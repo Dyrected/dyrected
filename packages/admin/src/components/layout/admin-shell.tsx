@@ -82,7 +82,7 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
                 <SidebarMenu>
                   {isLoading ? (
                     <div className="px-4 py-2 text-xs text-muted-foreground italic">Loading...</div>
-                  ) : schemas?.collections?.filter(col => !col?.admin?.hidden)?.map((col: any) => (
+                  ) : schemas?.collections?.filter(col => col?.admin?.hidden)?.map((col: any) => (
                     <SidebarMenuItem key={col.slug}>
                       <SidebarMenuButton asChild tooltip={col.label} isActive={location.pathname === `/collections/${col.slug}`} className="rounded-lg">
                         <Link to={`/collections/${col.slug}`}>
@@ -131,8 +131,8 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-9 w-9 rounded-lg border border-border bg-white shadow-sm" />
-                <div className="h-4 w-px bg-border/60" />
-                <div>
+                {/* <div className="h-4 w-px bg-border/60" /> */}
+                {/* <div>
                   <h2 className="text-xl font-bold tracking-tight text-foreground">
                     {location.pathname === '/' ? 'Dashboard' :
                       location.pathname.startsWith('/collections/') ? 'Collection' :
@@ -140,7 +140,7 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
                           location.pathname === '/media' ? 'Media Library' : 'Admin'}
                   </h2>
                   <p className="text-xs text-muted-foreground">Manage your site content and settings.</p>
-                </div>
+                </div> */}
               </div>
             </div>
             <div className="animate-in">
