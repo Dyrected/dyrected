@@ -61,6 +61,7 @@
         "core/configuration",
         "core/schema",
         "core/fields",
+        "core/admin-config",
         "core/hooks",
         "core/access-control"
       ]
@@ -68,7 +69,8 @@
     {
       "group": "Admin Dashboard",
       "pages": [
-        "admin/overview"
+        "admin/overview",
+        "admin/live-preview"
       ]
     },
     {

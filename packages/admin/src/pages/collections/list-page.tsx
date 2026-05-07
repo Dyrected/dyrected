@@ -6,8 +6,8 @@ import { DataTable } from "../../components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
 import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
-import { 
-  MoreHorizontal, 
+import {
+  MoreHorizontal,
   Plus,
   Pencil,
   Trash2,
@@ -76,7 +76,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
     // Determine which fields to show in columns
     let displayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
-    
+
     if (schema.admin?.defaultColumns && Array.isArray(schema.admin.defaultColumns)) {
       displayFields = displayFields.filter((f: any) => schema.admin.defaultColumns.includes(f.name))
     } else {
@@ -178,7 +178,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-           <Link to={`/collections/${slug}/new`}>
+          <Link to={`/collections/${slug}/new`}>
             <Button className="h-10 px-4 rounded-lg bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" />
               Create {schema.label || schema.slug}
@@ -187,10 +187,10 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-white shadow-sm overflow-hidden">
-        <DataTable 
-          columns={columns} 
-          data={response?.docs || []} 
+      <div className="rounded-xl border border-border/60 bg-white overflow-hidden">
+        <DataTable
+          columns={columns}
+          data={response?.docs || []}
           searchKey={schema.admin?.useAsTitle || schema.fields.find((f: any) => !f.admin?.hidden)?.name || "id"}
         />
       </div>
