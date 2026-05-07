@@ -63,7 +63,9 @@
         "core/fields",
         "core/admin-config",
         "core/hooks",
-        "core/access-control"
+        "core/access-control",
+        "core/auth",
+        "core/upload"
       ]
     },
     {
@@ -84,6 +86,8 @@
       "group": "API Reference",
       "pages": [
         "api-reference/introduction",
+        "api-reference/rest-api",
+        "api-reference/sdk",
         "api-reference/openapi"
       ]
     },

@@ -1,6 +1,7 @@
 # Dyrected Platform — Metrics & License Management
 
 This document covers:
+
 1. **What to track** — the key metrics for a headless CMS platform like Dyrected.
 2. **How to track it** — lightweight instrumentation strategy.
 3. **The License Server** — what it is, what it does, and where it lives.
@@ -12,35 +13,35 @@ This document covers:
 
 ### Business / Growth Metrics
 
-| Metric | Why It Matters | How to Measure |
-|---|---|---|
-| **MRR (Monthly Recurring Revenue)** | Core health of the SaaS business | Paystack subscription data |
-| **New workspaces / month** | Top-of-funnel growth | `workspaces` table, `created_at` |
-| **Trial → Paid conversion rate** | Validates pricing + onboarding | Compare trial signups to first payment |
-| **Churn rate** | Revenue retention | Subscriptions moved to `cancelled` |
-| **ARR by plan** | Revenue distribution | Group subscriptions by `plan` field |
-| **Active license count** | Cloud + enterprise health | License server DB |
+| Metric                              | Why It Matters                   | How to Measure                         |
+| ----------------------------------- | -------------------------------- | -------------------------------------- |
+| **MRR (Monthly Recurring Revenue)** | Core health of the SaaS business | Paystack subscription data             |
+| **New workspaces / month**          | Top-of-funnel growth             | `workspaces` table, `created_at`       |
+| **Trial → Paid conversion rate**    | Validates pricing + onboarding   | Compare trial signups to first payment |
+| **Churn rate**                      | Revenue retention                | Subscriptions moved to `cancelled`     |
+| **ARR by plan**                     | Revenue distribution             | Group subscriptions by `plan` field    |
+| **Active license count**            | Cloud + enterprise health        | License server DB                      |
 
 ### Product / Usage Metrics
 
-| Metric | Why It Matters | How to Measure |
-|---|---|---|
-| **Active sites / workspace** | Indicates customer growth & expansion | Count `sites` per `workspaceId` |
-| **API requests / site / day** | Usage depth, scaling signals | Request logs (Hono middleware) |
-| **Content writes / site / week** | Engagement — are people actually using it? | `afterCreate` / `afterUpdate` hooks |
-| **Media storage used / workspace** | Billing driver, plan enforcement | Already tracked in Redis: `usage:storage:{workspaceId}` |
-| **Webhook delivery rate** | System reliability | BullMQ job success/failure ratio |
-| **SDK version distribution** | Tells you which package versions are in the wild | `user-agent` header from SDK |
+| Metric                             | Why It Matters                                   | How to Measure                                          |
+| ---------------------------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| **Active sites / workspace**       | Indicates customer growth & expansion            | Count `sites` per `workspaceId`                         |
+| **API requests / site / day**      | Usage depth, scaling signals                     | Request logs (Hono middleware)                          |
+| **Content writes / site / week**   | Engagement — are people actually using it?       | `afterCreate` / `afterUpdate` hooks                     |
+| **Media storage used / workspace** | Billing driver, plan enforcement                 | Already tracked in Redis: `usage:storage:{workspaceId}` |
+| **Webhook delivery rate**          | System reliability                               | BullMQ job success/failure ratio                        |
+| **SDK version distribution**       | Tells you which package versions are in the wild | `user-agent` header from SDK                            |
 
 ### Operational / Health Metrics
 
-| Metric | Why It Matters | How to Measure |
-|---|---|---|
-| **API error rate (4xx / 5xx)** | Bugs, bad integrations | Hono error handler, request logs |
-| **License key validation latency** | If the license server is slow, boots slow | Instrumented `validateLicenseKey()` |
-| **P50 / P95 response time** | API performance | Hono timing middleware |
-| **Queue depth (BullMQ)** | Backlog of undelivered webhooks / image jobs | BullMQ metrics API |
-| **DB query count / request** | N+1 problems | Drizzle query events or pg_stat |
+| Metric                             | Why It Matters                               | How to Measure                      |
+| ---------------------------------- | -------------------------------------------- | ----------------------------------- |
+| **API error rate (4xx / 5xx)**     | Bugs, bad integrations                       | Hono error handler, request logs    |
+| **License key validation latency** | If the license server is slow, boots slow    | Instrumented `validateLicenseKey()` |
+| **P50 / P95 response time**        | API performance                              | Hono timing middleware              |
+| **Queue depth (BullMQ)**           | Backlog of undelivered webhooks / image jobs | BullMQ metrics API                  |
+| **DB query count / request**       | N+1 problems                                 | Drizzle query events or pg_stat     |
 
 ---
 
@@ -56,17 +57,18 @@ Use **Posthog** (open source, self-hostable) or **Plausible** for product analyt
 // src/analytics.ts
 export async function track(event: string, properties: Record<string, any>) {
   await db.create({
-    collection: 'platform_events',
+    collection: "platform_events",
     data: {
-      event,           // e.g. 'workspace.created', 'site.created', 'api.request'
-      properties,      // e.g. { workspaceId, plan, siteCount }
+      event, // e.g. 'workspace.created', 'site.created', 'api.request'
+      properties, // e.g. { workspaceId, plan, siteCount }
       timestamp: new Date().toISOString(),
-    }
-  })
+    },
+  });
 }
 ```
 
 Call it from:
+
 - `workspaces.ts` route — on workspace create, update, delete.
 - `invitations.ts` route — on invitation accept (user activated).
 - `billing.ts` — on Paystack subscription events.
@@ -75,6 +77,7 @@ Call it from:
 ### License Server Metrics
 
 The license server tracks:
+
 - Total issued keys
 - Active / revoked / expired keys
 - Validation request counts per key (detect abuse / unexpected multiple instances)
@@ -109,13 +112,13 @@ The license server is intentionally **completely separate** from `apps/cloud`. I
 
 Given your preference for simple + easy to track:
 
-| Concern | Choice | Reason |
-|---|---|---|
-| **Backend** | Hono on Node (same as cloud) | Keeps the stack consistent, you already know it |
-| **Database** | Postgres (same instance or separate schema) | Simple, no extra infra |
-| **Frontend Dashboard** | Next.js (standalone app) | Fast to build, deploy to Vercel/Railway |
-| **Auth** | Simple email + password (NextAuth or custom JWT) | You don't need OAuth complexity for an internal tool |
-| **Hosting** | Railway or Fly.io | Easy deploys, no k8s overhead |
+| Concern                | Choice                                           | Reason                                               |
+| ---------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| **Backend**            | Hono on Node (same as cloud)                     | Keeps the stack consistent, you already know it      |
+| **Database**           | Postgres (same instance or separate schema)      | Simple, no extra infra                               |
+| **Frontend Dashboard** | Next.js (standalone app)                         | Fast to build, deploy to Vercel/Railway              |
+| **Auth**               | Simple email + password (NextAuth or custom JWT) | You don't need OAuth complexity for an internal tool |
+| **Hosting**            | Railway or Fly.io                                | Easy deploys, no k8s overhead                        |
 
 > **Don't merge this into `apps/cloud`.**  
 > The license server needs to be available even when no cloud customer is running. If you embed it in `apps/cloud`, you've created a circular dependency — cloud needs the license server, and the license server is cloud.
@@ -132,11 +135,11 @@ Given your preference for simple + easy to track:
 
 ### Options Considered
 
-| Option | Pros | Cons |
-|---|---|---|
-| **Merge into `apps/cloud`** | One codebase | Circular dependency; mixes platform admin with license management |
-| **Separate Hono backend + separate React/Next.js frontend** | Clean separation, fully typed RPC | Two repos, two deploys, more overhead to set up |
-| **Single Next.js app** (full-stack) | One repo, one deploy, fast to iterate | API and UI in one — fine for internal tooling |
+| Option                                                      | Pros                                  | Cons                                                              |
+| ----------------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------- |
+| **Merge into `apps/cloud`**                                 | One codebase                          | Circular dependency; mixes platform admin with license management |
+| **Separate Hono backend + separate React/Next.js frontend** | Clean separation, fully typed RPC     | Two repos, two deploys, more overhead to set up                   |
+| **Single Next.js app** (full-stack)                         | One repo, one deploy, fast to iterate | API and UI in one — fine for internal tooling                     |
 
 ### Recommendation — Single Next.js App
 
@@ -204,70 +207,4 @@ apps/platform/
 
 ---
 
-## Table Naming — Core Improvement
-
-> This section captures a required improvement to `@dyrected/core` for multi-tenant correctness.
-
-### Problem
-
-Currently, all sites share the same physical SQL tables, isolated only by `siteId`/`workspaceId` columns injected by the `QueryInterceptor`. A bug in the interceptor = data leak.
-
-### Solution — Prefix Tables with IDs
-
-When the database adapter creates or queries a collection's table, it should prefix the table name with the workspace and site IDs:
-
-```
-{workspaceId}_{siteId}_{collectionSlug}
-
-Examples:
-  ws_abc123_site_xyz789_posts
-  ws_abc123_site_xyz789_media
-  ws_abc123_site_xyz789_users
-```
-
-### Implementation
-
-The `onSchemaFetch` hook in `apps/cloud/src/config.ts` already stamps `siteId` onto every returned collection. Extend it to also pass a `tablePrefix`:
-
-```ts
-onSchemaFetch: async (siteId) => {
-  const site = await baseDb.findOne({ collection: 'sites', id: siteId })
-  if (!site?.schema) return { collections: [], globals: [] }
-
-  const prefix = `ws_${site.workspaceId}_site_${siteId}`
-
-  return {
-    collections: site.schema.collections.map(c => ({
-      ...c,
-      siteId,
-      tablePrefix: prefix,  // ← NEW
-    })),
-    globals: site.schema.globals.map(g => ({
-      ...g,
-      siteId,
-      tablePrefix: prefix,
-    })),
-  }
-}
-```
-
-The database adapters (`@dyrected/db-postgres`, `@dyrected/db-sqlite`, etc.) then resolve the physical table name as:
-
-```ts
-function tableName(collection: CollectionConfig): string {
-  if (collection.tablePrefix) {
-    return `${collection.tablePrefix}_${collection.slug}`
-  }
-  return collection.slug  // self-hosted default
-}
-```
-
-This gives physical isolation per site with zero change to the HTTP layer or the `QueryInterceptor`.  
-The `QueryInterceptor` can then be simplified — it still stamps `siteId`/`workspaceId` as columns, but it is no longer the **only** isolation mechanism.
-
-> [!IMPORTANT]
-> Self-hosted installations are unaffected. When `tablePrefix` is absent (self-hosted), adapters fall back to the plain `slug` as the table name — the existing behavior.
-
----
-
-*Last updated: May 2026.*
+_Last updated: May 2026._

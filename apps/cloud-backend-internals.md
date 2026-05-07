@@ -162,32 +162,28 @@ When a request arrives for a site, `@dyrected/core` calls `onSchemaFetch(siteId)
 
 ---
 
-## Table Naming — The Current Approach & Planned Improvement
+## Table Naming — Architecture Decision
 
-### Current State
+> [!IMPORTANT]
+> The table naming strategy has been finalized. See **`specs/database-multi-tenancy.md`** for the complete architecture decision, rationale, and implementation plan.
 
-The `@dyrected/core` database adapters (e.g., `@dyrected/db-postgres`) derive the physical SQL table name directly from a collection's `slug` field. For a collection with `slug: 'posts'`, the table is named `posts`.
+### Summary
 
-**Problem in Cloud mode:** Multiple sites in the same database all have their own `posts`, `media`, `users`, etc. collections — and right now they all write to the same `posts` table, isolated only by the `siteId` and `workspaceId` columns that the `QueryInterceptor` injects at runtime.
-
-This is functional but fragile: a missing filter = data leak. It also makes it impossible to give sites different schemas for the same slug.
-
-### Planned Improvement — Table Prefixing
-
-The planned approach is to prefix each table name with `{workspaceId}_{siteId}_`:
+Each **workspace** gets its own dedicated **Postgres schema** (`ws_{workspaceId}`). Tables within that schema are named `{siteId}_{collectionSlug}`.
 
 ```
-ws_abc123_site_xyz789_posts
-ws_abc123_site_xyz789_media
-ws_abc123_site_xyz789_users
+dyrected_cloud
+├── public                    ← Cloud system tables (workspaces, sites, accounts, billing)
+├── ws_abc123                 ← Workspace A's schema
+│   ├── xyz789_posts
+│   ├── xyz789_media
+│   └── mno456_posts
+└── ws_def456                 ← Workspace B's schema
+    ├── stu111_products
+    └── stu111_media
 ```
 
-This means:
-- Each site gets fully isolated physical tables — no shared-table risk.
-- Schema drift between sites (e.g., different `posts` field definitions) is safe.
-- The `QueryInterceptor` still stamps `siteId`/`workspaceId` on rows, but as belt-and-suspenders rather than the primary isolation mechanism.
-
-The `onSchemaFetch` hook already stamps `siteId` onto every returned collection definition. The db adapters need to be updated to consume a `tablePrefix` option derived from those definitions.
+The `onSchemaFetch` hook resolves the fully qualified `"schemaName"."tableName"` for every collection and passes it to the database adapter as `dbTableName`. Adapters use this directly when present, and fall back to the plain `slug` for self-hosted installations.
 
 ---
 
@@ -264,7 +260,7 @@ Jobs are enqueued from collection hooks defined in the `onSchemaFetch`-resolved 
 | Concern | Self-Hosted (`@dyrected/core`) | Cloud (`apps/cloud`) |
 |---|---|---|
 | Schema source | `dyrected.config.ts` at boot | `sites.schema` JSON column, via `onSchemaFetch` |
-| Table naming | `{slug}` | `{workspaceId}_{siteId}_{slug}` (planned) |
+| Table naming | `{slug}` | `"ws_{workspaceId}"."siteId_slug"` — see `specs/database-multi-tenancy.md` |
 | Tenant isolation | None (single site) | `resolveSite()` middleware + `QueryInterceptor` |
 | License | Not required | `DYRECTED_LICENSE_KEY` required at boot |
 | Redis | Optional | Required |

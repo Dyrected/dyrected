@@ -1,51 +1,269 @@
 ---
 title: Next.js Integration
-description: How to use Dyrected inside your Next.js application.
+description: Complete guide to using Dyrected in a Next.js App Router project.
 ---
 
-Dyrected is built to work seamlessly with the Next.js App Router.
+Dyrected integrates natively with the Next.js App Router via a catch-all API route. You can fetch data server-side, client-side, or use the SDK in Server Components.
 
-## API Route Setup
+---
 
-The most common way to integrate Dyrected is by creating a single catch-all API route that handles all Dyrected requests (Admin UI, REST API, etc.).
+## Installation
 
-Create the file at `app/api/dyrected/[...route]/route.ts`:
-
-```typescript
-import { createApp } from '@dyrected/core';
-import config from '@/dyrected.config';
-
-const app = createApp(config);
-
-export const GET = app.fetch;
-export const POST = app.fetch;
-export const PATCH = app.fetch;
-export const DELETE = app.fetch;
+```bash
+pnpm add @dyrected/core @dyrected/sdk @dyrected/admin @dyrected/db-postgres
 ```
 
-## Data Fetching
+---
 
-Since Dyrected runs inside your app, you can fetch data directly in your Server Components using the `baseDb` adapter.
+## Step 1 — Create your config
+
+```ts
+// dyrected.config.ts (project root)
+import { defineConfig } from '@dyrected/core'
+import { PostgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [
+    {
+      slug: 'posts',
+      admin: { useAsTitle: 'title' },
+      fields: [
+        { name: 'title', type: 'text', required: true },
+        { name: 'slug',  type: 'text', required: true, unique: true },
+        { name: 'body',  type: 'richText' },
+        {
+          name: 'status',
+          type: 'select',
+          options: ['draft', 'published'],
+          defaultValue: 'draft',
+        },
+      ],
+    },
+  ],
+})
+```
+
+---
+
+## Step 2 — Mount the API route
+
+Create a catch-all route that forwards all Dyrected requests to the Hono router:
+
+```ts
+// app/api/dyrected/[...route]/route.ts
+import { createApp } from '@dyrected/core'
+import config from '@/dyrected.config'
+
+const { handler } = createApp(config)
+
+export const GET    = handler
+export const POST   = handler
+export const PATCH  = handler
+export const DELETE = handler
+```
+
+All Dyrected REST endpoints are now available at `/api/dyrected/...`.
+
+---
+
+## Step 3 — Fetch data in Server Components
+
+### Using the SDK
 
 ```tsx
-import config from '@/dyrected.config';
+// app/blog/page.tsx
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey: process.env.DYRECTED_API_KEY!,
+})
+
+export default async function BlogPage() {
+  const { docs: posts } = await client.collection('posts').find({
+    where: { status: { equals: 'published' } },
+    sort: '-createdAt',
+    depth: 1,
+  })
+
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+### Directly via the database adapter
+
+When Dyrected is co-located with your Next.js app (self-hosted), you can bypass HTTP entirely:
+
+```tsx
+// app/blog/page.tsx
+import config from '@/dyrected.config'
 
 export default async function BlogPage() {
   const { docs: posts } = await config.db.find({
     collection: 'posts',
-    limit: 10
-  });
+    where: { status: { equals: 'published' } },
+    limit: 10,
+  })
 
-  return (
-    <div>
-      {posts.map(post => (
-        <h1 key={post.id}>{post.title}</h1>
-      ))}
-    </div>
-  );
+  return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>
 }
 ```
 
-## Middleware & Auth
+This approach has zero network overhead and is the fastest option for self-hosted setups.
 
-If you want to protect your Dyrected endpoints, you can wrap the catch-all route with your own authentication logic or use Dyrected's built-in `auth` field on collections.
+---
+
+## Step 4 — Embed the Admin UI
+
+```tsx
+// app/admin/[[...route]]/page.tsx
+'use client'
+
+import { AdminUI } from '@dyrected/admin'
+import '@dyrected/admin/dist/index.css'
+
+export default function AdminPage() {
+  return (
+    <AdminUI
+      baseUrl={process.env.NEXT_PUBLIC_DYRECTED_URL!}
+      apiKey={process.env.NEXT_PUBLIC_DYRECTED_API_KEY!}
+      siteId={process.env.NEXT_PUBLIC_SITE_ID}
+    />
+  )
+}
+```
+
+---
+
+## Environment Variables
+
+```bash
+# .env.local
+DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
+
+# Dyrected API base URL (the Next.js app URL + /api/dyrected)
+NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000/api/dyrected
+
+# Server-side API key (never expose to browser)
+DYRECTED_API_KEY=sk_live_...
+
+# Client-side keys (safe to expose — access is controlled by Dyrected access functions)
+NEXT_PUBLIC_DYRECTED_API_KEY=pk_live_...
+NEXT_PUBLIC_SITE_ID=site_...
+```
+
+---
+
+## ISR Cache Revalidation
+
+When content is published, you often want to revalidate cached Next.js pages. Use an `afterChange` hook to call `revalidatePath` or `revalidateTag`:
+
+```ts
+// dyrected.config.ts
+import { revalidatePath } from 'next/cache'
+
+{
+  slug: 'posts',
+  hooks: {
+    afterChange: [
+      async ({ doc, operation }) => {
+        if (doc.status === 'published') {
+          revalidatePath('/blog')
+          revalidatePath(`/blog/${doc.slug}`)
+        }
+      }
+    ]
+  }
+}
+```
+
+Or use webhook-style revalidation via a dedicated endpoint:
+
+```ts
+// app/api/revalidate/route.ts
+import { revalidatePath } from 'next/cache'
+import { NextRequest } from 'next/server'
+
+export async function POST(req: NextRequest) {
+  const secret = req.headers.get('x-revalidate-secret')
+  if (secret !== process.env.REVALIDATE_SECRET) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+  const { path } = await req.json()
+  revalidatePath(path)
+  return Response.json({ revalidated: true })
+}
+```
+
+---
+
+## Live Preview
+
+Add live preview support to any page with the `useLivePreview` hook:
+
+```tsx
+// app/blog/[slug]/preview/page.tsx
+'use client'
+import { useLivePreview } from '@dyrected/react'
+
+export default function BlogPreview({ initialPost }: { initialPost: Post }) {
+  const { data: post, isLive } = useLivePreview({
+    initialData: initialPost,
+    serverURL: process.env.NEXT_PUBLIC_DYRECTED_ADMIN_URL!,
+  })
+
+  return (
+    <article>
+      {isLive && <div className="preview-badge">Preview Mode</div>}
+      <h1>{post.title}</h1>
+    </article>
+  )
+}
+```
+
+Enable it on the collection:
+
+```ts
+{
+  slug: 'posts',
+  admin: {
+    previewUrl: (doc) =>
+      doc?.slug ? `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${doc.slug}/preview` : null,
+  }
+}
+```
+
+See [Live Preview](/docs/admin/live-preview) for the full guide.
+
+---
+
+## Middleware & Route Protection
+
+Protect your admin route with Next.js middleware:
+
+```ts
+// middleware.ts
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    const token = request.cookies.get('dyrected-token')?.value
+    if (!token) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  }
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ['/admin/:path*'],
+}
+```
