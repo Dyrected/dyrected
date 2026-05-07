@@ -8,3 +8,4 @@ Refer to these files for detailed information on:
 - [Backend Implementation](./dyrected-backend.md)
 - [SDK Reference](./dyrected-sdk.md)
 - [Product Vision](./dyrected-product.md)
+- [Cloud Platform Deployment](./cloud-platform.md)

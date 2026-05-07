@@ -58,6 +58,7 @@
     {
       "group": "Core Engine",
       "pages": [
+        "core/configuration",
         "core/schema",
         "core/fields",
         "core/hooks",
@@ -87,7 +88,6 @@
     {
       "group": "Deployment",
       "pages": [
-        "deployment/cloud-platform",
         "deployment/vercel",
         "deployment/docker"
       ]
