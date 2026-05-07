@@ -18,5 +18,5 @@ All notable changes to the Dyrected project will be documented in this file.
     - Full directory tree for packages and apps.
 - **Documentation**:
     - Organized specifications in `specs/`.
-    - Detailed [Implementation Plan](./specs/implementation_plan.md) with granular breakdown of all 6 build phases.
+    - Detailed [Implementation Plan](./specs/implementation_plan.md) with granular breakdown of all 6 build phases, including support for SQLite, Postgres, and MongoDB.
     - READMEs for all packages and apps.
