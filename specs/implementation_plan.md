@@ -188,62 +188,63 @@ The current implementation and documentation have drifted from the strict archit
 This phase establishes the base data model and infrastructure required for the cloud environment.
 
 ### Phase 7.1: Redis & Caching Infrastructure
-- [ ] Set up the `apps/cloud` `turbo.json` configuration and environment variables.
-- [ ] Integrate Redis connection handling for caching, session synchronization, and rate limiting.
+- [x] Set up the `apps/cloud` `turbo.json` configuration and environment variables.
+- [x] Integrate Redis connection handling for caching, session synchronization, and rate limiting.
 
 ### Phase 7.2: Multi-tenant Data Architecture
-- [ ] Create database schema extensions for Workspaces, Sites, and Subscriptions within `@dyrected/cloud`.
-- [ ] Build the `SiteResolver` middleware for header-based (`x-api-key`) and host-based tenant identification.
-- [ ] Implement the `QueryInterceptor` to automatically inject `workspace_id` and `site_id` bounds into database queries.
-- [ ] Validate database-level isolation to ensure data cannot leak across tenants.
+- [x] Create database schema extensions for Workspaces, Sites, and Subscriptions within `@dyrected/cloud`.
+- [x] Build the `SiteResolver` middleware for header-based (`x-api-key`) and host-based tenant identification.
+- [x] Implement the `QueryInterceptor` to automatically inject `workspace_id` and `site_id` bounds into database queries.
+- [x] Validate database-level isolation to ensure data cannot leak across tenants.
 
 ## Phase 8: Cloud Identity & Access Management (IAM)
 
 This phase introduces user authentication and team collaboration to the cloud platform.
 
 ### Phase 8.1: Identity & Authentication
-- [ ] Define the `Users` collection with `auth: true` within the `apps/cloud` configuration.
-- [ ] Implement workspace owner authentication using the `@dyrected/sdk` (`dyrected.auth.login()`).
-- [ ] Build secure, cookie-based session management for the Cloud Dashboard using native Dyrected tokens.
+- [x] Define the `Users` collection with `auth: true` within the `apps/cloud` configuration.
+- [x] Implement workspace owner authentication using the `@dyrected/sdk` (`dyrected.auth.login()`).
+- [x] Build secure, cookie-based session management for the Cloud Dashboard using native Dyrected tokens.
 
 ### Phase 8.2: Access Management & Collaboration
-- [ ] Implement the Workspace Invitation system with secure token-based email links.
-- [ ] Build the team management API (invite, revoke, update roles).
-- [ ] Implement Role-Based Access Control (RBAC) middleware for Owner, Admin, and Editor roles.
+- [x] Implement the Workspace Invitation system with secure token-based email links.
+- [x] Build the team management API (invite, revoke, update roles).
+- [x] Implement Role-Based Access Control (RBAC) middleware for Owner, Admin, and Editor roles.
 
 ## Phase 9: Cloud Platform Dashboard
 
 This phase builds the actual UI where customers will manage their Dyrected instances.
 
 ### Phase 9.1: Dashboard Application Shell
-- [ ] Scaffold the Cloud Admin dashboard application shell (Next.js/Nuxt).
-- [ ] Build the "Workspace Overview" page showing active sites and top-level metrics.
-- [ ] Build the "Site Detail" page for managing a specific site's settings.
+- [x] Scaffold the Cloud Admin dashboard application shell (Next.js/Nuxt).
+- [x] Build the "Workspace Overview" page showing active sites and top-level metrics.
+- [x] Build the "Site Detail" page for managing a specific site's settings.
 
 ### Phase 9.2: Configuration Management UI
-- [ ] Create interfaces for creating, viewing, and rotating Site API Keys.
-- [ ] Build forms for configuring custom storage adapters per site (S3, B2, Cloudinary).
-- [ ] Implement the UI for team management and invitation workflows.
+- [x] Create interfaces for creating, viewing, and rotating Site API Keys.
+- [x] Build forms for configuring custom storage adapters per site (S3, B2, Cloudinary).
+- [x] Build the UI for team management and invitation workflows.
 
 ## Phase 10: Cloud Operations, Webhooks & Billing
 
 This phase introduces background processing, usage tracking, and monetization.
 
 ### Phase 10.1: Background Jobs & Webhooks
-- [ ] Integrate BullMQ for asynchronous task queues, connected to Redis.
-- [ ] Implement the `WebhookDispatcher` service to listen to content lifecycle events.
-- [ ] Create the database tables to store Webhook Endpoint configurations and Delivery Logs.
-- [ ] Build the Webhook management UI in the dashboard.
+- [x] Integrate BullMQ for asynchronous task queues, connected to Redis.
+- [x] Implement the `WebhookDispatcher` service to listen to content lifecycle events.
+- [x] Create the database tables to store Webhook Endpoint configurations and Delivery Logs.
+- [x] Build the Webhook management UI in the dashboard.
 
 ### Phase 10.2: Usage Tracking & Analytics
-- [ ] Implement middleware to track incoming API requests and increment usage counters in Redis.
-- [ ] Create a cron job to flush Redis usage counters to the main database periodically.
-- [ ] Implement storage space calculation logic.
-- [ ] Build the Analytics dashboard view for users to monitor their bandwidth and API consumption.
+- [x] Implement middleware to track incoming API requests and increment usage counters in Redis.
+- [x] Create a cron job to flush Redis usage counters to the main database periodically.
+- [x] Implement storage space calculation logic.
+- [x] Build the Analytics dashboard view for users to monitor their bandwidth and API consumption.
 
 ### Phase 10.3: Paystack Billing Integration
-- [ ] Integrate the Paystack Node SDK.
-- [ ] Implement the payment flow for creating subscriptions and handling one-off payments.
-- [ ] Create the Paystack webhook listener to process `subscription.create`, `charge.success`, and `invoice.payment_failed` events.
-- [ ] Build the Billing Management UI for users to manage cards, view invoices, and upgrade/downgrade plans.
-- [ ] Enforce usage limits based on the active Paystack subscription tier.
+- [x] Integrate the Paystack Node SDK.
+- [x] Implement the payment flow for creating subscriptions and handling one-off payments.
+- [x] Create the Paystack webhook listener to process `subscription.create`, `charge.success`, and `invoice.payment_failed` events.
+- [x] Build the Billing Management UI for users to manage cards, view invoices, and upgrade/downgrade plans.
+- [x] Enforce usage limits based on the active Paystack subscription tier.
+
