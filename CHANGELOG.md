@@ -5,6 +5,11 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **MongoDB Database Adapter (@dyrected/db-mongodb)**:
+    - Native driver integration.
+    - Automatic `ObjectId` handling and string fallback.
+    - Native document-to-object mapping.
+    - Highly scalable document storage for large-scale CMS deployments.
 - **Postgres Database Adapter (@dyrected/db-postgres)**:
     - Native `postgres.js` integration.
     - JSONB storage for flexible schemas.
