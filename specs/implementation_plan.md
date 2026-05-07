@@ -144,14 +144,29 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [ ] Add toggle support for "Draft" vs "Published" if the `status` field is present.
 - [ ] Implement UI indicators in the `CollectionListPage` for entry status.
 
-## Phase 6: Cloud & Platform
+## Phase 6: Architectural Alignment & Fixes [NEW]
 
-### Phase 6.1: Multi-tenant Architecture
-- [ ] Implement the `licenseKey` gate in the core engine.
-- [ ] Build the `SiteResolver` for host-based tenant identification.
-- [ ] Implement the platform-wide Auth provider (OAuth/GitHub).
+The current implementation and documentation have drifted from the strict architectural standards defined in `dyrected-architecture.md` and `dyrected-core-vs-cloud.md`. This phase will implement the necessary fixes to ensure the codebase perfectly aligns with the Open Core / Commercial Split model before building the Cloud platform.
 
-### Phase 6.2: Visual Builder
-- [ ] Build a UI for defining collections and fields (GUI -> Config JSON).
-- [ ] Implement the dynamic migration runner for schema changes.
+### Phase 6.1: Core Engine Purification
+- [ ] **Extract Workspace & Site Routes**: Remove `workspacesRoutes` and `sitesRoutes` from `@dyrected/core/src/index.ts`. These belong exclusively in the closed-source `apps/cloud` package.
+- [ ] **Remove `isCloud` Logic from Core**: Remove the `resolveSite` middleware's dependency on `config.isCloud` inside `@dyrected/core`. The core engine should unconditionally run in self-hosted (singleton) mode.
+- [ ] **Refactor `dyrected-backend.md`**: Update the backend documentation to remove references to `workspacesRoutes` and `sitesRoutes` within the `@dyrected/core` code examples, reflecting the true architecture.
+
+### Phase 6.2: Cloud App Bootstrapping
+- [ ] **Initialize `apps/cloud`**: Create the private `apps/cloud` workspace if it doesn't exist, marked as `"private": true`.
+- [ ] **Implement `apps/cloud/src/boot.ts`**: Implement the `DYRECTED_LICENSE_KEY` validation gate here, not in the core engine. This file will orchestrate the startup of the Cloud platform and wrap the `@dyrected/core` engine.
+- [ ] **Migrate Multi-Tenant Middleware**: Move the `resolveSite` (API key to site resolution) and multi-tenant logic entirely into `apps/cloud`.
+
+## Phase 7: Cloud & Platform
+
+### Phase 7.1: Multi-tenant Architecture
+- [ ] Implement the `licenseKey` gate in `apps/cloud/src/boot.ts` (moved from core engine).
+- [ ] Build the `SiteResolver` for host-based tenant identification within `apps/cloud`.
+- [ ] Implement the robust workspace invitation system for teams (replacing generic OAuth/GitHub auth if not required).
+
+### Phase 7.2: Visual Builder
+- [ ] Build a UI for defining collections and fields via the Admin dashboard.
+- [ ] **GUI -> Database Schema**: Ensure the Visual Builder saves schema configurations directly to the Database, overriding the file-based `dyrected.config.ts` (as specified for Cloud mode).
+- [ ] Implement the dynamic migration runner for database-backed schema changes.
 - [ ] Build the dashboard for usage analytics and site management.
