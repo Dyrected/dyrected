@@ -1,34 +1,236 @@
 import * as React from "react"
+import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link, useLocation } from "react-router-dom"
 import {
-  LayoutDashboard,
-  Settings,
   Database,
   Image as ImageIcon,
-  LogOut
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-} from "../../components/ui/sidebar"
-
 import { useDyrected } from "../../providers/dyrected-provider"
+import { cn } from "../../lib/utils"
 
-export function AdminShell({ children, isEmbedded = false }: { children: React.ReactNode, isEmbedded?: boolean }) {
+// ---------------------------------------------------------------------------
+// Single nav item
+// ---------------------------------------------------------------------------
+function NavItem({
+  to,
+  icon: Icon,
+  label,
+  active,
+  collapsed,
+  onClick,
+}: {
+  to: string
+  icon: React.ElementType
+  label: string
+  active: boolean
+  collapsed: boolean
+  onClick?: () => void
+}) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      title={collapsed ? label : undefined}
+      className={cn(
+        "group flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150",
+        collapsed ? "justify-center px-2" : "",
+        active
+          ? "bg-foreground text-background"
+          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+      )}
+    >
+      <Icon
+        className={cn(
+          "shrink-0 transition-colors",
+          collapsed ? "h-[17px] w-[17px]" : "h-[15px] w-[15px]",
+          active ? "text-background" : "text-muted-foreground group-hover:text-foreground"
+        )}
+      />
+      {!collapsed && <span className="truncate">{label}</span>}
+      {!collapsed && active && (
+        <ChevronRight className="ml-auto h-3.5 w-3.5 opacity-50 shrink-0" />
+      )}
+    </Link>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar inner content (shared)
+// ---------------------------------------------------------------------------
+function SidebarInner({
+  schemas,
+  isLoading,
+  location,
+  logout,
+  isEmbedded,
+  collapsed,
+  onNavigate,
+}: {
+  schemas: any
+  isLoading: boolean
+  location: ReturnType<typeof useLocation>
+  logout: () => void
+  isEmbedded: boolean
+  collapsed: boolean
+  onNavigate?: () => void
+}) {
+  const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden) ?? []
+  const globals = schemas?.globals?.filter((g: any) => !g?.admin?.hidden) ?? []
+  const uploadCol = schemas?.collections?.find((c: any) => c.upload)
+
+  const groupLabel = (text: string) =>
+    !collapsed ? (
+      <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+        {text}
+      </p>
+    ) : (
+      <div className="my-2 mx-3 h-px bg-border" />
+    )
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      {!isEmbedded && (
+        <div
+          className={cn(
+            "flex items-center h-14 border-b border-border shrink-0 transition-all",
+            collapsed ? "justify-center px-2" : "gap-2.5 px-4"
+          )}
+        >
+          <div className="h-7 w-7 bg-foreground rounded flex items-center justify-center text-background shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
+              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          {!collapsed && (
+            <span className="font-semibold text-sm tracking-tight text-foreground">Dyrected</span>
+          )}
+        </div>
+      )}
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+        {uploadCol && (
+          <div>
+            {groupLabel("Media")}
+            <NavItem
+              to={`/collections/${uploadCol.slug}`}
+              icon={ImageIcon}
+              label="Media Library"
+              active={location.pathname.startsWith(`/collections/${uploadCol.slug}`)}
+              collapsed={collapsed}
+              onClick={onNavigate}
+            />
+          </div>
+        )}
+
+        {(isLoading || collections.filter((c: any) => !c.upload).length > 0) && (
+          <div>
+            {groupLabel("Collections")}
+            {isLoading ? (
+              <div className="space-y-1 px-1">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={cn("h-8 rounded-md bg-muted/60 animate-pulse", collapsed ? "mx-1" : "mx-2")} />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-0.5">
+                {collections
+                  .filter((col: any) => !col.upload)
+                  .map((col: any) => (
+                    <NavItem
+                      key={col.slug}
+                      to={`/collections/${col.slug}`}
+                      icon={Database}
+                      label={col.labels?.plural ?? col.slug}
+                      active={location.pathname === `/collections/${col.slug}`}
+                      collapsed={collapsed}
+                      onClick={onNavigate}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {globals.length > 0 && (
+          <div>
+            {groupLabel("Configuration")}
+            <div className="space-y-0.5">
+              {globals.map((glob: any) => (
+                <NavItem
+                  key={glob.slug}
+                  to={`/globals/${glob.slug}`}
+                  icon={Settings}
+                  label={glob.label ?? glob.slug}
+                  active={location.pathname === `/globals/${glob.slug}`}
+                  collapsed={collapsed}
+                  onClick={onNavigate}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Footer */}
+      {!isEmbedded && (
+        <div className="border-t border-border px-2 py-3 shrink-0">
+          <button
+            onClick={logout}
+            title={collapsed ? "Logout" : undefined}
+            className={cn(
+              "flex w-full items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
+              collapsed ? "justify-center px-2" : ""
+            )}
+          >
+            <LogOut className="h-[15px] w-[15px] shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// AdminShell
+// ---------------------------------------------------------------------------
+export function AdminShell({
+  children,
+  isEmbedded = false,
+}: {
+  children: React.ReactNode
+  isEmbedded?: boolean
+}) {
   const { client, logout } = useDyrected()
   const location = useLocation()
+
+  // Desktop: collapsed state (sidebar still sits in the layout)
+  const [collapsed, setCollapsed] = useState(false)
+  // Mobile: open/close overlay
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
+
+  // Lock scroll on mobile when open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : ""
+    return () => { document.body.style.overflow = "" }
+  }, [mobileOpen])
 
   const { data: schemas, isLoading } = useQuery({
     queryKey: ["schemas"],
@@ -36,111 +238,95 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
       if (!client) return null
       return client.getSchemas()
     },
-    enabled: !!client
+    enabled: !!client,
   })
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <Sidebar>
-          {!isEmbedded && <SidebarHeader className="border-b px-4 py-3 bg-white/50 backdrop-blur-sm">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-                <LayoutDashboard className="h-4 w-4 text-white" />
-              </div>
-              <h1 className="text-lg font-bold tracking-tight text-foreground">Dyrected</h1>
-            </div>
-          </SidebarHeader>}
-          <SidebarContent className="px-2 py-4">
-            <SidebarGroup>
-              <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Content</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Dashboard" isActive={location.pathname === "/"} className="rounded-lg">
-                      <Link to="/">
-                        <LayoutDashboard className="h-4 w-4" />
-                        <span>Dashboard</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {schemas?.collections?.find((col: any) => col.upload)?.slug && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip="Media Library" isActive={location.pathname.startsWith(`/collections/${schemas.collections.find((col: any) => col.upload).slug}`)} className="rounded-lg">
-                        <Link to={`/collections/${schemas.collections.find((col: any) => col.upload).slug}`}>
-                          <ImageIcon className="h-4 w-4" />
-                          <span>Media Library</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+    <div className={cn("flex w-full relative", isEmbedded ? "h-full min-h-[600px]" : "min-h-screen")}>
 
-            <SidebarGroup className="mt-4">
-              <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Collections</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {isLoading ? (
-                    <div className="px-4 py-2 text-xs text-muted-foreground italic">Loading...</div>
-                  ) : schemas?.collections?.filter((col: any) => !col?.admin?.hidden)?.map((col: any) => (
-                    <SidebarMenuItem key={col.slug}>
-                      <SidebarMenuButton asChild tooltip={col.label} isActive={location.pathname === `/collections/${col.slug}`} className="rounded-lg">
-                        <Link to={`/collections/${col.slug}`}>
-                          {col.upload ? <ImageIcon className="h-4 w-4" /> : <Database className="h-4 w-4" />}
-                          <span>{col.labels?.plural}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+      {/* ------------------------------------------------------------------ */}
+      {/* DESKTOP sidebar — always in the layout, pushes content              */}
+      {/* ------------------------------------------------------------------ */}
+      <aside
+        className={cn(
+          "hidden md:flex flex-col shrink-0 h-full border-r border-border bg-background transition-all duration-300 overflow-hidden",
+          collapsed ? "w-[56px]" : "w-[220px]"
+        )}
+      >
+        <SidebarInner
+          schemas={schemas}
+          isLoading={isLoading}
+          location={location}
+          logout={logout}
+          isEmbedded={isEmbedded}
+          collapsed={collapsed}
+        />
+      </aside>
 
-            <SidebarGroup className="mt-4">
-              <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Configuration</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {schemas?.globals?.filter((glob: any) => !glob?.admin?.hidden)?.map((glob: any) => (
-                    <SidebarMenuItem key={glob.slug}>
-                      <SidebarMenuButton asChild tooltip={glob.label} isActive={location.pathname === `/globals/${glob.slug}`} className="rounded-lg">
-                        <Link to={`/globals/${glob.slug}`}>
-                          <Settings className="h-4 w-4" />
-                          <span>{glob.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-          {!isEmbedded && (
-            <SidebarFooter className="border-t p-4 bg-muted/30">
-              <button
-                onClick={logout}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
-            </SidebarFooter>
-          )}
-        </Sidebar>
-        <main className="flex-1 overflow-auto bg-background/50 backdrop-blur-sm">
-          <div className="mx-auto max-w-7xl p-8">
-            <div className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="h-9 w-9 rounded-lg border border-border bg-white shadow-sm" />
-              </div>
-            </div>
-            <div className="animate-in">
-              {children}
-            </div>
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+      {/* ------------------------------------------------------------------ */}
+      {/* MOBILE backdrop + sidebar                                           */}
+      {/* ------------------------------------------------------------------ */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 z-40 h-full w-[220px] flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out md:hidden",
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-3.5 right-3 p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        <SidebarInner
+          schemas={schemas}
+          isLoading={isLoading}
+          location={location}
+          logout={logout}
+          isEmbedded={isEmbedded}
+          collapsed={false}
+          onNavigate={() => setMobileOpen(false)}
+        />
+      </aside>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Main content                                                         */}
+      {/* ------------------------------------------------------------------ */}
+      <main className="flex-1 min-w-0 overflow-auto flex flex-col">
+        {/* Top bar with toggle */}
+        <div className="flex items-center gap-2 h-14 px-4 border-b border-border bg-background shrink-0">
+          {/* Mobile: hamburger */}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="md:hidden p-2 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          {/* Desktop: collapse/expand toggle */}
+          <button
+            onClick={() => setCollapsed((v) => !v)}
+            className="hidden md:flex p-2 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        <div className="flex-1 p-6 lg:p-8">
+          {children}
+        </div>
+      </main>
+    </div>
   )
 }
