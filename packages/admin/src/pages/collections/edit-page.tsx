@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useDyrected } from "@/providers/dyrected-provider"
-import { FormEngine } from "@/components/forms/form-engine"
+import { useDyrected } from "../../providers/dyrected-provider"
+import { FormEngine } from "../../components/forms/form-engine"
 import { useNavigate, useParams } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "../../components/ui/button"
+import { Badge } from "../../components/ui/badge"
 import { Calendar, Globe, Archive } from "lucide-react"
 
 export function EditEntryPage() {

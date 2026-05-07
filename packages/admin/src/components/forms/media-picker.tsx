@@ -1,16 +1,16 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "@/providers/dyrected-provider"
-import { Button } from "@/components/ui/button"
+import { useDyrected } from "../../providers/dyrected-provider"
+import { Button } from "../../components/ui/button"
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
   DialogTrigger 
-} from "@/components/ui/dialog"
+} from "../../components/ui/dialog"
 import { Image as ImageIcon, X, Plus, FileIcon } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea } from "../../components/ui/scroll-area"
 
 interface MediaPickerProps {
   value?: string

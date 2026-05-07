@@ -2,14 +2,14 @@ import { useState } from "react"
 import { useFieldArray } from "react-hook-form"
 import { FormFieldRenderer, buildDefaultValues } from "./form-engine"
 import type { FieldSchema, BlockSchema } from "./form-engine"
-import { Button } from "@/components/ui/button"
+import { Button } from "../../components/ui/button"
 import { X, GripVertical, ChevronDown, ChevronUp } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../../components/ui/dropdown-menu"
 import {
   DndContext,
   closestCenter,

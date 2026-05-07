@@ -1,11 +1,11 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
-import { useDyrected } from "@/providers/dyrected-provider"
-import { DataTable } from "@/components/ui/data-table"
+import { useDyrected } from "../../providers/dyrected-provider"
+import { DataTable } from "../../components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Badge } from "../../components/ui/badge"
+import { Button } from "../../components/ui/button"
 import { 
   MoreHorizontal, 
   Plus,
@@ -20,7 +20,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../../components/ui/dropdown-menu"
 
 interface CollectionListPageProps {
   slug: string

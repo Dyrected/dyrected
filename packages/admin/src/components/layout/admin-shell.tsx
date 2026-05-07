@@ -22,9 +22,9 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
-} from "@/components/ui/sidebar"
+} from "../../components/ui/sidebar"
 
-import { useDyrected } from "@/providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-provider"
 
 export function AdminShell({ children, isEmbedded = false }: { children: React.ReactNode, isEmbedded?: boolean }) {
   const { client, logout } = useDyrected()

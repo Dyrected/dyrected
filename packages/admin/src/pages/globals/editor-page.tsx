@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useDyrected } from "@/providers/dyrected-provider"
-import { FormEngine } from "@/components/forms/form-engine"
+import { useDyrected } from "../../providers/dyrected-provider"
+import { FormEngine } from "../../components/forms/form-engine"
 import { useParams } from "react-router-dom"
 import { Globe } from "lucide-react"
 

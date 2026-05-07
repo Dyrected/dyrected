@@ -8,19 +8,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+} from "../../components/ui/form"
+import { Input } from "../../components/ui/input"
+import { Button } from "../../components/ui/button"
 import { X } from "lucide-react"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
+import { Textarea } from "../../components/ui/textarea"
+import { Switch } from "../../components/ui/switch"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "../../components/ui/select"
 import { MediaPicker } from "./media-picker"
 import { RichTextEditor } from "./rich-text-editor"
 import { RelationshipPicker } from "./relationship-picker"

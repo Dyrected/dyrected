@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { useDyrected } from "@/providers/dyrected-provider";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { useDyrected } from "../../providers/dyrected-provider";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { Label } from "../../components/ui/label";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, setAuth } = useDyrected();
