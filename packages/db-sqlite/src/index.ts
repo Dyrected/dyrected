@@ -90,9 +90,13 @@ export class SqliteAdapter implements DatabaseAdapter {
   async update(params: { collection: string; id: string; data: any }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
+    const existing = await this.findOne({ collection: params.collection, id: params.id });
+    const newData = { ...(existing || {}), ...params.data };
+    delete (newData as any).id; // Ensure ID doesn't end up in data column twice
+
     const stmt = this.sqlite.prepare(`UPDATE ${tableName} SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
-    stmt.run(JSON.stringify(params.data), params.id);
-    return { id: params.id, ...params.data };
+    stmt.run(JSON.stringify(newData), params.id);
+    return { id: params.id, ...newData };
   }
 
   async delete(params: { collection: string; id: string }) {

@@ -127,7 +127,7 @@ export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
 
 function MediaCard({ item, baseUrl, onDelete }: { item: any, baseUrl: string, onDelete: () => void }) {
   const isImage = item.mimeType?.startsWith("image/")
-  const url = `${baseUrl}/media/${item.filename}`
+  const url = item.url ? (item.url.startsWith('http') ? item.url : `${baseUrl}${item.url}`) : `${baseUrl}/uploads/${item.filename}`
 
   return (
     <Card className="overflow-hidden group relative border-border/40 bg-white shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl">
@@ -155,7 +155,7 @@ function MediaCard({ item, baseUrl, onDelete }: { item: any, baseUrl: string, on
             {item.mimeType?.split("/")[1] || "file"}
           </p>
           <p className="text-[9px] text-muted-foreground font-medium">
-            {(item.size / 1024).toFixed(1)} KB
+            {((item.filesize || item.size || 0) / 1024).toFixed(1)} KB
           </p>
         </div>
       </CardContent>

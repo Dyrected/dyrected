@@ -7,6 +7,8 @@ export const useDyrected = () => {
   
   const client = createClient({
     baseUrl: config.baseUrl,
+    apiKey: config.apiKey,
+    siteId: config.siteId,
   });
 
   return client;

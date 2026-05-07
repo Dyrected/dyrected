@@ -22,11 +22,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   setup(options, nuxt) {
     const resolver = createResolver(import.meta.url);
 
-    // 1. Add Server Handler (Nitro)
-    addServerHandler({
-      route: `${options.apiBase}/**`,
-      handler: resolver.resolve('./runtime/server/handler'),
-    });
+    // 1. Add Server Handler (Nitro) - only if apiBase is a relative path
+    if (options.apiBase?.startsWith('/')) {
+      addServerHandler({
+        route: `${options.apiBase}/**`,
+        handler: resolver.resolve('./runtime/server/handler'),
+      });
+    }
 
     // 2. Add Components
     addComponent({
@@ -43,6 +45,8 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // 4. Pass options to runtime
     nuxt.options.runtimeConfig.public.dyrected = {
       baseUrl: options.apiBase,
+      apiKey: options.apiKey,
+      siteId: options.siteId,
     };
   },
 });

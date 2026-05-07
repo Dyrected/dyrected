@@ -12,15 +12,21 @@ export class LocalStorageAdapter implements StorageAdapter {
     fs.ensureDirSync(this.config.uploadDir);
   }
 
-  async upload(args: { filename: string; buffer: Buffer; mimeType: string }): Promise<FileData> {
-    const filePath = path.join(this.config.uploadDir, args.filename);
+  async upload(args: { filename: string; buffer: Buffer; mimeType: string; prefix?: string }): Promise<FileData> {
+    const relativeFolder = args.prefix || '';
+    const absoluteFolder = path.join(this.config.uploadDir, relativeFolder);
+    await fs.ensureDir(absoluteFolder);
+
+    const filePath = path.join(absoluteFolder, args.filename);
     await fs.writeFile(filePath, args.buffer);
+
+    const relativePath = path.join(relativeFolder, args.filename);
 
     return {
       filename: args.filename,
       filesize: args.buffer.length,
       mimeType: args.mimeType,
-      url: this.getURL({ filename: args.filename })
+      url: this.getURL({ filename: relativePath })
     };
   }
 
@@ -32,6 +38,8 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   getURL(args: { filename: string }): string {
-    return `${this.config.staticUrlPrefix}/${args.filename}`;
+    // Normalize path for URL (replace backslashes if on Windows)
+    const urlPath = args.filename.replace(/\\/g, '/');
+    return `${this.config.staticUrlPrefix}/${urlPath}`;
   }
 }

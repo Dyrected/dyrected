@@ -25,14 +25,21 @@ export class MediaController {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     
+    const siteId = c.get('siteId');
+    const workspaceId = c.get('workspaceId');
+    const prefix = workspaceId ? `${workspaceId}/${siteId}` : siteId;
+
     const fileData = await storage.upload({
       filename: file.name,
       buffer,
-      mimeType: file.type
+      mimeType: file.type,
+      prefix,
     });
 
     // Save to database
     const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
     const doc = await db.create({
       collection: this.collection,
       data: fileData
@@ -43,6 +50,8 @@ export class MediaController {
 
   async find(c: Context<DyrectedContext>) {
     const db = c.get('config').db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
     const limit = Number(c.req.query('limit')) || 10;
     const page = Number(c.req.query('page')) || 1;
     const result = await db.find({
@@ -57,6 +66,8 @@ export class MediaController {
     const config = c.get('config');
     const storage = config.storage;
     const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
     const id = c.req.param('id');
 
     if (!id) return c.json({ message: 'Missing ID' }, 400);

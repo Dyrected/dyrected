@@ -34,6 +34,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           name: f.name,
           type: f.type,
           label: f.label,
+          required: f.required,
+          defaultValue: f.defaultValue,
+          options: f.options,
+          relationTo: f.collection,
+          fields: f.fields,
+          blocks: f.blocks,
           admin: f.admin,
         })),
         upload: !!col.upload,
@@ -49,6 +55,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           name: f.name,
           type: f.type,
           label: f.label,
+          required: f.required,
+          defaultValue: f.defaultValue,
+          options: f.options,
+          relationTo: f.collection,
+          fields: f.fields,
+          blocks: f.blocks,
           admin: f.admin,
         })),
       }));
@@ -92,19 +104,20 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     }
   }
 
-  // 3. Collection Routes
+  // 3. Collection Routes (Static)
   for (const collection of config.collections) {
     const path = `/api/collections/${collection.slug}`;
     const controller = new CollectionController(collection);
     
     app.get(path, (c) => controller.find(c));
     app.post(path, (c) => controller.create(c));
+    app.post(`${path}/media`, (c) => controller.create(c));
     app.get(`${path}/:id`, (c) => controller.findOne(c));
     app.patch(`${path}/:id`, (c) => controller.update(c));
     app.delete(`${path}/:id`, (c) => controller.delete(c));
   }
 
-  // 3. Global Routes
+  // 4. Global Routes (Static)
   for (const global of config.globals) {
     const path = `/api/globals/${global.slug}`;
     const controller = new GlobalController(global);
@@ -112,4 +125,73 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.get(path, (c) => controller.get(c));
     app.patch(path, (c) => controller.update(c));
   }
+
+  // 5. Dynamic Routes (Tenant-specific)
+  // This handles collections/globals defined via sync:schema and fetched via onSchemaFetch
+  app.all('/api/collections/:slug/:id?', async (c) => {
+    const slug = c.req.param('slug');
+    const id = c.req.param('id');
+    const siteId = c.req.header('X-Site-Id') || c.get('siteId');
+    const config = c.get('config');
+
+    // Skip if static (already handled by routes above)
+    if (config.collections.some(col => col.slug === slug)) {
+      return c.json({ message: 'Method Not Allowed' }, 405);
+    }
+
+    if (config.onSchemaFetch && siteId) {
+      const dynamic = await config.onSchemaFetch(siteId);
+      let collection = dynamic.collections?.find(col => col.slug === slug);
+      
+      if (!collection && slug === 'media') {
+        collection = {
+          slug: 'media',
+          labels: { singular: 'Media', plural: 'Media' },
+          upload: true,
+          fields: []
+        };
+      }
+
+      if (collection) {
+        const controller = new CollectionController(collection);
+        const method = c.req.method;
+
+        if (id) {
+          if (method === 'GET') return controller.findOne(c);
+          if (method === 'PATCH') return controller.update(c);
+          if (method === 'DELETE') return controller.delete(c);
+          if (method === 'POST' && id === 'media') return controller.create(c);
+        } else {
+          if (method === 'GET') return controller.find(c);
+          if (method === 'POST') return controller.create(c);
+        }
+      }
+    }
+    
+    return c.json({ message: `Collection "${slug}" not found` }, 404);
+  });
+
+  app.all('/api/globals/:slug', async (c) => {
+    const slug = c.req.param('slug');
+    const siteId = c.req.header('X-Site-Id') || c.get('siteId');
+    const config = c.get('config');
+
+    // Skip if static
+    if (config.globals.some(glb => glb.slug === slug)) {
+      return c.json({ message: 'Method Not Allowed' }, 405);
+    }
+
+    if (config.onSchemaFetch && siteId) {
+      const dynamic = await config.onSchemaFetch(siteId);
+      const global = dynamic.globals?.find(glb => glb.slug === slug);
+      
+      if (global) {
+        const controller = new GlobalController(global);
+        if (c.req.method === 'GET') return controller.get(c);
+        if (c.req.method === 'PATCH') return controller.update(c);
+      }
+    }
+    
+    return c.json({ message: `Global "${slug}" not found` }, 404);
+  });
 }

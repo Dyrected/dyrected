@@ -22,8 +22,8 @@ export class DyrectedClient {
     this.fetch = config.fetch || fetch;
     this.headers = {
       'Content-Type': 'application/json',
-      ...(config.apiKey ? { 'X-API-Key': config.apiKey } : {}),
-      ...(config.siteId ? { 'X-Site-Id': config.siteId } : {}),
+      ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
+      ...(config.siteId ? { 'x-site-id': config.siteId } : {}),
       ...config.headers,
     };
   }
@@ -102,43 +102,50 @@ export class DyrectedClient {
     });
   }
 
-  async listMedia(args: QueryArgs = {}, collection?: string): Promise<PaginatedResult<Media>> {
-    const query = qs.stringify(args, { addQueryPrefix: true });
-    const path = collection ? `/api/collections/${collection}/media` : '/api/media';
-    return this.request(`${path}${query}`);
+  async listMedia(args: QueryArgs = {}, collection: string = 'media'): Promise<PaginatedResult<Media>> {
+    return this.find<Media>(collection, args);
   }
 
-  async uploadMedia(file: File, collection?: string): Promise<Media> {
+  async uploadMedia(file: File, collection: string = 'media'): Promise<Media> {
     const formData = new FormData();
     formData.append('file', file);
 
     // Remove Content-Type header to let the browser set the boundary
     const { 'Content-Type': _, ...headers } = this.headers;
 
-    const path = collection ? `/api/collections/${collection}/media` : '/api/media';
+    const path = `/api/collections/${collection}`;
 
     return this.request(path, {
       method: 'POST',
-      headers,
+      headers: {
+        ...headers,
+        'Content-Type': undefined as any, // Force removal so browser can set boundary
+      },
       body: formData,
     });
   }
 
-  async deleteMedia(id: string, collection?: string): Promise<{ message: string }> {
-    const path = collection ? `/api/collections/${collection}/media/${id}` : `/api/media/${id}`;
-    return this.request(path, {
-      method: 'DELETE',
-    });
+  async deleteMedia(id: string, collection: string = 'media'): Promise<{ message: string }> {
+    return this.delete(collection, id);
   }
 
   private async request(path: string, init?: RequestInit): Promise<any> {
     const url = `${this.baseUrl}${path}`;
+    const allHeaders: any = {
+      ...this.headers,
+      ...init?.headers,
+    };
+
+    // Remove undefined headers (allows overriding and removing defaults)
+    Object.keys(allHeaders).forEach((key) => {
+      if (allHeaders[key] === undefined) {
+        delete allHeaders[key];
+      }
+    });
+
     const res = await this.fetch(url, {
       ...init,
-      headers: {
-        ...this.headers,
-        ...init?.headers,
-      },
+      headers: allHeaders,
     });
 
     if (!res.ok) {

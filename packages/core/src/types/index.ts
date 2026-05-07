@@ -1,19 +1,19 @@
 export type FieldType =
-  | 'text'
-  | 'textarea'
-  | 'richText'
-  | 'number'
-  | 'boolean'
-  | 'date'
-  | 'select'
-  | 'multiSelect'
-  | 'email'
-  | 'url'
-  | 'relationship'
-  | 'array'
-  | 'object'
-  | 'json'
-  | 'blocks';
+  | "text"
+  | "textarea"
+  | "richText"
+  | "number"
+  | "boolean"
+  | "date"
+  | "select"
+  | "multiSelect"
+  | "email"
+  | "url"
+  | "relationship"
+  | "array"
+  | "object"
+  | "json"
+  | "blocks";
 
 export interface Block {
   slug: string;
@@ -59,19 +59,9 @@ export type AccessFunction = (args: {
   req: any;
 }) => boolean | object | Promise<boolean | object>;
 
-export type HookFunction = (args: {
-  data?: any;
-  doc?: any;
-  user?: any;
-  req?: any;
-}) => any | Promise<any>;
+export type HookFunction = (args: { data?: any; doc?: any; user?: any; req?: any }) => any | Promise<any>;
 
-export type FieldHook = (args: {
-  value: any;
-  originalDoc?: any;
-  data?: any;
-  user?: any;
-}) => any | Promise<any>;
+export type FieldHook = (args: { value: any; originalDoc?: any; data?: any; user?: any }) => any | Promise<any>;
 
 export interface CollectionConfig {
   slug: string;
@@ -147,18 +137,18 @@ export interface PaginatedResult<T = any> {
 }
 
 export interface DatabaseAdapter {
-  find(args: { 
-    collection: string; 
-    where?: any; 
-    limit?: number; 
-    page?: number; 
+  find(args: {
+    collection: string;
+    where?: any;
+    limit?: number;
+    page?: number;
     sort?: string;
   }): Promise<PaginatedResult>;
   findOne(args: { collection: string; id: string }): Promise<any>;
   create(args: { collection: string; data: any }): Promise<any>;
   update(args: { collection: string; id: string; data: any }): Promise<any>;
   delete(args: { collection: string; id: string }): Promise<any>;
-  
+
   // Globals
   getGlobal(args: { slug: string }): Promise<any>;
   updateGlobal(args: { slug: string; data: any }): Promise<any>;
@@ -171,18 +161,14 @@ export interface FileData {
   url: string;
   width?: number;
   height?: number;
-  type?: 'upload' | 'external';
+  type?: "upload" | "external";
   provider?: string;
   provider_metadata?: any;
   [key: string]: any;
 }
 
 export interface StorageAdapter {
-  upload(args: {
-    filename: string;
-    buffer: Buffer;
-    mimeType: string;
-  }): Promise<FileData>;
+  upload(args: { filename: string; buffer: Buffer; mimeType: string; prefix?: string }): Promise<FileData>;
   delete(args: { filename: string }): Promise<void>;
   getURL(args: { filename: string }): string;
 }
@@ -190,7 +176,7 @@ export interface StorageAdapter {
 export interface DyrectedConfig {
   collections: CollectionConfig[];
   globals: GlobalConfig[];
-  db: DatabaseAdapter;
+  db?: DatabaseAdapter;
   storage?: StorageAdapter;
   email?: {
     provider: string;

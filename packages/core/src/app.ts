@@ -9,6 +9,7 @@ export interface DyrectedContext {
   Variables: {
     config: DyrectedConfig;
     siteId?: string;
+    workspaceId?: string;
   };
 }
 

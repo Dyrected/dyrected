@@ -418,7 +418,6 @@ function toPascalCase(str: string) {
 
 import { createJiti } from 'jiti';
 
-const jiti = createJiti(import.meta.url);
 
 program
   .command('sync:schema')
@@ -433,6 +432,8 @@ program
       const siteId = options.siteId || process.env.DYRECTED_SITE_ID;
       const apiUrl = options.url || process.env.DYRECTED_URL || 'https://prodeegi-vault.onrender.com';
       const configPath = path.resolve(process.cwd(), options.config);
+
+      const jiti = createJiti(configPath);
 
       if (!apiKey || !siteId) {
         throw new Error(

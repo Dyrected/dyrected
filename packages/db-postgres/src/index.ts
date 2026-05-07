@@ -103,7 +103,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   async update(params: { collection: string; id: string; data: any }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    await this.sql`UPDATE ${this.sql(tableName)} SET data = ${params.data}, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
+    await this.sql`UPDATE ${this.sql(tableName)} SET data = data || ${params.data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
     return { id: params.id, ...params.data };
   }
 

@@ -37,7 +37,7 @@ export interface BlockSchema {
 
 export interface FieldSchema {
   name: string
-  label: string
+  label?: string
   type: "text" | "number" | "boolean" | "select" | "textarea" | "image" | "richText" | "relationship" | "email" | "url" | "date" | "multiSelect" | "json" | "object" | "array" | "blocks"
   relationTo?: string
   required?: boolean
@@ -57,6 +57,7 @@ function buildSchemaShape(fields: FieldSchema[]) {
   const shape: Record<string, z.ZodTypeAny> = {}
   fields.forEach((field) => {
     let validator: any = z.any()
+    const label = field.label || field.name.charAt(0).toUpperCase() + field.name.slice(1)
 
     if (field.type === "object" && field.fields) {
       validator = z.object(buildSchemaShape(field.fields))
@@ -83,13 +84,13 @@ function buildSchemaShape(fields: FieldSchema[]) {
 
     if (field.type === "text" || field.type === "textarea" || field.type === "select" || field.type === "image" || field.type === "richText" || field.type === "relationship" || field.type === "date") {
       validator = z.string()
-      if (field.required) validator = validator.min(1, `${field.label} is required`)
+      if (field.required) validator = validator.min(1, `${label} is required`)
     } else if (field.type === "email") {
-      validator = z.string().email(`${field.label} must be a valid email`)
-      if (field.required) validator = validator.min(1, `${field.label} is required`)
+      validator = z.string().email(`${label} must be a valid email`)
+      if (field.required) validator = validator.min(1, `${label} is required`)
     } else if (field.type === "url") {
-      validator = z.string().url(`${field.label} must be a valid URL`)
-      if (field.required) validator = validator.min(1, `${field.label} is required`)
+      validator = z.string().url(`${label} must be a valid URL`)
+      if (field.required) validator = validator.min(1, `${label} is required`)
     } else if (field.type === "number") {
       validator = z.coerce.number()
     } else if (field.type === "boolean") {
@@ -98,7 +99,7 @@ function buildSchemaShape(fields: FieldSchema[]) {
       validator = z.any()
     } else if (field.type === "multiSelect") {
       validator = z.array(z.string())
-      if (field.required) validator = validator.min(1, `${field.label} requires at least one selection`)
+      if (field.required) validator = validator.min(1, `${label} requires at least one selection`)
     }
 
     if (!field.required && field.type !== "multiSelect") {
@@ -149,7 +150,7 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
     <div className="border border-border p-5 rounded-xl space-y-5 bg-muted/5 shadow-sm transition-all">
       <div className="flex justify-between items-center">
         <div>
-          <h4 className="font-bold text-sm text-foreground">{schema.label}</h4>
+          <h4 className="font-bold text-sm text-foreground">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
           <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Array Collection</p>
         </div>
         <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={() => append(buildDefaultValues(schema.fields || [], {}))}>
@@ -190,7 +191,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
       <div className="border border-border/80 p-5 rounded-xl space-y-5 bg-white/40 shadow-sm transition-all">
         <div className="flex items-center gap-2 border-b border-border/40 pb-3 mb-2">
           <div className="h-2 w-2 rounded-full bg-primary/40" />
-          <h4 className="font-bold text-sm text-foreground">{schema.label}</h4>
+          <h4 className="font-bold text-sm text-foreground">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
         </div>
         <div className="space-y-6">
           {schema.fields?.map(subField => (
@@ -215,7 +216,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
       name={fullPath}
       render={({ field: formField }) => (
         <FormItem>
-          <FormLabel>{schema.label}</FormLabel>
+          <FormLabel>{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</FormLabel>
           <FormControl>
             {renderField(schema, formField)}
           </FormControl>
@@ -265,7 +266,8 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, isLoading, su
 }
 
 function renderField(schema: FieldSchema, field: any) {
-  const placeholder = schema.admin?.placeholder || `Enter ${schema.label.toLowerCase()}...`
+  const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
+  const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
   const disabled = schema.admin?.readOnly
 
   switch (schema.type) {
@@ -285,7 +287,7 @@ function renderField(schema: FieldSchema, field: any) {
       return (
         <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
           <SelectTrigger>
-            <SelectValue placeholder={schema.admin?.placeholder || `Select ${schema.label.toLowerCase()}`} />
+            <SelectValue placeholder={schema.admin?.placeholder || `Select ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
             {schema.options?.map((opt) => (

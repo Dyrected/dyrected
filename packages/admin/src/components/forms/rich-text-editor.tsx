@@ -179,6 +179,7 @@ export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) 
       }),
     ],
     content: value,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       // Extract HTML for standard rich text storage
       onChange(editor.getHTML())
