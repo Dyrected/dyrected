@@ -5,25 +5,25 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 ## Phase 1: Core Engine Foundation (@dyrected/core)
 
 ### Phase 1.1: Typings & Configuration API
-- [ ] Define core TypeScript interfaces for `Collection`, `Global`, `Field`, and `Block`.
-- [ ] Implement `defineCollection`, `defineGlobal`, and `defineConfig` helper functions with strict generic typing.
-- [ ] Set up the base `Field` types (text, number, select, relationship, etc.).
+- [x] Define core TypeScript interfaces for `Collection`, `Global`, `Field`, and `Block`.
+- [x] Implement `defineCollection`, `defineGlobal`, and `defineConfig` helper functions with strict generic typing.
+- [x] Set up the base `Field` types (text, number, select, relationship, etc.).
 
 ### Phase 1.2: App Shell & Middleware
-- [ ] Initialize the Hono application instance in `packages/core`.
-- [ ] Implement standard middleware: Request ID, Logger, CORS, and Body Parser.
-- [ ] Build the `resolveSite` middleware to handle self-hosted singleton resolution.
-- [ ] Set up the internal context type and `c.set/c.get` helpers.
+- [x] Initialize the Hono application instance in `packages/core`.
+- [x] Implement standard middleware: Request ID, Logger, CORS, and Body Parser.
+- [x] Build the `resolveSite` middleware to handle self-hosted singleton resolution.
+- [x] Set up the internal context type and `c.set/c.get` helpers.
 
 ### Phase 1.3: Dynamic Routing Layer
-- [ ] Implement the dynamic route generator that reads the config at boot.
-- [ ] Build the `/collections/:slug` and `/globals/:slug` route groups.
-- [ ] Implement the `schemas` routes to expose the active config to the SDK/Admin.
+- [x] Implement the dynamic route generator that reads the config at boot.
+- [x] Build the `/collections/:slug` and `/globals/:slug` route groups.
+- [x] Implement the `schemas` routes to expose the active config to the SDK/Admin.
 
 ### Phase 1.4: Base Controller Logic
-- [ ] Implement the generic `find`, `findOne`, and `create` controller logic.
-- [ ] Build the `update` and `delete` handlers with basic response normalization.
-- [ ] Set up the initial `DatabaseAdapter` interface requirements.
+- [x] Implement the generic `find`, `findOne`, and `create` controller logic.
+- [x] Build the `update` and `delete` handlers with basic response normalization.
+- [x] Set up the initial `DatabaseAdapter` interface requirements.
 
 ## Phase 2: Persistence & Storage
 
