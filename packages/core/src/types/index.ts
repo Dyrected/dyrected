@@ -149,11 +149,31 @@ export interface DatabaseAdapter {
   updateGlobal(args: { slug: string; data: any }): Promise<any>;
 }
 
+export interface FileData {
+  filename: string;
+  filesize: number;
+  mimeType: string;
+  url: string;
+  width?: number;
+  height?: number;
+  [key: string]: any;
+}
+
+export interface StorageAdapter {
+  upload(args: {
+    filename: string;
+    buffer: Buffer;
+    mimeType: string;
+  }): Promise<FileData>;
+  delete(args: { filename: string }): Promise<void>;
+  getURL(args: { filename: string }): string;
+}
+
 export interface DyrectedConfig {
   collections: CollectionConfig[];
   globals: GlobalConfig[];
   db: DatabaseAdapter;
-  storage?: any; // Will be typed by StorageAdapter
+  storage?: StorageAdapter;
   email?: {
     provider: string;
     apiKey?: string;

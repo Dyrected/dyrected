@@ -62,6 +62,12 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [ ] Implement `@dyrected/storage-cloudinary` (Cloudinary SDK).
 - [ ] Support image transformation logic (ImageMagick/Sharp integration).
 
+### Phase 2.6: Relationship Population (Depth)
+- [ ] Implement the `PopulationService` in `@dyrected/core`.
+- [ ] Build recursive relationship resolver with circular dependency protection.
+- [ ] Add `depth` support to `find` and `findOne` in the core engine.
+- [ ] Support `?depth=N` query parameter in dynamic routes.
+
 ## Phase 3: The SDK (@dyrected/sdk)
 
 ### Phase 3.1: Client Core & Transport

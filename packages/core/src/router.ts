@@ -3,6 +3,7 @@ import { DyrectedContext } from './app.js';
 import { DyrectedConfig } from './types/index.js';
 import { CollectionController } from './controllers/collection.controller.js';
 import { GlobalController } from './controllers/global.controller.js';
+import { MediaController } from './controllers/media.controller.js';
 
 /**
  * Register dynamic routes based on the provided configuration.
@@ -27,7 +28,15 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     });
   });
 
-  // 2. Collection Routes
+  // 2. Media Routes (Conditional)
+  if (config.storage) {
+    const mediaController = new MediaController();
+    app.get('/api/media', (c) => mediaController.find(c));
+    app.post('/api/media', (c) => mediaController.upload(c));
+    app.delete('/api/media/:id', (c) => mediaController.delete(c));
+  }
+
+  // 3. Collection Routes
   for (const collection of config.collections) {
     const path = `/api/collections/${collection.slug}`;
     const controller = new CollectionController(collection);
