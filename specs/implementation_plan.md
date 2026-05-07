@@ -248,3 +248,36 @@ This phase introduces background processing, usage tracking, and monetization.
 - [x] Build the Billing Management UI for users to manage cards, view invoices, and upgrade/downgrade plans.
 - [x] Enforce usage limits based on the active Paystack subscription tier.
 
+---
+
+## Phase 11: Ecosystem & Documentation
+
+This phase focuses on the developer experience and public release stability.
+
+### Phase 11.1: Technical Documentation
+- [x] Create a comprehensive documentation outline.
+- [x] Implement the documentation site using **Mintlify**.
+- [x] Remove all legacy references to "Scribe".
+
+### Phase 11.2: API Discoverability
+- [x] Implement automated OpenAPI 3.0 specification generation in `@dyrected/core`.
+- [x] Integrate interactive Swagger UI at `/api/docs`.
+
+### Phase 11.3: CLI & Onboarding
+- [ ] Implement `npx @dyrected/cli init` for rapid project bootstrapping.
+- [x] Create the "AI Cloud Setup Prompt" for instant scaffolding.
+
+---
+
+## Phase 12: Public Release & Stabilization
+
+### Phase 12.1: Package Publishing
+- [x] Configure `changesets` for monorepo package management.
+- [x] Update package access to `public` in `.changeset/config.json`.
+- [x] Publish initial `@dyrected/*` packages to NPM (v0.0.1).
+
+### Phase 12.2: Infrastructure Hardening
+- [ ] Finalize environment variable validation for all adapters.
+- [ ] Implement global error handling and reporting in `apps/cloud`.
+
+

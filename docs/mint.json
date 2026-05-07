@@ -87,6 +87,7 @@
     {
       "group": "Deployment",
       "pages": [
+        "deployment/cloud-platform",
         "deployment/vercel",
         "deployment/docker"
       ]
