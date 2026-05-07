@@ -26,7 +26,7 @@ import {
 
 import { useDyrected } from "@/providers/dyrected-provider"
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children, isEmbedded = false }: { children: React.ReactNode, isEmbedded?: boolean }) {
   const { client, logout } = useDyrected()
   const location = useLocation()
 
@@ -109,15 +109,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter className="border-t p-4">
-            <button 
-              onClick={logout}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Logout</span>
-            </button>
-          </SidebarFooter>
+          {!isEmbedded && (
+            <SidebarFooter className="border-t p-4">
+              <button 
+                onClick={logout}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Logout</span>
+              </button>
+            </SidebarFooter>
+          )}
         </Sidebar>
         <main className="flex-1 overflow-auto bg-muted/20">
           <div className="container mx-auto p-8">

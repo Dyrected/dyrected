@@ -14,9 +14,19 @@ interface DyrectedContextType {
 
 const DyrectedContext = createContext<DyrectedContextType | undefined>(undefined);
 
-export function DyrectedProvider({ children }: { children: React.ReactNode }) {
-  const [baseUrl, setBaseUrl] = useState<string>(() => localStorage.getItem("dyrected_url") || "");
-  const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem("dyrected_key"));
+export interface DyrectedProviderProps {
+  children: React.ReactNode;
+  apiKey?: string;
+  baseUrl?: string;
+}
+
+export function DyrectedProvider({ 
+  children, 
+  apiKey: initialApiKey, 
+  baseUrl: initialBaseUrl 
+}: DyrectedProviderProps) {
+  const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || localStorage.getItem("dyrected_url") || "");
+  const [apiKey, setApiKey] = useState<string | null>(() => initialApiKey || localStorage.getItem("dyrected_key"));
   const [client, setClient] = useState<DyrectedClient | null>(null);
 
   useEffect(() => {

@@ -73,6 +73,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@dyrected/admin':
+        specifier: workspace:*
+        version: link:../../packages/admin
       next:
         specifier: 16.2.5
         version: 16.2.5(react-dom@19.2.4)(react@19.2.4)
