@@ -5,6 +5,18 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Cloud IAM: Identity & Access Management (Phase 8)**:
+    - Renamed `users` collection to `accounts` to clearly distinguish cloud-internal identities from site-level users managed by self-hosted `@dyrected/core` instances.
+    - Added `workspaceMembers` join collection to manage account-to-workspace relationships with `owner`, `admin`, and `editor` roles.
+    - Added `invitations` collection as an audit log for pending workspace invitations.
+    - Implemented password hashing using Node's built-in `crypto.scrypt` with per-entry salts and constant-time comparison to prevent timing attacks.
+    - Implemented JWT token utilities (`signToken`, `verifyToken`) with Redis-backed token blacklisting for secure logout.
+    - Built `requireAuth()` middleware reading from `__dyrected_token` HttpOnly cookie or `Authorization: Bearer` header.
+    - Built `requireRole()` RBAC middleware for `owner`, `admin`, and `editor` role enforcement.
+    - Implemented 6 auth endpoints: `register`, `login`, `logout`, `me`, `forgot-password` (Seamailer email), and `reset-password` (Redis token).
+    - Implemented workspace invitation system: send invite via Seamailer, accept invite (creates account if new), revoke membership.
+    - Cloud IAM routes (`/cloud/auth/*`, `/cloud/workspaces/*`) are mounted **before** `resolveSite()` so they don't require a site API key.
+    - Added `CLOUD_DASHBOARD_URL` environment variable for generating correct reset/invite URLs in emails.
 - **Multi-Tenant Foundation (Phase 7)**:
     - Bootstrapped Cloud-specific Schema definition including `workspaces`, `sites`, `subscriptions`, and `users` collections.
     - Built a robust Redis singleton using `ioredis` for session caching and rate-limiting queue logic within the cloud application.
