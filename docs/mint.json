@@ -1,0 +1,99 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Dyrected",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "favicon": "/favicon.png",
+  "colors": {
+    "primary": "#000000",
+    "light": "#333333",
+    "dark": "#000000"
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "mailto:support@dyrected.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Sign Up",
+    "url": "https://app.dyrected.com"
+  },
+  "anchors": [
+    {
+      "name": "API Reference",
+      "icon": "code",
+      "url": "/api-reference/introduction"
+    },
+    {
+      "name": "Cloud",
+      "icon": "cloud",
+      "url": "/cloud/workspaces"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart"
+      ]
+    },
+    {
+      "group": "Framework Integrations",
+      "pages": [
+        "integrations/nextjs",
+        "integrations/nuxt"
+      ]
+    },
+    {
+      "group": "Adapters",
+      "pages": [
+        "adapters/databases",
+        "adapters/storage"
+      ]
+    },
+    {
+      "group": "Core Engine",
+      "pages": [
+        "core/schema",
+        "core/fields",
+        "core/hooks",
+        "core/access-control"
+      ]
+    },
+    {
+      "group": "Admin Dashboard",
+      "pages": [
+        "admin/overview"
+      ]
+    },
+    {
+      "group": "Dyrected Cloud",
+      "pages": [
+        "cloud/workspaces",
+        "cloud/billing"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/introduction",
+        "api-reference/openapi"
+      ]
+    },
+    {
+      "group": "Deployment",
+      "pages": [
+        "deployment/vercel",
+        "deployment/docker"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "x": "https://x.com/dyrected",
+    "github": "https://github.com/she-WritesCode/dyrected"
+  }
+}
