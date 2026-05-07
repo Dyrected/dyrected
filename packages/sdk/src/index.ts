@@ -1,8 +1,24 @@
 import qs from 'qs';
-import { PaginatedResult, FileData as Media } from '@dyrected/core';
+import { 
+  PaginatedResult, 
+  FileData as Media,
+  Field,
+  Block,
+  CollectionConfig,
+  GlobalConfig,
+  FieldType
+} from '@dyrected/core';
 import { QueryBuilder, QueryArgs } from './query-builder.js';
 
-export { Media };
+export type { 
+  PaginatedResult, 
+  Media,
+  Field,
+  Block,
+  CollectionConfig,
+  GlobalConfig,
+  FieldType
+};
 
 /**
  * Structured error thrown by the SDK when the server returns a non-2xx response.

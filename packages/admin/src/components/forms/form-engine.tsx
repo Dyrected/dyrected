@@ -1,3 +1,13 @@
+import type {
+  Field as FieldSchema,
+  Block as BlockSchema
+} from "@dyrected/sdk";
+export type { FieldSchema, BlockSchema }
+
+function normalizeOptions(options: string[] | { label: string; value: string }[] | undefined): { label: string; value: string }[] {
+  if (!options) return []
+  return options.map(opt => typeof opt === "string" ? { label: opt, value: opt } : opt)
+}
 import { useForm, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -29,38 +39,6 @@ import { MultiSelect } from "./multi-select"
 import { JsonEditor } from "./json-editor"
 import { BlockBuilder } from "./block-builder"
 
-export interface BlockSchema {
-  slug: string
-  labels?: { singular: string; plural: string }
-  fields: FieldSchema[]
-}
-
-export interface FieldSchema {
-  name: string
-  label?: string
-  type: "text" | "number" | "boolean" | "select" | "textarea" | "image" | "richText" | "relationship" | "email" | "url" | "date" | "multiSelect" | "json" | "object" | "array" | "blocks"
-  relationTo?: string
-  hasMany?: boolean
-  required?: boolean
-  options?: { label: string; value: string }[]
-  defaultValue?: any
-  fields?: FieldSchema[]
-  blocks?: BlockSchema[]
-  admin?: {
-    hidden?: boolean
-    readOnly?: boolean
-    placeholder?: string
-    description?: string
-    /**
-     * A function that receives the current form data and returns true when
-     * the field should be visible. Evaluated reactively on every form change.
-     *
-     * @example
-     * condition: (data) => data.type === 'article'
-     */
-    condition?: (data: Record<string, any>) => boolean
-  }
-}
 
 function buildSchemaShape(fields: FieldSchema[]) {
   const shape: Record<string, z.ZodTypeAny> = {}
@@ -91,7 +69,8 @@ function buildSchemaShape(fields: FieldSchema[]) {
       return
     }
 
-    if (field.type === "text" || field.type === "textarea" || field.type === "select" || field.type === "image" || field.type === "richText" || field.type === "relationship" || field.type === "date") {
+    const fieldType = field.type as string
+    if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "image" || fieldType === "richText" || fieldType === "relationship" || fieldType === "date") {
       validator = z.string()
       if (field.required) validator = validator.min(1, `${label} is required`)
     } else if (field.type === "email") {
@@ -147,7 +126,7 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
       else if (field.type === "json") defaultVal = {}
       else defaultVal = ""
     }
-    
+
     acc[field.name] = defaultVal
     return acc
   }, {} as any)
@@ -169,16 +148,16 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
       </div>
       <div className="space-y-4">
         {fields.map((item, index) => (
-           <div key={item.id} className="relative border border-border/60 p-5 rounded-lg bg-white shadow-sm transition-all hover:shadow-md animate-in">
-             <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md" onClick={() => remove(index)}>
-               <Trash2 className="w-3.5 h-3.5" />
-             </Button>
-             <div className="space-y-6 pt-2">
-               {schema.fields?.map(subField => (
-                 <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} />
-               ))}
-             </div>
-           </div>
+          <div key={item.id} className="relative border border-border/60 p-5 rounded-lg bg-white shadow-sm transition-all hover:shadow-md animate-in">
+            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md" onClick={() => remove(index)}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+            <div className="space-y-6 pt-2">
+              {schema.fields?.map(subField => (
+                <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} />
+              ))}
+            </div>
+          </div>
         ))}
         {fields.length === 0 && (
           <div className="text-center py-8 border border-dashed border-border rounded-lg bg-muted/10">
@@ -315,12 +294,12 @@ function renderField(schema: FieldSchema, field: any) {
     case "multiSelect":
       return (
         <MultiSelect 
-          options={schema.options || []} 
+          options={normalizeOptions(schema.options)} 
           value={field.value || []} 
           onChange={field.onChange} 
         />
       )
-    case "image":
+    case "image" as any:
       return <MediaPicker value={field.value} onChange={field.onChange} />
     case "richText":
       return <RichTextEditor value={field.value} onChange={field.onChange} />
@@ -329,11 +308,11 @@ function renderField(schema: FieldSchema, field: any) {
     case "date":
       return <DatePicker value={field.value} onChange={field.onChange} />
     case "relationship":
-      return <RelationshipPicker 
-        value={field.value} 
-        onChange={field.onChange} 
-        relationTo={schema.relationTo!} 
-        multiple={schema.hasMany}
+      return <RelationshipPicker
+        value={field.value}
+        onChange={field.onChange}
+        relationTo={(schema as any).relationTo!}
+        multiple={(schema as any).hasMany}
       />
     case "number":
       return <Input type="number" {...field} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} />

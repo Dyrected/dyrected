@@ -7,13 +7,14 @@ export type FieldType =
   | "date"
   | "select"
   | "multiSelect"
-  | "email"
-  | "url"
   | "relationship"
   | "array"
   | "object"
   | "json"
-  | "blocks";
+  | "blocks"
+  | "image"
+  | "email"
+  | "url";
 
 export interface Block {
   slug: string;
@@ -32,7 +33,8 @@ export interface Field {
   unique?: boolean;
   defaultValue?: any;
   options?: string[] | { label: string; value: string }[]; // For select/multiSelect
-  collection?: string; // For relationship
+  relationTo?: string; // For relationship
+  hasMany?: boolean; // For relationship/multiSelect
   fields?: Field[]; // For array/object
   blocks?: Block[]; // For blocks
   access?: {
