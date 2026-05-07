@@ -1,7 +1,9 @@
+import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
 import { DyrectedProvider } from "./providers/dyrected-provider";
 import { QueryProvider } from "./providers/query-provider";
 import { AuthGate } from "./components/auth/auth-gate";
 import { AdminShell } from "./components/layout/admin-shell";
+import { CollectionListPage } from "./pages/collections/list-page";
 
 function Dashboard() {
   return (
@@ -26,14 +28,26 @@ function Dashboard() {
   );
 }
 
+function CollectionRoute() {
+  const { slug } = useParams();
+  return <CollectionListPage slug={slug!} />;
+}
+
 function App() {
   return (
     <DyrectedProvider>
       <QueryProvider>
         <AuthGate>
-          <AdminShell>
-            <Dashboard />
-          </AdminShell>
+          <BrowserRouter>
+            <AdminShell>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/collections/:slug" element={<CollectionRoute />} />
+                <Route path="/globals/:slug" element={<div>Global Editor (Coming Soon)</div>} />
+                <Route path="/media" element={<div>Media Library (Coming Soon)</div>} />
+              </Routes>
+            </AdminShell>
+          </BrowserRouter>
         </AuthGate>
       </QueryProvider>
     </DyrectedProvider>

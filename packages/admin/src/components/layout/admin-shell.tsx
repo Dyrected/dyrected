@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
+import { Link, useLocation } from "react-router-dom"
 import { 
   LayoutDashboard, 
   Settings, 
@@ -27,6 +28,7 @@ import { useDyrected } from "@/providers/dyrected-provider"
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { client, logout } = useDyrected()
+  const location = useLocation()
 
   const { data: schemas, isLoading } = useQuery({
     queryKey: ["schemas"],
@@ -50,15 +52,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Dashboard">
-                      <LayoutDashboard className="h-4 w-4" />
-                      <span>Dashboard</span>
+                    <SidebarMenuButton asChild tooltip="Dashboard" isActive={location.pathname === "/"}>
+                      <Link to="/">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton tooltip="Media Library">
-                      <ImageIcon className="h-4 w-4" />
-                      <span>Media Library</span>
+                    <SidebarMenuButton asChild tooltip="Media Library" isActive={location.pathname === "/media"}>
+                      <Link to="/media">
+                        <ImageIcon className="h-4 w-4" />
+                        <span>Media Library</span>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -73,9 +79,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     <div className="px-4 py-2 text-xs text-muted-foreground italic">Loading...</div>
                   ) : schemas?.collections?.map((col: any) => (
                     <SidebarMenuItem key={col.slug}>
-                      <SidebarMenuButton tooltip={col.label}>
-                        <Database className="h-4 w-4" />
-                        <span>{col.label}</span>
+                      <SidebarMenuButton asChild tooltip={col.label} isActive={location.pathname === `/collections/${col.slug}`}>
+                        <Link to={`/collections/${col.slug}`}>
+                          <Database className="h-4 w-4" />
+                          <span>{col.label}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
@@ -89,9 +97,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <SidebarMenu>
                   {schemas?.globals?.map((glob: any) => (
                     <SidebarMenuItem key={glob.slug}>
-                      <SidebarMenuButton tooltip={glob.label}>
-                        <Settings className="h-4 w-4" />
-                        <span>{glob.label}</span>
+                      <SidebarMenuButton asChild tooltip={glob.label} isActive={location.pathname === `/globals/${glob.slug}`}>
+                        <Link to={`/globals/${glob.slug}`}>
+                          <Settings className="h-4 w-4" />
+                          <span>{glob.label}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
