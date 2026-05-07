@@ -5,6 +5,11 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Architectural Alignment (Phase 6)**:
+    - Purified `@dyrected/core` by removing cloud-specific multi-tenant routes (`workspacesRoutes`, `sitesRoutes`) from the core architecture and documentation.
+    - Updated the `createDyrectedApp` middleware to support upstream dependency injection for `siteId`, providing a `'default'` fallback for self-hosted singletons.
+    - Initialized the `apps/cloud` closed-source platform with a private package configuration.
+    - Implemented the `DYRECTED_LICENSE_KEY` validation gate and the tenant resolution middleware (`resolveSite`) within the cloud application.
 - **Global Settings Editor**: Added `GlobalEditorPage` (`/globals/:slug`) for managing singleton data structures like site settings and navigation menus.
 - **Publishing Status Workflow**:
   - Transformed the Collection Edit Page into a two-column layout featuring a new **Publishing Sidebar**.

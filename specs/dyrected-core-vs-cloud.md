@@ -10,7 +10,7 @@ This document clarifies the distinction between the **Dyrected Core** (the open-
 |---|---|---|
 | **Tenancy** | Single-tenant (one project per deploy) | Multi-tenant (managed workspaces) |
 | **Sites** | Single Site (singleton) | Multiple Sites per Workspace |
-| **Schema Source** | `dyrected.config.ts` (Code) | Database-backed (UI Editor) |
+| **Schema Source** | `dyrected.config.ts` (Code) | `dyrected.config.ts` (Code) |
 | **Database** | Any supported (Postgres, SQLite, etc.) | Optimized PostgreSQL |
 | **Redis** | Optional (Local caching/preview) | Required (Rate limiting/Session sync) |
 | **Background Jobs** | Synchronous / Native hooks | BullMQ (Async webhooks/Image processing) |
@@ -36,7 +36,6 @@ The Core is the heart of Dyrected. It is designed for developers who want a head
 Dyrected Cloud is activated by providing a `DYRECTED_LICENSE_KEY`. It transforms the engine into a scalable, SaaS-ready platform.
 
 ### Key Characteristics:
-- **Dynamic Schema**: Instead of reading from a config file, the Cloud mode reads the schema from the database. This allows non-technical users to modify fields and collections via the Admin UI without a redeploy.
 - **Multi-Site Management**: A single workspace can host multiple sites (e.g., `staging`, `production`, `mobile-app`).
 - **Identity & Access**: Includes a robust invitation system for teams and workspace-level permissions.
 - **Performance & Scaling**:
@@ -54,7 +53,6 @@ Dyrected Cloud is activated by providing a `DYRECTED_LICENSE_KEY`. It transforms
 | Role-Based Access Control | ✅ | ✅ |
 | Custom Storage Adapters | ✅ | ✅ |
 | Localized Content | ✅ | ✅ |
-| **Visual Schema Builder** | ❌ | ✅ |
 | **API Webhook Queues** | ❌ | ✅ |
 | **Usage Analytics** | ❌ | ✅ |
 | **White-labeling** | ❌ | ✅ |
@@ -63,4 +61,4 @@ Dyrected Cloud is activated by providing a `DYRECTED_LICENSE_KEY`. It transforms
 
 ## Technical Guardrail: The License Key
 
-Dyrected does not have two separate codebases. The presence of the `DYRECTED_LICENSE_KEY` environment variable acts as a "gate" that unlocks the Cloud-only route handlers (Workspaces/Sites management) and switches the schema provider from the filesystem to the database.
+Dyrected does not have two separate codebases. The presence of the `DYRECTED_LICENSE_KEY` environment variable acts as a "gate" that unlocks the Cloud-only route handlers (Workspaces/Sites management).

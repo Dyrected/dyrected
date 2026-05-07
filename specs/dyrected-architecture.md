@@ -313,22 +313,12 @@ The `resolveSite()` middleware is the single point where cloud and self-hosted d
 ```ts
 // packages/core/src/middleware/resolveSite.ts
 export const resolveSite = () => async (c: Context, next: Next) => {
-  if (!config.isCloud) {
-    // self-hosted: pre-resolved at boot, no DB lookup
-    c.set('site', config._singletonSite)
-    c.set('workspace', config._singletonWorkspace)
-    return next()
-  }
-
-  // cloud: resolve from API key on every request
-  const apiKey = c.req.header('x-api-key')
-  if (!apiKey) return c.json({ error: true, code: 'MISSING_API_KEY' }, 401)
-
-  const site = await db.findSiteByApiKey(apiKey)
-  if (!site) return c.json({ error: true, code: 'INVALID_API_KEY' }, 401)
-
-  c.set('site', site)
-  c.set('workspace', site.workspace)
+  // Self-hosted/embedded default: pre-resolved at boot
+  c.set('siteId', 'default')
+  
+  // Note: In Cloud mode, this middleware is preceded by the
+  // cloud tenant resolver which sets siteId based on x-api-key
+  
   return next()
 }
 ```
@@ -346,11 +336,9 @@ import { authRoutes } from './routes/auth'
 import { collectionsRoutes } from './routes/collections'
 import { globalsRoutes } from './routes/globals'
 import { schemasRoutes } from './routes/schemas'
-import { workspacesRoutes } from './routes/workspaces'
 
 export const dyrected = new Hono()
   .route('/auth', authRoutes)
-  .route('/workspaces', workspacesRoutes)
   .route('/collections', collectionsRoutes)
   .route('/globals', globalsRoutes)
   .route('/schemas', schemasRoutes)

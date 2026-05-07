@@ -173,27 +173,70 @@ The current implementation and documentation have drifted from the strict archit
 
 ### Phase 6.1: Core Engine Purification
 
-- [ ] **Extract Workspace & Site Routes**: Remove `workspacesRoutes` and `sitesRoutes` from `@dyrected/core/src/index.ts`. These belong exclusively in the closed-source `apps/cloud` package.
-- [ ] **Remove `isCloud` Logic from Core**: Remove the `resolveSite` middleware's dependency on `config.isCloud` inside `@dyrected/core`. The core engine should unconditionally run in self-hosted (singleton) mode.
-- [ ] **Refactor `dyrected-backend.md`**: Update the backend documentation to remove references to `workspacesRoutes` and `sitesRoutes` within the `@dyrected/core` code examples, reflecting the true architecture.
+- [x] **Extract Workspace & Site Routes**: Remove `workspacesRoutes` and `sitesRoutes` from `@dyrected/core/src/index.ts`. These belong exclusively in the closed-source `apps/cloud` package.
+- [x] **Remove `isCloud` Logic from Core**: Remove the `resolveSite` middleware's dependency on `config.isCloud` inside `@dyrected/core`. The core engine should unconditionally run in self-hosted (singleton) mode.
+- [x] **Refactor `dyrected-backend.md`**: Update the backend documentation to remove references to `workspacesRoutes` and `sitesRoutes` within the `@dyrected/core` code examples, reflecting the true architecture.
 
 ### Phase 6.2: Cloud App Bootstrapping
 
-- [ ] **Initialize `apps/cloud`**: Create the private `apps/cloud` workspace if it doesn't exist, marked as `"private": true`.
-- [ ] **Implement `apps/cloud/src/boot.ts`**: Implement the `DYRECTED_LICENSE_KEY` validation gate here, not in the core engine. This file will orchestrate the startup of the Cloud platform and wrap the `@dyrected/core` engine.
-- [ ] **Migrate Multi-Tenant Middleware**: Move the `resolveSite` (API key to site resolution) and multi-tenant logic entirely into `apps/cloud`.
+- [x] **Initialize `apps/cloud`**: Create the private `apps/cloud` workspace if it doesn't exist, marked as `"private": true`.
+- [x] **Implement `apps/cloud/src/boot.ts`**: Implement the `DYRECTED_LICENSE_KEY` validation gate here, not in the core engine. This file will orchestrate the startup of the Cloud platform and wrap the `@dyrected/core` engine.
+- [x] **Migrate Multi-Tenant Middleware**: Move the `resolveSite` (API key to site resolution) and multi-tenant logic entirely into `apps/cloud`.
 
 ## Phase 7: Cloud & Platform
 
-### Phase 7.1: Multi-tenant Architecture
+### Phase 7.1: Cloud Infrastructure & Bootstrapping
 
-- [ ] Implement the `licenseKey` gate in `apps/cloud/src/boot.ts` (moved from core engine).
-- [ ] Build the `SiteResolver` for host-based tenant identification within `apps/cloud`.
-- [ ] Implement the robust workspace invitation system for teams (replacing generic OAuth/GitHub auth if not required).
+- [ ] Set up the `apps/cloud` workspace and `turbo.json` configuration.
+- [ ] Implement the `licenseKey` validation logic and gate in `apps/cloud/src/boot.ts`.
+- [ ] Scaffold the Nitro/Hono entry point for the cloud environment.
+- [ ] Integrate Redis connection handling for caching, session sync, and rate limiting.
 
-### Phase 7.2: Visual Builder
+### Phase 7.2: Multi-tenant Data Architecture
 
-- [ ] Build a UI for defining collections and fields via the Admin dashboard.
-- [ ] **GUI -> Database Schema**: Ensure the Visual Builder saves schema configurations directly to the Database, overriding the file-based `dyrected.config.ts` (as specified for Cloud mode).
-- [ ] Implement the dynamic migration runner for database-backed schema changes.
-- [ ] Build the dashboard for usage analytics and site management.
+- [ ] Create database schema extensions for Workspaces, Sites, and Subscriptions.
+- [ ] Build the `SiteResolver` middleware for header-based (`x-api-key`) and host-based tenant identification.
+- [ ] Implement the `QueryInterceptor` to automatically inject `workspace_id` and `site_id` bounds.
+- [ ] Validate database-level isolation to ensure data cannot leak across tenants.
+
+### Phase 7.3: Identity & Authentication
+
+- [ ] Define the `Users` collection with `auth: true` within the `apps/cloud` Dyrected configuration.
+- [ ] Implement workspace owner authentication using the `@dyrected/sdk` (`dyrected.auth.login()`).
+- [ ] Build secure, cookie-based session management for the Cloud Dashboard using native Dyrected tokens.
+
+### Phase 7.4: Access Management & Collaboration
+
+- [ ] Implement the Workspace Invitation system with secure token-based email links.
+- [ ] Build the team management UI (invite, revoke, update roles).
+- [ ] Implement Role-Based Access Control (RBAC) middleware for Owner, Admin, and Editor roles.
+
+### Phase 7.5: Platform Dashboard UI
+
+- [ ] Scaffold the Cloud Admin dashboard application shell (Next.js/Nuxt).
+- [ ] Build the "Workspace Overview" page showing active sites and top-level metrics.
+- [ ] Build the "Site Detail" page for managing a specific site's settings.
+- [ ] Create interfaces for creating, viewing, and rotating Site API Keys.
+- [ ] Build forms for configuring custom storage adapters per site (S3, B2, etc.).
+
+### Phase 7.6: Background Jobs & Webhooks
+
+- [ ] Integrate BullMQ for asynchronous task queues, connected to Redis.
+- [ ] Implement the `WebhookDispatcher` service to listen to content lifecycle events.
+- [ ] Create the database tables to store Webhook Endpoint configurations and Delivery Logs.
+- [ ] Build the Webhook management UI in the dashboard for users to add/remove endpoints and view logs.
+
+### Phase 7.7: Usage Tracking & Analytics
+
+- [ ] Implement middleware to track incoming API requests and increment usage counters in Redis.
+- [ ] Create a cron job to flush Redis usage counters to the main database periodically.
+- [ ] Implement storage space calculation logic.
+- [ ] Build the Analytics dashboard view for users to monitor their bandwidth and API consumption.
+
+### Phase 7.8: Paystack Billing Integration
+
+- [ ] Integrate the Paystack Node SDK.
+- [ ] Implement the payment flow for creating subscriptions and handling one-off payments.
+- [ ] Create the Paystack webhook listener to process `subscription.create`, `charge.success`, and `invoice.payment_failed` events.
+- [ ] Build the Billing Management UI for users to manage cards, view invoices, and upgrade/downgrade plans.
+- [ ] Enforce usage limits based on the active Paystack subscription tier.

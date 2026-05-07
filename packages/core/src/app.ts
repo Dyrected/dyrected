@@ -25,10 +25,12 @@ export function createDyrectedApp(config: DyrectedConfig) {
 
   // 2. Site Resolution Middleware
   app.use('*', async (c, next) => {
-    // For self-hosted/singleton mode, we default to 'default' site
-    // In cloud mode, this will extract the site from the host or license key
     c.set('config', config);
-    c.set('siteId', 'default'); 
+    // If an upstream middleware (e.g. cloud app) hasn't already set the siteId,
+    // fallback to 'default' for self-hosted/singleton mode.
+    if (!c.get('siteId')) {
+      c.set('siteId', 'default');
+    }
     await next();
   });
 

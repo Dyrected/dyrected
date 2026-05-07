@@ -29,12 +29,9 @@ import { authRoutes } from './routes/auth'
 import { collectionsRoutes } from './routes/collections'
 import { globalsRoutes } from './routes/globals'
 import { schemasRoutes } from './routes/schemas'
-import { workspacesRoutes } from './routes/workspaces'
-import { sitesRoutes } from './routes/sites'
 
 export const dyrected = new Hono()
   .route('/auth', authRoutes)
-  .route('/workspaces', workspacesRoutes)
   .route('/collections', collectionsRoutes)
   .route('/globals', globalsRoutes)
   .route('/schemas', schemasRoutes)
