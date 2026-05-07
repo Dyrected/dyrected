@@ -4,6 +4,8 @@ import { DyrectedConfig } from './types/index.js';
 import { CollectionController } from './controllers/collection.controller.js';
 import { GlobalController } from './controllers/global.controller.js';
 import { MediaController } from './controllers/media.controller.js';
+import { generateOpenApi } from './utils/openapi.js';
+import { getSwaggerHtml } from './utils/swagger.js';
 
 /**
  * Register dynamic routes based on the provided configuration.
@@ -27,6 +29,16 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       })),
     });
   });
+
+  app.get('/api/openapi.json', (c) => {
+    return c.json(generateOpenApi(config));
+  });
+
+  app.get('/api/docs', (c) => {
+    return c.html(getSwaggerHtml());
+  });
+
+
 
   // 2. Media Routes (Conditional)
   if (config.storage) {
