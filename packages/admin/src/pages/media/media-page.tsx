@@ -28,20 +28,20 @@ import {
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
 
-export function MediaPage() {
+export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
 
   const { data: mediaResponse, isLoading } = useQuery({
-    queryKey: ["media", search],
-    queryFn: () => client!.listMedia({ where: search ? { filename: { contains: search } } : undefined }).then(r => r.docs),
+    queryKey: ["media", collectionSlug, search],
+    queryFn: () => client!.listMedia({ where: search ? { filename: { contains: search } } : undefined }, collectionSlug).then(r => r.docs),
     enabled: !!client,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => client!.deleteMedia(id),
+    mutationFn: (id: string) => client!.deleteMedia(id, collectionSlug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media"] })
     }
@@ -71,9 +71,10 @@ export function MediaPage() {
               <DialogTitle className="text-xl font-bold">Upload Media Assets</DialogTitle>
             </DialogHeader>
             <FileUploader 
+              collectionSlug={collectionSlug}
               onComplete={() => {
                 setIsUploadOpen(false)
-                queryClient.invalidateQueries({ queryKey: ["media"] })
+                queryClient.invalidateQueries({ queryKey: ["media", collectionSlug] })
               }} 
             />
           </DialogContent>
@@ -182,7 +183,7 @@ function MediaCard({ item, baseUrl, onDelete }: { item: any, baseUrl: string, on
   )
 }
 
-function FileUploader({ onComplete }: { onComplete: () => void }) {
+function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string, onComplete: () => void }) {
   const { client } = useDyrected()
   const [files, setFiles] = React.useState<File[]>([])
   const [uploading, setUploading] = React.useState(false)
@@ -201,7 +202,7 @@ function FileUploader({ onComplete }: { onComplete: () => void }) {
 
     try {
       for (let i = 0; i < files.length; i++) {
-        await client!.uploadMedia(files[i])
+        await client!.uploadMedia(files[i], collectionSlug)
         setProgress(((i + 1) / files.length) * 100)
       }
       onComplete()

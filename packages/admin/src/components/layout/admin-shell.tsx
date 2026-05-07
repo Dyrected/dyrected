@@ -64,14 +64,16 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Media Library" isActive={location.pathname === "/media"} className="rounded-lg">
-                      <Link to="/media">
-                        <ImageIcon className="h-4 w-4" />
-                        <span>Media Library</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {schemas?.collections?.find((col: any) => col.upload)?.slug && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild tooltip="Media Library" isActive={location.pathname.startsWith(`/collections/${schemas.collections.find((col: any) => col.upload).slug}`)} className="rounded-lg">
+                        <Link to={`/collections/${schemas.collections.find((col: any) => col.upload).slug}`}>
+                          <ImageIcon className="h-4 w-4" />
+                          <span>Media Library</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -82,11 +84,11 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
                 <SidebarMenu>
                   {isLoading ? (
                     <div className="px-4 py-2 text-xs text-muted-foreground italic">Loading...</div>
-                  ) : schemas?.collections?.filter(col => col?.admin?.hidden)?.map((col: any) => (
+                  ) : schemas?.collections?.filter((col: any) => !col?.admin?.hidden)?.map((col: any) => (
                     <SidebarMenuItem key={col.slug}>
                       <SidebarMenuButton asChild tooltip={col.label} isActive={location.pathname === `/collections/${col.slug}`} className="rounded-lg">
                         <Link to={`/collections/${col.slug}`}>
-                          <Database className="h-4 w-4" />
+                          {col.upload ? <ImageIcon className="h-4 w-4" /> : <Database className="h-4 w-4" />}
                           <span>{col.labels?.plural}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -100,7 +102,7 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
               <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Configuration</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {schemas?.globals?.map((glob: any) => (
+                  {schemas?.globals?.filter((glob: any) => !glob?.admin?.hidden)?.map((glob: any) => (
                     <SidebarMenuItem key={glob.slug}>
                       <SidebarMenuButton asChild tooltip={glob.label} isActive={location.pathname === `/globals/${glob.slug}`} className="rounded-lg">
                         <Link to={`/globals/${glob.slug}`}>
@@ -131,16 +133,6 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
             <div className="mb-8 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-9 w-9 rounded-lg border border-border bg-white shadow-sm" />
-                {/* <div className="h-4 w-px bg-border/60" /> */}
-                {/* <div>
-                  <h2 className="text-xl font-bold tracking-tight text-foreground">
-                    {location.pathname === '/' ? 'Dashboard' :
-                      location.pathname.startsWith('/collections/') ? 'Collection' :
-                        location.pathname.startsWith('/globals/') ? 'Global Setting' :
-                          location.pathname === '/media' ? 'Media Library' : 'Admin'}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">Manage your site content and settings.</p>
-                </div> */}
               </div>
             </div>
             <div className="animate-in">

@@ -11,7 +11,7 @@ import {
 } from "../../components/ui/form"
 import { Input } from "../../components/ui/input"
 import { Button } from "../../components/ui/button"
-import { X } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 import { Textarea } from "../../components/ui/textarea"
 import { Switch } from "../../components/ui/switch"
 import {
@@ -45,6 +45,12 @@ export interface FieldSchema {
   defaultValue?: any
   fields?: FieldSchema[]
   blocks?: BlockSchema[]
+  admin?: {
+    hidden?: boolean
+    readOnly?: boolean
+    placeholder?: string
+    description?: string
+  }
 }
 
 function buildSchemaShape(fields: FieldSchema[]) {
@@ -175,6 +181,8 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
 }
 
 export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
+  if (schema.admin?.hidden) return null
+
   const fullPath = basePath ? `${basePath}.${schema.name}` : schema.name
 
   if (schema.type === "object") {
@@ -211,6 +219,9 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
           <FormControl>
             {renderField(schema, formField)}
           </FormControl>
+          {schema.admin?.description && (
+            <p className="text-[10px] text-muted-foreground mt-1.5">{schema.admin.description}</p>
+          )}
           <FormMessage />
         </FormItem>
       )}
@@ -239,7 +250,7 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, isLoading, su
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid gap-6">
-          {fields.map((field) => (
+          {fields.filter(f => !f.admin?.hidden).map((field) => (
             <FormFieldRenderer key={field.name} schema={field} basePath="" control={form.control} />
           ))}
         </div>
@@ -254,23 +265,27 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, isLoading, su
 }
 
 function renderField(schema: FieldSchema, field: any) {
+  const placeholder = schema.admin?.placeholder || `Enter ${schema.label.toLowerCase()}...`
+  const disabled = schema.admin?.readOnly
+
   switch (schema.type) {
     case "textarea":
-      return <Textarea {...field} placeholder={`Enter ${schema.label.toLowerCase()}...`} />
+      return <Textarea {...field} placeholder={placeholder} disabled={disabled} />
     case "boolean":
       return (
         <div className="flex items-center space-x-2">
           <Switch
             checked={field.value}
             onCheckedChange={field.onChange}
+            disabled={disabled}
           />
         </div>
       )
     case "select":
       return (
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
           <SelectTrigger>
-            <SelectValue placeholder={`Select ${schema.label.toLowerCase()}`} />
+            <SelectValue placeholder={schema.admin?.placeholder || `Select ${schema.label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
             {schema.options?.map((opt) => (
@@ -300,12 +315,12 @@ function renderField(schema: FieldSchema, field: any) {
     case "relationship":
       return <RelationshipPicker value={field.value} onChange={field.onChange} relationTo={schema.relationTo!} />
     case "number":
-      return <Input type="number" {...field} placeholder="0" />
+      return <Input type="number" {...field} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} />
     case "email":
-      return <Input type="email" {...field} placeholder={`Enter ${schema.label.toLowerCase()}...`} />
+      return <Input type="email" {...field} placeholder={placeholder} disabled={disabled} />
     case "url":
-      return <Input type="url" {...field} placeholder="https://" />
+      return <Input type="url" {...field} placeholder={schema.admin?.placeholder || "https://"} disabled={disabled} />
     default:
-      return <Input {...field} placeholder={`Enter ${schema.label.toLowerCase()}...`} />
+      return <Input {...field} placeholder={placeholder} disabled={disabled} />
   }
 }

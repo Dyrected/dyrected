@@ -75,6 +75,8 @@ export type FieldHook = (args: {
 
 export interface CollectionConfig {
   slug: string;
+  siteId?: string;
+  shared?: boolean;
   labels?: {
     singular: string;
     plural: string;
@@ -117,6 +119,8 @@ export interface UploadConfig {
 
 export interface GlobalConfig {
   slug: string;
+  siteId?: string;
+  shared?: boolean;
   label?: string;
   fields: Field[];
   access?: {

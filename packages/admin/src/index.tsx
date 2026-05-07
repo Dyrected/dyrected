@@ -1,4 +1,5 @@
 import { MemoryRouter, Routes, Route, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { DyrectedProvider } from "./providers/dyrected-provider";
 import { QueryProvider } from "./providers/query-provider";
 import { AdminShell } from "./components/layout/admin-shell";
@@ -24,17 +25,32 @@ function Dashboard() {
 
 function CollectionRoute() {
   const { slug } = useParams();
+  const { client } = useDyrected();
+  
+  const { data: schemas } = useQuery({
+    queryKey: ["schemas"],
+    queryFn: () => client!.getSchemas(),
+    enabled: !!client
+  });
+
+  const schema = schemas?.collections.find((c: any) => c.slug === slug);
+
+  if (schema?.upload) {
+    return <MediaPage collectionSlug={slug!} />;
+  }
+
   return <CollectionListPage slug={slug!} />;
 }
 
 export interface AdminUIProps {
   apiKey: string;
   baseUrl: string;
+  siteId?: string;
 }
 
-export function AdminUI({ apiKey, baseUrl }: AdminUIProps) {
+export function AdminUI({ apiKey, baseUrl, siteId }: AdminUIProps) {
   return (
-    <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl}>
+    <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
       <QueryProvider>
         <MemoryRouter>
           <AdminShell isEmbedded>
@@ -44,7 +60,6 @@ export function AdminUI({ apiKey, baseUrl }: AdminUIProps) {
               <Route path="/collections/:slug/new" element={<EditEntryPage />} />
               <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
               <Route path="/globals/:slug" element={<GlobalEditorPage />} />
-              <Route path="/media" element={<MediaPage />} />
             </Routes>
           </AdminShell>
         </MemoryRouter>

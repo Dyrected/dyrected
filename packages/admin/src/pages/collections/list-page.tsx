@@ -74,8 +74,16 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       })
     }
 
-    // Add fields from schema (up to 3 main ones for preview, excluding status if we just added it)
-    schema.fields.filter((f: any) => f.name !== "status").slice(0, 3).forEach((field: any) => {
+    // Determine which fields to show in columns
+    let displayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
+    
+    if (schema.admin?.defaultColumns && Array.isArray(schema.admin.defaultColumns)) {
+      displayFields = displayFields.filter((f: any) => schema.admin.defaultColumns.includes(f.name))
+    } else {
+      displayFields = displayFields.slice(0, 3)
+    }
+
+    displayFields.forEach((field: any) => {
       cols.push({
         accessorKey: field.name,
         header: field.label || field.name,
@@ -183,7 +191,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         <DataTable 
           columns={columns} 
           data={response?.docs || []} 
-          searchKey={schema.fields[0]?.name}
+          searchKey={schema.admin?.useAsTitle || schema.fields.find((f: any) => !f.admin?.hidden)?.name || "id"}
         />
       </div>
     </div>

@@ -7,6 +7,7 @@ export { Media };
 export interface DyrectedClientConfig {
   baseUrl: string;
   apiKey?: string;
+  siteId?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
 }
@@ -22,6 +23,7 @@ export class DyrectedClient {
     this.headers = {
       'Content-Type': 'application/json',
       ...(config.apiKey ? { 'X-API-Key': config.apiKey } : {}),
+      ...(config.siteId ? { 'X-Site-Id': config.siteId } : {}),
       ...config.headers,
     };
   }
@@ -100,27 +102,31 @@ export class DyrectedClient {
     });
   }
 
-  async listMedia(args: QueryArgs = {}): Promise<PaginatedResult<Media>> {
+  async listMedia(args: QueryArgs = {}, collection?: string): Promise<PaginatedResult<Media>> {
     const query = qs.stringify(args, { addQueryPrefix: true });
-    return this.request(`/api/media${query}`);
+    const path = collection ? `/api/collections/${collection}/media` : '/api/media';
+    return this.request(`${path}${query}`);
   }
 
-  async uploadMedia(file: File): Promise<Media> {
+  async uploadMedia(file: File, collection?: string): Promise<Media> {
     const formData = new FormData();
     formData.append('file', file);
 
     // Remove Content-Type header to let the browser set the boundary
     const { 'Content-Type': _, ...headers } = this.headers;
 
-    return this.request('/api/media', {
+    const path = collection ? `/api/collections/${collection}/media` : '/api/media';
+
+    return this.request(path, {
       method: 'POST',
       headers,
       body: formData,
     });
   }
 
-  async deleteMedia(id: string): Promise<{ message: string }> {
-    return this.request(`/api/media/${id}`, {
+  async deleteMedia(id: string, collection?: string): Promise<{ message: string }> {
+    const path = collection ? `/api/collections/${collection}/media/${id}` : `/api/media/${id}`;
+    return this.request(path, {
       method: 'DELETE',
     });
   }
