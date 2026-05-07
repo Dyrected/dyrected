@@ -1,19 +1,12 @@
 import qs from 'qs';
 import { PaginatedResult } from '@dyrected/core';
+import { QueryBuilder, QueryArgs } from './query-builder.js';
 
 export interface DyrectedClientConfig {
   baseUrl: string;
   apiKey?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
-}
-
-export interface FindArgs {
-  limit?: number;
-  page?: number;
-  depth?: number;
-  where?: any;
-  sort?: string;
 }
 
 export class DyrectedClient {
@@ -31,10 +24,33 @@ export class DyrectedClient {
     };
   }
 
-  async find<T = any>(collection: string, args: FindArgs = {}): Promise<PaginatedResult<T>> {
+  async find<T = any>(collection: string, args: QueryArgs = {}): Promise<PaginatedResult<T>> {
     const query = qs.stringify(args, { addQueryPrefix: true });
     const res = await this.request(`/api/collections/${collection}${query}`);
     return res as PaginatedResult<T>;
+  }
+
+  /**
+   * Returns a fluent query builder for a collection.
+   */
+  collection<T = any>(slug: string) {
+    return {
+      find: (args?: QueryArgs) => {
+        const qb = new QueryBuilder<T>(slug, (c, a) => this.find<T>(c, a));
+        if (args) {
+          if (args.where) qb.where(args.where);
+          if (args.sort) qb.sort(args.sort);
+          if (args.limit) qb.limit(args.limit);
+          if (args.page) qb.page(args.page);
+          if (args.depth) qb.depth(args.depth);
+        }
+        return qb;
+      },
+      findOne: (id: string, args: { depth?: number } = {}) => this.findOne<T>(slug, id, args),
+      create: (data: any) => this.create<T>(slug, data),
+      update: (id: string, data: any) => this.update<T>(slug, id, data),
+      delete: (id: string) => this.delete(slug, id),
+    };
   }
 
   async findOne<T = any>(collection: string, id: string, args: { depth?: number } = {}): Promise<T> {
