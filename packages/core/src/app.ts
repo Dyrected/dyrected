@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
-import { DyrectedConfig } from './types';
+import { DyrectedConfig } from './types/index.js';
+import { registerRoutes } from './router.js';
 
 export interface DyrectedContext {
   Variables: {
@@ -33,6 +34,9 @@ export function createDyrectedApp(config: DyrectedConfig) {
 
   // 3. Health Check
   app.get('/health', (c) => c.json({ status: 'ok', version: '0.0.1' }));
+
+  // 4. Dynamic Routing
+  registerRoutes(app, config);
 
   return app;
 }
