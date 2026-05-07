@@ -5,6 +5,10 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Admin UI Content Experience (Phase 5.5)**:
+    - Added a robust **Block Builder Engine** with drag-and-drop (`@dnd-kit`) to allow page-builder-like functionality.
+    - Implemented a "Block Selector" to insert complex, deeply nested blocks dynamically.
+    - Added the `blocks` FieldType to `@dyrected/core` to support block definitions in configuration schemas.
 - **Admin UI Data Management (Phase 5.4)**:
     - Implemented a dynamic **Form Engine** using `react-hook-form` and `zod`.
     - Automated form generation based on backend schemas with support for Text, Number, Boolean, Select, and Media fields.

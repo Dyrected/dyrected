@@ -27,16 +27,24 @@ import { RelationshipPicker } from "./relationship-picker"
 import { DatePicker } from "./date-picker"
 import { MultiSelect } from "./multi-select"
 import { JsonEditor } from "./json-editor"
+import { BlockBuilder } from "./block-builder"
 
-interface FieldSchema {
+export interface BlockSchema {
+  slug: string
+  labels?: { singular: string; plural: string }
+  fields: FieldSchema[]
+}
+
+export interface FieldSchema {
   name: string
   label: string
-  type: "text" | "number" | "boolean" | "select" | "textarea" | "image" | "richText" | "relationship" | "email" | "url" | "date" | "multiSelect" | "json" | "object" | "array"
+  type: "text" | "number" | "boolean" | "select" | "textarea" | "image" | "richText" | "relationship" | "email" | "url" | "date" | "multiSelect" | "json" | "object" | "array" | "blocks"
   relationTo?: string
   required?: boolean
   options?: { label: string; value: string }[]
   defaultValue?: any
   fields?: FieldSchema[]
+  blocks?: BlockSchema[]
 }
 
 function buildSchemaShape(fields: FieldSchema[]) {
@@ -46,6 +54,15 @@ function buildSchemaShape(fields: FieldSchema[]) {
 
     if (field.type === "object" && field.fields) {
       validator = z.object(buildSchemaShape(field.fields))
+      if (!field.required) validator = validator.optional()
+      shape[field.name] = validator
+      return
+    }
+
+    if (field.type === "blocks") {
+      // In a real scenario, this would discriminate based on blockType, 
+      // but for dynamic forms we can loosely validate it as an array of objects
+      validator = z.array(z.any())
       if (!field.required) validator = validator.optional()
       shape[field.name] = validator
       return
@@ -89,7 +106,7 @@ function buildSchemaShape(fields: FieldSchema[]) {
   return shape
 }
 
-function buildDefaultValues(fields: FieldSchema[], defaults: any) {
+export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
   return fields.reduce((acc, field) => {
     let defaultVal = defaults[field.name] ?? field.defaultValue
 
@@ -99,6 +116,11 @@ function buildDefaultValues(fields: FieldSchema[], defaults: any) {
     }
 
     if (field.type === "array") {
+      acc[field.name] = Array.isArray(defaultVal) ? defaultVal : []
+      return acc
+    }
+
+    if (field.type === "blocks") {
       acc[field.name] = Array.isArray(defaultVal) ? defaultVal : []
       return acc
     }
@@ -141,7 +163,7 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
   )
 }
 
-function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
+export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
   const fullPath = basePath ? `${basePath}.${schema.name}` : schema.name
 
   if (schema.type === "object") {
@@ -159,6 +181,10 @@ function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema,
 
   if (schema.type === "array") {
     return <ArrayFieldRenderer schema={schema} basePath={fullPath} control={control} />
+  }
+
+  if (schema.type === "blocks" && schema.blocks) {
+    return <BlockBuilder schema={schema} basePath={fullPath} control={control} />
   }
 
   return (

@@ -12,7 +12,17 @@ export type FieldType =
   | 'relationship'
   | 'array'
   | 'object'
-  | 'json';
+  | 'json'
+  | 'blocks';
+
+export interface Block {
+  slug: string;
+  labels?: {
+    singular: string;
+    plural: string;
+  };
+  fields: Field[];
+}
 
 export interface Field {
   name: string;
@@ -24,6 +34,7 @@ export interface Field {
   options?: string[] | { label: string; value: string }[]; // For select/multiSelect
   collection?: string; // For relationship
   fields?: Field[]; // For array/object
+  blocks?: Block[]; // For blocks
   access?: {
     read?: AccessFunction;
     update?: AccessFunction;
