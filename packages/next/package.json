@@ -1,0 +1,29 @@
+{
+  "name": "@dyrected/next",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "peerDependencies": {
+    "next": ">=13.4.0"
+  },
+  "dependencies": {
+    "@dyrected/core": "workspace:*",
+    "@dyrected/sdk": "workspace:*",
+    "hono": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^19.2.3",
+    "next": "^14.2.3",
+    "typescript": "^5.4.5"
+  }
+}

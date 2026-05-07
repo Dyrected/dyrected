@@ -1,6 +1,8 @@
 import qs from 'qs';
-import { PaginatedResult } from '@dyrected/core';
+import { PaginatedResult, FileData as Media } from '@dyrected/core';
 import { QueryBuilder, QueryArgs } from './query-builder.js';
+
+export { Media };
 
 export interface DyrectedClientConfig {
   baseUrl: string;
