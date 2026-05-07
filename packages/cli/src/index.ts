@@ -133,4 +133,65 @@ function toPascalCase(str: string) {
   return str.replace(/(^\w|-\w)/g, (m) => m.replace(/-/, '').toUpperCase());
 }
 
+import { createJiti } from 'jiti';
+
+const jiti = createJiti(import.meta.url);
+
+program
+  .command('sync:schema')
+  .description('Sync your local Dyrected schema with the Cloud dashboard')
+  .option('-k, --api-key <key>', 'Your Dyrected API Key')
+  .option('-s, --site-id <id>', 'Your Dyrected Site ID')
+  .option('-u, --url <url>', 'Cloud API URL', 'https://prodeegi-vault.onrender.com')
+  .option('-c, --config <path>', 'Path to your dyrected.config.ts', './dyrected.config.ts')
+  .action(async (options) => {
+    try {
+      const apiKey = options.apiKey || process.env.DYRECTED_API_KEY;
+      const siteId = options.siteId || process.env.DYRECTED_SITE_ID;
+      const apiUrl = options.url || process.env.DYRECTED_URL || 'https://prodeegi-vault.onrender.com';
+      const configPath = path.resolve(process.cwd(), options.config);
+
+      if (!apiKey || !siteId) {
+        throw new Error('API Key and Site ID are required. Provide them via options or environment variables (DYRECTED_API_KEY, DYRECTED_SITE_ID).');
+      }
+
+      if (!await fs.pathExists(configPath)) {
+        throw new Error(`Config file not found at ${configPath}`);
+      }
+
+      console.log(chalk.blue(`Loading config from ${configPath}...`));
+      const configModule = await jiti.import(configPath) as any;
+      const config = configModule.default || configModule;
+
+      if (!config.collections) {
+        throw new Error('Invalid config: No collections found.');
+      }
+
+      console.log(chalk.blue(`Syncing schema to ${apiUrl}...`));
+
+      const response = await fetch(`${apiUrl}/cloud/workspaces/sites/${siteId}/schema/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`, // Assuming Bearer for CLI, or custom header
+          'X-API-Key': apiKey, // Backup if using header based auth
+        },
+        body: JSON.stringify({
+          collections: config.collections,
+          globals: config.globals || []
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(`Sync failed: ${error.message || response.statusText}`);
+      }
+
+      console.log(chalk.green(`\nSuccess! Schema synced successfully for site ${siteId}`));
+    } catch (error: any) {
+      console.error(chalk.red(`\nError: ${error.message}`));
+      process.exit(1);
+    }
+  });
+
 program.parse();

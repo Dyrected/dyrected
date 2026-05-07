@@ -203,4 +203,5 @@ export interface DyrectedConfig {
   cors?: {
     origins: string[];
   };
+  onSchemaFetch?: (siteId: string) => Promise<{ collections?: CollectionConfig[]; globals?: GlobalConfig[] }>;
 }

@@ -294,6 +294,9 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.5
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
       prettier:
         specifier: ^3.2.5
         version: 3.8.3

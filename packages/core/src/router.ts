@@ -13,34 +13,50 @@ import { getSwaggerHtml } from './utils/swagger.js';
 export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfig) {
   // 1. Schema Endpoints
   // Used by the SDK and Admin to understand the content structure
-  app.get('/api/schemas', (c) => {
+  app.get('/api/schemas', async (c) => {
     const siteId = c.req.header('X-Site-Id');
 
-    const collections = config.collections
+    let collections = [...config.collections];
+    let globals = [...config.globals];
+
+    if (siteId && config.onSchemaFetch) {
+      const dynamic = await config.onSchemaFetch(siteId);
+      if (dynamic.collections) collections = [...collections, ...dynamic.collections];
+      if (dynamic.globals) globals = [...globals, ...dynamic.globals];
+    }
+
+    const filteredCollections = collections
       .filter((col) => !siteId || col.shared || col.siteId === siteId)
       .map((col) => ({
         slug: col.slug,
-        siteId: col.siteId,
-        shared: col.shared,
         labels: col.labels,
-        fields: col.fields,
-        auth: col.auth,
-        upload: col.upload,
-        admin: col.admin,
+        fields: col.fields.map((f) => ({
+          name: f.name,
+          type: f.type,
+          label: f.label,
+          admin: f.admin,
+        })),
+        upload: !!col.upload,
+        auth: !!col.auth,
       }));
 
-    const globals = config.globals
+    const filteredGlobals = globals
       .filter((glb) => !siteId || glb.shared || glb.siteId === siteId)
       .map((glb) => ({
         slug: glb.slug,
-        siteId: glb.siteId,
-        shared: glb.shared,
         label: glb.label,
-        fields: glb.fields,
-        admin: glb.admin,
+        fields: glb.fields.map((f) => ({
+          name: f.name,
+          type: f.type,
+          label: f.label,
+          admin: f.admin,
+        })),
       }));
 
-    return c.json({ collections, globals });
+    return c.json({
+      collections: filteredCollections,
+      globals: filteredGlobals,
+    });
   });
 
   app.get('/api/openapi.json', (c) => {
