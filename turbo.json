@@ -20,5 +20,5 @@
     },
     "lint": {}
   },
-  "concurrency": "15"
+  "concurrency": "18"
 }

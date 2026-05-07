@@ -32,14 +32,14 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   private async ensureTable(slug: string) {
     const tableName = this.getTableName(slug);
-    await this.sql.unsafe(`
-      CREATE TABLE IF NOT EXISTS ${tableName} (
+    await this.sql`
+      CREATE TABLE IF NOT EXISTS ${this.sql(tableName)} (
         id TEXT PRIMARY KEY,
         data JSONB,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
-    `);
+    `;
   }
 
   async find(params: { collection: string; where?: any; limit?: number; page?: number }): Promise<PaginatedResult> {
@@ -49,12 +49,27 @@ export class PostgresAdapter implements DatabaseAdapter {
     const page = params.page || 1;
     const offset = (page - 1) * limit;
 
+    let whereClause = this.sql``;
+    if (params.where) {
+      const conditions = Object.entries(params.where).map(([key, value]) => {
+        if (key === 'id') return this.sql`id = ${value as any}`;
+        return this.sql`data->>${key} = ${value as any}`;
+      });
+      if (conditions.length > 0) {
+        whereClause = this.sql`WHERE ${conditions.reduce((acc, curr) => this.sql`${acc} AND ${curr}`)}`;
+      }
+    }
+
     // Fetch total count
-    const countRes = await this.sql.unsafe(`SELECT count(*) as total FROM ${tableName}`);
+    const countRes = await this.sql`SELECT count(*) as total FROM ${this.sql(tableName)} ${whereClause}`;
     const total = parseInt(countRes[0].total);
 
     // Fetch data
-    const rows = await this.sql.unsafe(`SELECT * FROM ${tableName} LIMIT ${limit} OFFSET ${offset}`);
+    const rows = await this.sql`
+      SELECT * FROM ${this.sql(tableName)} 
+      ${whereClause} 
+      LIMIT ${limit} OFFSET ${offset}
+    `;
 
     return {
       docs: rows.map(r => ({ id: r.id, ...r.data })),
@@ -67,7 +82,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   async findOne(params: { collection: string; id: string }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    const rows = await this.sql.unsafe(`SELECT * FROM ${tableName} WHERE id = ${params.id}`);
+    const rows = await this.sql`SELECT * FROM ${this.sql(tableName)} WHERE id = ${params.id}`;
     const row = rows[0];
     if (!row) return null;
     return { id: row.id, ...row.data };
@@ -80,7 +95,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     const data = { ...params.data };
     delete data.id;
 
-    await this.sql.unsafe(`INSERT INTO ${tableName} (id, data) VALUES (${id}, ${JSON.stringify(data)})`);
+    await this.sql`INSERT INTO ${this.sql(tableName)} (id, data) VALUES (${id}, ${data})`;
 
     return { id, ...data };
   }
@@ -88,14 +103,14 @@ export class PostgresAdapter implements DatabaseAdapter {
   async update(params: { collection: string; id: string; data: any }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    await this.sql.unsafe(`UPDATE ${tableName} SET data = ${JSON.stringify(params.data)}, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`);
+    await this.sql`UPDATE ${this.sql(tableName)} SET data = ${params.data}, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
     return { id: params.id, ...params.data };
   }
 
   async delete(params: { collection: string; id: string }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    await this.sql.unsafe(`DELETE FROM ${tableName} WHERE id = ${params.id}`);
+    await this.sql`DELETE FROM ${this.sql(tableName)} WHERE id = ${params.id}`;
   }
 
   async getGlobal(params: { slug: string }) {
