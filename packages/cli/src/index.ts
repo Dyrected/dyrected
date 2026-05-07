@@ -4,6 +4,8 @@ import prettier from 'prettier';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import path from 'path';
+import prompts from 'prompts';
+import { execSync } from 'child_process';
 
 const program = new Command();
 
@@ -11,6 +13,290 @@ program
   .name('dyrected')
   .description('Dyrected CMS CLI tool')
   .version('0.0.1');
+
+// ─── init ──────────────────────────────────────────────────────────────────
+
+program
+  .command('init')
+  .description('Bootstrap a new Dyrected CMS project')
+  .action(async () => {
+    console.log(chalk.bold('\n🚀 Welcome to Dyrected CMS\n'));
+
+    const { framework } = await prompts({
+      type: 'select',
+      name: 'framework',
+      message: 'Which framework are you using?',
+      choices: [
+        { title: 'Next.js (App Router)', value: 'next' },
+        { title: 'Nuxt 3', value: 'nuxt' },
+      ],
+    });
+
+    if (!framework) {
+      console.log(chalk.yellow('\nAborted.'));
+      process.exit(0);
+    }
+
+    const { db } = await prompts({
+      type: 'select',
+      name: 'db',
+      message: 'Which database adapter?',
+      choices: [
+        { title: 'PostgreSQL (recommended)', value: 'postgres' },
+        { title: 'SQLite (local dev)', value: 'sqlite' },
+        { title: 'MongoDB', value: 'mongodb' },
+      ],
+    });
+
+    const { storage } = await prompts({
+      type: 'select',
+      name: 'storage',
+      message: 'Which storage adapter?',
+      choices: [
+        { title: 'Local filesystem', value: 'local' },
+        { title: 'AWS S3', value: 's3' },
+        { title: 'Backblaze B2', value: 'b2' },
+        { title: 'Cloudinary', value: 'cloudinary' },
+      ],
+    });
+
+    const cwd = process.cwd();
+    const packageManager = detectPackageManager(cwd);
+
+    // ── 1. Install dependencies ──────────────────────────────────────────
+    const frameworkPkg = framework === 'next' ? '@dyrected/next' : '@dyrected/nuxt';
+    const dbPkg = `@dyrected/db-${db}`;
+    const storagePkg = `@dyrected/storage-${storage}`;
+    const deps = [frameworkPkg, dbPkg, storagePkg].join(' ');
+
+    console.log(chalk.blue(`\nInstalling ${deps}...`));
+    try {
+      execSync(`${packageManager} add ${deps}`, { cwd, stdio: 'inherit' });
+    } catch {
+      console.log(chalk.yellow('\nCould not auto-install. Run the following manually:'));
+      console.log(chalk.cyan(`  ${packageManager} add ${deps}\n`));
+    }
+
+    // ── 2. Write dyrected.config.ts ──────────────────────────────────────
+    const dbImport = `import { ${db}Adapter } from '${dbPkg}'`;
+    const storageImport = `import { ${storage}Adapter } from '${storagePkg}'`;
+    const dbConfig = buildDbConfig(db);
+    const storageConfig = buildStorageConfig(storage);
+
+    const configContent = `import { defineCollection, defineGlobal, defineConfig } from '@dyrected/core'
+${dbImport}
+${storageImport}
+
+// ── Collections ──────────────────────────────────────────────────────────
+
+const media = defineCollection({
+  slug: 'media',
+  labels: { singular: 'Media', plural: 'Media' },
+  upload: true,
+  fields: [
+    { name: 'alt', type: 'text' },
+  ],
+})
+
+const pages = defineCollection({
+  slug: 'pages',
+  labels: { singular: 'Page', plural: 'Pages' },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'slug', type: 'text', required: true },
+    { name: 'content', type: 'richText' },
+    { name: 'featuredImage', type: 'relationship', collection: 'media' },
+  ],
+})
+
+const posts = defineCollection({
+  slug: 'posts',
+  labels: { singular: 'Post', plural: 'Posts' },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'content', type: 'richText' },
+    { name: 'featuredImage', type: 'relationship', collection: 'media' },
+  ],
+})
+
+// ── Globals ───────────────────────────────────────────────────────────────
+
+const navigation = defineGlobal({
+  slug: 'navigation',
+  label: 'Navigation',
+  fields: [
+    {
+      name: 'menuItems',
+      type: 'array',
+      fields: [
+        { name: 'label', type: 'text' },
+        { name: 'link', type: 'relationship', collection: 'pages' },
+      ],
+    },
+  ],
+})
+
+const settings = defineGlobal({
+  slug: 'settings',
+  label: 'Site Settings',
+  fields: [
+    { name: 'siteName', type: 'text' },
+    { name: 'logo', type: 'relationship', collection: 'media' },
+    { name: 'footerText', type: 'textarea' },
+  ],
+})
+
+// ── Config ────────────────────────────────────────────────────────────────
+
+export default defineConfig({
+  collections: [media, pages, posts],
+  globals: [navigation, settings],
+  db: ${dbConfig},
+  storage: ${storageConfig},
+})
+`;
+
+    const configPath = path.join(cwd, 'dyrected.config.ts');
+    if (await fs.pathExists(configPath)) {
+      const { overwrite } = await prompts({
+        type: 'confirm',
+        name: 'overwrite',
+        message: 'dyrected.config.ts already exists. Overwrite?',
+        initial: false,
+      });
+      if (!overwrite) {
+        console.log(chalk.yellow('Skipping config file.'));
+      } else {
+        await fs.outputFile(configPath, configContent);
+        console.log(chalk.green('✔  dyrected.config.ts written'));
+      }
+    } else {
+      await fs.outputFile(configPath, configContent);
+      console.log(chalk.green('✔  dyrected.config.ts written'));
+    }
+
+    // ── 3. Framework-specific files ──────────────────────────────────────
+    if (framework === 'next') {
+      await writeNextFiles(cwd);
+    } else {
+      await writeNuxtFiles(cwd);
+    }
+
+    // ── 4. .env template ─────────────────────────────────────────────────
+    const envPath = path.join(cwd, '.env.example');
+    const envContent = buildEnvTemplate(db, storage, framework);
+    await fs.outputFile(envPath, envContent);
+    console.log(chalk.green('✔  .env.example written'));
+
+    // ── Done ─────────────────────────────────────────────────────────────
+    console.log(chalk.bold.green('\n✅ Dyrected is ready!\n'));
+    console.log(chalk.dim('Next steps:'));
+    console.log(chalk.cyan('  1. Copy .env.example → .env and fill in your secrets'));
+    console.log(chalk.cyan('  2. Run your dev server'));
+    console.log(chalk.cyan('  3. Open /cms to access the admin panel'));
+    console.log(chalk.cyan('  4. Run: npx dyrected generate:types\n'));
+  });
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function detectPackageManager(cwd: string): string {
+  if (fs.existsSync(path.join(cwd, 'pnpm-lock.yaml'))) return 'pnpm';
+  if (fs.existsSync(path.join(cwd, 'yarn.lock'))) return 'yarn';
+  return 'npm';
+}
+
+function buildDbConfig(db: string): string {
+  switch (db) {
+    case 'postgres':
+      return `postgresAdapter({ url: process.env.DATABASE_URL! })`;
+    case 'sqlite':
+      return `sqliteAdapter({ filename: './data.db' })`;
+    case 'mongodb':
+      return `mongodbAdapter({ url: process.env.DATABASE_URL! })`;
+    default:
+      return `postgresAdapter({ url: process.env.DATABASE_URL! })`;
+  }
+}
+
+function buildStorageConfig(storage: string): string {
+  switch (storage) {
+    case 'local':
+      return `localAdapter({ directory: './public/uploads', serveFrom: '/uploads' })`;
+    case 's3':
+      return `s3Adapter({ bucket: process.env.S3_BUCKET!, region: process.env.S3_REGION!, accessKeyId: process.env.S3_ACCESS_KEY_ID!, secretAccessKey: process.env.S3_SECRET_ACCESS_KEY! })`;
+    case 'b2':
+      return `b2Adapter({ bucketId: process.env.B2_BUCKET_ID!, keyId: process.env.B2_KEY_ID!, applicationKey: process.env.B2_APPLICATION_KEY! })`;
+    case 'cloudinary':
+      return `cloudinaryAdapter({ cloudName: process.env.CLOUDINARY_CLOUD_NAME!, apiKey: process.env.CLOUDINARY_API_KEY!, apiSecret: process.env.CLOUDINARY_API_SECRET! })`;
+    default:
+      return `localAdapter({ directory: './public/uploads', serveFrom: '/uploads' })`;
+  }
+}
+
+async function writeNextFiles(cwd: string) {
+  const apiRoutePath = path.join(cwd, 'app/api/dyrected/[...route]/route.ts');
+  if (!await fs.pathExists(apiRoutePath)) {
+    await fs.outputFile(apiRoutePath, `export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'\n`);
+    console.log(chalk.green('✔  app/api/dyrected/[...route]/route.ts written'));
+  }
+
+  const adminPagePath = path.join(cwd, 'app/cms/[[...route]]/page.tsx');
+  if (!await fs.pathExists(adminPagePath)) {
+    await fs.outputFile(adminPagePath, `import { DyrectedAdmin } from '@dyrected/next/admin'
+
+export default function AdminPage() {
+  return <DyrectedAdmin apiPath="/api/dyrected" />
+}
+`);
+    console.log(chalk.green('✔  app/cms/[[...route]]/page.tsx written'));
+  }
+}
+
+async function writeNuxtFiles(cwd: string) {
+  console.log(chalk.yellow('\n⚠  Add the module to your nuxt.config.ts manually:'));
+  console.log(chalk.dim(`
+  modules: ['@dyrected/nuxt'],
+  runtimeConfig: {
+    public: { dyrectedApiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY }
+  }
+`));
+
+  const adminPagePath = path.join(cwd, 'pages/cms/[[...route]].vue');
+  if (!await fs.pathExists(adminPagePath)) {
+    await fs.outputFile(adminPagePath, `<template>
+  <DyrectedAdmin api-path="/api/dyrected" />
+</template>
+
+<script setup lang="ts">
+import { DyrectedAdmin } from '@dyrected/nuxt/admin'
+</script>
+`);
+    console.log(chalk.green('✔  pages/cms/[[...route]].vue written'));
+  }
+}
+
+function buildEnvTemplate(db: string, storage: string, framework: string): string {
+  const lines = [
+    `# Dyrected CMS — Environment Variables`,
+    `DATABASE_URL=${db === 'mongodb' ? 'mongodb://localhost:27017/dyrected' : 'postgres://user:pass@localhost:5432/dyrected'}`,
+    `JWT_SECRET=change-me-32-characters-minimum`,
+    `ENCRYPTION_KEY=change-me-aes-256-key`,
+    ``,
+  ];
+
+  if (storage === 's3') {
+    lines.push(`S3_BUCKET=my-bucket`, `S3_REGION=us-east-1`, `S3_ACCESS_KEY_ID=`, `S3_SECRET_ACCESS_KEY=`);
+  } else if (storage === 'b2') {
+    lines.push(`B2_BUCKET_ID=`, `B2_KEY_ID=`, `B2_APPLICATION_KEY=`);
+  } else if (storage === 'cloudinary') {
+    lines.push(`CLOUDINARY_CLOUD_NAME=`, `CLOUDINARY_API_KEY=`, `CLOUDINARY_API_SECRET=`);
+  }
+
+  lines.push(``, framework === 'next' ? `NEXT_PUBLIC_DYRECTED_API_KEY=local-dev` : `NUXT_PUBLIC_DYRECTED_API_KEY=local-dev`);
+  return lines.join('\n') + '\n';
+}
+
+// ─── generate:types ─────────────────────────────────────────────────────────
 
 program
   .command('generate:types')
@@ -28,9 +314,7 @@ program
       
       const schema = await response.json();
       const code = generateTypes(schema);
-      
       const formattedCode = await prettier.format(code, { parser: 'typescript' });
-      
       await fs.outputFile(path.resolve(process.cwd(), options.output), formattedCode);
       
       console.log(chalk.green(`\nSuccess! Types generated at ${options.output}`));
@@ -59,34 +343,27 @@ export interface Media {
 }
 \n`;
 
-  // Collections
   for (const col of schema.collections) {
     const interfaceName = toPascalCase(col.slug);
     code += `export interface ${interfaceName} {\n`;
     code += `  id: string;\n`;
-    
     for (const field of col.fields) {
       code += `  ${field.name}${field.required ? '' : '?'}: ${mapFieldType(field)};\n`;
     }
-    
     code += `  createdAt: string;\n`;
     code += `  updatedAt: string;\n`;
     code += `}\n\n`;
   }
 
-  // Globals
   for (const glb of schema.globals) {
     const interfaceName = `${toPascalCase(glb.slug)}Global`;
     code += `export interface ${interfaceName} {\n`;
-    
     for (const field of glb.fields) {
       code += `  ${field.name}${field.required ? '' : '?'}: ${mapFieldType(field)};\n`;
     }
-    
     code += `}\n\n`;
   }
 
-  // Registry
   code += `export interface DyrectedSchema {\n`;
   code += `  collections: {\n`;
   for (const col of schema.collections) {
@@ -117,11 +394,15 @@ function mapFieldType(field: any): string {
     case 'boolean':
       return 'boolean';
     case 'select':
-      return field.options ? field.options.map((o: any) => `'${typeof o === 'string' ? o : o.value}'`).join(' | ') : 'string';
+      return field.options
+        ? field.options.map((o: any) => `'${typeof o === 'string' ? o : o.value}'`).join(' | ')
+        : 'string';
     case 'relationship':
-      return field.collection === 'media' ? 'Media | string' : `${toPascalCase(field.collection)} | string`;
+      return field.collection === 'media'
+        ? 'Media | string'
+        : `${toPascalCase(field.collection)} | string`;
     case 'array':
-      return 'any[]'; // Deep nesting handled later
+      return 'any[]';
     case 'object':
       return 'any';
     default:
@@ -132,6 +413,8 @@ function mapFieldType(field: any): string {
 function toPascalCase(str: string) {
   return str.replace(/(^\w|-\w)/g, (m) => m.replace(/-/, '').toUpperCase());
 }
+
+// ─── sync:schema ─────────────────────────────────────────────────────────────
 
 import { createJiti } from 'jiti';
 
@@ -152,7 +435,9 @@ program
       const configPath = path.resolve(process.cwd(), options.config);
 
       if (!apiKey || !siteId) {
-        throw new Error('API Key and Site ID are required. Provide them via options or environment variables (DYRECTED_API_KEY, DYRECTED_SITE_ID).');
+        throw new Error(
+          'API Key and Site ID are required. Provide them via options or environment variables (DYRECTED_API_KEY, DYRECTED_SITE_ID).',
+        );
       }
 
       if (!await fs.pathExists(configPath)) {
@@ -173,12 +458,12 @@ program
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`, // Assuming Bearer for CLI, or custom header
-          'X-API-Key': apiKey, // Backup if using header based auth
+          'Authorization': `Bearer ${apiKey}`,
+          'X-API-Key': apiKey,
         },
         body: JSON.stringify({
           collections: config.collections,
-          globals: config.globals || []
+          globals: config.globals || [],
         }),
       });
 

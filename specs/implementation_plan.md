@@ -264,7 +264,7 @@ This phase focuses on the developer experience and public release stability.
 - [x] Integrate interactive Swagger UI at `/api/docs`.
 
 ### Phase 11.3: CLI & Onboarding
-- [ ] Implement `npx @dyrected/cli init` for rapid project bootstrapping.
+- [x] Implement `npx @dyrected/cli init` for rapid project bootstrapping.
 - [x] Create the "AI Cloud Setup Prompt" for instant scaffolding.
 
 ---

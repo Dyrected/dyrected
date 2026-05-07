@@ -319,7 +319,7 @@ onMounted(async () => {
     return base + frameworks[framework] + `\n\n**Documentation Reference:**\nFor more advanced configurations (hooks, access control, custom blocks), refer to:\n${config.baseUrl}/api/docs`;
   };
 
-  const lovablePrompt = getPrompt(activeTab);
+  const aiDeveloperPrompt = getPrompt(activeTab);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-8 animate-in slide-in-from-bottom-4 duration-700">
@@ -332,7 +332,7 @@ onMounted(async () => {
           Finish Your Site Setup
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Your site has been created! Now let's connect it to your application using Lovable AI.
+          Your site has been created! Now let's connect it to your application using AI.
         </p>
       </div>
 
@@ -375,7 +375,7 @@ onMounted(async () => {
             <div className="space-y-3">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-                Lovable AI Integration
+                AI Integration
               </h3>
               <div className="flex gap-2 bg-muted/50 p-1 rounded-lg w-fit">
                 {(['next', 'nuxt', 'react', 'vue'] as const).map((tab) => (
@@ -393,20 +393,20 @@ onMounted(async () => {
                   </button>
                 ))}
               </div>
-              <p className="text-sm text-muted-foreground">Copy and paste this into Lovable to handle everything automatically</p>
+              <p className="text-sm text-muted-foreground">Copy and paste this into your AI developer to handle everything automatically</p>
             </div>
             <Button
-              onClick={() => copyToClipboard(lovablePrompt, "lovable")}
+              onClick={() => copyToClipboard(aiDeveloperPrompt, "ai-developer")}
               className="relative overflow-hidden group"
             >
               <div className="flex items-center gap-2">
-                {copied === "lovable" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                {copied === "lovable" ? "Copied!" : "Copy Full Prompt"}
+                {copied === "ai-developer" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {copied === "ai-developer" ? "Copied!" : "Copy Full Prompt"}
               </div>
             </Button>
           </div>
           <div className="p-6 bg-slate-950 text-slate-300 font-mono text-xs leading-relaxed max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
-            <pre className="whitespace-pre-wrap">{lovablePrompt}</pre>
+            <pre className="whitespace-pre-wrap">{aiDeveloperPrompt}</pre>
           </div>
         </section>
       </div>

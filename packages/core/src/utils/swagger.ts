@@ -18,8 +18,13 @@ export function getSwaggerHtml(specUrl: string = '/api/openapi.json') {
 <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
 <script>
   window.onload = () => {
+    // Forward the apikey query param when loading the spec and making API calls
+    const params = new URLSearchParams(window.location.search);
+    const apiKey = params.get('apikey');
+    const specUrlWithKey = apiKey ? '${specUrl}?apikey=' + encodeURIComponent(apiKey) : '${specUrl}';
+
     window.ui = SwaggerUIBundle({
-      url: '${specUrl}',
+      url: specUrlWithKey,
       dom_id: '#swagger-ui',
       presets: [
         SwaggerUIBundle.presets.apis,
@@ -28,7 +33,14 @@ export function getSwaggerHtml(specUrl: string = '/api/openapi.json') {
       layout: "BaseLayout",
       deepLinking: true,
       showExtensions: true,
-      showCommonExtensions: true
+      showCommonExtensions: true,
+      // Inject x-api-key header on every request made from the Swagger UI
+      requestInterceptor: (request) => {
+        if (apiKey) {
+          request.headers['x-api-key'] = apiKey;
+        }
+        return request;
+      }
     });
   };
 </script>
@@ -36,3 +48,4 @@ export function getSwaggerHtml(specUrl: string = '/api/openapi.json') {
 </html>
   `;
 }
+
