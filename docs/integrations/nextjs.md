@@ -55,12 +55,12 @@ Create a catch-all route that forwards all Dyrected requests to the Hono router:
 import { createApp } from '@dyrected/core'
 import config from '@/dyrected.config'
 
-const { handler } = createApp(config)
+const app = createApp(config)
 
-export const GET    = handler
-export const POST   = handler
-export const PATCH  = handler
-export const DELETE = handler
+export const GET    = app.fetch
+export const POST   = app.fetch
+export const PATCH  = app.fetch
+export const DELETE = app.fetch
 ```
 
 All Dyrected REST endpoints are now available at `/api/dyrected/...`.

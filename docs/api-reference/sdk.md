@@ -36,7 +36,6 @@ const client = createClient({
 | `baseUrl` | `string` | ✅ | Base URL of your Dyrected instance |
 | `apiKey` | `string` | | Site API Key. Sent as `x-api-key` header. |
 | `siteId` | `string` | | Site ID. Sent as `x-site-id` header. Required in Cloud mode. |
-| `token` | `string` | | JWT token for user-authenticated requests. Sent as `Authorization: Bearer` header. |
 | `defaultDepth` | `number` | | Default relationship population depth (default: `1`) |
 | `fetch` | `typeof fetch` | | Custom `fetch` implementation (e.g., for Node 18 polyfills) |
 
@@ -109,11 +108,12 @@ const post = await client.collection('posts').create({
 
 ### `.update(id, data)`
 
-Update an existing document.
+Partially update a document. Only the fields you pass are changed.
 
 ```ts
-const post = await client.collection('posts').update('abc123', {
-  title: 'Updated Title',
+const updated = await client.collection('posts').update('abc123', {
+  status: 'published',
+  publishedAt: new Date().toISOString(),
 })
 ```
 
@@ -131,51 +131,7 @@ await client.collection('posts').delete('abc123')
 
 ### `.upload(file, data?)`
 
-Upload a file to an upload collection.
-
-```ts
-const media = await client.collection('media').upload(file, {
-  alt: 'Description',
-  caption: 'Caption',
-})
-```
-
-```ts
-const post = await client.collection('posts').create({
-  title: 'Hello World',
-  status: 'draft',
-  author: 'user-id-here',
-})
-```
-
----
-
-### `.update(id, data)`
-
-Partially update a document. Only the fields you pass are changed.
-
-```ts
-const updated = await client.collection('posts').update('abc123', {
-  status: 'published',
-  publishedAt: new Date().toISOString(),
-})
-```
-
----
-
-### `.delete(id)`
-
-Delete a document.
-
-```ts
-await client.collection('posts').delete('abc123')
-```
-
----
-
-### `.upload(file, data?)`
-
-Upload a file to an upload collection. Accepts a `File` or `Blob` (browser). Node.js support via standard `fetch` + `FormData`.
+Upload a file to an upload collection. Accepts a `File` or `Blob` (browser).
 
 ```ts
 // Browser — File from <input type="file">
@@ -206,13 +162,6 @@ const settings = await client.global('site-settings').get({ depth: 1 })
 
 ```ts
 await client.global('site-settings').update({
-  siteName: 'My New Name',
-})
-```
-Update the global.
-
-```ts
-const settings = await client.global('site-settings').update({
   maintenanceMode: true,
 })
 ```
@@ -239,7 +188,24 @@ await client.collection('users').logout()
 client.clearToken()
 ```
 
-### `.setToken(token)` / `.clearToken()` *(planned)*
+### `.me()`
+
+Returns the currently authenticated user document.
+
+```ts
+const user = await client.collection('users').me()
+```
+
+### `.refreshToken()`
+
+```ts
+const { token } = await client.collection('users').refreshToken()
+client.setToken(token)
+```
+
+### `.setToken(token)` / `.clearToken()`
+
+Manually manage the authentication header.
 
 ```ts
 client.setToken(token)
@@ -283,7 +249,7 @@ const result = await client.collection<Post>('posts').find({ depth: 1 })
 
 ## Error Handling
 
-> **Note:** `DyrectedError` is not yet implemented. The SDK currently throws a generic `Error`. The typed class is planned — see Phase 13.2 in the implementation plan.
+The SDK throws a `DyrectedError` on non-2xx responses.
 
 ```ts
 import { DyrectedError } from '@dyrected/sdk'
@@ -321,15 +287,6 @@ export default async function BlogPost({ params }: { params: { slug: string } })
   if (!post) notFound()
 
   return <article>{post.title}</article>
-}
-
-// Statically pre-render all post slugs
-export async function generateStaticParams() {
-  const { docs } = await client.collection('posts').find({
-    where: { status: { equals: 'published' } },
-    limit: 100,
-  })
-  return docs.map(p => ({ slug: p.slug }))
 }
 ```
 
