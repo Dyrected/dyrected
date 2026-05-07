@@ -49,7 +49,7 @@ Dyrected Cloud is activated by providing a `DYRECTED_LICENSE_KEY`. It transforms
 
 | Feature | Core | Cloud |
 |---|---|---|
-| Rich Text Editor (Scribe) | ✅ | ✅ |
+| Rich Text Editor (Tiptap) | ✅ | ✅ |
 | Role-Based Access Control | ✅ | ✅ |
 | Custom Storage Adapters | ✅ | ✅ |
 | Localized Content | ✅ | ✅ |
