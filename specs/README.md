@@ -4,6 +4,7 @@ This directory contains the technical design documents and architectural decisio
 
 Refer to these files for detailed information on:
 - [Architecture](./dyrected-architecture.md)
+- [Implementation Plan](./implementation_plan.md)
 - [Backend Implementation](./dyrected-backend.md)
 - [SDK Reference](./dyrected-sdk.md)
 - [Product Vision](./dyrected-product.md)
