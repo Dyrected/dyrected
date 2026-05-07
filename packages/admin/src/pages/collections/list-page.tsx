@@ -56,8 +56,25 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       },
     ]
 
-    // Add fields from schema (up to 3 main ones for preview)
-    schema.fields.slice(0, 4).forEach((field: any) => {
+    const hasStatus = schema.fields.some((f: any) => f.name === "status")
+
+    if (hasStatus) {
+      cols.push({
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => {
+          const status = row.getValue("status")
+          return (
+            <Badge variant={status === "published" ? "default" : "secondary"}>
+              {status === "published" ? "Published" : "Draft"}
+            </Badge>
+          )
+        }
+      })
+    }
+
+    // Add fields from schema (up to 3 main ones for preview, excluding status if we just added it)
+    schema.fields.filter((f: any) => f.name !== "status").slice(0, 3).forEach((field: any) => {
       cols.push({
         accessorKey: field.name,
         header: field.label || field.name,
