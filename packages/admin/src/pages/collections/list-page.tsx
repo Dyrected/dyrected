@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu"
+import { RenderCell } from "../../components/ui/render-cell"
 
 interface CollectionListPageProps {
   slug: string
@@ -49,7 +50,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   // Fetch collection data
   const { data: response, isLoading } = useQuery({
     queryKey: ["collection", slug, page],
-    queryFn: () => client!.collection(slug).find({ page, limit: 20 }).exec(),
+    queryFn: () => client!.collection(slug).find({ page, limit: 20, depth: 1 }).exec(),
     enabled: !!client,
   })
 
@@ -109,16 +110,14 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       cols.push({
         accessorKey: field.name,
         header: field.label || field.name,
-        cell: ({ row }) => {
-          const value = row.getValue(field.name)
-          if (typeof value === "boolean") {
-            return <Badge variant={value ? "default" : "secondary"}>{value ? "Yes" : "No"}</Badge>
-          }
-          if (field.type === "image" && value) {
-            return <img src={client?.getBaseUrl() + "/media/" + value} className="h-8 w-8 rounded object-cover" alt="" />
-          }
-          return <span>{String(value ?? "-")}</span>
-        },
+        cell: ({ row }) => (
+          <RenderCell 
+            value={row.getValue(field.name)} 
+            field={field} 
+            client={client} 
+            schemas={schemas} 
+          />
+        ),
       })
     })
 
