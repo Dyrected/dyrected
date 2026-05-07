@@ -25,14 +25,29 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [ ] Build the `update` and `delete` handlers with basic response normalization.
 - [ ] Set up the initial `DatabaseAdapter` interface requirements.
 
-## Phase 2: Persistence & Storage (@dyrected/db-* & @dyrected/storage-*)
-Enable data saving and file management.
+## Phase 2: Persistence & Storage
 
-- [ ] Implement `@dyrected/db-sqlite` (using Drizzle) for local development.
-- [ ] Implement `@dyrected/db-postgres` (using Drizzle) for production.
-- [ ] Implement `@dyrected/storage-local` for local file hosting.
-- [ ] Implement `@dyrected/storage-s3` for cloud storage.
-- [ ] Integrate media handling as a special collection with `upload: true`.
+### Phase 2.1: SQLite Adapter (@dyrected/db-sqlite)
+- [ ] Set up Drizzle ORM with `better-sqlite3`.
+- [ ] Implement dynamic table mapping for Collections and Globals.
+- [ ] Build the `DatabaseAdapter` implementation for SQLite CRUD.
+- [ ] Support basic indexing and unique constraints.
+
+### Phase 2.2: Postgres Adapter (@dyrected/db-postgres)
+- [ ] Set up Drizzle ORM with `postgres.js` or `pg`.
+- [ ] Implement connection pooling and transaction support.
+- [ ] Build the `DatabaseAdapter` implementation for Postgres CRUD.
+- [ ] Implement full-text search support (GIN indexes).
+
+### Phase 2.3: Storage Engine Foundation
+- [ ] Define the `StorageAdapter` interface (Upload, Delete, GetURL).
+- [ ] Implement `@dyrected/storage-local` for local filesystem storage.
+- [ ] Create the `Media` system collection handler in the core engine.
+
+### Phase 2.4: Cloud Storage Adapters
+- [ ] Implement `@dyrected/storage-s3` (AWS SDK).
+- [ ] Implement `@dyrected/storage-cloudinary`.
+- [ ] Support image transformation logic (ImageMagick/Sharp integration).
 
 ## Phase 3: The SDK (@dyrected/sdk)
 The bridge between the CMS and the website.
