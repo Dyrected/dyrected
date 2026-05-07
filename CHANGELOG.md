@@ -5,6 +5,21 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Admin UI Data Management (Phase 5.4)**:
+    - Implemented a dynamic **Form Engine** using `react-hook-form` and `zod`.
+    - Automated form generation based on backend schemas with support for Text, Number, Boolean, Select, and Media fields.
+    - Built **EditEntryPage** for full CRUD management of any collection.
+    - Integrated a visual **MediaPicker** component for seamless asset selection within forms.
+- **Admin UI Media Library (Phase 5.3)**:
+    - Created a central **MediaPage** with an asset inspection grid.
+    - Built a robust file uploader with drag-and-drop support and real-time progress tracking.
+    - Added quick-action tools for asset deletion and external viewing.
+- **SDK Media Management**:
+    - Added core methods to `DyrectedClient`: `listMedia`, `uploadMedia`, and `deleteMedia`.
+    - Standardized media upload flow using `FormData` and dynamic header resolution.
+- **Project Configuration**:
+    - Established standardized `.env.example` templates for root, core, and framework adapters.
+    - Documented all required variables for storage (S3, B2, Cloudinary) and databases.
 - **Admin UI Foundation (@dyrected/admin)**:
     - Initialized Vite + React + TypeScript environment.
     - Integrated Tailwind CSS v3 and Shadcn UI with custom design system.
