@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { defineConfig, defineCollection, defineGlobal } from '../index';
+import { defineConfig, defineCollection, defineGlobal } from '../index.js';
+import { MockDatabaseAdapter } from './mocks.js';
 
 describe('Configuration Helpers', () => {
   it('should define a collection correctly', () => {
@@ -29,10 +30,10 @@ describe('Configuration Helpers', () => {
     const config = defineConfig({
       collections: [],
       globals: [],
-      db: { type: 'mock' },
+      db: new MockDatabaseAdapter(),
     });
 
     expect(config.collections).toEqual([]);
-    expect(config.db.type).toBe('mock');
+    expect(config.db).toBeInstanceOf(MockDatabaseAdapter);
   });
 });

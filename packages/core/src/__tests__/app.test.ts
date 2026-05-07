@@ -1,12 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { createDyrectedApp } from '../app';
-import { defineConfig } from '../index';
+import { createDyrectedApp } from '../app.js';
+import { defineConfig } from '../index.js';
+import { MockDatabaseAdapter } from './mocks.js';
 
 describe('App Shell', () => {
   const config = defineConfig({
     collections: [],
     globals: [],
-    db: { type: 'mock' },
+    db: new MockDatabaseAdapter(),
   });
 
   it('should respond to health check', async () => {

@@ -124,10 +124,22 @@ export interface GlobalConfig {
   };
 }
 
+export interface DatabaseAdapter {
+  find(args: { collection: string; where?: any; limit?: number; offset?: number }): Promise<any[]>;
+  findOne(args: { collection: string; id: string }): Promise<any>;
+  create(args: { collection: string; data: any }): Promise<any>;
+  update(args: { collection: string; id: string; data: any }): Promise<any>;
+  delete(args: { collection: string; id: string }): Promise<any>;
+  
+  // Globals
+  getGlobal(args: { slug: string }): Promise<any>;
+  updateGlobal(args: { slug: string; data: any }): Promise<any>;
+}
+
 export interface DyrectedConfig {
   collections: CollectionConfig[];
   globals: GlobalConfig[];
-  db: any; // Will be typed by DatabaseAdapter
+  db: DatabaseAdapter;
   storage?: any; // Will be typed by StorageAdapter
   email?: {
     provider: string;

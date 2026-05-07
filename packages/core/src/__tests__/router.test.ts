@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createDyrectedApp } from '../app.js';
 import { defineConfig, defineCollection, defineGlobal } from '../index.js';
+import { MockDatabaseAdapter } from './mocks.js';
 
 describe('Dynamic Router', () => {
   const config = defineConfig({
@@ -16,7 +17,7 @@ describe('Dynamic Router', () => {
         fields: [{ name: 'siteName', type: 'text' }],
       }),
     ],
-    db: { type: 'mock' },
+    db: new MockDatabaseAdapter(),
   });
 
   const app = createDyrectedApp(config);
@@ -36,7 +37,8 @@ describe('Dynamic Router', () => {
     const data = await res.json();
     
     expect(res.status).toBe(200);
-    expect(data.message).toBe('List posts');
+    expect(data.docs).toBeDefined();
+    expect(Array.isArray(data.docs)).toBe(true);
   });
 
   it('should register global routes', async () => {
@@ -44,7 +46,7 @@ describe('Dynamic Router', () => {
     const data = await res.json();
     
     expect(res.status).toBe(200);
-    expect(data.message).toBe('Get global settings');
+    expect(data).toEqual({}); // Empty object from MockDatabaseAdapter
   });
 
   it('should return 404 for non-existent collections', async () => {

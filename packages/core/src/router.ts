@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
-import { DyrectedContext } from './app';
-import { DyrectedConfig } from './types';
+import { DyrectedContext } from './app.js';
+import { DyrectedConfig } from './types/index.js';
+import { CollectionController } from './controllers/collection.controller.js';
+import { GlobalController } from './controllers/global.controller.js';
 
 /**
  * Register dynamic routes based on the provided configuration.
@@ -28,19 +30,21 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   // 2. Collection Routes
   for (const collection of config.collections) {
     const path = `/api/collections/${collection.slug}`;
+    const controller = new CollectionController(collection);
     
-    app.get(path, (c) => c.json({ message: `List ${collection.slug}` }));
-    app.post(path, (c) => c.json({ message: `Create ${collection.slug}` }));
-    app.get(`${path}/:id`, (c) => c.json({ message: `Get ${collection.slug} ${c.req.param('id')}` }));
-    app.patch(`${path}/:id`, (c) => c.json({ message: `Update ${collection.slug} ${c.req.param('id')}` }));
-    app.delete(`${path}/:id`, (c) => c.json({ message: `Delete ${collection.slug} ${c.req.param('id')}` }));
+    app.get(path, (c) => controller.find(c));
+    app.post(path, (c) => controller.create(c));
+    app.get(`${path}/:id`, (c) => controller.findOne(c));
+    app.patch(`${path}/:id`, (c) => controller.update(c));
+    app.delete(`${path}/:id`, (c) => controller.delete(c));
   }
 
   // 3. Global Routes
   for (const global of config.globals) {
     const path = `/api/globals/${global.slug}`;
+    const controller = new GlobalController(global);
     
-    app.get(path, (c) => c.json({ message: `Get global ${global.slug}` }));
-    app.patch(path, (c) => c.json({ message: `Update global ${global.slug}` }));
+    app.get(path, (c) => controller.get(c));
+    app.patch(path, (c) => controller.update(c));
   }
 }
