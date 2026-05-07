@@ -50,46 +50,70 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [ ] Support image transformation logic (ImageMagick/Sharp integration).
 
 ## Phase 3: The SDK (@dyrected/sdk)
-The bridge between the CMS and the website.
 
-- [ ] Implement the framework-agnostic `createClient`.
-- [ ] Build the query builder logic for `find`, `findOne`, and `where` clauses.
-- [ ] Implement the authentication client (login, logout, refresh).
-- [ ] Create the CLI command `generate:types` to produce TS definitions from the config.
+### Phase 3.1: Client Core & Transport
+- [ ] Implement framework-agnostic `createClient` using `fetch`.
+- [ ] Build the base request/response interceptors for API keys and errors.
+- [ ] Implement generic result types for Collections and Globals.
 
-## Phase 4: Framework Adapters (@dyrected/next & @dyrected/nuxt)
-Embedding Dyrected into the modern stack.
+### Phase 3.2: Query Builder API
+- [ ] Implement the fluent query builder (`.find().where().sort()`).
+- [ ] Add support for deep relationship population.
+- [ ] Implement the pagination helper logic.
 
-- [ ] **Next.js**: 
-    - Implement the catch-all route handler.
-    - Create the server-side direct client (`getDyrectedClient`).
-- [ ] **Nuxt**:
-    - Build the Nuxt module to auto-register Nitro routes.
-    - Create auto-imported composables (`useDyrectedServer`, `useDyrectedClient`).
+### Phase 3.3: CLI & Type Generation
+- [ ] Build the CLI entry point in `packages/cli`.
+- [ ] Implement the `generate:types` command that fetches schemas from the API.
+- [ ] Build the code generator for TypeScript interfaces.
+
+## Phase 4: Framework Adapters
+
+### Phase 4.1: Next.js Adapter (@dyrected/next)
+- [ ] Implement `dyrectedNextHandler` for Route Handlers.
+- [ ] Create the server-only direct client for RSC (`getDyrectedClient`).
+- [ ] Build the Image component adapter for `next/image`.
+
+### Phase 4.2: Nuxt Adapter (@dyrected/nuxt)
+- [ ] Build the Nuxt module entry point.
+- [ ] Implement the Nitro server middleware for API mounting.
+- [ ] Create `useDyrected` and `useDyrectedDoc` composables.
 
 ## Phase 5: The Admin UI (@dyrected/admin)
-The user-facing editorial dashboard.
 
-- [ ] Set up the React/Shadcn/Tailwind environment.
-- [ ] Implement the dynamic sidebar and list views.
-- [ ] Build the auto-generated forms for all field types.
-- [ ] Integrate the **Scribe** editor for rich text fields.
-- [ ] Implement the login/auth screens.
+### Phase 5.1: Shell & Navigation
+- [ ] Set up the React application shell with Tailwind and Shadcn.
+- [ ] Build the dynamic sidebar that populates from the schema API.
+- [ ] Implement the Auth wall (Login/Logout).
 
-## Phase 6: Cloud & Platform (apps/cloud)
-The managed multi-tenant layer.
+### Phase 5.2: Data Views
+- [ ] Implement the generic `DataTable` component for collection lists.
+- [ ] Build filtering and sorting UI components.
+- [ ] Implement the Global edit view.
 
-- [ ] Implement the license key validation middleware.
-- [ ] Build the Workspace and Site management models.
-- [ ] Implement the database-backed schema provider (Visual Builder).
-- [ ] Set up the private deployment pipeline for the Cloud Docker image.
+### Phase 5.3: Form Engine & Scribe
+- [ ] Build the dynamic form builder using `react-hook-form` and `zod`.
+- [ ] Integrate **Scribe** as the default rich text editor.
+- [ ] Implement relationship pickers and media library integration.
+
+## Phase 6: Cloud & Platform
+
+### Phase 6.1: Multi-tenant Architecture
+- [ ] Implement the `licenseKey` gate in the core engine.
+- [ ] Build the `SiteResolver` for host-based tenant identification.
+- [ ] Implement the platform-wide Auth provider (OAuth/GitHub).
+
+### Phase 6.2: Visual Builder
+- [ ] Build a UI for defining collections and fields (GUI -> Config JSON).
+- [ ] Implement the dynamic migration runner for schema changes.
+- [ ] Build the dashboard for usage analytics and site management.
 
 ---
 
 ## Verification Plan
 
 ### Automated Testing
-- [ ] Unit tests for the core engine routing.
+- [x] Unit tests for core engine configuration.
+- [x] Integration tests for core engine routing.
 - [ ] Integration tests for each DB adapter using a test suite.
 - [ ] E2E tests for the Next.js/Nuxt adapters using Playwright.
 
