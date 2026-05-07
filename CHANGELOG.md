@@ -13,6 +13,17 @@ All notable changes to the Dyrected project will be documented in this file.
     - AWS SDK v3 integration.
     - Multipart upload support via `@aws-sdk/lib-storage`.
     - Compatible with DigitalOcean Spaces, Cloudflare R2, and Backblaze B2.
+- **Backblaze B2 Storage Adapter (@dyrected/storage-b2)**:
+    - Native B2 API integration for high-performance uploads.
+    - Optimized for large files and cost-effective object storage.
+- **Next.js Adapter (@dyrected/next)**:
+    - `dyrectedNextHandler` for Hono-to-Next API bridging.
+    - `getDyrectedClient` for Server Component data fetching.
+    - `DyrectedImage` component for optimized media rendering.
+- **Nuxt Adapter (@dyrected/nuxt)**:
+    - Nitro server handler for seamless API mounting.
+    - `useDyrected` composable for client-side data access.
+    - `DyrectedImage` Vue component for media handling.
 - **Cloudinary Storage Adapter (@dyrected/storage-cloudinary)**:
     - Native Cloudinary SDK integration.
     - Automatic metadata extraction (width, height, resource type).

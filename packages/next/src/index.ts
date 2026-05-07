@@ -37,5 +37,5 @@ export function getDyrectedClient(): DyrectedClient {
   });
 }
 
-export * from './components/DyrectedImage.js';
+export * from './components/DyrectedMedia.js';
 export * from '@dyrected/sdk';

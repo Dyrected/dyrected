@@ -1,0 +1,28 @@
+{
+  "name": "@dyrected/nuxt",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/module.mjs",
+  "types": "./dist/module.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "nuxt-module-build build",
+    "dev": "nuxt-module-build build --watch"
+  },
+  "dependencies": {
+    "@dyrected/core": "workspace:*",
+    "@dyrected/sdk": "workspace:*",
+    "@nuxt/kit": "^3.11.2",
+    "h3": "2.0.1-rc.22"
+  },
+  "devDependencies": {
+    "@nuxt/module-builder": "^0.5.5",
+    "@nuxt/schema": "^3.11.2",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^19.2.3",
+    "nuxt": "^3.11.2",
+    "vue": "^3.5.34"
+  }
+}

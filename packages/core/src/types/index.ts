@@ -151,11 +151,14 @@ export interface DatabaseAdapter {
 
 export interface FileData {
   filename: string;
-  filesize: number;
+  filesize?: number;
   mimeType: string;
   url: string;
   width?: number;
   height?: number;
+  type?: 'upload' | 'external';
+  provider?: string;
+  provider_metadata?: any;
   [key: string]: any;
 }
 

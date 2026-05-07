@@ -48,18 +48,24 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 ### Phase 2.4: Storage Engine Foundation
 - [x] Define the `StorageAdapter` interface (Upload, Delete, GetURL).
 - [x] Implement `@dyrected/storage-local` for local filesystem storage.
-- [x] Create the `Media` system collection handler in the core engine.
+- [x] **System Media Collection**: Integrated support for file uploads and metadata.
+- [ ] **Document Support**: Explicit handling for PDF, ZIP, and other non-image formats.
 
 ### Phase 2.5: Cloud Storage Adapters
 - [x] Implement `@dyrected/storage-s3` (AWS SDK v3).
 - [x] Implement `@dyrected/storage-cloudinary` (Cloudinary SDK).
-- [ ] Implement `@dyrected/storage-b2` (Optional).
+- [x] Implement `@dyrected/storage-b2` (Native Backblaze API).
 
 ### Phase 2.6: Relationship Population (Depth)
 - [x] Implement the `PopulationService` in `@dyrected/core`.
 - [x] Build recursive relationship resolver with circular dependency protection.
 - [x] Add `depth` support to `find` and `findOne` in the core engine.
 - [x] Support `?depth=N` query parameter in dynamic routes.
+
+### Phase 2.7: Hybrid Media Strategy [NEW]
+- [ ] **External Media Support**: Support for YouTube, Vimeo, and external URLs in the Media collection.
+- [ ] **Universal Media Type**: Extend the Media interface to distinguish between `upload` and `remote`.
+- [ ] **Metadata Fetching**: Optional helper to fetch YouTube thumbnails/titles.
 
 ## Phase 3: The SDK (@dyrected/sdk) [IN PROGRESS]
 
@@ -78,16 +84,16 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] Implement the `generate:types` command that fetches schemas from the API.
 - [x] Build the code generator for TypeScript interfaces.
 
-## Phase 4: Framework Adapters
+## Phase 4: Framework Adapters [IN PROGRESS]
 
 ### Phase 4.1: Next.js Adapter (@dyrected/next)
-- [/] Implement `dyrectedNextHandler` for Route Handlers.
-- [ ] Create the server-only direct client for RSC (`getDyrectedClient`).
-- [ ] Build the Image component adapter for `next/image`.
+- [x] Implement `dyrectedNextHandler` for Route Handlers.
+- [x] Create the server-only direct client for RSC (`getDyrectedClient`).
+- [ ] **Universal Media Component**: Implement `DyrectedMedia` with support for Images, Videos (YouTube), and Documents.
 
 ### Phase 4.2: Nuxt Adapter (@dyrected/nuxt)
-- [ ] Build the Nuxt module entry point.
-- [ ] Implement the Nitro server middleware for API mounting.
+- [/] Build the Nuxt module entry point and Nitro handler.
+- [ ] **Universal Media Component**: Implement `DyrectedMedia` (Vue) with support for hybrid media types.
 - [ ] Create `useDyrected` and `useDyrectedDoc` composables.
 
 ## Phase 5: The Admin UI (@dyrected/admin)
@@ -118,18 +124,3 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [ ] Build a UI for defining collections and fields (GUI -> Config JSON).
 - [ ] Implement the dynamic migration runner for schema changes.
 - [ ] Build the dashboard for usage analytics and site management.
-
----
-
-## Verification Plan
-
-### Automated Testing
-- [x] Unit tests for core engine configuration.
-- [x] Integration tests for core engine routing.
-- [ ] Integration tests for each DB adapter using a test suite.
-- [ ] E2E tests for the Next.js/Nuxt adapters using Playwright.
-
-### Manual Verification
-- [x] Validation of the "Type-Safe Cycle" (Config -> CLI -> SDK).
-- [x] Testing media uploads across all storage adapters.
-- [ ] Cross-browser testing of the Admin UI.
