@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
+import { Link } from "react-router-dom"
 import { useDyrected } from "@/providers/dyrected-provider"
 import { DataTable } from "@/components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
@@ -107,10 +108,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
                 Copy ID
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="flex gap-2">
-                <Pencil className="h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
+              <Link to={`/collections/${slug}/edit/${item.id}`}>
+                <DropdownMenuItem className="flex gap-2">
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuItem className="flex gap-2 text-destructive">
                 <Trash2 className="h-4 w-4" />
                 Delete
@@ -145,10 +148,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             Manage your {schema.slug} entries and content.
           </p>
         </div>
-        <Button className="flex gap-2">
-          <Plus className="h-4 w-4" />
-          Create Entry
-        </Button>
+        <Link to={`/collections/${slug}/new`}>
+          <Button className="flex gap-2">
+            <Plus className="h-4 w-4" />
+            Create Entry
+          </Button>
+        </Link>
       </div>
 
       <DataTable 

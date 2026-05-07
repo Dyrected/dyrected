@@ -4,6 +4,8 @@ import { QueryProvider } from "./providers/query-provider";
 import { AuthGate } from "./components/auth/auth-gate";
 import { AdminShell } from "./components/layout/admin-shell";
 import { CollectionListPage } from "./pages/collections/list-page";
+import { EditEntryPage } from "./pages/collections/edit-page";
+import { MediaPage } from "./pages/media/media-page";
 
 function Dashboard() {
   return (
@@ -43,8 +45,10 @@ function App() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/collections/:slug" element={<CollectionRoute />} />
+                <Route path="/collections/:slug/new" element={<EditEntryPage />} />
+                <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
                 <Route path="/globals/:slug" element={<div>Global Editor (Coming Soon)</div>} />
-                <Route path="/media" element={<div>Media Library (Coming Soon)</div>} />
+                <Route path="/media" element={<MediaPage />} />
               </Routes>
             </AdminShell>
           </BrowserRouter>

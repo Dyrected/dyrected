@@ -100,6 +100,31 @@ export class DyrectedClient {
     });
   }
 
+  async listMedia(args: QueryArgs = {}): Promise<PaginatedResult<Media>> {
+    const query = qs.stringify(args, { addQueryPrefix: true });
+    return this.request(`/api/media${query}`);
+  }
+
+  async uploadMedia(file: File): Promise<Media> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Remove Content-Type header to let the browser set the boundary
+    const { 'Content-Type': _, ...headers } = this.headers;
+
+    return this.request('/api/media', {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  }
+
+  async deleteMedia(id: string): Promise<{ message: string }> {
+    return this.request(`/api/media/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   private async request(path: string, init?: RequestInit): Promise<any> {
     const url = `${this.baseUrl}${path}`;
     const res = await this.fetch(url, {
