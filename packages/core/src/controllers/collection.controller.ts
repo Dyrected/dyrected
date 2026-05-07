@@ -11,7 +11,7 @@ export class CollectionController {
     const db = config.db;
     const limit = Number(c.req.query('limit')) || 10;
     const page = Number(c.req.query('page')) || 1;
-    const depth = Number(c.req.query('depth')) || 0;
+    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
 
     let result = await db.find({
       collection: this.collection.slug,
@@ -31,7 +31,7 @@ export class CollectionController {
     const config = c.get('config');
     const db = config.db;
     const id = c.req.param('id');
-    const depth = Number(c.req.query('depth')) || 0;
+    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
 
     if (!id) return c.json({ message: 'Missing ID' }, 400);
     const doc = await db.findOne({ collection: this.collection.slug, id });

@@ -9,7 +9,7 @@ export class GlobalController {
   async get(c: Context<DyrectedContext>) {
     const config = c.get('config');
     const db = config.db;
-    const depth = Number(c.req.query('depth')) || 0;
+    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
     const data = await db.getGlobal({ slug: this.global.slug });
 
     if (depth > 0 && data) {

@@ -1,10 +1,10 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Link, useLocation } from "react-router-dom"
-import { 
-  LayoutDashboard, 
-  Settings, 
-  Database, 
+import {
+  LayoutDashboard,
+  Settings,
+  Database,
   Image as ImageIcon,
   LogOut
 } from "lucide-react"
@@ -43,14 +43,14 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <Sidebar>
-          <SidebarHeader className="border-b px-4 py-3 bg-white/50 backdrop-blur-sm">
+          {!isEmbedded && <SidebarHeader className="border-b px-4 py-3 bg-white/50 backdrop-blur-sm">
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
                 <LayoutDashboard className="h-4 w-4 text-white" />
               </div>
               <h1 className="text-lg font-bold tracking-tight text-foreground">Dyrected</h1>
             </div>
-          </SidebarHeader>
+          </SidebarHeader>}
           <SidebarContent className="px-2 py-4">
             <SidebarGroup>
               <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Content</SidebarGroupLabel>
@@ -82,12 +82,12 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
                 <SidebarMenu>
                   {isLoading ? (
                     <div className="px-4 py-2 text-xs text-muted-foreground italic">Loading...</div>
-                  ) : schemas?.collections?.map((col: any) => (
+                  ) : schemas?.collections?.filter(col => !col?.admin?.hidden)?.map((col: any) => (
                     <SidebarMenuItem key={col.slug}>
                       <SidebarMenuButton asChild tooltip={col.label} isActive={location.pathname === `/collections/${col.slug}`} className="rounded-lg">
                         <Link to={`/collections/${col.slug}`}>
                           <Database className="h-4 w-4" />
-                          <span>{col.label}</span>
+                          <span>{col.labels?.plural}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -116,7 +116,7 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
           </SidebarContent>
           {!isEmbedded && (
             <SidebarFooter className="border-t p-4 bg-muted/30">
-              <button 
+              <button
                 onClick={logout}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
@@ -134,10 +134,10 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
                 <div className="h-4 w-px bg-border/60" />
                 <div>
                   <h2 className="text-xl font-bold tracking-tight text-foreground">
-                    {location.pathname === '/' ? 'Dashboard' : 
-                     location.pathname.startsWith('/collections/') ? 'Collection' :
-                     location.pathname.startsWith('/globals/') ? 'Global Setting' :
-                     location.pathname === '/media' ? 'Media Library' : 'Admin'}
+                    {location.pathname === '/' ? 'Dashboard' :
+                      location.pathname.startsWith('/collections/') ? 'Collection' :
+                        location.pathname.startsWith('/globals/') ? 'Global Setting' :
+                          location.pathname === '/media' ? 'Media Library' : 'Admin'}
                   </h2>
                   <p className="text-xs text-muted-foreground">Manage your site content and settings.</p>
                 </div>
