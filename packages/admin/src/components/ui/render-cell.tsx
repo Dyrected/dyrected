@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Badge } from "./badge"
 import { Calendar } from "lucide-react"
 

@@ -40,6 +40,7 @@ export interface FieldSchema {
   label?: string
   type: "text" | "number" | "boolean" | "select" | "textarea" | "image" | "richText" | "relationship" | "email" | "url" | "date" | "multiSelect" | "json" | "object" | "array" | "blocks"
   relationTo?: string
+  hasMany?: boolean
   required?: boolean
   options?: { label: string; value: string }[]
   defaultValue?: any
@@ -328,7 +329,12 @@ function renderField(schema: FieldSchema, field: any) {
     case "date":
       return <DatePicker value={field.value} onChange={field.onChange} />
     case "relationship":
-      return <RelationshipPicker value={field.value} onChange={field.onChange} relationTo={schema.relationTo!} />
+      return <RelationshipPicker 
+        value={field.value} 
+        onChange={field.onChange} 
+        relationTo={schema.relationTo!} 
+        multiple={schema.hasMany}
+      />
     case "number":
       return <Input type="number" {...field} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} />
     case "email":

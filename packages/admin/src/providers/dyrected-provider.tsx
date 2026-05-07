@@ -11,6 +11,7 @@ interface DyrectedContextType {
   setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  schemas: { collections: any[]; globals: any[] } | null;
 }
 
 const DyrectedContext = createContext<DyrectedContextType | undefined>(undefined);
@@ -32,6 +33,7 @@ export function DyrectedProvider({
   const [apiKey, setApiKey] = useState<string | null>(() => initialApiKey || localStorage.getItem("dyrected_key"));
   const [siteId, setSiteId] = useState<string | null>(() => initialSiteId || localStorage.getItem("dyrected_site_id"));
   const [client, setClient] = useState<DyrectedClient | null>(null);
+  const [schemas, setSchemas] = useState<{ collections: any[]; globals: any[] } | null>(null);
 
   useEffect(() => {
     if (baseUrl) {
@@ -41,6 +43,12 @@ export function DyrectedProvider({
         siteId: siteId || undefined,
       });
       setClient(newClient);
+      
+      // Fetch schemas
+      newClient.getSchemas().then(setSchemas).catch(err => {
+        console.error("Failed to fetch schemas:", err);
+        setSchemas(null);
+      });
     }
   }, [baseUrl, apiKey, siteId]);
 
@@ -71,7 +79,8 @@ export function DyrectedProvider({
       config: { baseUrl, apiKey, siteId },
       setAuth,
       logout,
-      isAuthenticated: !!baseUrl && !!apiKey
+      isAuthenticated: !!baseUrl && !!apiKey,
+      schemas
     }}>
       {children}
     </DyrectedContext.Provider>

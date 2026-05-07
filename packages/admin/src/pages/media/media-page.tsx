@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
+import { cn } from "../../lib/utils"
 import {
   Card,
   CardContent,
@@ -23,16 +24,26 @@ import {
   FileIcon, 
   Trash2, 
   ExternalLink,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Copy,
+  Info
 } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle,
+} from "../../components/ui/sheet"
+import { Separator } from "../../components/ui/separator"
 
 export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
+  const [selectedItem, setSelectedItem] = React.useState<any>(null)
 
   const { data: mediaResponse, isLoading } = useQuery({
     queryKey: ["media", collectionSlug, search],
@@ -47,8 +58,31 @@ export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
     }
   })
 
+  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      setIsUploadOpen(true)
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop,
+    noClick: true, // Only trigger on drop, not on background click
+  })
+
   return (
-    <div className="space-y-8 animate-in">
+    <div {...getRootProps()} className="min-h-full space-y-8 animate-in relative">
+      <input {...getInputProps()} />
+      
+      {isDragActive && (
+        <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-[2px] border-4 border-dashed border-primary rounded-2xl flex items-center justify-center pointer-events-none">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Upload className="h-8 w-8 text-primary animate-bounce" />
+            </div>
+            <p className="text-xl font-bold">Drop to upload assets</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-end justify-between border-b border-border/50 pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -116,21 +150,41 @@ export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
                 item={item} 
                 baseUrl={client!.getBaseUrl()} 
                 onDelete={() => deleteMutation.mutate(item.id)}
+                onClick={() => setSelectedItem(item)}
+                isSelected={selectedItem?.id === item.id}
               />
             ))}
           </div>
         )}
       </ScrollArea>
+
+      <MediaSidebar 
+        item={selectedItem} 
+        onClose={() => setSelectedItem(null)} 
+        baseUrl={client!.getBaseUrl()}
+      />
     </div>
   )
 }
 
-function MediaCard({ item, baseUrl, onDelete }: { item: any, baseUrl: string, onDelete: () => void }) {
+function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: { 
+  item: any, 
+  baseUrl: string, 
+  onDelete: () => void,
+  onClick: () => void,
+  isSelected: boolean
+}) {
   const isImage = item.mimeType?.startsWith("image/")
   const url = item.url ? (item.url.startsWith('http') ? item.url : `${baseUrl}${item.url}`) : `${baseUrl}/uploads/${item.filename}`
 
   return (
-    <Card className="overflow-hidden group relative border-border/40 bg-white shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl">
+    <Card 
+      className={cn(
+        "overflow-hidden group relative border-border/40 bg-white shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl cursor-pointer",
+        isSelected && "ring-2 ring-primary ring-offset-2 shadow-lg scale-[0.98]"
+      )}
+      onClick={onClick}
+    >
       <CardHeader className="p-0 border-b border-border/10">
         <AspectRatio ratio={1 / 1} className="bg-muted/30 overflow-hidden">
           {isImage ? (
@@ -159,27 +213,113 @@ function MediaCard({ item, baseUrl, onDelete }: { item: any, baseUrl: string, on
           </p>
         </div>
       </CardContent>
-      <div className="absolute inset-0 bg-primary/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
-        <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full shadow-lg bg-white hover:bg-white/90 text-primary transition-transform duration-300 hover:scale-110" asChild>
-          <a href={url} target="_blank" rel="noreferrer">
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </Button>
+      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button 
           size="icon" 
           variant="destructive" 
-          className="h-9 w-9 rounded-full shadow-lg transition-transform duration-300 hover:scale-110"
+          className="h-7 w-7 rounded-lg shadow-lg"
           onClick={(e) => {
-            e.preventDefault()
+            e.stopPropagation()
             if (confirm("Are you sure you want to delete this file?")) {
               onDelete()
             }
           }}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
     </Card>
+  )
+}
+
+function MediaSidebar({ item, onClose, baseUrl }: { item: any, onClose: () => void, baseUrl: string }) {
+  if (!item) return null
+
+  const isImage = item.mimeType?.startsWith("image/")
+  const url = item.url ? (item.url.startsWith('http') ? item.url : `${baseUrl}${item.url}`) : `${baseUrl}/uploads/${item.filename}`
+
+  return (
+    <Sheet open={!!item} onOpenChange={onClose}>
+      <SheetContent className="sm:max-w-md p-0 flex flex-col h-full border-l border-border/40">
+        <SheetHeader className="p-6 border-b border-border/40">
+          <SheetTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-primary" />
+            File Details
+          </SheetTitle>
+        </SheetHeader>
+        
+        <ScrollArea className="flex-1">
+          <div className="p-6 space-y-8">
+            <div className="rounded-xl overflow-hidden border border-border/40 bg-muted/20">
+              <AspectRatio ratio={16 / 9}>
+                {isImage ? (
+                  <img src={url} alt={item.filename} className="object-contain w-full h-full bg-checkered" />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <FileIcon className="h-16 w-16 text-muted-foreground/30" />
+                  </div>
+                )}
+              </AspectRatio>
+            </div>
+
+            <div className="space-y-6">
+              <DetailItem label="Filename" value={item.filename} />
+              <DetailItem label="File ID" value={item.id} copyable />
+              <DetailItem label="URL" value={url} copyable />
+              <div className="grid grid-cols-2 gap-4">
+                <DetailItem label="Size" value={`${((item.filesize || item.size || 0) / 1024).toFixed(1)} KB`} />
+                <DetailItem label="Type" value={item.mimeType || "Unknown"} />
+              </div>
+              <DetailItem label="Created At" value={new Date(item.createdAt).toLocaleString()} />
+            </div>
+
+            {isImage && (item.width || item.height) && (
+              <div className="space-y-4">
+                <Separator className="bg-border/40" />
+                <div className="grid grid-cols-2 gap-4">
+                  <DetailItem label="Width" value={`${item.width}px`} />
+                  <DetailItem label="Height" value={`${item.height}px`} />
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+        
+        <div className="p-6 border-t border-border/40 bg-muted/5">
+          <Button className="w-full h-12 rounded-xl font-bold gap-2" variant="outline" asChild>
+            <a href={url} target="_blank" rel="noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              Open Original
+            </a>
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function DetailItem({ label, value, copyable }: { 
+  label: string, 
+  value: string, 
+  copyable?: boolean
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">{label}</label>
+      <div className="flex items-center gap-2 group">
+        <p className="text-sm font-medium text-foreground truncate flex-1">{value}</p>
+        {copyable && (
+          <Button 
+            size="icon" 
+            variant="ghost" 
+            className="h-7 w-7 text-muted-foreground hover:text-primary transition-colors"
+            onClick={() => navigator.clipboard.writeText(value)}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
+    </div>
   )
 }
 

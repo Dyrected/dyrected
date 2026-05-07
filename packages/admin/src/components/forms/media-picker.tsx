@@ -29,8 +29,8 @@ export function MediaPicker({ value, onChange, label, variant = "default" }: Med
     enabled: isOpen && !!client,
   })
 
-  const selectedMedia = media?.find(m => m.filename === value)
-  const previewUrl = selectedMedia ? `${client?.getBaseUrl()}/media/${selectedMedia.filename}` : null
+  const selectedMedia = media?.find(m => m.id === value)
+  const previewUrl = selectedMedia?.url || (selectedMedia ? `${client?.getBaseUrl()}/media/${selectedMedia.filename}` : null)
 
   const isIcon = variant === "icon"
 
@@ -81,16 +81,16 @@ export function MediaPicker({ value, onChange, label, variant = "default" }: Med
                     <button
                       key={item.id}
                       onClick={() => {
-                        onChange(item.filename)
+                        onChange(item.id)
                         setIsOpen(false)
                       }}
                       className={`relative group rounded-md overflow-hidden border aspect-square transition-all hover:ring-2 hover:ring-primary ${
-                        value === item.filename ? "ring-2 ring-primary" : ""
+                        value === item.id ? "ring-2 ring-primary" : ""
                       }`}
                     >
                       {item.mimeType?.startsWith("image/") ? (
                         <img 
-                          src={`${client?.getBaseUrl()}/media/${item.filename}`} 
+                          src={item.url || `${client?.getBaseUrl()}/media/${item.filename}`} 
                           alt="" 
                           className="object-cover w-full h-full" 
                         />
