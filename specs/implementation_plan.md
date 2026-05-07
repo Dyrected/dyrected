@@ -161,11 +161,11 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 
 #### Phase 5.5.3: Global Settings & Publishing Status
 
-- [ ] Build the `GlobalEditorPage` for managing singleton schemas.
-- [ ] Route `/globals/:slug` to the new `GlobalEditorPage`.
-- [ ] Implement a `PublishingSidebar` in the `EditEntryPage`.
-- [ ] Add toggle support for "Draft" vs "Published" if the `status` field is present.
-- [ ] Implement UI indicators in the `CollectionListPage` for entry status.
+- [x] Build the `GlobalEditorPage` for managing singleton schemas.
+- [x] Route `/globals/:slug` to the new `GlobalEditorPage`.
+- [x] Implement a `PublishingSidebar` in the `EditEntryPage`.
+- [x] Add toggle support for "Draft" vs "Published" if the `status` field is present.
+- [x] Implement UI indicators in the `CollectionListPage` for entry status.
 
 ## Phase 6: Architectural Alignment & Fixes [NEW]
 

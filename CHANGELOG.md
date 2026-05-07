@@ -5,6 +5,12 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Global Settings Editor**: Added `GlobalEditorPage` (`/globals/:slug`) for managing singleton data structures like site settings and navigation menus.
+- **Publishing Status Workflow**:
+  - Transformed the Collection Edit Page into a two-column layout featuring a new **Publishing Sidebar**.
+  - Sidebar surfaces essential document metadata (ID, Creation Date, Last Updated).
+  - Automatically renders Status Badges for schema models that incorporate a `status` field.
+  - Dynamically injects a Status column and badge directly into the `CollectionListPage` data table.
 - **Admin UI Content Experience (Phase 5.5)**:
     - Added a robust **Block Builder Engine** with drag-and-drop (`@dnd-kit`) to allow page-builder-like functionality.
     - Implemented a "Block Selector" to insert complex, deeply nested blocks dynamically.
