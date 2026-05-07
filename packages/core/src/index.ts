@@ -23,3 +23,5 @@ export function defineConfig(config: DyrectedConfig): DyrectedConfig {
 
 export * from './app';
 export * from './types';
+export * from './services/population.service';
+export * from './services/media.service';

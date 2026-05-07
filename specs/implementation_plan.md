@@ -49,7 +49,7 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] Define the `StorageAdapter` interface (Upload, Delete, GetURL).
 - [x] Implement `@dyrected/storage-local` for local filesystem storage.
 - [x] **System Media Collection**: Integrated support for file uploads and metadata.
-- [ ] **Document Support**: Explicit handling for PDF, ZIP, and other non-image formats.
+- [x] **Document Support**: Explicit handling for PDF, ZIP, and other non-image formats.
 
 ### Phase 2.5: Cloud Storage Adapters
 - [x] Implement `@dyrected/storage-s3` (AWS SDK v3).
@@ -63,9 +63,9 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] Support `?depth=N` query parameter in dynamic routes.
 
 ### Phase 2.7: Hybrid Media Strategy [NEW]
-- [ ] **External Media Support**: Support for YouTube, Vimeo, and external URLs in the Media collection.
-- [ ] **Universal Media Type**: Extend the Media interface to distinguish between `upload` and `remote`.
-- [ ] **Metadata Fetching**: Optional helper to fetch YouTube thumbnails/titles.
+- [x] **External Media Support**: Support for YouTube, Vimeo, and external URLs in the Media collection.
+- [x] **Universal Media Type**: Extend the Media interface to distinguish between `upload` and `remote`.
+- [x] **Metadata Fetching**: Optional helper to fetch YouTube thumbnails/titles.
 
 ## Phase 3: The SDK (@dyrected/sdk) [IN PROGRESS]
 
@@ -89,29 +89,44 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 ### Phase 4.1: Next.js Adapter (@dyrected/next)
 - [x] Implement `dyrectedNextHandler` for Route Handlers.
 - [x] Create the server-only direct client for RSC (`getDyrectedClient`).
-- [ ] **Universal Media Component**: Implement `DyrectedMedia` with support for Images, Videos (YouTube), and Documents.
+- [x] **Universal Media Component**: Implement `DyrectedMedia` with support for Images, Videos (YouTube), and Documents.
 
 ### Phase 4.2: Nuxt Adapter (@dyrected/nuxt)
-- [/] Build the Nuxt module entry point and Nitro handler.
-- [ ] **Universal Media Component**: Implement `DyrectedMedia` (Vue) with support for hybrid media types.
-- [ ] Create `useDyrected` and `useDyrectedDoc` composables.
+- [x] Build the Nuxt module entry point and Nitro handler.
+- [x] **Universal Media Component**: Implement `DyrectedMedia` (Vue) with support for hybrid media types.
+- [x] Create `useDyrected` and `useDyrectedDoc` composables.
 
 ## Phase 5: The Admin UI (@dyrected/admin)
 
-### Phase 5.1: Shell & Navigation
-- [ ] Set up the React application shell with Tailwind and Shadcn.
-- [ ] Build the dynamic sidebar that populates from the schema API.
-- [ ] Implement the Auth wall (Login/Logout).
+### Phase 5.1: Foundation & Auth
+- [x] Set up the React application shell with Tailwind and Shadcn/UI.
+- [x] **Dynamic Navigation**: Build the sidebar that populates from the `/api/dyrected/schemas` endpoint.
+- [x] Implement the Auth wall (Login/Logout) and Site API Key state management.
+- [x] Set up the React Query (TanStack Query) provider for efficient data fetching.
 
-### Phase 5.2: Data Views
-- [ ] Implement the generic `DataTable` component for collection lists.
-- [ ] Build filtering and sorting UI components.
-- [ ] Implement the Global edit view.
+### Phase 5.2: Data Management (List Views)
+- [ ] Implement the **Universal DataTable** using TanStack Table.
+- [ ] Build the dynamic filtering UI (mapping to the SDK's `.where()` logic).
+- [ ] Implement server-side pagination and multi-column sorting.
+- [ ] Create the "Bulk Actions" framework (Delete, Export).
 
-### Phase 5.3: Form Engine & Scribe
-- [ ] Build the dynamic form builder using `react-hook-form` and `zod`.
-- [ ] Integrate **Scribe** as the default rich text editor.
-- [ ] Implement relationship pickers and media library integration.
+### Phase 5.3: The Media Library
+- [ ] Build the **Media Grid** view with lazy-loaded thumbnails.
+- [ ] Implement the **Hybrid Uploader**: Support for drag-and-drop files and Remote URL inputs.
+- [ ] Build the Media Detail sidebar for editing metadata (alt text, titles).
+- [ ] Integrate with `MediaService` to auto-populate metadata for YouTube/Vimeo.
+
+### Phase 5.4: Dynamic Form Engine (Edit Views)
+- [ ] Build the recursive **Field Renderer** for standard field types (text, number, select, boolean).
+- [ ] Implement the **Relationship Picker**: Searchable modal for selecting related entries.
+- [ ] Build the **JSON Editor** field for raw data manipulation.
+- [ ] Implement real-time validation using `react-hook-form` and `zod`.
+
+### Phase 5.5: Content Experience (Scribe & Blocks)
+- [ ] Integrate **Scribe** (or TipTap) as the primary rich text editor.
+- [ ] Build the **Block Builder** UI: Draggable sections for the `blocks` field type.
+- [ ] Implement the **Global Settings** editor for singleton configurations.
+- [ ] Add "Draft vs Published" status indicators if supported by the collection.
 
 ## Phase 6: Cloud & Platform
 

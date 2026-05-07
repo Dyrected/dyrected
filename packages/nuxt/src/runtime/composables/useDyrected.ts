@@ -11,3 +11,8 @@ export const useDyrected = () => {
 
   return client;
 };
+
+export const useDyrectedDoc = (collection: string, slug: string, options?: { depth?: number }) => {
+  const client = useDyrected();
+  return client.collection(collection).findOne(slug, options);
+};

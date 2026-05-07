@@ -5,6 +5,19 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Admin UI Foundation (@dyrected/admin)**:
+    - Initialized Vite + React + TypeScript environment.
+    - Integrated Tailwind CSS v3 and Shadcn UI with custom design system.
+    - Implemented **AdminShell** with dynamic, schema-driven sidebar navigation.
+    - Built **AuthGate** for instance-level authentication and Site API Key management.
+    - Set up **TanStack Query** for efficient client-side state and caching.
+- **SDK Schema Support (@dyrected/sdk)**:
+    - New `getSchemas()` method to fetch architectural metadata.
+    - Exposed `getBaseUrl()` for dynamic asset and API resolution.
+- **Monorepo Type Unification**:
+    - Implemented `pnpm overrides` for consistent React 19 type definitions.
+    - Resolved JSX component type conflicts across `@dyrected/next` and `@dyrected/admin`.
+
 - **SDK Fluent Query Builder (@dyrected/sdk)**:
     - New `.collection(slug).find()` chainable API.
     - Support for `.where()`, `.sort()`, `.limit()`, `.page()`, and `.depth()`.

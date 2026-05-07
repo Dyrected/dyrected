@@ -26,6 +26,14 @@ export class DyrectedClient {
     };
   }
 
+  getBaseUrl() {
+    return this.baseUrl;
+  }
+
+  async getSchemas(): Promise<{ collections: any[], globals: any[] }> {
+    return this.request('/api/schemas');
+  }
+
   async find<T = any>(collection: string, args: QueryArgs = {}): Promise<PaginatedResult<T>> {
     const query = qs.stringify(args, { addQueryPrefix: true });
     const res = await this.request(`/api/collections/${collection}${query}`);

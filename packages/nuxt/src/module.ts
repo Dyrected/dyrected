@@ -35,11 +35,10 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     });
 
     // 3. Add Composables
-    addImports({
-      name: 'useDyrected',
-      as: 'useDyrected',
-      from: resolver.resolve('./runtime/composables/useDyrected'),
-    });
+    addImports([
+      { name: 'useDyrected', from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedDoc', from: resolver.resolve('./runtime/composables/useDyrected') },
+    ]);
 
     // 4. Pass options to runtime
     nuxt.options.runtimeConfig.public.dyrected = {
