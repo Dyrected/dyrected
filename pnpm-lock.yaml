@@ -24,6 +24,9 @@ importers:
       '@dyrected/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@dyrected/db-postgres':
+        specifier: workspace:^
+        version: link:../../packages/db-postgres
       hono:
         specifier: ^4.0.0
         version: 4.12.18

@@ -5,6 +5,11 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Multi-Tenant Foundation (Phase 7)**:
+    - Bootstrapped Cloud-specific Schema definition including `workspaces`, `sites`, `subscriptions`, and `users` collections.
+    - Built a robust Redis singleton using `ioredis` for session caching and rate-limiting queue logic within the cloud application.
+    - Implemented a dynamic `SiteResolver` middleware that correctly maps API requests via `x-api-key` header logic against the cloud database.
+    - Integrated a `QueryInterceptor` utilizing Node's `AsyncLocalStorage` and the Adapter proxy pattern to seamlessly inject `workspace_id` and `site_id` data boundaries on all database CRUD operations without modifying the self-hosted core engine.
 - **Architectural Alignment (Phase 6)**:
     - Purified `@dyrected/core` by removing cloud-specific multi-tenant routes (`workspacesRoutes`, `sitesRoutes`) from the core architecture and documentation.
     - Updated the `createDyrectedApp` middleware to support upstream dependency injection for `siteId`, providing a `'default'` fallback for self-hosted singletons.
