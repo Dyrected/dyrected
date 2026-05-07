@@ -62,7 +62,7 @@ function Dashboard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Overview</h2>
         <p className="text-muted-foreground">Monitor and manage your site's content and structure.</p>
       </div>
 
@@ -74,7 +74,7 @@ function Dashboard() {
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Collections</h3>
-              <p className="text-3xl font-bold">{collections.length}</p>
+              <p className="text-3xl font-semibold">{collections.length}</p>
             </div>
           </div>
         </div>
@@ -86,7 +86,7 @@ function Dashboard() {
             </div>
             <div>
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Global Configs</h3>
-              <p className="text-3xl font-bold">{globals.length}</p>
+              <p className="text-3xl font-semibold">{globals.length}</p>
             </div>
           </div>
         </div>
@@ -328,7 +328,7 @@ onMounted(async () => {
           <Sparkles className="h-3 w-3" />
           Ready to launch
         </div>
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+        <h1 className="text-4xl font-semibold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
           Finish Your Site Setup
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
