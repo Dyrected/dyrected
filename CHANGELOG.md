@@ -5,6 +5,14 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **S3 Storage Adapter (@dyrected/storage-s3)**:
+    - AWS SDK v3 integration.
+    - Multipart upload support via `@aws-sdk/lib-storage`.
+    - Compatible with DigitalOcean Spaces, Cloudflare R2, and Backblaze B2.
+- **Cloudinary Storage Adapter (@dyrected/storage-cloudinary)**:
+    - Native Cloudinary SDK integration.
+    - Automatic metadata extraction (width, height, resource type).
+    - Secure URL generation.
 - **MongoDB Database Adapter (@dyrected/db-mongodb)**:
     - Native driver integration.
     - Automatic `ObjectId` handling and string fallback.
