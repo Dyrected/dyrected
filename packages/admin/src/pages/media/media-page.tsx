@@ -22,7 +22,8 @@ import {
   Search, 
   FileIcon, 
   Trash2, 
-  ExternalLink
+  ExternalLink,
+  Image as ImageIcon
 } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
@@ -47,24 +48,27 @@ export function MediaPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-in">
+      <div className="flex items-end justify-between border-b border-border/50 pb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Media Library</h1>
-          <p className="text-muted-foreground">
-            Manage your images, documents, and other assets.
+          <div className="flex items-center gap-2 mb-1">
+            <ImageIcon className="h-5 w-5 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Media Library</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Manage your images, documents, and other assets for this site.
           </p>
         </div>
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
           <DialogTrigger asChild>
-            <Button className="flex gap-2">
-              <Upload className="h-4 w-4" />
-              Upload Files
+            <Button className="h-10 px-4 rounded-lg bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload Assets
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Upload Media</DialogTitle>
+          <DialogContent className="sm:max-w-[600px] rounded-2xl overflow-hidden border-none shadow-2xl">
+            <DialogHeader className="pb-4 border-b border-border/40">
+              <DialogTitle className="text-xl font-bold">Upload Media Assets</DialogTitle>
             </DialogHeader>
             <FileUploader 
               onComplete={() => {
@@ -78,29 +82,33 @@ export function MediaPage() {
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
           <Input
-            placeholder="Search files..."
-            className="pl-8"
+            placeholder="Search assets by filename..."
+            className="pl-10 h-11 bg-white border-border/60 rounded-xl shadow-sm focus-visible:ring-primary/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-280px)]">
+      <ScrollArea className="h-[calc(100vh-320px)] pr-4">
         {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <div className="animate-spin rounded-full border-4 border-primary border-t-transparent h-8 w-8"></div>
+          <div className="flex h-60 items-center justify-center">
+            <div className="animate-spin rounded-full border-4 border-primary/20 border-t-primary h-10 w-10"></div>
           </div>
         ) : mediaResponse?.length === 0 ? (
-          <div className="flex h-60 flex-col items-center justify-center rounded-lg border border-dashed text-center">
-            <FileIcon className="h-10 w-10 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium">No media found</h3>
-            <p className="text-muted-foreground">Upload some files to get started.</p>
+          <div className="flex h-80 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/60 bg-muted/5 text-center animate-in">
+            <div className="h-16 w-16 rounded-2xl bg-muted/40 flex items-center justify-center mb-4">
+              <FileIcon className="h-8 w-8 text-muted-foreground/50" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground">No assets found</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              Your media library is empty. Upload some files to start building your content.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-8">
             {mediaResponse?.map((item) => (
               <MediaCard 
                 key={item.id} 
@@ -121,32 +129,37 @@ function MediaCard({ item, baseUrl, onDelete }: { item: any, baseUrl: string, on
   const url = `${baseUrl}/media/${item.filename}`
 
   return (
-    <Card className="overflow-hidden group relative">
-      <CardHeader className="p-0">
-        <AspectRatio ratio={1 / 1} className="bg-muted">
+    <Card className="overflow-hidden group relative border-border/40 bg-white shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl">
+      <CardHeader className="p-0 border-b border-border/10">
+        <AspectRatio ratio={1 / 1} className="bg-muted/30 overflow-hidden">
           {isImage ? (
             <img
               src={url}
               alt={item.filename}
-              className="object-cover w-full h-full transition-transform group-hover:scale-105"
+              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
             />
           ) : (
-            <div className="flex items-center justify-center h-full">
-              <FileIcon className="h-10 w-10 text-muted-foreground" />
+            <div className="flex items-center justify-center h-full bg-primary/5">
+              <FileIcon className="h-10 w-10 text-primary/40" />
             </div>
           )}
         </AspectRatio>
       </CardHeader>
-      <CardContent className="p-2">
-        <p className="text-xs font-medium truncate" title={item.filename}>
+      <CardContent className="p-3 bg-white">
+        <p className="text-[11px] font-bold truncate text-foreground/90 mb-0.5" title={item.filename}>
           {item.filename}
         </p>
-        <p className="text-[10px] text-muted-foreground uppercase">
-          {item.mimeType?.split("/")[1] || "file"} • {(item.size / 1024).toFixed(1)} KB
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">
+            {item.mimeType?.split("/")[1] || "file"}
+          </p>
+          <p className="text-[9px] text-muted-foreground font-medium">
+            {(item.size / 1024).toFixed(1)} KB
+          </p>
+        </div>
       </CardContent>
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-        <Button size="icon" variant="secondary" className="h-8 w-8" asChild>
+      <div className="absolute inset-0 bg-primary/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3">
+        <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full shadow-lg bg-white hover:bg-white/90 text-primary transition-transform duration-300 hover:scale-110" asChild>
           <a href={url} target="_blank" rel="noreferrer">
             <ExternalLink className="h-4 w-4" />
           </a>
@@ -154,7 +167,7 @@ function MediaCard({ item, baseUrl, onDelete }: { item: any, baseUrl: string, on
         <Button 
           size="icon" 
           variant="destructive" 
-          className="h-8 w-8"
+          className="h-9 w-9 rounded-full shadow-lg transition-transform duration-300 hover:scale-110"
           onClick={(e) => {
             e.preventDefault()
             if (confirm("Are you sure you want to delete this file?")) {
@@ -201,44 +214,70 @@ function FileUploader({ onComplete }: { onComplete: () => void }) {
   }
 
   return (
-    <div className="space-y-4 py-4">
+    <div className="space-y-6 py-6 px-4">
       <div 
         {...getRootProps()} 
-        className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
-          isDragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+        className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${
+          isDragActive 
+            ? "border-primary bg-primary/5 scale-[0.98]" 
+            : "border-muted-foreground/20 hover:border-primary/40 hover:bg-muted/5"
         }`}
       >
         <input {...getInputProps()} />
-        <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-lg font-medium">Drag & drop files here</p>
-        <p className="text-sm text-muted-foreground">or click to select files</p>
+        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+          <Upload className="h-8 w-8 text-primary" />
+        </div>
+        <p className="text-xl font-bold text-foreground">Drag & drop assets</p>
+        <p className="text-sm text-muted-foreground mt-1">or click to browse your files</p>
       </div>
 
       {files.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium">{files.length} files selected</p>
-          <div className="max-h-[200px] overflow-auto space-y-2">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-foreground">{files.length} assets selected</p>
+            <Button variant="ghost" size="sm" onClick={() => setFiles([])} disabled={uploading} className="text-xs h-8">
+              Clear All
+            </Button>
+          </div>
+          
+          <div className="max-h-[240px] overflow-auto space-y-2 pr-2 custom-scrollbar">
             {files.map((file, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md text-sm">
-                <span className="truncate flex-1">{file.name}</span>
-                <span className="text-muted-foreground text-xs ml-4">
+              <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 border border-border/40 rounded-xl text-sm group transition-colors hover:bg-muted/50">
+                <div className="flex items-center gap-3 truncate">
+                  <div className="h-8 w-8 rounded-lg bg-white border border-border/60 flex items-center justify-center flex-shrink-0">
+                    <FileIcon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="truncate font-medium text-foreground/80">{file.name}</span>
+                </div>
+                <span className="text-muted-foreground text-[10px] font-bold bg-white px-2 py-1 rounded border border-border/40 ml-4">
                   {(file.size / 1024).toFixed(1)} KB
                 </span>
               </div>
             ))}
           </div>
+
           {uploading && (
-            <div className="space-y-1">
-              <Progress value={progress} />
-              <p className="text-[10px] text-right text-muted-foreground">{Math.round(progress)}%</p>
+            <div className="space-y-2 pt-2">
+              <div className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <span>Uploading...</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <Progress value={progress} className="h-2 rounded-full" />
             </div>
           )}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setFiles([])} disabled={uploading}>
-              Clear
-            </Button>
-            <Button onClick={handleUpload} disabled={uploading || files.length === 0}>
-              {uploading ? "Uploading..." : "Start Upload"}
+
+          <div className="flex justify-end pt-4 border-t border-border/40">
+            <Button 
+              onClick={handleUpload} 
+              disabled={uploading || files.length === 0}
+              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+            >
+              {uploading ? (
+                <span className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Uploading Assets...
+                </span>
+              ) : `Upload ${files.length} Assets`}
             </Button>
           </div>
         </div>

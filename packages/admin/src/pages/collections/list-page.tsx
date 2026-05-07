@@ -11,7 +11,8 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Calendar
+  Calendar,
+  Database
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -157,27 +158,34 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-in">
+      <div className="flex items-end justify-between border-b border-border/50 pb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{schema.label || schema.slug}</h1>
-          <p className="text-muted-foreground">
-            Manage your {schema.slug} entries and content.
+          <div className="flex items-center gap-2 mb-1">
+            <Database className="h-5 w-5 text-primary" />
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{schema.label || schema.slug}</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Manage your {schema.slug} entries, search, and update content.
           </p>
         </div>
-        <Link to={`/collections/${slug}/new`}>
-          <Button className="flex gap-2">
-            <Plus className="h-4 w-4" />
-            Create Entry
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+           <Link to={`/collections/${slug}/new`}>
+            <Button className="h-10 px-4 rounded-lg bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
+              <Plus className="mr-2 h-4 w-4" />
+              Create {schema.label || schema.slug}
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      <DataTable 
-        columns={columns} 
-        data={response?.docs || []} 
-        searchKey={schema.fields[0]?.name}
-      />
+      <div className="rounded-xl border border-border/60 bg-white shadow-sm overflow-hidden">
+        <DataTable 
+          columns={columns} 
+          data={response?.docs || []} 
+          searchKey={schema.fields[0]?.name}
+        />
+      </div>
     </div>
   )
 }

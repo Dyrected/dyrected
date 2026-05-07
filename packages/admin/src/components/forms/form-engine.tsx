@@ -140,25 +140,36 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
 function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
   const { fields, append, remove } = useFieldArray({ control, name: basePath })
   return (
-    <div className="border border-border p-4 rounded-md space-y-4 bg-muted/10">
+    <div className="border border-border p-5 rounded-xl space-y-5 bg-muted/5 shadow-sm transition-all">
       <div className="flex justify-between items-center">
-        <h4 className="font-semibold text-sm">{schema.label}</h4>
-        <Button type="button" variant="outline" size="sm" onClick={() => append(buildDefaultValues(schema.fields || [], {}))}>
+        <div>
+          <h4 className="font-bold text-sm text-foreground">{schema.label}</h4>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Array Collection</p>
+        </div>
+        <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={() => append(buildDefaultValues(schema.fields || [], {}))}>
+          <Plus className="w-3.5 h-3.5 mr-1.5" />
           Add Item
         </Button>
       </div>
-      {fields.map((item, index) => (
-         <div key={item.id} className="relative border border-border p-4 rounded-md bg-background shadow-sm">
-           <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-destructive hover:bg-destructive/10" onClick={() => remove(index)}>
-             <X className="w-4 h-4" />
-           </Button>
-           <div className="space-y-6 pt-4">
-             {schema.fields?.map(subField => (
-               <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} />
-             ))}
+      <div className="space-y-4">
+        {fields.map((item, index) => (
+           <div key={item.id} className="relative border border-border/60 p-5 rounded-lg bg-white shadow-sm transition-all hover:shadow-md animate-in">
+             <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md" onClick={() => remove(index)}>
+               <Trash2 className="w-3.5 h-3.5" />
+             </Button>
+             <div className="space-y-6 pt-2">
+               {schema.fields?.map(subField => (
+                 <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} />
+               ))}
+             </div>
            </div>
-         </div>
-      ))}
+        ))}
+        {fields.length === 0 && (
+          <div className="text-center py-8 border border-dashed border-border rounded-lg bg-muted/10">
+            <p className="text-xs text-muted-foreground">No items added yet.</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -168,9 +179,12 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
 
   if (schema.type === "object") {
     return (
-      <div className="border border-border p-4 rounded-md space-y-4 bg-muted/5">
-        <h4 className="font-semibold text-sm">{schema.label}</h4>
-        <div className="space-y-6 pl-4 border-l-2 border-border/50">
+      <div className="border border-border/80 p-5 rounded-xl space-y-5 bg-white/40 shadow-sm transition-all">
+        <div className="flex items-center gap-2 border-b border-border/40 pb-3 mb-2">
+          <div className="h-2 w-2 rounded-full bg-primary/40" />
+          <h4 className="font-bold text-sm text-foreground">{schema.label}</h4>
+        </div>
+        <div className="space-y-6">
           {schema.fields?.map(subField => (
             <FormFieldRenderer key={subField.name} schema={subField} basePath={fullPath} control={control} />
           ))}

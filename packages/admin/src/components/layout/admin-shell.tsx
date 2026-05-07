@@ -43,16 +43,21 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <Sidebar>
-          <SidebarHeader className="border-b px-6 py-4">
-            <h1 className="text-xl font-bold tracking-tight">Dyrected</h1>
+          <SidebarHeader className="border-b px-4 py-3 bg-white/50 backdrop-blur-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
+                <LayoutDashboard className="h-4 w-4 text-white" />
+              </div>
+              <h1 className="text-lg font-bold tracking-tight text-foreground">Dyrected</h1>
+            </div>
           </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="px-2 py-4">
             <SidebarGroup>
-              <SidebarGroupLabel>Core</SidebarGroupLabel>
+              <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Content</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Dashboard" isActive={location.pathname === "/"}>
+                    <SidebarMenuButton asChild tooltip="Dashboard" isActive={location.pathname === "/"} className="rounded-lg">
                       <Link to="/">
                         <LayoutDashboard className="h-4 w-4" />
                         <span>Dashboard</span>
@@ -60,7 +65,7 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Media Library" isActive={location.pathname === "/media"}>
+                    <SidebarMenuButton asChild tooltip="Media Library" isActive={location.pathname === "/media"} className="rounded-lg">
                       <Link to="/media">
                         <ImageIcon className="h-4 w-4" />
                         <span>Media Library</span>
@@ -71,15 +76,15 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Collections</SidebarGroupLabel>
+            <SidebarGroup className="mt-4">
+              <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Collections</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {isLoading ? (
                     <div className="px-4 py-2 text-xs text-muted-foreground italic">Loading...</div>
                   ) : schemas?.collections?.map((col: any) => (
                     <SidebarMenuItem key={col.slug}>
-                      <SidebarMenuButton asChild tooltip={col.label} isActive={location.pathname === `/collections/${col.slug}`}>
+                      <SidebarMenuButton asChild tooltip={col.label} isActive={location.pathname === `/collections/${col.slug}`} className="rounded-lg">
                         <Link to={`/collections/${col.slug}`}>
                           <Database className="h-4 w-4" />
                           <span>{col.label}</span>
@@ -91,13 +96,13 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Globals</SidebarGroupLabel>
+            <SidebarGroup className="mt-4">
+              <SidebarGroupLabel className="px-4 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/70">Configuration</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {schemas?.globals?.map((glob: any) => (
                     <SidebarMenuItem key={glob.slug}>
-                      <SidebarMenuButton asChild tooltip={glob.label} isActive={location.pathname === `/globals/${glob.slug}`}>
+                      <SidebarMenuButton asChild tooltip={glob.label} isActive={location.pathname === `/globals/${glob.slug}`} className="rounded-lg">
                         <Link to={`/globals/${glob.slug}`}>
                           <Settings className="h-4 w-4" />
                           <span>{glob.label}</span>
@@ -110,10 +115,10 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
             </SidebarGroup>
           </SidebarContent>
           {!isEmbedded && (
-            <SidebarFooter className="border-t p-4">
+            <SidebarFooter className="border-t p-4 bg-muted/30">
               <button 
                 onClick={logout}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-destructive hover:bg-destructive/10"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
@@ -121,14 +126,26 @@ export function AdminShell({ children, isEmbedded = false }: { children: React.R
             </SidebarFooter>
           )}
         </Sidebar>
-        <main className="flex-1 overflow-auto bg-muted/20">
-          <div className="container mx-auto p-8">
-            <div className="mb-8 flex items-center gap-4">
-              <SidebarTrigger />
-              <div className="h-4 w-px bg-border" />
-              <h2 className="text-2xl font-semibold tracking-tight">Dashboard</h2>
+        <main className="flex-1 overflow-auto bg-background/50 backdrop-blur-sm">
+          <div className="mx-auto max-w-7xl p-8">
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="h-9 w-9 rounded-lg border border-border bg-white shadow-sm" />
+                <div className="h-4 w-px bg-border/60" />
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight text-foreground">
+                    {location.pathname === '/' ? 'Dashboard' : 
+                     location.pathname.startsWith('/collections/') ? 'Collection' :
+                     location.pathname.startsWith('/globals/') ? 'Global Setting' :
+                     location.pathname === '/media' ? 'Media Library' : 'Admin'}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">Manage your site content and settings.</p>
+                </div>
+              </div>
             </div>
-            {children}
+            <div className="animate-in">
+              {children}
+            </div>
           </div>
         </main>
       </div>
