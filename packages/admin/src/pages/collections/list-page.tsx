@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Link } from "react-router-dom"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { DataTable } from "../../components/ui/data-table"
@@ -12,7 +12,9 @@ import {
   Pencil,
   Trash2,
   Calendar,
-  Database
+  Database,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -29,6 +31,11 @@ interface CollectionListPageProps {
 
 export function CollectionListPage({ slug }: CollectionListPageProps) {
   const { client } = useDyrected()
+  const queryClient = useQueryClient()
+  const [page, setPage] = React.useState(1)
+
+  // Reset to page 1 when collection slug changes
+  React.useEffect(() => { setPage(1) }, [slug])
 
   // Fetch schema to know fields
   const { data: schemas } = useQuery({
@@ -41,10 +48,25 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   // Fetch collection data
   const { data: response, isLoading } = useQuery({
-    queryKey: ["collection", slug],
-    queryFn: () => client!.collection(slug).find().exec(),
+    queryKey: ["collection", slug, page],
+    queryFn: () => client!.collection(slug).find({ page, limit: 20 }).exec(),
     enabled: !!client,
   })
+
+  const totalPages = response?.totalPages ?? 1
+  const hasNextPage = page < totalPages
+  const hasPrevPage = page > 1
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => client!.collection(slug).delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["collection", slug] }),
+  })
+
+  function handleDelete(id: string) {
+    if (window.confirm("Delete this entry? This cannot be undone.")) {
+      deleteMutation.mutate(id)
+    }
+  }
 
   const columns: ColumnDef<any>[] = React.useMemo(() => {
     if (!schema) return []
@@ -140,9 +162,13 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
                   Edit
                 </DropdownMenuItem>
               </Link>
-              <DropdownMenuItem className="flex gap-2 text-destructive">
+              <DropdownMenuItem
+                className="flex gap-2 text-destructive focus:text-destructive"
+                onClick={() => handleDelete(item.id)}
+                disabled={deleteMutation.isPending}
+              >
                 <Trash2 className="h-4 w-4" />
-                Delete
+                {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -193,6 +219,38 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           data={response?.docs || []}
           searchKey={schema.admin?.useAsTitle || schema.fields.find((f: any) => !f.admin?.hidden)?.name || "id"}
         />
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border/50 bg-muted/20">
+            <p className="text-xs text-muted-foreground">
+              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+              {response?.total != null && (
+                <> &mdash; {response.total} total entries</>
+              )}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={!hasPrevPage}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                title="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={!hasNextPage}
+                onClick={() => setPage((p) => p + 1)}
+                title="Next page"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

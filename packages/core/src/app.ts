@@ -10,6 +10,13 @@ export interface DyrectedContext {
     config: DyrectedConfig;
     siteId?: string;
     workspaceId?: string;
+    /** Decoded JWT payload set by requireAuth() or optionalAuth() middleware. */
+    user?: {
+      sub: string;
+      email: string;
+      collection: string;
+      [key: string]: any;
+    };
   };
 }
 

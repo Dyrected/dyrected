@@ -1,4 +1,4 @@
-import { useForm, useFieldArray } from "react-hook-form"
+import { useForm, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import {
@@ -50,6 +50,14 @@ export interface FieldSchema {
     readOnly?: boolean
     placeholder?: string
     description?: string
+    /**
+     * A function that receives the current form data and returns true when
+     * the field should be visible. Evaluated reactively on every form change.
+     *
+     * @example
+     * condition: (data) => data.type === 'article'
+     */
+    condition?: (data: Record<string, any>) => boolean
   }
 }
 
@@ -182,7 +190,12 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
 }
 
 export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
+  // Statically hidden field
   if (schema.admin?.hidden) return null
+
+  // Reactively evaluate admin.condition against current form values
+  const formValues = useWatch({ control })
+  if (schema.admin?.condition && !schema.admin.condition(formValues)) return null
 
   const fullPath = basePath ? `${basePath}.${schema.name}` : schema.name
 

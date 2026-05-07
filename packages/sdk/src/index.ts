@@ -4,28 +4,67 @@ import { QueryBuilder, QueryArgs } from './query-builder.js';
 
 export { Media };
 
+/**
+ * Structured error thrown by the SDK when the server returns a non-2xx response.
+ */
+export class DyrectedError extends Error {
+  readonly statusCode: number;
+  readonly errors: { field?: string; message: string }[];
+
+  constructor(
+    message: string,
+    statusCode: number,
+    errors: { field?: string; message: string }[] = [],
+  ) {
+    super(message);
+    this.name = 'DyrectedError';
+    this.statusCode = statusCode;
+    this.errors = errors;
+  }
+}
+
 export interface DyrectedClientConfig {
   baseUrl: string;
   apiKey?: string;
   siteId?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
+  /** Default depth for relationship population. Applied to every request unless overridden per-call. */
+  defaultDepth?: number;
 }
 
 export class DyrectedClient {
   private baseUrl: string;
   private headers: Record<string, string>;
   private fetch: typeof fetch;
+  private defaultDepth: number;
 
   constructor(config: DyrectedClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '');
     this.fetch = config.fetch || fetch;
+    this.defaultDepth = config.defaultDepth ?? 1;
     this.headers = {
       'Content-Type': 'application/json',
       ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
       ...(config.siteId ? { 'x-site-id': config.siteId } : {}),
       ...config.headers,
     };
+  }
+
+  /**
+   * Update the Authorization header with a Bearer token.
+   * Call this after a successful login.
+   */
+  setToken(token: string): void {
+    this.headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  /**
+   * Remove the Authorization header.
+   * Call this after logout.
+   */
+  clearToken(): void {
+    delete this.headers['Authorization'];
   }
 
   getBaseUrl() {
@@ -69,8 +108,28 @@ export class DyrectedClient {
        */
       upload: (file: File | Blob, data?: Record<string, string>) =>
         this._upload(slug, file, data),
+      // ---- Auth methods (only meaningful when the collection has auth: true) ----
+      /**
+       * Log in with email + password. Returns a JWT token and the user document.
+       * Call `client.setToken(token)` afterwards to authenticate subsequent requests.
+       */
+      login: (email: string, password: string): Promise<{ token: string; user: T }> =>
+        this.request(`/api/collections/${slug}/login`, {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        }),
+      /** Log out. Stateless — token must be discarded client-side; call client.clearToken() too. */
+      logout: (): Promise<{ success: boolean }> =>
+        this.request(`/api/collections/${slug}/logout`, { method: 'POST' }),
+      /** Return the currently authenticated user (requires a token via setToken). */
+      me: (): Promise<T> =>
+        this.request(`/api/collections/${slug}/me`),
+      /** Issue a fresh token for the currently authenticated user. */
+      refreshToken: (): Promise<{ token: string }> =>
+        this.request(`/api/collections/${slug}/refresh-token`, { method: 'POST' }),
     };
   }
+
 
   /**
    * Access a global by its slug with a fluent builder.
@@ -185,8 +244,12 @@ export class DyrectedClient {
     });
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: 'Unknown error' }));
-      throw new Error(error.message || `Request failed with status ${res.status}`);
+      const body = await res.json().catch(() => ({ message: 'Unknown error' }));
+      throw new DyrectedError(
+        body.message || `Request failed with status ${res.status}`,
+        res.status,
+        body.errors || [],
+      );
     }
 
     return res.json();

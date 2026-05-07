@@ -175,146 +175,478 @@ function SetupPrompt({ config }: { config: any }) {
   };
 
   const getPrompt = (framework: string) => {
-    const base = `I need to integrate Dyrected CMS into my ${framework} project. Please complete the entire setup automatically.
+    const base = `You are helping integrate Dyrected CMS into a ${framework} project. Complete the entire setup automatically using the details below.
 
-**Site Details:**
-- Site Name: ${config.siteName}
-- Site ID: ${config.siteId}
-- API Key: ${config.apiKey}
-- API Base URL: ${config.baseUrl}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SITE CREDENTIALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Site Name : ${config.siteName}
+Site ID   : ${config.siteId}
+API Key   : ${config.apiKey}
+API URL   : ${config.baseUrl}
 
-**Step 1: Content Model Definition**
-Create a 'dyrected.config.ts' that defines your schema. 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — CONTENT MODEL (dyrected.config.ts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Use \`defineCollection\`, \`defineGlobal\`, and \`defineConfig\` from '@dyrected/core'.
 
-**Supported Field Types:**
-'text', 'textarea', 'richText', 'number', 'boolean', 'date', 'select', 'multiSelect', 'email', 'url', 'relationship', 'array', 'object', 'json', 'blocks'.
+SUPPORTED FIELD TYPES:
+  Primitive  : text | textarea | richText | number | boolean | date | email | url | json
+  Choice     : select | multiSelect           (requires \`options: [{ label, value }]\`)
+  Structural : array | object                 (requires nested \`fields: [...]\`)
+  Relation   : relationship                   (requires \`collection: '<slug>'\`)
+  Media      : image                          (use a relationship to an upload collection)
+  Blocks     : blocks                         (requires \`blocks: [{ slug, labels, fields }]\`)
 
-**Advanced Config:**
-- \`labels\`: { singular: string, plural: string }
-- \`upload\`: true (to enable media/image uploads for this collection)
-- \`auth\`: true (to enable authentication for this collection)
-- \`admin\`: { hidden: boolean, useAsTitle: string, group: string }
+COLLECTION OPTIONS:
+  \`upload: true\`   — turns this collection into a media library (file uploads)
+  \`auth: true\`     — adds login/register/me endpoints; password field is auto-added
+  \`admin.group\`    — groups this collection under a sidebar heading
+  \`admin.useAsTitle\` — field to use as the display title in the admin list view
+  \`admin.hidden\`   — hide from sidebar (useful for internal/system collections)
 
-Example:
+FIELD OPTIONS:
+  \`required\`        — validation
+  \`unique\`          — database-level uniqueness
+  \`defaultValue\`    — fallback value
+  \`admin.condition\` — (data) => boolean — show/hide field based on other field values
+  \`admin.readOnly\`  — display-only in the form
+  \`admin.hidden\`    — completely hidden from editor UI
+  \`access.read\`     — ({ user }) => boolean — field-level read access
+  \`access.update\`   — ({ user }) => boolean — field-level write access
+  \`hooks.beforeChange\` — [async (value) => newValue] — transform value before save
+  \`hooks.afterRead\`    — [async (value) => newValue] — transform value after read
+
+BLOCKS EXPLAINED:
+  A \`blocks\` field stores an ordered array of typed content blocks.
+  Each block has a \`blockType\` discriminator and its own set of fields.
+  The admin UI renders a drag-and-drop block editor automatically.
+  On the frontend, iterate the array and switch on \`block.blockType\`.
+
+COMPLETE EXAMPLE:
 \`\`\`typescript
-import { defineCollection, defineConfig } from '@dyrected/core'
+import { defineCollection, defineGlobal, defineConfig } from '@dyrected/core'
 
+// ── Media ──────────────────────────────────────────
 const media = defineCollection({
   slug: 'media',
-  labels: { singular: 'Media', plural: 'Media' },
+  labels: { singular: 'Media Item', plural: 'Media' },
   upload: true,
   fields: [
-    { name: 'alt', type: 'text' }
-  ]
+    { name: 'alt', type: 'text', label: 'Alt Text' },
+    { name: 'caption', type: 'textarea', label: 'Caption' },
+  ],
 })
 
+// ── Authentication collection ───────────────────────
+const customers = defineCollection({
+  slug: 'customers',
+  labels: { singular: 'Customer', plural: 'Customers' },
+  auth: true,                  // adds /customers/login, /customers/me, etc.
+  admin: { group: 'Membership' },
+  fields: [
+    { name: 'name', type: 'text', required: true },
+    { name: 'email', type: 'email', required: true, unique: true },
+    // 'password' is auto-added when auth: true
+    { name: 'avatar', type: 'relationship', collection: 'media' },
+    { name: 'role', type: 'select', options: [
+        { label: 'Member', value: 'member' },
+        { label: 'VIP', value: 'vip' },
+    ]},
+  ],
+})
+
+// ── Pages with blocks ───────────────────────────────
 const pages = defineCollection({
   slug: 'pages',
   labels: { singular: 'Page', plural: 'Pages' },
+  admin: { useAsTitle: 'title', group: 'Content' },
   fields: [
     { name: 'title', type: 'text', required: true },
-    { name: 'slug', type: 'text', required: true },
-    { name: 'content', type: 'richText' },
-    { name: 'featuredImage', type: 'relationship', collection: 'media' }
-  ]
+    { name: 'slug',  type: 'text', required: true, unique: true },
+    { name: 'seo', type: 'object', fields: [
+        { name: 'metaTitle',       type: 'text' },
+        { name: 'metaDescription', type: 'textarea' },
+        { name: 'ogImage',         type: 'relationship', collection: 'media' },
+    ]},
+    // Flexible page builder using blocks
+    {
+      name: 'layout',
+      type: 'blocks',
+      label: 'Page Layout',
+      blocks: [
+        {
+          slug: 'hero',
+          labels: { singular: 'Hero', plural: 'Heroes' },
+          fields: [
+            { name: 'heading',    type: 'text',         required: true },
+            { name: 'subheading', type: 'textarea' },
+            { name: 'image',      type: 'relationship', collection: 'media' },
+            { name: 'ctaLabel',   type: 'text' },
+            { name: 'ctaLink',    type: 'url' },
+          ],
+        },
+        {
+          slug: 'richContent',
+          labels: { singular: 'Rich Content', plural: 'Rich Content Blocks' },
+          fields: [
+            { name: 'content', type: 'richText', required: true },
+          ],
+        },
+        {
+          slug: 'imageGallery',
+          labels: { singular: 'Image Gallery', plural: 'Image Galleries' },
+          fields: [
+            { name: 'title', type: 'text' },
+            { name: 'images', type: 'array', fields: [
+                { name: 'image',   type: 'relationship', collection: 'media' },
+                { name: 'caption', type: 'text' },
+            ]},
+            { name: 'columns', type: 'select', options: [
+                { label: '2 Columns', value: '2' },
+                { label: '3 Columns', value: '3' },
+                { label: '4 Columns', value: '4' },
+            ]},
+          ],
+        },
+        {
+          slug: 'callToAction',
+          labels: { singular: 'Call to Action', plural: 'Calls to Action' },
+          fields: [
+            { name: 'heading',     type: 'text', required: true },
+            { name: 'description', type: 'textarea' },
+            { name: 'buttonLabel', type: 'text' },
+            { name: 'buttonLink',  type: 'url' },
+            { name: 'theme', type: 'select', options: [
+                { label: 'Primary',   value: 'primary' },
+                { label: 'Secondary', value: 'secondary' },
+                { label: 'Dark',      value: 'dark' },
+            ]},
+          ],
+        },
+      ],
+    },
+  ],
 })
 
+// ── Posts ───────────────────────────────────────────
 const posts = defineCollection({
   slug: 'posts',
   labels: { singular: 'Post', plural: 'Posts' },
-  upload: true,
+  admin: { useAsTitle: 'title', group: 'Content' },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'content', type: 'richText' }
-  ]
+    { name: 'title',    type: 'text',         required: true },
+    { name: 'slug',     type: 'text',         required: true, unique: true },
+    { name: 'excerpt',  type: 'textarea' },
+    { name: 'content',  type: 'richText' },
+    { name: 'image',    type: 'relationship', collection: 'media' },
+    { name: 'author',   type: 'relationship', collection: 'customers' },
+    { name: 'tags',     type: 'multiSelect',  options: [
+        { label: 'News',      value: 'news' },
+        { label: 'Tutorial',  value: 'tutorial' },
+        { label: 'Release',   value: 'release' },
+    ]},
+    { name: 'publishedAt', type: 'date' },
+    {
+      name: 'status',
+      type: 'select',
+      defaultValue: 'draft',
+      options: [
+        { label: 'Draft',     value: 'draft' },
+        { label: 'Published', value: 'published' },
+      ],
+    },
+  ],
+  access: {
+    // Anyone can read; only authenticated users can write
+    read:   () => true,
+    create: ({ user }) => !!user,
+    update: ({ user }) => !!user,
+    delete: ({ user }) => !!user,
+  },
 })
 
+// ── Globals ─────────────────────────────────────────
 const navigation = defineGlobal({
   slug: 'navigation',
   label: 'Navigation',
   fields: [
-    { 
-      name: 'menuItems', 
-      type: 'array', 
+    {
+      name: 'menuItems',
+      type: 'array',
       fields: [
         { name: 'label', type: 'text' },
-        { name: 'link', type: 'relationship', collection: 'pages' }
-      ]
-    }
-  ]
+        { name: 'url',   type: 'url' },
+        { name: 'page',  type: 'relationship', collection: 'pages' },
+        { name: 'openInNewTab', type: 'boolean', defaultValue: false },
+        { name: 'children', type: 'array', fields: [
+            { name: 'label', type: 'text' },
+            { name: 'url',   type: 'url' },
+        ]},
+      ],
+    },
+  ],
 })
 
 const settings = defineGlobal({
   slug: 'settings',
   label: 'Site Settings',
   fields: [
-    { name: 'siteName', type: 'text' },
-    { name: 'logo', type: 'relationship', collection: 'media' },
-    { name: 'footerText', type: 'textarea' }
-  ]
+    { name: 'siteName',    type: 'text' },
+    { name: 'tagline',     type: 'text' },
+    { name: 'logo',        type: 'relationship', collection: 'media' },
+    { name: 'favicon',     type: 'relationship', collection: 'media' },
+    { name: 'footerText',  type: 'textarea' },
+    { name: 'socialLinks', type: 'object', fields: [
+        { name: 'twitter',   type: 'url' },
+        { name: 'instagram', type: 'url' },
+        { name: 'linkedin',  type: 'url' },
+    ]},
+    { name: 'analyticsId', type: 'text', admin: { description: 'Google Analytics measurement ID' } },
+  ],
 })
 
 export default defineConfig({
-  collections: [media, pages, posts],
-  globals: [navigation, settings]
+  collections: [media, customers, pages, posts],
+  globals:     [navigation, settings],
 })
 \`\`\`
 
-**Step 2: Schema Sync**
-You can sync your schema automatically during build. Add this to your 'package.json':
-\`\`\`json
-"scripts": {
-  "build": "dyrected sync:schema && next build"
-}
-\`\`\`
-Or run it manually:
-\`npx dyrected sync:schema --api-key ${config.apiKey} --site-id ${config.siteId}\`
-
-**Step 3: Frontend Implementation**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — FRONTEND IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
     const frameworks: Record<string, string> = {
-      next: `Install '@dyrected/next'. 
-Use 'getDyrectedClient()' in Server Components to fetch data:
-\`\`\`tsx
-import { getDyrectedClient } from '@dyrected/next/server'
-const dyrected = getDyrectedClient()
-const { docs } = await dyrected.collections.find('posts')
-\`\`\``,
-      nuxt: `Install '@dyrected/nuxt'. 
-Register the module in 'nuxt.config.ts' and use 'useDyrectedServer()' in your pages:
-\`\`\`ts
-const dyrected = useDyrectedServer()
-const { data: posts } = await useAsyncData('posts', () => dyrected.collections.find('posts'))
-\`\`\``,
-      react: `Install '@dyrected/sdk'. 
-Initialize the client and fetch data in your components:
-\`\`\`tsx
-import { createClient } from '@dyrected/sdk'
-const dyrected = createClient({ 
-  apiUrl: '${config.baseUrl}', 
-  apiKey: '${config.apiKey}' 
-})
-const { docs } = await dyrected.collections.find('posts')
-\`\`\``,
-      vue: `Install '@dyrected/sdk'. 
-Initialize the client and use it in your Vue components:
+      next: `Install \`@dyrected/sdk\` (or \`@dyrected/next\` if you want Next.js server helpers).
+
+SDK CLIENT SETUP (\`lib/dyrected.ts\`):
 \`\`\`ts
 import { createClient } from '@dyrected/sdk'
-const dyrected = createClient({ 
-  apiUrl: '${config.baseUrl}', 
-  apiKey: '${config.apiKey}' 
+
+export const dyrected = createClient({
+  baseUrl: '${config.baseUrl}',
+  apiKey:  '${config.apiKey}',
+  siteId:  '${config.siteId}',
 })
+\`\`\`
+
+FETCHING COLLECTIONS (Server Component):
+\`\`\`tsx
+import { dyrected } from '@/lib/dyrected'
+
+// List with filters
+const { docs: posts } = await dyrected.collection('posts')
+  .find({ where: { status: { equals: 'published' } }, sort: '-publishedAt', limit: 10 })
+
+// Single document by ID
+const post = await dyrected.collection('posts').findOne(id, { depth: 2 })
+\`\`\`
+
+FETCHING GLOBALS:
+\`\`\`tsx
+const settings   = await dyrected.global('settings').get()
+const navigation = await dyrected.global('navigation').get()
+\`\`\`
+
+RENDERING BLOCKS (switch on \`blockType\`):
+\`\`\`tsx
+export function PageLayout({ layout }: { layout: any[] }) {
+  return (
+    <>
+      {layout.map((block, i) => {
+        switch (block.blockType) {
+          case 'hero':          return <HeroBlock key={i} {...block} />
+          case 'richContent':   return <RichContentBlock key={i} {...block} />
+          case 'imageGallery':  return <GalleryBlock key={i} {...block} />
+          case 'callToAction':  return <CTABlock key={i} {...block} />
+          default:              return null
+        }
+      })}
+    </>
+  )
+}
+\`\`\`
+
+AUTH (customer login):
+\`\`\`ts
+const { token, user } = await dyrected.collection('customers').login(email, password)
+dyrected.setToken(token)   // adds Authorization header to all future requests
+const me = await dyrected.collection('customers').me()
+\`\`\``,
+
+      nuxt: `Install \`@dyrected/nuxt\` and add it to \`nuxt.config.ts\`:
+\`\`\`ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@dyrected/nuxt'],
+  dyrected: {
+    baseUrl: '${config.baseUrl}',
+    apiKey:  '${config.apiKey}',
+    siteId:  '${config.siteId}',
+  }
+})
+\`\`\`
+
+FETCHING COLLECTIONS (auto-imported composables):
+\`\`\`ts
+// In a page or composable — useDyrected() returns the raw SDK client
+const dyrected = useDyrected()
+
+const { data: posts } = await useAsyncData('posts', () =>
+  dyrected.collection('posts')
+    .find({ where: { status: { equals: 'published' } }, sort: '-publishedAt' })
+)
+\`\`\`
+
+FETCHING GLOBALS (\`useDyrectedGlobal\`):
+\`\`\`ts
+const { data: settings }   = await useDyrectedGlobal('settings')
+const { data: navigation } = await useDyrectedGlobal('navigation')
+\`\`\`
+
+RENDERING BLOCKS in a Vue template:
+\`\`\`vue
+<template>
+  <template v-for="(block, i) in page.layout" :key="i">
+    <HeroBlock        v-if="block.blockType === 'hero'"         v-bind="block" />
+    <RichContentBlock v-else-if="block.blockType === 'richContent'"  v-bind="block" />
+    <GalleryBlock     v-else-if="block.blockType === 'imageGallery'" v-bind="block" />
+    <CTABlock         v-else-if="block.blockType === 'callToAction'" v-bind="block" />
+  </template>
+</template>
+\`\`\`
+
+AUTH (\`useDyrectedAuth\`):
+\`\`\`ts
+const { login, logout, user, isLoggedIn, fetchMe } = useDyrectedAuth('customers')
+
+// Login
+await login(email, password)
+
+// Rehydrate on app boot (reads persisted cookie)
+await fetchMe()
+\`\`\``,
+
+      react: `Install \`@dyrected/sdk\`:
+
+CLIENT SETUP (\`lib/dyrected.ts\`):
+\`\`\`ts
+import { createClient } from '@dyrected/sdk'
+
+export const dyrected = createClient({
+  baseUrl: '${config.baseUrl}',
+  apiKey:  '${config.apiKey}',
+  siteId:  '${config.siteId}',
+})
+\`\`\`
+
+FETCHING DATA (with React Query):
+\`\`\`tsx
+import { useQuery } from '@tanstack/react-query'
+import { dyrected } from '@/lib/dyrected'
+
+function Posts() {
+  const { data } = useQuery({
+    queryKey: ['posts'],
+    queryFn: () => dyrected.collection('posts')
+      .find({ where: { status: { equals: 'published' } }, sort: '-publishedAt' }),
+  })
+
+  return data?.docs.map(post => <PostCard key={post.id} post={post} />)
+}
+\`\`\`
+
+FETCHING GLOBALS:
+\`\`\`ts
+const settings = await dyrected.global('settings').get()
+\`\`\`
+
+RENDERING BLOCKS:
+\`\`\`tsx
+function PageLayout({ layout }) {
+  return layout.map((block, i) => {
+    switch (block.blockType) {
+      case 'hero':          return <HeroBlock key={i} {...block} />
+      case 'richContent':   return <RichContentBlock key={i} {...block} />
+      case 'imageGallery':  return <GalleryBlock key={i} {...block} />
+      case 'callToAction':  return <CTABlock key={i} {...block} />
+      default: return null
+    }
+  })
+}
+\`\`\`
+
+AUTH:
+\`\`\`ts
+const { token, user } = await dyrected.collection('customers').login(email, password)
+dyrected.setToken(token)
+\`\`\``,
+
+      vue: `Install \`@dyrected/sdk\`:
+
+CLIENT SETUP (\`lib/dyrected.ts\`):
+\`\`\`ts
+import { createClient } from '@dyrected/sdk'
+
+export const dyrected = createClient({
+  baseUrl: '${config.baseUrl}',
+  apiKey:  '${config.apiKey}',
+  siteId:  '${config.siteId}',
+})
+\`\`\`
+
+FETCHING DATA IN A COMPONENT:
+\`\`\`ts
+import { ref, onMounted } from 'vue'
+import { dyrected } from '@/lib/dyrected'
+
 const posts = ref([])
 onMounted(async () => {
-  const res = await dyrected.collections.find('posts')
+  const res = await dyrected.collection('posts')
+    .find({ where: { status: { equals: 'published' } }, sort: '-publishedAt' })
   posts.value = res.docs
 })
+\`\`\`
+
+FETCHING GLOBALS:
+\`\`\`ts
+const settings = await dyrected.global('settings').get()
+\`\`\`
+
+RENDERING BLOCKS in template:
+\`\`\`vue
+<template v-for="(block, i) in page.layout" :key="i">
+  <HeroBlock        v-if="block.blockType === 'hero'"         v-bind="block" />
+  <RichContentBlock v-else-if="block.blockType === 'richContent'"  v-bind="block" />
+  <GalleryBlock     v-else-if="block.blockType === 'imageGallery'" v-bind="block" />
+  <CTABlock         v-else-if="block.blockType === 'callToAction'" v-bind="block" />
+</template>
+\`\`\`
+
+AUTH:
+\`\`\`ts
+const { token, user } = await dyrected.collection('customers').login(email, password)
+dyrected.setToken(token)
+const me = await dyrected.collection('customers').me()
 \`\`\``
     };
 
-    return base + frameworks[framework] + `\n\n**Documentation Reference:**\nFor more advanced configurations (hooks, access control, custom blocks), refer to:\n${config.baseUrl}/api/docs`;
+    return base + frameworks[framework] + `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Blocks are stored as \`[{ blockType: '<slug>', ...fields }]\` — always switch on \`blockType\` when rendering.
+- \`client.collection(slug)\` is the primary API entrypoint. Do NOT use \`client.collections\`.
+- Globals use \`client.global(slug).get()\` and \`client.global(slug).update(data)\`.
+- After login, call \`client.setToken(token)\` to authenticate all subsequent requests.
+- The password field on auth collections is automatically stripped from all responses.
+- Relationship fields are populated to the specified \`depth\` (default: 1). Set \`depth: 0\` for IDs only.
+
+API Reference: ${config.baseUrl}/api/docs`;
   };
+
 
   const aiDeveloperPrompt = getPrompt(activeTab);
 

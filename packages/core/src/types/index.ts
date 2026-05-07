@@ -59,7 +59,14 @@ export type AccessFunction = (args: {
   req: any;
 }) => boolean | object | Promise<boolean | object>;
 
-export type HookFunction = (args: { data?: any; doc?: any; user?: any; req?: any }) => any | Promise<any>;
+export type HookFunction = (args: {
+  data?: any;
+  doc?: any;
+  user?: any;
+  req?: any;
+  /** The operation that triggered this hook. */
+  operation?: 'create' | 'update' | 'delete';
+}) => any | Promise<any>;
 
 export type FieldHook = (args: { value: any; originalDoc?: any; data?: any; user?: any }) => any | Promise<any>;
 
@@ -93,17 +100,36 @@ export interface CollectionConfig {
     defaultColumns?: string[];
     group?: string;
     hidden?: boolean;
+    /**
+     * URL to open in the Live Preview pane.
+     * Accepts a static string or a function that receives the document and returns a URL.
+     */
+    previewUrl?: string | ((doc: any, opts: { locale?: string }) => string | null);
+    /** Which mode to use for live preview. Defaults to 'postMessage'. */
+    previewMode?: 'postMessage' | 'token';
   };
 }
 
 export interface UploadConfig {
   allowedMimeTypes?: string[];
   maxFileSize?: number;
+  /** Local disk path where files are stored. Only used by LocalStorage adapter. */
+  staticDir?: string;
+  /** Public URL prefix for locally stored files. Only used by LocalStorage adapter. */
+  staticURL?: string;
+  /** Which imageSizes entry to use as the thumbnail in the Admin media grid. */
+  adminThumbnail?: string;
   imageSizes?: {
     name: string;
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     crop?: string;
+    /** sharp fit strategy: 'cover' | 'contain' | 'fill' | 'inside' | 'outside' */
+    fit?: string;
+    /** Never upscale images smaller than the target size. Default: true. */
+    withoutEnlargement?: boolean;
+    /** Additional sharp format options. */
+    formatOptions?: Record<string, any>;
   }[];
 }
 
@@ -134,6 +160,10 @@ export interface PaginatedResult<T = any> {
   total: number;
   limit: number;
   page: number;
+  /** Total number of pages given the current limit. */
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 export interface DatabaseAdapter {
@@ -173,11 +203,31 @@ export interface StorageAdapter {
   getURL(args: { filename: string }): string;
 }
 
+/** Branding and metadata configuration for the Admin UI. */
+export interface AdminConfig {
+  branding?: {
+    /** URL or imported image for the full logo shown in the sidebar. */
+    logo?: string;
+    /** URL or imported image for the compact logo mark used in collapsed sidebar. */
+    logoMark?: string;
+    /** Primary accent colour as a CSS value (e.g. '#6366f1' or 'hsl(240 50% 60%)') */
+    primaryColor?: string;
+    /** URL for the browser tab favicon. */
+    favicon?: string;
+  };
+  meta?: {
+    /** Appended to every Admin page title. Default: '- Dyrected' */
+    titleSuffix?: string;
+  };
+}
+
 export interface DyrectedConfig {
   collections: CollectionConfig[];
   globals: GlobalConfig[];
   db?: DatabaseAdapter;
   storage?: StorageAdapter;
+  /** Admin UI branding and meta configuration. */
+  admin?: AdminConfig;
   email?: {
     provider: string;
     apiKey?: string;

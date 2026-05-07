@@ -143,11 +143,47 @@ function SidebarInner({
                   <div key={i} className={cn("h-8 rounded-md bg-muted/60 animate-pulse", collapsed ? "mx-1" : "mx-2")} />
                 ))}
               </div>
-            ) : (
-              <div className="space-y-0.5">
-                {collections
-                  .filter((col: any) => !col.upload)
-                  .map((col: any) => (
+            ) : (() => {
+              // Group collections by admin.group; ungrouped goes last
+              const nonUpload = collections.filter((col: any) => !col.upload)
+              const groups = new Map<string, any[]>()
+              const ungrouped: any[] = []
+
+              nonUpload.forEach((col: any) => {
+                const g = col.admin?.group
+                if (g) {
+                  if (!groups.has(g)) groups.set(g, [])
+                  groups.get(g)!.push(col)
+                } else {
+                  ungrouped.push(col)
+                }
+              })
+
+              return (
+                <div className="space-y-0.5">
+                  {/* Grouped sections */}
+                  {Array.from(groups.entries()).map(([groupName, cols]) => (
+                    <div key={groupName}>
+                      {!collapsed && (
+                        <p className="px-3 mt-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
+                          {groupName}
+                        </p>
+                      )}
+                      {cols.map((col: any) => (
+                        <NavItem
+                          key={col.slug}
+                          to={`/collections/${col.slug}`}
+                          icon={Database}
+                          label={col.labels?.plural ?? col.slug}
+                          active={location.pathname === `/collections/${col.slug}`}
+                          collapsed={collapsed}
+                          onClick={onNavigate}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                  {/* Ungrouped */}
+                  {ungrouped.map((col: any) => (
                     <NavItem
                       key={col.slug}
                       to={`/collections/${col.slug}`}
@@ -158,10 +194,12 @@ function SidebarInner({
                       onClick={onNavigate}
                     />
                   ))}
-              </div>
-            )}
+                </div>
+              )
+            })()}
           </div>
         )}
+
 
         {globals.length > 0 && (
           <div>

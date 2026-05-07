@@ -7,6 +7,10 @@ export interface ModuleOptions extends DyrectedConfig {
    * @default '/api/dyrected'
    */
   apiBase?: string;
+  /** API key passed to the SDK client for request authentication. */
+  apiKey?: string;
+  /** Site ID used to scope content to a specific tenant site. */
+  siteId?: string;
 }
 
 import { NuxtModule } from '@nuxt/schema';
@@ -38,9 +42,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // 3. Add Composables
     addImports([
-      { name: 'useDyrected', from: resolver.resolve('./runtime/composables/useDyrected') },
-      { name: 'useDyrectedDoc', from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrected',       from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedDoc',    from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedGlobal', from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedAuth',   from: resolver.resolve('./runtime/composables/useDyrectedAuth') },
+      { name: 'useLivePreview',    from: resolver.resolve('./runtime/composables/useLivePreview') },
     ]);
+
 
     // 4. Pass options to runtime
     nuxt.options.runtimeConfig.public.dyrected = {

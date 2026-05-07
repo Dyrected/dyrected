@@ -15,11 +15,25 @@ export class CollectionController {
     const limit = Number(c.req.query('limit')) || 10;
     const page = Number(c.req.query('page')) || 1;
     const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
+    const sort = c.req.query('sort') || undefined;
+
+    // Parse `where` from query string — accepts JSON-encoded object or qs-style nested params
+    let where: any = undefined;
+    const whereRaw = c.req.query('where');
+    if (whereRaw) {
+      try {
+        where = JSON.parse(decodeURIComponent(whereRaw));
+      } catch {
+        // Not valid JSON — fall through without a where clause
+      }
+    }
 
     let result = await db!.find({
       collection: this.collection.slug,
       limit,
       page,
+      sort,
+      where,
     });
     
     // Apply default values to each document
@@ -32,6 +46,7 @@ export class CollectionController {
 
     return c.json(result);
   }
+
 
   async findOne(c: Context<DyrectedContext>) {
     const config = c.get('config');
