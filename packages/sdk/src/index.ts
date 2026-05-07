@@ -62,6 +62,25 @@ export class DyrectedClient {
       create: (data: any) => this.create<T>(slug, data),
       update: (id: string, data: any) => this.update<T>(slug, id, data),
       delete: (id: string) => this.delete(slug, id),
+      /**
+       * Upload a file to this collection. Sends as multipart/form-data.
+       * @param file - A File or Blob (browser) or Buffer with filename/mimeType (Node.js)
+       * @param data - Additional metadata fields to save alongside the file (e.g. alt, caption)
+       */
+      upload: (file: File | Blob, data?: Record<string, string>) =>
+        this._upload(slug, file, data),
+    };
+  }
+
+  /**
+   * Access a global by its slug with a fluent builder.
+   * @example client.global('site-settings').get()
+   * @example client.global('site-settings').update({ siteName: 'My Site' })
+   */
+  global<T = any>(slug: string) {
+    return {
+      get: (args: { depth?: number } = {}) => this.getGlobal<T>(slug, args),
+      update: (data: any) => this.updateGlobal<T>(slug, data),
     };
   }
 
@@ -106,20 +125,37 @@ export class DyrectedClient {
     return this.find<Media>(collection, args);
   }
 
+  /** @deprecated Use client.collection('media').upload(file, data) instead */
   async uploadMedia(file: File, collection: string = 'media'): Promise<Media> {
+    return this._upload(collection, file);
+  }
+
+  /**
+   * Internal upload implementation shared by collection().upload() and uploadMedia().
+   */
+  private async _upload(
+    collection: string,
+    file: File | Blob,
+    data?: Record<string, string>,
+  ): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Remove Content-Type header to let the browser set the boundary
+    // Append any extra metadata fields (e.g. alt, caption)
+    if (data) {
+      for (const [key, value] of Object.entries(data)) {
+        formData.append(key, value);
+      }
+    }
+
+    // Remove Content-Type so the browser/fetch sets the multipart boundary automatically
     const { 'Content-Type': _, ...headers } = this.headers;
 
-    const path = `/api/collections/${collection}`;
-
-    return this.request(path, {
+    return this.request(`/api/collections/${collection}`, {
       method: 'POST',
       headers: {
         ...headers,
-        'Content-Type': undefined as any, // Force removal so browser can set boundary
+        'Content-Type': undefined as any,
       },
       body: formData,
     });

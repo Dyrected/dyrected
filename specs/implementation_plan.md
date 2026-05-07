@@ -281,3 +281,159 @@ This phase focuses on the developer experience and public release stability.
 - [ ] Implement global error handling and reporting in `apps/cloud`.
 
 
+
+---
+
+## Phase 13: Docs-to-Reality Gap Closure
+
+This phase tracks everything **documented as existing** but not yet implemented, discovered during the May 2026 documentation audit. Items are grouped by package.
+
+> Items marked ⚠️ have an **API design question** that must be resolved before implementation (see the table at the bottom of this phase).
+
+---
+
+### Phase 13.1: `@dyrected/core` — Missing Backend Features
+
+#### Auth Collection Endpoints
+`auth: true` exists in types but the router registers **zero auth endpoints**. The full auth subsystem needs to be built:
+
+- [ ] `POST /api/collections/:slug/login` — email + password → JWT
+- [ ] `POST /api/collections/:slug/logout` — invalidate session
+- [ ] `GET  /api/collections/:slug/me` — return current user (strip `password`)
+- [ ] `POST /api/collections/:slug/refresh-token` — issue fresh JWT
+- [ ] `POST /api/collections/:slug/forgot-password` — send reset email (requires `email` config)
+- [ ] `POST /api/collections/:slug/reset-password` — consume reset token
+- [ ] Auto-inject `email` + `password` (bcrypt-hashed) fields when `auth: true`
+- [ ] Strip `password` from all response bodies unconditionally
+- [ ] JWT decode middleware: expose decoded user as `c.get('user')` for access functions
+
+#### Access Flags in `/api/schemas`
+`/api/schemas` returns raw config with **no resolved access**. Docs say it should return computed flags when a JWT is present:
+
+- [ ] Resolve each collection's `access.*` functions against `c.get('user')`
+- [ ] Resolve each field's `access.*` functions against the user
+- [ ] Merge computed flags into the schema response
+
+#### Preview Token Endpoints (Live Preview — token mode)
+- [ ] `POST /api/preview-token` — issue signed JWT stored in Redis, 15-minute TTL
+- [ ] `GET  /api/preview-data?token=<jwt>` — return draft document for the token
+- [ ] Return `501 Not Implemented` when `redis` is not configured
+
+#### `CollectionConfig.admin` — Missing Type Properties
+- [ ] `previewUrl?: string | ((doc: any, opts: { locale?: string }) => string | null)`
+- [ ] `previewMode?: 'postMessage' | 'token'`
+
+#### `UploadConfig` — Missing Properties + Name Mismatch ⚠️
+Type currently has `allowedMimeTypes` but docs say `mimeTypes`. Also missing:
+- [ ] Rename / alias field — decision required ⚠️
+- [ ] `staticDir?: string`, `staticURL?: string` (LocalStorage only)
+- [ ] `adminThumbnail?: string`
+- [ ] `imageSizes[].fit?: string`
+- [ ] `imageSizes[].withoutEnlargement?: boolean`
+- [ ] `imageSizes[].formatOptions?: object`
+
+#### Top-level `DyrectedConfig.admin` Branding — Not in Types
+- [ ] Define `AdminConfig` interface with `branding` and `meta` sub-objects
+- [ ] Add `admin?: AdminConfig` to `DyrectedConfig`
+
+#### `where` / `sort` Params Ignored in Controller
+`CollectionController.find` never parses or passes `where` or `sort`:
+- [ ] Parse `where` from query string server-side (qs)
+- [ ] Parse and pass `sort` to `db.find()`
+
+#### `HookFunction` Missing `operation` Argument
+- [ ] Add `operation?: 'create' | 'update' | 'delete'` to `HookFunction` args
+
+---
+
+### Phase 13.2: `@dyrected/sdk` — Missing Client Methods
+
+#### Auth Methods on the Collection Builder
+- [ ] `collection(slug).login(email, password)` → `{ token, user }`
+- [ ] `collection(slug).logout()` → `void`
+- [ ] `collection(slug).me()` → `user`
+- [ ] `collection(slug).refreshToken()` → `{ token }`
+
+#### Token Management
+- [ ] `client.setToken(token)` — update Authorization header on the instance
+- [ ] `client.clearToken()` — remove Authorization header
+
+#### `collection(slug).upload(file, data?)` ⚠️
+Currently `client.uploadMedia(file, slug)` at top-level. Docs show it on the collection builder. Design decision required.
+
+#### `DyrectedError` Class
+- [ ] Export `class DyrectedError extends Error` with `statusCode: number` and `errors: { field: string, message: string }[]`
+- [ ] Update `private request()` to throw `DyrectedError`
+
+#### `global(slug)` Fluent Builder ⚠️
+Currently `client.getGlobal(slug)`. Docs show `client.global(slug).get()`. Decision required.
+
+#### `defaultDepth` Client Option
+- [ ] Accept `defaultDepth?: number` in `DyrectedClientConfig` and use as per-call fallback
+
+---
+
+### Phase 13.3: `@dyrected/nuxt` — Missing Composables
+
+#### `useDyrected` Signature ⚠️
+Docs show `useDyrected('posts').find()` — collection-scoped + `useAsyncData`-wrapped. Reality returns the raw client. Decision required.
+
+#### `useDyrectedGlobal(slug, opts?)`
+- [ ] Wraps `client.getGlobal(slug)` in `useAsyncData`, register in `addImports`
+
+#### `useDyrectedAuth()`
+- [ ] Returns `{ login, logout, user: Ref<User | null>, isLoggedIn: Ref<boolean> }`
+- [ ] Persists JWT in cookie / `useState` for SSR compatibility
+
+#### `useLivePreview<T>(options)`
+- [ ] Vue `postMessage`-based live preview composable
+- [ ] Register in `addImports`
+
+---
+
+### Phase 13.4: `@dyrected/admin` — UI Gaps
+
+- [ ] Delete row action — mutation not connected to API
+- [ ] Pagination controls — `totalPages` exists in response but no Prev/Next UI
+- [ ] `admin.condition` — `FormEngine` does not evaluate it reactively
+- [ ] `admin.group` — sidebar does not group collections under headings
+- [ ] `admin.hidden` — sidebar does not hide collections
+- [ ] Live Preview pane — not built (type also missing)
+- [ ] RBAC buttons — Create/Edit/Delete not conditioned on resolved access flags
+- [ ] Field `access.read/update` — form engine does not strip or disable fields
+
+---
+
+### Phase 13.5: Missing Package — `@dyrected/react`
+
+`useLivePreview` is documented as importable from `@dyrected/react`. The package does not exist:
+- [ ] Scaffold `packages/react/` (package.json, tsconfig, build)
+- [ ] Implement `useLivePreview<T>({ initialData, serverURL })` hook
+- [ ] Export `DyrectedError` re-export from SDK
+
+---
+
+## Open Design Questions — Must Resolve Before Phase 13 Implementation
+
+| # | Question | Option A (docs) | Option B (current code) |
+|---|---|---|---|
+| 1 | `UploadConfig` MIME field name | `mimeTypes` — shorter, matches Payload/Directus | `allowedMimeTypes` — more explicit |
+| 2 | SDK global accessor | `client.global(slug).get()` — fluent, consistent with collection builder | `client.getGlobal(slug)` — flat, already shipped |
+| 3 | SDK upload location | `client.collection(slug).upload(file, data)` — discoverable | `client.uploadMedia(file, slug)` — already shipped |
+| 4 | Nuxt `useDyrected` shape | `useDyrected('posts').find({ ... })` — DX-friendly, SSR-wrapped | `useDyrected()` → raw client — flexible but verbose |
+
+---
+
+## Phase 14: Embedded Admin UI — Browser History & Routing
+
+**Priority: P1.** When `<AdminUI />` is embedded in a host app (Next.js, Nuxt, etc.), internal navigations do not update the browser URL. Back/Forward buttons don't work. Tested broken in React; Vue/Nuxt host untested.
+
+See `specs/dyrected-frontend-roadmap.md §8` for full root-cause analysis and solution options. Summary of work:
+
+- [ ] Add `basename?: string` prop to `<AdminUI>` (default `'/admin'`); pass to `<BrowserRouter basename={basename}>`
+- [ ] Add `onNavigate?: (path: string) => void` prop; emit on every internal route change via a `useEffect` + `useLocation` sync component
+- [ ] Add both props to `AdminUIProps` type
+- [ ] Update Next.js embed docs: use `[[...route]]` catch-all page that always renders `<AdminUI>`
+- [ ] Update Nuxt embed docs: equivalent catch-all page setup
+- [ ] Test in a Nuxt/Vue host app — verify `navigateTo()` integration via `onNavigate`
+- [ ] Add `docs/admin/overview.md` section explaining embedding options

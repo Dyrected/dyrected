@@ -174,7 +174,7 @@ Configure the upload behaviour per collection (see also [Upload Collections](/do
 {
   slug: 'media',
   upload: {
-    mimeTypes: ['image/*', 'application/pdf'],
+    allowedMimeTypes: ['image/*', 'application/pdf'],
     maxFileSize: 10_000_000,
     imageSizes: [
       { name: 'thumbnail', width: 300, height: 300, crop: 'center' },
@@ -188,7 +188,7 @@ Configure the upload behaviour per collection (see also [Upload Collections](/do
 
 | Option | Type | Default | Description |
 |---|---|---|---|
-| `mimeTypes` | `string[]` | all | Allowed MIME type patterns. Supports `image/*` globs. |
+| `allowedMimeTypes` | `string[]` | all | Allowed MIME type patterns. Supports `image/*` globs. |
 | `maxFileSize` | `number` | `7_000_000` | Max upload size in bytes |
 | `imageSizes` | `ImageSize[]` | `[]` | Resize configurations (see below) |
 | `adminThumbnail` | `string` | original | Which `imageSizes` entry to use in the Admin media grid |

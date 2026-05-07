@@ -489,3 +489,112 @@ const getCollectionAccess = (slug: string): CollectionAccess => {
 
 - `src/runtime/composables/useLivePreview.ts` — **[NEW]** Vue composable for live preview.
 - `src/module.ts` — Register `useLivePreview` in `addImports`.
+
+---
+
+## 8. Embedded Admin UI — Browser History & Routing
+
+### 8.1 Problem
+
+When `<AdminUI />` is embedded inside a host application (Next.js, Nuxt, or any other framework), the Admin's internal React Router navigations **do not update the browser URL**. This means:
+
+- Clicking into a collection, opening an edit form, or navigating back does not change the address bar.
+- The browser Back and Forward buttons have no effect on the Admin's internal state.
+- Sharing or bookmarking a deep link inside the Admin (e.g. `/admin/collections/posts/abc123`) does not work.
+- If the host app uses client-side routing, full-page navigation history is shared with the Admin but the Admin's internal transitions are invisible to the host router.
+
+Tested so far: **React (Next.js App Router)** — confirmed broken. Behaviour in Vue/Nuxt host has not been verified yet.
+
+---
+
+### 8.2 Root Cause
+
+`@dyrected/admin` is a self-contained React app that uses `BrowserRouter` (or `HashRouter`) internally. When embedded:
+
+- `BrowserRouter` creates its own `window.history` stack but the host router has no visibility into it.
+- `HashRouter` would update `window.location.hash` — the host router typically ignores hash changes, so it might work but causes `#` pollution in the URL.
+- Neither approach propagates route changes upward to the host.
+
+---
+
+### 8.3 Solution Options
+
+#### Option A — `basename` prop + `MemoryRouter` sync (Recommended)
+
+Pass a `basename` prop to `<AdminUI>` that tells the Admin where it is mounted. The Admin uses `BrowserRouter` with this `basename`, and all internal navigations produce real URLs that the host can intercept.
+
+```tsx
+// Host app (Next.js)
+// app/admin/[[...route]]/page.tsx
+<AdminUI
+  basename="/admin"
+  baseUrl={...}
+  apiKey={...}
+/>
+```
+
+The Admin's router is then configured:
+
+```tsx
+// Inside @dyrected/admin
+<BrowserRouter basename={props.basename ?? '/admin'}>
+  <Routes>...</Routes>
+</BrowserRouter>
+```
+
+With `basename="/admin"`, the Admin navigates to `/admin/collections/posts` — a real URL. The host Next.js catch-all `[[...route]]` page handles it by always rendering `<AdminUI>`, and the Admin restores its state from `window.location.pathname`.
+
+**Pros:** Real URLs, bookmarkable, Back/Forward works.  
+**Cons:** Host must use a catch-all route that renders `<AdminUI>` regardless of path.
+
+#### Option B — `onNavigate` callback
+
+Expose an `onNavigate(path: string)` prop. The Admin calls it on every internal route change. The host app decides how to reflect that (e.g., `router.push(path)` in Next.js, `useRouter().push(path)` in Nuxt).
+
+```tsx
+<AdminUI
+  basename="/admin"
+  onNavigate={(path) => router.push(path)}
+/>
+```
+
+**Pros:** Gives the host full control; works in any framework.  
+**Cons:** Requires host-side wiring; URLs only update when the host calls `router.push`.
+
+#### Option C — HashRouter (simpler, no catch-all needed)
+
+Switch to `HashRouter` internally. URLs become `/admin#/collections/posts`.
+
+**Pros:** Works out of the box with any host; no catch-all needed.  
+**Cons:** `#` in URLs looks dated; not compatible with SSR meta tags per page; harder to link to specific admin pages from external sources.
+
+---
+
+### 8.4 Recommended Approach
+
+Implement **Option A** as the default, with **Option B** as an escape hatch for unusual host setups:
+
+1. Add `basename?: string` prop to `<AdminUI>` (default: `'/admin'`).
+2. Replace the current router instantiation with `<BrowserRouter basename={basename}>`.
+3. Add `onNavigate?: (path: string) => void` prop — call it via a `useEffect` + `useLocation()` listener inside the router.
+4. Update docs (`docs/admin/overview.md`) with the catch-all route setup for Next.js and Nuxt.
+5. Test in a Nuxt host app — verify `navigateTo()` works when wired through `onNavigate`.
+
+---
+
+### 8.5 Files to Change
+
+| File | Change |
+|---|---|
+| `packages/admin/src/app.tsx` (or root router file) | Pass `basename` prop to `BrowserRouter`; add `NavigationSync` component that calls `onNavigate` on location change |
+| `packages/admin/src/components/AdminUI.tsx` | Accept `basename?: string` and `onNavigate?: (path: string) => void` props; forward to app |
+| `packages/admin/src/types.ts` | Add `basename` and `onNavigate` to `AdminUIProps` |
+| `docs/admin/overview.md` | Document `basename` prop; update Next.js and Nuxt embedding examples with catch-all route |
+| `docs/integrations/nextjs.md` | Update admin embed section with `[[...route]]` catch-all and `basename` |
+| `docs/integrations/nuxt.md` | Document equivalent Nuxt page setup |
+
+---
+
+### 8.6 Priority
+
+**P1** — This is a significant DX and usability regression for any embedded deployment. Without working browser history, the Admin UI is difficult to use in a real production host app.

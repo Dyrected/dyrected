@@ -48,17 +48,22 @@ DYRECTED_SITE_ID=site_...
 
 ### `useDyrected`
 
-The primary composable for fetching content. Wraps `@dyrected/sdk` with `useAsyncData` for SSR compatibility.
+Returns the configured `DyrectedClient` instance. Use it to call any SDK method.
 
 ```vue
 <script setup lang="ts">
+// useDyrected() returns the raw SDK client
+const client = useDyrected()
+
 // Fetch a list of posts
-const { data: posts } = await useDyrected('posts').find({
-  where: { status: { equals: 'published' } },
-  sort: '-createdAt',
-  depth: 1,
-  limit: 10,
-})
+const { data: posts } = await useAsyncData('posts', () =>
+  client.collection('posts').find({
+    where: { status: { equals: 'published' } },
+    sort: '-createdAt',
+    depth: 1,
+    limit: 10,
+  })
+)
 </script>
 
 <template>
@@ -70,24 +75,38 @@ const { data: posts } = await useDyrected('posts').find({
 </template>
 ```
 
-### `useDyrected(slug).findOne(id)`
+### Fetch a single document
 
 ```vue
 <script setup lang="ts">
 const route = useRoute()
-const { data: post } = await useDyrected('posts').findOne(route.params.id as string, {
-  depth: 1,
-})
+const client = useDyrected()
+
+const { data: post } = await useAsyncData(`post-${route.params.id}`, () =>
+  client.collection('posts').findOne(route.params.id as string, { depth: 1 })
+)
 </script>
 ```
 
-### `useDyrectedGlobal(slug)`
+### `useDyrectedDoc(collection, id, options?)`
 
-Fetch a global singleton:
+A convenience shortcut for fetching a single document by ID:
 
 ```vue
 <script setup lang="ts">
-const { data: settings } = await useDyrectedGlobal('site-settings')
+const route = useRoute()
+const post = await useDyrectedDoc('posts', route.params.id as string, { depth: 1 })
+</script>
+```
+
+### Fetch a global
+
+```vue
+<script setup lang="ts">
+const client = useDyrected()
+const { data: settings } = await useAsyncData('site-settings', () =>
+  client.global('site-settings').get()
+)
 </script>
 ```
 
@@ -95,15 +114,11 @@ const { data: settings } = await useDyrectedGlobal('site-settings')
 
 ## Step 3 — Mutating data
 
-For create/update/delete operations (e.g. in forms), use the raw SDK client:
+For create/update/delete operations, call methods on the client directly:
 
 ```vue
 <script setup lang="ts">
-const config = useRuntimeConfig()
-const client = createClient({
-  baseUrl: config.public.dyrectedUrl,
-  apiKey: config.public.dyrectedApiKey,
-})
+const client = useDyrected()
 
 async function submitForm(data: any) {
   await client.collection('inquiries').create(data)
@@ -115,54 +130,55 @@ async function submitForm(data: any) {
 
 ## All Available Composables
 
-| Composable | Description |
-|---|---|
-| `useDyrected(slug)` | Returns an object with `.find()` and `.findOne()` methods |
-| `useDyrectedGlobal(slug)` | Fetches a global singleton |
-| `useDyrectedAuth()` | Returns `login()`, `logout()`, `user`, and `isLoggedIn` |
-| `useLivePreview(options)` | Enables live preview `postMessage` integration |
+| Composable | Status | Description |
+|---|---|---|
+| `useDyrected()` | ✅ Available | Returns the configured `DyrectedClient` |
+| `useDyrectedDoc(slug, id, opts?)` | ✅ Available | Shortcut for `client.collection(slug).findOne(id)` |
+| `useDyrectedGlobal(slug)` | 🔜 Planned | Wraps `client.global(slug).get()` with `useAsyncData` |
+| `useDyrectedAuth()` | 🔜 Planned | Returns `login()`, `logout()`, `user`, `isLoggedIn` |
+| `useLivePreview(options)` | 🔜 Planned | Live preview `postMessage` integration |
 
 ---
 
-## Authentication Composable
+## Authentication
+
+`useDyrectedAuth()` is planned — see Phase 13 in the implementation plan. In the meantime, call auth methods directly:
 
 ```vue
 <script setup lang="ts">
-const { login, logout, user, isLoggedIn } = useDyrectedAuth()
+const client = useDyrected()
 
 async function handleLogin() {
-  await login('user@example.com', 'my-password')
+  const { token } = await client.collection('users').login('user@example.com', 'my-password')
+  // Store token — client.setToken(token) and persist in a cookie
   navigateTo('/dashboard')
 }
 </script>
-
-<template>
-  <div v-if="isLoggedIn">Welcome, {{ user?.name }}</div>
-  <button v-else @click="handleLogin">Log in</button>
-</template>
 ```
 
 ---
 
-## Live Preview Composable
+## Live Preview
+
+`useLivePreview()` is planned — see [Live Preview](/docs/admin/live-preview) for the postMessage protocol. In the meantime, implement it manually:
 
 ```vue
 <script setup lang="ts">
-const { data: page, isLive } = useLivePreview({
-  initialData: await useDyrected('pages').findOne(route.params.slug),
-  serverURL: useRuntimeConfig().public.dyrectedAdminUrl,
+const initialData = ...
+const page = ref(initialData)
+const isLive = ref(false)
+
+onMounted(() => {
+  window.addEventListener('message', (e) => {
+    if (e.origin !== 'https://your-admin.com') return
+    if (e.data?.type === 'dyrected-live-preview') {
+      page.value = e.data.data
+      isLive.value = true
+    }
+  })
 })
 </script>
-
-<template>
-  <div>
-    <span v-if="isLive" class="badge">Preview</span>
-    <h1>{{ page?.title }}</h1>
-  </div>
-</template>
 ```
-
-See [Live Preview](/docs/admin/live-preview) for the full guide.
 
 ---
 
@@ -186,16 +202,18 @@ export default defineNuxtConfig({
 
 ## Cache Revalidation
 
-Nuxt caches `useAsyncData` results. When content changes, call `refreshNuxtData()` to invalidate:
+Wrap data fetching in `useAsyncData` so Nuxt can cache and revalidate it:
 
 ```vue
 <script setup lang="ts">
-const { data: posts, refresh } = await useDyrected('posts').find()
+const client = useDyrected()
+const { data: posts, refresh } = await useAsyncData('posts', () =>
+  client.collection('posts').find()
+)
 
-// Call refresh() after a mutation to re-fetch
 async function publish(id: string) {
   await client.collection('posts').update(id, { status: 'published' })
-  await refresh()
+  await refresh()  // Re-fetch the list
 }
 </script>
 ```
@@ -214,7 +232,7 @@ export default defineEventHandler(async (event) => {
 
 ## TypeScript
 
-The module auto-imports all composables globally. For type safety, define your document types and pass them as generics:
+The module auto-imports `useDyrected` and `useDyrectedDoc`. Pass your type to the SDK methods for type-safe responses:
 
 ```ts
 interface Post {
@@ -224,6 +242,9 @@ interface Post {
   status: 'draft' | 'published'
 }
 
-const { data } = await useDyrected<Post>('posts').find()
+const client = useDyrected()
+const { data } = await useAsyncData('posts', () =>
+  client.collection<Post>('posts').find()
+)
 // data.value?.docs is Post[]
 ```

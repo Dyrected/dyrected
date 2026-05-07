@@ -133,21 +133,18 @@ await client.collection('posts').delete('abc123')
 
 ### `.upload(file, data?)`
 
-Upload a file to an upload collection. Pass a `File`, `Blob`, or `Buffer`.
+Upload a file to an upload collection. Accepts a `File` or `Blob` (browser). Node.js support via standard `fetch` + `FormData`.
 
 ```ts
-// Browser (File from <input type="file">)
+// Browser — File from <input type="file">
 const mediaDoc = await client.collection('media').upload(file, {
   alt: 'A mountain landscape',
 })
 
-// Node.js (Buffer)
-import { readFileSync } from 'fs'
-const buffer = readFileSync('./image.jpg')
-const mediaDoc = await client.collection('media').upload(buffer, {
-  filename: 'image.jpg',
-  mimeType: 'image/jpeg',
-  alt: 'My image',
+// Blob from fetch or canvas
+const blob = await fetch('/some-image.jpg').then(r => r.blob())
+const mediaDoc = await client.collection('media').upload(blob, {
+  alt: 'Fetched image',
 })
 ```
 
@@ -175,40 +172,38 @@ await client.global('site-settings').update({
 
 ## Auth Methods
 
+> **Note:** Auth collection endpoints are not yet implemented in `@dyrected/core`. These methods are planned — see Phase 13.1 in the implementation plan.
+
 For collections with `auth: true`.
 
-### `.login(email, password)`
+### `.login(email, password)` *(planned)*
 
 ```ts
 const { token, user } = await client.collection('users').login(
   'user@example.com',
   'my-password'
 )
-
-// Store the token for subsequent authenticated requests
 client.setToken(token)
 ```
 
-### `.me()`
+### `.me()` *(planned)*
 
 ```ts
 const user = await client.collection('users').me()
 ```
 
-### `.logout()`
+### `.logout()` *(planned)*
 
 ```ts
 await client.collection('users').logout()
 client.clearToken()
 ```
 
-### `.setToken(token)` / `.clearToken()`
-
-Update the JWT on the client instance after login or on logout.
+### `.setToken(token)` / `.clearToken()` *(planned)*
 
 ```ts
-client.setToken(token)    // All subsequent requests use this JWT
-client.clearToken()       // Remove the JWT
+client.setToken(token)
+client.clearToken()
 ```
 
 ---
@@ -229,7 +224,7 @@ const schemas = await client.getSchemas()
 
 ## TypeScript Generics
 
-The SDK is fully typed. Pass your document type as a generic to get type-safe responses:
+The SDK is fully typed. Pass your document type as a generic for type-safe responses:
 
 ```ts
 interface Post {
@@ -248,7 +243,7 @@ const result = await client.collection<Post>('posts').find({ depth: 1 })
 
 ## Error Handling
 
-All methods throw a `DyrectedError` on non-2xx responses:
+> **Note:** `DyrectedError` is not yet implemented. The SDK currently throws a generic `Error`. The typed class is planned — see Phase 13.2 in the implementation plan.
 
 ```ts
 import { DyrectedError } from '@dyrected/sdk'
@@ -258,7 +253,7 @@ try {
 } catch (err) {
   if (err instanceof DyrectedError) {
     console.log(err.statusCode) // 404
-    console.log(err.message)    // "Document not found"
+    console.log(err.message)
     console.log(err.errors)     // validation error array (on 400)
   }
 }

@@ -37,27 +37,27 @@ Pass an object instead of `true` for full control:
 
 ```ts
 upload: {
-  staticDir: './public/media',     // Local disk path to store files (LocalStorage only)
-  staticURL: '/media',             // Public URL prefix for locally stored files
-  mimeTypes: ['image/*', 'application/pdf'],  // Allowed types (glob patterns)
-  maxFileSize: 10_000_000,         // Max file size in bytes (10 MB)
+  staticDir: './public/media',       // Local disk path to store files (LocalStorage only)
+  staticURL: '/media',               // Public URL prefix for locally stored files
+  allowedMimeTypes: ['image/*', 'application/pdf'],  // Allowed types (glob patterns)
+  maxFileSize: 10_000_000,           // Max file size in bytes (10 MB)
   imageSizes: [
     { name: 'thumbnail', width: 300, height: 300, crop: 'center' },
     { name: 'card',      width: 800, height: 450, crop: 'center' },
     { name: 'hero',      width: 1920, fit: 'contain' },
   ],
-  adminThumbnail: 'thumbnail',    // Which imageSizes entry to use in the Admin grid
+  adminThumbnail: 'thumbnail',      // Which imageSizes entry to use in the Admin grid
 }
 ```
 
-### `mimeTypes`
+### `allowedMimeTypes`
 
 An array of MIME type patterns. Supports glob wildcards:
 
 ```ts
-mimeTypes: ['image/*']                        // All images
-mimeTypes: ['image/jpeg', 'image/png']        // JPEG and PNG only
-mimeTypes: ['image/*', 'video/*', 'application/pdf']  // Mixed
+allowedMimeTypes: ['image/*']                        // All images
+allowedMimeTypes: ['image/jpeg', 'image/png']        // JPEG and PNG only
+allowedMimeTypes: ['image/*', 'video/*', 'application/pdf']  // Mixed
 ```
 
 Files not matching an allowed type are rejected with `400 Bad Request`.
