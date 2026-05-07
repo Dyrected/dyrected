@@ -37,7 +37,7 @@ const client = createClient({
 | `apiKey` | `string` | | Site API Key. Sent as `x-api-key` header. |
 | `siteId` | `string` | | Site ID. Sent as `x-site-id` header. Required in Cloud mode. |
 | `token` | `string` | | JWT token for user-authenticated requests. Sent as `Authorization: Bearer` header. |
-| `defaultDepth` | `number` | | Default relationship population depth (default: `0`) |
+| `defaultDepth` | `number` | | Default relationship population depth (default: `1`) |
 | `fetch` | `typeof fetch` | | Custom `fetch` implementation (e.g., for Node 18 polyfills) |
 
 ---
@@ -97,6 +97,48 @@ const post = await client.collection('posts').findOne('abc123', { depth: 2 })
 ### `.create(data)`
 
 Create a new document.
+
+```ts
+const post = await client.collection('posts').create({
+  title: 'My New Post',
+  status: 'draft',
+})
+```
+
+---
+
+### `.update(id, data)`
+
+Update an existing document.
+
+```ts
+const post = await client.collection('posts').update('abc123', {
+  title: 'Updated Title',
+})
+```
+
+---
+
+### `.delete(id)`
+
+Delete a document by ID.
+
+```ts
+await client.collection('posts').delete('abc123')
+```
+
+---
+
+### `.upload(file, data?)`
+
+Upload a file to an upload collection.
+
+```ts
+const media = await client.collection('media').upload(file, {
+  alt: 'Description',
+  caption: 'Caption',
+})
+```
 
 ```ts
 const post = await client.collection('posts').create({
@@ -167,32 +209,30 @@ await client.global('site-settings').update({
   siteName: 'My New Name',
 })
 ```
+Update the global.
+
+```ts
+const settings = await client.global('site-settings').update({
+  maintenanceMode: true,
+})
+```
 
 ---
 
-## Auth Methods
+## Authentication
 
-> **Note:** Auth collection endpoints are not yet implemented in `@dyrected/core`. These methods are planned — see Phase 13.1 in the implementation plan.
+Authentication is performed on auth-enabled collections.
 
-For collections with `auth: true`.
-
-### `.login(email, password)` *(planned)*
+### `.login(email, password)`
 
 ```ts
-const { token, user } = await client.collection('users').login(
-  'user@example.com',
-  'my-password'
-)
+const { token, user } = await client.collection('users').login('admin@example.com', 'password')
+
+// Attach token to the client for subsequent requests
 client.setToken(token)
 ```
 
-### `.me()` *(planned)*
-
-```ts
-const user = await client.collection('users').me()
-```
-
-### `.logout()` *(planned)*
+### `.logout()`
 
 ```ts
 await client.collection('users').logout()

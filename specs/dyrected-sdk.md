@@ -23,19 +23,19 @@ Create one SDK instance per site and export it. Import it wherever you need cont
 import { createClient } from '@dyrected/sdk'
 
 export const dyrected = createClient({
-  apiUrl: process.env.DYRECTED_API_URL,   // e.g. https://api.dyrected.com
+  baseUrl: process.env.DYRECTED_BASE_URL, // e.g. https://api.dyrected.com
   apiKey: process.env.DYRECTED_API_KEY,   // x-api-key sent on every request
 })
 ```
 
-In self-hosted mode, `apiUrl` points at your own server. In cloud mode, it points at `https://api.dyrected.com`. The SDK does not know or care which — it just sends requests.
+In self-hosted mode, `baseUrl` points at your own server. In cloud mode, it points at `https://api.dyrected.com`. The SDK does not know or care which — it just sends requests.
 
 ### Config Options
 
 ```ts
 interface ClientConfig {
-  apiUrl: string           // Base URL of the Dyrected backend
-  apiKey: string           // Site API key — attached as x-api-key header
+  baseUrl: string          // Base URL of the Dyrected backend
+  apiKey?: string          // Site API key — attached as x-api-key header
   token?: string           // Optional initial auth token (SSR use cases)
   defaultLocale?: string   // Default locale for localised content
   fetch?: typeof fetch     // Custom fetch implementation (e.g. for edge runtimes)
@@ -47,12 +47,12 @@ interface ClientConfig {
 
 ## Collections
 
-### `dyrected.collections.find()`
+### `dyrected.collection(slug).find()`
 
 Fetch a paginated, filterable, sortable list of documents from a collection.
 
 ```ts
-const posts = await dyrected.collections.find('posts', {
+const posts = await dyrected.collection('posts').find({
   where: {
     status: { equals: 'published' },
   },
@@ -77,78 +77,59 @@ const posts = await dyrected.collections.find('posts', {
 }
 ```
 
-### `dyrected.collections.findOne()`
+### `dyrected.collection(slug).findOne()`
 
 Fetch a single document by ID.
 
 ```ts
-const post = await dyrected.collections.findOne('posts', '64a1f...', {
+const post = await dyrected.collection('posts').findOne('64a1f...', {
   depth: 2,
 })
 ```
 
-### `dyrected.collections.findBy()`
+### `dyrected.collection(slug).find()` (Single by filter)
 
-Fetch a single document by a field value. Useful for slug-based routing.
+Fetch a single document by a field value using `where`.
 
 ```ts
-const post = await dyrected.collections.findBy('posts', {
-  field: 'slug',
-  value: 'my-post-slug',
+const { docs } = await dyrected.collection('posts').find({
+  where: { slug: { equals: 'my-post-slug' } },
+  limit: 1,
   depth: 1,
 })
+const post = docs[0]
 ```
 
-### `dyrected.collections.create()`
+### `dyrected.collection(slug).create()`
 
 Create a new document. Requires the user to be authenticated unless the collection allows public creation.
 
 ```ts
-const submission = await dyrected.collections.create('contact-submissions', {
+const submission = await dyrected.collection('contact-submissions').create({
   name: 'Jane Smith',
   email: 'jane@example.com',
   message: 'Hello from the contact form.',
 })
 ```
 
-### `dyrected.collections.update()`
+### `dyrected.collection(slug).update()`
 
 Update an existing document by ID.
 
 ```ts
-const updated = await dyrected.collections.update('posts', '64a1f...', {
+const updated = await dyrected.collection('posts').update('64a1f...', {
   title: 'Updated title',
 })
 ```
 
-### `dyrected.collections.delete()`
+### `dyrected.collection(slug).delete()`
 
 Delete a document by ID.
 
 ```ts
-await dyrected.collections.delete('posts', '64a1f...')
+await dyrected.collection('posts').delete('64a1f...')
 ```
 
-### `dyrected.collections.updateMany()`
-
-Update multiple documents matching a criteria.
-
-```ts
-await dyrected.collections.updateMany('posts', 
-  { status: 'published' }, 
-  { where: { status: { equals: 'draft' } } }
-)
-```
-
-### `dyrected.collections.deleteMany()`
-
-Delete multiple documents matching a criteria.
-
-```ts
-await dyrected.collections.deleteMany('posts', {
-  where: { status: { equals: 'archived' } }
-})
-```
 
 ---
 
@@ -197,22 +178,22 @@ where: {
 
 ## Globals
 
-### `dyrected.globals.get()`
+### `dyrected.global(slug).get()`
 
 Fetch the single instance of a global.
 
 ```ts
-const navbar = await dyrected.globals.get('navbar', { depth: 1 })
-const footer = await dyrected.globals.get('footer')
-const settings = await dyrected.globals.get('site-settings')
+const navbar = await dyrected.global('navbar').get({ depth: 1 })
+const footer = await dyrected.global('footer').get()
+const settings = await dyrected.global('site-settings').get()
 ```
 
-### `dyrected.globals.update()`
+### `dyrected.global(slug).update()`
 
 Update a global. Requires authentication.
 
 ```ts
-const updated = await dyrected.globals.update('site-settings', {
+const updated = await dyrected.global('site-settings').update({
   maintenanceMode: true,
 })
 ```
@@ -223,60 +204,46 @@ const updated = await dyrected.globals.update('site-settings', {
 
 The SDK manages authentication state internally. Tokens are stored in memory. On the server (SSR / RSC) you pass the token directly in config or per-request. On the client, the SDK handles refresh automatically.
 
-### `dyrected.auth.login()`
+### `dyrected.collection(slug).login()`
 
 ```ts
-const result = await dyrected.auth.login('users', {
-  email: 'admin@example.com',
-  password: 'securepassword',
-})
+const result = await dyrected.collection('users').login('admin@example.com', 'securepassword')
 
-// result.token    — access token (15 min)
+// result.token    — access token
 // result.user     — the authenticated user document
+
+// Set the token on the client for subsequent requests
+dyrected.setToken(result.token)
 ```
 
 The collection slug (`'users'`) matches the auth collection defined in your backend config. If you have multiple auth collections (`users`, `admins`), you call login against whichever is appropriate.
 
-### `dyrected.auth.logout()`
+### `dyrected.collection(slug).logout()`
 
 ```ts
-await dyrected.auth.logout('users')
+await dyrected.collection('users').logout()
+dyrected.clearToken()
 ```
 
 Invalidates the refresh token on the server and clears the token from the SDK instance.
 
-### `dyrected.auth.me()`
+### `dyrected.collection(slug).me()`
 
 Fetch the currently authenticated user.
 
 ```ts
-const user = await dyrected.auth.me('users')
+const user = await dyrected.collection('users').me()
 ```
 
 Returns `null` if no valid session exists.
 
-### `dyrected.auth.refresh()`
-
-Manually refresh the access token. The SDK calls this automatically when a request returns `401` — you rarely need to call it yourself.
+### `dyrected.collection(slug).refreshToken()`
 
 ```ts
-const token = await dyrected.auth.refresh('users')
+const { token } = await dyrected.collection('users').refreshToken()
+dyrected.setToken(token)
 ```
 
-### `dyrected.auth.forgotPassword()`
-
-```ts
-await dyrected.auth.forgotPassword('users', { email: 'admin@example.com' })
-```
-
-### `dyrected.auth.resetPassword()`
-
-```ts
-await dyrected.auth.resetPassword('users', {
-  token: 'reset-token-from-email',
-  password: 'newpassword123',
-})
-```
 
 ### Passing Auth Tokens in SSR
 
@@ -288,12 +255,14 @@ import { createClient } from '@dyrected/sdk'
 import { cookies } from 'next/headers'
 
 const dyrected = createClient({
-  apiUrl: process.env.DYRECTED_API_URL,
+  baseUrl: process.env.DYRECTED_BASE_URL,
   apiKey: process.env.DYRECTED_API_KEY,
-  token: cookies().get('dyrected_token')?.value,
 })
 
-const drafts = await dyrected.collections.find('posts', {
+// Set the token manually from a cookie
+dyrected.setToken(cookies().get('dyrected_token')?.value)
+
+const posts = await dyrected.collection('posts').find({
   where: { status: { equals: 'draft' } },
 })
 ```
@@ -304,16 +273,13 @@ const drafts = await dyrected.collections.find('posts', {
 
 Upload a file to an upload collection.
 
-### `dyrected.collections.upload()`
+### `dyrected.collection(slug).upload()`
 
 ```ts
-const image = await dyrected.collections.upload('images', {
-  file: fileFromInput,       // File | Blob | Buffer
-  data: {
-    alt: 'A descriptive alt text',
-  },
+const image = await dyrected.collection('images').upload(fileFromInput, {
+  alt: 'A descriptive alt text',
 })
-
+```
 // image.url        — full public URL
 // image.sizes      — generated image sizes if configured on the collection
 // image.filename   — stored filename
@@ -399,12 +365,8 @@ Preview mode lets editors see unpublished content by visiting the site with a sh
 ```ts
 // initialise with preview support
 const dyrected = createClient({
-  apiUrl: process.env.DYRECTED_API_URL,
+  baseUrl: process.env.DYRECTED_BASE_URL,
   apiKey: process.env.DYRECTED_API_KEY,
-  preview: {
-    enabled: true,
-    secret: process.env.DYRECTED_PREVIEW_SECRET,
-  },
 })
 ```
 
@@ -420,7 +382,7 @@ For Next.js, use the native `fetch` cache options via the custom fetch config:
 
 ```ts
 const dyrected = createClient({
-  apiUrl: process.env.DYRECTED_API_URL,
+  baseUrl: process.env.DYRECTED_BASE_URL,
   apiKey: process.env.DYRECTED_API_KEY,
   fetch: (url, init) =>
     fetch(url, {
@@ -442,7 +404,7 @@ All SDK methods throw a `DyrectedError` on non-2xx responses. The error includes
 import { DyrectedError } from '@dyrected/sdk'
 
 try {
-  const post = await dyrected.collections.findOne('posts', 'bad-id')
+  const post = await dyrected.collection('posts').findOne('bad-id')
 } catch (err) {
   if (err instanceof DyrectedError) {
     console.log(err.code)      // e.g. 'NOT_FOUND'
@@ -461,31 +423,28 @@ try {
 
 | Method | Signature | Auth required |
 |---|---|---|
-| `find` | `(slug, options?) → PaginatedResult<T>` | Optional |
-| `findOne` | `(slug, id, options?) → T` | Optional |
-| `findBy` | `(slug, { field, value }, options?) → T` | Optional |
-| `create` | `(slug, data) → T` | Depends on access rule |
-| `update` | `(slug, id, data) → T` | Yes |
-| `delete` | `(slug, id) → void` | Yes |
-| `upload` | `(slug, { file, data }) → T` | Depends on access rule |
+| `find` | `(options?) → PaginatedResult<T>` | Optional |
+| `findOne` | `(id, options?) → T` | Optional |
+| `create` | `(data) → T` | Depends on access rule |
+| `update` | `(id, data) → T` | Yes |
+| `delete` | `(id) → void` | Yes |
+| `upload` | `(file, data?) → T` | Depends on access rule |
 
 ### Globals
 
 | Method | Signature | Auth required |
 |---|---|---|
-| `get` | `(slug, options?) → T` | Optional |
-| `update` | `(slug, data) → T` | Yes |
+| `get` | `(options?) → T` | Optional |
+| `update` | `(data) → T` | Yes |
 
 ### Auth
 
 | Method | Signature | Auth required |
 |---|---|---|
-| `login` | `(collection, { email, password }) → { token, user }` | No |
-| `logout` | `(collection) → void` | Yes |
-| `me` | `(collection) → User \| null` | Yes |
-| `refresh` | `(collection) → string` | No (uses refresh cookie) |
-| `forgotPassword` | `(collection, { email }) → void` | No |
-| `resetPassword` | `(collection, { token, password }) → void` | No |
+| `login` | `(email, password) → { token, user }` | No |
+| `logout` | `() → void` | Yes |
+| `me` | `() → User \| null` | Yes |
+| `refreshToken` | `() → string` | No |
 
 ### Workspaces (Cloud Only)
 

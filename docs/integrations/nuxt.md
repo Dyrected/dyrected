@@ -182,6 +182,35 @@ onMounted(() => {
 
 ---
 
+## Step 4 — Embed the Admin UI
+
+To use the Admin UI in a Nuxt project, create a client-only page and sync the internal history with `navigateTo`.
+
+```vue
+<!-- pages/admin/[...slug].vue -->
+<template>
+  <ClientOnly>
+    <AdminUI
+      :base-url="config.public.dyrectedUrl"
+      :api-key="config.public.dyrectedApiKey"
+      :site-id="config.public.dyrectedSiteId"
+      basename="/admin"
+      @navigate="(path) => navigateTo('/admin' + path)"
+    />
+  </ClientOnly>
+</template>
+
+<script setup lang="ts">
+import { AdminUI } from '@dyrected/admin'
+import '@dyrected/admin/dist/index.css'
+
+definePageMeta({ layout: false }) // Optional: hide standard site layout
+const config = useRuntimeConfig()
+</script>
+```
+
+---
+
 ## Server Handler
 
 The module automatically registers a server handler at `/api/dyrected/[...route]`. This proxies requests from your Nuxt frontend to your Dyrected backend, injecting the API key server-side so it is never exposed to the browser.

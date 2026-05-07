@@ -18,7 +18,7 @@ The Admin UI (`@dyrected/admin`) must fully reflect every option in `CollectionC
 | Config Property | Current State | Required Admin Behavior |
 |---|---|---|
 | `labels.singular / plural` | Partially used | Use `plural` in list heading; `singular` in Create button and breadcrumb |
-| `admin.group` | Not used | Group sidebar links under the `group` label with a collapsible section |
+| `admin.group` | **Used** | Group sidebar links under the `group` label with a collapsible section |
 | `admin.hidden` | Not enforced | Hide collection from sidebar and refuse navigation to its routes |
 | `admin.useAsTitle` | Used in search key only | Use as the primary display column in list table and as the document title in edit header |
 | `admin.defaultColumns` | Partially used | Respect the ordered column list exactly; show a column picker UI to override |
@@ -41,7 +41,7 @@ The Admin UI (`@dyrected/admin`) must fully reflect every option in `CollectionC
 | `admin.description` | Used | — |
 | `admin.hidden` | Used | — |
 | `admin.readOnly` | Used | — |
-| `admin.condition` | **Not implemented** | Evaluate `condition(watchedValues)` on every form change; hide/show field dynamically |
+| `admin.condition` | **Implemented** | Evaluate `condition(watchedValues)` on every form change; hide/show field dynamically |
 | `access.read` | **Not enforced** | Strip field from form if `read` returns false for current user |
 | `access.update` | **Not enforced** | Set field `readOnly` if `update` returns false |
 

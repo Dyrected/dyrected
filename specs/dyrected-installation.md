@@ -45,12 +45,24 @@ export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'
 ```
 
 ### Step D: Mount the Admin UI
-Create `app/cms/[[...route]]/page.tsx` to serve the editor.
+Create `app/admin/[[...path]]/page.tsx` to serve the editor.
 ```tsx
-import { DyrectedAdmin } from '@dyrected/next/admin'
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { AdminUI } from '@dyrected/admin'
 
 export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/api/dyrected" />
+  const router = useRouter()
+
+  return (
+    <AdminUI 
+      baseUrl={process.env.NEXT_PUBLIC_DYRECTED_BASE_URL}
+      apiKey={process.env.NEXT_PUBLIC_DYRECTED_API_KEY}
+      basename="/admin"
+      onNavigate={(path) => router.push('/admin' + path)}
+    />
+  )
 }
 ```
 
@@ -80,14 +92,20 @@ export default defineNuxtConfig({
 ```
 
 ### Step D: Setup the Admin Page
-Create `pages/cms/[[...route]].vue`.
+Create `pages/admin/[...path].vue`.
 ```vue
 <template>
-  <DyrectedAdmin api-path="/api/dyrected" />
+  <AdminUI 
+    :base-url="config.public.dyrectedBaseUrl"
+    :api-key="config.public.dyrectedApiKey"
+    basename="/admin"
+    @navigate="(path) => navigateTo('/admin' + path)"
+  />
 </template>
 
 <script setup lang="ts">
-import { DyrectedAdmin } from '@dyrected/nuxt/admin'
+import { AdminUI } from '@dyrected/admin'
+const config = useRuntimeConfig()
 </script>
 ```
 
@@ -120,11 +138,12 @@ pnpm dyrected generate:types
 ### Usage
 ```ts
 // Next.js (Server Component)
-import { getDyrectedClient } from '@dyrected/next/server'
-const dyrected = getDyrectedClient()
-const posts = await dyrected.collections.find('posts')
+import { dyrected } from '@/lib/dyrected'
+const { docs: posts } = await dyrected.collection('posts').find()
 
 // Nuxt (Composable)
-const dyrected = useDyrectedServer()
-const { data: posts } = await useAsyncData('posts', () => dyrected.collections.find('posts'))
+const dyrected = useDyrected()
+const { data: posts } = await useAsyncData('posts', () => 
+  dyrected.collection('posts').find()
+)
 ```

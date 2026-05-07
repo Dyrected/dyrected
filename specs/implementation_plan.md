@@ -429,10 +429,23 @@ This phase tracks everything **documented as existing** but not yet implemented,
 
 See `specs/dyrected-frontend-roadmap.md §8` for full root-cause analysis and solution options. Summary of work:
 
-- [ ] Add `basename?: string` prop to `<AdminUI>` (default `'/admin'`); pass to `<BrowserRouter basename={basename}>`
-- [ ] Add `onNavigate?: (path: string) => void` prop; emit on every internal route change via a `useEffect` + `useLocation` sync component
-- [ ] Add both props to `AdminUIProps` type
+- [x] Add `basename?: string` prop to `<AdminUI>` (default `'/admin'`); pass to `<BrowserRouter basename={basename}>`
+- [x] Add `onNavigate?: (path: string) => void` prop; emit on every internal route change via a `useEffect` + `useLocation` sync component
+- [x] Add both props to `AdminUIProps` type
+- [x] Added `AdminStandalone` export using `MemoryRouter` for iframe / self-hosted use cases
 - [ ] Update Next.js embed docs: use `[[...route]]` catch-all page that always renders `<AdminUI>`
 - [ ] Update Nuxt embed docs: equivalent catch-all page setup
 - [ ] Test in a Nuxt/Vue host app — verify `navigateTo()` integration via `onNavigate`
 - [ ] Add `docs/admin/overview.md` section explaining embedding options
+
+---
+
+## Admin UI File Organization — ✅ Complete
+
+`packages/admin/src/index.tsx` was 800+ lines with all components co-located. Refactored:
+
+- [x] `src/pages/dashboard/dashboard.tsx` — extracted `Dashboard`
+- [x] `src/pages/setup/setup-prompt.tsx` — extracted `SetupPromptUI`, exported as named package export
+- [x] `src/index.tsx` — clean entrypoint: only `AdminUI`, `AdminStandalone`, and re-exports
+- [x] `/setup` route added to admin router — prompt reachable any time from the sidebar
+- [x] Sidebar footer — persistent "Integration Guide" link visible in all modes

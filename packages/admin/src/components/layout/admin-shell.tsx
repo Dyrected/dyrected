@@ -12,6 +12,7 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Sparkles,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { cn } from "../../lib/utils"
@@ -222,8 +223,18 @@ function SidebarInner({
       </nav>
 
       {/* Footer */}
-      {!isEmbedded && (
-        <div className="border-t border-border px-2 py-3 shrink-0">
+      <div className="border-t border-border px-2 py-3 shrink-0 space-y-0.5">
+        {/* Integration guide — always visible so embedded users can access the prompt */}
+        <NavItem
+          to="/setup"
+          icon={Sparkles}
+          label="Integration Guide"
+          active={location.pathname === "/setup"}
+          collapsed={collapsed}
+          onClick={onNavigate}
+        />
+
+        {!isEmbedded && (
           <button
             onClick={logout}
             title={collapsed ? "Logout" : undefined}
@@ -235,8 +246,8 @@ function SidebarInner({
             <LogOut className="h-[15px] w-[15px] shrink-0" />
             {!collapsed && <span>Logout</span>}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

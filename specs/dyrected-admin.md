@@ -25,25 +25,49 @@ pnpm add @dyrected/admin
 To embed the admin panel, create a catch-all page in your `app` directory.
 
 ```tsx
-// app/cms/[[...route]]/page.tsx
+// app/admin/[[...path]]/page.tsx
 'use client'
 
-import { DyrectedAdmin } from '@dyrected/admin'
+import { useRouter } from 'next/navigation'
+import { AdminUI } from '@dyrected/admin'
 import '@dyrected/admin/dist/index.css'
 
 export default function AdminPage() {
+  const router = useRouter()
+
   return (
-    <DyrectedAdmin 
-      apiPath="/api/dyrected" 
-      basePath="/cms"
-      config={{
-        logo: '/logo.svg',
-        primaryColor: '#000000',
-      }}
+    <AdminUI 
+      baseUrl="https://your-dyrected-api.com" 
+      apiKey={process.env.NEXT_PUBLIC_DYRECTED_API_KEY}
+      siteId="your-site-id"
+      basename="/admin"
+      onNavigate={(path) => router.push('/admin' + path)}
     />
   )
 }
 ```
+
+---
+
+## Component Exports
+
+The package exports two main entry points and a standalone UI component:
+
+1.  **`AdminUI`**: The standard embedded version. Uses `BrowserRouter` and requires a `basename`. Best for Next.js/Nuxt catch-all routes.
+2.  **`AdminStandalone`**: Uses `MemoryRouter`. Best for iframes or cases where you don't want the admin to affect the browser URL.
+3.  **`SetupPromptUI`**: The raw AI Integration Guide component. Useful for building your own onboarding flows.
+
+---
+
+## Props
+
+| Prop | Type | Description |
+|---|---|---|
+| `baseUrl` | `string` | The full URL to your Dyrected API (e.g. `https://api.dyrected.com`). |
+| `apiKey` | `string` | Your Site API Key. |
+| `siteId` | `string` | (Optional) The Site ID for multi-tenant setups. |
+| `basename` | `string` | The route prefix where the admin is mounted (default: `/admin`). |
+| `onNavigate` | `function` | Callback `(path: string) => void` triggered on internal route changes. |
 
 ---
 
@@ -88,6 +112,7 @@ Dyrected Admin automatically renders the appropriate UI component based on the f
 | `email` | Email Input | Format validation |
 | `url` | URL Input | Format validation, "open" button |
 | `relationship` | Searchable Select | Paginated lookup across collections, "Add New" inline |
+| `blocks` | Block Builder | Drag-and-drop page builder with custom block types |
 | `array` | Repeatable List | Draggable reordering, nested validation |
 | `object` | Grouped Fields | Visual indentation, collapsible sections |
 | `json` | Code Editor | Syntax highlighting, JSON validation |
@@ -99,7 +124,7 @@ Dyrected Admin automatically renders the appropriate UI component based on the f
 You can extend the Admin UI by providing your own React components for specific fields. This is useful for custom map pickers, color selectors, or complex data types.
 
 ```tsx
-<DyrectedAdmin
+<AdminUI
   components={{
     fields: {
       customMap: MyMapFieldComponent,

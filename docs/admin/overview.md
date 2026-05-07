@@ -13,19 +13,20 @@ The `@dyrected/admin` package is a React-based Admin UI that is **automatically 
 
 Create a catch-all page under your chosen admin path:
 
-```tsx
-// app/admin/[[...route]]/page.tsx
-'use client'
-
 import { AdminUI } from '@dyrected/admin'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import '@dyrected/admin/dist/index.css'
 
 export default function AdminPage() {
+  const router = useRouter()
+
   return (
     <AdminUI
       baseUrl={process.env.NEXT_PUBLIC_CMS_URL!}
       apiKey={process.env.NEXT_PUBLIC_CMS_API_KEY!}
       siteId={process.env.NEXT_PUBLIC_SITE_ID}
+      basename="/admin"
+      onNavigate={(path) => router.push(`/admin${path}`)}
     />
   )
 }
@@ -43,6 +44,8 @@ The `@dyrected/nuxt` module does not embed the Admin UI — it provides SSR data
       :base-url="config.public.cmsUrl"
       :api-key="config.public.cmsApiKey"
       :site-id="config.public.siteId"
+      basename="/admin"
+      @navigate="(path) => navigateTo('/admin' + path)"
     />
   </ClientOnly>
 </template>
@@ -67,6 +70,24 @@ When running the `@dyrected/core` app directly, the Admin UI is served at `/admi
 | `baseUrl` | `string` | ✅ | The base URL of your Dyrected API (e.g. `https://cms.mysite.com`). |
 | `apiKey` | `string` | ✅ | The Site API key used to authenticate all Admin requests. |
 | `siteId` | `string` | | The Site ID sent as `X-Site-Id` on every request (required in Cloud mode). |
+| `basename` | `string` | | The base path where the admin is mounted (default: `/admin`). |
+| `onNavigate` | `function` | | Callback fired on internal route change. Receives the `path` (relative to basename). |
+
+---
+
+## Standalone Components
+
+The admin library also exports specialized components for targeted use cases.
+
+### `SetupPromptUI`
+
+The AI integration prompt can be embedded standalone in your own application if you want to guide users through schema setup without mounting the full dashboard.
+
+```tsx
+import { SetupPromptUI } from '@dyrected/admin'
+
+<SetupPromptUI config={{ baseUrl, apiKey }} />
+```
 
 ---
 
