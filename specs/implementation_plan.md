@@ -3,13 +3,27 @@
 This document outlines the phased roadmap for building the Dyrected CMS ecosystem.
 
 ## Phase 1: Core Engine Foundation (@dyrected/core)
-The goal is to establish the Hono-based engine and the plugin/adapter architecture.
 
-- [ ] Define core types and interfaces (Collection, Global, Field, Adapter).
-- [ ] Implement the base Hono application with standard middleware (CORS, Logger, Error handling).
-- [ ] Create the `defineConfig` and `defineCollection/Global` utility functions.
-- [ ] Implement the singleton resolution logic for self-hosted mode.
-- [ ] Build the basic REST routing layer for collections and globals.
+### Phase 1.1: Typings & Configuration API
+- [ ] Define core TypeScript interfaces for `Collection`, `Global`, `Field`, and `Block`.
+- [ ] Implement `defineCollection`, `defineGlobal`, and `defineConfig` helper functions with strict generic typing.
+- [ ] Set up the base `Field` types (text, number, select, relationship, etc.).
+
+### Phase 1.2: App Shell & Middleware
+- [ ] Initialize the Hono application instance in `packages/core`.
+- [ ] Implement standard middleware: Request ID, Logger, CORS, and Body Parser.
+- [ ] Build the `resolveSite` middleware to handle self-hosted singleton resolution.
+- [ ] Set up the internal context type and `c.set/c.get` helpers.
+
+### Phase 1.3: Dynamic Routing Layer
+- [ ] Implement the dynamic route generator that reads the config at boot.
+- [ ] Build the `/collections/:slug` and `/globals/:slug` route groups.
+- [ ] Implement the `schemas` routes to expose the active config to the SDK/Admin.
+
+### Phase 1.4: Base Controller Logic
+- [ ] Implement the generic `find`, `findOne`, and `create` controller logic.
+- [ ] Build the `update` and `delete` handlers with basic response normalization.
+- [ ] Set up the initial `DatabaseAdapter` interface requirements.
 
 ## Phase 2: Persistence & Storage (@dyrected/db-* & @dyrected/storage-*)
 Enable data saving and file management.
