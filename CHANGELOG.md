@@ -5,6 +5,11 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Postgres Database Adapter (@dyrected/db-postgres)**:
+    - Native `postgres.js` integration.
+    - JSONB storage for flexible schemas.
+    - Efficient UPSERT logic for global state management.
+    - Connection pooling ready for production workloads.
 - **SQLite Database Adapter (@dyrected/db-sqlite)**:
     - Native `better-sqlite3` integration.
     - Dynamic table creation for Collections.

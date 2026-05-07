@@ -1,0 +1,22 @@
+{
+  "name": "@dyrected/db-postgres",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "postgres": "^3.4.4",
+    "drizzle-orm": "^0.30.0",
+    "@dyrected/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
