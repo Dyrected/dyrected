@@ -5,6 +5,10 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **SDK Fluent Query Builder (@dyrected/sdk)**:
+    - New `.collection(slug).find()` chainable API.
+    - Support for `.where()`, `.sort()`, `.limit()`, `.page()`, and `.depth()`.
+    - Native `Promise` support for direct `await`.
 - **S3 Storage Adapter (@dyrected/storage-s3)**:
     - AWS SDK v3 integration.
     - Multipart upload support via `@aws-sdk/lib-storage`.

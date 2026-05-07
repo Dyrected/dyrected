@@ -42,6 +42,7 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] Set up Drizzle ORM with `postgres.js`.
 - [x] Implement dynamic table mapping (JSONB approach).
 - [x] Build the `DatabaseAdapter` implementation for Postgres CRUD.
+- [ ] Implement full-text search support (GIN indexes).
 
 ### Phase 2.3: MongoDB Adapter (@dyrected/db-mongodb)
 
