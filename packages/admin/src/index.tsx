@@ -1,18 +1,15 @@
 import { MemoryRouter, Routes, Route, useParams } from "react-router-dom";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import {
-  LayoutDashboard,
   Database,
   ImageIcon,
   Copy,
   Check,
   ExternalLink,
-  Rocket,
   Terminal,
   Sparkles,
   ArrowRight,
   Globe,
-  Plus,
   ShieldCheck
 } from "lucide-react";
 import { cn } from "./lib/utils";
@@ -42,7 +39,7 @@ function Dashboard() {
   const collectionCounts = useQueries({
     queries: collections.map(col => ({
       queryKey: ["collection-count", col.slug],
-      queryFn: () => client!.listEntries(col.slug, { limit: 1 }),
+      queryFn: () => client!.find(col.slug, { limit: 1 }),
       enabled: !!client && !!col.slug
     }))
   });
