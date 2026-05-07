@@ -9,16 +9,17 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog"
-import { X, Plus, FileIcon } from "lucide-react"
+import { Image as ImageIcon, X, Plus, FileIcon } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface MediaPickerProps {
   value?: string
   onChange: (value: string) => void
   label?: string
+  variant?: "default" | "icon"
 }
 
-export function MediaPicker({ value, onChange, label }: MediaPickerProps) {
+export function MediaPicker({ value, onChange, label, variant = "default" }: MediaPickerProps) {
   const { client } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
 
@@ -31,11 +32,13 @@ export function MediaPicker({ value, onChange, label }: MediaPickerProps) {
   const selectedMedia = media?.find(m => m.filename === value)
   const previewUrl = selectedMedia ? `${client?.getBaseUrl()}/media/${selectedMedia.filename}` : null
 
+  const isIcon = variant === "icon"
+
   return (
-    <div className="space-y-2">
-      {label && <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>}
-      <div className="flex items-center gap-4">
-        {value ? (
+    <div className={isIcon ? "" : "space-y-2"}>
+      {label && !isIcon && <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>}
+      <div className={isIcon ? "" : "flex items-center gap-4"}>
+        {value && !isIcon ? (
           <div className="relative group rounded-lg overflow-hidden border bg-muted aspect-square h-24">
             {selectedMedia?.mimeType?.startsWith("image/") ? (
               <img src={previewUrl!} alt="" className="object-cover w-full h-full" />
@@ -54,13 +57,19 @@ export function MediaPicker({ value, onChange, label }: MediaPickerProps) {
         ) : (
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                className="h-24 w-24 flex flex-col gap-2 border-dashed border-2 hover:border-primary/50"
-              >
-                <Plus className="h-6 w-6 text-muted-foreground" />
-                <span className="text-[10px] uppercase font-bold text-muted-foreground">Select</span>
-              </Button>
+              {isIcon ? (
+                <Button variant="ghost" size="sm" className="px-2">
+                  <ImageIcon className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  className="h-24 w-24 flex flex-col gap-2 border-dashed border-2 hover:border-primary/50"
+                >
+                  <Plus className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">Select</span>
+                </Button>
+              )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[800px]">
               <DialogHeader>

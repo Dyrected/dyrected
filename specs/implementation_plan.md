@@ -105,28 +105,44 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] Set up the React Query (TanStack Query) provider for efficient data fetching.
 
 ### Phase 5.2: Data Management (List Views)
-- [ ] Implement the **Universal DataTable** using TanStack Table.
-- [ ] Build the dynamic filtering UI (mapping to the SDK's `.where()` logic).
-- [ ] Implement server-side pagination and multi-column sorting.
-- [ ] Create the "Bulk Actions" framework (Delete, Export).
+- [x] Implement the **Universal DataTable** using TanStack Table.
+- [x] Build the dynamic filtering UI (mapping to the SDK's `.where()` logic).
+- [x] Implement server-side pagination and multi-column sorting.
+- [x] Create the "Bulk Actions" framework (Delete, Export).
 
 ### Phase 5.3: The Media Library
-- [ ] Build the **Media Grid** view with lazy-loaded thumbnails.
-- [ ] Implement the **Hybrid Uploader**: Support for drag-and-drop files and Remote URL inputs.
-- [ ] Build the Media Detail sidebar for editing metadata (alt text, titles).
-- [ ] Integrate with `MediaService` to auto-populate metadata for YouTube/Vimeo.
+- [x] Build the **Media Grid** view with lazy-loaded thumbnails.
+- [x] Implement the **Hybrid Uploader**: Support for drag-and-drop files and Remote URL inputs.
+- [x] Build the Media Detail sidebar for editing metadata (alt text, titles).
+- [x] Integrate with `MediaService` to auto-populate metadata for YouTube/Vimeo.
 
 ### Phase 5.4: Dynamic Form Engine (Edit Views)
-- [ ] Build the recursive **Field Renderer** for standard field types (text, number, select, boolean).
-- [ ] Implement the **Relationship Picker**: Searchable modal for selecting related entries.
-- [ ] Build the **JSON Editor** field for raw data manipulation.
-- [ ] Implement real-time validation using `react-hook-form` and `zod`.
+- [x] Build the recursive **Field Renderer** for standard field types (text, number, select, boolean).
+- [x] Implement the **Relationship Picker**: Searchable modal for selecting related entries.
+- [x] Build the **JSON Editor** field for raw data manipulation.
+- [x] Implement real-time validation using `react-hook-form` and `zod`.
 
-### Phase 5.5: Content Experience (Scribe & Blocks)
-- [ ] Integrate **Scribe** (or TipTap) as the primary rich text editor.
-- [ ] Build the **Block Builder** UI: Draggable sections for the `blocks` field type.
-- [ ] Implement the **Global Settings** editor for singleton configurations.
-- [ ] Add "Draft vs Published" status indicators if supported by the collection.
+### Phase 5.5: Content Experience (Tiptap & Blocks)
+
+#### Phase 5.5.1: Tiptap Rich Text Editor Integration
+- [x] Install `@tiptap/react`, `@tiptap/starter-kit`, and necessary extensions.
+- [x] Create a `RichTextEditor` component wrapping Tiptap.
+- [x] Implement a custom, accessible Toolbar using Shadcn UI components.
+- [x] Integrate the `MediaPicker` into Tiptap to support rich media insertion.
+- [x] Update the `FormEngine` to utilize the new `RichTextEditor` for fields of type `richText`.
+
+#### Phase 5.5.2: The Block Builder Engine
+- [ ] Create a `BlockBuilder` component that reads the `blocks` configuration.
+- [ ] Implement Drag-and-Drop functionality to allow users to reorder block sections.
+- [ ] Build a "Block Selector" UI to allow users to add new blocks.
+- [ ] Integrate the `FormEngine` within each block to render the block's specific fields.
+
+#### Phase 5.5.3: Global Settings & Publishing Status
+- [ ] Build the `GlobalEditorPage` for managing singleton schemas.
+- [ ] Route `/globals/:slug` to the new `GlobalEditorPage`.
+- [ ] Implement a `PublishingSidebar` in the `EditEntryPage`.
+- [ ] Add toggle support for "Draft" vs "Published" if the `status` field is present.
+- [ ] Implement UI indicators in the `CollectionListPage` for entry status.
 
 ## Phase 6: Cloud & Platform
 

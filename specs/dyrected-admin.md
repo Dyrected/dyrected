@@ -67,7 +67,7 @@ A powerful data table for browsing items.
 The primary interface for creating and editing content.
 - **Dynamic Forms**: Fields are generated automatically based on your field types (`text`, `richText`, `relationship`, etc.).
 - **Visual Preview**: Side-by-side live preview for frameworks that support it.
-- **Scribe Editor**: Integrated `@dyrected/scribe` for advanced block-based rich text editing, featuring a distraction-free mode and real-time collaboration support (Cloud only).
+- **Tiptap Editor**: Integrated Tiptap for advanced block-based rich text editing, featuring a distraction-free mode and real-time collaboration support (Cloud only).
 
 ---
 
@@ -79,7 +79,7 @@ Dyrected Admin automatically renders the appropriate UI component based on the f
 |---|---|---|
 | `text` | Input | Single-line text, validation, placeholders |
 | `textarea` | Textarea | Multi-line text, auto-expanding |
-| `richText` | Scribe Editor | Block-based editing, drag-and-drop, formatting |
+| `richText` | Tiptap Editor | Block-based editing, drag-and-drop, formatting |
 | `number` | Number Input | Step control, min/max validation |
 | `boolean` | Switch / Checkbox | Toggle state |
 | `date` | Date Picker | Calendar interface, ISO formatting |
