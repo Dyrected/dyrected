@@ -1,7 +1,14 @@
 import { DatabaseAdapter } from '../types/index.js';
 
 export class MockDatabaseAdapter implements DatabaseAdapter {
-  async find() { return []; }
+  async find(params: { collection: string; limit?: number; page?: number }) {
+    return {
+      docs: [],
+      total: 0,
+      limit: params.limit || 10,
+      page: params.page || 1
+    };
+  }
   async findOne() { return null; }
   async create({ data }: { data: any }) { return { id: '1', ...data }; }
   async update({ data }: { data: any }) { return { id: '1', ...data }; }

@@ -5,6 +5,14 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **SQLite Database Adapter (@dyrected/db-sqlite)**:
+    - Native `better-sqlite3` integration.
+    - Dynamic table creation for Collections.
+    - Global state management using internal tables.
+    - JSON-based flexible storage for fast prototyping.
+- **Core Engine Improvements**:
+    - Enhanced `DatabaseAdapter` interface with pagination support (`docs`, `total`, `limit`, `page`).
+    - Standardized `PaginatedResult` type for API consistency.
 - **Core Engine Foundation (@dyrected/core)**:
     - Content Contract Typings (Collection, Global, Field).
     - Configuration API (`defineConfig`, `defineCollection`, `defineGlobal`).

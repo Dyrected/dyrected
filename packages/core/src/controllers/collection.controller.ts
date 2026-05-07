@@ -1,18 +1,20 @@
 import { Context } from 'hono';
-import { DyrectedContext } from '../app.js';
 import { CollectionConfig } from '../types/index.js';
+import { DyrectedContext } from '../app.js';
 
 export class CollectionController {
   constructor(private collection: CollectionConfig) {}
 
   async find(c: Context<DyrectedContext>) {
     const db = c.get('config').db;
-    const data = await db.find({
+    const limit = Number(c.req.query('limit')) || 10;
+    const page = Number(c.req.query('page')) || 1;
+    const result = await db.find({
       collection: this.collection.slug,
-      limit: Number(c.req.query('limit')) || 10,
-      offset: Number(c.req.query('offset')) || 0,
+      limit,
+      page,
     });
-    return c.json({ docs: data });
+    return c.json(result);
   }
 
   async findOne(c: Context<DyrectedContext>) {

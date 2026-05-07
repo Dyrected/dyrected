@@ -124,8 +124,21 @@ export interface GlobalConfig {
   };
 }
 
+export interface PaginatedResult<T = any> {
+  docs: T[];
+  total: number;
+  limit: number;
+  page: number;
+}
+
 export interface DatabaseAdapter {
-  find(args: { collection: string; where?: any; limit?: number; offset?: number }): Promise<any[]>;
+  find(args: { 
+    collection: string; 
+    where?: any; 
+    limit?: number; 
+    page?: number; 
+    sort?: string;
+  }): Promise<PaginatedResult>;
   findOne(args: { collection: string; id: string }): Promise<any>;
   create(args: { collection: string; data: any }): Promise<any>;
   update(args: { collection: string; id: string; data: any }): Promise<any>;
