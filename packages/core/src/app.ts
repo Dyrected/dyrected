@@ -1,0 +1,38 @@
+import { Hono } from 'hono';
+import { logger } from 'hono/logger';
+import { cors } from 'hono/cors';
+import { requestId } from 'hono/request-id';
+import { DyrectedConfig } from './types';
+
+export interface DyrectedContext {
+  Variables: {
+    config: DyrectedConfig;
+    siteId?: string;
+  };
+}
+
+/**
+ * Create the main Dyrected Hono application.
+ */
+export function createDyrectedApp(config: DyrectedConfig) {
+  const app = new Hono<DyrectedContext>();
+
+  // 1. Standard Middleware
+  app.use('*', requestId());
+  app.use('*', logger());
+  app.use('*', cors());
+
+  // 2. Site Resolution Middleware
+  app.use('*', async (c, next) => {
+    // For self-hosted/singleton mode, we default to 'default' site
+    // In cloud mode, this will extract the site from the host or license key
+    c.set('config', config);
+    c.set('siteId', 'default'); 
+    await next();
+  });
+
+  // 3. Health Check
+  app.get('/health', (c) => c.json({ status: 'ok', version: '0.0.1' }));
+
+  return app;
+}

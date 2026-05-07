@@ -21,4 +21,5 @@ export function defineConfig(config: DyrectedConfig): DyrectedConfig {
   return config;
 }
 
+export * from './app';
 export * from './types';
