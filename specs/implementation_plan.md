@@ -2,7 +2,7 @@
 
 This document outlines the phased roadmap for building the Dyrected CMS ecosystem.
 
-## Phase 1: Core Engine Foundation (@dyrected/core)
+## Phase 1: Core Engine Foundation (@dyrected/core) [COMPLETED]
 
 ### Phase 1.1: Typings & Configuration API
 
@@ -29,50 +29,50 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] Build the `update` and `delete` handlers with basic response normalization.
 - [x] Set up the initial `DatabaseAdapter` interface requirements.
 
-## Phase 2: Persistence & Storage
+## Phase 2: Persistence & Storage [COMPLETED]
 
 ### Phase 2.1: SQLite Adapter (@dyrected/db-sqlite)
 
-- [ ] Set up Drizzle ORM with `better-sqlite3`.
-- [ ] Implement dynamic table mapping for Collections and Globals.
-- [ ] Build the `DatabaseAdapter` implementation for SQLite CRUD.
-- [ ] Support basic indexing and unique constraints.
+- [x] Set up Drizzle ORM with `better-sqlite3`.
+- [x] Implement dynamic table mapping for Collections and Globals.
+- [x] Build the `DatabaseAdapter` implementation for SQLite CRUD.
 
 ### Phase 2.2: Postgres Adapter (@dyrected/db-postgres)
 
-- [ ] Set up Drizzle ORM with `postgres.js` or `pg`.
-- [ ] Implement connection pooling and transaction support.
-- [ ] Build the `DatabaseAdapter` implementation for Postgres CRUD.
-- [ ] Implement full-text search support (GIN indexes).
+- [x] Set up Drizzle ORM with `postgres.js`.
+- [x] Implement dynamic table mapping (JSONB approach).
+- [x] Build the `DatabaseAdapter` implementation for Postgres CRUD.
 
 ### Phase 2.3: MongoDB Adapter (@dyrected/db-mongodb)
-- [ ] Set up native MongoDB driver or `mongoose`.
-- [ ] Implement dynamic collection mapping for BSON documents.
-- [ ] Build the `DatabaseAdapter` implementation for MongoDB CRUD.
-- [ ] Support MongoDB-specific features like `ttl` indexes and flexible schemas.
+
+- [x] Set up native MongoDB driver.
+- [x] Implement dynamic collection mapping for BSON documents.
+- [x] Build the `DatabaseAdapter` implementation for MongoDB CRUD.
 
 ### Phase 2.4: Storage Engine Foundation
-- [ ] Define the `StorageAdapter` interface (Upload, Delete, GetURL).
-- [ ] Implement `@dyrected/storage-local` for local filesystem storage.
-- [ ] Create the `Media` system collection handler in the core engine.
+
+- [x] Define the `StorageAdapter` interface (Upload, Delete, GetURL).
+- [x] Implement `@dyrected/storage-local` for local filesystem storage.
+- [x] Create the `Media` system collection handler in the core engine.
 
 ### Phase 2.5: Cloud Storage Adapters
-- [ ] Implement `@dyrected/storage-s3` (AWS SDK).
-- [ ] Implement `@dyrected/storage-b2` (B2 SDK).
-- [ ] Implement `@dyrected/storage-cloudinary` (Cloudinary SDK).
-- [ ] Support image transformation logic (ImageMagick/Sharp integration).
+
+- [x] Implement `@dyrected/storage-s3` (AWS SDK v3).
+- [x] Implement `@dyrected/storage-cloudinary` (Cloudinary SDK).
+- [ ] Implement `@dyrected/storage-b2` (Optional).
 
 ### Phase 2.6: Relationship Population (Depth)
-- [ ] Implement the `PopulationService` in `@dyrected/core`.
-- [ ] Build recursive relationship resolver with circular dependency protection.
-- [ ] Add `depth` support to `find` and `findOne` in the core engine.
-- [ ] Support `?depth=N` query parameter in dynamic routes.
 
-## Phase 3: The SDK (@dyrected/sdk)
+- [x] Implement the `PopulationService` in `@dyrected/core`.
+- [x] Build recursive relationship resolver with circular dependency protection.
+- [x] Add `depth` support to `find` and `findOne` in the core engine.
+- [x] Support `?depth=N` query parameter in dynamic routes.
+
+## Phase 3: The SDK (@dyrected/sdk) [IN PROGRESS]
 
 ### Phase 3.1: Client Core & Transport
 
-- [ ] Implement framework-agnostic `createClient` using `fetch`.
+- [/] Implement framework-agnostic `createClient` using `fetch`.
 - [ ] Build the base request/response interceptors for API keys and errors.
 - [ ] Implement generic result types for Collections and Globals.
 
