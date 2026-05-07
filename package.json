@@ -8,6 +8,7 @@
     "lint": "turbo lint"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "turbo": "latest",
     "typescript": "latest"
   },
