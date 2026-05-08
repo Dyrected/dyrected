@@ -49,7 +49,7 @@ function NavItem({
         "group flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150",
         collapsed ? "justify-center px-2" : "",
         active
-          ? "bg-foreground text-background"
+          ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-accent hover:text-foreground"
       )}
     >
@@ -262,7 +262,7 @@ function SidebarInner({
                     <span className="truncate">{col.labels?.plural ?? col.label ?? col.slug}</span>
                     {!collapsed && (
                       <div className="flex gap-1 shrink-0">
-                        {col.auth && <Shield className="h-2.5 w-2.5 text-blue-500/70" />}
+                        {col.auth && <Shield className="h-2.5 w-2.5 text-primary/70" />}
                         {col.shared && <Share2 className="h-2.5 w-2.5 text-purple-500/70" />}
                         {isReadOnly && <Lock className="h-2.5 w-2.5 text-muted-foreground/40" />}
                       </div>

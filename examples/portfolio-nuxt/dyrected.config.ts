@@ -145,4 +145,9 @@ export default defineConfig({
   collections: [media, replays, pages, posts, comments, inquiries],
   globals: [navigation, settings],
   db,
+  admin: {
+    branding: {
+      primaryColor: "#00008b", // Deep Blue
+    },
+  },
 });

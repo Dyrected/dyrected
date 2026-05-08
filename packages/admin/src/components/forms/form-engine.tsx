@@ -242,7 +242,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
               {schema.required && <span className="text-destructive ml-1">*</span>}
             </FormLabel>
             {schema.unique && (
-              <span className="inline-flex items-center rounded-full bg-blue-50/50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 ring-1 ring-inset ring-blue-600/10">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/10">
                 Unique
               </span>
             )}

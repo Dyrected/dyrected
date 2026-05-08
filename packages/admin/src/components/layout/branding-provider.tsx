@@ -61,11 +61,19 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     if (!branding?.primaryColor) return null;
     const hsl = toRawHsl(branding.primaryColor);
     
+    // Extract lightness to determine if foreground should be light or dark
+    const match = hsl.match(/([\d.]+)%$/);
+    const lightness = match ? parseFloat(match[1]) : 50;
+    const isDark = lightness < 60;
+    const foreground = isDark ? "0 0% 100%" : "222.2 84% 4.9%";
+    
     return (
       <style dangerouslySetInnerHTML={{ __html: `
         .admin-ui {
           --primary: ${hsl};
+          --primary-foreground: ${foreground};
           --sidebar-primary: ${hsl};
+          --sidebar-primary-foreground: ${foreground};
           --sidebar-accent-foreground: ${hsl};
           --sidebar-ring: ${hsl};
           --ring: ${hsl} / 0.1;
