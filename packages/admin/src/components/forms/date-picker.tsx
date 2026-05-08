@@ -27,15 +27,17 @@ export function DatePicker({ value, onChange, label }: DatePickerProps) {
           <Button
             variant={"outline"}
             className={cn(
-              "w-full justify-start text-left font-normal",
+              "w-full justify-start text-left font-normal h-11 px-4 bg-white hover:bg-muted/50 border-border/60 shadow-sm transition-all hover:shadow-md",
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "PPP") : <span>Pick a date</span>}
+            <CalendarIcon className="mr-3 h-4 w-4 text-primary" />
+            <span className="flex-1 truncate">
+              {date ? format(date, "PPP") : "Pick a date..."}
+            </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0 border-border/50 shadow-2xl rounded-xl" align="start">
           <Calendar
             mode="single"
             selected={date}

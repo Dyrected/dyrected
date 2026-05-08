@@ -285,6 +285,7 @@ function renderField(schema: FieldSchema, field: any) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
   const disabled = schema.admin?.readOnly || (schema.access as any)?.update === false
+  const relationTo = (schema as any).relationTo || (schema as any).collection
 
   switch (schema.type) {
     case "textarea":
@@ -334,7 +335,7 @@ function renderField(schema: FieldSchema, field: any) {
       return <RelationshipPicker
         value={field.value}
         onChange={field.onChange}
-        relationTo={(schema as any).relationTo!}
+        relationTo={(schema as any).relationTo || (schema as any).collection}
         multiple={(schema as any).hasMany}
       />
     case "number":

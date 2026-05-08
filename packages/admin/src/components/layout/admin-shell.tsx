@@ -132,6 +132,7 @@ function SidebarInner({
   logout: () => void
   isEmbedded: boolean
   collapsed: boolean
+  onToggleCollapse?: () => void
   onNavigate?: () => void
 }) {
   const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
@@ -165,7 +166,22 @@ function SidebarInner({
             </svg>
           </div>
           {!collapsed && (
-            <span className="font-semibold text-sm tracking-tight text-foreground">Dyrected</span>
+            <span className="font-semibold text-sm tracking-tight text-foreground flex-1">Dyrected</span>
+          )}
+
+          {/* Desktop Toggle in Sidebar */}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="hidden md:flex p-1.5 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all ml-auto"
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
           )}
         </div>
       )}
@@ -377,6 +393,7 @@ export function AdminShell({
           logout={logout}
           isEmbedded={isEmbedded}
           collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((v) => !v)}
         />
       </aside>
 
@@ -415,30 +432,15 @@ export function AdminShell({
       {/* ------------------------------------------------------------------ */}
       {/* Main content                                                         */}
       {/* ------------------------------------------------------------------ */}
-      <main className="flex-1 min-w-0 overflow-auto flex flex-col">
-        {/* Top bar with toggle */}
-        <div className="flex items-center gap-2 h-14 px-4 border-b border-border bg-background shrink-0">
-          {/* Mobile: hamburger */}
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="md:hidden p-2 rounded-md text-muted-foreground hover:bg-muted transition-colors"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-
-          {/* Desktop: collapse/expand toggle */}
-          <button
-            onClick={() => setCollapsed((v) => !v)}
-            className="hidden md:flex p-2 rounded-md text-muted-foreground hover:bg-muted transition-colors"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
-        </div>
+      <main className="flex-1 min-w-0 overflow-auto flex flex-col relative">
+        {/* Mobile: Floating right-aligned toggle */}
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="md:hidden fixed top-3 right-3 z-20 p-2.5 rounded-full bg-background border border-border shadow-lg text-foreground hover:bg-muted transition-all active:scale-95"
+          aria-label="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
 
         <div className="flex-1 p-6 lg:p-8">
           {children}

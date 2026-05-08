@@ -26,14 +26,19 @@ export class PostgresAdapter implements DatabaseAdapter {
     `;
   }
 
-  private getTableName(slug: string) {
-    return `collection_${slug}`;
+  private getTableIdentifier(slug: string) {
+    if (slug.includes('.')) {
+      // If it's already qualified (contains a dot), trust the caller has formatted it correctly
+      // e.g. "ws_123"."collection_posts"
+      return this.sql.unsafe(slug);
+    }
+    return this.sql(`collection_${slug}`);
   }
 
   private async ensureTable(slug: string) {
-    const tableName = this.getTableName(slug);
+    const table = this.getTableIdentifier(slug);
     await this.sql`
-      CREATE TABLE IF NOT EXISTS ${this.sql(tableName)} (
+      CREATE TABLE IF NOT EXISTS ${table} (
         id TEXT PRIMARY KEY,
         data JSONB,
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -43,8 +48,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
-    await this.ensureTable(args.collection);
-    const tableName = this.getTableName(args.collection);
+    const table = this.getTableIdentifier(args.collection);
     const limit = args.limit || 10;
     const page = args.page || 1;
     const offset = (page - 1) * limit;
@@ -61,14 +65,14 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
 
     // Fetch total count
-    const countRes = await this.sql`SELECT count(*) as total FROM ${this.sql(tableName)} ${whereClause}`;
+    const countRes = await this.sql`SELECT count(*) as total FROM ${table} ${whereClause}`;
     const total = parseInt(countRes[0].total);
 
     // Fetch data
     let sort = args.sort || 'createdAt DESC';
     sort = sort.replace('createdAt', 'created_at').replace('updatedAt', 'updated_at');
     const rows = await this.sql`
-      SELECT * FROM ${this.sql(tableName)} 
+      SELECT * FROM ${table} 
       ${whereClause} 
       ORDER BY ${this.sql.unsafe(sort)}
       LIMIT ${limit} OFFSET ${offset}
@@ -87,37 +91,33 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async findOne(params: { collection: string; id: string }) {
-    await this.ensureTable(params.collection);
-    const tableName = this.getTableName(params.collection);
-    const rows = await this.sql`SELECT * FROM ${this.sql(tableName)} WHERE id = ${params.id}`;
+    const table = this.getTableIdentifier(params.collection);
+    const rows = await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
     const row = rows[0];
     if (!row) return null;
     return { id: row.id, ...row.data };
   }
 
   async create(params: { collection: string; data: any }) {
-    await this.ensureTable(params.collection);
-    const tableName = this.getTableName(params.collection);
+    const table = this.getTableIdentifier(params.collection);
     const id = params.data.id || Math.random().toString(36).substring(7);
     const data = { ...params.data };
     delete data.id;
 
-    await this.sql`INSERT INTO ${this.sql(tableName)} (id, data) VALUES (${id}, ${data})`;
+    await this.sql`INSERT INTO ${table} (id, data) VALUES (${id}, ${data})`;
 
     return { id, ...data };
   }
 
   async update(params: { collection: string; id: string; data: any }) {
-    await this.ensureTable(params.collection);
-    const tableName = this.getTableName(params.collection);
-    await this.sql`UPDATE ${this.sql(tableName)} SET data = data || ${params.data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
+    const table = this.getTableIdentifier(params.collection);
+    await this.sql`UPDATE ${table} SET data = data || ${params.data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
     return { id: params.id, ...params.data };
   }
 
   async delete(params: { collection: string; id: string }) {
-    await this.ensureTable(params.collection);
-    const tableName = this.getTableName(params.collection);
-    await this.sql`DELETE FROM ${this.sql(tableName)} WHERE id = ${params.id}`;
+    const table = this.getTableIdentifier(params.collection);
+    await this.sql`DELETE FROM ${table} WHERE id = ${params.id}`;
   }
 
   async getGlobal(params: { slug: string }) {

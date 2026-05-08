@@ -33,6 +33,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
   const [search, setSearch] = React.useState("")
 
   const relatedCollection = schemas?.collections.find(c => c.slug === relationTo)
+  if (!relationTo) console.warn("[RelationshipPicker] No relationTo/collection defined for field:", label)
   const isUpload = !!relatedCollection?.upload
   const displayField = relatedCollection?.admin?.useAsTitle || "title"
 

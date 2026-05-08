@@ -154,11 +154,11 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         accessorKey: field.name,
         header: field.label || field.name,
         cell: ({ row }) => (
-          <RenderCell 
-            value={row.getValue(field.name)} 
-            field={field} 
-            client={client} 
-            schemas={schemas} 
+          <RenderCell
+            value={row.getValue(field.name)}
+            field={field}
+            client={client}
+            schemas={schemas}
           />
         ),
       })
@@ -255,7 +255,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border/60 bg-white overflow-hidden">
+      <div className="overflow-hidden">
         <DataTable
           columns={columns}
           data={response?.docs || []}
@@ -263,9 +263,9 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           onRowSelectionChange={setRowSelection}
           rowSelection={rowSelection}
           bulkActions={(selectedIds) => (
-            <Button 
-              variant="destructive" 
-              size="sm" 
+            <Button
+              variant="destructive"
+              size="sm"
               className="h-8"
               onClick={() => handleBulkDelete(selectedIds)}
               disabled={bulkDeleteMutation.isPending}

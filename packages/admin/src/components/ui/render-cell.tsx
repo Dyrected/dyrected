@@ -28,7 +28,8 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   }
 
   // Handle Image/Media (from upload collections)
-  if (field.type === "image" || (field.type === "relationship" && isUploadCollection(field.relationTo, schemas))) {
+  const relationTo = field.relationTo || field.collection
+  if (field.type === "image" || (field.type === "relationship" && isUploadCollection(relationTo, schemas))) {
     const media = value
     const url = typeof media === 'string' 
       ? `${client?.getBaseUrl()}/media/${media}` // Legacy support for raw strings
@@ -45,7 +46,8 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
 
   // Handle Relationship (Populated)
   if (field.type === "relationship" && typeof value === "object") {
-    const relatedCollection = schemas?.collections.find((c: any) => c.slug === field.relationTo)
+    const relTo = field.relationTo || field.collection
+    const relatedCollection = schemas?.collections.find((c: any) => c.slug === relTo)
     const displayField = relatedCollection?.admin?.useAsTitle || "title"
     const displayValue = value[displayField] || value.name || value.id || "Unknown"
 
