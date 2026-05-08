@@ -134,8 +134,8 @@ function SidebarInner({
   collapsed: boolean
   onNavigate?: () => void
 }) {
-  const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden) ?? []
-  const globals = schemas?.globals?.filter((g: any) => !g?.admin?.hidden) ?? []
+  const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
+  const globals = schemas?.globals?.filter((g: any) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
   const uploadCol = schemas?.collections?.find((c: any) => c.upload)
 
   const groupLabel = (text: string) =>

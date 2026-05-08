@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   BrowserRouter,
   MemoryRouter,
@@ -68,9 +68,9 @@ function NavigationSync({ onNavigate }: NavigationSyncProps) {
 
 // ─── Route tree (shared between embedded and standalone) ──────────────────────
 
-function AdminRoutes({ onNavigate }: { onNavigate?: (path: string) => void }) {
+function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: string) => void, isEmbedded?: boolean }) {
   return (
-    <AdminShell>
+    <AdminShell isEmbedded={isEmbedded}>
       <NavigationSync onNavigate={onNavigate} />
       <Routes>
         <Route path="/"                              element={<Dashboard />} />
@@ -119,11 +119,22 @@ export function AdminUI({
   basename = "/admin",
   onNavigate,
 }: AdminUIProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-12 bg-muted/5 animate-pulse">
+        <div className="text-muted-foreground/40 text-sm font-medium">Loading Dashboard...</div>
+      </div>
+    );
+  }
+
   return (
     <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
       <QueryProvider>
         <BrowserRouter basename={basename}>
-          <AdminRoutes onNavigate={onNavigate} />
+          <AdminRoutes onNavigate={onNavigate} isEmbedded={true} />
         </BrowserRouter>
       </QueryProvider>
     </DyrectedProvider>

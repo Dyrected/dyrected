@@ -29,9 +29,9 @@ export function DyrectedProvider({
   baseUrl: initialBaseUrl,
   siteId: initialSiteId
 }: DyrectedProviderProps) {
-  const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || localStorage.getItem("dyrected_url") || "");
-  const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || localStorage.getItem("dyrected_key") || undefined);
-  const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || localStorage.getItem("dyrected_site_id") || undefined);
+  const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_url") : null) || "");
+  const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_key") : null) || undefined);
+  const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
   const [client, setClient] = useState<DyrectedClient | null>(null);
   const [schemas, setSchemas] = useState<{ collections: any[]; globals: any[] } | null>(null);
 

@@ -92,6 +92,38 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Collections
+            </h3>
+            <Button variant="ghost" size="sm" asChild className="text-xs">
+              <Link to="/collections">View All</Link>
+            </Button>
+          </div>
+          <div className="grid gap-3">
+            {collections.slice(0, 5).map((col: any, idx: number) => (
+              <Link
+                key={col.slug}
+                to={`/collections/${col.slug}`}
+                className="group flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+              >
+                <div>
+                  <p className="font-medium group-hover:text-primary transition-colors">{col.labels?.plural || col.slug}</p>
+                  <p className="text-xs text-muted-foreground uppercase">{col.slug}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right mr-4">
+                    <p className="text-sm font-semibold">{collectionCounts[idx]?.data?.total || 0}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Entries</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         <section>
           <div className="flex items-center justify-between mb-4">
