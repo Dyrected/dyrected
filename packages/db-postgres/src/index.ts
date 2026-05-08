@@ -42,16 +42,16 @@ export class PostgresAdapter implements DatabaseAdapter {
     `;
   }
 
-  async find(params: { collection: string; where?: any; limit?: number; page?: number }): Promise<PaginatedResult> {
-    await this.ensureTable(params.collection);
-    const tableName = this.getTableName(params.collection);
-    const limit = params.limit || 10;
-    const page = params.page || 1;
+  async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
+    await this.ensureTable(args.collection);
+    const tableName = this.getTableName(args.collection);
+    const limit = args.limit || 10;
+    const page = args.page || 1;
     const offset = (page - 1) * limit;
 
     let whereClause = this.sql``;
-    if (params.where) {
-      const conditions = Object.entries(params.where).map(([key, value]) => {
+    if (args.where) {
+      const conditions = Object.entries(args.where).map(([key, value]) => {
         if (key === 'id') return this.sql`id = ${value as any}`;
         return this.sql`data->>${key} = ${value as any}`;
       });
@@ -65,9 +65,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     const total = parseInt(countRes[0].total);
 
     // Fetch data
+    let sort = args.sort || 'createdAt DESC';
+    sort = sort.replace('createdAt', 'created_at').replace('updatedAt', 'updated_at');
     const rows = await this.sql`
       SELECT * FROM ${this.sql(tableName)} 
       ${whereClause} 
+      ORDER BY ${this.sql.unsafe(sort)}
       LIMIT ${limit} OFFSET ${offset}
     `;
 

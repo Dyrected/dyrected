@@ -28,16 +28,26 @@ export class MongoAdapter implements DatabaseAdapter {
     return this.db.collection('dyrected_globals');
   }
 
-  async find(params: { collection: string; where?: any; limit?: number; page?: number }): Promise<PaginatedResult> {
-    const col = this.db.collection(this.getCollectionName(params.collection));
-    const limit = params.limit || 10;
-    const page = params.page || 1;
+  async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
+    const col = this.db.collection(this.getCollectionName(args.collection));
+    const limit = args.limit || 10;
+    const page = args.page || 1;
     const skip = (page - 1) * limit;
 
-    const query = params.where || {};
+    const query = args.where || {};
     const total = await col.countDocuments(query);
-    const cursor = col.find(query).skip(skip).limit(limit);
+    
+    // Simple sort parsing (e.g. 'createdAt DESC' -> { createdAt: -1 })
+    let sortObj: any = { createdAt: -1 };
+    if (args.sort) {
+      const [field, order] = args.sort.split(' ');
+      sortObj = { [field]: order?.toUpperCase() === 'DESC' ? -1 : 1 };
+    }
+
+    const cursor = col.find(query).sort(sortObj).skip(skip).limit(limit);
     const docs = await cursor.toArray();
+
+    const totalPages = Math.ceil(total / limit);
 
     return {
       docs: docs.map(doc => {
@@ -46,7 +56,10 @@ export class MongoAdapter implements DatabaseAdapter {
       }),
       total,
       limit,
-      page
+      page,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
     };
   }
 
