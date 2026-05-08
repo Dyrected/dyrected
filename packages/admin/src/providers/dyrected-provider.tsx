@@ -11,7 +11,7 @@ interface DyrectedContextType {
   setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
-  schemas: { collections: any[]; globals: any[] } | null;
+  schemas: { collections: any[]; globals: any[]; admin?: any } | null;
 }
 
 const DyrectedContext = createContext<DyrectedContextType | undefined>(undefined);
@@ -33,7 +33,7 @@ export function DyrectedProvider({
   const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_key") : null) || undefined);
   const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
   const [client, setClient] = useState<DyrectedClient | null>(null);
-  const [schemas, setSchemas] = useState<{ collections: any[]; globals: any[] } | null>(null);
+  const [schemas, setSchemas] = useState<{ collections: any[]; globals: any[]; admin?: any } | null>(null);
 
   useEffect(() => {
     if (baseUrl) {

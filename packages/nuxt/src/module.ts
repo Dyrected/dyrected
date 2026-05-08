@@ -51,6 +51,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
 
     // 4. Pass options to runtime
+    // Private config for server-side (contains full engine config)
+    nuxt.options.runtimeConfig.dyrected = {
+      ...options,
+      baseUrl: options.apiBase,
+    };
+
+    // Public config for client-side
     nuxt.options.runtimeConfig.public.dyrected = {
       baseUrl: options.apiBase,
       apiKey: options.apiKey,

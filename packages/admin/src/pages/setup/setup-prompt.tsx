@@ -32,7 +32,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   };
 
   const getPrompt = (framework: string) => {
-    const base = `You are helping integrate Dyrected CMS into a ${framework} project. Complete the entire setup automatically using the details below.
+    const base = `You are helping integrate Dyrected CMS into a ${config.siteName} project using ${framework}. Complete the entire setup automatically using the details below.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SITE CREDENTIALS
@@ -66,7 +66,9 @@ FIELD OPTIONS:
   \`required\`        — validation
   \`unique\`          — database-level uniqueness
   \`defaultValue\`    — fallback value
-  \`admin.condition\` — (data) => boolean — show/hide field based on other field values
+  \`admin.condition\` — "expression" — Jexl string expression to show/hide field (e.g. "status == \\"published\\"")
+  \`admin.layout\`    — "radio" | "dropdown" — Visual layout for select/multiSelect
+  \`admin.direction\` — "vertical" | "horizontal" — Layout direction for radio groups
   \`admin.readOnly\`  — display-only in the form
   \`admin.hidden\`    — completely hidden from editor UI
   \`access.read\`     — ({ user }) => boolean — field-level read access
@@ -106,7 +108,7 @@ const customers = defineCollection({
     { name: 'email', type: 'email', required: true, unique: true },
     // 'password' is auto-added when auth: true
     { name: 'avatar', type: 'relationship', collection: 'media' },
-    { name: 'role', type: 'select', options: [
+    { name: 'role', type: 'select', admin: { layout: 'radio' }, options: [
         { label: 'Member', value: 'member' },
         { label: 'VIP', value: 'vip' },
     ]},
@@ -207,6 +209,7 @@ const posts = defineCollection({
       name: 'status',
       type: 'select',
       defaultValue: 'draft',
+      admin: { layout: 'radio', direction: 'horizontal' },
       options: [
         { label: 'Draft',     value: 'draft' },
         { label: 'Published', value: 'published' },
@@ -264,11 +267,41 @@ const settings = defineGlobal({
 export default defineConfig({
   collections: [media, customers, pages, posts],
   globals:     [navigation, settings],
+  admin: {
+    branding: {
+      primaryColor: '#4f46e5', // Custom brand color
+      logo: '/logo.png',       // Custom dashboard logo
+    },
+    meta: {
+      titleSuffix: '- My Dashboard',
+    }
+  }
 })
 \`\`\`
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 2 — FRONTEND IMPLEMENTATION
+STEP 2 — CHOOSE YOUR MODE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The developer can choose between two modes:
+
+1. CLOUD MODE (Managed)
+   - Use the SITE CREDENTIALS above.
+   - Point baseUrl to ${config.baseUrl}.
+   - Content is stored in Dyrected Cloud.
+
+2. SELF-HOSTED MODE (Core)
+   - Do NOT use apiKey/siteId (unless for proxying).
+   - Use a database adapter like \`SqliteAdapter\` from '@dyrected/db-sqlite'.
+   - Content is stored locally in the developer's project.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — MOUNTING THE ADMIN UI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The Admin UI can be mounted on any path (e.g. /cms-admin).
+Pass the \`basename\` prop to the \`<AdminUI />\` component to match your route.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — FRONTEND IMPLEMENTATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
@@ -284,48 +317,6 @@ export const dyrected = createClient({
   apiKey:  '${config.apiKey}',
   siteId:  '${config.siteId}',
 })
-\`\`\`
-
-FETCHING COLLECTIONS (Server Component):
-\`\`\`tsx
-import { dyrected } from '@/lib/dyrected'
-
-const { docs: posts } = await dyrected.collection('posts')
-  .find({ where: { status: { equals: 'published' } }, sort: '-publishedAt', limit: 10 })
-
-const post = await dyrected.collection('posts').findOne(id, { depth: 2 })
-\`\`\`
-
-FETCHING GLOBALS:
-\`\`\`tsx
-const settings   = await dyrected.global('settings').get()
-const navigation = await dyrected.global('navigation').get()
-\`\`\`
-
-RENDERING BLOCKS (switch on \`blockType\`):
-\`\`\`tsx
-export function PageLayout({ layout }: { layout: any[] }) {
-  return (
-    <>
-      {layout.map((block, i) => {
-        switch (block.blockType) {
-          case 'hero':          return <HeroBlock key={i} {...block} />
-          case 'richContent':   return <RichContentBlock key={i} {...block} />
-          case 'imageGallery':  return <GalleryBlock key={i} {...block} />
-          case 'callToAction':  return <CTABlock key={i} {...block} />
-          default:              return null
-        }
-      })}
-    </>
-  )
-}
-\`\`\`
-
-AUTH (customer login):
-\`\`\`ts
-const { token, user } = await dyrected.collection('customers').login(email, password)
-dyrected.setToken(token)
-const me = await dyrected.collection('customers').me()
 \`\`\``,
 
       nuxt: `Install \`@dyrected/nuxt\` and add it to \`nuxt.config.ts\`:
@@ -338,6 +329,44 @@ export default defineNuxtConfig({
     siteId:  '${config.siteId}',
   }
 })
+\`\`\`
+
+MOUNTING THE ADMIN DASHBOARD (\`pages/cms-admin.vue\`):
+\`\`\`vue
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
+import { renderAdminUI } from '@dyrected/admin'
+import '@dyrected/admin/styles'
+
+// Disable Nuxt layout for the admin dashboard
+definePageMeta({ layout: false })
+
+const adminContainer = ref<HTMLElement | null>(null)
+let unmount: (() => void) | null = null
+
+onMounted(() => {
+  if (adminContainer.value) {
+    unmount = renderAdminUI(adminContainer.value, {
+      basename: '/cms-admin'
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (unmount) unmount()
+})
+</script>
+
+<template>
+  <div ref="adminContainer" class="admin-wrapper" />
+</template>
+
+<style scoped>
+.admin-wrapper {
+  height: 100vh;
+  width: 100vw;
+}
+</style>
 \`\`\`
 
 FETCHING COLLECTIONS (auto-imported composables):
@@ -358,13 +387,11 @@ const { data: navigation } = await useDyrectedGlobal('navigation')
 
 RENDERING BLOCKS in a Vue template:
 \`\`\`vue
-<template>
-  <template v-for="(block, i) in page.layout" :key="i">
-    <HeroBlock        v-if="block.blockType === 'hero'"         v-bind="block" />
-    <RichContentBlock v-else-if="block.blockType === 'richContent'"  v-bind="block" />
-    <GalleryBlock     v-else-if="block.blockType === 'imageGallery'" v-bind="block" />
-    <CTABlock         v-else-if="block.blockType === 'callToAction'" v-bind="block" />
-  </template>
+<template v-for="(block, i) in page.layout" :key="i">
+  <HeroBlock        v-if="block.blockType === 'hero'"         v-bind="block" />
+  <RichContentBlock v-else-if="block.blockType === 'richContent'"  v-bind="block" />
+  <GalleryBlock     v-else-if="block.blockType === 'imageGallery'" v-bind="block" />
+  <CTABlock         v-else-if="block.blockType === 'callToAction'" v-bind="block" />
 </template>
 \`\`\`
 
@@ -373,9 +400,9 @@ AUTH (\`useDyrectedAuth\`):
 const { login, logout, user, isLoggedIn, fetchMe } = useDyrectedAuth('customers')
 await login(email, password)
 await fetchMe()
-\`\`\``,
+\\\`\\\`\\\``,
 
-      react: `Install \`@dyrected/sdk\`:
+      react: `Install \\\`@dyrected/sdk\\\`:
 
 CLIENT SETUP (\`lib/dyrected.ts\`):
 \`\`\`ts
@@ -427,9 +454,9 @@ AUTH:
 \`\`\`ts
 const { token, user } = await dyrected.collection('customers').login(email, password)
 dyrected.setToken(token)
-\`\`\``,
+\\\`\\\`\\\``,
 
-      vue: `Install \`@dyrected/sdk\`:
+      vue: `Install \\\`@dyrected/sdk\\\`:
 
 CLIENT SETUP (\`lib/dyrected.ts\`):
 \`\`\`ts

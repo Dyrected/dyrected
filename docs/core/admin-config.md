@@ -164,11 +164,14 @@ export const SiteSettings = defineGlobal({
 | `description` | `string` | none | Help text rendered directly below the field. Use for formatting hints or data requirements. |
 | `readOnly` | `boolean` | `false` | Renders the field disabled. The value is included in the form submission but cannot be edited. |
 | `hidden` | `boolean` | `false` | Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI. |
-| `condition` | `(data: any) => boolean` | always shown | A function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
+| `condition` | `string \| (data: any) => boolean` | always shown | A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
 
 ### `condition` — Conditional Fields
 
-Use `condition` to show or hide a field based on the values of *other* fields in the same document.
+Use `condition` to show or hide a field based on the values of *other* fields in the same document. For maximum compatibility and security, Dyrected uses [Jexl](https://github.com/TechnologyAdvice/Jexl) for conditions.
+
+#### String Expressions (Recommended)
+String-based conditions are serializable and work across all environments (local, cloud, and production).
 
 ```ts
 // Only show 'scheduledAt' when status is 'scheduled'
@@ -176,20 +179,24 @@ Use `condition` to show or hide a field based on the values of *other* fields in
   name: 'scheduledAt',
   type: 'date',
   admin: {
-    condition: (data) => data.status === 'scheduled',
+    condition: 'status == "scheduled"',
   }
 }
 
-// Only show 'discountPercent' when 'hasDiscount' is true
+// Complex logic (Jexl supports logical operators)
 {
-  name: 'discountPercent',
+  name: 'salePrice',
   type: 'number',
   admin: {
-    condition: (data) => data.hasDiscount === true,
+    condition: 'onSale == true && price > 0',
   }
 }
+```
 
-// Only show 'externalUrl' when contentType is 'link'
+#### Function Callbacks
+Functions are supported in local/embedded mode but are **stripped out** when syncing your schema to the Dyrected Cloud dashboard. Use strings for cloud-compatible schemas.
+
+```ts
 {
   name: 'externalUrl',
   type: 'url',

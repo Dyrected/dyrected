@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { cn } from "../../lib/utils"
+import { BrandingProvider } from "./branding-provider"
 
 // ---------------------------------------------------------------------------
 // Single nav item
@@ -124,6 +125,7 @@ function SidebarInner({
   logout,
   isEmbedded,
   collapsed,
+  onToggleCollapse,
   onNavigate,
 }: {
   schemas: any
@@ -148,6 +150,8 @@ function SidebarInner({
       <div className="my-2 mx-3 h-px bg-border" />
     )
 
+  const branding = schemas?.admin?.branding;
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Logo */}
@@ -158,15 +162,27 @@ function SidebarInner({
             collapsed ? "justify-center px-2" : "gap-2.5 px-4"
           )}
         >
-          <div className="h-7 w-7 bg-foreground rounded flex items-center justify-center text-background shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
+          {branding?.logo || branding?.logoMark ? (
+            <div className="h-7 w-7 flex items-center justify-center shrink-0">
+              <img 
+                src={collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark)} 
+                alt="Logo" 
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="h-7 w-7 bg-foreground rounded flex items-center justify-center text-background shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
+                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          )}
           {!collapsed && (
-            <span className="font-semibold text-sm tracking-tight text-foreground flex-1">Dyrected</span>
+            <span className="font-semibold text-sm tracking-tight text-foreground flex-1 truncate">
+              {branding?.titleSuffix?.replace(/^- /, '') || 'Dyrected'}
+            </span>
           )}
 
           {/* Desktop Toggle in Sidebar */}
@@ -375,77 +391,69 @@ export function AdminShell({
   })
 
   return (
-    <div className={cn("flex w-full relative", isEmbedded ? "h-full min-h-[600px]" : "min-h-screen")}>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* DESKTOP sidebar — always in the layout, pushes content              */}
-      {/* ------------------------------------------------------------------ */}
-      <aside
-        className={cn(
-          "hidden md:flex flex-col shrink-0 h-full border-r border-border bg-background transition-all duration-300 overflow-hidden",
-          collapsed ? "w-[56px]" : "w-[220px]"
-        )}
-      >
-        <SidebarInner
-          schemas={schemas}
-          isLoading={isLoading}
-          location={location}
-          logout={logout}
-          isEmbedded={isEmbedded}
-          collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed((v) => !v)}
-        />
-      </aside>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* MOBILE backdrop + sidebar                                           */}
-      {/* ------------------------------------------------------------------ */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/30 md:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-      <aside
-        className={cn(
-          "fixed top-0 left-0 z-40 h-full w-[220px] flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out md:hidden",
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <button
-          onClick={() => setMobileOpen(false)}
-          className="absolute top-3.5 right-3 p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+    <BrandingProvider>
+      <div className={cn("flex w-full relative", isEmbedded ? "h-full min-h-[600px]" : "min-h-screen")}>
+        {/* ... existing sidebar and main content ... */}
+        <aside
+          className={cn(
+            "hidden md:flex flex-col shrink-0 h-full border-r border-border bg-background transition-all duration-300 overflow-hidden",
+            collapsed ? "w-[56px]" : "w-[220px]"
+          )}
         >
-          <X className="h-4 w-4" />
-        </button>
-        <SidebarInner
-          schemas={schemas}
-          isLoading={isLoading}
-          location={location}
-          logout={logout}
-          isEmbedded={isEmbedded}
-          collapsed={false}
-          onNavigate={() => setMobileOpen(false)}
-        />
-      </aside>
+          <SidebarInner
+            schemas={schemas}
+            isLoading={isLoading}
+            location={location}
+            logout={logout}
+            isEmbedded={isEmbedded}
+            collapsed={collapsed}
+            onToggleCollapse={() => setCollapsed((v) => !v)}
+          />
+        </aside>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Main content                                                         */}
-      {/* ------------------------------------------------------------------ */}
-      <main className="flex-1 min-w-0 overflow-auto flex flex-col relative">
-        {/* Mobile: Floating right-aligned toggle */}
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="md:hidden fixed top-3 right-3 z-20 p-2.5 rounded-full bg-background border border-border shadow-lg text-foreground hover:bg-muted transition-all active:scale-95"
-          aria-label="Open menu"
+        {mobileOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/30 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+        <aside
+          className={cn(
+            "fixed top-0 left-0 z-40 h-full w-[220px] flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out md:hidden",
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          )}
         >
-          <Menu className="h-5 w-5" />
-        </button>
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="absolute top-3.5 right-3 p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <SidebarInner
+            schemas={schemas}
+            isLoading={isLoading}
+            location={location}
+            logout={logout}
+            isEmbedded={isEmbedded}
+            collapsed={false}
+            onNavigate={() => setMobileOpen(false)}
+          />
+        </aside>
 
-        <div className="flex-1 p-6 lg:p-8">
-          {children}
-        </div>
-      </main>
-    </div>
+        <main className="flex-1 min-w-0 overflow-auto flex flex-col relative">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="md:hidden fixed top-3 right-3 z-20 p-2.5 rounded-full bg-background border border-border shadow-lg text-foreground hover:bg-muted transition-all active:scale-95"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+
+          <div className="flex-1 p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </div>
+    </BrandingProvider>
   )
 }

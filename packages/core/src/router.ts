@@ -26,6 +26,10 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       const dynamic = await config.onSchemaFetch(siteId);
       if (dynamic.collections) collections = [...collections, ...dynamic.collections];
       if (dynamic.globals) globals = [...globals, ...dynamic.globals];
+      // Merge dynamic admin config if provided
+      if ((dynamic as any).admin) {
+        config.admin = { ...config.admin, ...(dynamic as any).admin };
+      }
     }
 
     const user = c.get('user');
@@ -107,6 +111,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.json({
       collections: filteredCollections,
       globals: filteredGlobals,
+      admin: config.admin || {},
     });
   });
 

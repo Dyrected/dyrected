@@ -17,27 +17,52 @@ pnpm add @dyrected/nuxt @dyrected/sdk
 
 ## Step 1 — Configure the module
 
+Dyrected can be run in two modes: **Cloud** (Managed) or **Self-Hosted** (Core).
+
+### Option A: Cloud Mode (Managed)
+Use this if you are using Dyrected Cloud to host your backend.
+
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
-
-  runtimeConfig: {
-    // Server-only (never exposed to browser)
-    dyrectedApiKey: process.env.DYRECTED_API_KEY,
-
-    public: {
-      // Exposed to browser
-      dyrectedUrl:    process.env.DYRECTED_URL,
-      dyrectedSiteId: process.env.DYRECTED_SITE_ID,
-    }
+  dyrected: {
+    apiKey: process.env.DYRECTED_API_KEY,
+    siteId: process.env.DYRECTED_SITE_ID,
+    baseUrl: 'https://api.dyrected.cloud', // Or your custom cloud URL
+    apiBase: '/api/dyrected',              // Local proxy path
   }
 })
 ```
 
+### Option B: Self-Hosted Mode (Core)
+Use this if you want to run the Dyrected engine directly inside your Nuxt app.
+
+```ts
+// nuxt.config.ts
+import { SqliteAdapter } from '@dyrected/db-sqlite'
+import config from './dyrected.config'
+
+export default defineNuxtConfig({
+  modules: ['@dyrected/nuxt'],
+  dyrected: {
+    ...config,
+    apiBase: '/api/dyrected',
+    db: new SqliteAdapter({
+      filename: 'cms.db'
+    })
+  }
+})
+```
+
+---
+
+## Environment Variables
+
+For Cloud mode, you should use environment variables for your keys:
+
 ```bash
 # .env
-DYRECTED_URL=https://cms.mysite.com/api
 DYRECTED_API_KEY=sk_live_...
 DYRECTED_SITE_ID=site_...
 ```
@@ -183,30 +208,48 @@ const { data: page, isLive } = useLivePreview({
 
 ## Step 4 — Embed the Admin UI
 
-To use the Admin UI in a Nuxt project, create a catch-all page at `pages/admin/[...slug].vue`. This allows the Admin UI to manage its own internal routing for collections, globals, and media while staying in sync with the Nuxt router.
+The Admin UI is a React-based dashboard. To embed it into Nuxt (Vue), we provide a framework-agnostic `renderAdminUI` function. Create a file at `pages/cms-admin.vue`.
 
 ```vue
-<!-- pages/admin/[...slug].vue -->
+<!-- pages/cms-admin.vue -->
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue'
+import { renderAdminUI } from '@dyrected/admin'
+import '@dyrected/admin/styles'
+
+// Disable Nuxt layout for the dashboard
+definePageMeta({ layout: false })
+
+const adminContainer = ref<HTMLElement | null>(null)
+let unmount: (() => void) | null = null
+
+onMounted(() => {
+  if (adminContainer.value) {
+    unmount = renderAdminUI(adminContainer.value, {
+      basename: '/cms-admin'
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (unmount) unmount()
+})
+</script>
+
 <template>
-  <ClientOnly>
-    <AdminUI
-      :base-url="config.public.dyrectedUrl"
-      :api-key="config.public.dyrectedApiKey"
-      :site-id="config.public.dyrectedSiteId"
-      basename="/admin"
-      @navigate="(path) => navigateTo('/admin' + path)"
-    />
-  </ClientOnly>
+  <div ref="adminContainer" class="admin-container" />
 </template>
 
-<script setup lang="ts">
-import { AdminUI } from '@dyrected/admin'
-import '@dyrected/admin/dist/index.css'
-
-definePageMeta({ layout: false }) // Optional: hide standard site layout
-const config = useRuntimeConfig()
-</script>
+<style scoped>
+.admin-container {
+  height: 100vh;
+  width: 100vw;
+}
+</style>
 ```
+
+> [!TIP]
+> If you are using Cloud mode and want to connect directly to the Cloud API from the browser (bypassing the proxy), you can pass `baseUrl`, `apiKey`, and `siteId` props to `<AdminUI />`.
 
 ---
 

@@ -1,3 +1,5 @@
+import config from './dyrected.config'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
@@ -8,8 +10,7 @@ export default defineNuxtConfig({
     '@dyrected/nuxt'
   ],
   dyrected: {
-    apiBase: process.env.DYRECTED_API_URL || '/api/dyrected',
-    apiKey: process.env.DYRECTED_API_KEY,
-    siteId: process.env.DYRECTED_SITE_ID,
+    ...config,
+    apiBase: '/api/dyrected',
   }
 })

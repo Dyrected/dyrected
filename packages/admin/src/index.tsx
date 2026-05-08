@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 import {
   BrowserRouter,
   MemoryRouter,
@@ -87,8 +88,8 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
 // ─── Public types ─────────────────────────────────────────────────────────────
 
 export interface AdminUIProps {
-  apiKey: string;
-  baseUrl: string;
+  apiKey?: string;
+  baseUrl?: string;
   siteId?: string;
   /**
    * The base path where the admin is mounted in the host app.
@@ -114,7 +115,7 @@ export interface AdminUIProps {
 
 export function AdminUI({
   apiKey,
-  baseUrl,
+  baseUrl = "/api/dyrected",
   siteId,
   basename = "/admin",
   onNavigate,
@@ -139,6 +140,20 @@ export function AdminUI({
       </QueryProvider>
     </DyrectedProvider>
   );
+}
+
+/**
+ * Renders the Admin UI into a DOM element. 
+ * Useful for non-React frameworks like Nuxt, Svelte, or Vanilla JS.
+ */
+export function renderAdminUI(container: HTMLElement, props: AdminUIProps) {
+  const root = createRoot(container);
+  root.render(
+    <StrictMode>
+      <AdminUI {...props} />
+    </StrictMode>
+  );
+  return () => root.unmount();
 }
 
 // ─── Standalone component (MemoryRouter — for iframe / self-hosted mode) ──────

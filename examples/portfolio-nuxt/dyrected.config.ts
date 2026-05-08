@@ -1,4 +1,5 @@
 import { defineCollection, defineConfig, defineGlobal } from "@dyrected/core";
+import { SqliteAdapter } from "@dyrected/db-sqlite";
 
 const media = defineCollection({
   slug: "media",
@@ -86,18 +87,21 @@ const navigation = defineGlobal({
           admin: {
             description: "Select the type of navigation link",
             layout: "radio",
+            direction: "horizontal",
           },
         },
         {
           name: "link",
+          label: "Link to page",
           type: "relationship",
           relationTo: "pages",
-          admin: { condition: ({ navType }) => navType === "internal" },
+          admin: { condition: 'navType == "internal"' },
         },
         {
           name: "url",
-          type: "text",
-          admin: { condition: ({ navType }) => navType === "external" },
+          label: "URL",
+          type: "url",
+          admin: { condition: 'navType == "external"' },
         },
       ],
     },
@@ -117,4 +121,7 @@ const settings = defineGlobal({
 export default defineConfig({
   collections: [media, pages, posts, comments, inquiries],
   globals: [navigation, settings],
+  db: new SqliteAdapter({
+    filename: "dyrected.db",
+  }),
 });

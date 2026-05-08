@@ -465,6 +465,7 @@ program
         body: JSON.stringify({
           collections: config.collections,
           globals: config.globals || [],
+          admin: config.admin || {},
         }),
       });
 

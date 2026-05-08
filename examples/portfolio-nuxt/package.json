@@ -11,8 +11,10 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@dyrected/admin": "workspace:^",
     "@dyrected/cli": "workspace:*",
     "@dyrected/core": "workspace:*",
+    "@dyrected/db-sqlite": "workspace:*",
     "@dyrected/nuxt": "workspace:*",
     "@dyrected/sdk": "workspace:*",
     "nuxt": "^3.11.2",

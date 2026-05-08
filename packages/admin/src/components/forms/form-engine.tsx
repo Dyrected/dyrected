@@ -3,11 +3,6 @@ import type {
   Block as BlockSchema
 } from "@dyrected/sdk";
 export type { FieldSchema, BlockSchema }
-
-function normalizeOptions(options: string[] | { label: string; value: string }[] | undefined): { label: string; value: string }[] {
-  if (!options) return []
-  return options.map(opt => typeof opt === "string" ? { label: opt, value: opt } : opt)
-}
 import { useEffect } from "react"
 import { useForm, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -39,7 +34,16 @@ import { DatePicker } from "./date-picker"
 import { MultiSelect } from "./multi-select"
 import { JsonEditor } from "./json-editor"
 import { BlockBuilder } from "./block-builder"
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group"
+import { Label } from "../../components/ui/label"
+import { cn } from "../../lib/utils";
+import jexl from 'jexl';
 
+
+function normalizeOptions(options: string[] | { label: string; value: string }[] | undefined): { label: string; value: string }[] {
+  if (!options) return []
+  return options.map(opt => typeof opt === "string" ? { label: opt, value: opt } : opt)
+}
 
 function buildSchemaShape(fields: FieldSchema[]) {
   const shape: Record<string, z.ZodTypeAny> = {}
@@ -136,7 +140,7 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
 function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
   const { fields, append, remove } = useFieldArray({ control, name: basePath })
   return (
-    <div className="border border-border p-5 rounded-xl space-y-5 bg-muted/5 shadow-sm transition-all">
+    <div className="space-y-5 transition-all">
       <div className="flex justify-between items-center">
         <div>
           <h4 className="font-bold text-sm text-foreground">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
@@ -149,7 +153,7 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
       </div>
       <div className="space-y-4">
         {fields.map((item, index) => (
-          <div key={item.id} className="relative border border-border/60 p-5 rounded-lg bg-white shadow-sm transition-all hover:shadow-md animate-in">
+          <div key={item.id} className="relative p-4 bg-white border-l border-primary/5 hover:border-primary/20 hover:shadow-sm transition-all animate-in">
             <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md" onClick={() => remove(index)}>
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
@@ -170,18 +174,33 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
   )
 }
 
-import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group"
-import { Label } from "../../components/ui/label"
-
 export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
   // Statically hidden field
   if (schema.admin?.hidden) return null
 
   // Reactively evaluate admin.condition against current form values
   const formValues = useWatch({ control })
-  const siblingData = useWatch({ control, name: basePath || undefined }) || formValues
-  
-  if (schema.admin?.condition && !schema.admin.condition(formValues, siblingData)) return null
+  const siblingData = useWatch({ control, name: basePath || undefined }) || {}
+
+  // Merge global and sibling data so destructuring works intuitively anywhere
+  const conditionData = basePath ? { ...formValues, ...siblingData } : formValues
+
+  let isVisible = true
+  const condition = schema.admin?.condition
+
+  if (typeof condition === 'function') {
+    isVisible = condition(conditionData, siblingData)
+  } else if (typeof condition === 'string') {
+    try {
+      // Use jexl for safe expression evaluation
+      isVisible = jexl.evalSync(condition, conditionData)
+    } catch (e) {
+      console.warn("Jexl eval failed:", e)
+      isVisible = true
+    }
+  }
+
+  if (!isVisible) return null
 
   if ((schema.access as any)?.read === false) return null
 
@@ -243,28 +262,28 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
 
 interface FormEngineProps {
   fields: FieldSchema[]
-   defaultValues?: Record<string, any>
-   onSubmit: (data: any) => void
-   onChange?: (isDirty: boolean) => void
-   isLoading?: boolean
+  defaultValues?: Record<string, any>
+  onSubmit: (data: any) => void
+  onChange?: (isDirty: boolean) => void
+  isLoading?: boolean
   submitLabel?: string
   readOnly?: boolean
 }
 
- export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isLoading, submitLabel = "Save", readOnly }: FormEngineProps) {
-   const schemaShape = buildSchemaShape(fields)
-   const formSchema = z.object(schemaShape)
- 
-   const form = useForm<z.infer<typeof formSchema>>({
-     resolver: zodResolver(formSchema),
-     defaultValues: buildDefaultValues(fields, defaultValues),
-   })
+export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isLoading, submitLabel = "Save", readOnly }: FormEngineProps) {
+  const schemaShape = buildSchemaShape(fields)
+  const formSchema = z.object(schemaShape)
 
-   const { isDirty } = form.formState
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: buildDefaultValues(fields, defaultValues),
+  })
 
-   useEffect(() => {
-     onChange?.(isDirty)
-   }, [isDirty, onChange])
+  const { isDirty } = form.formState
+
+  useEffect(() => {
+    onChange?.(isDirty)
+  }, [isDirty, onChange])
 
   return (
     <Form {...form}>
@@ -290,11 +309,10 @@ function renderField(schema: FieldSchema, field: any) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
   const disabled = schema.admin?.readOnly || (schema.access as any)?.update === false
-  const relationTo = (schema as any).relationTo || (schema as any).collection
 
   switch (schema.type) {
     case "textarea":
-      return <Textarea {...field} placeholder={placeholder} disabled={disabled} />
+      return <Textarea {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} />
     case "boolean":
       return (
         <div className="flex items-center space-x-2">
@@ -308,21 +326,43 @@ function renderField(schema: FieldSchema, field: any) {
     case "select":
       const options = normalizeOptions(schema.options)
       if (schema.admin?.layout === "radio") {
+        const isHorizontal = schema.admin?.direction === "horizontal"
         return (
-          <RadioGroup 
-            onValueChange={field.onChange} 
-            defaultValue={field.value} 
+          <RadioGroup
+            onValueChange={field.onChange}
+            defaultValue={field.value}
             disabled={disabled}
-            className="flex flex-col gap-3"
+            className={cn(
+              "gap-4",
+              isHorizontal ? "flex flex-wrap items-center" : "flex flex-col"
+            )}
           >
             {options.map((opt) => (
-              <div key={opt.value} className="flex items-center space-x-3 group cursor-pointer">
-                <RadioGroupItem value={opt.value} id={`${field.name}-${opt.value}`} />
-                <Label 
-                  htmlFor={`${field.name}-${opt.value}`} 
-                  className="text-sm font-medium leading-none cursor-pointer group-hover:text-primary transition-colors"
+              <div key={opt.value} className={cn(
+                "relative flex items-center",
+                isHorizontal ? "min-w-[120px]" : "w-full"
+              )}>
+                <RadioGroupItem
+                  value={opt.value}
+                  id={`${field.name}-${opt.value}`}
+                  className="peer sr-only"
+                />
+                <Label
+                  htmlFor={`${field.name}-${opt.value}`}
+                  className={cn(
+                    "flex flex-1 items-center justify-between rounded-xl border border-border/40 bg-white/50 px-4 py-3 cursor-pointer transition-all hover:bg-white/80 hover:shadow-sm",
+                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:shadow-md peer-data-[state=checked]:ring-1 peer-data-[state=checked]:ring-primary/20",
+                    "text-sm font-medium text-foreground/70 peer-data-[state=checked]:text-primary"
+                  )}
                 >
-                  {opt.label}
+                  <span>{opt.label}</span>
+                  <div className={cn(
+                    "h-4 w-4 rounded-full border-2 border-border/60 transition-all",
+                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary peer-data-[state=checked]:scale-110",
+                    "flex items-center justify-center"
+                  )}>
+                    <div className="h-1.5 w-1.5 rounded-full bg-white opacity-0 peer-data-[state=checked]:opacity-100" />
+                  </div>
                 </Label>
               </div>
             ))}
@@ -345,10 +385,10 @@ function renderField(schema: FieldSchema, field: any) {
       )
     case "multiSelect":
       return (
-        <MultiSelect 
-          options={normalizeOptions(schema.options)} 
-          value={field.value || []} 
-          onChange={field.onChange} 
+        <MultiSelect
+          options={normalizeOptions(schema.options)}
+          value={field.value || []}
+          onChange={field.onChange}
         />
       )
     case "image" as any:
@@ -367,12 +407,12 @@ function renderField(schema: FieldSchema, field: any) {
         multiple={(schema as any).hasMany}
       />
     case "number":
-      return <Input type="number" {...field} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} />
+      return <Input type="number" {...field} value={field.value ?? ""} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} />
     case "email":
-      return <Input type="email" {...field} placeholder={placeholder} disabled={disabled} />
+      return <Input type="email" {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} />
     case "url":
-      return <Input type="url" {...field} placeholder={schema.admin?.placeholder || "https://"} disabled={disabled} />
+      return <Input type="url" {...field} value={field.value ?? ""} placeholder={schema.admin?.placeholder || "https://"} disabled={disabled} />
     default:
-      return <Input {...field} placeholder={placeholder} disabled={disabled} />
+      return <Input {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} />
   }
 }

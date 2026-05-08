@@ -3,9 +3,13 @@ import { createDyrectedApp } from "@dyrected/core";
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
 
+let app: any;
+
 export default eventHandler(async (event) => {
-  const config = useRuntimeConfig().dyrected;
-  const app = createDyrectedApp(config);
+  if (!app) {
+    const config = useRuntimeConfig().dyrected;
+    app = createDyrectedApp(config);
+  }
 
   return app.fetch(toRequest(event.req));
 });

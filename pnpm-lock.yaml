@@ -168,12 +168,18 @@ importers:
 
   examples/portfolio-nuxt:
     dependencies:
+      '@dyrected/admin':
+        specifier: workspace:^
+        version: link:../../packages/admin
       '@dyrected/cli':
         specifier: workspace:*
         version: link:../../packages/cli
       '@dyrected/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@dyrected/db-sqlite':
+        specifier: workspace:*
+        version: link:../../packages/db-sqlite
       '@dyrected/nuxt':
         specifier: workspace:*
         version: link:../../packages/nuxt
@@ -332,6 +338,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      jexl:
+        specifier: ^2.3.0
+        version: 2.3.0
       lucide-react:
         specifier: ^1.14.0
         version: 1.14.0(react@19.2.6)
@@ -1493,7 +1502,6 @@ packages:
   /@babel/runtime@7.29.2:
     resolution: {integrity: sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g==}
     engines: {node: '>=6.9.0'}
-    dev: true
 
   /@babel/standalone@7.29.4:
     resolution: {integrity: sha512-QuPlodN3HBcX/HcKRz0fkpr8hmqhY+OKwX89h/vBVKuSat5ohvZw4XGNwfF1LtwScmp5ILBAO7puXwJDcMEtJQ==}
@@ -11604,6 +11612,12 @@ packages:
       '@isaacs/cliui': 8.0.2
     optionalDependencies:
       '@pkgjs/parseargs': 0.11.0
+
+  /jexl@2.3.0:
+    resolution: {integrity: sha512-ecqln4kTWNkMwbFvTukOMDq1jy1GcPzvshhMp/s4pxU86xdLDq7HbDRa87DfMfbSAOS8V6EwvCdfs0S+w/iycA==}
+    dependencies:
+      '@babel/runtime': 7.29.2
+    dev: false
 
   /jiti@1.21.7:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}

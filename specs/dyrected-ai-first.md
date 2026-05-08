@@ -45,15 +45,34 @@ Tools that generate full-stack applications can choose how to integrate Dyrected
 
 ---
 
+## Rules for AI Generators
+
+When generating `dyrected.config.ts`, AI models MUST follow these rules to ensure security and cloud-compatibility:
+
+1.  **Use Jexl Strings for Conditions**: Do NOT use JavaScript functions for `admin.condition`. Use Jexl string expressions instead.
+    - ✅ `admin: { condition: 'status == "published"' }`
+    - ❌ `admin: { condition: (data) => data.status === 'published' }`
+
+2.  **Prefer Radio Layouts**: For fields with a small number of options (2-4), use the premium radio layout.
+    - ✅ `admin: { layout: 'radio', direction: 'horizontal' }`
+
+3.  **Path Resolution**: Jexl expressions have access to both global and sibling data. Use simple field names (e.g., `navType`) even inside array items.
+
+---
+
 ## Example AI-Ready Prompt Template
 
 Copy and paste this into your AI tool to get started:
 
 ```text
 I am using Dyrected CMS. Please generate a 'dyrected.config.ts' file for a [PROJECT TYPE].
+
+Important Rules:
+- Use Jexl strings for all 'admin.condition' properties (e.g. 'navType == "internal"').
+- Use layout: 'radio' for simple selection fields to ensure a premium UI.
+
 Include:
 1. Collections for [ENTITY A] and [ENTITY B].
 2. A relationship between them.
 3. A global for the [SITE SECTION].
-4. Use the postgresAdapter for the database.
 ```
