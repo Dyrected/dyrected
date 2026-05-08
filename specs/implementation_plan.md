@@ -321,18 +321,18 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] RBAC buttons (conditional rendering based on access flags).
 - [x] Field `access.read/update` enforcement in form engine.
 
-### Phase 13.5: Missing Package — `@dyrected/react`
+### Phase 13.5: Missing Package — `@dyrected/react` [COMPLETED]
 
-- [ ] Scaffold `packages/react/`.
-- [ ] Implement `useLivePreview<T>` hook.
-- [ ] Export `DyrectedError` re-export from SDK.
+- [x] Scaffold `packages/react/`.
+- [x] Implement `useLivePreview<T>` hook.
+- [x] Export `DyrectedError` re-export from SDK.
 
 ## Phase 14: Embedded Admin UI — Browser History & Routing [COMPLETED]
 
 - [x] Add `basename?: string` prop to `<AdminUI>`.
 - [x] Add `onNavigate?: (path: string) => void` prop.
 - [x] Implement `AdminStandalone` export using `MemoryRouter`.
-- [ ] Update Next.js/Nuxt embed documentation for catch-all routes.
+- [x] Update Next.js/Nuxt embed documentation for catch-all routes.
 
 ## Phase 15: Frontend Roadmap & Admin UX (Priority: P1)
 

@@ -134,23 +134,22 @@ async function submitForm(data: any) {
 |---|---|---|
 | `useDyrected()` | ✅ Available | Returns the configured `DyrectedClient` |
 | `useDyrectedDoc(slug, id, opts?)` | ✅ Available | Shortcut for `client.collection(slug).findOne(id)` |
-| `useDyrectedGlobal(slug)` | 🔜 Planned | Wraps `client.global(slug).get()` with `useAsyncData` |
-| `useDyrectedAuth()` | 🔜 Planned | Returns `login()`, `logout()`, `user`, `isLoggedIn` |
-| `useLivePreview(options)` | 🔜 Planned | Live preview `postMessage` integration |
+| `useDyrectedGlobal(slug)` | ✅ Available | Wraps `client.global(slug).get()` with `useAsyncData` |
+| `useDyrectedAuth()` | ✅ Available | Returns `login()`, `logout()`, `user`, `isLoggedIn` |
+| `useLivePreview(options)` | ✅ Available | Live preview `postMessage` integration |
 
 ---
 
 ## Authentication
 
-`useDyrectedAuth()` is planned — see Phase 13 in the implementation plan. In the meantime, call auth methods directly:
+The `useDyrectedAuth()` composable provides everything you need to manage user sessions:
 
 ```vue
 <script setup lang="ts">
-const client = useDyrected()
+const { login, logout, user, isLoggedIn } = useDyrectedAuth()
 
 async function handleLogin() {
-  const { token } = await client.collection('users').login('user@example.com', 'my-password')
-  // Store token — client.setToken(token) and persist in a cookie
+  await login('user@example.com', 'my-password')
   navigateTo('/dashboard')
 }
 </script>
@@ -160,22 +159,22 @@ async function handleLogin() {
 
 ## Live Preview
 
-`useLivePreview()` is planned — see [Live Preview](/docs/admin/live-preview) for the postMessage protocol. In the meantime, implement it manually:
+Enable real-time synchronization with the Admin UI using `useLivePreview`:
 
 ```vue
 <script setup lang="ts">
-const initialData = ...
-const page = ref(initialData)
-const isLive = ref(false)
+const route = useRoute()
+const config = useRuntimeConfig()
 
-onMounted(() => {
-  window.addEventListener('message', (e) => {
-    if (e.origin !== 'https://your-admin.com') return
-    if (e.data?.type === 'dyrected-live-preview') {
-      page.value = e.data.data
-      isLive.value = true
-    }
-  })
+// Fetch initial data
+const { data: initialData } = await useAsyncData('page', () => 
+  useDyrected().collection('pages').findOne(route.params.slug)
+)
+
+// Sync with Admin UI
+const { data: page, isLive } = useLivePreview({
+  initialData: initialData.value,
+  serverURL: config.public.dyrectedAdminUrl
 })
 </script>
 ```
@@ -184,7 +183,7 @@ onMounted(() => {
 
 ## Step 4 — Embed the Admin UI
 
-To use the Admin UI in a Nuxt project, create a client-only page and sync the internal history with `navigateTo`.
+To use the Admin UI in a Nuxt project, create a catch-all page at `pages/admin/[...slug].vue`. This allows the Admin UI to manage its own internal routing for collections, globals, and media while staying in sync with the Nuxt router.
 
 ```vue
 <!-- pages/admin/[...slug].vue -->

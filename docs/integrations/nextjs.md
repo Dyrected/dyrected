@@ -122,7 +122,7 @@ This approach has zero network overhead and is the fastest option for self-hoste
 
 ## Step 4 — Embed the Admin UI
 
-Create a client-side page that mounts the admin dashboard. We use `onNavigate` to sync the internal admin history with the Next.js router.
+Create an optional catch-all page at `app/admin/[[...route]]/page.tsx`. This ensures that the root `/admin` and all internal admin sub-routes (like `/admin/collections/posts`) are handled by this single page. We use `onNavigate` to sync the internal admin history with the Next.js router.
 
 ```tsx
 // app/admin/[[...route]]/page.tsx
