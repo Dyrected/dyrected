@@ -212,7 +212,17 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
       name={fullPath}
       render={({ field: formField }) => (
         <FormItem>
-          <FormLabel>{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</FormLabel>
+          <div className="flex items-center gap-2 mb-1.5">
+            <FormLabel className="mb-0">
+              {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
+              {schema.required && <span className="text-destructive ml-1">*</span>}
+            </FormLabel>
+            {schema.unique && (
+              <span className="inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                Unique
+              </span>
+            )}
+          </div>
           <FormControl>
             {renderField(schema, formField)}
           </FormControl>
@@ -296,7 +306,7 @@ function renderField(schema: FieldSchema, field: any) {
             <SelectValue placeholder={schema.admin?.placeholder || `Select ${label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent>
-            {schema.options?.map((opt) => (
+            {normalizeOptions(schema.options).map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

@@ -23,11 +23,31 @@ export function MediaPicker({ value, onChange, label, variant = "default" }: Med
   const { client } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
 
-  const { data: media } = useQuery({
+  const { data: media, refetch } = useQuery({
     queryKey: ["media"],
     queryFn: () => client!.listMedia().then(r => r.docs),
     enabled: isOpen && !!client,
   })
+
+  const [isUploading, setIsUploading] = React.useState(false)
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !client) return
+
+    setIsUploading(true)
+    try {
+      const result = await client.uploadMedia(file)
+      await refetch()
+      onChange(result.id)
+      setIsOpen(false)
+    } catch (error) {
+      console.error("Upload failed:", error)
+      alert("Upload failed. Please try again.")
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const selectedMedia = media?.find(m => m.id === value)
   const previewUrl = selectedMedia?.url || (selectedMedia ? `${client?.getBaseUrl()}/media/${selectedMedia.filename}` : null)
@@ -72,8 +92,28 @@ export function MediaPicker({ value, onChange, label, variant = "default" }: Med
               )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[800px]">
-              <DialogHeader>
+              <DialogHeader className="flex flex-row items-center justify-between">
                 <DialogTitle>Select Media</DialogTitle>
+                <div className="relative">
+                  <input
+                    type="file"
+                    id="media-upload"
+                    className="hidden"
+                    onChange={handleUpload}
+                    accept="image/*"
+                    disabled={isUploading}
+                  />
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-8"
+                    disabled={isUploading}
+                    onClick={() => document.getElementById("media-upload")?.click()}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {isUploading ? "Uploading..." : "Upload New"}
+                  </Button>
+                </div>
               </DialogHeader>
               <ScrollArea className="h-[400px] mt-4">
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">

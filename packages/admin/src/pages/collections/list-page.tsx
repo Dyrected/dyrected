@@ -239,7 +239,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Database className="h-5 w-5 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">{schema.label || schema.slug}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{schema.labels?.plural || schema.label || schema.slug}</h1>
           </div>
           <p className="text-sm text-muted-foreground">
             Manage your {schema.slug} entries, search, and update content.
@@ -249,7 +249,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           <Link to={`/collections/${slug}/new`}>
             <Button className="h-10 px-4 rounded-lg bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
               <Plus className="mr-2 h-4 w-4" />
-              Create {schema.label || schema.slug}
+              Create {schema.labels?.singular || schema.label || schema.slug}
             </Button>
           </Link>
         </div>

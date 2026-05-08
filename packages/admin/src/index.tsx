@@ -32,6 +32,10 @@ function CollectionRoute() {
 
   const schema = schemas?.collections.find((c: any) => c.slug === slug);
 
+  if (schema?.admin?.hidden) {
+    return <div>404: Not Found</div>;
+  }
+
   if (schema?.upload) {
     return <MediaPage collectionSlug={slug!} />;
   }

@@ -10,9 +10,13 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
   Sparkles,
+  Lock,
+  Shield,
+  Share2,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { cn } from "../../lib/utils"
@@ -30,7 +34,7 @@ function NavItem({
 }: {
   to: string
   icon: React.ElementType
-  label: string
+  label: React.ReactNode
   active: boolean
   collapsed: boolean
   onClick?: () => void
@@ -39,7 +43,6 @@ function NavItem({
     <Link
       to={to}
       onClick={onClick}
-      title={collapsed ? label : undefined}
       className={cn(
         "group flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150",
         collapsed ? "justify-center px-2" : "",
@@ -60,6 +63,53 @@ function NavItem({
         <ChevronRight className="ml-auto h-3.5 w-3.5 opacity-50 shrink-0" />
       )}
     </Link>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Nav Group (Collapsible)
+// ---------------------------------------------------------------------------
+function NavGroup({
+  label,
+  children,
+  collapsed,
+  defaultExpanded = true,
+}: {
+  label: string
+  children: React.ReactNode
+  collapsed: boolean
+  defaultExpanded?: boolean
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
+
+  if (collapsed) {
+    return (
+      <div className="space-y-1">
+        <div className="my-2 mx-3 h-px bg-border" />
+        {children}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between px-3 mt-4 mb-1 group"
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+          {label}
+        </span>
+        {expanded ? (
+          <ChevronDown className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
+        ) : (
+          <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
+        )}
+      </button>
+      <div className={cn("space-y-0.5 overflow-hidden transition-all duration-200", expanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0")}>
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -137,7 +187,6 @@ function SidebarInner({
 
         {(isLoading || collections.filter((c: any) => !c.upload).length > 0) && (
           <div>
-            {groupLabel("Collections")}
             {isLoading ? (
               <div className="space-y-1 px-1">
                 {[1, 2, 3].map((i) => (
@@ -145,7 +194,6 @@ function SidebarInner({
                 ))}
               </div>
             ) : (() => {
-              // Group collections by admin.group; ungrouped goes last
               const nonUpload = collections.filter((col: any) => !col.upload)
               const groups = new Map<string, any[]>()
               const ungrouped: any[] = []
@@ -160,41 +208,49 @@ function SidebarInner({
                 }
               })
 
+              const renderCollectionItem = (col: any) => {
+                const isReadOnly = col.access?.read && !col.access?.create && !col.access?.update && !col.access?.delete
+                const navLabel = (
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="truncate">{col.labels?.plural ?? col.label ?? col.slug}</span>
+                    {!collapsed && (
+                      <div className="flex gap-1 shrink-0">
+                        {col.auth && <Shield className="h-2.5 w-2.5 text-blue-500/70" />}
+                        {col.shared && <Share2 className="h-2.5 w-2.5 text-purple-500/70" />}
+                        {isReadOnly && <Lock className="h-2.5 w-2.5 text-muted-foreground/40" />}
+                      </div>
+                    )}
+                  </div>
+                )
+
+                return (
+                  <NavItem
+                    key={col.slug}
+                    to={`/collections/${col.slug}`}
+                    icon={Database}
+                    label={navLabel}
+                    active={location.pathname.startsWith(`/collections/${col.slug}`)}
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                  />
+                )
+              }
+
               return (
-                <div className="space-y-0.5">
+                <div className="space-y-1">
                   {/* Grouped sections */}
                   {Array.from(groups.entries()).map(([groupName, cols]) => (
-                    <div key={groupName}>
-                      {!collapsed && (
-                        <p className="px-3 mt-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40">
-                          {groupName}
-                        </p>
-                      )}
-                      {cols.map((col: any) => (
-                        <NavItem
-                          key={col.slug}
-                          to={`/collections/${col.slug}`}
-                          icon={Database}
-                          label={col.labels?.plural ?? col.slug}
-                          active={location.pathname === `/collections/${col.slug}`}
-                          collapsed={collapsed}
-                          onClick={onNavigate}
-                        />
-                      ))}
-                    </div>
+                    <NavGroup key={groupName} label={groupName} collapsed={collapsed}>
+                      {cols.map(col => renderCollectionItem(col))}
+                    </NavGroup>
                   ))}
+                  
                   {/* Ungrouped */}
-                  {ungrouped.map((col: any) => (
-                    <NavItem
-                      key={col.slug}
-                      to={`/collections/${col.slug}`}
-                      icon={Database}
-                      label={col.labels?.plural ?? col.slug}
-                      active={location.pathname === `/collections/${col.slug}`}
-                      collapsed={collapsed}
-                      onClick={onNavigate}
-                    />
-                  ))}
+                  {ungrouped.length > 0 && (
+                    <NavGroup label="Collections" collapsed={collapsed}>
+                      {ungrouped.map(col => renderCollectionItem(col))}
+                    </NavGroup>
+                  )}
                 </div>
               )
             })()}
