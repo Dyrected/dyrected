@@ -71,11 +71,15 @@ export class PostgresAdapter implements DatabaseAdapter {
       LIMIT ${limit} OFFSET ${offset}
     `;
 
+    const totalPages = Math.ceil(total / limit);
     return {
       docs: rows.map(r => ({ id: r.id, ...r.data })),
       total,
       limit,
-      page
+      page,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
     };
   }
 
@@ -127,5 +131,12 @@ export class PostgresAdapter implements DatabaseAdapter {
       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
     `;
     return params.data;
+  }
+
+  async execute(query: string, params?: any[]) {
+    if (params && params.length > 0) {
+      return this.sql.unsafe(query, params);
+    }
+    return this.sql.unsafe(query);
   }
 }

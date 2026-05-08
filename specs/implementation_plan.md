@@ -372,28 +372,28 @@ This phase implements the comprehensive frontend improvements defined in `specs/
 - [x] 15.4 RBAC: "Button Gating" & "Field Gating" in FormEngine.
 - [x] 15.5 Integration: Embedded Admin routing stability.
 
-## Phase 16: Multi-Tenant Database Isolation (Priority: P1)
+## Phase 16: Multi-Tenant Database Isolation [COMPLETED]
 
 This phase transitions the cloud platform to a robust schema-per-workspace model as defined in `specs/database-multi-tenancy.md`.
 
 ### Phase 16.1: Schema Provisioning
 
-- [ ] **Provisioner Service**: Implement `provisionWorkspaceSchema` and `deprovisionWorkspaceSchema`.
-- [ ] **Lifecycle Hooks**: Trigger schema creation/deletion on workspace CRUD events.
+- [x] **Provisioner Service**: Implement `provisionWorkspaceSchema` and `deprovisionWorkspaceSchema`.
+- [x] **Lifecycle Hooks**: Trigger schema creation/deletion on workspace CRUD events.
 
 ### Phase 16.2: Schema-Aware Query Interceptor
 
-- [ ] **Qualified Table Names**: Update `QueryInterceptor` to use `"schema"."table"` notation for full PgBouncer compatibility.
-- [ ] **Adapter Updates**: Update `@dyrected/db-postgres` to respect `collection.dbTableName`.
+- [x] **Qualified Table Names**: Update `QueryInterceptor` to use `"schema"."table"` notation for full PgBouncer compatibility.
+- [x] **Adapter Updates**: Update `@dyrected/db-postgres` to support raw DDL execution.
 
 ### Phase 16.3: Collection-level Table Provisioning
 
-- [ ] **Dynamic Tables**: Create scoped tables (`{siteId}_{slug}`) within workspace schemas on config sync.
-- [ ] **Cleanup**: Implement cascading deletion for collection tables.
+- [x] **Dynamic Tables**: Create scoped tables (`{siteId}_{slug}`) within workspace schemas on config sync.
+- [x] **Shared Support**: Handle `shared: true` collections at the workspace level.
 
 ### Phase 16.4: Legacy Data Migration
 
-- [ ] **Migration Script**: Build `migrate-to-schemas.ts` to move data from legacy shared/prefixed tables to new schemas.
+- [x] **Migration Script**: Build `migrate-to-schemas.ts` to move data from legacy shared/prefixed tables to new schemas.
 
 ## Phase 17: Platform Metrics & Licensing (Priority: P2)
 

@@ -184,6 +184,12 @@ export interface DatabaseAdapter {
   // Globals
   getGlobal(args: { slug: string }): Promise<any>;
   updateGlobal(args: { slug: string; data: any }): Promise<any>;
+
+  /** 
+   * Low-level raw query execution. 
+   * Optional as not all adapters may support raw SQL/commands.
+   */
+  execute?(query: string, params?: any[]): Promise<any>;
 }
 
 export interface FileData {
