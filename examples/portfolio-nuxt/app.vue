@@ -14,6 +14,7 @@ const { data: settings } = await useAsyncData('settings', () =>
 
 const { data: navigation } = await useAsyncData('navigation', () => 
   dyrected.getGlobal('navigation', {
+    depth: 1,
     initialData: {
       menuItems: [
         { label: 'Home', url: '/' },
@@ -24,6 +25,7 @@ const { data: navigation } = await useAsyncData('navigation', () =>
     }
   })
 );
+
 
 const siteTitle = computed(() => settings.value?.siteName || 'Ministry of Grace');
 const footerText = computed(() => settings.value?.footerText || '2026 Ministry of Grace. All rights reserved.');
@@ -36,10 +38,11 @@ const footerText = computed(() => settings.value?.footerText || '2026 Ministry o
         <NuxtLink to="/" class="logo">{{ siteTitle }}</NuxtLink>
         <ul>
           <li v-for="item in navigation?.menuItems" :key="item.label">
-             <NuxtLink :to="item.url || '#'">
+             <NuxtLink :to="item.page?.slug ? (item.page.slug === 'home' ? '/' : `/${item.page.slug}`) : (item.url || '#')">
                {{ item.label }}
              </NuxtLink>
           </li>
+
           <template v-if="!navigation?.menuItems">
             <li><NuxtLink to="/">Home</NuxtLink></li>
             <li><NuxtLink to="/about">About</NuxtLink></li>

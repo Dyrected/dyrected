@@ -1,26 +1,32 @@
-import { defineConfig } from "@dyrected/core";
-import { SqliteAdapter } from "@dyrected/db-sqlite";
-import { PostgresAdapter } from "@dyrected/db-postgres";
+import { defineConfig, type DatabaseAdapter } from "@dyrected/core";
+import { collections, globals } from "./config/schema.ts";
 
-// Collections
-import { media } from "./config/collections/media.config";
-import { pages } from "./config/collections/pages.config";
-import { posts } from "./config/collections/posts.config";
-import { inquiries } from "./config/collections/inquiries.config";
-import { comments } from "./config/collections/comments.config";
+// Database Setup
+// We use a helper variable to keep the top-level clean of Node-only imports
 
-// Globals
-import { navigation } from "./config/globals/navigation.config";
-import { settings } from "./config/globals/settings.config";
+const getDb = async (): Promise<DatabaseAdapter> => {
+  let db: DatabaseAdapter;
+  if (typeof window === "undefined") {
+    // We only pull in the adapters if we are on the server
+    const { SqliteAdapter } = await import("@dyrected/db-sqlite");
+    const { PostgresAdapter } = await import("@dyrected/db-postgres");
 
-const db = process.env.DATABASE_URL
-  ? new PostgresAdapter({ url: process.env.DATABASE_URL })
-  : new SqliteAdapter({ filename: process.env.DB_FILENAME || "dyrected.db" });
+    if (process.env.DATABASE_URL) {
+      db = new PostgresAdapter({ url: process.env.DATABASE_URL });
+    } else {
+      db = new SqliteAdapter({
+        filename: process.env.DB_FILENAME || "dyrected.db",
+      });
+    }
+  }
+  // @ts-ignore
+  return db;
+};
 
 export default defineConfig({
-  collections: [media, pages, posts, inquiries, comments],
-  globals: [navigation, settings],
-  db,
+  collections,
+  globals,
+  db: await getDb(),
   admin: {
     branding: {
       primaryColor: "#4f46e5",

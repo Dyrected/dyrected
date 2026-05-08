@@ -1,9 +1,9 @@
 import { defineCollection } from "@dyrected/core";
-import { HeroBlockConfig } from "../../components/blocks/HeroBlock/config";
-import { RichContentBlockConfig } from "../../components/blocks/RichContentBlock/config";
-import { GalleryBlockConfig } from "../../components/blocks/GalleryBlock/config";
-import { CTABlockConfig } from "../../components/blocks/CTABlock/config";
-import { TestimonialBlockConfig } from "../../components/blocks/TestimonialBlock/config";
+import { HeroBlockConfig } from "../../components/blocks/HeroBlock/config.ts";
+import { RichContentBlockConfig } from "../../components/blocks/RichContentBlock/config.ts";
+import { GalleryBlockConfig } from "../../components/blocks/GalleryBlock/config.ts";
+import { CTABlockConfig } from "../../components/blocks/CTABlock/config.ts";
+import { TestimonialBlockConfig } from "../../components/blocks/TestimonialBlock/config.ts";
 
 export const pages = defineCollection({
   slug: "pages",
@@ -25,13 +25,7 @@ export const pages = defineCollection({
       name: "layout",
       type: "blocks",
       label: "Page Layout",
-      blocks: [
-        HeroBlockConfig,
-        RichContentBlockConfig,
-        GalleryBlockConfig,
-        CTABlockConfig,
-        TestimonialBlockConfig,
-      ],
+      blocks: [HeroBlockConfig, RichContentBlockConfig, GalleryBlockConfig, CTABlockConfig, TestimonialBlockConfig],
     },
   ],
 });
