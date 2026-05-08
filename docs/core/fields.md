@@ -340,7 +340,7 @@ A flexible layout builder. Each block in the list can be a different type, chose
       fields: [
         { name: 'heading', type: 'text', required: true },
         { name: 'subheading', type: 'textarea' },
-        { name: 'backgroundImage', type: 'relationship', collection: 'media' },
+        { name: 'backgroundImage', type: 'relationship', relationTo: 'media' },
       ],
     },
     {

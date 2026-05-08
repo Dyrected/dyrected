@@ -4,7 +4,7 @@ defineProps<{
   description?: string
   buttonLabel?: string
   buttonLink?: string
-  theme: 'primary' | 'secondary' | 'dark'
+  theme?: 'primary' | 'secondary' | 'dark'
 }>()
 </script>
 

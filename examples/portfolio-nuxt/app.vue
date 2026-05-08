@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const dyrected = useDyrected();
+import type { DyrectedSchema } from "~/dyrected-types";
+
+const dyrected = useDyrected<DyrectedSchema>();
 
 const { data: settings } = await useAsyncData('settings', () => 
   dyrected.getGlobal('settings', { 

@@ -39,7 +39,7 @@ export default defineConfig({
       label: 'Site Settings',
       fields: [
         { name: 'siteName', type: 'text' },
-        { name: 'logo', type: 'relationship', collection: 'media' },
+        { name: 'logo', type: 'relationship', relationTo: 'media' },
       ],
     },
   ],

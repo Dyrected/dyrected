@@ -18,7 +18,7 @@ export default defineConfig({
       fields: [
         { name: 'name', type: 'text', required: true },
         { name: 'role', type: 'select', options: ['admin', 'editor', 'viewer'], defaultValue: 'viewer' },
-        { name: 'avatar', type: 'relationship', collection: 'media' },
+        { name: 'avatar', type: 'relationship', relationTo: 'media' },
       ],
     },
   ],

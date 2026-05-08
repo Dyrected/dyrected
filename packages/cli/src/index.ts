@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import prompts from 'prompts';
 import { execSync } from 'child_process';
+import { createJiti } from 'jiti';
 
 const program = new Command();
 
@@ -301,18 +302,41 @@ function buildEnvTemplate(db: string, storage: string, framework: string): strin
 program
   .command('generate:types')
   .description('Generate TypeScript interfaces from your Dyrected schema')
-  .option('-u, --url <url>', 'Base URL of your Dyrected API', 'http://localhost:3000')
+  .option('-u, --url <url>', 'Base URL of your Dyrected API (Cloud or self-hosted)')
+  .option('-c, --config <path>', 'Path to your dyrected.config.ts (Self-hosted)', './dyrected.config.ts')
   .option('-o, --output <path>', 'Output file path', './dyrected-types.ts')
   .action(async (options) => {
     try {
-      console.log(chalk.blue(`Fetching schemas from ${options.url}/api/schemas...`));
-      
-      const response = await fetch(`${options.url}/api/schemas`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch schemas: ${response.statusText}`);
+      let schema: any;
+      if (options.url) {
+        console.log(chalk.blue(`Fetching schemas from ${options.url}/api/schemas...`));
+        const response = await fetch(`${options.url}/api/schemas`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch schemas: ${response.statusText}`);
+        }
+        schema = await response.json();
+      } else {
+        const configPath = path.resolve(process.cwd(), options.config);
+        if (await fs.pathExists(configPath)) {
+          console.log(chalk.blue(`Generating types from local config: ${configPath}...`));
+          const jiti = createJiti(configPath);
+          const configModule = await jiti.import(configPath) as any;
+          schema = configModule.default || configModule;
+        } else {
+          // Fallback to default localhost if no config found
+          const url = 'http://localhost:3000';
+          console.log(chalk.blue(`No local config found. Fetching schemas from ${url}/api/schemas...`));
+          const response = await fetch(`${url}/api/schemas`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch schemas: ${response.statusText}`);
+          }
+          schema = await response.json();
+        }
       }
-      
-      const schema = await response.json();
+
+      if (!schema || !schema.collections) {
+        throw new Error('Invalid schema: collections missing.');
+      }
       const code = generateTypes(schema);
       const formattedCode = await prettier.format(code, { parser: 'typescript' });
       await fs.outputFile(path.resolve(process.cwd(), options.output), formattedCode);
@@ -344,10 +368,35 @@ export interface Media {
 \n`;
 
   for (const col of schema.collections) {
+    if (!col || !col.slug) continue;
     const interfaceName = toPascalCase(col.slug);
+    
+    // Skip if it's the base Media interface and we already have it
+    if (interfaceName === 'Media') {
+      // We could merge fields here if we want, but usually base Media is enough
+      // For now, let's just add the custom fields to a separate interface or merge
+      code = code.replace('export interface Media {', `export interface MediaBase {`);
+      code = code.replace('export interface MediaBase {', `export interface Media {`);
+    }
+
+    const existingInterface = code.includes(`export interface ${interfaceName} {`);
+    if (existingInterface && interfaceName !== 'Media') continue;
+
+    if (interfaceName === 'Media') {
+      // If it's Media, we just want to add the extra fields to the existing interface
+      const extraFields = col.fields.filter((f: any) => !['filename', 'filesize', 'mimeType', 'url', 'width', 'height', 'createdAt', 'updatedAt'].includes(f.name));
+      if (extraFields.length > 0) {
+          const insertionPoint = code.indexOf('}', code.indexOf('export interface Media {'));
+          const fieldsCode = extraFields.map((f: any) => `  ${f.name}${f.required ? '' : '?'}: ${mapFieldType(f)};`).join('\n');
+          code = code.slice(0, insertionPoint) + fieldsCode + '\n' + code.slice(insertionPoint);
+      }
+      continue;
+    }
+
     code += `export interface ${interfaceName} {\n`;
     code += `  id: string;\n`;
     for (const field of col.fields) {
+      if (field.name === 'createdAt' || field.name === 'updatedAt' || field.name === 'id') continue;
       code += `  ${field.name}${field.required ? '' : '?'}: ${mapFieldType(field)};\n`;
     }
     code += `  createdAt: string;\n`;
@@ -356,6 +405,7 @@ export interface Media {
   }
 
   for (const glb of schema.globals) {
+    if (!glb || !glb.slug) continue;
     const interfaceName = `${toPascalCase(glb.slug)}Global`;
     code += `export interface ${interfaceName} {\n`;
     for (const field of glb.fields) {
@@ -397,13 +447,26 @@ function mapFieldType(field: any): string {
       return field.options
         ? field.options.map((o: any) => `'${typeof o === 'string' ? o : o.value}'`).join(' | ')
         : 'string';
-    case 'relationship':
-      return field.collection === 'media'
+    case 'relationship': {
+      const relationTo = field.relationTo || field.collection;
+      return relationTo === 'media'
         ? 'Media | string'
-        : `${toPascalCase(field.collection)} | string`;
+        : `${toPascalCase(relationTo)} | string`;
+    }
     case 'array':
+      if (field.fields) {
+        return `Array<{\n${field.fields.map((f: any) => `      ${f.name}${f.required ? '' : '?'}: ${mapFieldType(f)};`).join('\n')}\n    }>`;
+      }
+      return 'any[]';
+    case 'blocks':
+      if (field.blocks) {
+        return `Array<${field.blocks.map((b: any) => `{\n      blockType: '${b.slug}';\n${b.fields.map((f: any) => `      ${f.name}${f.required ? '' : '?'}: ${mapFieldType(f)};`).join('\n')}\n    }`).join(' | ')}>`;
+      }
       return 'any[]';
     case 'object':
+      if (field.fields) {
+        return `{\n${field.fields.map((f: any) => `    ${f.name}${f.required ? '' : '?'}: ${mapFieldType(f)};`).join('\n')}\n  }`;
+      }
       return 'any';
     default:
       return 'any';
@@ -411,12 +474,11 @@ function mapFieldType(field: any): string {
 }
 
 function toPascalCase(str: string) {
+  if (!str) return 'Unknown';
   return str.replace(/(^\w|-\w)/g, (m) => m.replace(/-/, '').toUpperCase());
 }
 
 // ─── sync:schema ─────────────────────────────────────────────────────────────
-
-import { createJiti } from 'jiti';
 
 
 program

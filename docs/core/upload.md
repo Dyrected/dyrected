@@ -151,7 +151,7 @@ Use a `relationship` field pointing to your upload collection:
 {
   name: 'featuredImage',
   type: 'relationship',
-  collection: 'media',   // the slug of your upload collection
+  relationTo: 'media',   // the slug of your upload collection
 }
 ```
 

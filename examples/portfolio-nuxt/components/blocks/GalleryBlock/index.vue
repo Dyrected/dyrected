@@ -1,8 +1,8 @@
 <script setup lang="ts">
 defineProps<{
   title?: string
-  images: Array<{ image: any; caption?: string }>
-  columns: string
+  images?: Array<{ image?: any; caption?: string }>
+  columns?: string
 }>()
 </script>
 

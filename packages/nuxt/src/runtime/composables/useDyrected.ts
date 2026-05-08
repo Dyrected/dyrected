@@ -1,10 +1,10 @@
 // @ts-ignore
 import { useRuntimeConfig, useAsyncData, useState, useCookie } from '#app'
-import { createClient, type DyrectedClient } from '@dyrected/sdk'
+import { createClient, type DyrectedClient, type BaseSchema } from '@dyrected/sdk'
 
-function getClient(): DyrectedClient {
+function getClient<TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> {
   const config = useRuntimeConfig().public.dyrected
-  return createClient({
+  return createClient<TSchema>({
     baseUrl: config.baseUrl,
     apiKey: config.apiKey,
     siteId: config.siteId,
@@ -14,30 +14,30 @@ function getClient(): DyrectedClient {
 // ---------------------------------------------------------------------------
 // useDyrected — returns the raw SDK client (SSR-friendly singleton per request)
 // ---------------------------------------------------------------------------
-export const useDyrected = (): DyrectedClient => {
-  return getClient()
+export const useDyrected = <TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> => {
+  return getClient<TSchema>()
 }
 
 // ---------------------------------------------------------------------------
 // useDyrectedDoc — convenience shorthand for a single document
 // ---------------------------------------------------------------------------
-export const useDyrectedDoc = <T = any>(
-  collection: string, 
+export const useDyrectedDoc = <T = any, TSchema extends BaseSchema = any>(
+  collection: keyof TSchema['collections'] | string, 
   id: string, 
   options?: { depth?: number; initialData?: T }
 ) => {
-  const client = getClient()
+  const client = getClient<TSchema>()
   return useAsyncData<T>(
-    `dyrected:doc:${collection}:${id}`,
-    () => client.findOne<T>(collection, id, options)
+    `dyrected:doc:${collection as string}:${id}`,
+    () => client.findOne<T>(collection as any, id, options)
   )
 }
 
 // ---------------------------------------------------------------------------
 // useDyrectedCollection — convenience shorthand for a collection
 // ---------------------------------------------------------------------------
-export const useDyrectedCollection = <T = any>(
-  collection: string,
+export const useDyrectedCollection = <T = any, TSchema extends BaseSchema = any>(
+  collection: keyof TSchema['collections'] | string,
   options?: { 
     depth?: number; 
     limit?: number; 
@@ -47,10 +47,10 @@ export const useDyrectedCollection = <T = any>(
     initialData?: T[];
   }
 ) => {
-  const client = getClient()
+  const client = getClient<TSchema>()
   return useAsyncData(
-    `dyrected:collection:${collection}`,
-    () => client.collection<T>(collection).find(options).exec()
+    `dyrected:collection:${collection as string}`,
+    () => client.collection<any>(collection as any).find(options).exec()
   )
 }
 
@@ -58,14 +58,14 @@ export const useDyrectedCollection = <T = any>(
 // useDyrectedGlobal — wraps client.global(slug).get() in useAsyncData
 // Returns: { data, pending, error, refresh }
 // ---------------------------------------------------------------------------
-export function useDyrectedGlobal<T = any>(
-  slug: string,
+export function useDyrectedGlobal<T = any, TSchema extends BaseSchema = any>(
+  slug: keyof TSchema['globals'] | string,
   options?: { depth?: number; initialData?: T; watch?: any[] }
 ) {
-  const client = getClient()
+  const client = getClient<TSchema>()
   return useAsyncData<T>(
-    `dyrected:global:${slug}`,
-    () => client.global<T>(slug).get(options),
+    `dyrected:global:${slug as string}`,
+    () => client.global<any>(slug as any).get(options),
     { watch: options?.watch }
   )
 }

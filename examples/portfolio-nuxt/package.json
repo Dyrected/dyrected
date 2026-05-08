@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "sync": "dyrected sync:schema --api-key sk_live_0d33f2478e1ebd46786aeb25beeccf8a6c1dd41847cce124 --site-id a1q8bo --url http://localhost:3999",
+    "generate:types": "dyrected generate:types",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

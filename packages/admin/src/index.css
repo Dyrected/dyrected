@@ -28,11 +28,11 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 32% 93%; /* Softer gray */
-    --input: 214.3 32% 93%;
-    --ring: 239 84% 67% / 0.1; /* Translucent ring */
+    --border: 214.3 32% 91%; /* Even softer gray */
+    --input: 214.3 32% 91%;
+    --ring: 239 84% 67% / 0.1;
 
-    --radius: 0.75rem;
+    --radius: 1rem; /* More rounded */
 
     --sidebar-background: 210 40% 99%;
     --sidebar-foreground: 222.2 84% 4.9%;
@@ -40,20 +40,98 @@
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 210 40% 96.1%;
     --sidebar-accent-foreground: 239 84% 67%;
-    --sidebar-border: 214.3 32% 93%;
+    --sidebar-border: 214.3 32% 91%;
     --sidebar-ring: 239 84% 67%;
   }
 }
 
 @layer base {
+  /* Global border softening */
   .admin-ui * {
-    @apply border-border/50; /* Much more subtle */
+    border-color: hsl(var(--border) / 0.4) !important;
   }
   
+  .admin-ui .border-border\/60,
+  .admin-ui .border-border\/50,
+  .admin-ui .border-border\/40,
+  .admin-ui .border-border\/20 {
+    border-color: hsl(var(--border) / 0.3) !important;
+  }
+
+  /* Padding streamlining */
+  .admin-ui .p-8 {
+    padding: 1.5rem !important;
+  }
+  .admin-ui .p-6, 
+  .admin-ui .p-5, 
+  .admin-ui .p-4 {
+    padding: 1rem !important;
+  }
+  
+  /* Main content spacing */
+  .admin-ui main .flex-1.p-6,
+  .admin-ui main .flex-1.lg\:p-8 {
+    padding: 1.5rem !important;
+  }
+
+  /* Gap reduction */
+  .admin-ui .space-y-8 {
+    margin-top: 0 !important;
+    gap: 1.25rem !important;
+  }
+  .admin-ui .space-y-6,
+  .admin-ui .space-y-5 {
+    gap: 1rem !important;
+  }
+
+  /* Radius softening */
+  .admin-ui .rounded-xl,
+  .admin-ui .rounded-lg {
+    border-radius: 0.75rem !important;
+  }
+  .admin-ui .rounded-md {
+    border-radius: 0.5rem !important;
+  }
+
+  /* Elimination of nested background noise */
+  .admin-ui .bg-muted\/30,
+  .admin-ui .bg-muted\/10,
+  .admin-ui .bg-white\/30,
+  .admin-ui .bg-primary\/5 {
+    background-color: transparent !important;
+  }
+
+  /* Form field refinement */
   .admin-ui input, 
   .admin-ui select, 
-  .admin-ui textarea, 
-  .admin-ui button {
+  .admin-ui textarea {
     @apply focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus:outline-none;
+    border-color: hsl(var(--border)) !important;
+    background-color: hsl(var(--background)) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: none !important;
+  }
+  
+  /* Select trigger special case */
+  .admin-ui .rounded-xl.border-border\/40 {
+    border-color: hsl(var(--border)) !important;
+    background-color: hsl(var(--background)) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: none !important;
+  }
+
+  /* Sidebar styling */
+  .admin-ui aside {
+    border-right-width: 1px !important;
+    background-color: #fafbfc !important;
+  }
+  .admin-ui aside .border-b {
+    border-bottom-color: hsl(var(--border) / 0.3) !important;
+  }
+
+  /* Shadow softening */
+  .admin-ui .shadow-sm,
+  .admin-ui .shadow {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.02) !important;
   }
 }

@@ -49,7 +49,12 @@ export interface DyrectedClientConfig {
   defaultDepth?: number;
 }
 
-export class DyrectedClient {
+export interface BaseSchema {
+  collections: Record<string, any>;
+  globals: Record<string, any>;
+}
+
+export class DyrectedClient<TSchema extends BaseSchema = any> {
   private baseUrl: string;
   private headers: Record<string, string>;
   private fetch: typeof fetch;
@@ -91,10 +96,20 @@ export class DyrectedClient {
     return this.request('/api/schemas');
   }
 
-  async find<T = any>(collection: string, args: QueryArgs = {}): Promise<PaginatedResult<T>> {
+  async find<K extends keyof TSchema['collections']>(
+    collection: K & string, 
+    args: QueryArgs = {}
+  ): Promise<PaginatedResult<TSchema['collections'][K]>> {
     const { initialData, ...queryArgs } = args;
-    const query = qs.stringify(queryArgs, { addQueryPrefix: true });
-    const res = (await this.request(`/api/collections/${collection}${query}`)) as PaginatedResult<T>;
+    
+    // Normalize where clause for the server (expects JSON string)
+    const normalizedArgs = { ...queryArgs };
+    if (normalizedArgs.where && typeof normalizedArgs.where === 'object') {
+      normalizedArgs.where = JSON.stringify(normalizedArgs.where);
+    }
+
+    const query = qs.stringify(normalizedArgs, { addQueryPrefix: true });
+    const res = (await this.request(`/api/collections/${collection}${query}`)) as PaginatedResult<TSchema['collections'][K]>;
 
     if (res.docs.length === 0 && initialData && initialData.length > 0) {
       // Trigger background seed
@@ -120,10 +135,10 @@ export class DyrectedClient {
   /**
    * Returns a fluent query builder for a collection.
    */
-  collection<T = any>(slug: string) {
+  collection<K extends keyof TSchema['collections']>(slug: K & string) {
     return {
       find: (args?: QueryArgs) => {
-        const qb = new QueryBuilder<T>(slug, (c, a) => this.find<T>(c, a));
+        const qb = new QueryBuilder<TSchema['collections'][K]>(slug, (c, a) => this.find(c as any, a));
         if (args) {
           if (args.where) qb.where(args.where);
           if (args.sort) qb.sort(args.sort);
@@ -133,9 +148,10 @@ export class DyrectedClient {
         }
         return qb;
       },
-      findOne: (id: string, args: { depth?: number; initialData?: T } = {}) => this.findOne<T>(slug, id, args),
-      create: (data: any) => this.create<T>(slug, data),
-      update: (id: string, data: any) => this.update<T>(slug, id, data),
+      findOne: (id: string, args: { depth?: number; initialData?: TSchema['collections'][K] } = {}) => 
+        this.findOne<TSchema['collections'][K]>(slug, id, args),
+      create: (data: any) => this.create<TSchema['collections'][K]>(slug, data),
+      update: (id: string, data: any) => this.update<TSchema['collections'][K]>(slug, id, data),
       delete: (id: string) => this.delete(slug, id),
       /**
        * Upload a file to this collection. Sends as multipart/form-data.
@@ -149,7 +165,7 @@ export class DyrectedClient {
        * Log in with email + password. Returns a JWT token and the user document.
        * Call `client.setToken(token)` afterwards to authenticate subsequent requests.
        */
-      login: (email: string, password: string): Promise<{ token: string; user: T }> =>
+      login: (email: string, password: string): Promise<{ token: string; user: TSchema['collections'][K] }> =>
         this.request(`/api/collections/${slug}/login`, {
           method: 'POST',
           body: JSON.stringify({ email, password }),
@@ -158,7 +174,7 @@ export class DyrectedClient {
       logout: (): Promise<{ success: boolean }> =>
         this.request(`/api/collections/${slug}/logout`, { method: 'POST' }),
       /** Return the currently authenticated user (requires a token via setToken). */
-      me: (): Promise<T> =>
+      me: (): Promise<TSchema['collections'][K]> =>
         this.request(`/api/collections/${slug}/me`),
       /** Issue a fresh token for the currently authenticated user. */
       refreshToken: (): Promise<{ token: string }> =>
@@ -172,10 +188,11 @@ export class DyrectedClient {
    * @example client.global('site-settings').get()
    * @example client.global('site-settings').update({ siteName: 'My Site' })
    */
-  global<T = any>(slug: string) {
+  global<K extends keyof TSchema['globals']>(slug: K & string) {
     return {
-      get: (args: { depth?: number } = {}) => this.getGlobal<T>(slug, args),
-      update: (data: any) => this.updateGlobal<T>(slug, data),
+      get: (args: { depth?: number; initialData?: TSchema['globals'][K] } = {}) => 
+        this.getGlobal<TSchema['globals'][K]>(slug, args),
+      update: (data: any) => this.updateGlobal<TSchema['globals'][K]>(slug, data),
     };
   }
 
@@ -254,7 +271,7 @@ export class DyrectedClient {
   }
 
   async listMedia(args: QueryArgs = {}, collection: string = 'media'): Promise<PaginatedResult<Media>> {
-    return this.find<Media>(collection, args);
+    return this.find(collection as any, args) as any;
   }
 
   /** @deprecated Use client.collection('media').upload(file, data) instead */
@@ -329,6 +346,8 @@ export class DyrectedClient {
   }
 }
 
-export function createClient(config: DyrectedClientConfig): DyrectedClient {
-  return new DyrectedClient(config);
+export function createClient<TSchema extends { collections: any; globals: any } = any>(
+  config: DyrectedClientConfig
+): DyrectedClient<TSchema> {
+  return new DyrectedClient<TSchema>(config);
 }

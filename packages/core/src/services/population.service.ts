@@ -69,6 +69,22 @@ export class PopulationService {
           maxDepth,
         });
       }
+
+      // Handle Blocks
+      if (field.type === 'blocks' && field.blocks && Array.isArray(value)) {
+        populatedDoc[field.name] = await Promise.all(
+          value.map(async (blockData: any) => {
+            const blockConfig = field.blocks!.find(b => b.slug === blockData.blockType);
+            if (!blockConfig) return blockData;
+            return this.populate({
+              data: blockData,
+              fields: blockConfig.fields,
+              currentDepth,
+              maxDepth,
+            });
+          })
+        );
+      }
     }
 
     return populatedDoc;
