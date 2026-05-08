@@ -34,27 +34,20 @@ export default function AdminPage() {
 
 ### In Nuxt
 
-The `@dyrected/nuxt` module does not embed the Admin UI — it provides SSR data fetching composables and the server handler. To use the Admin UI in a Nuxt project, add a client-only page:
+The `@dyrected/nuxt` module provides a `<DyrectedAdmin />` component for easy embedding. Create a catch-all page or a dedicated admin route:
 
 ```vue
-<!-- pages/admin/[...slug].vue -->
+<!-- pages/cms-admin.vue -->
+<script setup lang="ts">
+// Disable Nuxt layout for the dashboard
+definePageMeta({ layout: false })
+</script>
+
 <template>
   <ClientOnly>
-    <AdminUI
-      :base-url="config.public.cmsUrl"
-      :api-key="config.public.cmsApiKey"
-      :site-id="config.public.siteId"
-      basename="/admin"
-      @navigate="(path) => navigateTo('/admin' + path)"
-    />
+    <DyrectedAdmin basename="/cms-admin" />
   </ClientOnly>
 </template>
-
-<script setup lang="ts">
-import { AdminUI } from '@dyrected/admin'
-import '@dyrected/admin/dist/index.css'
-const config = useRuntimeConfig()
-</script>
 ```
 
 ### Standalone (self-hosted)

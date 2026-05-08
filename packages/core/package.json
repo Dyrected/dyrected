@@ -14,6 +14,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@dyrected/db-sqlite": "workspace:^",
     "hono": "^4.0.0",
     "jose": "^6.2.3",
     "zod": "^3.22.0"

@@ -36,11 +36,10 @@ export default defineNuxtConfig({
 ```
 
 ### Option B: Self-Hosted Mode (Core)
-Use this if you want to run the Dyrected engine directly inside your Nuxt app.
+Use this if you want to run the Dyrected engine directly inside your Nuxt app. We recommend defining your schema in a separate `dyrected.config.ts` file.
 
 ```ts
 // nuxt.config.ts
-import { SqliteAdapter } from '@dyrected/db-sqlite'
 import config from './dyrected.config'
 
 export default defineNuxtConfig({
@@ -48,10 +47,39 @@ export default defineNuxtConfig({
   dyrected: {
     ...config,
     apiBase: '/api/dyrected',
-    db: new SqliteAdapter({
-      filename: 'cms.db'
-    })
-  }
+  },
+  // Necessary for embedding the Admin UI dashboard
+  build: {
+    transpile: ["@dyrected/admin"],
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        "react",
+        "react-dom",
+        "react-router-dom",
+        "@tanstack/react-query",
+        "lucide-react"
+      ],
+    },
+  },
+})
+```
+
+And your `dyrected.config.ts` (using SQLite as an example):
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from '@dyrected/core'
+import { SqliteAdapter } from '@dyrected/db-sqlite'
+
+export default defineConfig({
+  db: new SqliteAdapter({
+    filename: 'dyrected.db'
+  }),
+  collections: [
+    // ... your collections
+  ]
 })
 ```
 
@@ -208,45 +236,28 @@ const { data: page, isLive } = useLivePreview({
 
 ## Step 4 — Embed the Admin UI
 
-The Admin UI is a React-based dashboard. To embed it into Nuxt (Vue), we provide a framework-agnostic `renderAdminUI` function. Create a file at `pages/cms-admin.vue`.
+The Admin UI is a React-based dashboard. The `@dyrected/nuxt` module provides a `<DyrectedAdmin />` component that handles all the React-to-Vue bridging, mounting, and routing isolation for you.
+
+Create a file at `pages/cms-admin.vue`.
 
 ```vue
 <!-- pages/cms-admin.vue -->
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { renderAdminUI } from '@dyrected/admin'
-import '@dyrected/admin/styles'
-
-// Disable Nuxt layout for the dashboard
-definePageMeta({ layout: false })
-
-const adminContainer = ref<HTMLElement | null>(null)
-let unmount: (() => void) | null = null
-
-onMounted(() => {
-  if (adminContainer.value) {
-    unmount = renderAdminUI(adminContainer.value, {
-      basename: '/cms-admin'
-    })
-  }
-})
-
-onUnmounted(() => {
-  if (unmount) unmount()
-})
+// Disable Nuxt layout for the dashboard to provide a full-screen experience
+definePageMeta({
+  layout: false,
+});
 </script>
 
 <template>
-  <div ref="adminContainer" class="admin-container" />
+  <ClientOnly>
+    <DyrectedAdmin basename="/cms-admin" />
+  </ClientOnly>
 </template>
-
-<style scoped>
-.admin-container {
-  height: 100vh;
-  width: 100vw;
-}
-</style>
 ```
+
+> [!IMPORTANT]
+> Ensure you have added `@dyrected/admin` to your `build.transpile` and relevant React dependencies to `vite.optimizeDeps.include` in your `nuxt.config.ts` as shown in Step 1.
 
 > [!TIP]
 > If you are using Cloud mode and want to connect directly to the Cloud API from the browser (bypassing the proxy), you can pass `baseUrl`, `apiKey`, and `siteId` props to `<AdminUI />`.
@@ -264,7 +275,7 @@ You can customise the prefix:
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
-    routePrefix: '/api/cms',   // defaults to '/api/dyrected'
+    apiBase: '/api/cms',   // defaults to '/api/dyrected'
   }
 })
 ```
@@ -322,32 +333,14 @@ const { data } = await useAsyncData('posts', () =>
 
 ---
 
-## Troubleshooting
+### Transformation Errors (e.g. `Unexpected "!"`)
+If you see errors like `Unexpected "!"` or `Transform failed` for files in `@dyrected/admin`, it usually means Vite is trying to parse the TypeScript code as plain JavaScript. 
 
-### Vite Version Mismatch
-If you see errors like `Package subpath './internal' is not defined` or TypeScript errors regarding `PluginOption`, it is usually due to a version mismatch between Nuxt's internal Vite version (v5) and the React plugin.
-
-**Solution**: Ensure you are using `@vitejs/plugin-react@4` which is the compatible version for Vite 5.
-
-```bash
-pnpm add -D @vitejs/plugin-react@4
-```
-
-Then configure your `nuxt.config.ts` to isolate the React transformation:
+**Solution**: Ensure you have added `@dyrected/admin` to `build.transpile` in your `nuxt.config.ts`. If problems persist, you may need to force the `tsx` loader in your Vite config:
 
 ```ts
-import react from '@vitejs/plugin-react'
-
 export default defineNuxtConfig({
   vite: {
-    plugins: [
-      react({
-        include: [/@dyrected\/admin\/src\/.*\.tsx$/]
-      })
-    ],
-    vueJsx: {
-      exclude: [/@dyrected\/admin\/.*\.tsx$/]
-    },
     esbuild: {
       loader: 'tsx',
       include: /@dyrected\/admin\/.*\.tsx$/
@@ -356,10 +349,7 @@ export default defineNuxtConfig({
 })
 ```
 
-### Transformation Errors (e.g. `Unexpected "!"`)
-If you see errors like `Unexpected "!"` or `Transform failed` for files in `@dyrected/admin`, it usually means Vite is trying to parse the TypeScript code as plain JavaScript. Add the `esbuild` configuration above to force the `tsx` loader.
-
 ### Hash Routing
 For self-hosted deployments embedded in Nuxt, we recommend using **Hash Routing**. This ensures that the Admin dashboard's internal navigation doesn't interfere with your Nuxt application's URL paths. 
 
-The `@dyrected/admin` component uses `HashRouter` by default for embedded modes to ensure maximum compatibility.
+The `<DyrectedAdmin />` component uses hash routing by default for internal navigation to ensure maximum compatibility.

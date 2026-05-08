@@ -23,7 +23,14 @@ export interface DyrectedContext {
 /**
  * Create the main Dyrected Hono application.
  */
+import { appendFileSync } from 'fs';
+
 export function createDyrectedApp(config: DyrectedConfig) {
+  const logMsg = `[dyrected/core] Creating app with ${config.collections?.length || 0} collections and ${config.globals?.length || 0} globals\n`;
+  console.log(logMsg);
+  try {
+    appendFileSync('dyrected_debug.log', logMsg);
+  } catch(e) {}
   const app = new Hono<DyrectedContext>();
 
   // 1. Standard Middleware
@@ -42,8 +49,12 @@ export function createDyrectedApp(config: DyrectedConfig) {
     await next();
   });
 
-  // 3. Health Check
+  // 3. Health Check & Debug
   app.get('/health', (c) => c.json({ status: 'ok', version: '0.0.1' }));
+  app.get('/routes', (c) => {
+    const routes = app.routes.map(r => ({ method: r.method, path: r.path }));
+    return c.json({ routes });
+  });
 
   // 4. Dynamic Routing
   registerRoutes(app, config);

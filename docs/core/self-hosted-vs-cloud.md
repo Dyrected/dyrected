@@ -7,14 +7,14 @@ Dyrected offers two primary architectural modes: **Self-Hosted (Core)** and **Ma
 
 ## Comparison Overview
 
-| Feature | Self-Hosted (Core) | Managed (Cloud) |
-| :--- | :--- | :--- |
-| **Engine Location** | Embedded in your App (Nitro/Next) | Dyrected Cloud Servers |
-| **Database** | Your own (SQLite, Postgres, etc.) | Fully Managed |
-| **Media Storage** | Local Disk or your S3/B2 | Fully Managed |
-| **Authentication** | You manage user sessions | Managed Auth & RBAC |
-| **Deployment** | Part of your monolith | Decoupled / Serverless |
-| **Best For** | Total control, data residency, offline | Speed, scalability, team collaboration |
+| Feature             | Self-Hosted (Core)                     | Managed (Cloud)                        |
+| :------------------ | :------------------------------------- | :------------------------------------- |
+| **Engine Location** | Embedded in your App (Nitro/Next)      | Dyrected Cloud Servers                 |
+| **Database**        | Your own (SQLite, Postgres, etc.)      | Fully Managed                          |
+| **Media Storage**   | Local Disk or your S3/B2               | Fully Managed                          |
+| **Authentication**  | You manage user sessions               | Managed Auth & RBAC                    |
+| **Deployment**      | Part of your monolith                  | Decoupled / Serverless                 |
+| **Best For**        | Total control, data residency, offline | Speed, scalability, team collaboration |
 
 ---
 
@@ -23,19 +23,37 @@ Dyrected offers two primary architectural modes: **Self-Hosted (Core)** and **Ma
 In Self-Hosted mode, the Dyrected engine runs as a server handler inside your application (e.g., using `@dyrected/nuxt` or `@dyrected/next`).
 
 ### How it works
+
 Your application imports `@dyrected/core` and a database adapter (like `@dyrected/db-sqlite`). When a request hits `/api/dyrected/*`, your app initializes the engine on-the-fly to query your database.
 
 ### Example Nuxt Config
+
 ```ts
-import { SqliteAdapter } from '@dyrected/db-sqlite'
-import config from './dyrected.config'
+import config from "./dyrected.config";
 
 export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt'],
+  modules: ["@dyrected/nuxt"],
   dyrected: {
     ...config,
-    db: new SqliteAdapter({ filename: 'cms.db' })
-  }
+    apiBase: "/dyrected", // or '/backend' or whatever you like...
+  },
+});
+```
+
+Your `dyrected.config.ts` handles the database connection. You can use any supported adapter:
+
+```ts
+// For SQLite
+import { SqliteAdapter } from '@dyrected/db-sqlite'
+const db = new SqliteAdapter({ filename: 'dyrected.db' })
+
+// For Postgres
+import { PostgresAdapter } from '@dyrected/db-postgres'
+const db = new PostgresAdapter({ url: process.env.DATABASE_URL })
+
+export default defineConfig({
+  db,
+  collections: [...]
 })
 ```
 
@@ -46,18 +64,20 @@ export default defineNuxtConfig({
 In Cloud mode, your application acts as a client. The actual engine, database, and media storage are managed by Dyrected Cloud.
 
 ### How it works
+
 Your app sends your `dyrected.config.ts` to the Cloud during deployment (via `dyrected sync:schema`). The Cloud then provisions the necessary infrastructure. Your app then communicates with the Cloud API using a **Site API Key**.
 
 ### Example Nuxt Config
+
 ```ts
 export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt'],
+  modules: ["@dyrected/nuxt"],
   dyrected: {
     apiKey: process.env.DYRECTED_API_KEY,
     siteId: process.env.DYRECTED_SITE_ID,
-    baseUrl: 'https://api.dyrected.cloud'
-  }
-})
+    baseUrl: "https://api.dyrected.cloud",
+  },
+});
 ```
 
 ---

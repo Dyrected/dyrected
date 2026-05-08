@@ -1,5 +1,7 @@
 import config from "./dyrected.config";
 
+console.log(`[nuxt.config] Imported dyrected config with ${config.collections?.length || 0} collections`);
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2026-05-08",

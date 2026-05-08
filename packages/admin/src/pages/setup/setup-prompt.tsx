@@ -532,7 +532,7 @@ API Reference: ${config.baseUrl}/api/docs`
           <Sparkles className="h-3 w-3" />
           Integration Guide
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+        <h1 className="text-2xl font-semibold tracking-tight lg:text-5xl text-foreground">
           Connect Your Application
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">

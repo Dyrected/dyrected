@@ -53,7 +53,8 @@ export default defineConfig({
 
 ### 3. Initialize the Router
 
-In your Next.js project, create a catch-all route at `app/api/dyrected/[...route]/route.ts`.
+#### In Next.js
+Create a catch-all route at `app/api/dyrected/[...route]/route.ts`.
 
 ```typescript
 import { createApp } from '@dyrected/core';
@@ -65,6 +66,21 @@ export const GET = app.fetch;
 export const POST = app.fetch;
 export const PATCH = app.fetch;
 export const DELETE = app.fetch;
+```
+
+#### In Nuxt 3
+Add the `@dyrected/nuxt` module to your `nuxt.config.ts`. The router is registered automatically.
+
+```typescript
+import config from './dyrected.config'
+
+export default defineNuxtConfig({
+  modules: ['@dyrected/nuxt'],
+  dyrected: {
+    ...config,
+    apiBase: '/api/dyrected'
+  }
+})
 ```
 
 Now, navigate to `/api/docs` to see your interactive documentation!

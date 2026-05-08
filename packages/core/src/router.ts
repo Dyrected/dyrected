@@ -47,7 +47,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     };
 
     const filteredCollections = await Promise.all(collections
-      .filter((col) => !siteId || col.shared || col.siteId === siteId)
+      .filter((col) => !siteId || col.shared || !col.siteId || col.siteId === siteId)
       .map(async (col) => ({
         slug: col.slug,
         labels: col.labels,
@@ -80,7 +80,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       })));
 
     const filteredGlobals = await Promise.all(globals
-      .filter((glb) => !siteId || glb.shared || glb.siteId === siteId)
+      .filter((glb) => !siteId || glb.shared || !glb.siteId || glb.siteId === siteId)
       .map(async (glb) => ({
         slug: glb.slug,
         label: glb.label,
