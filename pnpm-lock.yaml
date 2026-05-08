@@ -63,6 +63,9 @@ importers:
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
+      zod:
+        specifier: ^3.22.0
+        version: 3.25.76
     devDependencies:
       '@hono/node-server':
         specifier: ^2.0.1

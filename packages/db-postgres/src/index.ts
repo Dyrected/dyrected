@@ -142,4 +142,14 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
     return this.sql.unsafe(query);
   }
+
+  async ping() {
+    try {
+      await this.sql`SELECT 1`;
+      return true;
+    } catch (error) {
+      console.error('[dyrected-db-postgres] Database connectivity check failed:', error);
+      return false;
+    }
+  }
 }

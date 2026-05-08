@@ -61,4 +61,8 @@ Dyrected Cloud is activated by providing a `DYRECTED_LICENSE_KEY`. It transforms
 
 ## Technical Guardrail: The License Key
 
-Dyrected does not have two separate codebases. The presence of the `DYRECTED_LICENSE_KEY` environment variable acts as a "gate" that unlocks the Cloud-only route handlers (Workspaces/Sites management).
+The presence of the `DYRECTED_LICENSE_KEY` environment variable acts as a "gate" that unlocks the Cloud-only route handlers (Workspaces/Sites management). 
+
+- **Validation**: On startup, `apps/cloud` validates the key against the Dyrected License Server (`license.dyrected.com`). 
+- **Production Gate**: In `production`, a valid, active key is required to boot.
+- **Enterprise Self-Hosting**: Enterprise customers hosting their own private Cloud instance can point to their own License Server using the `LICENSE_SERVER_URL` environment variable.

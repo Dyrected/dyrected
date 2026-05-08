@@ -446,3 +446,33 @@ This phase implements the dynamic image resizing engine as defined in `specs/ima
 - [x] **Focal Point Picker**: Interactive UI in the media sidebar for setting image focus.
 - [x] **Blurhash Placeholders**: Integrated `react-blurhash` for smooth image loading transitions.
 - [x] **Responsive Previews**: Support for viewing and updating image metadata.
+
+## Phase 19: Documentation & Polish [COMPLETED]
+
+This phase focuses on finalizing the developer-facing documentation and polishing the overall ecosystem.
+
+### Phase 19.1: Technical Documentation Updates
+
+- [x] **License Server Docs**: Document `apps/platform` deployment and license key management.
+- [x] **Telemetry Guide**: Create a guide for extending platform events and metrics.
+- [x] **Installation Overhaul**: Update installation guides to reflect `DYRECTED_LICENSE_KEY` requirements.
+
+### Phase 19.2: Monorepo Polish
+
+- [x] **README Synchronization**: Update all package READMEs with consistent branding and installation steps.
+- [x] **Dependency Audit**: Ensure all packages have correct peer dependencies and workspace references.
+
+## Phase 20: Final Readiness Review [COMPLETED]
+
+The final stabilization phase before the v1.0.0 public release.
+
+### Phase 20.1: Infrastructure Hardening
+
+- [x] **Env Var Validation**: Implement strict validation for all required environment variables in `apps/cloud`.
+- [x] **Global Error Handling**: Finalize the global exception filter and logging strategy for production.
+- [x] **DB Connectivity Check**: Add startup sanity checks for database and Redis connectivity.
+
+### Phase 20.2: Production Build & Testing
+
+- [x] **Full Monorepo Build**: Validate that all packages build successfully in a clean environment.
+- [x] **E2E Smoke Tests**: Perform a final end-to-end walk-through of the Cloud registration and Site sync flow.

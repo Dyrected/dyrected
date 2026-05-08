@@ -124,6 +124,10 @@ NEXT_PUBLIC_DYRECTED_API_KEY=local-dev
 
 # For Nuxt client-side
 NUXT_PUBLIC_DYRECTED_API_KEY=local-dev
+
+# For Cloud Platform (Production)
+DYRECTED_LICENSE_KEY=your-license-key
+# LICENSE_SERVER_URL=https://license.dyrected.com
 ```
 
 ---

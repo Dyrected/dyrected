@@ -4,10 +4,18 @@ Dyrected is the **AI-First Headless CMS**. It replaces manual UI-based schema bu
 
 ## Project Structure
 
-- `apps/`: Platform applications (Cloud, Docs, Dev sandbox).
-- `packages/`: Core engine, SDKs, and pluggable adapters.
-- `examples/`: Starter templates for various frameworks.
-- `specs/`: Technical specifications and architectural documentation.
+### Applications (`apps/`)
+- `apps/cloud`: The multi-tenant CMS platform backend.
+- `apps/platform`: **[NEW]** Internal operations dashboard for license & metrics management.
+- `apps/docs`: Developer documentation (Mintlify).
+- `apps/admin`: The standalone Admin UI shell.
+
+### Core Engine & SDKs (`packages/`)
+- `packages/core`: The core CMS engine (Hono-based).
+- `packages/admin`: React-based editor UI components.
+- `packages/sdk`: Universal JavaScript client for content fetching.
+- `packages/db-postgres`: PostgreSQL database adapter with multi-schema support.
+- `packages/storage-s3`: AWS S3 / Cloudflare R2 storage adapter.
 
 ## Getting Started
 
