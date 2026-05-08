@@ -75,7 +75,30 @@ const navigation = defineGlobal({
       type: "array",
       fields: [
         { name: "label", type: "text" },
-        { name: "link", type: "relationship", relationTo: "pages" },
+        {
+          name: "navType",
+          type: "select",
+          options: [
+            { label: "Internal", value: "internal" },
+            { label: "External", value: "external" },
+          ],
+          defaultValue: "internal",
+          admin: {
+            description: "Select the type of navigation link",
+            layout: "radio",
+          },
+        },
+        {
+          name: "link",
+          type: "relationship",
+          relationTo: "pages",
+          admin: { condition: ({ navType }) => navType === "internal" },
+        },
+        {
+          name: "url",
+          type: "text",
+          admin: { condition: ({ navType }) => navType === "external" },
+        },
       ],
     },
   ],

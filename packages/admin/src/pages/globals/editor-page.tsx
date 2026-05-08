@@ -53,9 +53,9 @@ export function GlobalEditorPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border bg-card p-8 shadow-sm">
-        <FormEngine 
-          fields={schema.fields} 
+      <div className="">
+        <FormEngine
+          fields={schema.fields}
           defaultValues={globalData || {}}
           onSubmit={(data) => saveMutation.mutate(data)}
           isLoading={saveMutation.isPending}

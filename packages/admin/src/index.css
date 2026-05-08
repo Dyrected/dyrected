@@ -4,7 +4,7 @@
 
 @layer base {
   .admin-ui {
-    --background: 210 40% 98%;
+    --background: 210 40% 99%;
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -28,25 +28,32 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 239 84% 67%;
+    --border: 214.3 32% 93%; /* Softer gray */
+    --input: 214.3 32% 93%;
+    --ring: 239 84% 67% / 0.1; /* Translucent ring */
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 210 40% 98%;
+    --sidebar-background: 210 40% 99%;
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-primary: 239 84% 67%;
     --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 239 84% 67%;
+    --sidebar-accent: 210 40% 96.1%;
     --sidebar-accent-foreground: 239 84% 67%;
-    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-border: 214.3 32% 93%;
     --sidebar-ring: 239 84% 67%;
   }
 }
 
 @layer base {
   .admin-ui * {
-    @apply border-border;
+    @apply border-border/50; /* Much more subtle */
+  }
+  
+  .admin-ui input, 
+  .admin-ui select, 
+  .admin-ui textarea, 
+  .admin-ui button {
+    @apply focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus:outline-none;
   }
 }

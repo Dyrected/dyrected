@@ -50,7 +50,8 @@ export interface Field {
     description?: string;
     hidden?: boolean;
     readOnly?: boolean;
-    condition?: (data: any) => boolean;
+    condition?: (data: any, siblingData: any) => boolean;
+    layout?: "radio" | "select" | string;
   };
 }
 

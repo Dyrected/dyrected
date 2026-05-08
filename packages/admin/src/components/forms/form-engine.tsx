@@ -170,13 +170,18 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
   )
 }
 
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group"
+import { Label } from "../../components/ui/label"
+
 export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
   // Statically hidden field
   if (schema.admin?.hidden) return null
 
   // Reactively evaluate admin.condition against current form values
   const formValues = useWatch({ control })
-  if (schema.admin?.condition && !schema.admin.condition(formValues)) return null
+  const siblingData = useWatch({ control, name: basePath || undefined }) || formValues
+  
+  if (schema.admin?.condition && !schema.admin.condition(formValues, siblingData)) return null
 
   if ((schema.access as any)?.read === false) return null
 
@@ -184,10 +189,10 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
 
   if (schema.type === "object") {
     return (
-      <div className="border border-border/80 p-5 rounded-xl space-y-5 bg-white/40 shadow-sm transition-all">
-        <div className="flex items-center gap-2 border-b border-border/40 pb-3 mb-2">
-          <div className="h-2 w-2 rounded-full bg-primary/40" />
-          <h4 className="font-bold text-sm text-foreground">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+      <div className="border border-border/60 p-5 rounded-xl space-y-5 bg-white/30 shadow-sm transition-all hover:bg-white/40">
+        <div className="flex items-center gap-2 border-b border-border/20 pb-3 mb-2">
+          <div className="h-2 w-2 rounded-full bg-primary/40 shadow-sm" />
+          <h4 className="font-bold text-sm text-foreground tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
         </div>
         <div className="space-y-6">
           {schema.fields?.map(subField => (
@@ -211,14 +216,14 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
       control={control}
       name={fullPath}
       render={({ field: formField }) => (
-        <FormItem>
-          <div className="flex items-center gap-2 mb-1.5">
-            <FormLabel className="mb-0">
+        <FormItem className="space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <FormLabel className="text-sm font-semibold text-foreground/80">
               {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
               {schema.required && <span className="text-destructive ml-1">*</span>}
             </FormLabel>
             {schema.unique && (
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+              <span className="inline-flex items-center rounded-full bg-blue-50/50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 ring-1 ring-inset ring-blue-600/10">
                 Unique
               </span>
             )}
@@ -227,9 +232,9 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
             {renderField(schema, formField)}
           </FormControl>
           {schema.admin?.description && (
-            <p className="text-[10px] text-muted-foreground mt-1.5">{schema.admin.description}</p>
+            <p className="text-[11px] text-muted-foreground/70 leading-relaxed italic">{schema.admin.description}</p>
           )}
-          <FormMessage />
+          <FormMessage className="text-xs font-medium" />
         </FormItem>
       )}
     />
@@ -301,14 +306,37 @@ function renderField(schema: FieldSchema, field: any) {
         </div>
       )
     case "select":
+      const options = normalizeOptions(schema.options)
+      if (schema.admin?.layout === "radio") {
+        return (
+          <RadioGroup 
+            onValueChange={field.onChange} 
+            defaultValue={field.value} 
+            disabled={disabled}
+            className="flex flex-col gap-3"
+          >
+            {options.map((opt) => (
+              <div key={opt.value} className="flex items-center space-x-3 group cursor-pointer">
+                <RadioGroupItem value={opt.value} id={`${field.name}-${opt.value}`} />
+                <Label 
+                  htmlFor={`${field.name}-${opt.value}`} 
+                  className="text-sm font-medium leading-none cursor-pointer group-hover:text-primary transition-colors"
+                >
+                  {opt.label}
+                </Label>
+              </div>
+            ))}
+          </RadioGroup>
+        )
+      }
       return (
         <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
-          <SelectTrigger>
+          <SelectTrigger className="h-12 rounded-xl border-border/40 bg-white/50 focus:ring-0 focus:ring-offset-0 focus:bg-white shadow-sm transition-all hover:shadow-md">
             <SelectValue placeholder={schema.admin?.placeholder || `Select ${label.toLowerCase()}`} />
           </SelectTrigger>
-          <SelectContent>
-            {normalizeOptions(schema.options).map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
+          <SelectContent className="rounded-xl border-border/40 shadow-xl animate-in fade-in zoom-in-95">
+            {options.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value} className="rounded-lg focus:bg-primary/5 focus:text-primary transition-colors">
                 {opt.label}
               </SelectItem>
             ))}
