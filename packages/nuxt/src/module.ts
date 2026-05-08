@@ -40,6 +40,11 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       filePath: resolver.resolve('./runtime/components/DyrectedMedia.vue'),
     });
 
+    addComponent({
+      name: 'DyrectedAdmin',
+      filePath: resolver.resolve('./runtime/components/DyrectedAdmin.vue'),
+    });
+
     // 3. Add Composables
     addImports([
       { name: 'useDyrected',       from: resolver.resolve('./runtime/composables/useDyrected') },

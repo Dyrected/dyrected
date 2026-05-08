@@ -12,6 +12,7 @@
     "dev": "nuxt-module-build build --watch"
   },
   "dependencies": {
+    "@dyrected/admin": "workspace:*",
     "@dyrected/core": "workspace:*",
     "@dyrected/sdk": "workspace:*",
     "@nuxt/kit": "^3.11.2",

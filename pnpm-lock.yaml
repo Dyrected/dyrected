@@ -186,9 +186,21 @@ importers:
       '@dyrected/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@tanstack/react-query':
+        specifier: ^5.100.9
+        version: 5.100.9(react@19.2.6)
       '@vitejs/plugin-react':
         specifier: ^4.7.0
         version: 4.7.0(vite@7.3.2)
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.14.0(react@19.2.6)
       nuxt:
         specifier: ^3.11.2
         version: 3.21.4(@types/node@20.19.39)(@vue/compiler-sfc@3.5.34)(typescript@5.9.3)(vite@7.3.2)
@@ -198,12 +210,21 @@ importers:
       react-dom:
         specifier: ^19.2.6
         version: 19.2.6(react@19.2.6)
+      react-router-dom:
+        specifier: ^7.15.0
+        version: 7.15.0(react-dom@19.2.6)(react@19.2.6)
+      tailwind-merge:
+        specifier: ^3.5.0
+        version: 3.5.0
       vue:
         specifier: ^3.5.34
         version: 3.5.34(typescript@5.9.3)
       vue-router:
         specifier: ^4.3.0
         version: 4.6.4(vue@3.5.34)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@types/react':
         specifier: ^19.2.14
@@ -576,6 +597,9 @@ importers:
 
   packages/nuxt:
     dependencies:
+      '@dyrected/admin':
+        specifier: workspace:*
+        version: link:../admin
       '@dyrected/core':
         specifier: workspace:*
         version: link:../core

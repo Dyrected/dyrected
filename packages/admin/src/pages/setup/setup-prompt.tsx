@@ -32,13 +32,12 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   };
 
   const getPrompt = (framework: string) => {
-    const base = `You are helping integrate Dyrected CMS into a ${config.siteName} project using ${framework}. Complete the entire setup automatically using the details below.
+    const base = `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. Complete the entire setup automatically using the details below.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SITE CREDENTIALS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Site Name : ${config.siteName}
-Site ID   : ${config.siteId}
+${config.siteName ? `Site Name : ${config.siteName}\n` : ""}Site ID   : ${config.siteId}
 API Key   : ${config.apiKey}
 API URL   : ${config.baseUrl}
 

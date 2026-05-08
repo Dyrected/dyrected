@@ -1,4 +1,5 @@
 /** @jsxImportSource react */
+import "./index.css";
 import React, { useEffect, useState, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -119,7 +120,6 @@ export function AdminUI({
   apiKey,
   baseUrl = "/api/dyrected",
   siteId,
-  basename = "/admin",
   onNavigate,
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
@@ -135,7 +135,6 @@ export function AdminUI({
 
   return (
     <ErrorBoundary>
-      <>testing the dashbaord</>
       <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
         <QueryProvider>
           <HashRouter>
