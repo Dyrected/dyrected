@@ -233,6 +233,54 @@ Useful for:
 
 ---
 
+## Preview Endpoints
+
+### Generate Preview Token
+
+```
+POST /api/preview-token
+Content-Type: application/json
+```
+
+Issues a short-lived, signed JWT for accessing draft content. Requires an authenticated user with `update` access to the requested document.
+
+**Request body:**
+```json
+{
+  "collection": "posts",
+  "id": "abc-123",
+  "data": { ... } // Draft data from the form
+}
+```
+
+**Response:**
+```json
+{
+  "token": "eyJhbG..."
+}
+```
+
+---
+
+### Get Preview Data
+
+```
+GET /api/preview-data?token=<jwt>
+```
+
+Retrieves draft data using a valid preview token. This endpoint is public (no `x-api-key` required) as it relies on the signed token for authorization.
+
+**Response:**
+```json
+{
+  "collection": "posts",
+  "id": "abc-123",
+  "data": { ... }
+}
+```
+
+---
+
 ## Filtering
 
 The `where` parameter supports nested operators:

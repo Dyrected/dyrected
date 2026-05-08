@@ -12,6 +12,33 @@ The `admin` object on a `CollectionConfig`, `GlobalConfig`, or `Field` configure
 ```ts
 export const Posts = defineCollection({
   slug: 'posts',
+  labels: {
+    singular: 'Blog Post',
+    plural: 'Blog Posts',
+  },
+  admin: {
+    useAsTitle: 'title',
+    ...
+  },
+})
+```
+
+### `labels`
+
+Customizes the human-readable names used for the collection in the Admin UI.
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `singular` | `string` | capitalized slug | Used in "Create {singular}" buttons and breadcrumbs. |
+| `plural` | `string` | capitalized slug | Used in the sidebar navigation and list headings. |
+
+---
+
+## Collection `admin` Options
+
+```ts
+export const Posts = defineCollection({
+  slug: 'posts',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'status', 'author', 'publishedAt'],

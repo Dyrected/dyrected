@@ -21,6 +21,9 @@ Every field in a collection or global is defined by a `Field` object. All fields
 | `access` | `object` | | Field-level read/update permissions. See [Field Access](#field-access). |
 | `hooks` | `object` | | Field-level lifecycle hooks. See [Field Hooks](#field-hooks). |
 
+> [!NOTE]
+> **Admin UI Indicators:** Fields marked as `required: true` will display a red asterisk (`*`) next to their label. Fields marked as `unique: true` will display a blue "Unique" badge to alert editors about data constraints.
+
 ---
 
 ## Text Fields
