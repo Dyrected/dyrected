@@ -25,6 +25,8 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"next" | "nuxt" | "react" | "vue">("next");
 
+  const isSelfHosted = config.baseUrl?.startsWith("/");
+
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
@@ -32,15 +34,20 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   };
 
   const getPrompt = (framework: string) => {
-    const base = `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. Complete the entire setup automatically using the details below.
+    const baseIntro = isSelfHosted 
+      ? `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. This is a SELF-HOSTED installation.\nComplete the entire setup automatically using the details below.`
+      : `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. Complete the entire setup automatically using the details below.`;
 
+    const credentials = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SITE CREDENTIALS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${config.siteName ? `Site Name : ${config.siteName}\n` : ""}Site ID   : ${config.siteId}
-API Key   : ${config.apiKey}
+${config.siteName ? `Site Name : ${config.siteName}\n` : ""}Site ID   : ${config.siteId || "N/A (Self-hosted)"}
+API Key   : ${config.apiKey || "N/A (Self-hosted)"}
 API URL   : ${config.baseUrl}
+`;
 
+    const base = baseIntro + credentials + `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 1 — CONTENT MODEL (dyrected.config.ts)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -278,6 +285,7 @@ export default defineConfig({
 })
 \`\`\`
 
+${isSelfHosted ? "" : `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 2 — CHOOSE YOUR MODE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -292,15 +300,16 @@ The developer can choose between two modes:
    - Do NOT use apiKey/siteId (unless for proxying).
    - Use a database adapter like \`SqliteAdapter\` from '@dyrected/db-sqlite'.
    - Content is stored locally in the developer's project.
+`}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 3 — MOUNTING THE ADMIN UI
+STEP ${isSelfHosted ? "2" : "3"} — MOUNTING THE ADMIN UI
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 The Admin UI can be mounted on any path (e.g. /cms-admin).
 Pass the \`basename\` prop to the \`<AdminUI />\` component to match your route.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-STEP 4 — FRONTEND IMPLEMENTATION
+STEP ${isSelfHosted ? "3" : "4"} — FRONTEND IMPLEMENTATION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `;
 
@@ -312,9 +321,9 @@ SDK CLIENT SETUP (\`lib/dyrected.ts\`):
 import { createClient } from '@dyrected/sdk'
 
 export const dyrected = createClient({
-  baseUrl: '${config.baseUrl}',
+  baseUrl: '${config.baseUrl}',${isSelfHosted ? "" : `
   apiKey:  '${config.apiKey}',
-  siteId:  '${config.siteId}',
+  siteId:  '${config.siteId}',`}
 })
 \`\`\``,
 
@@ -323,9 +332,9 @@ export const dyrected = createClient({
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
-    baseUrl: '${config.baseUrl}',
+    baseUrl: '${config.baseUrl}',${isSelfHosted ? "" : `
     apiKey:  '${config.apiKey}',
-    siteId:  '${config.siteId}',
+    siteId:  '${config.siteId}',`}
   }
 })
 \`\`\`
@@ -408,9 +417,9 @@ CLIENT SETUP (\`lib/dyrected.ts\`):
 import { createClient } from '@dyrected/sdk'
 
 export const dyrected = createClient({
-  baseUrl: '${config.baseUrl}',
+  baseUrl: '${config.baseUrl}',${isSelfHosted ? "" : `
   apiKey:  '${config.apiKey}',
-  siteId:  '${config.siteId}',
+  siteId:  '${config.siteId}',`}
 })
 \`\`\`
 
@@ -462,9 +471,9 @@ CLIENT SETUP (\`lib/dyrected.ts\`):
 import { createClient } from '@dyrected/sdk'
 
 export const dyrected = createClient({
-  baseUrl: '${config.baseUrl}',
+  baseUrl: '${config.baseUrl}',${isSelfHosted ? "" : `
   apiKey:  '${config.apiKey}',
-  siteId:  '${config.siteId}',
+  siteId:  '${config.siteId}',`}
 })
 \`\`\`
 

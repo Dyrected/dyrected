@@ -1,6 +1,5 @@
 import { defineNuxtModule, addPlugin, createResolver, addServerHandler, addComponent, addImports } from '@nuxt/kit';
 import { DyrectedConfig } from '@dyrected/core';
-import { appendFileSync } from 'fs';
 
 export interface ModuleOptions extends DyrectedConfig {
   /**
@@ -26,11 +25,6 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   } as any,
   setup(options, nuxt) {
     const resolver = createResolver(import.meta.url);
-    const logMsg = `[@dyrected/nuxt] Module setup with ${options.collections?.length || 0} collections and ${options.globals?.length || 0} globals\n`;
-    console.log(logMsg);
-    try {
-      appendFileSync('dyrected_build.log', logMsg);
-    } catch(e) {}
 
     // 1. Add Server Handler (Nitro) - only if apiBase is a relative path
     if (options.apiBase?.startsWith('/')) {

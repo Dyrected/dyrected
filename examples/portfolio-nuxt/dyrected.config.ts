@@ -1,5 +1,6 @@
 import { defineCollection, defineConfig, defineGlobal } from "@dyrected/core";
 import { SqliteAdapter } from "@dyrected/db-sqlite";
+import { PostgresAdapter } from "@dyrected/db-postgres";
 
 const media = defineCollection({
   slug: "media",
@@ -118,10 +119,14 @@ const settings = defineGlobal({
   ],
 });
 
+// ... (existing collections and globals)
+
+const db = process.env.DATABASE_URL 
+  ? new PostgresAdapter({ url: process.env.DATABASE_URL })
+  : new SqliteAdapter({ filename: process.env.DB_FILENAME || "dyrected.db" });
+
 export default defineConfig({
   collections: [media, pages, posts, comments, inquiries],
   globals: [navigation, settings],
-  db: new SqliteAdapter({
-    filename: "dyrected.db",
-  }),
+  db,
 });

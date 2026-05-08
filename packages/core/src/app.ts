@@ -23,14 +23,7 @@ export interface DyrectedContext {
 /**
  * Create the main Dyrected Hono application.
  */
-import { appendFileSync } from 'fs';
-
 export function createDyrectedApp(config: DyrectedConfig) {
-  const logMsg = `[dyrected/core] Creating app with ${config.collections?.length || 0} collections and ${config.globals?.length || 0} globals\n`;
-  console.log(logMsg);
-  try {
-    appendFileSync('dyrected_debug.log', logMsg);
-  } catch(e) {}
   const app = new Hono<DyrectedContext>();
 
   // 1. Standard Middleware

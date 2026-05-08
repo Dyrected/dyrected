@@ -177,6 +177,9 @@ importers:
       '@dyrected/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@dyrected/db-postgres':
+        specifier: workspace:^
+        version: link:../../packages/db-postgres
       '@dyrected/db-sqlite':
         specifier: workspace:*
         version: link:../../packages/db-sqlite
