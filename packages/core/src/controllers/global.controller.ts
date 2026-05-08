@@ -39,4 +39,28 @@ export class GlobalController {
     const data = await db.updateGlobal({ slug: this.global.slug, data: body });
     return c.json(data);
   }
+
+  async seed(c: Context<DyrectedContext>) {
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    const body = await c.req.json();
+    const initialData = body.data;
+
+    if (!initialData) {
+      return c.json({ message: "Invalid initial data" }, 400);
+    }
+
+    // Check if empty
+    const existing = await db.getGlobal({ slug: this.global.slug });
+    if (existing && Object.keys(existing).length > 0) {
+      return c.json({ message: "Global is not empty, skipping seed" });
+    }
+
+    console.log(`[dyrected/core] Auto-seeding global: ${this.global.slug}`);
+    await db.updateGlobal({ slug: this.global.slug, data: initialData });
+
+    return c.json({ message: "Seed successful", data: initialData }, 201);
+  }
 }

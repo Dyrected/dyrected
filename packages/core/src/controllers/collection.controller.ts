@@ -151,4 +151,32 @@ export class CollectionController {
     await db!.delete({ collection: this.collection.slug, id });
     return c.json({ message: 'Deleted' });
   }
+
+  async seed(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const body = await c.req.json();
+    const initialData = body.data;
+
+    if (!initialData || !Array.isArray(initialData)) {
+      return c.json({ message: 'Invalid initial data' }, 400);
+    }
+
+    // Check if collection is empty before seeding
+    const result = await db.find({ collection: this.collection.slug, limit: 1 });
+    if (result.total > 0) {
+      return c.json({ message: 'Collection is not empty, skipping seed' });
+    }
+
+    console.log(`[dyrected/core] Auto-seeding collection: ${this.collection.slug}`);
+    const createdDocs = [];
+    for (const data of initialData) {
+      const doc = await db.create({ collection: this.collection.slug, data });
+      createdDocs.push(doc);
+    }
+
+    return c.json({ message: 'Seed successful', count: createdDocs.length }, 201);
+  }
 }

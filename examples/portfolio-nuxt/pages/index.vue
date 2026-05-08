@@ -1,14 +1,50 @@
+<script setup lang="ts">
+const dyrected = useDyrected();
+
+const { data: pageData } = await useAsyncData('home-page', () => 
+  dyrected.collection('pages').find({ 
+    where: { slug: { equals: 'home' } } 
+  }).seed([{
+    title: 'Faith, Hope, and Love',
+    slug: 'home',
+    content: 'Bringing the message of grace to a broken world.',
+    featuredImage: {
+      url: 'https://images.unsplash.com/photo-1544717297-fa154da09f9b?auto=format&fit=crop&q=80&w=800',
+      alt: 'Preacher speaking'
+    }
+  }])
+);
+
+const { data: sermonsData } = await useAsyncData('recent-sermons', () =>
+  dyrected.collection('posts').find({ limit: 2 }).seed([
+    {
+      title: 'Walking in Faith',
+      slug: 'walking-in-faith',
+      content: 'A deep dive into Hebrews 11 and what it means to trust God in the dark.',
+    },
+    {
+      title: 'The Power of Grace',
+      slug: 'power-of-grace',
+      content: 'Understanding the unmerited favor of God in our daily lives.',
+    }
+  ])
+);
+
+const page = computed(() => pageData.value?.docs[0]);
+const sermons = computed(() => sermonsData.value?.docs || []);
+</script>
+
 <template>
   <div class="home-page">
     <!-- Hero Section -->
     <section class="hero">
       <div class="hero-content">
-        <h1>Faith, Hope, and Love</h1>
-        <p class="subtitle">Bringing the message of grace to a broken world.</p>
+        <h1>{{ page?.title || 'Faith, Hope, and Love' }}</h1>
+        <p class="subtitle">{{ page?.content || 'Bringing the message of grace to a broken world.' }}</p>
         <NuxtLink to="/blog" class="btn btn-primary">Listen to Sermons</NuxtLink>
       </div>
       <div class="hero-image">
-        <img src="https://images.unsplash.com/photo-1544717297-fa154da09f9b?auto=format&fit=crop&q=80&w=800" alt="Preacher speaking" />
+        <img :src="page?.featuredImage?.url || 'https://images.unsplash.com/photo-1544717297-fa154da09f9b?auto=format&fit=crop&q=80&w=800'" :alt="page?.featuredImage?.alt || 'Preacher speaking'" />
       </div>
     </section>
 
@@ -25,17 +61,11 @@
       <div class="container">
         <h2>Recent Sermons</h2>
         <div class="sermon-grid">
-          <div class="sermon-card">
-            <img src="https://images.unsplash.com/photo-1519491050282-ce00c739ce3c?auto=format&fit=crop&q=80&w=400" alt="Sermon Topic" />
-            <h3>Walking in Faith</h3>
-            <p>A deep dive into Hebrews 11 and what it means to trust God in the dark.</p>
-            <NuxtLink to="/blog/walking-in-faith" class="link">Read More</NuxtLink>
-          </div>
-          <div class="sermon-card">
-            <img src="https://images.unsplash.com/photo-1504052434139-44b057717549?auto=format&fit=crop&q=80&w=400" alt="Sermon Topic" />
-            <h3>The Power of Grace</h3>
-            <p>Understanding the unmerited favor of God in our daily lives.</p>
-            <NuxtLink to="/blog/power-of-grace" class="link">Read More</NuxtLink>
+          <div v-for="sermon in sermons" :key="sermon.id" class="sermon-card">
+            <img :src="sermon.featuredImage?.url || 'https://images.unsplash.com/photo-1519491050282-ce00c739ce3c?auto=format&fit=crop&q=80&w=400'" :alt="sermon.title" />
+            <h3>{{ sermon.title }}</h3>
+            <p>{{ sermon.content }}</p>
+            <NuxtLink :to="`/blog/${sermon.slug}`" class="link">Read More</NuxtLink>
           </div>
         </div>
       </div>

@@ -26,7 +26,7 @@ const pages = defineCollection({
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true },
-    { name: "content", type: "richText" },
+    { name: "content", type: "textarea" },
     { name: "featuredImage", type: "relationship", relationTo: "media" },
   ],
   admin: {
@@ -39,10 +39,12 @@ const posts = defineCollection({
   labels: { singular: "Post", plural: "Posts" },
   fields: [
     { name: "title", type: "text", required: true },
-    { name: "content", type: "richText" },
+    { name: "slug", type: "text", required: true },
+    { name: "content", type: "textarea" },
   ],
   admin: {
-    group: "Content", // Add this
+    useAsTitle: "title",
+    group: "Content",
   },
 });
 

@@ -1,5 +1,22 @@
 <script setup lang="ts">
 const dyrected = useDyrected();
+
+const { data: pageData } = await useAsyncData('about-page', () => 
+  dyrected.collection('pages').find({ 
+    where: { slug: { equals: 'about' } } 
+  }).seed([{
+    title: 'Meet Pastor John Smith',
+    slug: 'about',
+    content: 'Pastor John has dedicated his life to sharing the message of hope. Born and raised in a small town, his journey into ministry began after a life-changing experience that led him to pursue a theological degree and eventually lead this vibrant community. His teaching style is known for being practical, engaging, and deeply rooted in scripture, making the ancient word relevant to modern life.',
+    featuredImage: {
+      url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600',
+      alt: 'Pastor Photo'
+    }
+  }])
+);
+
+const page = computed(() => pageData.value?.docs[0]);
+
 const form = ref({
   name: '',
   email: '',
@@ -30,13 +47,18 @@ async function submitInquiry() {
       <!-- Bio Section -->
       <section class="bio">
         <div class="bio-image">
-          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600" alt="Pastor Photo" />
+          <img :src="page?.featuredImage?.url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600'" :alt="page?.featuredImage?.alt || 'Pastor Photo'" />
         </div>
         <div class="bio-text">
-          <h1>Meet Pastor John Smith</h1>
+          <h1>{{ page?.title || 'Meet Pastor John Smith' }}</h1>
           <p class="lead">Serving the community for over 20 years with a passion for spiritual transformation.</p>
-          <p>Pastor John has dedicated his life to sharing the message of hope. Born and raised in a small town, his journey into ministry began after a life-changing experience that led him to pursue a theological degree and eventually lead this vibrant community.</p>
-          <p>His teaching style is known for being practical, engaging, and deeply rooted in scripture, making the ancient word relevant to modern life.</p>
+          <div v-if="page?.content" class="content-text">
+            {{ page.content }}
+          </div>
+          <template v-else>
+            <p>Pastor John has dedicated his life to sharing the message of hope. Born and raised in a small town, his journey into ministry began after a life-changing experience that led him to pursue a theological degree and eventually lead this vibrant community.</p>
+            <p>His teaching style is known for being practical, engaging, and deeply rooted in scripture, making the ancient word relevant to modern life.</p>
+          </template>
         </div>
       </section>
 
@@ -149,10 +171,11 @@ section {
   margin-bottom: 1.5rem;
 }
 
-.bio-text p {
+.bio-text p, .content-text {
   line-height: 1.8;
   color: #555;
   margin-bottom: 1rem;
+  white-space: pre-wrap;
 }
 
 .vision-values h2 {

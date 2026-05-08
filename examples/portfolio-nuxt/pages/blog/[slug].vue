@@ -6,7 +6,19 @@ const slug = route.params.slug as string;
 
 const { data: post } = await useAsyncData(`post-${slug}`, async () => {
   try {
-    return await dyrected.collection('posts').findOne(slug);
+    const seeds: Record<string, any> = {
+      'walking-in-faith': {
+        title: 'Walking in Faith',
+        slug: 'walking-in-faith',
+        content: 'A deep dive into Hebrews 11 and what it means to trust God in the dark. Faith is not the absence of doubt, but the presence of trust in the midst of it.',
+      },
+      'power-of-grace': {
+        title: 'The Power of Grace',
+        slug: 'power-of-grace',
+        content: 'Understanding the unmerited favor of God in our daily lives. Grace is the power that enables us to be who God called us to be.',
+      }
+    };
+    return await dyrected.collection('posts').findOne(slug, { initialData: seeds[slug] });
   } catch (e) {
     return null;
   }

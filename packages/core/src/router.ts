@@ -165,6 +165,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.get(`${path}/:id`, (c) => controller.findOne(c));
     app.patch(`${path}/:id`, (c) => controller.update(c));
     app.delete(`${path}/:id`, (c) => controller.delete(c));
+    app.post(`${path}/seed`, (c) => controller.seed(c));
   }
 
   // 5. Global Routes (Static)
@@ -174,6 +175,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
     app.get(path, (c) => controller.get(c));
     app.patch(path, (c) => controller.update(c));
+    app.post(`${path}/seed`, (c) => controller.seed(c));
   }
 
   // 6. Preview Routes

@@ -32,3 +32,17 @@ const { docs: posts } = await dyrected.collection('posts').find({
   sort: '-createdAt'
 });
 ```
+
+### Auto-Seeding (Initial Data)
+
+Dyrected supports "page-level seeding". You can hardcode initial data in your frontend code; if the collection is empty, the SDK will return this data immediately and automatically persist it to the CMS database.
+
+```ts
+const { docs: testimonials } = await dyrected.collection('testimonials').find({
+  initialData: [
+    { name: 'John Doe', quote: 'Excellent CMS!' },
+    { name: 'Jane Smith', quote: 'Very easy to integrate.' }
+  ]
+});
+```
+

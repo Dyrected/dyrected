@@ -1,10 +1,29 @@
 <script setup lang="ts">
 const dyrected = useDyrected();
+
 const { data: settings } = await useAsyncData('settings', () => 
-  dyrected.getGlobal('settings').catch(() => ({ siteName: 'Ministry of Grace' }))
+  dyrected.getGlobal('settings', { 
+    initialData: { 
+      siteName: 'Ministry of Grace',
+      footerText: '2026 Ministry of Grace. All rights reserved.'
+    } 
+  })
+);
+
+const { data: navigation } = await useAsyncData('navigation', () => 
+  dyrected.getGlobal('navigation', {
+    initialData: {
+      menuItems: [
+        { label: 'Home', navType: 'internal' },
+        { label: 'About', navType: 'internal' },
+        { label: 'Sermons', navType: 'internal' }
+      ]
+    }
+  })
 );
 
 const siteTitle = computed(() => settings.value?.siteName || 'Ministry of Grace');
+const footerText = computed(() => settings.value?.footerText || '2026 Ministry of Grace. All rights reserved.');
 </script>
 
 <template>
@@ -13,9 +32,17 @@ const siteTitle = computed(() => settings.value?.siteName || 'Ministry of Grace'
       <nav>
         <NuxtLink to="/" class="logo">{{ siteTitle }}</NuxtLink>
         <ul>
-          <li><NuxtLink to="/">Home</NuxtLink></li>
-          <li><NuxtLink to="/about">About</NuxtLink></li>
-          <li><NuxtLink to="/blog">Sermons</NuxtLink></li>
+          <li v-for="item in navigation?.menuItems" :key="item.label">
+             <NuxtLink v-if="item.navType === 'internal'" :to="item.label === 'Home' ? '/' : (item.label === 'Sermons' ? '/blog' : '/' + item.label.toLowerCase())">
+               {{ item.label }}
+             </NuxtLink>
+             <a v-else :href="item.url" target="_blank">{{ item.label }}</a>
+          </li>
+          <template v-if="!navigation?.menuItems">
+            <li><NuxtLink to="/">Home</NuxtLink></li>
+            <li><NuxtLink to="/about">About</NuxtLink></li>
+            <li><NuxtLink to="/blog">Sermons</NuxtLink></li>
+          </template>
         </ul>
       </nav>
     </header>
@@ -23,7 +50,7 @@ const siteTitle = computed(() => settings.value?.siteName || 'Ministry of Grace'
       <NuxtPage />
     </main>
     <footer>
-      <p>&copy; 2026 Ministry of Grace. All rights reserved.</p>
+      <p>&copy; {{ footerText }}</p>
     </footer>
   </div>
 </template>

@@ -92,9 +92,29 @@ export class DyrectedClient {
   }
 
   async find<T = any>(collection: string, args: QueryArgs = {}): Promise<PaginatedResult<T>> {
-    const query = qs.stringify(args, { addQueryPrefix: true });
-    const res = await this.request(`/api/collections/${collection}${query}`);
-    return res as PaginatedResult<T>;
+    const { initialData, ...queryArgs } = args;
+    const query = qs.stringify(queryArgs, { addQueryPrefix: true });
+    const res = (await this.request(`/api/collections/${collection}${query}`)) as PaginatedResult<T>;
+
+    if (res.docs.length === 0 && initialData && initialData.length > 0) {
+      // Trigger background seed
+      this.request(`/api/collections/${collection}/seed`, {
+        method: "POST",
+        body: JSON.stringify({ data: initialData }),
+      }).catch((err) => console.error(`[dyrected/sdk] Failed to auto-seed collection "${collection}":`, err));
+
+      return {
+        docs: initialData,
+        total: initialData.length,
+        limit: initialData.length,
+        page: 1,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      };
+    }
+
+    return res;
   }
 
   /**
@@ -113,7 +133,7 @@ export class DyrectedClient {
         }
         return qb;
       },
-      findOne: (id: string, args: { depth?: number } = {}) => this.findOne<T>(slug, id, args),
+      findOne: (id: string, args: { depth?: number; initialData?: T } = {}) => this.findOne<T>(slug, id, args),
       create: (data: any) => this.create<T>(slug, data),
       update: (id: string, data: any) => this.update<T>(slug, id, data),
       delete: (id: string) => this.delete(slug, id),
@@ -159,9 +179,24 @@ export class DyrectedClient {
     };
   }
 
-  async findOne<T = any>(collection: string, id: string, args: { depth?: number } = {}): Promise<T> {
-    const query = qs.stringify(args, { addQueryPrefix: true });
-    return this.request(`/api/collections/${collection}/${id}${query}`);
+  async findOne<T = any>(collection: string, id: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
+    const { initialData, ...queryArgs } = args;
+    const query = qs.stringify(queryArgs, { addQueryPrefix: true });
+    
+    try {
+      return await this.request(`/api/collections/${collection}/${id}${query}`);
+    } catch (err) {
+      if (err instanceof DyrectedError && err.statusCode === 404 && initialData) {
+        // Trigger background seed for this specific document
+        this.request(`/api/collections/${collection}/seed`, {
+          method: "POST",
+          body: JSON.stringify({ data: [{ id, ...initialData }] }),
+        }).catch((err) => console.error(`[dyrected/sdk] Failed to auto-seed document "${id}" in collection "${collection}":`, err));
+        
+        return initialData;
+      }
+      throw err;
+    }
   }
 
   async create<T = any>(collection: string, data: any): Promise<T> {
@@ -184,9 +219,31 @@ export class DyrectedClient {
     });
   }
 
-  async getGlobal<T = any>(slug: string, args: { depth?: number } = {}): Promise<T> {
-    const query = qs.stringify(args, { addQueryPrefix: true });
-    return this.request(`/api/globals/${slug}${query}`);
+  async getGlobal<T = any>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
+    const { initialData, ...queryArgs } = args;
+    const query = qs.stringify(queryArgs, { addQueryPrefix: true });
+    
+    try {
+      const res = await this.request(`/api/globals/${slug}${query}`);
+      // Check if global is empty (some adapters return {} for missing globals)
+      if ((!res || Object.keys(res).length === 0) && initialData) {
+        this.request(`/api/globals/${slug}/seed`, {
+          method: "POST",
+          body: JSON.stringify({ data: initialData }),
+        }).catch((err) => console.error(`[dyrected/sdk] Failed to auto-seed global "${slug}":`, err));
+        return initialData;
+      }
+      return res;
+    } catch (err) {
+      if (err instanceof DyrectedError && err.statusCode === 404 && initialData) {
+        this.request(`/api/globals/${slug}/seed`, {
+          method: "POST",
+          body: JSON.stringify({ data: initialData }),
+        }).catch((err) => console.error(`[dyrected/sdk] Failed to auto-seed global "${slug}":`, err));
+        return initialData;
+      }
+      throw err;
+    }
   }
 
   async updateGlobal<T = any>(slug: string, data: any): Promise<T> {

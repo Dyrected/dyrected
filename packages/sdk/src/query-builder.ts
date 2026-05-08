@@ -6,6 +6,7 @@ export interface QueryArgs {
   depth?: number;
   where?: any;
   sort?: string;
+  initialData?: any[];
 }
 
 export class QueryBuilder<T = any> {
@@ -38,6 +39,11 @@ export class QueryBuilder<T = any> {
 
   depth(depth: number): this {
     this.args.depth = depth;
+    return this;
+  }
+
+  seed(data: T[]): this {
+    this.args.initialData = data;
     return this;
   }
 

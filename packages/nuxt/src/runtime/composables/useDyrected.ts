@@ -21,9 +21,37 @@ export const useDyrected = (): DyrectedClient => {
 // ---------------------------------------------------------------------------
 // useDyrectedDoc — convenience shorthand for a single document
 // ---------------------------------------------------------------------------
-export const useDyrectedDoc = (collection: string, id: string, options?: { depth?: number }) => {
+export const useDyrectedDoc = <T = any>(
+  collection: string, 
+  id: string, 
+  options?: { depth?: number; initialData?: T }
+) => {
   const client = getClient()
-  return client.collection(collection).findOne(id, options)
+  return useAsyncData<T>(
+    `dyrected:doc:${collection}:${id}`,
+    () => client.findOne<T>(collection, id, options)
+  )
+}
+
+// ---------------------------------------------------------------------------
+// useDyrectedCollection — convenience shorthand for a collection
+// ---------------------------------------------------------------------------
+export const useDyrectedCollection = <T = any>(
+  collection: string,
+  options?: { 
+    depth?: number; 
+    limit?: number; 
+    page?: number; 
+    sort?: string; 
+    where?: any;
+    initialData?: T[];
+  }
+) => {
+  const client = getClient()
+  return useAsyncData(
+    `dyrected:collection:${collection}`,
+    () => client.collection<T>(collection).find(options).exec()
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -32,12 +60,12 @@ export const useDyrectedDoc = (collection: string, id: string, options?: { depth
 // ---------------------------------------------------------------------------
 export function useDyrectedGlobal<T = any>(
   slug: string,
-  options?: { depth?: number; watch?: any[] }
+  options?: { depth?: number; initialData?: T; watch?: any[] }
 ) {
   const client = getClient()
   return useAsyncData<T>(
     `dyrected:global:${slug}`,
-    () => client.global<T>(slug).get({ depth: options?.depth }),
+    () => client.global<T>(slug).get(options),
     { watch: options?.watch }
   )
 }
