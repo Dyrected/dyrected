@@ -319,3 +319,47 @@ const { data } = await useAsyncData('posts', () =>
 )
 // data.value?.docs is Post[]
 ```
+
+---
+
+## Troubleshooting
+
+### Vite Version Mismatch
+If you see errors like `Package subpath './internal' is not defined` or TypeScript errors regarding `PluginOption`, it is usually due to a version mismatch between Nuxt's internal Vite version (v5) and the React plugin.
+
+**Solution**: Ensure you are using `@vitejs/plugin-react@4` which is the compatible version for Vite 5.
+
+```bash
+pnpm add -D @vitejs/plugin-react@4
+```
+
+Then configure your `nuxt.config.ts` to isolate the React transformation:
+
+```ts
+import react from '@vitejs/plugin-react'
+
+export default defineNuxtConfig({
+  vite: {
+    plugins: [
+      react({
+        include: [/@dyrected\/admin\/src\/.*\.tsx$/]
+      })
+    ],
+    vueJsx: {
+      exclude: [/@dyrected\/admin\/.*\.tsx$/]
+    },
+    esbuild: {
+      loader: 'tsx',
+      include: /@dyrected\/admin\/.*\.tsx$/
+    }
+  }
+})
+```
+
+### Transformation Errors (e.g. `Unexpected "!"`)
+If you see errors like `Unexpected "!"` or `Transform failed` for files in `@dyrected/admin`, it usually means Vite is trying to parse the TypeScript code as plain JavaScript. Add the `esbuild` configuration above to force the `tsx` loader.
+
+### Hash Routing
+For self-hosted deployments embedded in Nuxt, we recommend using **Hash Routing**. This ensures that the Admin dashboard's internal navigation doesn't interfere with your Nuxt application's URL paths. 
+
+The `@dyrected/admin` component uses `HashRouter` by default for embedded modes to ensure maximum compatibility.

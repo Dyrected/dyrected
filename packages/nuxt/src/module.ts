@@ -52,10 +52,22 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // 4. Pass options to runtime
     // Private config for server-side (contains full engine config)
-    nuxt.options.runtimeConfig.dyrected = {
+    const runtimeConfig = {
       ...options,
       baseUrl: options.apiBase,
     };
+
+    // Ensure 'db' is attached but non-enumerable to avoid serialization crashes in DevTools
+    if ((options as any).db) {
+      Object.defineProperty(runtimeConfig, "db", {
+        value: (options as any).db,
+        enumerable: false,
+        configurable: true,
+        writable: true,
+      });
+    }
+
+    nuxt.options.runtimeConfig.dyrected = runtimeConfig as any;
 
     // Public config for client-side
     nuxt.options.runtimeConfig.public.dyrected = {

@@ -1,7 +1,8 @@
-import { useEffect, useState, StrictMode } from "react";
+/** @jsxImportSource react */
+import React, { useEffect, useState, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import {
-  BrowserRouter,
+  HashRouter,
   MemoryRouter,
   Routes,
   Route,
@@ -18,6 +19,7 @@ import { EditEntryPage } from "./pages/collections/edit-page";
 import { MediaPage } from "./pages/media/media-page";
 import { GlobalEditorPage } from "./pages/globals/editor-page";
 import { SetupPromptUI } from "./pages/setup/setup-prompt";
+import { ErrorBoundary } from "./components/error-boundary";
 
 // ─── Route that resolves collection → list or media page ─────────────────────
 
@@ -27,7 +29,7 @@ function CollectionRoute() {
 
   const { data: schemas } = useQuery({
     queryKey: ["schemas"],
-    queryFn: () => client!.getSchemas(),
+    queryFn: () => client?.getSchemas() || Promise.resolve({ collections: [], globals: [] }),
     enabled: !!client,
   });
 
@@ -74,12 +76,12 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
     <AdminShell isEmbedded={isEmbedded}>
       <NavigationSync onNavigate={onNavigate} />
       <Routes>
-        <Route path="/"                              element={<Dashboard />} />
-        <Route path="/collections/:slug"             element={<CollectionRoute />} />
-        <Route path="/collections/:slug/new"         element={<EditEntryPage />} />
-        <Route path="/collections/:slug/edit/:id"    element={<EditEntryPage />} />
-        <Route path="/globals/:slug"                 element={<GlobalEditorPage />} />
-        <Route path="/setup"                         element={<SetupPage />} />
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/collections/:slug" element={<CollectionRoute />} />
+        <Route path="/collections/:slug/new" element={<EditEntryPage />} />
+        <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
+        <Route path="/globals/:slug" element={<GlobalEditorPage />} />
+        <Route path="/setup" element={<SetupPage />} />
       </Routes>
     </AdminShell>
   );
@@ -132,13 +134,16 @@ export function AdminUI({
   }
 
   return (
-    <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
-      <QueryProvider>
-        <BrowserRouter basename={basename}>
-          <AdminRoutes onNavigate={onNavigate} isEmbedded={true} />
-        </BrowserRouter>
-      </QueryProvider>
-    </DyrectedProvider>
+    <ErrorBoundary>
+      <>testing the dashbaord</>
+      <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
+        <QueryProvider>
+          <HashRouter>
+            <AdminRoutes onNavigate={onNavigate} isEmbedded={true} />
+          </HashRouter>
+        </QueryProvider>
+      </DyrectedProvider>
+    </ErrorBoundary>
   );
 }
 
@@ -149,9 +154,9 @@ export function AdminUI({
 export function renderAdminUI(container: HTMLElement, props: AdminUIProps) {
   const root = createRoot(container);
   root.render(
-    <StrictMode>
-      <AdminUI {...props} />
-    </StrictMode>
+    React.createElement(StrictMode, null,
+      React.createElement(AdminUI, props)
+    )
   );
   return () => root.unmount();
 }

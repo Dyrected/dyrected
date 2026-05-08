@@ -17,11 +17,16 @@
     "@dyrected/db-sqlite": "workspace:*",
     "@dyrected/nuxt": "workspace:*",
     "@dyrected/sdk": "workspace:*",
+    "@vitejs/plugin-react": "^4.7.0",
     "nuxt": "^3.11.2",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "vue": "^3.5.34",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "jiti": "^2.7.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.2.2"
