@@ -180,7 +180,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
 
   // Reactively evaluate admin.condition against current form values
   const formValues = useWatch({ control })
-  const siblingData = useWatch({ control, name: basePath || undefined }) || {}
+  const siblingData = useWatch({ control, name: (basePath || undefined) as any }) || {}
 
   // Merge global and sibling data so destructuring works intuitively anywhere
   const conditionData = basePath ? { ...formValues, ...siblingData } : formValues

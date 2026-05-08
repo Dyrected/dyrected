@@ -41,7 +41,7 @@ function CollectionRoute() {
   }
 
   if (schema?.upload) {
-    return <MediaPage collectionSlug={slug!} />;
+    return <MediaPage collectionSlug={slug!} schema={schema} />;
   }
 
   return <CollectionListPage slug={slug!} />;

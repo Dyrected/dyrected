@@ -40,7 +40,7 @@ import { Separator } from "../../components/ui/separator"
 import { FocalPointPicker } from "../../components/media/focal-point-picker"
 import { Blurhash } from "react-blurhash"
 
-export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
+export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string, schema?: any }) {
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
@@ -97,7 +97,9 @@ export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <ImageIcon className="h-5 w-5 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Media Library</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              {schema?.labels?.plural ?? schema?.label ?? "Media Library"}
+            </h1>
           </div>
           <p className="text-sm text-muted-foreground">
             Manage your images, documents, and other assets for this site.

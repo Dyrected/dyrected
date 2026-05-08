@@ -139,7 +139,7 @@ function SidebarInner({
 }) {
   const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
   const globals = schemas?.globals?.filter((g: any) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
-  const uploadCol = schemas?.collections?.find((c: any) => c.upload)
+  const uploadCollections = collections.filter((c: any) => c.upload)
 
   const groupLabel = (text: string) =>
     !collapsed ? (
@@ -164,9 +164,9 @@ function SidebarInner({
         >
           {branding?.logo || branding?.logoMark ? (
             <div className="h-7 w-7 flex items-center justify-center shrink-0">
-              <img 
-                src={collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark)} 
-                alt="Logo" 
+              <img
+                src={collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark)}
+                alt="Logo"
                 className="max-h-full max-w-full object-contain"
               />
             </div>
@@ -215,17 +215,20 @@ function SidebarInner({
           />
         </div>
 
-        {uploadCol && (
+        {uploadCollections.length > 0 && (
           <div>
             {groupLabel("Media")}
-            <NavItem
-              to={`/collections/${uploadCol.slug}`}
-              icon={ImageIcon}
-              label="Media Library"
-              active={location.pathname.startsWith(`/collections/${uploadCol.slug}`)}
-              collapsed={collapsed}
-              onClick={onNavigate}
-            />
+            {uploadCollections.map((col: any) => (
+              <NavItem
+                key={col.slug}
+                to={`/collections/${col.slug}`}
+                icon={ImageIcon}
+                label={col.labels?.plural ?? col.label ?? col.slug}
+                active={location.pathname.startsWith(`/collections/${col.slug}`)}
+                collapsed={collapsed}
+                onClick={onNavigate}
+              />
+            ))}
           </div>
         )}
 

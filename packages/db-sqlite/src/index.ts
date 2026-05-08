@@ -119,6 +119,12 @@ export class SqliteAdapter implements DatabaseAdapter {
     stmt.run(params.id);
   }
 
+  async sync(collections: any[]) {
+    for (const col of collections) {
+      await this.ensureTable(col.slug);
+    }
+  }
+
   async getGlobal(params: { slug: string }) {
     const stmt = this.sqlite.prepare(`SELECT value FROM dyrected_internal WHERE key = ?`);
     const row = stmt.get(`global_${params.slug}`) as any;

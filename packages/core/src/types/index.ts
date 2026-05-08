@@ -188,6 +188,12 @@ export interface DatabaseAdapter {
   updateGlobal(args: { slug: string; data: any }): Promise<any>;
 
   /** 
+   * Sync the database schema with the provided collections and globals.
+   * Useful for creating tables on startup.
+   */
+  sync?(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;
+
+  /** 
    * Low-level raw query execution. 
    * Optional as not all adapters may support raw SQL/commands.
    */

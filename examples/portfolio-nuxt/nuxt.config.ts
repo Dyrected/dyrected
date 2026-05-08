@@ -11,8 +11,6 @@ export default defineNuxtConfig({
   dyrected: {
     ...config,
     apiBase: "/dyrected",
-    apiKey: "sk_live_0d33f2478e1ebd46786aeb25beeccf8a6c1dd41847cce124",
-    siteId: "a1q8bo",
   },
   build: {
     transpile: ["@dyrected/admin"],

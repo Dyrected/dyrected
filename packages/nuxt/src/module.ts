@@ -1,4 +1,6 @@
-import { defineNuxtModule, addPlugin, createResolver, addServerHandler, addComponent, addImports } from '@nuxt/kit';
+import { defineNuxtModule, addPlugin, createResolver, addServerHandler, addComponent, addImports, addServerPlugin } from '@nuxt/kit';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { DyrectedConfig } from '@dyrected/core';
 
 export interface ModuleOptions extends DyrectedConfig {
@@ -11,6 +13,8 @@ export interface ModuleOptions extends DyrectedConfig {
   apiKey?: string;
   /** Site ID used to scope content to a specific tenant site. */
   siteId?: string;
+  /** Optional manual path to the dyrected config file (absolute or relative to root). */
+  configPath?: string;
 }
 
 import { NuxtModule } from '@nuxt/schema';
@@ -62,7 +66,30 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       baseUrl: options.apiBase,
     };
 
-    // Ensure 'db' is attached but non-enumerable to avoid serialization crashes in DevTools
+    // Try to find the config file path to allow the Nitro plugin to re-import the DB instance
+    const configFiles = ['dyrected.config.ts', 'dyrected.config.js', 'dyrected.config.mjs'];
+    let configPath = options.configPath ? join(nuxt.options.rootDir, options.configPath) : '';
+    
+    if (!configPath) {
+      for (const file of configFiles) {
+        const fullPath = join(nuxt.options.rootDir, file);
+        if (existsSync(fullPath)) {
+          configPath = fullPath;
+          break;
+        }
+      }
+    }
+
+    if (configPath) {
+      console.log('[dyrected/nuxt] Auto-detected config at:', configPath);
+      (runtimeConfig as any).configPath = configPath;
+      addServerPlugin(resolver.resolve('./runtime/server/plugins/db'));
+    } else {
+      console.warn('[dyrected/nuxt] Could not find dyrected.config.ts. Self-hosted database re-hydration might fail.');
+    }
+
+    // Ensure 'db' is attached but non-enumerable to avoid serialization crashes in DevTools.
+    // The Nitro plugin will re-attach it on the server if it's lost.
     if ((options as any).db) {
       Object.defineProperty(runtimeConfig, "db", {
         value: (options as any).db,

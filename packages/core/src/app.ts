@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { logger } from 'hono/logger';
 import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
 import { DyrectedConfig } from './types/index.js';
@@ -23,12 +22,22 @@ export interface DyrectedContext {
 /**
  * Create the main Dyrected Hono application.
  */
-export function createDyrectedApp(config: DyrectedConfig) {
+export async function createDyrectedApp(config: DyrectedConfig) {
   const app = new Hono<DyrectedContext>();
+
+  // 0. Sync Database Schema if adapter supports it
+  if (config.db?.sync) {
+    await config.db.sync(config.collections, config.globals);
+  }
 
   // 1. Standard Middleware
   app.use('*', requestId());
-  app.use('*', logger());
+  app.use('*', async (c, next) => {
+    const start = Date.now();
+    await next();
+    const ms = Date.now() - start;
+    console.log(`[dyrected/api] ${c.req.method} ${c.req.path} ${c.res.status} - ${ms}ms`);
+  });
   app.use('*', cors());
 
   // 2. Site Resolution Middleware
@@ -49,7 +58,16 @@ export function createDyrectedApp(config: DyrectedConfig) {
     return c.json({ routes });
   });
 
-  // 4. Dynamic Routing
+  // 4. Global Error Handler
+  app.onError((err, c) => {
+    console.error(`[dyrected/core] Uncaught Error:`, err);
+    return c.json({ 
+      message: err.message || 'Internal Server Error',
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+    }, 500);
+  });
+
+  // 5. Dynamic Routing
   registerRoutes(app, config);
 
   return app;

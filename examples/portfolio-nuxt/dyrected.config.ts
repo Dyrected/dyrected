@@ -9,6 +9,17 @@ const media = defineCollection({
   fields: [{ name: "alt", type: "text" }],
 });
 
+const replays = defineCollection({
+  slug: "replays",
+  labels: { singular: "Replay", plural: "Replays" },
+  upload: true,
+  fields: [
+    { name: "title", type: "text", required: true },
+    { name: "content", type: "richText" },
+    { name: "featuredImage", type: "relationship", relationTo: "media" },
+  ],
+});
+
 const pages = defineCollection({
   slug: "pages",
   labels: { singular: "Page", plural: "Pages" },
@@ -18,16 +29,21 @@ const pages = defineCollection({
     { name: "content", type: "richText" },
     { name: "featuredImage", type: "relationship", relationTo: "media" },
   ],
+  admin: {
+    group: "Content", // Add this
+  },
 });
 
 const posts = defineCollection({
   slug: "posts",
   labels: { singular: "Post", plural: "Posts" },
-  upload: true,
   fields: [
     { name: "title", type: "text", required: true },
     { name: "content", type: "richText" },
   ],
+  admin: {
+    group: "Content", // Add this
+  },
 });
 
 const comments = defineCollection({
@@ -41,7 +57,7 @@ const comments = defineCollection({
   ],
   admin: {
     useAsTitle: "author",
-    group: "Content",
+    group: "Entries",
   },
 });
 
@@ -64,7 +80,7 @@ const inquiries = defineCollection({
   ],
   admin: {
     useAsTitle: "name",
-    group: "Content",
+    group: "Entries",
   },
 });
 
@@ -121,12 +137,12 @@ const settings = defineGlobal({
 
 // ... (existing collections and globals)
 
-const db = process.env.DATABASE_URL 
+const db = process.env.DATABASE_URL
   ? new PostgresAdapter({ url: process.env.DATABASE_URL })
   : new SqliteAdapter({ filename: process.env.DB_FILENAME || "dyrected.db" });
 
 export default defineConfig({
-  collections: [media, pages, posts, comments, inquiries],
+  collections: [media, replays, pages, posts, comments, inquiries],
   globals: [navigation, settings],
   db,
 });

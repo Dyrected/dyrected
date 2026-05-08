@@ -25,8 +25,11 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"next" | "nuxt" | "react" | "vue">("next");
 
-  const isSelfHosted = config.baseUrl?.startsWith("/");
-
+  const isSelfHosted = config.baseUrl?.startsWith("/") || 
+    config.baseUrl?.includes("localhost") || 
+    config.baseUrl?.includes("127.0.0.1") ||
+    !config.apiKey;
+    
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
@@ -35,7 +38,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
 
   const getPrompt = (framework: string) => {
     const baseIntro = isSelfHosted 
-      ? `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. This is a SELF-HOSTED installation.\nComplete the entire setup automatically using the details below.`
+      ? `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. This is a SELF-HOSTED installation.\nThe backend is already configured in the same project via @dyrected/nuxt or @dyrected/next.\nComplete the entire setup automatically using the details below.`
       : `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. Complete the entire setup automatically using the details below.`;
 
     const credentials = `

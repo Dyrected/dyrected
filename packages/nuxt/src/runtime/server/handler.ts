@@ -8,7 +8,13 @@ let app: any;
 export default eventHandler(async (event) => {
   const config = useRuntimeConfig().dyrected;
   if (!app) {
-    app = createDyrectedApp(config);
+    const dyrectedConfig = { ...config };
+    // Re-hydrate DB from global context if missing (populated by the Nitro plugin)
+    if (!dyrectedConfig.db) {
+      dyrectedConfig.db = (globalThis as any).__dyrected_db;
+    }
+    console.log('[dyrected/nuxt] Initializing app. DB present:', !!dyrectedConfig.db);
+    app = await createDyrectedApp(dyrectedConfig);
   }
 
   const method = (event as any).req?.method || 'GET';
@@ -23,11 +29,6 @@ export default eventHandler(async (event) => {
   const path = originalUrl.startsWith(apiBase) 
     ? originalUrl.slice(apiBase.length) || '/' 
     : originalUrl;
-
-  const debugInfo = `[dyrected/nuxt] ${method} ${originalUrl} -> ${path} (apiBase: ${apiBase})\n`;
-  // Use a simple file write if possible, but Nitro environment is restricted.
-  // We'll stick to console.log for now but ensure it's visible.
-  console.log(debugInfo);
 
   // 3. Construct the full URL for the Request object
   const protocol = (event as any).req?.headers?.['x-forwarded-proto'] || 'http';
