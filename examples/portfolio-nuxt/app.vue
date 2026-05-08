@@ -14,9 +14,10 @@ const { data: navigation } = await useAsyncData('navigation', () =>
   dyrected.getGlobal('navigation', {
     initialData: {
       menuItems: [
-        { label: 'Home', navType: 'internal' },
-        { label: 'About', navType: 'internal' },
-        { label: 'Sermons', navType: 'internal' }
+        { label: 'Home', url: '/' },
+        { label: 'About', url: '/about' },
+        { label: 'Sermons', url: '/blog' },
+        { label: 'Contact', url: '/contact' }
       ]
     }
   })
@@ -33,15 +34,15 @@ const footerText = computed(() => settings.value?.footerText || '2026 Ministry o
         <NuxtLink to="/" class="logo">{{ siteTitle }}</NuxtLink>
         <ul>
           <li v-for="item in navigation?.menuItems" :key="item.label">
-             <NuxtLink v-if="item.navType === 'internal'" :to="item.label === 'Home' ? '/' : (item.label === 'Sermons' ? '/blog' : '/' + item.label.toLowerCase())">
+             <NuxtLink :to="item.url || '#'">
                {{ item.label }}
              </NuxtLink>
-             <a v-else :href="item.url" target="_blank">{{ item.label }}</a>
           </li>
           <template v-if="!navigation?.menuItems">
             <li><NuxtLink to="/">Home</NuxtLink></li>
             <li><NuxtLink to="/about">About</NuxtLink></li>
             <li><NuxtLink to="/blog">Sermons</NuxtLink></li>
+            <li><NuxtLink to="/contact">Contact</NuxtLink></li>
           </template>
         </ul>
       </nav>

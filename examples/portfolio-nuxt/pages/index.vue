@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import HeroBlock from '~/components/blocks/HeroBlock.vue'
+import RichContentBlock from '~/components/blocks/RichContentBlock.vue'
+import GalleryBlock from '~/components/blocks/GalleryBlock.vue'
+import CTABlock from '~/components/blocks/CTABlock.vue'
+
 const dyrected = useDyrected();
 
 const { data: pageData } = await useAsyncData('home-page', () => 
@@ -7,11 +12,25 @@ const { data: pageData } = await useAsyncData('home-page', () =>
   }).seed([{
     title: 'Faith, Hope, and Love',
     slug: 'home',
-    content: 'Bringing the message of grace to a broken world.',
-    featuredImage: {
-      url: 'https://images.unsplash.com/photo-1544717297-fa154da09f9b?auto=format&fit=crop&q=80&w=800',
-      alt: 'Preacher speaking'
-    }
+    layout: [
+      {
+        blockType: 'hero',
+        heading: 'Faith, Hope, and Love',
+        subheading: 'Bringing the message of grace to a broken world.',
+        ctaLabel: 'Listen to Sermons',
+        ctaLink: '/blog',
+        image: {
+          url: 'https://images.unsplash.com/photo-1544717297-fa154da09f9b?auto=format&fit=crop&q=80&w=800',
+          alt: 'Preacher speaking'
+        }
+      },
+      {
+        blockType: 'callToAction',
+        heading: 'Our Mission',
+        description: '"To spread the word of God and empower believers to live a life of purpose and spiritual growth."',
+        theme: 'dark'
+      }
+    ]
   }])
 );
 
@@ -36,27 +55,15 @@ const sermons = computed(() => sermonsData.value?.docs || []);
 
 <template>
   <div class="home-page">
-    <!-- Hero Section -->
-    <section class="hero">
-      <div class="hero-content">
-        <h1>{{ page?.title || 'Faith, Hope, and Love' }}</h1>
-        <p class="subtitle">{{ page?.content || 'Bringing the message of grace to a broken world.' }}</p>
-        <NuxtLink to="/blog" class="btn btn-primary">Listen to Sermons</NuxtLink>
-      </div>
-      <div class="hero-image">
-        <img :src="page?.featuredImage?.url || 'https://images.unsplash.com/photo-1544717297-fa154da09f9b?auto=format&fit=crop&q=80&w=800'" :alt="page?.featuredImage?.alt || 'Preacher speaking'" />
-      </div>
-    </section>
+    <!-- Render Blocks -->
+    <template v-for="(block, i) in page?.layout" :key="i">
+      <HeroBlock v-if="block.blockType === 'hero'" v-bind="block" />
+      <RichContentBlock v-else-if="block.blockType === 'richContent'" v-bind="block" />
+      <GalleryBlock v-else-if="block.blockType === 'imageGallery'" v-bind="block" />
+      <CTABlock v-else-if="block.blockType === 'callToAction'" v-bind="block" />
+    </template>
 
-    <!-- Mission Statement -->
-    <section class="mission">
-      <div class="container">
-        <h2>Our Mission</h2>
-        <p>"To spread the word of God and empower believers to live a life of purpose and spiritual growth."</p>
-      </div>
-    </section>
-
-    <!-- Recent Sermons / Blog Feed -->
+    <!-- Recent Sermons / Blog Feed (Kept as specialized section for home) -->
     <section class="featured-sermons">
       <div class="container">
         <h2>Recent Sermons</h2>
@@ -64,7 +71,7 @@ const sermons = computed(() => sermonsData.value?.docs || []);
           <div v-for="sermon in sermons" :key="sermon.id" class="sermon-card">
             <img :src="sermon.featuredImage?.url || 'https://images.unsplash.com/photo-1519491050282-ce00c739ce3c?auto=format&fit=crop&q=80&w=400'" :alt="sermon.title" />
             <h3>{{ sermon.title }}</h3>
-            <p>{{ sermon.content }}</p>
+            <p>{{ sermon.content?.substring(0, 100) }}...</p>
             <NuxtLink :to="`/blog/${sermon.slug}`" class="link">Read More</NuxtLink>
           </div>
         </div>
@@ -82,23 +89,6 @@ const sermons = computed(() => sermonsData.value?.docs || []);
         </ul>
       </div>
     </section>
-
-    <!-- Testimonials -->
-    <section class="testimonials">
-      <div class="container">
-        <h2>Transformed Lives</h2>
-        <div class="testimonial-grid">
-          <div class="testimonial">
-            <p>"The messages here have completely changed my perspective on life and faith."</p>
-            <cite>— Sarah J.</cite>
-          </div>
-          <div class="testimonial">
-            <p>"A community that truly lives out the love of Christ. I'm so blessed to be a part of it."</p>
-            <cite>— Michael D.</cite>
-          </div>
-        </div>
-      </div>
-    </section>
   </div>
 </template>
 
@@ -107,82 +97,34 @@ const sermons = computed(() => sermonsData.value?.docs || []);
   max-width: 1000px;
   margin: 0 auto;
 }
-
 section {
   padding: 4rem 0;
 }
-
-.hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  background-color: #f8f5f2;
-  padding: 6rem 2rem;
-}
-
-.hero-content {
-  flex: 1;
-}
-
-.hero-content h1 {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-  color: #2c3e50;
-}
-
-.subtitle {
-  font-size: 1.5rem;
-  color: #7f8c8d;
-  margin-bottom: 2rem;
-}
-
-.hero-image {
-  flex: 1;
-}
-
-.hero-image img {
-  width: 100%;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
-
-.mission {
+.featured-sermons h2 {
   text-align: center;
-  background-color: #2c3e50;
-  color: white;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
 }
-
-.mission p {
-  font-size: 1.8rem;
-  font-style: italic;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
 .sermon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
+  padding: 0 1rem;
 }
-
 .sermon-card {
   border: 1px solid #eee;
   border-radius: 8px;
   overflow: hidden;
 }
-
 .sermon-card img {
   width: 100%;
   height: 200px;
   object-fit: cover;
 }
-
 .sermon-card h3, .sermon-card p {
   padding: 0 1rem;
 }
-
 .link {
   display: inline-block;
   padding: 1rem;
@@ -190,54 +132,16 @@ section {
   text-decoration: none;
   font-weight: bold;
 }
-
 .events {
   background-color: #f9f9f9;
 }
-
 .events ul {
   list-style: none;
   padding: 0;
 }
-
 .events li {
   padding: 1rem 0;
   border-bottom: 1px solid #ddd;
-}
-
-.testimonial-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-
-.testimonial {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-.btn {
-  display: inline-block;
-  padding: 1rem 2rem;
-  border-radius: 4px;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.btn-primary {
-  background-color: #e67e22;
-  color: white;
-}
-
-@media (max-width: 768px) {
-  .hero {
-    flex-direction: column;
-    text-align: center;
-  }
-  .testimonial-grid {
-    grid-template-columns: 1fr;
-  }
+  text-align: center;
 }
 </style>
