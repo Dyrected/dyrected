@@ -23,7 +23,7 @@ export interface DyrectedContext {
 /**
  * Create the main Dyrected Hono application.
  */
-export function createApp(config: DyrectedConfig) {
+export function createDyrectedApp(config: DyrectedConfig) {
   const app = new Hono<DyrectedContext>();
 
   // 1. Standard Middleware

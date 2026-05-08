@@ -47,21 +47,33 @@ export class SqliteAdapter implements DatabaseAdapter {
     `);
   }
 
-  async find(params: { collection: string; where?: any; limit?: number; page?: number }) {
+  async find(params: { collection: string; where?: any; limit?: number; page?: number; sort?: string }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     
-    // Simple query implementation
-    const stmt = this.sqlite.prepare(`SELECT * FROM ${tableName} LIMIT ? OFFSET ?`);
     const limit = params.limit || 10;
-    const offset = ((params.page || 1) - 1) * limit;
+    const page = params.page || 1;
+    const offset = (page - 1) * limit;
+
+    // Count total
+    const countStmt = this.sqlite.prepare(`SELECT COUNT(*) as count FROM ${tableName}`);
+    const { count } = countStmt.get() as { count: number };
+
+    // Fetch data
+    const stmt = this.sqlite.prepare(`SELECT * FROM ${tableName} LIMIT ? OFFSET ?`);
     const rows = stmt.all(limit, offset) as any[];
 
+    const docs = rows.map(r => ({ id: r.id, ...JSON.parse(r.data) }));
+    const totalPages = Math.ceil(count / limit);
+
     return {
-      docs: rows.map(r => ({ id: r.id, ...JSON.parse(r.data) })),
-      total: 0, // TODO: Count total
+      docs,
+      total: count,
       limit,
-      page: params.page || 1
+      page,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1
     };
   }
 

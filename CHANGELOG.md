@@ -5,6 +5,43 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Core Engine: Type Standardization**:
+    - Unified `FieldSchema` and `BlockSchema` definitions in `@dyrected/core` as the single source of truth.
+    - Standardized field configuration by renaming `collection` to `relationTo` and adding `hasMany` support.
+    - Exposed all core platform types via `@dyrected/sdk` for consistent cross-package type safety.
+- **Admin UI: Enhanced Content Management**:
+    - **RelationshipPicker Upgrade**: Added support for multi-select (`hasMany`) and debounced server-side search.
+    - **MediaPage Improvements**: Added an asset inspection sidebar with URL copying, dimensions, and metadata editing.
+    - **RenderCell Component**: Built a type-aware cell renderer for the list table, supporting populated relationship thumbnails and status badges.
+- **SDK: Fluent API & Auth**:
+    - Implemented `collection(slug).login()` and `logout()` methods for developer-defined auth collections.
+    - Added `global(slug)` fluent builder for singleton management.
+    - Added `DyrectedError` class for consistent error handling and status code reporting.
+- **CLI: Project Bootstrapping**:
+    - Implemented `dyrected init` command to automatically scaffold configuration and install dependencies.
+- **Framework Integrations**:
+    - Added comprehensive Nuxt 3 and Vue 3 portfolio examples demonstrating cloud-to-client integration.
+    - Implemented `useLivePreview` composables for real-time content editing feedback.
+
+### Changed
+- **Architectural Cleanup**:
+    - Renamed internal factory functions to restore the `createDyrectedApp` public API contract.
+    - Modularized the Admin UI by extracting `AdminUI` and `AdminStandalone` components for easier embedding.
+    - Standardized import paths to use relative references within the admin package.
+- **UI/UX Refinement**:
+    - Updated typography across the dashboard, switching from bold to semibold for a more premium aesthetic.
+    - Improved `DashboardShell` to conditionally hide platform-level navigation on single-site views.
+- **Database Adapters**:
+    - Updated `SqliteAdapter` to support full pagination metadata (`totalPages`, `hasNextPage`, `hasPrevPage`).
+
+### Fixed
+- **Admin UI Routing**: Resolved browser history and back-button issues in embedded environments by implementing `basename` support and `onNavigate` callbacks.
+- **Type Safety**: Fixed longstanding TS2367 and TS2352 errors in `FormEngine` caused by mismatched field type literals.
+- **Auth Reliability**: Improved cookie management and session invalidation on 401 Unauthorized responses.
+
+## [0.1.0] - 2026-05-07
+
+### Added
 - **Cloud IAM: Identity & Access Management (Phase 8)**:
     - Renamed `users` collection to `accounts` to clearly distinguish cloud-internal identities from site-level users managed by self-hosted `@dyrected/core` instances.
     - Added `workspaceMembers` join collection to manage account-to-workspace relationships with `owner`, `admin`, and `editor` roles.

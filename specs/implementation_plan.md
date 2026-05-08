@@ -167,9 +167,7 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 - [x] Add toggle support for "Draft" vs "Published" if the `status` field is present.
 - [x] Implement UI indicators in the `CollectionListPage` for entry status.
 
-## Phase 6: Architectural Alignment & Fixes [NEW]
-
-The current implementation and documentation have drifted from the strict architectural standards defined in `dyrected-architecture.md` and `dyrected-core-vs-cloud.md`. This phase will implement the necessary fixes to ensure the codebase perfectly aligns with the Open Core / Commercial Split model before building the Cloud platform.
+## Phase 6: Architectural Alignment & Fixes [COMPLETED]
 
 ### Phase 6.1: Core Engine Purification
 
@@ -185,13 +183,13 @@ The current implementation and documentation have drifted from the strict archit
 
 ## Phase 7: Multi-Tenant Foundation & Infrastructure
 
-This phase establishes the base data model and infrastructure required for the cloud environment.
-
 ### Phase 7.1: Redis & Caching Infrastructure
+
 - [x] Set up the `apps/cloud` `turbo.json` configuration and environment variables.
 - [x] Integrate Redis connection handling for caching, session synchronization, and rate limiting.
 
 ### Phase 7.2: Multi-tenant Data Architecture
+
 - [x] Create database schema extensions for Workspaces, Sites, and Subscriptions within `@dyrected/cloud`.
 - [x] Build the `SiteResolver` middleware for header-based (`x-api-key`) and host-based tenant identification.
 - [x] Implement the `QueryInterceptor` to automatically inject `workspace_id` and `site_id` bounds into database queries.
@@ -199,253 +197,248 @@ This phase establishes the base data model and infrastructure required for the c
 
 ## Phase 8: Cloud Identity & Access Management (IAM)
 
-This phase introduces user authentication and team collaboration to the cloud platform.
-
 ### Phase 8.1: Identity & Authentication
+
 - [x] Define the `Users` collection with `auth: true` within the `apps/cloud` configuration.
 - [x] Implement workspace owner authentication using the `@dyrected/sdk` (`dyrected.auth.login()`).
 - [x] Build secure, cookie-based session management for the Cloud Dashboard using native Dyrected tokens.
 
 ### Phase 8.2: Access Management & Collaboration
+
 - [x] Implement the Workspace Invitation system with secure token-based email links.
 - [x] Build the team management API (invite, revoke, update roles).
 - [x] Implement Role-Based Access Control (RBAC) middleware for Owner, Admin, and Editor roles.
 
 ## Phase 9: Cloud Platform Dashboard
 
-This phase builds the actual UI where customers will manage their Dyrected instances.
-
 ### Phase 9.1: Dashboard Application Shell
+
 - [x] Scaffold the Cloud Admin dashboard application shell (Next.js/Nuxt).
 - [x] Build the "Workspace Overview" page showing active sites and top-level metrics.
 - [x] Build the "Site Detail" page for managing a specific site's settings.
 
 ### Phase 9.2: Configuration Management UI
+
 - [x] Create interfaces for creating, viewing, and rotating Site API Keys.
 - [x] Build forms for configuring custom storage adapters per site (S3, B2, Cloudinary).
 - [x] Build the UI for team management and invitation workflows.
 
 ## Phase 10: Cloud Operations, Webhooks & Billing
 
-This phase introduces background processing, usage tracking, and monetization.
-
 ### Phase 10.1: Background Jobs & Webhooks
+
 - [x] Integrate BullMQ for asynchronous task queues, connected to Redis.
 - [x] Implement the `WebhookDispatcher` service to listen to content lifecycle events.
 - [x] Create the database tables to store Webhook Endpoint configurations and Delivery Logs.
 - [x] Build the Webhook management UI in the dashboard.
 
 ### Phase 10.2: Usage Tracking & Analytics
+
 - [x] Implement middleware to track incoming API requests and increment usage counters in Redis.
 - [x] Create a cron job to flush Redis usage counters to the main database periodically.
 - [x] Implement storage space calculation logic.
 - [x] Build the Analytics dashboard view for users to monitor their bandwidth and API consumption.
 
 ### Phase 10.3: Paystack Billing Integration
+
 - [x] Integrate the Paystack Node SDK.
 - [x] Implement the payment flow for creating subscriptions and handling one-off payments.
 - [x] Create the Paystack webhook listener to process `subscription.create`, `charge.success`, and `invoice.payment_failed` events.
 - [x] Build the Billing Management UI for users to manage cards, view invoices, and upgrade/downgrade plans.
 - [x] Enforce usage limits based on the active Paystack subscription tier.
 
----
-
-## Phase 11: Ecosystem & Documentation
-
-This phase focuses on the developer experience and public release stability.
+## Phase 11: Ecosystem & Documentation [COMPLETED]
 
 ### Phase 11.1: Technical Documentation
+
 - [x] Create a comprehensive documentation outline.
 - [x] Implement the documentation site using **Mintlify**.
 - [x] Remove all legacy references to "Scribe".
 
 ### Phase 11.2: API Discoverability
+
 - [x] Implement automated OpenAPI 3.0 specification generation in `@dyrected/core`.
 - [x] Integrate interactive Swagger UI at `/api/docs`.
 
 ### Phase 11.3: CLI & Onboarding
+
 - [x] Implement `npx @dyrected/cli init` for rapid project bootstrapping.
 - [x] Create the "AI Cloud Setup Prompt" for instant scaffolding.
 
----
-
-## Phase 12: Public Release & Stabilization
+## Phase 12: Public Release & Stabilization [IN PROGRESS]
 
 ### Phase 12.1: Package Publishing
+
 - [x] Configure `changesets` for monorepo package management.
 - [x] Update package access to `public` in `.changeset/config.json`.
 - [x] Publish initial `@dyrected/*` packages to NPM (v0.0.1).
 
 ### Phase 12.2: Infrastructure Hardening
+
 - [ ] Finalize environment variable validation for all adapters.
 - [ ] Implement global error handling and reporting in `apps/cloud`.
 
-
-
----
-
-## Phase 13: Docs-to-Reality Gap Closure
-
-This phase tracks everything **documented as existing** but not yet implemented, discovered during the May 2026 documentation audit. Items are grouped by package.
-
-> All design questions for this phase have been resolved (see the decisions table at the bottom). Items marked ✅ are already implemented.
-
----
+## Phase 13: Live Preview (Docs-to-Reality) [COMPLETED]
 
 ### Phase 13.1: `@dyrected/core` — Missing Backend Features
 
-#### Auth Collection Endpoints
-> **Context:** `apps/cloud` already has a full auth system at `/cloud/auth/*` — but that authenticates **Dyrected platform accounts** (who can log in to the dashboard). This is **different**. What's missing here is auth for **developer-defined collections** with `auth: true` on their *own site*, so that a developer building a membership site can have `/api/collections/customers/login` etc.
-
-- [x] `POST /api/collections/:slug/login` — email + password → JWT
-- [x] `POST /api/collections/:slug/logout` — invalidate session
-- [x] `GET  /api/collections/:slug/me` — return current user (strip `password`)
-- [x] `POST /api/collections/:slug/refresh-token` — issue fresh JWT
-- [x] `POST /api/collections/:slug/forgot-password` — send reset email
-- [x] `POST /api/collections/:slug/reset-password` — consume reset token
-- [x] Auto-inject `email` + `password` (bcrypt-hashed) fields when `auth: true`
-- [x] Strip `password` from all response bodies unconditionally
-- [x] JWT decode middleware: expose decoded user as `c.get('user')` for access functions
-
-#### Access Flags in `/api/schemas`
-`/api/schemas` returns raw config with **no resolved access**. Docs say it should return computed flags when a JWT is present:
-
-- [x] Resolve each collection's `access.*` functions against `c.get('user')`
-- [x] Resolve each field's `access.*` functions against the user
-- [x] Merge computed flags into the schema response
-
-#### Preview Token Endpoints (Live Preview — token mode)
-- [ ] `POST /api/preview-token` — issue signed JWT stored in Redis, 15-minute TTL
-- [ ] `GET  /api/preview-data?token=<jwt>` — return draft document for the token
-- [ ] Return `501 Not Implemented` when `redis` is not configured
-
-#### `CollectionConfig.admin` — Missing Type Properties
-- [x] `previewUrl?: string | ((doc: any, opts: { locale?: string }) => string | null)`
-- [x] `previewMode?: 'postMessage' | 'token'`
-
-#### `UploadConfig` — Missing Properties
-**Decision:** Keep `allowedMimeTypes` (matches the type). Docs updated to match. Still missing from the type:
-- [x] `staticDir?: string`, `staticURL?: string` (LocalStorage only)
-- [x] `adminThumbnail?: string`
-- [x] `imageSizes[].fit?: string`
-- [x] `imageSizes[].withoutEnlargement?: boolean`
-- [x] `imageSizes[].formatOptions?: object`
-
-#### Top-level `DyrectedConfig.admin` Branding — Not in Types
-- [x] Define `AdminConfig` interface with `branding` and `meta` sub-objects
-- [x] Add `admin?: AdminConfig` to `DyrectedConfig`
-
-#### `where` / `sort` Params Ignored in Controller
-`CollectionController.find` never parses or passes `where` or `sort`:
-- [x] Parse `where` from query string server-side (qs)
-- [x] Parse and pass `sort` to `db.find()`
-
-#### `HookFunction` Missing `operation` Argument
-- [x] Add `operation?: 'create' | 'update' | 'delete'` to `HookFunction` args
-
----
+- [x] Auth Collection Endpoints (`/login`, `/logout`, `/me`, `/refresh-token`).
+- [x] Access Flags in /api/schemas (resolved per-user).
+- [x] Preview Controller (POST /preview-token, GET /preview-data).
+- [x] Admin: LivePreviewPane.tsx.
+- [x] Admin: Integration in edit-page.tsx.
+- [x] Core API: Integration in router.ts.
+- [x] Nuxt: useLivePreview implementation.
+- [x] postMessage Sync protocol implementation.
+- [x] `CollectionConfig.admin` — Missing `previewUrl`, `previewMode`.
+- [x] `UploadConfig` — Missing `staticDir`, `staticURL`, `adminThumbnail`.
+- [x] `Field` — Added `fit`, `withoutEnlargement` (standardized image handling).
+- [x] Top-level `DyrectedConfig.admin` branding.
+- [x] `where` / `sort` Params implemented in Controller.
+- [x] `HookFunction` updated with `operation` argument.
 
 ### Phase 13.2: `@dyrected/sdk` — Missing Client Methods
 
-#### Auth Methods on the Collection Builder
-- [x] `collection(slug).login(email, password)` → `{ token, user }`
-- [x] `collection(slug).logout()` → `void`
-- [x] `collection(slug).me()` → `user`
-- [x] `collection(slug).refreshToken()` → `{ token }`
-
-#### Token Management
-- [x] `client.setToken(token)` — update Authorization header on the instance
-- [x] `client.clearToken()` — remove Authorization header
-
-#### `collection(slug).upload(file, data?)` ✅ Implemented
-**Decision:** Move to collection builder (docs win). `_upload()` private method added; `uploadMedia()` marked `@deprecated`. No further action needed.
-
-#### `DyrectedError` Class
-- [x] Export `class DyrectedError extends Error` with `statusCode: number` and `errors: { field: string, message: string }[]`
-- [x] Update `private request()` to throw `DyrectedError`
-
-#### `global(slug)` Fluent Builder ✅ Implemented
-**Decision:** Fluent builder (docs win). `client.global(slug).get()` / `.update()` added; flat `getGlobal`/`updateGlobal` kept as `@deprecated` aliases. No further action needed.
-
-#### `defaultDepth` Client Option
-- [x] Accept `defaultDepth?: number` in `DyrectedClientConfig` and use as per-call fallback
-
----
+- [x] Auth Methods on the Collection Builder (`.login()`, `.logout()`, etc.).
+- [x] Token Management (`setToken`, `clearToken`).
+- [x] `DyrectedError` Class exported.
+- [x] `global(slug)` Fluent Builder.
+- [x] `defaultDepth` Client Option.
 
 ### Phase 13.3: `@dyrected/nuxt` — Missing Composables
 
-#### `useDyrected` Signature — Decision Made
-**Decision:** Keep current behaviour — `useDyrected()` returns the raw `DyrectedClient`. Docs updated to match. No code change needed.
-
-#### `useDyrectedGlobal(slug, opts?)`
-- [x] Wraps `client.global(slug).get()` in `useAsyncData`, register in `addImports`
-
-#### `useDyrectedAuth()`
-- [x] Returns `{ login, logout, user: Ref<User | null>, isLoggedIn: Ref<boolean> }`
-- [x] Persists JWT in cookie / `useState` for SSR compatibility
-
-#### `useLivePreview<T>(options)`
-- [x] Vue `postMessage`-based live preview composable
-- [x] Register in `addImports`
-
----
+- [x] `useDyrectedGlobal(slug, opts?)`.
+- [x] `useDyrectedAuth()`.
+- [x] `useLivePreview<T>(options)`.
 
 ### Phase 13.4: `@dyrected/admin` — UI Gaps
 
-- [x] Delete row action — mutation connected to API with confirmation dialog
-- [x] Pagination controls — Prev/Next with page/totalPages display
-- [x] `admin.condition` — `FormEngine` evaluates it reactively via `useWatch`
-- [x] `admin.group` — sidebar groups collections under sub-headings
-- [x] `admin.hidden` — sidebar filters hidden collections (already worked; confirmed)
-- [ ] Live Preview pane — not built (type also missing)
-- [ ] RBAC buttons — Create/Edit/Delete not conditioned on resolved access flags
-- [ ] Field `access.read/update` — form engine does not strip or disable fields
-
----
+- [x] Delete row action with confirmation.
+- [x] Pagination controls.
+- [x] `admin.condition` reactive evaluation.
+- [x] `admin.group` sidebar grouping.
+- [x] Live Preview pane (integration with iframe).
+- [x] RBAC buttons (conditional rendering based on access flags).
+- [x] Field `access.read/update` enforcement in form engine.
 
 ### Phase 13.5: Missing Package — `@dyrected/react`
 
-`useLivePreview` is documented as importable from `@dyrected/react`. The package does not exist:
-- [ ] Scaffold `packages/react/` (package.json, tsconfig, build)
-- [ ] Implement `useLivePreview<T>({ initialData, serverURL })` hook
-- [ ] Export `DyrectedError` re-export from SDK
+- [ ] Scaffold `packages/react/`.
+- [ ] Implement `useLivePreview<T>` hook.
+- [ ] Export `DyrectedError` re-export from SDK.
 
----
+## Phase 14: Embedded Admin UI — Browser History & Routing [COMPLETED]
 
-## Design Decisions — Resolved 2026-05-07
+- [x] Add `basename?: string` prop to `<AdminUI>`.
+- [x] Add `onNavigate?: (path: string) => void` prop.
+- [x] Implement `AdminStandalone` export using `MemoryRouter`.
+- [ ] Update Next.js/Nuxt embed documentation for catch-all routes.
 
-| # | Question | Decision | Action |
-|---|---|---|---|
-| 1 | `UploadConfig` MIME field name | **`allowedMimeTypes`** (types win) | Docs updated — no code change |
-| 2 | SDK global accessor | **`client.global(slug).get()`** (docs win) | ✅ Implemented in SDK |
-| 3 | SDK upload method location | **`client.collection(slug).upload()`** (docs win) | ✅ Implemented in SDK; `uploadMedia()` deprecated |
-| 4 | Nuxt `useDyrected` shape | **Raw client** (code wins) | Docs updated — no code change |
+## Phase 15: Frontend Roadmap & Admin UX (Priority: P1)
 
----
+This phase implements the comprehensive frontend improvements defined in `specs/dyrected-frontend-roadmap.md`.
 
-## Phase 14: Embedded Admin UI — Browser History & Routing
+### Phase 15.1: Admin UI Config Parity
 
-**Priority: P1.** When `<AdminUI />` is embedded in a host app (Next.js, Nuxt, etc.), internal navigations do not update the browser URL. Back/Forward buttons don't work. Tested broken in React; Vue/Nuxt host untested.
+- [x] **Labels & Badges**: Support `labels.singular/plural`, `auth: true` badges, and `shared: true` indicators.
+- [x] **Field Metadata**: Show `required` asterisks, `unique` badges, and respect `admin.placeholder/description`.
+- [x] **Grouping & Visibility**: Enforce `admin.hidden` and implement sidebar collapsible grouping by `admin.group`.
 
-See `specs/dyrected-frontend-roadmap.md §8` for full root-cause analysis and solution options. Summary of work:
+### Phase 15.2: Relationship & Media Display Overhaul
 
-- [x] Add `basename?: string` prop to `<AdminUI>` (default `'/admin'`); pass to `<BrowserRouter basename={basename}>`
-- [x] Add `onNavigate?: (path: string) => void` prop; emit on every internal route change via a `useEffect` + `useLocation` sync component
-- [x] Add both props to `AdminUIProps` type
-- [x] Added `AdminStandalone` export using `MemoryRouter` for iframe / self-hosted use cases
-- [ ] Update Next.js embed docs: use `[[...route]]` catch-all page that always renders `<AdminUI>`
-- [ ] Update Nuxt embed docs: equivalent catch-all page setup
-- [ ] Test in a Nuxt/Vue host app — verify `navigateTo()` integration via `onNavigate`
-- [ ] Add `docs/admin/overview.md` section explaining embedding options
+- [x] **Relationship Cells**: Implement type-aware cell rendering in list tables (thumbnails for media).
+- [x] **Relationship Picker**: Add debounced server-side search and multi-select support.
+- [x] **Media Picker**: Store/match by ID, use absolute URLs, and add upload-from-picker capability.
+- [x] **Media Page Sidebar**: Show file details (URL, dimensions, filesize) and alt text editor.
 
----
+### Phase 15.3: Live Preview System
 
-## Admin UI File Organization — ✅ Complete
+- [x] **Core Backend**: Implement `POST /api/preview-token` and `GET /api/preview-data` (JWT/Redis).
+- [x] **Admin Split-Pane**: Add a side-by-side preview panel in the Edit page using iframes.
+- [x] **Cross-Window Sync**: Implement `postMessage` protocol between Admin and host framework.
+- [x] **Framework Hooks**: Implement `useLivePreview` in `@dyrected/nuxt` and `@dyrected/react`.
 
-`packages/admin/src/index.tsx` was 800+ lines with all components co-located. Refactored:
+### Phase 15.4: RBAC & Access Enforcement
 
-- [x] `src/pages/dashboard/dashboard.tsx` — extracted `Dashboard`
-- [x] `src/pages/setup/setup-prompt.tsx` — extracted `SetupPromptUI`, exported as named package export
-- [x] `src/index.tsx` — clean entrypoint: only `AdminUI`, `AdminStandalone`, and re-exports
-- [x] `/setup` route added to admin router — prompt reachable any time from the sidebar
-- [x] Sidebar footer — persistent "Integration Guide" link visible in all modes
+- [x] **Schema Resolution**: Propagate resolved access flags via `/api/schemas`.
+- [x] **Button Gating**: Condition Create/Edit/Delete buttons on `access` flags.
+- [x] **Field Gating**: Strip or disable fields in `FormEngine` based on `field.access.read/update`.
+
+### Phase 15: Frontend Roadmap (UX & RBAC) [COMPLETED]
+
+- [x] 15.1 Config Parity: Labels, Badges, Field Metadata in Admin UI.
+- [x] 15.2 UX: Unsaved Changes Guard (isDirty).
+- [x] 15.3 UX: Bulk Operations (Row Checkboxes + Toolbar).
+- [x] 15.4 RBAC: "Button Gating" & "Field Gating" in FormEngine.
+- [x] 15.5 Integration: Embedded Admin routing stability.
+
+## Phase 16: Multi-Tenant Database Isolation (Priority: P1)
+
+This phase transitions the cloud platform to a robust schema-per-workspace model as defined in `specs/database-multi-tenancy.md`.
+
+### Phase 16.1: Schema Provisioning
+
+- [ ] **Provisioner Service**: Implement `provisionWorkspaceSchema` and `deprovisionWorkspaceSchema`.
+- [ ] **Lifecycle Hooks**: Trigger schema creation/deletion on workspace CRUD events.
+
+### Phase 16.2: Schema-Aware Query Interceptor
+
+- [ ] **Qualified Table Names**: Update `QueryInterceptor` to use `"schema"."table"` notation for full PgBouncer compatibility.
+- [ ] **Adapter Updates**: Update `@dyrected/db-postgres` to respect `collection.dbTableName`.
+
+### Phase 16.3: Collection-level Table Provisioning
+
+- [ ] **Dynamic Tables**: Create scoped tables (`{siteId}_{slug}`) within workspace schemas on config sync.
+- [ ] **Cleanup**: Implement cascading deletion for collection tables.
+
+### Phase 16.4: Legacy Data Migration
+
+- [ ] **Migration Script**: Build `migrate-to-schemas.ts` to move data from legacy shared/prefixed tables to new schemas.
+
+## Phase 17: Platform Metrics & Licensing (Priority: P2)
+
+This phase introduces internal operations tooling for platform management as defined in `specs/platform-metrics-and-licensing.md`.
+
+### Phase 17.1: Internal Ops Dashboard (`apps/platform`)
+
+- [ ] **Next.js Scaffold**: Initialize a full-stack Next.js app for platform administration.
+- [ ] **Authentication**: Simple email/password admin auth for internal staff.
+
+### Phase 17.2: License Key Management
+
+- [ ] **CRUD API**: Implement license key issuance, revocation, and expiry management.
+- [ ] **Validation Endpoint**: `POST /api/validate` for cloud boot authorization.
+
+### Phase 17.3: Usage Telemetry & Events
+
+- [ ] **Event Logging**: Implement `platform_events` table and instrumentation for high-value business events.
+- [ ] **Operational Health**: Track API error rates, queue depths, and response latencies.
+
+### Phase 17.4: Business KPI Dashboard
+
+- [ ] **Revenue Metrics**: Visualize MRR, churn, and plan distribution (Paystack sync).
+- [ ] **Usage Metrics**: Visualize active workspaces, sites, and API traffic.
+
+## Phase 18: Advanced Image Handling (`imageSizes`) (Priority: P2)
+
+This phase implements the dynamic image resizing engine as defined in `specs/image-sizes-implementation.md`.
+
+### Phase 18.1: Core `sharp` Integration
+
+- [ ] **Dependency Management**: Add `sharp` to `@dyrected/core`.
+- [ ] **Startup Validation**: Ensure `sharp` is available if `imageSizes` are configured.
+
+### Phase 18.2: `ImageResizeService`
+
+- [ ] **Resize Pipeline**: Implement buffer-to-buffer resizing with support for `fit`, `crop`, and `withoutEnlargement`.
+- [ ] **Variant Generation**: Upload multiple sizes and return a metadata map (`sizes`).
+
+### Phase 18.3: Controller Upload Flow
+
+- [ ] **Synchronous Processing**: Update `CollectionController.upload` to generate sizes during the request for self-hosted mode.
+- [ ] **Response Normalization**: Merge `sizes` into the document response.
+
+### Phase 18.4: Async Processing (Cloud)
+
+- [ ] **BullMQ Integration**: Enqueue `image-processing` jobs for background variant generation.
+- [ ] **Patch Update**: Update document with `sizes` metadata once processing completes.

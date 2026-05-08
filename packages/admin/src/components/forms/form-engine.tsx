@@ -8,6 +8,7 @@ function normalizeOptions(options: string[] | { label: string; value: string }[]
   if (!options) return []
   return options.map(opt => typeof opt === "string" ? { label: opt, value: opt } : opt)
 }
+import { useEffect } from "react"
 import { useForm, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -177,6 +178,8 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
   const formValues = useWatch({ control })
   if (schema.admin?.condition && !schema.admin.condition(formValues)) return null
 
+  if ((schema.access as any)?.read === false) return null
+
   const fullPath = basePath ? `${basePath}.${schema.name}` : schema.name
 
   if (schema.type === "object") {
@@ -225,20 +228,28 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
 
 interface FormEngineProps {
   fields: FieldSchema[]
-  defaultValues?: Record<string, any>
-  onSubmit: (data: any) => void
-  isLoading?: boolean
+   defaultValues?: Record<string, any>
+   onSubmit: (data: any) => void
+   onChange?: (isDirty: boolean) => void
+   isLoading?: boolean
   submitLabel?: string
+  readOnly?: boolean
 }
 
-export function FormEngine({ fields, defaultValues = {}, onSubmit, isLoading, submitLabel = "Save" }: FormEngineProps) {
-  const schemaShape = buildSchemaShape(fields)
-  const formSchema = z.object(schemaShape)
+ export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isLoading, submitLabel = "Save", readOnly }: FormEngineProps) {
+   const schemaShape = buildSchemaShape(fields)
+   const formSchema = z.object(schemaShape)
+ 
+   const form = useForm<z.infer<typeof formSchema>>({
+     resolver: zodResolver(formSchema),
+     defaultValues: buildDefaultValues(fields, defaultValues),
+   })
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: buildDefaultValues(fields, defaultValues),
-  })
+   const { isDirty } = form.formState
+
+   useEffect(() => {
+     onChange?.(isDirty)
+   }, [isDirty, onChange])
 
   return (
     <Form {...form}>
@@ -249,9 +260,11 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, isLoading, su
           ))}
         </div>
         <div className="flex justify-end gap-4">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : submitLabel}
-          </Button>
+          {!readOnly && (
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Saving..." : submitLabel}
+            </Button>
+          )}
         </div>
       </form>
     </Form>
@@ -261,7 +274,7 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, isLoading, su
 function renderField(schema: FieldSchema, field: any) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
-  const disabled = schema.admin?.readOnly
+  const disabled = schema.admin?.readOnly || (schema.access as any)?.update === false
 
   switch (schema.type) {
     case "textarea":

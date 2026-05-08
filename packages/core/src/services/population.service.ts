@@ -28,15 +28,15 @@ export class PopulationService {
       const value = populatedDoc[field.name];
 
       // Handle Relationship Fields
-      if (field.type === 'relationship' && field.collection && value) {
-        const relatedCollection = this.collections.find(c => c.slug === field.collection);
+      if (field.type === 'relationship' && field.relationTo && value) {
+        const relatedCollection = this.collections.find(c => c.slug === field.relationTo);
         if (!relatedCollection) continue;
 
         if (Array.isArray(value)) {
           // Multi-relationship
           populatedDoc[field.name] = await Promise.all(
             value.map(async (id: string) => {
-              const doc = await this.db.findOne({ collection: field.collection!, id });
+              const doc = await this.db.findOne({ collection: field.relationTo!, id });
               if (!doc) return id;
               return this.populate({
                 data: doc,
@@ -48,7 +48,7 @@ export class PopulationService {
           );
         } else if (typeof value === 'string') {
           // Single relationship
-          const doc = await this.db.findOne({ collection: field.collection, id: value });
+          const doc = await this.db.findOne({ collection: field.relationTo, id: value });
           if (doc) {
             populatedDoc[field.name] = await this.populate({
               data: doc,

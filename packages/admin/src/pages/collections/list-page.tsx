@@ -6,6 +6,7 @@ import { DataTable } from "../../components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
 import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
+import { Checkbox } from "../../components/ui/checkbox"
 import {
   MoreHorizontal,
   Plus,
@@ -60,7 +61,22 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => client!.collection(slug).delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["collection", slug] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+      setRowSelection({})
+    },
+  })
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      for (const id of ids) {
+        await client!.collection(slug).delete(id)
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+      setRowSelection({})
+    },
   })
 
   function handleDelete(id: string) {
@@ -69,10 +85,37 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
   }
 
+  function handleBulkDelete(ids: string[]) {
+    if (window.confirm(`Delete ${ids.length} entries? This cannot be undone.`)) {
+      bulkDeleteMutation.mutate(ids)
+    }
+  }
+
+  const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
+
   const columns: ColumnDef<any>[] = React.useMemo(() => {
     if (!schema) return []
 
     const cols: ColumnDef<any>[] = [
+      {
+        id: "select",
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected() ? true : table.getIsSomePageRowsSelected() ? "indeterminate" : false}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Select row"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
       {
         accessorKey: "id",
         header: "ID",
@@ -176,7 +219,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     })
 
     return cols
-  }, [schema, client])
+  }, [schema, client, deleteMutation.isPending])
 
   if (isLoading) {
     return (
@@ -217,6 +260,20 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           columns={columns}
           data={response?.docs || []}
           searchKey={schema.admin?.useAsTitle || schema.fields.find((f: any) => !f.admin?.hidden)?.name || "id"}
+          onRowSelectionChange={setRowSelection}
+          rowSelection={rowSelection}
+          bulkActions={(selectedIds) => (
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="h-8"
+              onClick={() => handleBulkDelete(selectedIds)}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Selected ({selectedIds.length})
+            </Button>
+          )}
         />
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-border/50 bg-muted/20">

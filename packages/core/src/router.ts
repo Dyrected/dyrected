@@ -5,6 +5,7 @@ import { CollectionController } from "./controllers/collection.controller.js";
 import { GlobalController } from "./controllers/global.controller.js";
 import { MediaController } from "./controllers/media.controller.js";
 import { AuthController } from "./controllers/auth.controller.js";
+import { PreviewController } from "./controllers/preview.controller.js";
 import { requireAuth, optionalAuth } from "./middleware/auth.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
@@ -27,12 +28,32 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       if (dynamic.globals) globals = [...globals, ...dynamic.globals];
     }
 
-    const filteredCollections = collections
+    const user = c.get('user');
+    const accessArgs = { user, req: c.req, doc: null };
+
+    const resolveAccess = async (fn: any): Promise<boolean> => {
+      if (!fn) return true;
+      try {
+        const result = await fn(accessArgs);
+        return typeof result === 'boolean' ? result : !!result;
+      } catch (err) {
+        console.error('[dyrected/core] Access check failed:', err);
+        return false;
+      }
+    };
+
+    const filteredCollections = await Promise.all(collections
       .filter((col) => !siteId || col.shared || col.siteId === siteId)
-      .map((col) => ({
+      .map(async (col) => ({
         slug: col.slug,
         labels: col.labels,
-        fields: col.fields.map((f) => ({
+        access: {
+          read: await resolveAccess(col.access?.read),
+          create: await resolveAccess(col.access?.create),
+          update: await resolveAccess(col.access?.update),
+          delete: await resolveAccess(col.access?.delete),
+        },
+        fields: await Promise.all(col.fields.map(async (f) => ({
           name: f.name,
           type: f.type,
           label: f.label,
@@ -44,18 +65,26 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           fields: f.fields,
           blocks: f.blocks,
           admin: f.admin,
-        })),
+          access: {
+            read: await resolveAccess(f.access?.read),
+            update: await resolveAccess(f.access?.update),
+          },
+        }))),
         upload: !!col.upload,
         auth: !!col.auth,
         admin: col.admin,
-      }));
+      })));
 
-    const filteredGlobals = globals
+    const filteredGlobals = await Promise.all(globals
       .filter((glb) => !siteId || glb.shared || glb.siteId === siteId)
-      .map((glb) => ({
+      .map(async (glb) => ({
         slug: glb.slug,
         label: glb.label,
-        fields: glb.fields.map((f) => ({
+        access: {
+          read: await resolveAccess(glb.access?.read),
+          update: await resolveAccess(glb.access?.update),
+        },
+        fields: await Promise.all(glb.fields.map(async (f) => ({
           name: f.name,
           type: f.type,
           label: f.label,
@@ -67,9 +96,13 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           fields: f.fields,
           blocks: f.blocks,
           admin: f.admin,
-        })),
+          access: {
+            read: await resolveAccess(f.access?.read),
+            update: await resolveAccess(f.access?.update),
+          },
+        }))),
         admin: glb.admin,
-      }));
+      })));
 
     return c.json({
       collections: filteredCollections,
@@ -138,7 +171,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.patch(path, (c) => controller.update(c));
   }
 
-  // 6. Dynamic Routes (Tenant-specific)
+  // 6. Preview Routes
+  const previewController = new PreviewController();
+  app.post("/api/preview-token", requireAuth(), (c) => previewController.createToken(c));
+  app.get("/api/preview-data", (c) => previewController.getData(c));
+
+  // 7. Dynamic Routes (Tenant-specific)
   // This handles collections/globals defined via sync:schema and fetched via onSchemaFetch
   app.all("/api/collections/:slug/:id?", async (c) => {
     const slug = c.req.param("slug");

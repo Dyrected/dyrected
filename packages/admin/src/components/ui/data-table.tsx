@@ -37,12 +37,18 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
   searchKey?: string
+  rowSelection?: any
+  onRowSelectionChange?: any
+  bulkActions?: (selectedIds: string[]) => React.ReactNode
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
+  rowSelection: externalRowSelection,
+  onRowSelectionChange,
+  bulkActions,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -50,7 +56,10 @@ export function DataTable<TData, TValue>({
   )
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [internalRowSelection, setInternalRowSelection] = React.useState({})
+
+  const rowSelection = externalRowSelection || internalRowSelection
+  const setRowSelection = onRowSelectionChange || setInternalRowSelection
 
   const table = useReactTable({
     data,
@@ -83,6 +92,15 @@ export function DataTable<TData, TValue>({
             }
             className="max-w-sm"
           />
+        )}
+        {bulkActions && table.getFilteredSelectedRowModel().rows.length > 0 && (
+          <div className="flex items-center gap-2 animate-in slide-in-from-left-2">
+            {bulkActions(
+              table
+                .getFilteredSelectedRowModel()
+                .rows.map((r) => (r.original as any).id)
+            )}
+          </div>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
