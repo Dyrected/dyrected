@@ -199,6 +199,8 @@ export interface FileData {
   url: string;
   width?: number;
   height?: number;
+  focalPoint?: { x: number; y: number };
+  blurhash?: string;
   type?: "upload" | "external";
   provider?: string;
   provider_metadata?: any;
@@ -229,11 +231,28 @@ export interface AdminConfig {
   };
 }
 
+export interface ImageService {
+  process(args: { 
+    buffer: Buffer; 
+    mimeType: string; 
+    config?: CollectionConfig['upload'];
+    focalPoint?: { x: number; y: number };
+  }): Promise<{
+    metadata: {
+      width?: number;
+      height?: number;
+      blurhash?: string;
+    };
+    sizes?: Record<string, { buffer: Buffer; width: number; height: number; filename: string }>;
+  }>;
+}
+
 export interface DyrectedConfig {
   collections: CollectionConfig[];
   globals: GlobalConfig[];
   db?: DatabaseAdapter;
   storage?: StorageAdapter;
+  image?: ImageService;
   /** Admin UI branding and meta configuration. */
   admin?: AdminConfig;
   email?: {

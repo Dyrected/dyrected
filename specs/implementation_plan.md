@@ -395,50 +395,54 @@ This phase transitions the cloud platform to a robust schema-per-workspace model
 
 - [x] **Migration Script**: Build `migrate-to-schemas.ts` to move data from legacy shared/prefixed tables to new schemas.
 
-## Phase 17: Platform Metrics & Licensing (Priority: P2)
+## Phase 17: Platform Metrics & Licensing [COMPLETED]
 
 This phase introduces internal operations tooling for platform management as defined in `specs/platform-metrics-and-licensing.md`.
 
 ### Phase 17.1: Internal Ops Dashboard (`apps/platform`)
 
-- [ ] **Next.js Scaffold**: Initialize a full-stack Next.js app for platform administration.
-- [ ] **Authentication**: Simple email/password admin auth for internal staff.
+- [x] **Next.js Scaffold**: Initialize a full-stack Next.js app for platform administration.
+- [x] **Authentication**: Simple email/password admin auth for internal staff.
 
 ### Phase 17.2: License Key Management
 
-- [ ] **CRUD API**: Implement license key issuance, revocation, and expiry management.
-- [ ] **Validation Endpoint**: `POST /api/validate` for cloud boot authorization.
+- [x] **CRUD API**: Implement license key issuance, revocation, and expiry management.
+- [x] **Validation Endpoint**: `POST /api/validate` for cloud boot authorization.
 
 ### Phase 17.3: Usage Telemetry & Events
 
-- [ ] **Event Logging**: Implement `platform_events` table and instrumentation for high-value business events.
-- [ ] **Operational Health**: Track API error rates, queue depths, and response latencies.
+- [x] **Event Logging**: Implement `platform_events` table and instrumentation for high-value business events.
+- [x] **Operational Health**: Track API error rates, queue depths, and response latencies.
 
 ### Phase 17.4: Business KPI Dashboard
 
-- [ ] **Revenue Metrics**: Visualize MRR, churn, and plan distribution (Paystack sync).
-- [ ] **Usage Metrics**: Visualize active workspaces, sites, and API traffic.
+- [x] **Revenue Metrics**: Visualize MRR, churn, and plan distribution (Paystack sync).
+- [x] **Usage Metrics**: Visualize active workspaces, sites, and API traffic.
 
-## Phase 18: Advanced Image Handling (`imageSizes`) (Priority: P2)
+## Phase 18: Advanced Image Handling (`imageSizes`) [COMPLETED]
 
 This phase implements the dynamic image resizing engine as defined in `specs/image-sizes-implementation.md`.
 
 ### Phase 18.1: Core `sharp` Integration
 
-- [ ] **Dependency Management**: Add `sharp` to `@dyrected/core`.
-- [ ] **Startup Validation**: Ensure `sharp` is available if `imageSizes` are configured.
+- [x] **Dependency Management**: Integrated `sharp`, `blurhash`, and `canvas` into `apps/cloud`.
+- [x] **ImageService Interface**: Defined `ImageService` in `@dyrected/core` for decoupled processing.
 
-### Phase 18.2: `ImageResizeService`
+### Phase 18.2: `SharpImageService` Implementation
 
-- [ ] **Resize Pipeline**: Implement buffer-to-buffer resizing with support for `fit`, `crop`, and `withoutEnlargement`.
-- [ ] **Variant Generation**: Upload multiple sizes and return a metadata map (`sizes`).
+- [x] **Metadata Extraction**: Automatic resolution, mimeType, and aspect ratio detection.
+- [x] **Blurhash Generation**: Integrated `blurhash` for lightweight placeholders.
+- [x] **Variant Generation**: Responsive size generation based on `CollectionConfig.upload.imageSizes`.
+- [x] **Focal Point Support**: Smart cropping based on `focalPoint` metadata.
 
-### Phase 18.3: Controller Upload Flow
+### Phase 18.3: Controller & Storage Logic
 
-- [ ] **Synchronous Processing**: Update `CollectionController.upload` to generate sizes during the request for self-hosted mode.
-- [ ] **Response Normalization**: Merge `sizes` into the document response.
+- [x] **Upload Orchestration**: Updated `MediaController.upload` to trigger the image pipeline.
+- [x] **Cascading Deletion**: Enhanced `MediaController.delete` to clean up all generated variants.
+- [x] **Metadata Persistence**: Structured `FileData` to store `sizes`, `blurhash`, and `focalPoint`.
 
-### Phase 18.4: Async Processing (Cloud)
+### Phase 18.4: Admin UI Enhancements
 
-- [ ] **BullMQ Integration**: Enqueue `image-processing` jobs for background variant generation.
-- [ ] **Patch Update**: Update document with `sizes` metadata once processing completes.
+- [x] **Focal Point Picker**: Interactive UI in the media sidebar for setting image focus.
+- [x] **Blurhash Placeholders**: Integrated `react-blurhash` for smooth image loading transitions.
+- [x] **Responsive Previews**: Support for viewing and updating image metadata.

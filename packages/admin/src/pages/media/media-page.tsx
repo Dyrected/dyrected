@@ -37,6 +37,8 @@ import {
   SheetTitle,
 } from "../../components/ui/sheet"
 import { Separator } from "../../components/ui/separator"
+import { FocalPointPicker } from "../../components/media/focal-point-picker"
+import { Blurhash } from "react-blurhash"
 
 export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
   const { client } = useDyrected()
@@ -55,6 +57,14 @@ export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
     mutationFn: (id: string) => client!.deleteMedia(id, collectionSlug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media"] })
+    }
+  })
+  
+  const updateMutation = useMutation({
+    mutationFn: (args: { id: string, data: any }) => client!.update(collectionSlug || "media", args.id, args.data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["media"] })
+      setSelectedItem(data)
     }
   })
 
@@ -162,6 +172,7 @@ export function MediaPage({ collectionSlug }: { collectionSlug?: string }) {
         item={selectedItem} 
         onClose={() => setSelectedItem(null)} 
         baseUrl={client!.getBaseUrl()}
+        onUpdate={(data) => updateMutation.mutate({ id: selectedItem.id, data })}
       />
     </div>
   )
@@ -186,13 +197,28 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
       onClick={onClick}
     >
       <CardHeader className="p-0 border-b border-border/10">
-        <AspectRatio ratio={1 / 1} className="bg-muted/30 overflow-hidden">
+        <AspectRatio ratio={1 / 1} className="bg-muted/30 overflow-hidden relative">
           {isImage ? (
-            <img
-              src={url}
-              alt={item.filename}
-              className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-            />
+            <>
+              {item.blurhash && (
+                <div className="absolute inset-0 z-0">
+                  <Blurhash
+                    hash={item.blurhash}
+                    width="100%"
+                    height="100%"
+                    resolutionX={32}
+                    resolutionY={32}
+                    punch={1}
+                  />
+                </div>
+              )}
+              <img
+                src={url}
+                alt={item.filename}
+                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110 relative z-10"
+                loading="lazy"
+              />
+            </>
           ) : (
             <div className="flex items-center justify-center h-full bg-primary/5">
               <FileIcon className="h-10 w-10 text-primary/40" />
@@ -232,7 +258,12 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   )
 }
 
-function MediaSidebar({ item, onClose, baseUrl }: { item: any, onClose: () => void, baseUrl: string }) {
+function MediaSidebar({ item, onClose, baseUrl, onUpdate }: { 
+  item: any, 
+  onClose: () => void, 
+  baseUrl: string,
+  onUpdate: (data: any) => void 
+}) {
   if (!item) return null
 
   const isImage = item.mimeType?.startsWith("image/")
@@ -250,10 +281,24 @@ function MediaSidebar({ item, onClose, baseUrl }: { item: any, onClose: () => vo
         
         <ScrollArea className="flex-1">
           <div className="p-6 space-y-8">
-            <div className="rounded-xl overflow-hidden border border-border/40 bg-muted/20">
+            <div className="rounded-xl overflow-hidden border border-border/40 bg-muted/20 relative">
               <AspectRatio ratio={16 / 9}>
                 {isImage ? (
-                  <img src={url} alt={item.filename} className="object-contain w-full h-full bg-checkered" />
+                  <>
+                    {item.blurhash && (
+                      <div className="absolute inset-0 z-0">
+                        <Blurhash
+                          hash={item.blurhash}
+                          width="100%"
+                          height="100%"
+                          resolutionX={32}
+                          resolutionY={32}
+                          punch={1}
+                        />
+                      </div>
+                    )}
+                    <img src={url} alt={item.filename} className="object-contain w-full h-full bg-checkered relative z-10" />
+                  </>
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <FileIcon className="h-16 w-16 text-muted-foreground/30" />
@@ -272,6 +317,22 @@ function MediaSidebar({ item, onClose, baseUrl }: { item: any, onClose: () => vo
               </div>
               <DetailItem label="Created At" value={new Date(item.createdAt).toLocaleString()} />
             </div>
+
+            {isImage && (
+              <div className="space-y-4">
+                <Separator className="bg-border/40" />
+                <div className="space-y-4">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Focal Point</label>
+                  <FocalPointPicker 
+                    url={url} 
+                    value={item.focalPoint} 
+                    onChange={(fp) => {
+                      onUpdate({ focalPoint: fp })
+                    }} 
+                  />
+                </div>
+              </div>
+            )}
 
             {isImage && (item.width || item.height) && (
               <div className="space-y-4">
