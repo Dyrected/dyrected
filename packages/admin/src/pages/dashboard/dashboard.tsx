@@ -13,8 +13,8 @@ export function Dashboard() {
     enabled: !!client,
   });
 
-  const collections = schemas?.collections || [];
-  const globals = schemas?.globals || [];
+  const collections = (schemas?.collections || []).filter((c: any) => !c.admin?.hidden && !c.slug.startsWith('platform_'));
+  const globals = (schemas?.globals || []).filter((g: any) => !g.admin?.hidden && !g.slug.startsWith('platform_'));
 
   const collectionCounts = useQueries({
     queries: collections.map((col: any) => ({
@@ -92,37 +92,6 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Database className="h-5 w-5 text-primary" />
-              Recent Collections
-            </h3>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/collections">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-          </div>
-          <div className="grid gap-3">
-            {collections.slice(0, 5).map((col: any, idx: number) => (
-              <Link
-                key={col.slug}
-                to={`/collections/${col.slug}`}
-                className="group flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
-              >
-                <div>
-                  <p className="font-medium group-hover:text-primary transition-colors">{col.labels?.plural || col.slug}</p>
-                  <p className="text-xs text-muted-foreground uppercase">{col.slug}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">
-                    {collectionCounts[idx]?.isLoading ? "..." : (collectionCounts[idx]?.data as any)?.total || 0}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Entries</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
 
         <section>
           <div className="flex items-center justify-between mb-4">

@@ -17,6 +17,7 @@ import {
   Lock,
   Shield,
   Share2,
+  LayoutDashboard,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { cn } from "../../lib/utils"
@@ -147,7 +148,7 @@ function SidebarInner({
     )
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col min-h-screen">
       {/* Logo */}
       {!isEmbedded && (
         <div
@@ -171,6 +172,17 @@ function SidebarInner({
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+        <div>
+          <NavItem
+            to="/"
+            icon={LayoutDashboard}
+            label="Dashboard"
+            active={location.pathname === "/" || location.pathname === ""}
+            collapsed={collapsed}
+            onClick={onNavigate}
+          />
+        </div>
+
         {uploadCol && (
           <div>
             {groupLabel("Media")}
@@ -244,7 +256,7 @@ function SidebarInner({
                       {cols.map(col => renderCollectionItem(col))}
                     </NavGroup>
                   ))}
-                  
+
                   {/* Ungrouped */}
                   {ungrouped.length > 0 && (
                     <NavGroup label="Collections" collapsed={collapsed}>

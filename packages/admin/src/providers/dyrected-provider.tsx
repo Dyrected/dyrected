@@ -5,8 +5,8 @@ interface DyrectedContextType {
   client: DyrectedClient | null;
   config: {
     baseUrl: string;
-    apiKey: string | null;
-    siteId: string | null;
+    apiKey: string | undefined;
+    siteId: string | undefined;
   };
   setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
   logout: () => void;
@@ -30,8 +30,8 @@ export function DyrectedProvider({
   siteId: initialSiteId
 }: DyrectedProviderProps) {
   const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || localStorage.getItem("dyrected_url") || "");
-  const [apiKey, setApiKey] = useState<string | null>(() => initialApiKey || localStorage.getItem("dyrected_key"));
-  const [siteId, setSiteId] = useState<string | null>(() => initialSiteId || localStorage.getItem("dyrected_site_id"));
+  const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || localStorage.getItem("dyrected_key") || undefined);
+  const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || localStorage.getItem("dyrected_site_id") || undefined);
   const [client, setClient] = useState<DyrectedClient | null>(null);
   const [schemas, setSchemas] = useState<{ collections: any[]; globals: any[] } | null>(null);
 
@@ -60,7 +60,7 @@ export function DyrectedProvider({
     
     setBaseUrl(newUrl);
     setApiKey(newKey);
-    setSiteId(newSiteId || null);
+    setSiteId(newSiteId);
   };
 
   const logout = () => {
@@ -68,8 +68,8 @@ export function DyrectedProvider({
     localStorage.removeItem("dyrected_key");
     localStorage.removeItem("dyrected_site_id");
     setBaseUrl("");
-    setApiKey(null);
-    setSiteId(null);
+    setApiKey(undefined);
+    setSiteId(undefined);
     setClient(null);
   };
 

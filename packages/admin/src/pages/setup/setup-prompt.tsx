@@ -506,10 +506,10 @@ API Reference: ${config.baseUrl}/api/docs`
           <Sparkles className="h-3 w-3" />
           Integration Guide
         </div>
-        <h1 className="text-4xl font-semibold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+        <h1 className="text-2xl font-semibold tracking-tight lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
           Connect Your Application
         </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Use the AI prompt below to set up your frontend automatically, or follow the steps manually.
         </p>
       </div>
@@ -517,17 +517,17 @@ API Reference: ${config.baseUrl}/api/docs`
       <div className="grid gap-6">
         {/* Site Credentials */}
         <section className="rounded-2xl border bg-card overflow-hidden shadow-xl">
-          <div className="p-6 border-b bg-muted/30">
+          <div className="p-4 border-b bg-muted/30">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
               Site Credentials
             </h3>
           </div>
-          <div className="p-6">
+          <div className="p-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                { label: "Site ID",  value: config.siteId,  id: "siteId" },
-                { label: "API Key",  value: config.apiKey,  id: "apiKey" },
+                { label: "Site ID", value: config.siteId, id: "siteId" },
+                { label: "API Key", value: config.apiKey, id: "apiKey" },
                 { label: "Base URL", value: config.baseUrl, id: "baseUrl" },
               ].map((item) => (
                 <div key={item.id} className="space-y-2">
@@ -556,7 +556,7 @@ API Reference: ${config.baseUrl}/api/docs`
         </section>
 
         {/* AI Prompt */}
-        <section className="rounded-2xl border bg-card overflow-hidden shadow-xl ring-1 ring-primary/20">
+        <section className="rounded-2xl border bg-white overflow-hidden shadow-xl ring-1 ring-primary/20">
           <div className="p-6 border-b bg-primary/5 flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-3">
               <h3 className="text-lg font-semibold flex items-center gap-2">
