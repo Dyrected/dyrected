@@ -145,6 +145,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
           if (args.limit) qb.limit(args.limit);
           if (args.page) qb.page(args.page);
           if (args.depth) qb.depth(args.depth);
+          if (args.initialData) qb.seed(args.initialData);
         }
         return qb;
       },

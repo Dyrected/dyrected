@@ -38,8 +38,8 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
 
   const getPrompt = (framework: string) => {
     const baseIntro = isSelfHosted 
-      ? `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. This is a SELF-HOSTED installation.\nThe backend is already configured in the same project via @dyrected/nuxt or @dyrected/next.\nComplete the entire setup automatically using the details below.`
-      : `You are helping integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. Complete the entire setup automatically using the details below.`;
+      ? `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. This is a SELF-HOSTED installation.\nThe backend is already configured via @dyrected/nuxt or @dyrected/next.\nYour priority is DATA PRESERVATION and creating a CMS that empowers marketing teams.`
+      : `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. Complete the entire setup automatically, prioritizing DATA PRESERVATION and marketing independence.`;
 
     const credentials = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -52,6 +52,14 @@ API URL   : ${config.baseUrl}
 
     const base = baseIntro + credentials + `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PHASE 0 — DATA PRESERVATION & STRATEGY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. BACKUP: If an existing site is provided, you MUST extract all current content (text, assets, structure) and save it into a \`migration/\` folder as structured .md files BEFORE modifying any code. Never lose data.
+2. DISCOVERY: If NO existing site is provided, STOP and ask the user:
+   - "What are your core content types (e.g. Services, Team, Blog)?"
+   - "How do you want your marketing team to manage the page layouts?"
+3. ARCHITECTURAL CREATIVITY: Design the CMS for longevity. Use \`blocks\` for flexible page builders, \`globals\` for site settings, and \`collections\` for repeated content.
+
 STEP 1 — CONTENT MODEL (dyrected.config.ts)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Use \`defineCollection\`, \`defineGlobal\`, and \`defineConfig\` from '@dyrected/core'.
@@ -338,72 +346,41 @@ export default defineNuxtConfig({
     baseUrl: '${config.baseUrl}',${isSelfHosted ? "" : `
     apiKey:  '${config.apiKey}',
     siteId:  '${config.siteId}',`}
-  }
+  },
+  build: { transpile: ['@dyrected/admin'] },
+  vite: {
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'lucide-react'],
+    },
+  },
 })
 \`\`\`
 
 MOUNTING THE ADMIN DASHBOARD (\`pages/cms-admin.vue\`):
 \`\`\`vue
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { renderAdminUI } from '@dyrected/admin'
-import '@dyrected/admin/styles'
-
-// Disable Nuxt layout for the admin dashboard
 definePageMeta({ layout: false })
-
-const adminContainer = ref<HTMLElement | null>(null)
-let unmount: (() => void) | null = null
-
-onMounted(() => {
-  if (adminContainer.value) {
-    unmount = renderAdminUI(adminContainer.value, {
-      basename: '/cms-admin'
-    })
-  }
-})
-
-onUnmounted(() => {
-  if (unmount) unmount()
-})
 </script>
 
 <template>
-  <div ref="adminContainer" class="admin-wrapper" />
+  <ClientOnly>
+    <DyrectedAdmin basename="/cms-admin" />
+  </ClientOnly>
 </template>
-
-<style scoped>
-.admin-wrapper {
-  height: 100vh;
-  width: 100vw;
-}
-</style>
 \`\`\`
 
 FETCHING COLLECTIONS (auto-imported composables):
 \`\`\`ts
-const dyrected = useDyrected()
-
-const { data: posts } = await useAsyncData('posts', () =>
-  dyrected.collection('posts')
-    .find({ where: { status: { equals: 'published' } }, sort: '-publishedAt' })
-)
+const { data: posts } = await useDyrectedCollection('posts', {
+  where: { status: { equals: 'published' } },
+  sort: '-publishedAt',
+  depth: 1
+})
 \`\`\`
 
-FETCHING GLOBALS (\`useDyrectedGlobal\`):
+FETCHING GLOBALS:
 \`\`\`ts
-const { data: settings }   = await useDyrectedGlobal('settings')
-const { data: navigation } = await useDyrectedGlobal('navigation')
-\`\`\`
-
-RENDERING BLOCKS in a Vue template:
-\`\`\`vue
-<template v-for="(block, i) in page.layout" :key="i">
-  <HeroBlock        v-if="block.blockType === 'hero'"         v-bind="block" />
-  <RichContentBlock v-else-if="block.blockType === 'richContent'"  v-bind="block" />
-  <GalleryBlock     v-else-if="block.blockType === 'imageGallery'" v-bind="block" />
-  <CTABlock         v-else-if="block.blockType === 'callToAction'" v-bind="block" />
-</template>
+const { data: settings } = await useDyrectedGlobal('settings')
 \`\`\`
 
 AUTH (\`useDyrectedAuth\`):
@@ -411,7 +388,8 @@ AUTH (\`useDyrectedAuth\`):
 const { login, logout, user, isLoggedIn, fetchMe } = useDyrectedAuth('customers')
 await login(email, password)
 await fetchMe()
-\\\`\\\`\\\``,
+\`\`\`
+`,
 
       react: `Install \\\`@dyrected/sdk\\\`:
 
@@ -524,6 +502,8 @@ const me = await dyrected.collection('customers').me()
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 IMPORTANT NOTES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- MARKETING INDEPENDENCE: Always use a dynamic \`pages\` collection with a catch-all route. Marketing should create pages without a developer.
+- AUTO-SEEDING: Use \`initialData\` in all data fetches to ensure the site is never empty on first load.
 - Blocks are stored as \`[{ blockType: '<slug>', ...fields }]\` — always switch on \`blockType\` when rendering.
 - \`client.collection(slug)\` is the primary API entrypoint. Do NOT use \`client.collections\`.
 - Globals use \`client.global(slug).get()\` and \`client.global(slug).update(data)\`.

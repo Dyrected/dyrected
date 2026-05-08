@@ -51,12 +51,14 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // 3. Add Composables
     addImports([
-      { name: 'useDyrected',       from: resolver.resolve('./runtime/composables/useDyrected') },
-      { name: 'useDyrectedDoc',    from: resolver.resolve('./runtime/composables/useDyrected') },
-      { name: 'useDyrectedGlobal', from: resolver.resolve('./runtime/composables/useDyrected') },
-      { name: 'useDyrectedAuth',   from: resolver.resolve('./runtime/composables/useDyrectedAuth') },
-      { name: 'useLivePreview',    from: resolver.resolve('./runtime/composables/useLivePreview') },
+      { name: 'useDyrected',           from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedDoc',        from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedCollection', from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedGlobal',     from: resolver.resolve('./runtime/composables/useDyrected') },
+      { name: 'useDyrectedAuth',       from: resolver.resolve('./runtime/composables/useDyrectedAuth') },
+      { name: 'useLivePreview',        from: resolver.resolve('./runtime/composables/useLivePreview') },
     ]);
+
 
 
     // 4. Pass options to runtime
