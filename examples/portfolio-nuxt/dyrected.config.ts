@@ -1,8 +1,9 @@
-import { defineConfig, type DatabaseAdapter } from "@dyrected/core";
+import { defineConfig, type DatabaseAdapter, type StorageAdapter } from "@dyrected/core";
 import { collections, globals } from "./config/schema.ts";
+import path from "path";
 
-// Database Setup
-// We use a helper variable to keep the top-level clean of Node-only imports
+// Database & Storage Setup
+// We use helper variables to keep the top-level clean of Node-only imports
 
 const getDb = async (): Promise<DatabaseAdapter> => {
   let db: DatabaseAdapter;
@@ -23,10 +24,22 @@ const getDb = async (): Promise<DatabaseAdapter> => {
   return db;
 };
 
+const getStorage = async (): Promise<StorageAdapter | undefined> => {
+  if (typeof window === "undefined") {
+    const { LocalStorageAdapter } = await import("@dyrected/storage-local");
+    return new LocalStorageAdapter({
+      uploadDir: path.join(process.cwd(), "public/uploads"),
+      staticUrlPrefix: "/uploads",
+    });
+  }
+  return undefined;
+};
+
 export default defineConfig({
   collections,
   globals,
   db: await getDb(),
+  storage: await getStorage(),
   admin: {
     branding: {
       primaryColor: "#4f46e5",

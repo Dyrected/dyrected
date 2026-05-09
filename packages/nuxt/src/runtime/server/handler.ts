@@ -13,7 +13,10 @@ export default eventHandler(async (event) => {
     if (!dyrectedConfig.db) {
       dyrectedConfig.db = (globalThis as any).__dyrected_db;
     }
-    console.log('[dyrected/nuxt] Initializing app. DB present:', !!dyrectedConfig.db);
+    if (!dyrectedConfig.storage) {
+      dyrectedConfig.storage = (globalThis as any).__dyrected_storage;
+    }
+    console.log('[dyrected/nuxt] Initializing app. DB:', !!dyrectedConfig.db, 'Storage:', !!dyrectedConfig.storage);
     app = await createDyrectedApp(dyrectedConfig);
   }
 

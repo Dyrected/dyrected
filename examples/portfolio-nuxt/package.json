@@ -19,6 +19,7 @@
     "@dyrected/db-sqlite": "workspace:*",
     "@dyrected/nuxt": "workspace:*",
     "@dyrected/sdk": "workspace:*",
+    "@dyrected/storage-local": "workspace:*",
     "@vitejs/plugin-react": "^4.7.0",
     "nuxt": "^3.11.2",
     "react": "^19.2.6",

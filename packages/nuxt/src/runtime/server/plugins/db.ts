@@ -13,10 +13,12 @@ export default defineNitroPlugin(async (nitroApp: any) => {
       const configPath = (runtimeConfig as any).configPath;
       const { default: userConfig } = await import(configPath);
       if (userConfig && userConfig.db) {
-        // Use globalThis to share the instance with the handler, 
-        // bypassing the frozen runtimeConfig object.
         (globalThis as any).__dyrected_db = userConfig.db;
         console.log("[dyrected/nuxt] Database re-attached to global context");
+      }
+      if (userConfig && userConfig.storage) {
+        (globalThis as any).__dyrected_storage = userConfig.storage;
+        console.log("[dyrected/nuxt] Storage adapter re-attached to global context");
       }
     } catch (err) {
       console.error("[dyrected/nuxt] Failed to re-attach database:", err);

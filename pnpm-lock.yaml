@@ -189,6 +189,9 @@ importers:
       '@dyrected/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@dyrected/storage-local':
+        specifier: workspace:*
+        version: link:../../packages/storage-local
       '@vitejs/plugin-react':
         specifier: ^4.7.0
         version: 4.7.0(vite@7.3.2)
@@ -478,9 +481,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@dyrected/db-sqlite':
-        specifier: workspace:^
-        version: link:../db-sqlite
       '@types/jexl':
         specifier: ^2.3.4
         version: 2.3.4
