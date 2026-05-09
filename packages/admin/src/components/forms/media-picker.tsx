@@ -268,25 +268,60 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                         </ScrollArea>
                       </div>
 
-                      <div className="w-80 bg-muted/30 p-6 flex flex-col gap-6 overflow-y-auto">
+                      <div className="w-96 bg-white border-l p-6 flex flex-col gap-6 overflow-y-auto">
                         {selectedItem ? (
                           <>
                             <div className="space-y-4">
-                              <div className="aspect-square rounded-xl overflow-hidden border-2 border-white shadow-sm bg-white">
+                              <div className="aspect-video rounded-xl overflow-hidden border bg-muted shadow-sm group relative">
                                 <img 
                                   src={getPreviewUrl(selectedItem)} 
                                   className="w-full h-full object-contain" 
                                   alt="" 
                                 />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                   <Button variant="secondary" size="sm" onClick={() => window.open(getPreviewUrl(selectedItem), '_blank')}>
+                                      View Full
+                                   </Button>
+                                </div>
                               </div>
                               <div className="space-y-1">
-                                <h4 className="font-semibold text-sm truncate" title={selectedItem.filename}>
+                                <h4 className="font-bold text-sm truncate" title={selectedItem.filename}>
                                   {selectedItem.filename}
                                 </h4>
-                                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                                  {selectedItem.mimeType} • {selectedItem.filesize ? `${(selectedItem.filesize / 1024).toFixed(1)} KB` : 'External'}
-                                </p>
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                                  <span className="bg-muted px-1.5 py-0.5 rounded">{selectedItem.mimeType}</span>
+                                  <span>{selectedItem.filesize ? `${(selectedItem.filesize / 1024).toFixed(1)} KB` : 'External'}</span>
+                                </div>
                               </div>
+                            </div>
+
+                            <div className="space-y-4 border-t pt-4">
+                               <div className="space-y-2">
+                                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Alt Text</label>
+                                  <Input 
+                                    value={selectedItem.alt || ""} 
+                                    placeholder="Describe this image..."
+                                    className="h-8 text-xs"
+                                    onChange={(e) => {
+                                      const newVal = e.target.value;
+                                      setSelectedItem({...selectedItem, alt: newVal});
+                                      client?.collection('media').update(selectedItem.id, { alt: newVal });
+                                    }}
+                                  />
+                               </div>
+                               <div className="space-y-2">
+                                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Caption</label>
+                                  <Input 
+                                    value={selectedItem.caption || ""} 
+                                    placeholder="Add a caption..."
+                                    className="h-8 text-xs"
+                                    onChange={(e) => {
+                                      const newVal = e.target.value;
+                                      setSelectedItem({...selectedItem, caption: newVal});
+                                      client?.collection('media').update(selectedItem.id, { caption: newVal });
+                                    }}
+                                  />
+                               </div>
                             </div>
 
                             <div className="space-y-2">

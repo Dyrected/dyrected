@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { DyrectedSchema, NavigationGlobal, Pages } from "~/dyrected-types";
 
+const route = useRoute();
+const isAdminPage = computed(() => route.path.startsWith('/cms-admin'));
+
 const dyrected = useDyrected<DyrectedSchema>();
 
 const { data: settings } = await useAsyncData("settings", () =>
@@ -31,8 +34,8 @@ const footerText = computed(() => settings.value?.footerText || "2026 Ministry o
 </script>
 
 <template>
-  <div>
-    <header>
+  <div :class="{ 'admin-layout': isAdminPage }">
+    <header v-if="!isAdminPage">
       <nav>
         <NuxtLink to="/" class="logo">{{ siteTitle }}</NuxtLink>
         <ul>
@@ -62,7 +65,7 @@ const footerText = computed(() => settings.value?.footerText || "2026 Ministry o
     <main>
       <NuxtPage />
     </main>
-    <footer>
+    <footer v-if="!isAdminPage">
       <p>&copy; {{ footerText }}</p>
     </footer>
   </div>

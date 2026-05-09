@@ -197,7 +197,9 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
   } else if (typeof condition === 'string') {
     try {
       // Use jexl for safe expression evaluation
-      isVisible = jexl.evalSync(condition, conditionData)
+      // Transform === to == for JS-friendly syntax
+      const sanitizedCondition = condition.replace(/===/g, '==').replace(/!==/g, '!=')
+      isVisible = jexl.evalSync(sanitizedCondition, conditionData)
     } catch (e) {
       console.warn("Jexl eval failed:", e)
       isVisible = true
@@ -249,18 +251,27 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
     return <BlockBuilder schema={schema} basePath={fullPath} control={control} />
   }
 
+  const isBoolean = schema.type === "boolean"
+
   return (
     <FormField
       control={control}
       name={fullPath}
       render={({ field: formField }) => (
-        <FormItem className="space-y-3">
-          <div className="flex items-center gap-2 mb-1">
-            <FormLabel className="text-sm font-semibold text-foreground/80">
+        <FormItem className={cn(
+          isBoolean 
+            ? "flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-white" 
+            : "space-y-3"
+        )}>
+          <div className={cn(isBoolean ? "space-y-0.5" : "flex items-center gap-2 mb-1")}>
+            <FormLabel className="text-sm font-semibold text-foreground/80 cursor-pointer">
               {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
               {schema.required && <span className="text-destructive ml-1">*</span>}
             </FormLabel>
-            {schema.unique && (
+            {isBoolean && schema.admin?.description && (
+              <p className="text-[10px] text-muted-foreground/60 italic">{schema.admin.description}</p>
+            )}
+            {!isBoolean && schema.unique && (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/10">
                 Unique
               </span>
@@ -269,7 +280,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
           <FormControl>
             {renderField(schema, formField, { user, schemas, siblingData: conditionData })}
           </FormControl>
-          {schema.admin?.description && (
+          {!isBoolean && schema.admin?.description && (
             <p className="text-[11px] text-muted-foreground/70 leading-relaxed italic">{schema.admin.description}</p>
           )}
           <FormMessage className="text-xs font-medium" />
@@ -348,13 +359,11 @@ function renderField(schema: FieldSchema, field: any, context?: { user: any, sch
       return <Textarea {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} />
     case "boolean":
       return (
-        <div className="flex items-center space-x-2">
-          <Switch
-            checked={field.value}
-            onCheckedChange={field.onChange}
-            disabled={disabled}
-          />
-        </div>
+        <Switch
+          checked={field.value}
+          onCheckedChange={field.onChange}
+          disabled={disabled}
+        />
       )
     case "select":
       const options = normalizeOptions(schema.options)

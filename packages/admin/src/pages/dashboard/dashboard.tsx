@@ -54,7 +54,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div className="p-1 space-y-2 group">
+        <div className="p-1 space-y-2 group border border-card">
           <div className="flex items-center gap-3">
             <div className="rounded-md bg-primary/5 p-1.5 text-primary/60 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
               <Database className="h-4 w-4" />
@@ -64,7 +64,7 @@ export function Dashboard() {
           <p className="text-3xl font-bold tracking-tight">{collections.length}</p>
         </div>
 
-        <div className="p-1 space-y-2 group">
+        <div className="p-1 space-y-2 group border border-card">
           <div className="flex items-center gap-3">
             <div className="rounded-md bg-secondary/5 p-1.5 text-muted-foreground/60 group-hover:bg-accent group-hover:text-foreground transition-colors">
               <Globe className="h-4 w-4" />
@@ -74,7 +74,7 @@ export function Dashboard() {
           <p className="text-3xl font-bold tracking-tight">{globals.length}</p>
         </div>
 
-        <div className="p-1 space-y-2 group">
+        <div className="p-1 space-y-2 group border border-card">
           <div className="flex items-center gap-3">
             <div className="rounded-md bg-accent p-1.5 text-muted-foreground/60 group-hover:bg-accent group-hover:text-foreground transition-colors">
               <ImageIcon className="h-4 w-4" />
@@ -86,18 +86,18 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <section>
+        <section >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <Database className="h-5 w-5 text-primary" />
               Collections
             </h3>
-            <Button variant="ghost" size="sm" asChild className="text-xs">
+            {/* <Button variant="ghost" size="sm" asChild className="text-xs">
               <Link to="/collections">View All</Link>
-            </Button>
+            </Button> */}
           </div>
-          <div className="space-y-1">
-            {collections.slice(0, 5).map((col: any, idx: number) => (
+          <div className="space-y-1 border border-card">
+            {collections.map((col: any, idx: number) => (
               <Link
                 key={col.slug}
                 to={`/collections/${col.slug}`}
@@ -126,8 +126,8 @@ export function Dashboard() {
               Global Settings
             </h3>
           </div>
-          <div className="space-y-1">
-            {globals.slice(0, 5).map((glb: any) => (
+          <div className="space-y-1 border border-card">
+            {globals.map((glb: any) => (
               <Link
                 key={glb.slug}
                 to={`/globals/${glb.slug}`}

@@ -155,52 +155,56 @@ function SidebarInner({
   return (
     <div className="flex flex-col min-h-screen">
       {/* Logo */}
-      {!isEmbedded && (
-        <div
-          className={cn(
-            "flex items-center h-14 shrink-0 transition-all",
-            collapsed ? "justify-center px-2" : "gap-2.5 px-4"
-          )}
-        >
-          {branding?.logo || branding?.logoMark ? (
-            <div className="h-7 w-7 flex items-center justify-center shrink-0">
-              <img
-                src={collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark)}
-                alt="Logo"
-                className="max-h-full max-w-full object-contain"
-              />
-            </div>
-          ) : (
-            <div className="h-7 w-7 bg-foreground rounded flex items-center justify-center text-background shrink-0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-                <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-          )}
-          {!collapsed && (
-            <span className="font-semibold text-sm tracking-tight text-foreground flex-1 truncate">
-              {branding?.titleSuffix?.replace(/^- /, '') || 'Dyrected'}
-            </span>
-          )}
-
-          {/* Desktop Toggle in Sidebar */}
-          {onToggleCollapse && (
-            <button
-              onClick={onToggleCollapse}
-              className="hidden md:flex p-1.5 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all ml-auto"
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              {collapsed ? (
-                <PanelLeftOpen className="h-4 w-4" />
+      <div
+        className={cn(
+          "flex items-center h-14 shrink-0 transition-all",
+          collapsed ? "justify-center px-2" : "gap-2.5 px-4"
+        )}
+      >
+        <div>
+          {!isEmbedded && (
+            <>
+              {branding?.logo || branding?.logoMark ? (
+                <div className="h-7 w-7 flex items-center justify-center shrink-0">
+                  <img
+                    src={collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark)}
+                    alt="Logo"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
               ) : (
-                <PanelLeftClose className="h-4 w-4" />
+                <div className="h-7 w-7 bg-foreground rounded flex items-center justify-center text-background shrink-0">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
               )}
-            </button>
+              {!collapsed && (
+                <span className="font-semibold text-sm tracking-tight text-foreground flex-1 truncate">
+                  {branding?.titleSuffix?.replace(/^- /, '') || 'Dyrected'}
+                </span>
+              )}
+            </>
           )}
         </div>
-      )}
+        {/* Desktop Toggle - Only visible on desktop since mobile uses overlay */}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="hidden md:flex z-50 p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-all"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
+        )}
+      </div>
+
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
@@ -246,7 +250,9 @@ function SidebarInner({
               const ungrouped: any[] = []
 
               nonUpload.forEach((col: any) => {
-                const g = col.admin?.group
+                let g = col.admin?.group
+                if (!g && col.auth) g = "System"
+
                 if (g) {
                   if (!groups.has(g)) groups.set(g, [])
                   groups.get(g)!.push(col)
@@ -287,14 +293,14 @@ function SidebarInner({
                 <div className="space-y-1">
                   {/* Grouped sections */}
                   {Array.from(groups.entries()).map(([groupName, cols]) => (
-                    <NavGroup key={groupName} label={groupName} collapsed={collapsed}>
+                    <NavGroup key={groupName} label={groupName} collapsed={collapsed} defaultExpanded={true}>
                       {cols.map(col => renderCollectionItem(col))}
                     </NavGroup>
                   ))}
 
                   {/* Ungrouped */}
                   {ungrouped.length > 0 && (
-                    <NavGroup label="Collections" collapsed={collapsed}>
+                    <NavGroup label="Collections" collapsed={collapsed} defaultExpanded={true}>
                       {ungrouped.map(col => renderCollectionItem(col))}
                     </NavGroup>
                   )}
@@ -443,16 +449,18 @@ export function AdminShell({
           />
         </aside>
 
-        <main className="flex-1 min-w-0 overflow-auto flex flex-col relative">
+        <main className="flex-1 min-w-0 overflow-auto flex flex-col relative bg-[#fcfcfc]">
+          {/* Mobile Floating Toggle */}
+          {/* Mobile Floating Toggle */}
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden fixed top-3 right-3 z-20 p-2 rounded-md bg-background border border-border/40 text-muted-foreground/60 hover:text-foreground transition-all active:scale-95"
+            className="md:hidden fixed top-6 right-6 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex items-center justify-center transition-all active:scale-90 hover:scale-105 border border-white/20"
             aria-label="Open menu"
           >
-            <Menu className="h-4 w-4" />
+            <Menu className="h-6 w-6" />
           </button>
 
-          <div className="flex-1 p-6 lg:p-8">
+          <div className="flex-1 p-6 lg:p-10">
             {children}
           </div>
         </main>

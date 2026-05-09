@@ -43,6 +43,7 @@ export default defineConfig({
   admin: {
     branding: {
       primaryColor: "#4f46e5",
+      logo: "/dyrected/uploads/1752181691101-e06a6341-af7a-4c14-99d8-9f0b3a016f92.png",
     },
   },
 });
