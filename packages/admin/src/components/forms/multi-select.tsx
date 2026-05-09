@@ -29,6 +29,7 @@ interface MultiSelectProps {
   onChange: (value: string[]) => void
   label?: string
   placeholder?: string
+  disabled?: boolean
 }
 
 export function MultiSelect({
@@ -37,6 +38,7 @@ export function MultiSelect({
   onChange,
   label,
   placeholder = "Select options...",
+  disabled,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
 
@@ -56,12 +58,13 @@ export function MultiSelect({
   return (
     <div className="flex flex-col gap-2">
       {label && <label className="text-sm font-medium leading-none">{label}</label>}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            disabled={disabled}
             className="w-full justify-between h-auto min-h-10 font-normal"
           >
             <div className="flex flex-wrap gap-1 items-center">
@@ -77,23 +80,25 @@ export function MultiSelect({
                     className="mr-1 mb-1 items-center gap-1"
                   >
                     {option?.label || val}
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className="ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleRemove(val)
-                        }
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                      }}
-                      onClick={() => handleRemove(val)}
-                    >
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                    </div>
+                    {!disabled && (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleRemove(val)
+                          }
+                        }}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}
+                        onClick={() => handleRemove(val)}
+                      >
+                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      </div>
+                    )}
                   </Badge>
                 )
               })}

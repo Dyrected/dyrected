@@ -17,9 +17,10 @@ interface MediaPickerProps {
   onChange: (value: string) => void
   label?: string
   variant?: "default" | "icon"
+  disabled?: boolean
 }
 
-export function MediaPicker({ value, onChange, label, variant = "default" }: MediaPickerProps) {
+export function MediaPicker({ value, onChange, label, variant = "default", disabled }: MediaPickerProps) {
   const { client } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
 
@@ -67,24 +68,27 @@ export function MediaPicker({ value, onChange, label, variant = "default" }: Med
                 <FileIcon className="h-8 w-8 text-muted-foreground" />
               </div>
             )}
-            <button
-              onClick={() => onChange("")}
-              className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            {!disabled && (
+              <button
+                onClick={() => onChange("")}
+                className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
         ) : (
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               {isIcon ? (
-                <Button variant="ghost" size="sm" className="px-2">
+                <Button variant="ghost" size="sm" className="px-2" disabled={disabled}>
                   <ImageIcon className="h-4 w-4" />
                 </Button>
               ) : (
                 <Button 
                   variant="outline" 
                   className="h-24 w-24 flex flex-col gap-2 border-dashed border-2 hover:border-primary/50"
+                  disabled={disabled}
                 >
                   <Plus className="h-6 w-6 text-muted-foreground" />
                   <span className="text-[10px] uppercase font-bold text-muted-foreground">Select</span>

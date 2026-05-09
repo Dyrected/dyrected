@@ -266,24 +266,51 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
   baseUrl: string,
   onUpdate: (data: any) => void 
 }) {
+  const [formData, setFormData] = React.useState<any>({})
+  const [isSaving, setIsSaving] = React.useState(false)
+
+  React.useEffect(() => {
+    if (item) {
+      setFormData({
+        alt: item.alt || "",
+        caption: item.caption || "",
+        filename: item.filename || "",
+      })
+    }
+  }, [item])
+
   if (!item) return null
 
   const isImage = item.mimeType?.startsWith("image/")
   const url = item.url ? (item.url.startsWith('http') ? item.url : `${baseUrl}${item.url}`) : `${baseUrl}/uploads/${item.filename}`
 
+  const handleSave = async () => {
+    setIsSaving(true)
+    try {
+      await onUpdate(formData)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const hasChanges = 
+    formData.alt !== (item.alt || "") || 
+    formData.caption !== (item.caption || "") || 
+    formData.filename !== (item.filename || "")
+
   return (
     <Sheet open={!!item} onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-md p-0 flex flex-col h-full border-l border-border/40">
-        <SheetHeader className="p-6 border-b border-border/40">
+      <SheetContent className="sm:max-w-md p-0 flex flex-col h-full border-l border-border/40 bg-white shadow-2xl">
+        <SheetHeader className="p-6 border-b border-border/40 bg-white">
           <SheetTitle className="flex items-center gap-2">
             <Info className="h-5 w-5 text-primary" />
             File Details
           </SheetTitle>
         </SheetHeader>
         
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 bg-white">
           <div className="p-6 space-y-8">
-            <div className="rounded-xl overflow-hidden border border-border/40 bg-muted/20 relative">
+            <div className="rounded-xl overflow-hidden border border-border/40 bg-muted/10 relative shadow-inner">
               <AspectRatio ratio={16 / 9}>
                 {isImage ? (
                   <>
@@ -310,13 +337,45 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
             </div>
 
             <div className="space-y-6">
-              <DetailItem label="Filename" value={item.filename} />
-              <DetailItem label="File ID" value={item.id} copyable />
-              <DetailItem label="URL" value={url} copyable />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Filename</label>
+                  <Input 
+                    value={formData.filename} 
+                    onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
+                    className="h-10 rounded-lg bg-white border-border/60 focus:ring-1 focus:ring-primary/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Alt Text</label>
+                  <Input 
+                    value={formData.alt} 
+                    onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
+                    placeholder="Describe the image for accessibility..."
+                    className="h-10 rounded-lg bg-white border-border/60 focus:ring-1 focus:ring-primary/20"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Caption</label>
+                  <textarea 
+                    value={formData.caption} 
+                    onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
+                    placeholder="Add a caption..."
+                    className="flex min-h-[80px] w-full rounded-lg border border-border/60 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+              </div>
+
+              <Separator className="bg-border/40" />
+
+              <div className="grid grid-cols-2 gap-6">
+                <DetailItem label="File ID" value={item.id} copyable />
                 <DetailItem label="Size" value={`${((item.filesize || item.size || 0) / 1024).toFixed(1)} KB`} />
                 <DetailItem label="Type" value={item.mimeType || "Unknown"} />
+                <DetailItem label="Dimensions" value={item.width ? `${item.width}x${item.height}` : "N/A"} />
               </div>
+              
+              <DetailItem label="URL" value={url} copyable />
               <DetailItem label="Created At" value={new Date(item.createdAt).toLocaleString()} />
             </div>
 
@@ -335,21 +394,20 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
                 </div>
               </div>
             )}
-
-            {isImage && (item.width || item.height) && (
-              <div className="space-y-4">
-                <Separator className="bg-border/40" />
-                <div className="grid grid-cols-2 gap-4">
-                  <DetailItem label="Width" value={`${item.width}px`} />
-                  <DetailItem label="Height" value={`${item.height}px`} />
-                </div>
-              </div>
-            )}
           </div>
         </ScrollArea>
         
-        <div className="p-6 border-t border-border/40 bg-muted/5">
-          <Button className="w-full h-12 rounded-xl font-bold gap-2" variant="outline" asChild>
+        <div className="p-6 border-t border-border/40 bg-muted/5 space-y-3">
+          {hasChanges && (
+            <Button 
+              className="w-full h-12 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 animate-in fade-in slide-in-from-bottom-2"
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          )}
+          <Button className="w-full h-11 rounded-xl font-bold gap-2 bg-white" variant="outline" asChild>
             <a href={url} target="_blank" rel="noreferrer">
               <ExternalLink className="h-4 w-4" />
               Open Original

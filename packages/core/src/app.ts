@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
 import { DyrectedConfig } from './types/index.js';
 import { registerRoutes } from './router.js';
+import { normalizeConfig } from './utils/config.js';
 
 export interface DyrectedContext {
   Variables: {
@@ -22,7 +23,8 @@ export interface DyrectedContext {
 /**
  * Create the main Dyrected Hono application.
  */
-export async function createDyrectedApp(config: DyrectedConfig) {
+export async function createDyrectedApp(rawConfig: DyrectedConfig) {
+  const config = normalizeConfig(rawConfig);
   const app = new Hono<DyrectedContext>();
 
   // 0. Sync Database Schema if adapter supports it

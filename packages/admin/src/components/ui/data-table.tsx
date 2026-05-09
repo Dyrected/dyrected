@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu"
 import { ChevronLeft, ChevronRight, Settings2 } from "lucide-react"
+import { usePreferences } from "../../hooks/use-preferences"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -40,6 +41,8 @@ interface DataTableProps<TData, TValue> {
   rowSelection?: any
   onRowSelectionChange?: any
   bulkActions?: (selectedIds: string[]) => React.ReactNode
+  persistenceKey?: string
+  initialColumnVisibility?: VisibilityState
 }
 
 export function DataTable<TData, TValue>({
@@ -49,13 +52,17 @@ export function DataTable<TData, TValue>({
   rowSelection: externalRowSelection,
   onRowSelectionChange,
   bulkActions,
+  persistenceKey,
+  initialColumnVisibility = {},
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+  const [columnVisibility, setColumnVisibility] = usePreferences<VisibilityState>(
+    persistenceKey ? `visibility_${persistenceKey}` : "temp_visibility",
+    initialColumnVisibility
+  )
   const [internalRowSelection, setInternalRowSelection] = React.useState({})
 
   const rowSelection = externalRowSelection || internalRowSelection

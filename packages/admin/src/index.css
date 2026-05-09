@@ -4,7 +4,7 @@
 
 @layer base {
   /* Design Tokens */
-  .admin-ui {
+  :root {
     --background: 210 40% 99%;
     --foreground: 222.2 84% 4.9%;
 
@@ -50,9 +50,6 @@
     color-scheme: light;
   }
 
-  .admin-ui * {
-    border-color: hsl(var(--border) / 0.5);
-  }
 }
 
 @layer utilities {

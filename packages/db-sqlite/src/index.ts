@@ -45,6 +45,18 @@ export class SqliteAdapter implements DatabaseAdapter {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Ensure columns exist (for existing tables)
+    const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
+    const hasCreatedAt = tableInfo.some(col => col.name === "created_at");
+    const hasUpdatedAt = tableInfo.some(col => col.name === "updated_at");
+
+    if (!hasCreatedAt) {
+      this.sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP`);
+    }
+    if (!hasUpdatedAt) {
+      this.sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`);
+    }
   }
 
   async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }) {
@@ -63,8 +75,12 @@ export class SqliteAdapter implements DatabaseAdapter {
     const sort = args.sort || 'created_at DESC';
     const stmt = this.sqlite.prepare(`SELECT * FROM ${tableName} ORDER BY ${sort} LIMIT ? OFFSET ?`);
     const rows = stmt.all(limit, offset) as any[];
-
-    const docs = rows.map(r => ({ id: r.id, ...JSON.parse(r.data) }));
+    const docs = rows.map(r => ({ 
+      id: r.id, 
+      ...JSON.parse(r.data),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at
+    }));
     const totalPages = Math.ceil(count / limit);
 
     return {
@@ -84,32 +100,46 @@ export class SqliteAdapter implements DatabaseAdapter {
     const stmt = this.sqlite.prepare(`SELECT * FROM ${tableName} WHERE id = ?`);
     const row = stmt.get(params.id) as any;
     if (!row) return null;
-    return { id: row.id, ...JSON.parse(row.data) };
+    return { 
+      id: row.id, 
+      ...JSON.parse(row.data),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
   }
 
   async create(params: { collection: string; data: any }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     const id = params.data.id || Math.random().toString(36).substring(7);
+    const now = new Date().toISOString();
+    const createdAt = params.data.createdAt || now;
+    const updatedAt = params.data.updatedAt || now;
+
     const data = { ...params.data };
     delete data.id;
+    delete data.createdAt;
+    delete data.updatedAt;
 
-    const stmt = this.sqlite.prepare(`INSERT INTO ${tableName} (id, data) VALUES (?, ?)`);
-    stmt.run(id, JSON.stringify(data));
+    const stmt = this.sqlite.prepare(`INSERT INTO ${tableName} (id, data, created_at, updated_at) VALUES (?, ?, ?, ?)`);
+    stmt.run(id, JSON.stringify(data), createdAt, updatedAt);
 
-    return { id, ...data };
+    return { id, ...data, createdAt, updatedAt };
   }
 
   async update(params: { collection: string; id: string; data: any }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     const existing = await this.findOne({ collection: params.collection, id: params.id });
+    const now = new Date().toISOString();
     const newData = { ...(existing || {}), ...params.data };
-    delete (newData as any).id; // Ensure ID doesn't end up in data column twice
+    delete (newData as any).id;
+    delete (newData as any).createdAt;
+    delete (newData as any).updatedAt;
 
-    const stmt = this.sqlite.prepare(`UPDATE ${tableName} SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`);
-    stmt.run(JSON.stringify(newData), params.id);
-    return { id: params.id, ...newData };
+    const stmt = this.sqlite.prepare(`UPDATE ${tableName} SET data = ?, updated_at = ? WHERE id = ?`);
+    stmt.run(JSON.stringify(newData), now, params.id);
+    return { id: params.id, ...newData, createdAt: existing?.createdAt, updatedAt: now };
   }
 
   async delete(params: { collection: string; id: string }) {

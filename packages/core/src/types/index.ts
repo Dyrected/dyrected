@@ -85,6 +85,7 @@ export interface CollectionConfig {
   auth?: boolean;
   upload?: boolean | UploadConfig;
   fields: Field[];
+  timestamps?: boolean;
   access?: {
     read?: AccessFunction;
     create?: AccessFunction;

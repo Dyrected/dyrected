@@ -140,16 +140,10 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       })
     }
 
-    // Determine which fields to show in columns
-    let displayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
+    // Include all non-hidden fields as columns
+    const allDisplayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
 
-    if (schema.admin?.defaultColumns && Array.isArray(schema.admin.defaultColumns)) {
-      displayFields = displayFields.filter((f: any) => schema.admin.defaultColumns.includes(f.name))
-    } else {
-      displayFields = displayFields.slice(0, 3)
-    }
-
-    displayFields.forEach((field: any) => {
+    allDisplayFields.forEach((field: any) => {
       cols.push({
         accessorKey: field.name,
         header: field.label || field.name,
@@ -221,6 +215,27 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     return cols
   }, [schema, client, deleteMutation.isPending])
 
+  const initialColumnVisibility = React.useMemo(() => {
+    if (!schema) return {}
+    
+    const visibility: Record<string, boolean> = {}
+    const displayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
+    
+    let visibleFieldNames: string[] = []
+    if (schema.admin?.defaultColumns && Array.isArray(schema.admin.defaultColumns)) {
+      visibleFieldNames = schema.admin.defaultColumns
+    } else {
+      visibleFieldNames = displayFields.slice(0, 3).map((f: any) => f.name)
+    }
+
+    // Set visibility for all fields
+    displayFields.forEach((f: any) => {
+      visibility[f.name] = visibleFieldNames.includes(f.name)
+    })
+
+    return visibility
+  }, [schema])
+
   if (isLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -262,6 +277,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           searchKey={schema.admin?.useAsTitle || schema.fields.find((f: any) => !f.admin?.hidden)?.name || "id"}
           onRowSelectionChange={setRowSelection}
           rowSelection={rowSelection}
+          persistenceKey={slug}
+          initialColumnVisibility={initialColumnVisibility}
           bulkActions={(selectedIds) => (
             <Button
               variant="destructive"

@@ -6,9 +6,10 @@ interface JsonEditorProps {
   value?: any
   onChange: (value: any) => void
   label?: string
+  disabled?: boolean
 }
 
-export function JsonEditor({ value, onChange, label }: JsonEditorProps) {
+export function JsonEditor({ value, onChange, label, disabled }: JsonEditorProps) {
   const [internalValue, setInternalValue] = React.useState("")
   const [error, setError] = React.useState<string | null>(null)
 
@@ -48,6 +49,7 @@ export function JsonEditor({ value, onChange, label }: JsonEditorProps) {
       <Textarea
         value={internalValue}
         onChange={handleChange}
+        disabled={disabled}
         className={cn(
           "font-mono text-xs min-h-[150px]",
           error && "border-destructive focus-visible:ring-destructive"

@@ -58,13 +58,18 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const branding = schemas?.admin?.branding;
 
   const styleTag = useMemo(() => {
-    if (!branding?.primaryColor) return null;
-    const hsl = toRawHsl(branding.primaryColor);
+    const primaryColor = branding?.primaryColor || "239 84% 67%";
+    const hsl = toRawHsl(primaryColor);
     
     // Extract lightness to determine if foreground should be light or dark
-    const match = hsl.match(/([\d.]+)%$/);
-    const lightness = match ? parseFloat(match[1]) : 50;
-    const isDark = lightness < 60;
+    // HSL format: "H S% L%"
+    const parts = hsl.split(" ");
+    let lightness = 50;
+    if (parts.length === 3) {
+      lightness = parseFloat(parts[2].replace("%", ""));
+    }
+    
+    const isDark = lightness < 65; // Slightly higher threshold for dark backgrounds
     const foreground = isDark ? "0 0% 100%" : "222.2 84% 4.9%";
     
     return (

@@ -6,6 +6,7 @@ import Link from "@tiptap/extension-link"
 import TextAlign from "@tiptap/extension-text-align"
 import Image from "@tiptap/extension-image"
 import { Toggle } from "../../components/ui/toggle"
+import { cn } from "../../lib/utils"
 import { MediaPicker } from "./media-picker"
 import {
   Bold,
@@ -27,6 +28,7 @@ interface RichTextEditorProps {
   value: string
   onChange: (value: string) => void
   label?: string
+  disabled?: boolean
 }
 
 const MenuBar = ({ editor }: { editor: Editor | null }) => {
@@ -161,7 +163,7 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
   )
 }
 
-export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, label, disabled }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -179,6 +181,7 @@ export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) 
       }),
     ],
     content: value,
+    editable: !disabled,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       // Extract HTML for standard rich text storage
@@ -190,6 +193,12 @@ export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) 
       },
     },
   })
+
+  React.useEffect(() => {
+    if (editor) {
+      editor.setEditable(!disabled)
+    }
+  }, [disabled, editor])
 
   // Update editor content if value changes externally (e.g. initial load)
   React.useEffect(() => {
@@ -206,8 +215,8 @@ export function RichTextEditor({ value, onChange, label }: RichTextEditorProps) 
     <div className="space-y-2">
       {label && <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>}
       <div className="flex flex-col w-full">
-        <MenuBar editor={editor} />
-        <EditorContent editor={editor} />
+        {!disabled && <MenuBar editor={editor} />}
+        <EditorContent editor={editor} className={cn(disabled && "opacity-80")} />
       </div>
     </div>
   )

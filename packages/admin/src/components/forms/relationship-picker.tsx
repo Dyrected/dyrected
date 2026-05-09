@@ -25,9 +25,10 @@ interface RelationshipPickerProps {
   label?: string
   relationTo: string // The collection slug this field relates to
   multiple?: boolean
+  disabled?: boolean
 }
 
-export function RelationshipPicker({ value, onChange, label, relationTo, multiple }: RelationshipPickerProps) {
+export function RelationshipPicker({ value, onChange, label, relationTo, multiple, disabled }: RelationshipPickerProps) {
   const { client, schemas } = useDyrected()
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
@@ -62,12 +63,13 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
   return (
     <div className="flex flex-col gap-2">
       {label && <label className="text-sm font-medium leading-none">{label}</label>}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            disabled={disabled}
             className="w-full justify-between font-normal"
           >
             {isLoading ? (

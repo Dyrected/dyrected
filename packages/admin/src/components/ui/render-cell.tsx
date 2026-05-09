@@ -76,6 +76,29 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     )
   }
 
+  // Handle Generic Object (Summary)
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value)
+      .filter(([_, v]) => typeof v !== 'object' && v !== null && v !== undefined)
+      .slice(0, 3)
+    
+    if (entries.length > 0) {
+      return (
+        <span className="text-[11px] text-muted-foreground font-medium leading-tight">
+          {entries.map(([k, v]) => `${k}: ${String(v)}`).join(", ")}
+          {Object.keys(value).length > 3 ? "..." : ""}
+        </span>
+      )
+    }
+
+    return (
+      <span className="text-[11px] text-muted-foreground font-mono bg-muted/30 px-1 rounded">
+        {JSON.stringify(value).slice(0, 30)}
+        {JSON.stringify(value).length > 30 ? "..." : ""}
+      </span>
+    )
+  }
+
   return <span className="text-sm">{String(value)}</span>
 }
 

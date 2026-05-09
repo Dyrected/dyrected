@@ -14,18 +14,20 @@ interface DatePickerProps {
   value?: string | Date
   onChange: (date?: string) => void
   label?: string
+  disabled?: boolean
 }
 
-export function DatePicker({ value, onChange, label }: DatePickerProps) {
+export function DatePicker({ value, onChange, label, disabled }: DatePickerProps) {
   const date = value ? new Date(value) : undefined
 
   return (
     <div className="flex flex-col gap-2">
       {label && <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>}
-      <Popover>
+      <Popover open={disabled ? false : undefined}>
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
+            disabled={disabled}
             className={cn(
               "w-full justify-start text-left font-normal h-11 px-4 bg-white hover:bg-muted/50 border-border/60 shadow-sm transition-all hover:shadow-md",
               !date && "text-muted-foreground"

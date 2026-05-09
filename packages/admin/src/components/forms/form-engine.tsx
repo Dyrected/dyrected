@@ -422,22 +422,24 @@ function renderField(schema: FieldSchema, field: any, context?: { user: any, sib
           options={normalizeOptions(schema.options)}
           value={field.value || []}
           onChange={field.onChange}
+          disabled={disabled}
         />
       )
     case "image" as any:
-      return <MediaPicker value={field.value} onChange={field.onChange} />
+      return <MediaPicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "richText":
-      return <RichTextEditor value={field.value} onChange={field.onChange} />
+      return <RichTextEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "json":
-      return <JsonEditor value={field.value} onChange={field.onChange} />
+      return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
-      return <DatePicker value={field.value} onChange={field.onChange} />
+      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "relationship":
       return <RelationshipPicker
         value={field.value}
         onChange={field.onChange}
         relationTo={(schema as any).relationTo || (schema as any).collection}
         multiple={(schema as any).hasMany}
+        disabled={disabled}
       />
     case "number":
       return <Input type="number" {...field} value={field.value ?? ""} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} />
