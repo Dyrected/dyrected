@@ -8,7 +8,11 @@ import { TestimonialBlockConfig } from "../../components/blocks/TestimonialBlock
 export const pages = defineCollection({
   slug: "pages",
   labels: { singular: "Page", plural: "Pages" },
-  admin: { useAsTitle: "title", group: "Content" },
+  admin: { 
+    useAsTitle: "title", 
+    group: "Content",
+    previewUrl: "'http://localhost:3000/' + (slug == 'home' ? '' : slug)"
+  },
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },

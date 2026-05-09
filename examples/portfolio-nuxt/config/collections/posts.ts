@@ -3,7 +3,11 @@ import { defineCollection } from "@dyrected/core";
 export const posts = defineCollection({
   slug: "posts",
   labels: { singular: "Post", plural: "Posts" },
-  admin: { useAsTitle: "title", group: "Content" },
+  admin: { 
+    useAsTitle: "title", 
+    group: "Content",
+    previewUrl: "'http://localhost:3000/blog/' + slug"
+  },
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },

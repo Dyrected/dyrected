@@ -37,7 +37,7 @@ import {
   SheetTitle,
 } from "../../components/ui/sheet"
 import { Separator } from "../../components/ui/separator"
-import { FocalPointPicker } from "../../components/media/focal-point-picker"
+// import { FocalPointPicker } from "../../components/media/focal-point-picker"
 import { Blurhash } from "react-blurhash"
 
 export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string, schema?: any }) {
@@ -379,7 +379,7 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
               <DetailItem label="Created At" value={new Date(item.createdAt).toLocaleString()} />
             </div>
 
-            {isImage && (
+            {/* {isImage && (
               <div className="space-y-4">
                 <Separator className="bg-border/40" />
                 <div className="space-y-4">
@@ -393,7 +393,7 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
                   />
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </ScrollArea>
         

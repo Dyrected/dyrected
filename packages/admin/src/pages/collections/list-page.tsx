@@ -14,19 +14,13 @@ import {
   Trash2,
   Calendar,
   Database,
-  ChevronLeft,
-  ChevronRight,
   Image as ImageIcon,
 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu"
 import { RenderCell } from "../../components/ui/render-cell"
+import { PageHeader } from "../../components/ui/page-header"
+import { Pagination } from "../../components/ui/pagination"
+import { MediaGrid } from "../../components/media/media-grid"
 
 interface CollectionListPageProps {
   slug: string
@@ -252,109 +246,52 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   if (slug === "media") {
     return (
       <div className="space-y-8 animate-in">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <ImageIcon className="h-4 w-4 text-primary/60" />
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">Media Library</h1>
-            </div>
-            <p className="text-[11px] text-muted-foreground/60 font-medium">
-              Manage your media assets and uploads.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-             <Link to={`/collections/${slug}/new`}>
-              <Button className="h-8 px-4 text-[11px] rounded-md bg-primary hover:bg-primary/90 shadow-sm transition-all active:scale-95">
-                <Plus className="mr-1.5 h-3 w-3" />
-                Upload New
-              </Button>
-            </Link>
-          </div>
-        </div>
+        <PageHeader 
+          title="Media Library" 
+          description="Manage your media assets and uploads." 
+          icon={ImageIcon}
+        >
+          <Link to={`/collections/${slug}/new`}>
+            <Button className="h-8 px-4 text-[11px] rounded-md bg-primary hover:bg-primary/90 shadow-sm transition-all active:scale-95">
+              <Plus className="mr-1.5 h-3 w-3" />
+              Upload New
+            </Button>
+          </Link>
+        </PageHeader>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
-          {response?.docs?.map((item: any) => (
-            <div key={item.id} className="group relative aspect-square rounded-2xl overflow-hidden bg-white border border-border/40 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
-              <img 
-                src={`${client?.getBaseUrl()}/media/${item.filename}`}
-                alt={item.filename}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-[2px]">
-                <Link to={`/collections/${slug}/edit/${item.id}`}>
-                  <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full bg-white/90 hover:bg-white text-foreground shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Button 
-                  size="icon" 
-                  variant="destructive" 
-                  className="h-9 w-9 rounded-full bg-destructive/90 hover:bg-destructive shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75"
-                  onClick={() => handleDelete(item.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <p className="text-[10px] text-white truncate font-medium">{item.filename}</p>
-                <p className="text-[8px] text-white/60 uppercase tracking-wider mt-0.5">{item.mimeType}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <MediaGrid 
+          items={response?.docs || []} 
+          baseUrl={client?.getBaseUrl() || ""} 
+          onDelete={handleDelete}
+          slug={slug}
+        />
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-4 border-t border-border/40 mt-8">
-            <p className="text-xs text-muted-foreground">
-              Showing page <strong>{page}</strong> of <strong>{totalPages}</strong>
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-                disabled={!hasPrevPage}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-                disabled={!hasNextPage}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pagination 
+          page={page}
+          totalPages={totalPages}
+          hasPrevPage={hasPrevPage}
+          hasNextPage={hasNextPage}
+          onPageChange={setPage}
+          className="mt-8"
+        />
       </div>
     )
   }
 
   return (
     <div className="space-y-8 animate-in">
-      <div className="flex items-end justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Database className="h-4 w-4 text-primary/60" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">{schema.labels?.plural || schema.label || schema.slug}</h1>
-          </div>
-          <p className="text-[11px] text-muted-foreground/60 font-medium">
-            Manage your {schema.slug} entries and update content.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link to={`/collections/${slug}/new`}>
-            <Button className="h-8 px-4 text-[11px] rounded-md bg-primary hover:bg-primary/90 shadow-sm transition-all active:scale-95">
-              <Plus className="mr-1.5 h-3 w-3" />
-              Create New
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader 
+        title={schema.labels?.plural || schema.label || schema.slug} 
+        description={`Manage your ${schema.slug} entries and update content.`} 
+        icon={Database}
+      >
+        <Link to={`/collections/${slug}/new`}>
+          <Button className="h-8 px-4 text-[11px] rounded-md bg-primary hover:bg-primary/90 shadow-sm transition-all active:scale-95">
+            <Plus className="mr-1.5 h-3 w-3" />
+            Create New
+          </Button>
+        </Link>
+      </PageHeader>
 
       <div className="overflow-hidden">
         <DataTable
@@ -379,38 +316,14 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             </Button>
           )}
         />
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-4 border-t border-border/40">
-            <p className="text-xs text-muted-foreground">
-              Page <strong>{page}</strong> of <strong>{totalPages}</strong>
-              {response?.total != null && (
-                <> &mdash; {response.total} total entries</>
-              )}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-                disabled={!hasPrevPage}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                title="Previous page"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-                disabled={!hasNextPage}
-                onClick={() => setPage((p) => p + 1)}
-                title="Next page"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+        <Pagination 
+          page={page}
+          totalPages={totalPages}
+          total={response?.total}
+          hasPrevPage={hasPrevPage}
+          hasNextPage={hasNextPage}
+          onPageChange={setPage}
+        />
       </div>
     </div>
   )

@@ -6,8 +6,9 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
-import { Globe, Archive, Eye, EyeOff } from "lucide-react"
+import { Archive, Eye, EyeOff } from "lucide-react"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
+import jexl from 'jexl'
 
 export function EditEntryPage() {
   const { slug, id } = useParams()
@@ -60,21 +61,47 @@ export function EditEntryPage() {
     },
   })
 
-  if (!schema) return <div>Collection not found</div>
+  if (!schema) {
+    console.log("[PreviewDebug] Schema not found for slug:", slug)
+    return <div>Collection not found</div>
+  }
   if (isEdit && isEntryLoading) return <div>Loading entry...</div>
+
+  console.log("[PreviewDebug] Schema Admin Config:", schema.admin)
+  console.log("[PreviewDebug] Current Entry Data:", entry)
 
   const hasStatus = schema?.fields.some((f: any) => f.name === "status")
   const currentStatus = entry?.status || "draft"
 
-  const previewUrl = typeof schema.admin?.previewUrl === 'function' 
+  let previewUrl = typeof schema.admin?.previewUrl === 'function' 
     ? schema.admin.previewUrl(entry, { locale: 'en' }) 
     : schema.admin?.previewUrl
+
+  console.log("[PreviewDebug] Initial previewUrl from config:", previewUrl)
+
+  if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
+     previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => entry?.[key.trim()] || "")
+     console.log("[PreviewDebug] After template replacement:", previewUrl)
+  } else if (typeof previewUrl === 'string' && entry) {
+    try {
+      if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==')) {
+        const evaluated = jexl.evalSync(previewUrl, entry)
+        console.log("[PreviewDebug] Jexl Evaluation Success:", evaluated)
+        previewUrl = evaluated
+      }
+    } catch (e) {
+      console.error("[PreviewDebug] Jexl Evaluation Failed:", e)
+    }
+  }
+
+  console.log("[PreviewDebug] Final resolved previewUrl:", previewUrl)
+  console.log("[PreviewDebug] showPreview state:", showPreview)
 
   const canCreate = (schema.access as any)?.create !== false
   const canUpdate = (schema.access as any)?.update !== false
 
   return (
-    <div className="space-y-8 animate-in max-w-6xl mx-auto">
+    <div className={`space-y-8 animate-in ${previewUrl ? "max-w-[1600px]" : "max-w-6xl"} mx-auto px-6`}>
       <div className="flex items-center justify-between border-b border-border/50 pb-6">
         <div className="flex items-center gap-5">
           <Button 
@@ -125,7 +152,7 @@ export function EditEntryPage() {
 
       <div className={`grid gap-12 ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
         <div className={`${showPreview ? "" : "lg:col-span-8"} space-y-6`}>
-          <div className="animate-in">
+          <div className="animate-in space-y-8">
             {!canUpdate && isEdit && (
               <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
                 <Archive className="h-4 w-4" />
@@ -143,61 +170,55 @@ export function EditEntryPage() {
               readOnly={isEdit ? !canUpdate : !canCreate}
             />
             <button id="dyrected-form-submit" type="submit" className="hidden" />
-          </div>
-        </div>
 
-        {showPreview && previewUrl ? (
-          <div className="h-[calc(100vh-200px)] sticky top-8">
-            <LivePreviewPane 
-              previewUrl={previewUrl} 
-              data={entry} 
-              mode={schema.admin?.previewMode} 
-            />
-          </div>
-        ) : (
-          <div className="lg:col-span-4 space-y-8">
-            <div className="space-y-4">
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/40">Document Meta</h3>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-medium text-muted-foreground/60">ID</span>
-                  <code className="font-mono text-muted-foreground/80 select-all">
+            {/* Document Meta moved here */}
+            <div className="pt-8 border-t border-border/40">
+              <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Document ID</p>
+                  <code className="text-xs font-mono text-muted-foreground/80 select-all">
                     {isEdit ? id : "Pending..."}
                   </code>
                 </div>
                 
                 {isEdit && (
                   <>
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-medium text-muted-foreground/60">Created</span>
-                      <span className="font-medium text-muted-foreground/80">
-                        {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'N/A'}
-                      </span>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Created At</p>
+                      <p className="text-xs font-medium text-muted-foreground/80">
+                        {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
+                      </p>
                     </div>
                     
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-medium text-muted-foreground/60">Updated</span>
-                      <span className="font-medium text-muted-foreground/80">
-                        {entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : 'N/A'}
-                      </span>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Last Updated</p>
+                      <p className="text-xs font-medium text-muted-foreground/80">
+                        {entry.updatedAt ? new Date(entry.updatedAt).toLocaleString() : 'N/A'}
+                      </p>
                     </div>
                   </>
                 )}
+
+                {hasStatus && (
+                  <div className="space-y-1 max-w-xs">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Publishing</p>
+                    <p className="text-[10px] leading-tight text-muted-foreground/60 italic">
+                      Workflow enabled. Set status to <strong>Published</strong> to go live.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-            
-            {hasStatus && (
-               <div className="p-5 rounded-lg bg-primary/[0.02] border border-primary/10 space-y-3">
-                 <h3 className="font-bold text-xs flex items-center gap-2 text-primary/70">
-                   {currentStatus === "published" ? <Globe className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
-                   Publishing Mode
-                 </h3>
-                 <p className="text-[11px] leading-relaxed text-muted-foreground/60">
-                   This collection supports workflow states. Set the status to <strong>Published</strong> to make this entry visible.
-                 </p>
-               </div>
-            )}
+          </div>
+        </div>
+
+        {previewUrl && (
+          <div className={`${showPreview ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none hidden"} transition-all duration-500 h-[calc(100vh-180px)] sticky top-8 rounded-2xl overflow-hidden border border-border/40 shadow-2xl`}>
+            <LivePreviewPane 
+              previewUrl={previewUrl} 
+              data={entry} 
+              mode={schema.admin?.previewMode} 
+            />
           </div>
         )}
       </div>
