@@ -28,8 +28,8 @@ const getStorage = async (): Promise<StorageAdapter | undefined> => {
   if (typeof window === "undefined") {
     const { LocalStorageAdapter } = await import("@dyrected/storage-local");
     return new LocalStorageAdapter({
-      uploadDir: path.join(process.cwd(), "public/uploads"),
-      staticUrlPrefix: "/uploads",
+      uploadDir: path.join(process.cwd(), "public/dyrected/uploads"),
+      staticUrlPrefix: "/dyrected/uploads",
     });
   }
   return undefined;

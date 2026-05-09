@@ -10,10 +10,10 @@ export default eventHandler(async (event) => {
   if (!app) {
     const dyrectedConfig = { ...config };
     // Re-hydrate DB from global context if missing (populated by the Nitro plugin)
-    if (!dyrectedConfig.db) {
+    if (!dyrectedConfig.db || typeof (dyrectedConfig.db as any).find !== 'function') {
       dyrectedConfig.db = (globalThis as any).__dyrected_db;
     }
-    if (!dyrectedConfig.storage) {
+    if (!dyrectedConfig.storage || typeof (dyrectedConfig.storage as any).upload !== 'function') {
       dyrectedConfig.storage = (globalThis as any).__dyrected_storage;
     }
     console.log('[dyrected/nuxt] Initializing app. DB:', !!dyrectedConfig.db, 'Storage:', !!dyrectedConfig.storage);
