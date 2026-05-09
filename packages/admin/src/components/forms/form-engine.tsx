@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { Form } from "../ui/form"
@@ -19,6 +19,7 @@ interface FormEngineProps {
   isLoading?: boolean
   submitLabel?: string
   readOnly?: boolean
+  onDataChange?: (data: any) => void
 }
 
 export function FormEngine({
@@ -29,7 +30,8 @@ export function FormEngine({
   onChange,
   isLoading,
   submitLabel = "Save",
-  readOnly
+  readOnly,
+  onDataChange
 }: FormEngineProps) {
   const schemaShape = buildSchemaShape(fields)
   const formSchema = z.object(schemaShape)
@@ -44,6 +46,19 @@ export function FormEngine({
   useEffect(() => {
     onChange?.(isDirty)
   }, [isDirty, onChange])
+
+  const watchedValues = useWatch({
+    control: form.control,
+  })
+
+  useEffect(() => {
+    if (onDataChange) {
+      const handler = setTimeout(() => {
+        onDataChange(watchedValues)
+      }, 100)
+      return () => clearTimeout(handler)
+    }
+  }, [watchedValues, onDataChange])
 
   return (
     <Form {...form}>

@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { Link } from "react-router-dom"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { DataTable } from "../../components/ui/data-table"
@@ -59,7 +60,13 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collection", slug] })
       setRowSelection({})
+      toast.success("Entry deleted successfully")
     },
+    onError: (error: any) => {
+      toast.error("Failed to delete entry", {
+        description: error.message
+      })
+    }
   })
 
   const bulkDeleteMutation = useMutation({
@@ -71,7 +78,13 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["collection", slug] })
       setRowSelection({})
+      toast.success("Selected entries deleted")
     },
+    onError: (error: any) => {
+      toast.error("Failed to delete entries", {
+        description: error.message
+      })
+    }
   })
 
   function handleDelete(id: string) {

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { FormEngine } from "../../components/forms/form-engine"
 import { useParams } from "react-router-dom"
@@ -31,7 +32,13 @@ export function GlobalEditorPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["global", slug] })
+      toast.success(`${schema.label || schema.slug} updated successfully`)
     },
+    onError: (error: any) => {
+      toast.error("Failed to update settings", {
+        description: error.message
+      })
+    }
   })
 
   if (!schema) return <div>Global schema not found for: {slug}</div>

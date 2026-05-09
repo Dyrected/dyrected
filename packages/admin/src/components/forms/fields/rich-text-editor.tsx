@@ -1,8 +1,6 @@
 import * as React from "react"
 import { useEditor, EditorContent, type Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
-import Underline from "@tiptap/extension-underline"
-import Link from "@tiptap/extension-link"
 import TextAlign from "@tiptap/extension-text-align"
 import Image from "@tiptap/extension-image"
 import { Toggle } from "../../ui/toggle"
@@ -169,10 +167,10 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
 export function RichTextEditor({ value, onChange, label, disabled, collection = "media" }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Underline,
-      Link.configure({
-        openOnClick: false,
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+        },
       }),
       TextAlign.configure({
         types: ["heading", "paragraph"],

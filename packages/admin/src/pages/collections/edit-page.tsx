@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { FormEngine } from "../../components/forms/form-engine"
@@ -30,6 +31,8 @@ export function EditEntryPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [isDirty])
 
+  const [previewData, setPreviewData] = useState<any>(null)
+
   // Fetch schema
   const { data: schemas } = useQuery({
     queryKey: ["schemas"],
@@ -46,6 +49,12 @@ export function EditEntryPage() {
     enabled: !!client && isEdit,
   })
 
+  useEffect(() => {
+    if (entry) {
+      setPreviewData(entry)
+    }
+  }, [entry])
+
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (isEdit) {
@@ -57,8 +66,16 @@ export function EditEntryPage() {
     onSuccess: () => {
       setIsDirty(false)
       queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+      toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
+        description: `${schema.label || schema.slug} has been saved.`
+      })
       navigate(`/collections/${slug}`)
     },
+    onError: (error: any) => {
+      toast.error("Failed to save entry", {
+        description: error.message || "An unexpected error occurred."
+      })
+    }
   })
 
   if (!schema) return <div>Collection not found</div>
@@ -68,15 +85,15 @@ export function EditEntryPage() {
   const currentStatus = entry?.status || "draft"
 
   let previewUrl = typeof schema.admin?.previewUrl === 'function'
-    ? schema.admin.previewUrl(entry, { locale: 'en' })
+    ? schema.admin.previewUrl(previewData || entry, { locale: 'en' })
     : schema.admin?.previewUrl
 
   if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
     previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => entry?.[key.trim()] || "")
-  } else if (typeof previewUrl === 'string' && entry) {
+  } else if (typeof previewUrl === 'string' && (previewData || entry)) {
     try {
       // Provide current window origin to Jexl context so users can use it in expressions
-      const context = { ...entry, siteUrl: window.location.origin };
+      const context = { ...(previewData || entry), siteUrl: window.location.origin };
 
       if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
         previewUrl = jexl.evalSync(previewUrl, context)
@@ -95,20 +112,20 @@ export function EditEntryPage() {
   const canUpdate = (schema.access as any)?.update !== false
 
   return (
-    <div className={`space-y-8 animate-in ${previewUrl ? "max-w-[1600px]" : "max-w-6xl"} mx-auto px-6`}>
-      <div className="flex items-center justify-between border-b border-border/50 pb-6">
-        <div className="flex items-center gap-5">
+    <div className={`space-y-6 md:space-y-8 animate-in ${previewUrl ? "max-w-[1600px]" : "max-w-6xl"} mx-auto px-4 md:px-6`}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-6">
+        <div className="flex items-start gap-4 md:items-center md:gap-5">
           <Button
             variant="outline"
             size="icon"
-            className="h-10 w-10 rounded-lg shadow-sm bg-white hover:bg-muted"
+            className="h-9 w-9 md:h-10 md:w-10 rounded-lg shadow-sm bg-white hover:bg-muted shrink-0"
             onClick={() => navigate(`/collections/${slug}`)}
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
                 {isEdit ? `Edit ${schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
               </h1>
               {hasStatus && (
@@ -132,20 +149,25 @@ export function EditEntryPage() {
               onClick={() => setShowPreview(!showPreview)}
             >
               {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showPreview ? "Hide Preview" : "Live Preview"}
+              <span className="hidden sm:inline">{showPreview ? "Hide Preview" : "Live Preview"}</span>
             </Button>
           )}
           <Button
             onClick={() => document.getElementById('dyrected-form-submit')?.click()}
             disabled={saveMutation.isPending || (isEdit ? !canUpdate : !canCreate)}
           >
-            {saveMutation.isPending ? "Saving..." : (isEdit ? "Save Changes" : "Create Entry")}
+            {saveMutation.isPending ? "Saving..." : (
+              <>
+                <span className="hidden sm:inline">{isEdit ? "Save Changes" : "Create Entry"}</span>
+                <span className="sm:hidden">{isEdit ? "Save" : "Create"}</span>
+              </>
+            )}
           </Button>
         </div>
       </div>
 
-      <div className={`grid gap-12 ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
-        <div className={`${showPreview ? "" : "lg:col-span-8 xl:col-span-6"} space-y-6`}>
+      <div className={`grid gap-12 items-start ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
+        <div className={`${showPreview ? "" : "lg:col-span-8 xl:col-span-6"} space-y-6 order-2 lg:order-1`}>
           <div className="animate-in space-y-8">
             {!canUpdate && isEdit && (
               <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
@@ -158,6 +180,7 @@ export function EditEntryPage() {
               fields={schema.fields}
               defaultValues={entry}
               onSubmit={(data) => saveMutation.mutate(data)}
+              onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
               onChange={(dirty) => setIsDirty(dirty)}
               isLoading={saveMutation.isPending}
               submitLabel={isEdit ? "Save Changes" : "Create Entry"}
@@ -207,10 +230,10 @@ export function EditEntryPage() {
         </div>
 
         {previewUrl && (
-          <div className={`${showPreview ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none hidden"} transition-all duration-500 h-[calc(100vh-180px)] sticky top-8 rounded-2xl overflow-hidden border border-border/40 shadow-2xl`}>
+          <div className={`${showPreview ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none hidden"} transition-all duration-500 h-[300px] sm:h-[400px] lg:h-[calc(100vh-140px)] sticky top-6 rounded-2xl overflow-hidden border border-border/40 shadow-2xl order-1 lg:order-2`}>
             <LivePreviewPane
               previewUrl={previewUrl}
-              data={entry}
+              data={previewData || entry}
               mode={schema.admin?.previewMode}
             />
           </div>

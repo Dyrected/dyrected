@@ -24,6 +24,12 @@ Admin UI (Editor)
   └─ (or token mode: POST /api/preview-token → GET /api/preview-data)
 ```
 
+### Handshake
+To ensure the Admin UI doesn't send data before the iframe is ready, the iframe should emit:
+`window.parent.postMessage({ type: 'dyrected-live-preview-ready' }, '*')`
+
+The Admin UI will then respond by sending the initial document data.
+
 ---
 
 ## Step 1 — Enable on a Collection

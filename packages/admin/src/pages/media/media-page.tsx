@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
@@ -57,6 +58,12 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
     mutationFn: (id: string) => client!.deleteMedia(id, collectionSlug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["media"] })
+      toast.success("Asset deleted successfully")
+    },
+    onError: (error: any) => {
+      toast.error("Failed to delete asset", {
+        description: error.message
+      })
     }
   })
   
@@ -65,6 +72,12 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["media"] })
       setSelectedItem(data)
+      toast.success("Asset details updated")
+    },
+    onError: (error: any) => {
+      toast.error("Failed to update asset", {
+        description: error.message
+      })
     }
   })
 
@@ -467,9 +480,12 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
         setProgress(((i + 1) / files.length) * 100)
       }
       onComplete()
-    } catch (error) {
+      toast.success(`${files.length} assets uploaded successfully`)
+    } catch (error: any) {
       console.error("Upload failed", error)
-      alert("Failed to upload files.")
+      toast.error("Failed to upload assets", {
+        description: error.message
+      })
     } finally {
       setUploading(false)
     }

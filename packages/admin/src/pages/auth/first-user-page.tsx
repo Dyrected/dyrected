@@ -3,6 +3,7 @@ import { useDyrected } from "../../providers/dyrected-provider";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { toast } from "sonner";
 
 export function FirstUserPage({ 
   collectionSlug, 
@@ -34,9 +35,12 @@ export function FirstUserPage({
         email,
         password,
       });
+      toast.success("Admin account created successfully");
       onComplete(data);
     } catch (err: any) {
-      setError(err.message || "Failed to create initial user");
+      const message = err.message || "Failed to create initial user";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

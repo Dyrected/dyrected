@@ -36,6 +36,7 @@ onMounted(async () => {
         siteId: String(dyrectedRaw.siteId || ""),
         baseUrl: String(dyrectedRaw.baseUrl || ""),
         basename: props.basename || "/cms-admin",
+        isEmbedded: false,
       });
     } catch (err) {
       console.error("[DyrectedAdmin] Failed to mount admin UI:", err);

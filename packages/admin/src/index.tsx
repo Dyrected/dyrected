@@ -22,6 +22,7 @@ import { GlobalEditorPage } from "./pages/globals/editor-page";
 import { SetupPromptUI } from "./pages/setup/setup-prompt";
 import { ErrorBoundary } from "./components/error-boundary";
 import { AuthGate } from "./components/auth/auth-gate";
+import { Toaster } from "./components/ui/sonner";
 
 // ─── Route that resolves collection → list or media page ─────────────────────
 
@@ -115,6 +116,7 @@ export interface AdminUIProps {
    *   <AdminUI onNavigate={(path) => navigateTo('/admin' + path)} ... />
    */
   onNavigate?: (path: string) => void;
+  isEmbedded?: boolean
 }
 
 // ─── Embedded component (BrowserRouter — real URL + history) ─────────────────
@@ -124,6 +126,7 @@ export function AdminUI({
   baseUrl = "/api/dyrected",
   siteId,
   onNavigate,
+  isEmbedded
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -142,9 +145,10 @@ export function AdminUI({
         <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
           <QueryProvider>
             <HashRouter>
-              <AdminRoutes onNavigate={onNavigate} isEmbedded={true} />
+              <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
             </HashRouter>
           </QueryProvider>
+          <Toaster position="top-right" expand={true} richColors />
         </DyrectedProvider>
       </ErrorBoundary>
     </div>
@@ -182,6 +186,7 @@ export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProp
             <AdminRoutes />
           </MemoryRouter>
         </QueryProvider>
+        <Toaster position="top-right" expand={true} richColors />
       </DyrectedProvider>
     </div>
   );

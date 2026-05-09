@@ -3,6 +3,7 @@ import { useDyrected } from "../../providers/dyrected-provider";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { toast } from "sonner";
 
 export function LoginPage({ 
   collectionSlug, 
@@ -24,9 +25,12 @@ export function LoginPage({
 
     try {
       const data = await client!.collection(collectionSlug).login(email, password);
+      toast.success("Welcome back!");
       onLogin(data);
     } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+      const message = err.message || "Invalid email or password";
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

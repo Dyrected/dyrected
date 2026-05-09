@@ -34,8 +34,8 @@ export interface LivePreviewOptions<T> {
  */
 export function useLivePreview<T = any>(
   options: LivePreviewOptions<T>
-): { data: ShallowRef<T>; isLive: Ref<boolean> } {
-  const data = shallowRef<T>(options.initialData)
+): { data: Ref<T>; isLive: Ref<boolean> } {
+  const data = ref<T>(options.initialData) as Ref<T>
   const isLive = ref(false)
 
   function handleMessage(event: MessageEvent) {

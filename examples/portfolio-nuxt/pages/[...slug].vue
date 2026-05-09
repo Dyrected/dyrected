@@ -8,20 +8,21 @@ import type { DyrectedSchema } from "~/dyrected-types";
 
 const route = useRoute();
 const dyrected = useDyrected<DyrectedSchema>();
-const { data: settings } = useNuxtData<DyrectedSchema['globals']['settings']>('settings');
+const { data: settings } = useNuxtData<DyrectedSchema["globals"]["settings"]>("settings");
+const config = useRuntimeConfig();
 
 // Catch-all slug is an array
 const slugArray = route.params.slug as string[];
-let slug = slugArray && slugArray.length > 0 ? slugArray.join('/') : '';
+let slug = slugArray && slugArray.length > 0 ? slugArray.join("/") : "";
 
 // If root path, try to get home page from settings
 if (!slug && settings.value?.homePage) {
   const hp = settings.value.homePage;
-  slug = typeof hp === 'string' ? hp : hp.slug;
+  slug = typeof hp === "string" ? hp : hp.slug;
 }
 
 // Fallback to 'home' if still empty
-if (!slug) slug = 'home';
+if (!slug) slug = "home";
 
 const { data: pageData } = await useAsyncData(`page-${slug}`, () =>
   dyrected
@@ -56,7 +57,7 @@ const { data: pageData } = await useAsyncData(`page-${slug}`, () =>
                   url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600",
                   alt: "Pastor Photo",
                 },
-              }
+              },
             ],
           },
         ],
@@ -91,14 +92,21 @@ const { data: pageData } = await useAsyncData(`page-${slug}`, () =>
             description: "Fill out the form below or reach out via social media.",
             buttonLabel: "Contact Form",
             buttonLink: "#form",
-          }
-        ]
-      }
+          },
+        ],
+      },
     ] as any)
     .exec(),
 );
 
-const page = computed(() => pageData.value?.docs[0]);
+// Enable live preview (client-side only)
+const { data: liveData, isLive } = useLivePreview({
+  initialData: pageData.value?.docs[0],
+  // In production, set this to your admin URL
+  serverURL: "*",
+});
+
+const page = computed(() => liveData.value);
 
 if (!page.value && !process.server) {
   throw createError({ statusCode: 404, statusMessage: "Page Not Found" });
@@ -107,6 +115,12 @@ if (!page.value && !process.server) {
 
 <template>
   <div v-if="page" class="dynamic-page">
+    <div
+      v-if="isLive"
+      class="fixed bg-primary text-primary-foreground bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-full text-sm font-medium z-50 animate-pulse"
+    >
+      ✦ Live Preview Active
+    </div>
     <template v-for="(block, i) in page.layout" :key="i">
       <HeroBlock v-if="block.blockType === 'hero'" v-bind="block" />
       <RichContentBlock v-else-if="block.blockType === 'richContent'" v-bind="block" />
