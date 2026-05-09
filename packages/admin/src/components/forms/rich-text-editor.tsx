@@ -151,7 +151,8 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
       <div className="ml-auto">
         <MediaPicker
           variant="icon"
-          onChange={(filename) => {
+          onChange={(val) => {
+            const filename = Array.isArray(val) ? val[0] : val
             if (filename) {
               const url = `/api/media/${filename}`
               editor.chain().focus().setImage({ src: url, alt: filename }).run()

@@ -99,7 +99,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     )
   }
 
-  return <span className="text-sm">{String(value)}</span>
+  return <span className="text-sm font-medium">{typeof value === 'object' ? JSON.stringify(value).slice(0, 50) : String(value)}</span>
 }
 
 function isUploadCollection(slug: string | undefined, schemas: any) {

@@ -178,7 +178,7 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
 }
 
 export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
-  const { user } = useDyrected();
+  const { user, schemas } = useDyrected();
   // Statically hidden field
   if (schema.admin?.hidden) return null
 
@@ -267,7 +267,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
             )}
           </div>
           <FormControl>
-            {renderField(schema, formField, { user, siblingData: conditionData })}
+            {renderField(schema, formField, { user, schemas, siblingData: conditionData })}
           </FormControl>
           {schema.admin?.description && (
             <p className="text-[11px] text-muted-foreground/70 leading-relaxed italic">{schema.admin.description}</p>
@@ -324,7 +324,7 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isL
   )
 }
 
-function renderField(schema: FieldSchema, field: any, context?: { user: any, siblingData: any }) {
+function renderField(schema: FieldSchema, field: any, context?: { user: any, schemas?: any, siblingData: any }) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
 
@@ -434,6 +434,18 @@ function renderField(schema: FieldSchema, field: any, context?: { user: any, sib
     case "date":
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "relationship":
+      const isMediaRel = (schema as any).relationTo === "media" || 
+                         (context?.schemas?.collections.find((c: any) => c.slug === (schema as any).relationTo)?.upload)
+
+      if (isMediaRel) {
+        return <MediaPicker
+          value={field.value}
+          onChange={field.onChange}
+          multiple={(schema as any).hasMany}
+          disabled={disabled}
+        />
+      }
+
       return <RelationshipPicker
         value={field.value}
         onChange={field.onChange}
