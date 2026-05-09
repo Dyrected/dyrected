@@ -18,6 +18,7 @@ import {
   Shield,
   Share2,
   LayoutDashboard,
+  Users,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { cn } from "../../lib/utils"
@@ -268,9 +269,9 @@ function SidebarInner({
                     <span className="truncate">{col.labels?.plural ?? col.label ?? col.slug}</span>
                     {!collapsed && (
                       <div className="flex gap-1 shrink-0">
-                        {col.auth && <Shield className="h-2.5 w-2.5 text-primary/70" />}
-                        {col.shared && <Share2 className="h-2.5 w-2.5 text-purple-500/70" />}
-                        {isReadOnly && <Lock className="h-2.5 w-2.5 text-muted-foreground/40" />}
+                        {col.auth && <Shield className="h-4 w-4 text-primary/70" />}
+                        {col.shared && <Share2 className="h-4 w-4 text-purple-500/70" />}
+                        {isReadOnly && <Lock className="h-4 w-4 text-muted-foreground/40" />}
                       </div>
                     )}
                   </div>
@@ -280,7 +281,7 @@ function SidebarInner({
                   <NavItem
                     key={col.slug}
                     to={`/collections/${col.slug}`}
-                    icon={Database}
+                    icon={col.auth ? Users : Database}
                     label={navLabel}
                     active={location.pathname.startsWith(`/collections/${col.slug}`)}
                     collapsed={collapsed}

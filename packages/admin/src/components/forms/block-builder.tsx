@@ -31,6 +31,7 @@ interface BlockBuilderProps {
   schema: FieldSchema
   basePath: string
   control: any
+  collection: string
 }
 
 function SortableBlockItem({ 
@@ -40,6 +41,7 @@ function SortableBlockItem({
   schema, 
   basePath, 
   control, 
+  collection,
   remove 
 }: { 
   id: string; 
@@ -48,6 +50,7 @@ function SortableBlockItem({
   schema: FieldSchema; 
   basePath: string; 
   control: any; 
+  collection: string;
   remove: (index: number) => void 
 }) {
   const {
@@ -106,6 +109,7 @@ function SortableBlockItem({
               schema={subField} 
               basePath={`${basePath}.${index}`} 
               control={control} 
+              collection={collection}
             />
           ))}
         </div>
@@ -114,7 +118,7 @@ function SortableBlockItem({
   )
 }
 
-export function BlockBuilder({ schema, basePath, control }: BlockBuilderProps) {
+export function BlockBuilder({ schema, basePath, control, collection }: BlockBuilderProps) {
   const { fields, append, remove, move } = useFieldArray({ control, name: basePath })
 
   const sensors = useSensors(
@@ -195,6 +199,7 @@ export function BlockBuilder({ schema, basePath, control }: BlockBuilderProps) {
                   schema={schema}
                   basePath={basePath}
                   control={control}
+                  collection={collection}
                   remove={remove}
                 />
               ))}

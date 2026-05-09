@@ -55,6 +55,7 @@ export function GlobalEditorPage() {
 
       <div className="">
         <FormEngine
+          collection={slug!}
           fields={schema.fields}
           defaultValues={globalData || {}}
           onSubmit={(data) => saveMutation.mutate(data)}

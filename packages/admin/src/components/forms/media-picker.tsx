@@ -2,26 +2,26 @@ import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { Button } from "../../components/ui/button"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger
 } from "../../components/ui/dialog"
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from "../../components/ui/tabs"
-import { 
-  Image as ImageIcon, 
-  X, 
-  Plus, 
-  FileIcon, 
-  Video, 
-  Search, 
-  Upload, 
+import {
+  Image as ImageIcon,
+  X,
+  Plus,
+  FileIcon,
+  Video,
+  Search,
+  Upload,
   Library,
   Check
 } from "lucide-react"
@@ -29,6 +29,7 @@ import { ScrollArea } from "../../components/ui/scroll-area"
 import { Input } from "../../components/ui/input"
 
 interface MediaPickerProps {
+  collection: string
   value?: string | string[]
   onChange: (value: string | string[]) => void
   label?: string
@@ -37,7 +38,7 @@ interface MediaPickerProps {
   multiple?: boolean
 }
 
-export function MediaPicker({ value, onChange, label, variant = "default", disabled, multiple }: MediaPickerProps) {
+export function MediaPicker({ collection, value, onChange, label, variant = "default", disabled, multiple }: MediaPickerProps) {
   const { client } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -63,9 +64,9 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
   }
 
   const { data: media, refetch } = useQuery({
-    queryKey: ["media", searchQuery],
-    queryFn: () => client!.listMedia({ 
-      where: searchQuery ? { filename: { contains: searchQuery } } : undefined 
+    queryKey: [collection, searchQuery],
+    queryFn: () => client!.listMedia({
+      where: searchQuery ? { filename: { contains: searchQuery } } : undefined
     }).then(r => r.docs),
     enabled: isOpen && !!client,
   })
@@ -78,7 +79,7 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
 
     setIsUploading(true)
     try {
-      const result = await client.uploadMedia(file)
+      const result = await client.collection(collection).upload(file, {})
       await refetch()
       toggleValue(result.id)
       setIsOpen(false)
@@ -92,11 +93,11 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
 
   const handleYoutubeSubmit = async () => {
     if (!youtubeUrl || !client) return
-    
+
     // Simple YouTube ID extraction
     const match = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#\&\?]*)/)
     const videoId = match && match[1]
-    
+
     if (!videoId) {
       alert("Invalid YouTube URL")
       return
@@ -172,8 +173,8 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
             {!disabled && (multiple || selectedValues.length === 0) && (
               <Dialog open={isOpen} onOpenChange={setIsOpen}>
                 <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="h-24 w-24 flex flex-col gap-2 border-dashed border-2 hover:border-primary/50"
                   >
                     <Plus className="h-6 w-6 text-muted-foreground" />
@@ -192,8 +193,8 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                   <ImageIcon className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="h-24 w-24 flex flex-col gap-2 border-dashed border-2 hover:border-primary/50"
                   disabled={disabled}
                 >
@@ -228,8 +229,8 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                       <div className="flex-1 flex flex-col p-6 space-y-4 border-r">
                         <div className="relative">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            placeholder="Search media..." 
+                          <Input
+                            placeholder="Search media..."
                             className="pl-10"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -248,14 +249,13 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                                     setSelectedItem(item)
                                   }
                                 }}
-                                className={`relative group rounded-xl overflow-hidden border-2 aspect-square transition-all hover:scale-[1.02] active:scale-95 ${
-                                  selectedItem?.id === item.id ? "border-primary ring-2 ring-primary/20" : "border-transparent"
-                                }`}
+                                className={`relative group rounded-xl overflow-hidden border-2 aspect-square transition-all hover:scale-[1.02] active:scale-95 ${selectedItem?.id === item.id ? "border-primary ring-2 ring-primary/20" : "border-transparent"
+                                  }`}
                               >
-                                <img 
-                                  src={getPreviewUrl(item)} 
-                                  alt={item.filename} 
-                                  className="object-cover w-full h-full" 
+                                <img
+                                  src={getPreviewUrl(item)}
+                                  alt={item.filename}
+                                  className="object-cover w-full h-full"
                                 />
                                 {selectedValues.includes(item.id) && (
                                   <div className="absolute top-2 right-2 h-6 w-6 bg-primary rounded-full flex items-center justify-center text-white shadow-lg animate-in zoom-in">
@@ -278,15 +278,15 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                           <>
                             <div className="space-y-4">
                               <div className="aspect-video rounded-xl overflow-hidden border bg-muted shadow-sm group relative">
-                                <img 
-                                  src={getPreviewUrl(selectedItem)} 
-                                  className="w-full h-full object-contain" 
-                                  alt="" 
+                                <img
+                                  src={getPreviewUrl(selectedItem)}
+                                  className="w-full h-full object-contain"
+                                  alt=""
                                 />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                   <Button variant="secondary" size="sm" onClick={() => window.open(getPreviewUrl(selectedItem), '_blank')}>
-                                      View Full
-                                   </Button>
+                                  <Button variant="secondary" size="sm" onClick={() => window.open(getPreviewUrl(selectedItem), '_blank')}>
+                                    View Full
+                                  </Button>
                                 </div>
                               </div>
                               <div className="space-y-1">
@@ -301,37 +301,37 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                             </div>
 
                             <div className="space-y-4 border-t pt-4">
-                               <div className="space-y-2">
-                                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Alt Text</label>
-                                  <Input 
-                                    value={selectedItem.alt || ""} 
-                                    placeholder="Describe this image..."
-                                    className="h-8 text-xs"
-                                    onChange={(e) => {
-                                      const newVal = e.target.value;
-                                      setSelectedItem({...selectedItem, alt: newVal});
-                                      client?.collection('media').update(selectedItem.id, { alt: newVal });
-                                    }}
-                                  />
-                               </div>
-                               <div className="space-y-2">
-                                  <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Caption</label>
-                                  <Input 
-                                    value={selectedItem.caption || ""} 
-                                    placeholder="Add a caption..."
-                                    className="h-8 text-xs"
-                                    onChange={(e) => {
-                                      const newVal = e.target.value;
-                                      setSelectedItem({...selectedItem, caption: newVal});
-                                      client?.collection('media').update(selectedItem.id, { caption: newVal });
-                                    }}
-                                  />
-                               </div>
+                              <div className="space-y-2">
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Alt Text</label>
+                                <Input
+                                  value={selectedItem.alt || ""}
+                                  placeholder="Describe this image..."
+                                  className="h-8 text-xs"
+                                  onChange={(e) => {
+                                    const newVal = e.target.value;
+                                    setSelectedItem({ ...selectedItem, alt: newVal });
+                                    client?.collection('media').update(selectedItem.id, { alt: newVal });
+                                  }}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Caption</label>
+                                <Input
+                                  value={selectedItem.caption || ""}
+                                  placeholder="Add a caption..."
+                                  className="h-8 text-xs"
+                                  onChange={(e) => {
+                                    const newVal = e.target.value;
+                                    setSelectedItem({ ...selectedItem, caption: newVal });
+                                    client?.collection('media').update(selectedItem.id, { caption: newVal });
+                                  }}
+                                />
+                              </div>
                             </div>
 
                             <div className="space-y-2">
-                              <Button 
-                                className="w-full" 
+                              <Button
+                                className="w-full"
                                 onClick={() => {
                                   toggleValue(selectedItem.id)
                                   if (!multiple) setIsOpen(false)
@@ -339,8 +339,8 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                               >
                                 {selectedValues.includes(selectedItem.id) ? "Deselect Media" : "Select Media"}
                               </Button>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 className="w-full text-destructive hover:text-destructive"
                                 onClick={() => {
                                   if (confirm("Are you sure you want to delete this media?")) {
@@ -402,8 +402,8 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                         <p className="text-sm text-muted-foreground">Enter a video URL to embed it in your content.</p>
                       </div>
                       <div className="flex gap-2">
-                        <Input 
-                          placeholder="https://www.youtube.com/watch?v=..." 
+                        <Input
+                          placeholder="https://www.youtube.com/watch?v=..."
                           value={youtubeUrl}
                           onChange={(e) => setYoutubeUrl(e.target.value)}
                         />
@@ -424,8 +424,8 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
                         <p className="text-sm text-muted-foreground">Search and use millions of high-quality images.</p>
                       </div>
                       <div className="max-w-sm w-full space-y-2">
-                        <Input 
-                          placeholder="Search Unsplash (e.g. nature, tech)..." 
+                        <Input
+                          placeholder="Search Unsplash (e.g. nature, tech)..."
                           value={unsplashQuery}
                           onChange={(e) => setUnsplashQuery(e.target.value)}
                         />

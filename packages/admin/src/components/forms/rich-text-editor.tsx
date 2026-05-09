@@ -29,9 +29,10 @@ interface RichTextEditorProps {
   onChange: (value: string) => void
   label?: string
   disabled?: boolean
+  collection?: string
 }
 
-const MenuBar = ({ editor }: { editor: Editor | null }) => {
+const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, collection?: string }) => {
   if (!editor) {
     return null
   }
@@ -150,6 +151,7 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
       
       <div className="ml-auto">
         <MediaPicker
+          collection={collection}
           variant="icon"
           onChange={(val) => {
             const filename = Array.isArray(val) ? val[0] : val
@@ -164,7 +166,7 @@ const MenuBar = ({ editor }: { editor: Editor | null }) => {
   )
 }
 
-export function RichTextEditor({ value, onChange, label, disabled }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, label, disabled, collection = "media" }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -216,7 +218,7 @@ export function RichTextEditor({ value, onChange, label, disabled }: RichTextEdi
     <div className="space-y-2">
       {label && <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>}
       <div className="flex flex-col w-full">
-        {!disabled && <MenuBar editor={editor} />}
+        {!disabled && <MenuBar editor={editor} collection={collection} />}
         <EditorContent editor={editor} className={cn(disabled && "opacity-80")} />
       </div>
     </div>

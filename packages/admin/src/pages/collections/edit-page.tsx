@@ -133,6 +133,7 @@ export function EditEntryPage() {
               </div>
             )}
             <FormEngine 
+              collection={slug!}
               fields={schema.fields} 
               defaultValues={entry}
               onSubmit={(data) => saveMutation.mutate(data)}

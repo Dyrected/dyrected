@@ -138,7 +138,7 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
   }, {} as any)
 }
 
-function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
+function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema: FieldSchema, basePath: string, control: any, collection: string }) {
   const { fields, append, remove } = useFieldArray({ control, name: basePath })
   return (
     <div className="space-y-4 transition-all">
@@ -162,7 +162,7 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
             </Button>
             <div className="space-y-6">
               {schema.fields?.map(subField => (
-                <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} />
+                <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} collection={collection} />
               ))}
             </div>
           </div>
@@ -177,7 +177,7 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
   )
 }
 
-export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
+export function FormFieldRenderer({ schema, basePath, control, collection }: { schema: FieldSchema, basePath: string, control: any, collection: string }) {
   const { user, schemas } = useDyrected();
   // Statically hidden field
   if (schema.admin?.hidden) return null
@@ -236,7 +236,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
         </div>
         <div className="space-y-6">
           {schema.fields?.map(subField => (
-            <FormFieldRenderer key={subField.name} schema={subField} basePath={fullPath} control={control} />
+            <FormFieldRenderer key={subField.name} schema={subField} basePath={fullPath} control={control} collection={collection} />
           ))}
         </div>
       </div>
@@ -244,11 +244,11 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
   }
 
   if (schema.type === "array") {
-    return <ArrayFieldRenderer schema={schema} basePath={fullPath} control={control} />
+    return <ArrayFieldRenderer schema={schema} basePath={fullPath} control={control} collection={collection} />
   }
 
   if (schema.type === "blocks" && schema.blocks) {
-    return <BlockBuilder schema={schema} basePath={fullPath} control={control} />
+    return <BlockBuilder schema={schema} basePath={fullPath} control={control} collection={collection} />
   }
 
   const isBoolean = schema.type === "boolean"
@@ -259,8 +259,8 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
       name={fullPath}
       render={({ field: formField }) => (
         <FormItem className={cn(
-          isBoolean 
-            ? "flex flex-row items-center justify-between rounded-xl border border-border/40 p-4 bg-white/50 shadow-sm space-y-0" 
+          isBoolean
+            ? "flex flex-row items-center justify-between rounded-xl border border-border/40 p-4 bg-white/50 shadow-sm space-y-0"
             : "space-y-3"
         )}>
           <div className={cn(isBoolean ? "space-y-1" : "flex items-center gap-2 mb-1")}>
@@ -283,7 +283,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
             )}
           </div>
           <FormControl>
-            {renderField(schema, formField, { user, schemas, siblingData: conditionData })}
+            {renderField(schema, formField, collection, { user, schemas, siblingData: conditionData })}
           </FormControl>
           {!isBoolean && schema.admin?.description && (
             <p className="text-[11px] text-muted-foreground/70 leading-relaxed italic">{schema.admin.description}</p>
@@ -296,6 +296,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
 }
 
 interface FormEngineProps {
+  collection: string
   fields: FieldSchema[]
   defaultValues?: Record<string, any>
   onSubmit: (data: any) => void
@@ -305,7 +306,7 @@ interface FormEngineProps {
   readOnly?: boolean
 }
 
-export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isLoading, submitLabel = "Save", readOnly }: FormEngineProps) {
+export function FormEngine({ collection, fields, defaultValues = {}, onSubmit, onChange, isLoading, submitLabel = "Save", readOnly }: FormEngineProps) {
   const schemaShape = buildSchemaShape(fields)
   const formSchema = z.object(schemaShape)
 
@@ -325,7 +326,7 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isL
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid gap-6">
           {fields.filter(f => !f.admin?.hidden).map((field) => (
-            <FormFieldRenderer key={field.name} schema={field} basePath="" control={form.control} />
+            <FormFieldRenderer key={field.name} schema={field} basePath="" control={form.control} collection={collection} />
           ))}
         </div>
         <div className="flex justify-end gap-4">
@@ -340,7 +341,7 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isL
   )
 }
 
-function renderField(schema: FieldSchema, field: any, context?: { user: any, schemas?: any, siblingData: any }) {
+function renderField(schema: FieldSchema, field: any, collection: string, context?: { user: any, schemas?: any, siblingData: any }) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
 
@@ -440,24 +441,26 @@ function renderField(schema: FieldSchema, field: any, context?: { user: any, sch
         />
       )
     case "image" as any:
-      return <MediaPicker 
-        value={field.value} 
-        onChange={field.onChange} 
+      return <MediaPicker
+        collection={collection}
+        value={field.value}
+        onChange={field.onChange}
         disabled={disabled}
         multiple={(schema as any).hasMany}
       />
     case "richText":
-      return <RichTextEditor value={field.value} onChange={field.onChange} disabled={disabled} />
+      return <RichTextEditor collection={collection} value={field.value} onChange={field.onChange} disabled={disabled} />
     case "json":
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "relationship":
-      const isMediaRel = (schema as any).relationTo === "media" || 
-                         (context?.schemas?.collections?.find((c: any) => c.slug === (schema as any).relationTo)?.upload)
+      const isMediaRel = (schema as any).relationTo === "media" ||
+        (context?.schemas?.collections?.find((c: any) => c.slug === (schema as any).relationTo)?.upload)
 
       if (isMediaRel) {
         return <MediaPicker
+          collection={collection}
           value={field.value}
           onChange={field.onChange}
           multiple={(schema as any).hasMany}
