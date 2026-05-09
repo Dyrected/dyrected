@@ -483,7 +483,7 @@ export function AdminShell({
             <Menu className="h-6 w-6" />
           </button>
 
-          <div className="flex-1 p-6 lg:p-10">
+          <div className="flex-1 py-6 px-4 lg:py-10 lg:px-6">
             {children}
           </div>
         </main>

@@ -11,7 +11,7 @@ export const pages = defineCollection({
   admin: { 
     useAsTitle: "title", 
     group: "Content",
-    previewUrl: "'http://localhost:3000/' + (slug == 'home' ? '' : slug)"
+    previewUrl: "'/' + (slug == 'home' ? '' : slug)"
   },
   fields: [
     { name: "title", type: "text", required: true },

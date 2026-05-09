@@ -6,7 +6,7 @@ export const posts = defineCollection({
   admin: { 
     useAsTitle: "title", 
     group: "Content",
-    previewUrl: "'http://localhost:3000/blog/' + slug"
+    previewUrl: "'/blog/' + slug"
   },
   fields: [
     { name: "title", type: "text", required: true },

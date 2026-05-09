@@ -393,24 +393,17 @@ function renderField(schema: FieldSchema, field: any, collection: string, contex
                 <RadioGroupItem
                   value={opt.value}
                   id={`${field.name}-${opt.value}`}
-                  className="peer sr-only"
+                  className="peer absolute left-4 z-10"
                 />
                 <Label
                   htmlFor={`${field.name}-${opt.value}`}
                   className={cn(
-                    "flex flex-1 items-center justify-between rounded-xl border border-border/40 bg-white/50 px-4 py-3 cursor-pointer transition-all hover:bg-white/80 hover:shadow-sm",
+                    "flex flex-1 items-center pl-12 pr-4 py-3 rounded-xl border border-border/40 bg-white/50 cursor-pointer transition-all hover:bg-white/80 hover:shadow-sm",
                     "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:shadow-md peer-data-[state=checked]:ring-1 peer-data-[state=checked]:ring-primary/20",
                     "text-sm font-medium text-foreground/70 peer-data-[state=checked]:text-primary"
                   )}
                 >
-                  <span>{opt.label}</span>
-                  <div className={cn(
-                    "h-4 w-4 rounded-full border-2 border-border/60 transition-all",
-                    "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary peer-data-[state=checked]:scale-110",
-                    "flex items-center justify-center"
-                  )}>
-                    <div className="h-1.5 w-1.5 rounded-full bg-white opacity-0 peer-data-[state=checked]:opacity-100" />
-                  </div>
+                  {opt.label}
                 </Label>
               </div>
             ))}

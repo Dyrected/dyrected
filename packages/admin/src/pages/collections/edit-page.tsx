@@ -61,14 +61,8 @@ export function EditEntryPage() {
     },
   })
 
-  if (!schema) {
-    console.log("[PreviewDebug] Schema not found for slug:", slug)
-    return <div>Collection not found</div>
-  }
+  if (!schema) return <div>Collection not found</div>
   if (isEdit && isEntryLoading) return <div>Loading entry...</div>
-
-  console.log("[PreviewDebug] Schema Admin Config:", schema.admin)
-  console.log("[PreviewDebug] Current Entry Data:", entry)
 
   const hasStatus = schema?.fields.some((f: any) => f.name === "status")
   const currentStatus = entry?.status || "draft"
@@ -77,25 +71,25 @@ export function EditEntryPage() {
     ? schema.admin.previewUrl(entry, { locale: 'en' }) 
     : schema.admin?.previewUrl
 
-  console.log("[PreviewDebug] Initial previewUrl from config:", previewUrl)
-
   if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
      previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => entry?.[key.trim()] || "")
-     console.log("[PreviewDebug] After template replacement:", previewUrl)
   } else if (typeof previewUrl === 'string' && entry) {
     try {
-      if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==')) {
-        const evaluated = jexl.evalSync(previewUrl, entry)
-        console.log("[PreviewDebug] Jexl Evaluation Success:", evaluated)
-        previewUrl = evaluated
+      // Provide current window origin to Jexl context so users can use it in expressions
+      const context = { ...entry, siteUrl: window.location.origin };
+      
+      if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
+        previewUrl = jexl.evalSync(previewUrl, context)
       }
     } catch (e) {
       console.error("[PreviewDebug] Jexl Evaluation Failed:", e)
     }
   }
 
-  console.log("[PreviewDebug] Final resolved previewUrl:", previewUrl)
-  console.log("[PreviewDebug] showPreview state:", showPreview)
+  // If the resolved URL is relative, prepend the current origin
+  if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
+    previewUrl = `${window.location.origin}${previewUrl}`
+  }
 
   const canCreate = (schema.access as any)?.create !== false
   const canUpdate = (schema.access as any)?.update !== false
