@@ -21,6 +21,7 @@ import { MediaPage } from "./pages/media/media-page";
 import { GlobalEditorPage } from "./pages/globals/editor-page";
 import { SetupPromptUI } from "./pages/setup/setup-prompt";
 import { ErrorBoundary } from "./components/error-boundary";
+import { AuthGate } from "./components/auth/auth-gate";
 
 // ─── Route that resolves collection → list or media page ─────────────────────
 
@@ -74,17 +75,19 @@ function NavigationSync({ onNavigate }: NavigationSyncProps) {
 
 function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: string) => void, isEmbedded?: boolean }) {
   return (
-    <AdminShell isEmbedded={isEmbedded}>
-      <NavigationSync onNavigate={onNavigate} />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/collections/:slug" element={<CollectionRoute />} />
-        <Route path="/collections/:slug/new" element={<EditEntryPage />} />
-        <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
-        <Route path="/globals/:slug" element={<GlobalEditorPage />} />
-        <Route path="/setup" element={<SetupPage />} />
-      </Routes>
-    </AdminShell>
+    <AuthGate>
+      <AdminShell isEmbedded={isEmbedded}>
+        <NavigationSync onNavigate={onNavigate} />
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/collections/:slug" element={<CollectionRoute />} />
+          <Route path="/collections/:slug/new" element={<EditEntryPage />} />
+          <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
+          <Route path="/globals/:slug" element={<GlobalEditorPage />} />
+          <Route path="/setup" element={<SetupPage />} />
+        </Routes>
+      </AdminShell>
+    </AuthGate>
   );
 }
 

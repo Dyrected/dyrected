@@ -12,6 +12,8 @@ interface DyrectedContextType {
   logout: () => void;
   isAuthenticated: boolean;
   schemas: { collections: any[]; globals: any[]; admin?: any } | null;
+  user: any | null;
+  setToken: (token: string) => void;
 }
 
 const DyrectedContext = createContext<DyrectedContextType | undefined>(undefined);
@@ -34,6 +36,7 @@ export function DyrectedProvider({
   const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
   const [client, setClient] = useState<DyrectedClient | null>(null);
   const [schemas, setSchemas] = useState<{ collections: any[]; globals: any[]; admin?: any } | null>(null);
+  const [user, setUser] = useState<any | null>(null);
 
   useEffect(() => {
     if (baseUrl) {
@@ -52,6 +55,13 @@ export function DyrectedProvider({
     }
   }, [baseUrl, apiKey, siteId]);
 
+  useEffect(() => {
+    const token = localStorage.getItem("dyrected_token");
+    if (token && client && schemas && !user) {
+      setToken(token);
+    }
+  }, [client, schemas, user]);
+
   const setAuth = (newUrl: string, newKey: string, newSiteId?: string) => {
     localStorage.setItem("dyrected_url", newUrl);
     localStorage.setItem("dyrected_key", newKey);
@@ -63,14 +73,28 @@ export function DyrectedProvider({
     setSiteId(newSiteId);
   };
 
+  const setToken = (token: string) => {
+    localStorage.setItem("dyrected_token", token);
+    if (client) {
+      client.setToken(token);
+      // Fetch user data
+      const authCollection = schemas?.collections.find((c: any) => c.auth);
+      if (authCollection) {
+        client.collection(authCollection.slug).me().then(setUser).catch(() => setUser(null));
+      }
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("dyrected_url");
     localStorage.removeItem("dyrected_key");
     localStorage.removeItem("dyrected_site_id");
+    localStorage.removeItem("dyrected_token");
     setBaseUrl("");
     setApiKey(undefined);
     setSiteId(undefined);
     setClient(null);
+    setUser(null);
   };
 
   return (
@@ -78,9 +102,11 @@ export function DyrectedProvider({
       client,
       config: { baseUrl, apiKey, siteId },
       setAuth,
+      setToken,
       logout,
       isAuthenticated: !!baseUrl && !!apiKey,
-      schemas
+      schemas,
+      user
     }}>
       {children}
     </DyrectedContext.Provider>

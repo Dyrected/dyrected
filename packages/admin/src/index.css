@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer base {
+  /* Design Tokens */
   .admin-ui {
     --background: 210 40% 99%;
     --foreground: 222.2 84% 4.9%;
@@ -28,11 +29,11 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 32% 91%; /* Even softer gray */
+    --border: 214.3 32% 91%;
     --input: 214.3 32% 91%;
     --ring: 239 84% 67% / 0.1;
 
-    --radius: 1rem; /* More rounded */
+    --radius: 0.5rem;
 
     --sidebar-background: 210 40% 99%;
     --sidebar-foreground: 222.2 84% 4.9%;
@@ -43,95 +44,44 @@
     --sidebar-border: 214.3 32% 91%;
     --sidebar-ring: 239 84% 67%;
   }
+
+  /* Global Softening (Non-Forcing) */
+  .admin-ui {
+    color-scheme: light;
+  }
+
+  .admin-ui * {
+    border-color: hsl(var(--border) / 0.5);
+  }
 }
 
-@layer base {
-  /* Global border softening */
-  .admin-ui * {
-    border-color: hsl(var(--border) / 0.4) !important;
-  }
-  
-  .admin-ui .border-border\/60,
-  .admin-ui .border-border\/50,
-  .admin-ui .border-border\/40,
-  .admin-ui .border-border\/20 {
-    border-color: hsl(var(--border) / 0.3) !important;
+@layer utilities {
+  /* Left Accent Utility: Used for nesting without borders */
+  .admin-ui .left-accent {
+    @apply border-l-2 border-primary/10 pl-6 transition-all duration-200 bg-transparent;
   }
 
-  /* Padding streamlining */
-  .admin-ui .p-8 {
-    padding: 1.5rem !important;
-  }
-  .admin-ui .p-6, 
-  .admin-ui .p-5, 
-  .admin-ui .p-4 {
-    padding: 1rem !important;
-  }
-  
-  /* Main content spacing */
-  .admin-ui main .flex-1.p-6,
-  .admin-ui main .flex-1.lg\:p-8 {
-    padding: 1.5rem !important;
+  .admin-ui .left-accent:hover {
+    @apply border-l-primary bg-primary/[0.01];
   }
 
-  /* Gap reduction */
-  .admin-ui .space-y-8 {
-    margin-top: 0 !important;
-    gap: 1.25rem !important;
+  /* Flatness Utilities */
+  .admin-ui .flat-container {
+    @apply bg-transparent border-none shadow-none p-0;
   }
-  .admin-ui .space-y-6,
-  .admin-ui .space-y-5 {
-    gap: 1rem !important;
-  }
+}
 
-  /* Radius softening */
-  .admin-ui .rounded-xl,
-  .admin-ui .rounded-lg {
-    border-radius: 0.75rem !important;
-  }
-  .admin-ui .rounded-md {
-    border-radius: 0.5rem !important;
-  }
-
-  /* Elimination of nested background noise */
-  .admin-ui .bg-muted\/30,
-  .admin-ui .bg-muted\/10,
-  .admin-ui .bg-white\/30,
-  .admin-ui .bg-primary\/5 {
-    background-color: transparent !important;
-  }
-
-  /* Form field refinement */
+@layer components {
+  /* Refined Form Inputs (Non-Forcing) */
   .admin-ui input, 
   .admin-ui select, 
   .admin-ui textarea {
-    @apply focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus:outline-none;
-    border-color: hsl(var(--border)) !important;
-    background-color: hsl(var(--background)) !important;
-    border-radius: 0.5rem !important;
-    box-shadow: none !important;
-  }
-  
-  /* Select trigger special case */
-  .admin-ui .rounded-xl.border-border\/40 {
-    border-color: hsl(var(--border)) !important;
-    background-color: hsl(var(--background)) !important;
-    border-radius: 0.5rem !important;
-    box-shadow: none !important;
+    @apply focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus:outline-none border-border/60 bg-transparent transition-all;
   }
 
-  /* Sidebar styling */
-  .admin-ui aside {
-    border-right-width: 1px !important;
-    background-color: #fafbfc !important;
-  }
-  .admin-ui aside .border-b {
-    border-bottom-color: hsl(var(--border) / 0.3) !important;
-  }
-
-  /* Shadow softening */
-  .admin-ui .shadow-sm,
-  .admin-ui .shadow {
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.02) !important;
+  .admin-ui input:focus, 
+  .admin-ui select:focus, 
+  .admin-ui textarea:focus {
+    @apply border-primary/40;
   }
 }

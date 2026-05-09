@@ -9,6 +9,32 @@ import { PreviewController } from "./controllers/preview.controller.js";
 import { requireAuth, optionalAuth } from "./middleware/auth.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
+import { evaluateAccess } from "./auth/jexl.js";
+
+/**
+ * Access gate middleware for granular permissions using Jexl.
+ */
+function accessGate(target: { slug: string; access?: any }, action: 'read' | 'create' | 'update' | 'delete') {
+  return async (c: any, next: any) => {
+    const user = c.get('user');
+    const accessExpr = target.access?.[action];
+
+    // If no access expression, default to public (true) for now to maintain parity with old behavior.
+    // However, if we want to be secure by default, we could change this to false.
+    if (accessExpr === undefined || accessExpr === null) {
+      return await next();
+    }
+
+    const accessArgs = { user, req: c.req, doc: null };
+    const allowed = await evaluateAccess(accessExpr, accessArgs);
+
+    if (!allowed) {
+      return c.json({ error: true, message: `Access denied: ${action} on ${target.slug}` }, 403);
+    }
+
+    await next();
+  };
+}
 
 /**
  * Register dynamic routes based on the provided configuration.
@@ -35,15 +61,26 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const user = c.get('user');
     const accessArgs = { user, req: c.req, doc: null };
 
-    const resolveAccess = async (fn: any): Promise<boolean> => {
-      if (!fn) return true;
-      try {
-        const result = await fn(accessArgs);
-        return typeof result === 'boolean' ? result : !!result;
-      } catch (err) {
-        console.error('[dyrected/core] Access check failed:', err);
-        return false;
+    const resolveAccess = async (access: any): Promise<boolean> => {
+      if (access === undefined || access === null) return true; // Default to public if not defined? 
+      // Actually, standardizing on false for security might be better, but existing logic used true if !fn.
+      // Let's stick to the current "undefined means open" for schemas, but apply Jexl if it's a string.
+      
+      if (typeof access === 'function') {
+        try {
+          const result = await access(accessArgs);
+          return typeof result === 'boolean' ? result : !!result;
+        } catch (err) {
+          console.error('[dyrected/core] Functional access check failed:', err);
+          return false;
+        }
       }
+
+      if (typeof access === 'string' || typeof access === 'boolean') {
+        return evaluateAccess(access, accessArgs);
+      }
+
+      return true;
     };
 
     const filteredCollections = await Promise.all(collections
@@ -132,9 +169,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       const mediaController = new MediaController(col.slug);
       const prefix = `/api/collections/${col.slug}`;
 
-      app.get(`${prefix}/media`, (c) => mediaController.find(c));
-      app.post(`${prefix}/media`, (c) => mediaController.upload(c));
-      app.delete(`${prefix}/media/:id`, (c) => mediaController.delete(c));
+      app.get(`${prefix}/media`, accessGate(col, 'read'), (c) => mediaController.find(c));
+      app.post(`${prefix}/media`, accessGate(col, 'create'), (c) => mediaController.upload(c));
+      app.delete(`${prefix}/media/:id`, accessGate(col, 'delete'), (c) => mediaController.delete(c));
     }
   }
 
@@ -147,6 +184,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
     app.post(`${path}/login`, (c) => authController.login(c));
     app.post(`${path}/logout`, (c) => authController.logout(c));
+    app.get(`${path}/init`, (c) => authController.init(c));
+    app.post(`${path}/first-user`, (c) => authController.registerFirstUser(c));
     // /me and /refresh-token require a valid token
     app.get(`${path}/me`, requireAuth(), (c) => authController.me(c));
     app.post(`${path}/refresh-token`, requireAuth(), (c) => authController.refreshToken(c));
@@ -159,13 +198,13 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const path = `/api/collections/${collection.slug}`;
     const controller = new CollectionController(collection);
 
-    app.get(path, (c) => controller.find(c));
-    app.post(path, (c) => controller.create(c));
-    app.post(`${path}/media`, (c) => controller.create(c));
-    app.get(`${path}/:id`, (c) => controller.findOne(c));
-    app.patch(`${path}/:id`, (c) => controller.update(c));
-    app.delete(`${path}/:id`, (c) => controller.delete(c));
-    app.post(`${path}/seed`, (c) => controller.seed(c));
+    app.get(path, accessGate(collection, 'read'), (c) => controller.find(c));
+    app.post(path, accessGate(collection, 'create'), (c) => controller.create(c));
+    app.post(`${path}/media`, accessGate(collection, 'create'), (c) => controller.create(c));
+    app.get(`${path}/:id`, accessGate(collection, 'read'), (c) => controller.findOne(c));
+    app.patch(`${path}/:id`, accessGate(collection, 'update'), (c) => controller.update(c));
+    app.delete(`${path}/:id`, accessGate(collection, 'delete'), (c) => controller.delete(c));
+    app.post(`${path}/seed`, (c) => controller.seed(c)); // Seeding usually doesn't need gate or has its own logic
   }
 
   // 5. Global Routes (Static)
@@ -173,8 +212,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const path = `/api/globals/${global.slug}`;
     const controller = new GlobalController(global);
 
-    app.get(path, (c) => controller.get(c));
-    app.patch(path, (c) => controller.update(c));
+    app.get(path, accessGate(global, 'read'), (c) => controller.get(c));
+    app.patch(path, accessGate(global, 'update'), (c) => controller.update(c));
     app.post(`${path}/seed`, (c) => controller.seed(c));
   }
 

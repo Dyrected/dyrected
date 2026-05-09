@@ -19,6 +19,69 @@ export class AuthController {
   constructor(private collection: CollectionConfig) {}
 
   // ---------------------------------------------------------------------------
+  // GET /init
+  // Checks if the first user needs to be created.
+  // ---------------------------------------------------------------------------
+  async init(c: Context<DyrectedContext>) {
+    const db = c.get('config').db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const result = await db.find({
+      collection: this.collection.slug,
+      limit: 1,
+    });
+
+    return c.json({
+      initialized: result.total > 0,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // POST /first-user
+  // Creates the first user if none exist.
+  // ---------------------------------------------------------------------------
+  async registerFirstUser(c: Context<DyrectedContext>) {
+    const db = c.get('config').db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    // 1. Check if users already exist
+    const check = await db.find({
+      collection: this.collection.slug,
+      limit: 1,
+    });
+
+    if (check.total > 0) {
+      return c.json({ error: true, message: 'Initial user already exists.' }, 403);
+    }
+
+    const body = await c.req.json().catch(() => null);
+    if (!body?.email || !body?.password) {
+      return c.json({ error: true, message: 'email and password are required.' }, 400);
+    }
+
+    // 2. Create the user
+    const hashedPassword = await hashPassword(body.password);
+    const user = await db.create({
+      collection: this.collection.slug,
+      data: {
+        ...body,
+        password: hashedPassword,
+        roles: ['admin'], // Default first user to admin
+      },
+    });
+
+    // 3. Log them in immediately
+    const token = await signCollectionToken({
+      sub: user.id,
+      email: user.email,
+      collection: this.collection.slug,
+    });
+
+    const { password: _, ...safeUser } = user;
+    return c.json({ token, user: safeUser });
+  }
+
+  // ---------------------------------------------------------------------------
   // POST /login
   // ---------------------------------------------------------------------------
   async login(c: Context<DyrectedContext>) {

@@ -180,6 +180,15 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
       /** Issue a fresh token for the currently authenticated user. */
       refreshToken: (): Promise<{ token: string }> =>
         this.request(`/api/collections/${slug}/refresh-token`, { method: 'POST' }),
+      /** Check if this auth collection has any users (initialized). */
+      isInitialized: (): Promise<{ initialized: boolean }> =>
+        this.request(`/api/collections/${slug}/init`),
+      /** Register the very first user in an empty auth collection. */
+      registerFirstUser: (data: any): Promise<{ token: string; user: TSchema['collections'][K] }> =>
+        this.request(`/api/collections/${slug}/first-user`, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        }),
     };
   }
 

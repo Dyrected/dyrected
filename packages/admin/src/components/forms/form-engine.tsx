@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "../../components/ui/form"
+import { useDyrected } from "../../providers/dyrected-provider"
 import { Input } from "../../components/ui/input"
 import { Button } from "../../components/ui/button"
 import { Plus, Trash2 } from "lucide-react"
@@ -140,24 +141,26 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
 function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
   const { fields, append, remove } = useFieldArray({ control, name: basePath })
   return (
-    <div className="space-y-5 transition-all">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 transition-all">
+      <div className="flex justify-between items-center pb-2">
         <div>
-          <h4 className="font-bold text-sm text-foreground">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-tight">Array Collection</p>
+          <h4 className="font-bold text-sm text-foreground tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+          {schema.admin?.description && (
+            <p className="text-[11px] text-muted-foreground/60 italic">{schema.admin.description}</p>
+          )}
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={() => append(buildDefaultValues(schema.fields || [], {}))}>
-          <Plus className="w-3.5 h-3.5 mr-1.5" />
+        <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] rounded-md border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={() => append(buildDefaultValues(schema.fields || [], {}))}>
+          <Plus className="w-3 h-3 mr-1" />
           Add Item
         </Button>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {fields.map((item, index) => (
-          <div key={item.id} className="relative p-4 bg-white border-l border-primary/5 hover:border-primary/20 hover:shadow-sm transition-all animate-in">
-            <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md" onClick={() => remove(index)}>
-              <Trash2 className="w-3.5 h-3.5" />
+          <div key={item.id} className="relative group left-accent animate-in">
+            <Button type="button" variant="ghost" size="icon" className="absolute -top-1 -right-2 h-6 w-6 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => remove(index)}>
+              <Trash2 className="w-3 h-3" />
             </Button>
-            <div className="space-y-6 pt-2">
+            <div className="space-y-6">
               {schema.fields?.map(subField => (
                 <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} />
               ))}
@@ -165,8 +168,8 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
           </div>
         ))}
         {fields.length === 0 && (
-          <div className="text-center py-8 border border-dashed border-border rounded-lg bg-muted/10">
-            <p className="text-xs text-muted-foreground">No items added yet.</p>
+          <div className="text-center py-6 border border-dashed border-border/40 rounded-md">
+            <p className="text-[11px] text-muted-foreground/50">No items added yet.</p>
           </div>
         )}
       </div>
@@ -175,6 +178,7 @@ function ArrayFieldRenderer({ schema, basePath, control }: { schema: FieldSchema
 }
 
 export function FormFieldRenderer({ schema, basePath, control }: { schema: FieldSchema, basePath: string, control: any }) {
+  const { user } = useDyrected();
   // Statically hidden field
   if (schema.admin?.hidden) return null
 
@@ -202,16 +206,31 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
 
   if (!isVisible) return null
 
-  if ((schema.access as any)?.read === false) return null
+  // Evaluate Read Access
+  const readAccess = (schema.access as any)?.read
+  let canRead = true
+  if (readAccess === false) {
+    canRead = false
+  } else if (typeof readAccess === 'string') {
+    try {
+      canRead = jexl.evalSync(readAccess, { user, ...conditionData })
+    } catch (e) {
+      console.warn("Read access eval failed:", e)
+    }
+  }
+
+  if (!canRead) return null
 
   const fullPath = basePath ? `${basePath}.${schema.name}` : schema.name
 
   if (schema.type === "object") {
     return (
-      <div className="border border-border/60 p-5 rounded-xl space-y-5 bg-white/30 shadow-sm transition-all hover:bg-white/40">
-        <div className="flex items-center gap-2 border-b border-border/20 pb-3 mb-2">
-          <div className="h-2 w-2 rounded-full bg-primary/40 shadow-sm" />
-          <h4 className="font-bold text-sm text-foreground tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+      <div className="left-accent space-y-6">
+        <div className="flex items-center gap-2 mb-2">
+          <h4 className="font-bold text-sm text-foreground/80 tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+          {schema.admin?.description && (
+            <p className="text-[10px] text-muted-foreground/50 italic">{schema.admin.description}</p>
+          )}
         </div>
         <div className="space-y-6">
           {schema.fields?.map(subField => (
@@ -248,7 +267,7 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
             )}
           </div>
           <FormControl>
-            {renderField(schema, formField)}
+            {renderField(schema, formField, { user, siblingData: conditionData })}
           </FormControl>
           {schema.admin?.description && (
             <p className="text-[11px] text-muted-foreground/70 leading-relaxed italic">{schema.admin.description}</p>
@@ -305,10 +324,24 @@ export function FormEngine({ fields, defaultValues = {}, onSubmit, onChange, isL
   )
 }
 
-function renderField(schema: FieldSchema, field: any) {
+function renderField(schema: FieldSchema, field: any, context?: { user: any, siblingData: any }) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
-  const disabled = schema.admin?.readOnly || (schema.access as any)?.update === false
+
+  // Evaluate Update Access
+  const updateAccess = (schema.access as any)?.update
+  let canUpdate = true
+  if (updateAccess === false) {
+    canUpdate = false
+  } else if (typeof updateAccess === 'string' && context) {
+    try {
+      canUpdate = jexl.evalSync(updateAccess, { user: context.user, ...context.siblingData })
+    } catch (e) {
+      console.warn("Update access eval failed:", e)
+    }
+  }
+
+  const disabled = schema.admin?.readOnly || !canUpdate
 
   switch (schema.type) {
     case "textarea":

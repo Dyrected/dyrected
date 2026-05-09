@@ -235,21 +235,21 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   return (
     <div className="space-y-8 animate-in">
-      <div className="flex items-end justify-between border-b border-border/50 pb-6">
+      <div className="flex items-end justify-between mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Database className="h-5 w-5 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">{schema.labels?.plural || schema.label || schema.slug}</h1>
+          <div className="flex items-center gap-3 mb-1">
+            <Database className="h-4 w-4 text-primary/60" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">{schema.labels?.plural || schema.label || schema.slug}</h1>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Manage your {schema.slug} entries, search, and update content.
+          <p className="text-[11px] text-muted-foreground/60 font-medium">
+            Manage your {schema.slug} entries and update content.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link to={`/collections/${slug}/new`}>
-            <Button className="h-10 px-4 rounded-lg bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
-              <Plus className="mr-2 h-4 w-4" />
-              Create {schema.labels?.singular || schema.label || schema.slug}
+            <Button className="h-8 px-4 text-[11px] rounded-md bg-primary hover:bg-primary/90 shadow-sm transition-all active:scale-95">
+              <Plus className="mr-1.5 h-3 w-3" />
+              Create New
             </Button>
           </Link>
         </div>
@@ -276,7 +276,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           )}
         />
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-border/50 bg-muted/20">
+          <div className="flex items-center justify-between px-4 py-4 border-t border-border/40">
             <p className="text-xs text-muted-foreground">
               Page <strong>{page}</strong> of <strong>{totalPages}</strong>
               {response?.total != null && (

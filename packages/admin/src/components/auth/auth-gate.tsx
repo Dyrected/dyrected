@@ -1,64 +1,62 @@
-import React, { useState } from "react";
+import React from "react";
 import { useDyrected } from "../../providers/dyrected-provider";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
-import { Label } from "../../components/ui/label";
+import { useQuery } from "@tanstack/react-query";
+import { LoginPage } from "../../pages/auth/login-page";
+import { FirstUserPage } from "../../pages/auth/first-user-page";
 
+/**
+ * AuthGate protects the admin dashboard and handles the initial bootstrap flow.
+ * 
+ * 1. Checks if any user collection has 'auth: true'.
+ * 2. If yes, checks if at least one user exists (initialized).
+ * 3. If not initialized, shows the 'First User' registration page.
+ * 4. If initialized but not logged in, shows the 'Login' page.
+ * 5. If logged in (or no auth required), renders the children.
+ */
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, setAuth } = useDyrected();
-  const [url, setUrl] = useState("http://localhost:3000/api/dyrected");
-  const [key, setKey] = useState("");
+  const { client, user, setToken, schemas } = useDyrected();
 
-  if (isAuthenticated) {
+  // 1. Fetch schemas to find the auth collection
+  const authCollection = schemas?.collections.find((c: any) => c.auth);
+
+  // 2. Check if the collection is initialized
+  const { data: initData, isLoading: isLoadingInit } = useQuery({
+    queryKey: ["auth-init", authCollection?.slug],
+    queryFn: () => client!.collection(authCollection!.slug).isInitialized(),
+    enabled: !!client && !!authCollection,
+  });
+
+  const isLoading = !schemas || (authCollection && isLoadingInit);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground animate-pulse">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no auth collection exists, the app is open
+  if (!authCollection) {
     return <>{children}</>;
   }
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (url && key) {
-      setAuth(url, key);
-    }
-  };
+  // If not initialized, show first user registration
+  if (initData && !initData.initialized) {
+    return <FirstUserPage collectionSlug={authCollection.slug} onComplete={(data: any) => {
+      setToken(data.token);
+    }} />;
+  }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Connect to Dyrected</CardTitle>
-          <CardDescription>
-            Enter your instance URL and API key to manage your content.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="url">Instance URL</Label>
-              <Input 
-                id="url" 
-                placeholder="https://cms.yourdomain.com/api/dyrected" 
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="key">API Key</Label>
-              <Input 
-                id="key" 
-                type="password" 
-                placeholder="Enter your site API key" 
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full">Login</Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
-  );
+  // If not logged in, show login page
+  if (!user) {
+    return <LoginPage collectionSlug={authCollection.slug} onLogin={(data: any) => {
+      setToken(data.token);
+    }} />;
+  }
+
+  return <>{children}</>;
 }

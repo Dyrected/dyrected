@@ -73,33 +73,33 @@ function SortableBlockItem({
   if (!blockConfig) return null
 
   return (
-    <div ref={setNodeRef} style={style} className="relative border border-border rounded-md bg-background shadow-sm mb-4">
+    <div ref={setNodeRef} style={style} className="relative group left-accent mb-4 animate-in">
       {/* Header / Drag Handle */}
-      <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
+      <div className="flex items-center justify-between pb-3">
         <div className="flex items-center gap-2">
-          <div {...attributes} {...listeners} className="cursor-grab hover:bg-muted p-1 rounded-md">
-            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          <div {...attributes} {...listeners} className="cursor-grab opacity-20 group-hover:opacity-100 hover:bg-muted p-1 rounded-md transition-all">
+            <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
-          <span className="font-semibold text-sm">
+          <span className="font-bold text-xs text-foreground/70 tracking-tight">
             {blockConfig.labels?.singular || blockConfig.slug}
           </span>
-          <span className="text-xs text-muted-foreground ml-2">
-            Block {index + 1}
+          <span className="text-[10px] text-muted-foreground/40 ml-2 uppercase tracking-widest font-semibold">
+            Item {index + 1}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsExpanded(!isExpanded)}>
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/40" onClick={() => setIsExpanded(!isExpanded)}>
+            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </Button>
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => remove(index)}>
-            <X className="w-4 h-4" />
+          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10" onClick={() => remove(index)}>
+            <X className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
 
       {/* Content */}
       {isExpanded && (
-        <div className="p-4 space-y-6">
+        <div className="space-y-6">
           {blockConfig.fields.map(subField => (
             <FormFieldRenderer 
               key={subField.name} 
@@ -143,24 +143,26 @@ export function BlockBuilder({ schema, basePath, control }: BlockBuilderProps) {
   }
 
   return (
-    <div className="border border-border p-4 rounded-md space-y-4 bg-muted/10">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4">
+      <div className="flex justify-between items-center pb-2">
         <div>
-          <h4 className="font-semibold text-sm">{schema.label}</h4>
-          <p className="text-xs text-muted-foreground mt-1">Manage blocks for this section.</p>
+          <h4 className="font-bold text-sm text-foreground tracking-tight">{schema.label}</h4>
+          {schema.admin?.description && (
+            <p className="text-[11px] text-muted-foreground/60 italic">{schema.admin.description}</p>
+          )}
         </div>
         
         {schema.blocks && schema.blocks.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" size="sm">
+              <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] rounded-md border-primary/20 hover:bg-primary/5 hover:text-primary">
                 Add Block
-                <ChevronDown className="w-4 h-4 ml-2" />
+                <ChevronDown className="w-3 h-3 ml-1.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="rounded-lg border-border/40 shadow-xl">
               {schema.blocks.map((block) => (
-                <DropdownMenuItem key={block.slug} onClick={() => handleAddBlock(block)}>
+                <DropdownMenuItem key={block.slug} onClick={() => handleAddBlock(block)} className="text-[13px] rounded-md focus:bg-primary/5 focus:text-primary transition-colors">
                   {block.labels?.singular || block.slug}
                 </DropdownMenuItem>
               ))}
@@ -170,8 +172,8 @@ export function BlockBuilder({ schema, basePath, control }: BlockBuilderProps) {
       </div>
 
       {fields.length === 0 ? (
-        <div className="text-center p-8 border border-dashed border-border rounded-md">
-          <p className="text-sm text-muted-foreground mb-4">No blocks added yet.</p>
+        <div className="text-center p-8 border border-dashed border-border/40 rounded-md">
+          <p className="text-[11px] text-muted-foreground/50">No blocks added yet.</p>
         </div>
       ) : (
         <DndContext 
@@ -183,7 +185,7 @@ export function BlockBuilder({ schema, basePath, control }: BlockBuilderProps) {
             items={fields.map(f => f.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="pt-4">
+            <div className="pt-2">
               {fields.map((item, index) => (
                 <SortableBlockItem
                   key={item.id}

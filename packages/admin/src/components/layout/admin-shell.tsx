@@ -158,7 +158,7 @@ function SidebarInner({
       {!isEmbedded && (
         <div
           className={cn(
-            "flex items-center h-14 border-b border-border shrink-0 transition-all",
+            "flex items-center h-14 shrink-0 transition-all",
             collapsed ? "justify-center px-2" : "gap-2.5 px-4"
           )}
         >
@@ -446,10 +446,10 @@ export function AdminShell({
         <main className="flex-1 min-w-0 overflow-auto flex flex-col relative">
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden fixed top-3 right-3 z-20 p-2.5 rounded-full bg-background border border-border shadow-lg text-foreground hover:bg-muted transition-all active:scale-95"
+            className="md:hidden fixed top-3 right-3 z-20 p-2 rounded-md bg-background border border-border/40 text-muted-foreground/60 hover:text-foreground transition-all active:scale-95"
             aria-label="Open menu"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4" />
           </button>
 
           <div className="flex-1 p-6 lg:p-8">

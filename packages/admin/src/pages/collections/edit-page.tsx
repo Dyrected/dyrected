@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
-import { Calendar, Globe, Archive, Eye, EyeOff } from "lucide-react"
+import { Globe, Archive, Eye, EyeOff } from "lucide-react"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
 
 export function EditEntryPage() {
@@ -123,9 +123,9 @@ export function EditEntryPage() {
         </div>
       </div>
 
-      <div className={`grid gap-8 ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
+      <div className={`grid gap-12 ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
         <div className={`${showPreview ? "" : "lg:col-span-8"} space-y-6`}>
-          <div className="rounded-xl border border-border/60 bg-white p-8 shadow-sm">
+          <div className="animate-in">
             {!canUpdate && isEdit && (
               <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
                 <Archive className="h-4 w-4" />
@@ -154,38 +154,32 @@ export function EditEntryPage() {
             />
           </div>
         ) : (
-          <div className="lg:col-span-4 space-y-6">
-            <div className="rounded-xl border border-border/60 bg-white p-6 shadow-sm space-y-5">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground/80">Document Status</h3>
+          <div className="lg:col-span-4 space-y-8">
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground/40">Document Meta</h3>
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-                  <span className="text-sm font-medium text-muted-foreground">ID</span>
-                  <code className="text-[10px] font-mono bg-white px-2 py-1 rounded border border-border/60 shadow-xs select-all">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-medium text-muted-foreground/60">ID</span>
+                  <code className="font-mono text-muted-foreground/80 select-all">
                     {isEdit ? id : "Pending..."}
                   </code>
                 </div>
                 
                 {isEdit && (
                   <>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-                      <span className="text-sm font-medium text-muted-foreground">Created</span>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm font-semibold">
-                          {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'N/A'}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-medium text-muted-foreground/60">Created</span>
+                      <span className="font-medium text-muted-foreground/80">
+                        {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : 'N/A'}
+                      </span>
                     </div>
                     
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/40">
-                      <span className="text-sm font-medium text-muted-foreground">Updated</span>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-sm font-semibold">
-                          {entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : 'N/A'}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-medium text-muted-foreground/60">Updated</span>
+                      <span className="font-medium text-muted-foreground/80">
+                        {entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : 'N/A'}
+                      </span>
                     </div>
                   </>
                 )}
@@ -193,13 +187,13 @@ export function EditEntryPage() {
             </div>
             
             {hasStatus && (
-               <div className="rounded-xl border border-border/60 bg-primary/5 p-6 shadow-sm space-y-4 border-l-4 border-l-primary">
-                 <h3 className="font-bold flex items-center gap-2 text-primary">
-                   {currentStatus === "published" ? <Globe className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+               <div className="p-5 rounded-lg bg-primary/[0.02] border border-primary/10 space-y-3">
+                 <h3 className="font-bold text-xs flex items-center gap-2 text-primary/70">
+                   {currentStatus === "published" ? <Globe className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
                    Publishing Mode
                  </h3>
-                 <p className="text-xs leading-relaxed text-muted-foreground">
-                   This collection supports workflow states. Set the status to <strong>Published</strong> to make this entry visible on your public site.
+                 <p className="text-[11px] leading-relaxed text-muted-foreground/60">
+                   This collection supports workflow states. Set the status to <strong>Published</strong> to make this entry visible.
                  </p>
                </div>
             )}

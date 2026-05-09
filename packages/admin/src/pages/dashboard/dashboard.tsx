@@ -53,41 +53,35 @@ export function Dashboard() {
         <p className="text-muted-foreground">Monitor and manage your site's content and structure.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-          <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-primary/10 p-2 text-primary">
-              <Database className="h-6 w-6" />
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="p-1 space-y-2 group">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-primary/5 p-1.5 text-primary/60 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+              <Database className="h-4 w-4" />
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Collections</h3>
-              <p className="text-3xl font-semibold">{collections.length}</p>
-            </div>
+            <h3 className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Collections</h3>
           </div>
+          <p className="text-3xl font-bold tracking-tight">{collections.length}</p>
         </div>
 
-        <div className="rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-          <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-secondary/10 p-2 text-secondary-foreground">
-              <Globe className="h-6 w-6" />
+        <div className="p-1 space-y-2 group">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-secondary/5 p-1.5 text-muted-foreground/60 group-hover:bg-accent group-hover:text-foreground transition-colors">
+              <Globe className="h-4 w-4" />
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Global Configs</h3>
-              <p className="text-3xl font-semibold">{globals.length}</p>
-            </div>
+            <h3 className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Global Configs</h3>
           </div>
+          <p className="text-3xl font-bold tracking-tight">{globals.length}</p>
         </div>
 
-        <div className="rounded-xl border bg-card p-6 shadow-sm transition-all hover:shadow-md">
-          <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-accent/10 p-2 text-accent-foreground">
-              <ImageIcon className="h-6 w-6" />
+        <div className="p-1 space-y-2 group">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-accent p-1.5 text-muted-foreground/60 group-hover:bg-accent group-hover:text-foreground transition-colors">
+              <ImageIcon className="h-4 w-4" />
             </div>
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Media Files</h3>
-              <p className="text-3xl font-bold">-</p>
-            </div>
+            <h3 className="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">Media Files</h3>
           </div>
+          <p className="text-3xl font-bold tracking-tight">-</p>
         </div>
       </div>
 
@@ -102,12 +96,12 @@ export function Dashboard() {
               <Link to="/collections">View All</Link>
             </Button>
           </div>
-          <div className="grid gap-3">
+          <div className="space-y-1">
             {collections.slice(0, 5).map((col: any, idx: number) => (
               <Link
                 key={col.slug}
                 to={`/collections/${col.slug}`}
-                className="group flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+                className="group flex items-center justify-between p-3 rounded-md hover:bg-primary/[0.02] transition-colors"
               >
                 <div>
                   <p className="font-medium group-hover:text-primary transition-colors">{col.labels?.plural || col.slug}</p>
@@ -132,12 +126,12 @@ export function Dashboard() {
               Global Settings
             </h3>
           </div>
-          <div className="grid gap-3">
+          <div className="space-y-1">
             {globals.slice(0, 5).map((glb: any) => (
               <Link
                 key={glb.slug}
                 to={`/globals/${glb.slug}`}
-                className="group flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+                className="group flex items-center justify-between p-3 rounded-md hover:bg-primary/[0.02] transition-colors"
               >
                 <div>
                   <p className="font-medium group-hover:text-secondary-foreground transition-colors">{glb.label || glb.slug}</p>
