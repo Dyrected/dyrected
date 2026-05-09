@@ -35,24 +35,24 @@ interface BlockBuilderProps {
   collection: string
 }
 
-function SortableBlockItem({ 
-  id, 
-  index, 
-  item, 
-  schema, 
-  basePath, 
-  control, 
+function SortableBlockItem({
+  id,
+  index,
+  item,
+  schema,
+  basePath,
+  control,
   collection,
-  remove 
-}: { 
-  id: string; 
-  index: number; 
-  item: any; 
-  schema: FieldSchema; 
-  basePath: string; 
-  control: any; 
+  remove
+}: {
+  id: string;
+  index: number;
+  item: any;
+  schema: FieldSchema;
+  basePath: string;
+  control: any;
   collection: string;
-  remove: (index: number) => void 
+  remove: (index: number) => void
 }) {
   const {
     attributes,
@@ -80,7 +80,7 @@ function SortableBlockItem({
     <div ref={setNodeRef} style={style} className="relative group left-accent mb-4 animate-in">
       {/* Header / Drag Handle */}
       <div className="flex items-center justify-between pb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
           <div {...attributes} {...listeners} className="cursor-grab opacity-20 group-hover:opacity-100 hover:bg-muted p-1 rounded-md transition-all">
             <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
           </div>
@@ -105,11 +105,11 @@ function SortableBlockItem({
       {isExpanded && (
         <div className="space-y-6">
           {blockConfig.fields.map(subField => (
-            <FormFieldRenderer 
-              key={subField.name} 
-              schema={subField} 
-              basePath={`${basePath}.${index}`} 
-              control={control} 
+            <FormFieldRenderer
+              key={subField.name}
+              schema={subField}
+              basePath={`${basePath}.${index}`}
+              control={control}
               collection={collection}
             />
           ))}
@@ -131,7 +131,7 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
-    
+
     if (over && active.id !== over.id) {
       const oldIndex = fields.findIndex((f) => f.id === active.id)
       const newIndex = fields.findIndex((f) => f.id === over.id)
@@ -156,7 +156,7 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
             <p className="text-[11px] text-muted-foreground/60 italic">{schema.admin.description}</p>
           )}
         </div>
-        
+
         {schema.blocks && schema.blocks.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -181,12 +181,12 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
           <p className="text-[11px] text-muted-foreground/50">No blocks added yet.</p>
         </div>
       ) : (
-        <DndContext 
+        <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext 
+          <SortableContext
             items={fields.map(f => f.id)}
             strategy={verticalListSortingStrategy}
           >

@@ -63,13 +63,20 @@ export function EditEntryPage() {
         return client!.collection(slug!).create(data)
       }
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       setIsDirty(false)
       queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+      if (isEdit) {
+        queryClient.invalidateQueries({ queryKey: ["entry", slug, id] })
+      }
+      
       toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
         description: `${schema.label || schema.slug} has been saved.`
       })
-      navigate(`/collections/${slug}`)
+
+      if (!isEdit && data?.id) {
+        navigate(`/collections/${slug}/${data.id}`)
+      }
     },
     onError: (error: any) => {
       toast.error("Failed to save entry", {
@@ -112,7 +119,7 @@ export function EditEntryPage() {
   const canUpdate = (schema.access as any)?.update !== false
 
   return (
-    <div className={`space-y-6 md:space-y-8 animate-in ${previewUrl ? "max-w-[1600px]" : "max-w-6xl"} mx-auto px-4 md:px-6`}>
+    <div className={`space-y-6 md:space-y-8 animate-in ${previewUrl ? "" : "max-w-6xl"} mx-auto px-0 md:px-4 lg:px-0`}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-6">
         <div className="flex items-start gap-4 md:items-center md:gap-5">
           <Button
@@ -166,7 +173,7 @@ export function EditEntryPage() {
         </div>
       </div>
 
-      <div className={`grid gap-12 items-start ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
+      <div className={`grid gap-6 lg:gap-10 items-start ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
         <div className={`${showPreview ? "" : "lg:col-span-8 xl:col-span-6"} space-y-6 order-2 lg:order-1`}>
           <div className="animate-in space-y-8">
             {!canUpdate && isEdit && (
@@ -230,7 +237,7 @@ export function EditEntryPage() {
         </div>
 
         {previewUrl && (
-          <div className={`${showPreview ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none hidden"} transition-all duration-500 h-[300px] sm:h-[400px] lg:h-[calc(100vh-140px)] sticky top-6 rounded-2xl overflow-hidden border border-border/40 shadow-2xl order-1 lg:order-2`}>
+          <div className={`${showPreview ? "max-w-none mx-[-1.5rem] lg:mx-0 lg:max-w-full opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none hidden"} transition-all duration-500 h-[600px] sm:h-[700px] lg:h-[calc(100vh-180px)] lg:sticky top-12 rounded-2xl overflow-hidden border border-border/40 shadow-2xl order-1 lg:order-2`}>
             <LivePreviewPane
               previewUrl={previewUrl}
               data={previewData || entry}

@@ -74,7 +74,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
           {viewMode === 'desktop' && (
             <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border/40">
               <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider mr-1">Zoom</span>
-              {[0.50, 0.75, 0.85, 1.0].map((z) => (
+              {[0.50, 0.75, 1.0].map((z) => (
                 <Button
                   key={z}
                   variant="ghost"
