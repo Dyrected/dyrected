@@ -67,17 +67,17 @@ export function EditEntryPage() {
   const hasStatus = schema?.fields.some((f: any) => f.name === "status")
   const currentStatus = entry?.status || "draft"
 
-  let previewUrl = typeof schema.admin?.previewUrl === 'function' 
-    ? schema.admin.previewUrl(entry, { locale: 'en' }) 
+  let previewUrl = typeof schema.admin?.previewUrl === 'function'
+    ? schema.admin.previewUrl(entry, { locale: 'en' })
     : schema.admin?.previewUrl
 
   if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
-     previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => entry?.[key.trim()] || "")
+    previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => entry?.[key.trim()] || "")
   } else if (typeof previewUrl === 'string' && entry) {
     try {
       // Provide current window origin to Jexl context so users can use it in expressions
       const context = { ...entry, siteUrl: window.location.origin };
-      
+
       if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
         previewUrl = jexl.evalSync(previewUrl, context)
       }
@@ -98,9 +98,9 @@ export function EditEntryPage() {
     <div className={`space-y-8 animate-in ${previewUrl ? "max-w-[1600px]" : "max-w-6xl"} mx-auto px-6`}>
       <div className="flex items-center justify-between border-b border-border/50 pb-6">
         <div className="flex items-center gap-5">
-          <Button 
-            variant="outline" 
-            size="icon" 
+          <Button
+            variant="outline"
+            size="icon"
             className="h-10 w-10 rounded-lg shadow-sm bg-white hover:bg-muted"
             onClick={() => navigate(`/collections/${slug}`)}
           >
@@ -125,9 +125,9 @@ export function EditEntryPage() {
 
         <div className="flex items-center gap-3">
           {previewUrl && (
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className={`gap-2 ${showPreview ? "bg-primary/10 text-primary border-primary/20" : ""}`}
               onClick={() => setShowPreview(!showPreview)}
             >
@@ -135,7 +135,7 @@ export function EditEntryPage() {
               {showPreview ? "Hide Preview" : "Live Preview"}
             </Button>
           )}
-          <Button 
+          <Button
             onClick={() => document.getElementById('dyrected-form-submit')?.click()}
             disabled={saveMutation.isPending || (isEdit ? !canUpdate : !canCreate)}
           >
@@ -145,7 +145,7 @@ export function EditEntryPage() {
       </div>
 
       <div className={`grid gap-12 ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
-        <div className={`${showPreview ? "" : "lg:col-span-8"} space-y-6`}>
+        <div className={`${showPreview ? "" : "lg:col-span-8 xl:col-span-6"} space-y-6`}>
           <div className="animate-in space-y-8">
             {!canUpdate && isEdit && (
               <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
@@ -153,9 +153,9 @@ export function EditEntryPage() {
                 You have read-only access to this collection.
               </div>
             )}
-            <FormEngine 
+            <FormEngine
               collection={slug!}
-              fields={schema.fields} 
+              fields={schema.fields}
               defaultValues={entry}
               onSubmit={(data) => saveMutation.mutate(data)}
               onChange={(dirty) => setIsDirty(dirty)}
@@ -174,7 +174,7 @@ export function EditEntryPage() {
                     {isEdit ? id : "Pending..."}
                   </code>
                 </div>
-                
+
                 {isEdit && (
                   <>
                     <div className="space-y-1">
@@ -183,7 +183,7 @@ export function EditEntryPage() {
                         {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
                       </p>
                     </div>
-                    
+
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Last Updated</p>
                       <p className="text-xs font-medium text-muted-foreground/80">
@@ -208,10 +208,10 @@ export function EditEntryPage() {
 
         {previewUrl && (
           <div className={`${showPreview ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none hidden"} transition-all duration-500 h-[calc(100vh-180px)] sticky top-8 rounded-2xl overflow-hidden border border-border/40 shadow-2xl`}>
-            <LivePreviewPane 
-              previewUrl={previewUrl} 
-              data={entry} 
-              mode={schema.admin?.previewMode} 
+            <LivePreviewPane
+              previewUrl={previewUrl}
+              data={entry}
+              mode={schema.admin?.previewMode}
             />
           </div>
         )}

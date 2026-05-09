@@ -1,19 +1,19 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../providers/dyrected-provider"
-import { Button } from "../../components/ui/button"
+import { useDyrected } from "../../../providers/dyrected-provider"
+import { Button } from "../../ui/button"
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogTrigger
-} from "../../components/ui/dialog"
+} from "../../ui/dialog"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger
-} from "../../components/ui/tabs"
+} from "../../ui/tabs"
 import {
   Image as ImageIcon,
   X,
@@ -25,8 +25,8 @@ import {
   Library,
   Check
 } from "lucide-react"
-import { ScrollArea } from "../../components/ui/scroll-area"
-import { Input } from "../../components/ui/input"
+import { ScrollArea } from "../../ui/scroll-area"
+import { Input } from "../../ui/input"
 
 interface MediaPickerProps {
   collection: string
@@ -67,7 +67,7 @@ export function MediaPicker({ collection, value, onChange, label, variant = "def
     queryKey: [collection, searchQuery],
     queryFn: () => client!.listMedia({
       where: searchQuery ? { filename: { contains: searchQuery } } : undefined
-    }).then(r => r.docs),
+    }).then((r: any) => r.docs),
     enabled: isOpen && !!client,
   })
 
@@ -147,7 +147,7 @@ export function MediaPicker({ collection, value, onChange, label, variant = "def
         {selectedValues.length > 0 && !isIcon ? (
           <div className="flex flex-wrap gap-4">
             {selectedValues.map((val) => {
-              const item = media?.find(m => m.id === val)
+              const item = media?.find((m: any) => m.id === val)
               if (!item) return null
               const pUrl = getPreviewUrl(item)
               return (
@@ -238,7 +238,7 @@ export function MediaPicker({ collection, value, onChange, label, variant = "def
                         </div>
                         <ScrollArea className="flex-1">
                           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                            {media?.map((item) => (
+                            {media?.map((item: any) => (
                               <button
                                 key={item.id}
                                 onClick={() => {

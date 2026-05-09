@@ -5,8 +5,8 @@ import Underline from "@tiptap/extension-underline"
 import Link from "@tiptap/extension-link"
 import TextAlign from "@tiptap/extension-text-align"
 import Image from "@tiptap/extension-image"
-import { Toggle } from "../../components/ui/toggle"
-import { cn } from "../../lib/utils"
+import { Toggle } from "../../ui/toggle"
+import { cn } from "../../../lib/utils"
 import { MediaPicker } from "./media-picker"
 import {
   Bold,

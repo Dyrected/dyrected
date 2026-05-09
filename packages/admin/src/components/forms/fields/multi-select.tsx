@@ -1,8 +1,8 @@
 import * as React from "react"
 import { Check, ChevronsUpDown, X } from "lucide-react"
 
-import { cn } from "../../lib/utils"
-import { Button } from "../../components/ui/button"
+import { cn } from "../../../lib/utils"
+import { Button } from "../../ui/button"
 import {
   Command,
   CommandEmpty,
@@ -10,13 +10,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "../../components/ui/command"
+} from "../../ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../components/ui/popover"
-import { Badge } from "../../components/ui/badge"
+} from "../../ui/popover"
+import { Badge } from "../../ui/badge"
 
 interface Option {
   label: string
@@ -32,6 +32,11 @@ interface MultiSelectProps {
   disabled?: boolean
 }
 
+/**
+ * MultiSelect Field component
+ * 
+ * Provides a tag-based multi-selection UI using a searchable dropdown.
+ */
 export function MultiSelect({
   options,
   value = [],
@@ -117,7 +122,7 @@ export function MultiSelect({
                   return (
                     <CommandItem
                       key={option.value}
-                      value={option.label}
+                      value={option.label as any}
                       onSelect={() => handleSelect(option.value)}
                     >
                       <Check

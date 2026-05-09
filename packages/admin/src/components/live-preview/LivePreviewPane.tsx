@@ -18,7 +18,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
     if (mode !== 'postMessage') return;
 
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'dyrected-preview-ready') {
+      if (event.data?.type === 'dyrected-live-preview-ready') {
         setIsReady(true);
         // Send initial data once ready
         iframeRef.current?.contentWindow?.postMessage(

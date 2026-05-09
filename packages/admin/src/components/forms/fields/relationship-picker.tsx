@@ -1,8 +1,8 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../providers/dyrected-provider"
-import { Button } from "../../components/ui/button"
-import { Badge } from "../../components/ui/badge"
+import { useDyrected } from "../../../providers/dyrected-provider"
+import { Button } from "../../ui/button"
+import { Badge } from "../../ui/badge"
 import {
   Command,
   CommandEmpty,
@@ -10,14 +10,14 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "../../components/ui/command"
+} from "../../ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "../../components/ui/popover"
+} from "../../ui/popover"
 import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "../../lib/utils"
+import { cn } from "../../../lib/utils"
 
 interface RelationshipPickerProps {
   value?: string | string[]
@@ -33,7 +33,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
 
-  const relatedCollection = schemas?.collections.find(c => c.slug === relationTo)
+  const relatedCollection = schemas?.collections.find((c: any) => c.slug === relationTo)
   if (!relationTo) console.warn("[RelationshipPicker] No relationTo/collection defined for field:", label)
   const isUpload = !!relatedCollection?.upload
   const displayField = relatedCollection?.admin?.useAsTitle || "title"
@@ -46,7 +46,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
       if (search) {
         qb = qb.where({ [displayField]: { like: `%${search}%` } })
       }
-      return qb.exec().then(res => res.docs)
+      return qb.exec().then((res: any) => res.docs)
     },
     enabled: !!client && !!relationTo,
   })
@@ -58,7 +58,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
   }
 
   const values = Array.isArray(value) ? value : value ? [value] : []
-  const selectedItems = values.map(v => data?.find(item => item.id === v)).filter(Boolean)
+  const selectedItems = values.map(v => data?.find((item: any) => item.id === v)).filter(Boolean)
 
   return (
     <div className="flex flex-col gap-2">
@@ -97,7 +97,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
             <CommandList>
               <CommandEmpty>{isLoading ? "Searching..." : "No item found."}</CommandEmpty>
               <CommandGroup>
-                {data?.map((item) => (
+                {data?.map((item: any) => (
                   <CommandItem
                     key={item.id}
                     value={item.id}
