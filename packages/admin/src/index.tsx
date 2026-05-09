@@ -134,15 +134,17 @@ export function AdminUI({
   }
 
   return (
-    <ErrorBoundary>
-      <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
-        <QueryProvider>
-          <HashRouter>
-            <AdminRoutes onNavigate={onNavigate} isEmbedded={true} />
-          </HashRouter>
-        </QueryProvider>
-      </DyrectedProvider>
-    </ErrorBoundary>
+    <div className="admin-ui h-full">
+      <ErrorBoundary>
+        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
+          <QueryProvider>
+            <HashRouter>
+              <AdminRoutes onNavigate={onNavigate} isEmbedded={true} />
+            </HashRouter>
+          </QueryProvider>
+        </DyrectedProvider>
+      </ErrorBoundary>
+    </div>
   );
 }
 
@@ -170,13 +172,15 @@ export interface AdminStandaloneProps {
 
 export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProps) {
   return (
-    <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
-      <QueryProvider>
-        <MemoryRouter>
-          <AdminRoutes />
-        </MemoryRouter>
-      </QueryProvider>
-    </DyrectedProvider>
+    <div className="admin-ui h-full">
+      <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
+        <QueryProvider>
+          <MemoryRouter>
+            <AdminRoutes />
+          </MemoryRouter>
+        </QueryProvider>
+      </DyrectedProvider>
+    </div>
   );
 }
 

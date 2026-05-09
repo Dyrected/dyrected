@@ -1,34 +1,33 @@
 <script setup lang="ts">
-import type { DyrectedSchema } from "~/dyrected-types";
+import type { DyrectedSchema, NavigationGlobal, Pages } from "~/dyrected-types";
 
 const dyrected = useDyrected<DyrectedSchema>();
 
-const { data: settings } = await useAsyncData('settings', () => 
-  dyrected.getGlobal('settings', { 
-    initialData: { 
-      siteName: 'Ministry of Grace',
-      footerText: '2026 Ministry of Grace. All rights reserved.'
-    } 
-  })
+const { data: settings } = await useAsyncData("settings", () =>
+  dyrected.getGlobal("settings", {
+    initialData: {
+      siteName: "Ministry of Grace",
+      footerText: "2026 Ministry of Grace. All rights reserved.",
+    },
+  }),
 );
 
-const { data: navigation } = await useAsyncData('navigation', () => 
-  dyrected.getGlobal('navigation', {
+const { data: navigation } = await useAsyncData("navigation", () =>
+  dyrected.getGlobal("navigation", {
     depth: 1,
     initialData: {
       menuItems: [
-        { label: 'Home', url: '/' },
-        { label: 'About', url: '/about' },
-        { label: 'Sermons', url: '/blog' },
-        { label: 'Contact', url: '/contact' }
-      ]
-    }
-  })
+        { label: "Home", url: "/" },
+        { label: "About", url: "/about" },
+        { label: "Sermons", url: "/blog" },
+        { label: "Contact", url: "/contact" },
+      ],
+    } as NavigationGlobal,
+  }),
 );
 
-
-const siteTitle = computed(() => settings.value?.siteName || 'Ministry of Grace');
-const footerText = computed(() => settings.value?.footerText || '2026 Ministry of Grace. All rights reserved.');
+const siteTitle = computed(() => settings.value?.siteName || "Ministry of Grace");
+const footerText = computed(() => settings.value?.footerText || "2026 Ministry of Grace. All rights reserved.");
 </script>
 
 <template>
@@ -38,9 +37,17 @@ const footerText = computed(() => settings.value?.footerText || '2026 Ministry o
         <NuxtLink to="/" class="logo">{{ siteTitle }}</NuxtLink>
         <ul>
           <li v-for="item in navigation?.menuItems" :key="item.label">
-             <NuxtLink :to="item.page?.slug ? (item.page.slug === 'home' ? '/' : `/${item.page.slug}`) : (item.url || '#')">
-               {{ item.label }}
-             </NuxtLink>
+            <NuxtLink
+              :to="
+                (item.page as Pages)?.slug
+                  ? (item.page as Pages).slug === 'home'
+                    ? '/'
+                    : `/${(item.page as Pages).slug}`
+                  : item.url || '#'
+              "
+            >
+              {{ item.label }}
+            </NuxtLink>
           </li>
 
           <template v-if="!navigation?.menuItems">
