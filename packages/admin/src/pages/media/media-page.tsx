@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
-import { cn } from "../../lib/utils"
+import { cn, getMediaUrl } from "../../lib/utils"
 import {
   Card,
   CardContent,
@@ -201,7 +201,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   isSelected: boolean
 }) {
   const isImage = item.mimeType?.startsWith("image/")
-  const url = item.url ? (item.url.startsWith('http') ? item.url : `${baseUrl}${item.url}`) : `${baseUrl}/uploads/${item.filename}`
+  const url = getMediaUrl(item, baseUrl)
 
   return (
     <Card 
@@ -295,7 +295,7 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
   if (!item) return null
 
   const isImage = item.mimeType?.startsWith("image/")
-  const url = item.url ? (item.url.startsWith('http') ? item.url : `${baseUrl}${item.url}`) : `${baseUrl}/uploads/${item.filename}`
+  const url = getMediaUrl(item, baseUrl)
 
   const handleSave = async () => {
     setIsSaving(true)

@@ -21,7 +21,7 @@ import {
   Users,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
-import { cn } from "../../lib/utils"
+import { cn, getMediaUrl } from "../../lib/utils"
 import { BrandingProvider } from "./branding-provider"
 
 // ---------------------------------------------------------------------------
@@ -138,6 +138,7 @@ function SidebarInner({
   onToggleCollapse?: () => void
   onNavigate?: () => void
 }) {
+  const { client } = useDyrected()
   const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
   const globals = schemas?.globals?.filter((g: any) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
   const uploadCollections = collections.filter((c: any) => c.upload)
@@ -168,7 +169,7 @@ function SidebarInner({
               {branding?.logo || branding?.logoMark ? (
                 <div className="h-7 w-7 flex items-center justify-center shrink-0">
                   <img
-                    src={collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark)}
+                    src={getMediaUrl(collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark), client?.getBaseUrl() || "")}
                     alt="Logo"
                     className="max-h-full max-w-full object-contain"
                   />

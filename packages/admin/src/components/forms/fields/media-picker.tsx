@@ -25,6 +25,7 @@ import {
 } from "lucide-react"
 import { ScrollArea } from "../../ui/scroll-area"
 import { Input } from "../../ui/input"
+import { getMediaUrl } from "../../../lib/utils"
 
 interface MediaPickerProps {
   collection: string
@@ -137,12 +138,17 @@ export function MediaPicker({
       return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
     }
 
-    const baseUrl = client?.getBaseUrl()
-    return `${baseUrl}/media/${item.filename}`
+    return getMediaUrl(item, client?.getBaseUrl() || "");
   }
 
   const isIcon = variant === "icon"
-  const displayValue = Array.isArray(value) ? value.join(", ") : (value || "")
+  const getDisplayString = (val: any): string => {
+    if (!val) return ""
+    if (Array.isArray(val)) return val.map(v => getDisplayString(v)).join(", ")
+    if (typeof val === 'object') return val.filename || val.id || val.slug || "Object"
+    return String(val)
+  }
+  const displayValue = getDisplayString(value)
 
   const renderDialogContent = () => (
     <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden gap-0">

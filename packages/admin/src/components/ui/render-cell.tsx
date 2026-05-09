@@ -1,5 +1,6 @@
 import { Badge } from "./badge"
 import { Calendar } from "lucide-react"
+import { getMediaUrl } from "../../lib/utils"
 
 interface RenderCellProps {
   value: any
@@ -33,8 +34,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     const media = value
     if (!media) return <span className="text-muted-foreground">-</span>
 
-    const filename = typeof media === 'string' ? media : media.filename
-    const url = `${client?.getBaseUrl()}/media/${filename}`
+    const url = getMediaUrl(value, client?.getBaseUrl() || "")
     
     if (!url) return <span className="text-muted-foreground">-</span>
 

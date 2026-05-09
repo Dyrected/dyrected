@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from "../../ui/popover"
 import { Check, ChevronsUpDown } from "lucide-react"
-import { cn } from "../../../lib/utils"
+import { cn, getMediaUrl } from "../../../lib/utils"
 
 interface RelationshipPickerProps {
   value?: string | string[]
@@ -117,7 +117,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
                       {isUpload && (
                         <div className="h-6 w-6 rounded border bg-muted overflow-hidden flex-shrink-0">
                           <img 
-                            src={item.url || `${client?.getBaseUrl()}/media/${item.filename}`} 
+                            src={getMediaUrl(item, client?.getBaseUrl() || "")} 
                             className="h-full w-full object-cover" 
                             alt="" 
                           />
