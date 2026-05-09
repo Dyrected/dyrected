@@ -260,16 +260,21 @@ export function FormFieldRenderer({ schema, basePath, control }: { schema: Field
       render={({ field: formField }) => (
         <FormItem className={cn(
           isBoolean 
-            ? "flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-white" 
+            ? "flex flex-row items-center justify-between rounded-xl border border-border/40 p-4 bg-white/50 shadow-sm space-y-0" 
             : "space-y-3"
         )}>
-          <div className={cn(isBoolean ? "space-y-0.5" : "flex items-center gap-2 mb-1")}>
+          <div className={cn(isBoolean ? "space-y-1" : "flex items-center gap-2 mb-1")}>
             <FormLabel className="text-sm font-semibold text-foreground/80 cursor-pointer">
               {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
               {schema.required && <span className="text-destructive ml-1">*</span>}
             </FormLabel>
-            {isBoolean && schema.admin?.description && (
-              <p className="text-[10px] text-muted-foreground/60 italic">{schema.admin.description}</p>
+            {schema.admin?.description && (
+              <p className={cn(
+                "text-muted-foreground/60 italic",
+                isBoolean ? "text-[11px] leading-tight" : "text-[11px] leading-relaxed"
+              )}>
+                {schema.admin.description}
+              </p>
             )}
             {!isBoolean && schema.unique && (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/10">
@@ -435,7 +440,12 @@ function renderField(schema: FieldSchema, field: any, context?: { user: any, sch
         />
       )
     case "image" as any:
-      return <MediaPicker value={field.value} onChange={field.onChange} disabled={disabled} />
+      return <MediaPicker 
+        value={field.value} 
+        onChange={field.onChange} 
+        disabled={disabled}
+        multiple={(schema as any).hasMany}
+      />
     case "richText":
       return <RichTextEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "json":
@@ -444,7 +454,7 @@ function renderField(schema: FieldSchema, field: any, context?: { user: any, sch
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "relationship":
       const isMediaRel = (schema as any).relationTo === "media" || 
-                         (context?.schemas?.collections.find((c: any) => c.slug === (schema as any).relationTo)?.upload)
+                         (context?.schemas?.collections?.find((c: any) => c.slug === (schema as any).relationTo)?.upload)
 
       if (isMediaRel) {
         return <MediaPicker

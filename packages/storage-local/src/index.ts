@@ -23,7 +23,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     const relativePath = path.join(relativeFolder, args.filename);
 
     return {
-      filename: args.filename,
+      filename: relativePath,
       filesize: args.buffer.length,
       mimeType: args.mimeType,
       url: this.getURL({ filename: relativePath })
@@ -41,5 +41,27 @@ export class LocalStorageAdapter implements StorageAdapter {
     // Normalize path for URL (replace backslashes if on Windows)
     const urlPath = args.filename.replace(/\\/g, '/');
     return `${this.config.staticUrlPrefix}/${urlPath}`;
+  }
+
+  async resolve(args: { filename: string }): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    const filePath = path.join(this.config.uploadDir, args.filename);
+    if (!(await fs.pathExists(filePath))) return null;
+
+    const buffer = await fs.readFile(filePath);
+    // Basic mime type detection based on extension
+    const ext = path.extname(args.filename).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+      '.mp4': 'video/mp4',
+      '.pdf': 'application/pdf',
+    };
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+    return { buffer, mimeType };
   }
 }

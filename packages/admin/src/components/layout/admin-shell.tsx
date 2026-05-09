@@ -357,6 +357,29 @@ function SidebarInner({
           </button>
         )}
       </div>
+
+      {/* Desktop Collapse Toggle at Bottom */}
+      {onToggleCollapse && !isEmbedded && (
+        <div className="mt-auto p-4 border-t border-border/40">
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              "w-full flex items-center gap-3 p-2.5 rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-accent/50 transition-all group/btn",
+              collapsed ? "justify-center" : "px-3"
+            )}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="h-5 w-5" />
+            ) : (
+              <>
+                <PanelLeftClose className="h-5 w-5 group-hover/btn:-translate-x-0.5 transition-transform" />
+                <span className="text-sm font-medium text-[13px]">Collapse Sidebar</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -451,10 +474,9 @@ export function AdminShell({
 
         <main className="flex-1 min-w-0 overflow-auto flex flex-col relative bg-[#fcfcfc]">
           {/* Mobile Floating Toggle */}
-          {/* Mobile Floating Toggle */}
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden fixed top-6 right-6 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex items-center justify-center transition-all active:scale-90 hover:scale-105 border border-white/20"
+            className="md:hidden fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.3)] flex items-center justify-center transition-all active:scale-90 hover:scale-105 border border-white/20"
             aria-label="Open menu"
           >
             <Menu className="h-6 w-6" />

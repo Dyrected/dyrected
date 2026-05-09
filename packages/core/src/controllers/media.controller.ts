@@ -154,4 +154,28 @@ export class MediaController {
     await db.delete({ collection: this.collection, id });
     return c.json({ message: 'Deleted' });
   }
+
+  async serve(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    const storage = config.storage;
+    if (!storage || !storage.resolve) {
+      return c.json({ message: 'Storage not configured for serving' }, 404);
+    }
+
+    const filename = c.req.param('filename');
+    if (!filename) return c.json({ message: 'Missing filename' }, 400);
+    
+    let res = await storage.resolve({ filename });
+    
+    // Fallback: Try with 'default/' prefix if not found and not already prefixed
+    // This provides backward compatibility for files uploaded without the prefix in the filename field.
+    if (!res && !filename.includes('/')) {
+      res = await storage.resolve({ filename: `default/${filename}` });
+    }
+
+    if (!res) return c.json({ message: 'Not Found' }, 404);
+
+    c.header('Content-Type', res.mimeType);
+    return c.body(res.buffer as any);
+  }
 }

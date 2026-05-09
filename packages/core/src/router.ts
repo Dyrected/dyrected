@@ -160,6 +160,17 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.html(getSwaggerHtml());
   });
 
+  // Global Media Fallback (Proxies to the 'media' collection)
+  app.get("/api/media/:filename{.+$}", async (c) => {
+    const mediaController = new MediaController("media");
+    return mediaController.serve(c);
+  });
+
+  app.get("/media/:filename{.+$}", async (c) => {
+    const mediaController = new MediaController("media");
+    return mediaController.serve(c);
+  });
+
   // 2. Media Routes (Conditional & Dynamic)
   if (config.storage) {
     const uploadCollections = config.collections.filter((c) => c.upload);
@@ -170,6 +181,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       const prefix = `/api/collections/${col.slug}`;
 
       app.get(`${prefix}/media`, accessGate(col, 'read'), (c) => mediaController.find(c));
+      app.get(`${prefix}/media/:filename{.+$}`, (c) => mediaController.serve(c));
       app.post(`${prefix}/media`, accessGate(col, 'create'), (c) => mediaController.upload(c));
       app.delete(`${prefix}/media/:id`, accessGate(col, 'delete'), (c) => mediaController.delete(c));
     }

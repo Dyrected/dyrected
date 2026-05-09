@@ -19,8 +19,7 @@ export const HeroBlockConfig: Block = {
     },
     {
       name: "image",
-      type: "relationship",
-      relationTo: "media",
+      type: "image",
       admin: { condition: 'heroType != "centered"' },
     },
     { name: "ctaLabel", type: "text" },

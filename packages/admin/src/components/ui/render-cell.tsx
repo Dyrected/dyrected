@@ -31,9 +31,10 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   const relationTo = field.relationTo || field.collection
   if (field.type === "image" || (field.type === "relationship" && isUploadCollection(relationTo, schemas))) {
     const media = value
-    const url = typeof media === 'string' 
-      ? `${client?.getBaseUrl()}/media/${media}` // Legacy support for raw strings
-      : media?.url || `${client?.getBaseUrl()}/media/${media?.filename}`
+    if (!media) return <span className="text-muted-foreground">-</span>
+
+    const filename = typeof media === 'string' ? media : media.filename
+    const url = `${client?.getBaseUrl()}/media/${filename}`
     
     if (!url) return <span className="text-muted-foreground">-</span>
 

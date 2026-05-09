@@ -19,6 +19,22 @@ export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: U
     }
   })
 
+  // Sync state if key changes (e.g. navigating between collections)
+  React.useEffect(() => {
+    if (typeof window === "undefined") return
+
+    try {
+      const stored = window.localStorage.getItem(`dyrected_pref_${key}`)
+      if (stored) {
+        setValue(JSON.parse(stored))
+      } else {
+        setValue(defaultValue)
+      }
+    } catch (e) {
+      console.warn(`[usePreferences] Error syncing key "${key}":`, e)
+    }
+  }, [key, defaultValue])
+
   const updateValue = React.useCallback((updater: Updater<T>) => {
     setValue((prev) => {
       const newValue = typeof updater === 'function' 

@@ -220,6 +220,8 @@ export interface StorageAdapter {
   upload(args: { filename: string; buffer: Buffer; mimeType: string; prefix?: string }): Promise<FileData>;
   delete(args: { filename: string }): Promise<void>;
   getURL(args: { filename: string }): string;
+  /** Retrieve file content for serving via API */
+  resolve?(args: { filename: string }): Promise<{ buffer: Buffer; mimeType: string } | null>;
 }
 
 /** Branding and metadata configuration for the Admin UI. */

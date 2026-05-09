@@ -123,12 +123,17 @@ export function MediaPicker({ value, onChange, label, variant = "default", disab
   }
 
   const getPreviewUrl = (item: any) => {
+    if (!item) return ""
     if (item.mimeType === 'video/youtube') {
       const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#\&\?]*)/)
       const videoId = match && match[1]
       return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
     }
-    return item.url || `${client?.getBaseUrl()}/media/${item.filename}`
+
+    const baseUrl = client?.getBaseUrl()
+    // Prefer the API proxy for consistent rendering in the admin,
+    // especially if there's a prefix mismatch in the stored URL.
+    return `${baseUrl}/media/${item.filename}`
   }
 
 
