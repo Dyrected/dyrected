@@ -24,11 +24,11 @@ export default defineConfig({
 Great for local development or small, edge-deployed applications.
 
 ```typescript
-import { SQLiteAdapter } from '@dyrected/db-sqlite';
+import { SqliteAdapter } from '@dyrected/db-sqlite';
 
 export default defineConfig({
-  db: new SQLiteAdapter({
-    path: './dyrected.db',
+  db: new SqliteAdapter({
+    filename: 'dyrected.db',
   }),
 });
 ```

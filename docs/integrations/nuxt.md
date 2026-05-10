@@ -143,12 +143,12 @@ const { data: post } = await useAsyncData(`post-${route.params.id}`, () =>
 
 ### `useDyrectedDoc(collection, id, options?)`
 
-A convenience shortcut for fetching a single document by ID:
+A convenience shortcut for fetching a single document by ID. It wraps `useAsyncData`, so destructure `{ data }` from the result:
 
 ```vue
 <script setup lang="ts">
 const route = useRoute()
-const post = await useDyrectedDoc('posts', route.params.id as string, { depth: 1 })
+const { data: post } = await useDyrectedDoc('posts', route.params.id as string, { depth: 1 })
 </script>
 ```
 
@@ -188,18 +188,18 @@ async function submitForm(data: any) {
 | `useDyrected()` | ✅ Available | Returns the configured `DyrectedClient` |
 | `useDyrectedDoc(slug, id, opts?)` | ✅ Available | Shortcut for `client.collection(slug).findOne(id)` |
 | `useDyrectedGlobal(slug)` | ✅ Available | Wraps `client.global(slug).get()` with `useAsyncData` |
-| `useDyrectedAuth()` | ✅ Available | Returns `login()`, `logout()`, `user`, `isLoggedIn` |
+| `useDyrectedAuth(collection)` | ✅ Available | Returns `login()`, `logout()`, `user`, `isLoggedIn` |
 | `useLivePreview(options)` | ✅ Available | Live preview `postMessage` integration |
 
 ---
 
 ## Authentication
 
-The `useDyrectedAuth()` composable provides everything you need to manage user sessions:
+The `useDyrectedAuth(collection)` composable provides everything you need to manage user sessions. Pass the slug of your auth-enabled collection:
 
 ```vue
 <script setup lang="ts">
-const { login, logout, user, isLoggedIn } = useDyrectedAuth()
+const { login, logout, user, isLoggedIn } = useDyrectedAuth('users')
 
 async function handleLogin() {
   await login('user@example.com', 'my-password')

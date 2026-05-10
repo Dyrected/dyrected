@@ -37,20 +37,33 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   };
 
   const getPrompt = (framework: string) => {
+    const frameworkLabel = framework === "next" ? "Next.js" : framework === "nuxt" ? "Nuxt" : framework.charAt(0).toUpperCase() + framework.slice(1);
+    const backendPkg = framework === "nuxt" ? "@dyrected/nuxt" : "@dyrected/next";
+
     const baseIntro = isSelfHosted 
-      ? `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. This is a SELF-HOSTED installation.\nThe backend is already configured via @dyrected/nuxt or @dyrected/next.\nYour priority is DATA PRESERVATION and creating a CMS that empowers marketing teams.`
-      : `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${framework}. Complete the entire setup automatically, prioritizing DATA PRESERVATION and marketing independence.`;
+      ? `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${frameworkLabel}. This is a SELF-HOSTED installation.\nThe backend is already configured via ${backendPkg}.\nYour priority is DATA PRESERVATION and creating a CMS that empowers marketing teams.`
+      : `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${frameworkLabel}. Complete the entire setup automatically, prioritizing DATA PRESERVATION and marketing independence.`;
 
     const credentials = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SITE CREDENTIALS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${config.siteName ? `Site Name : ${config.siteName}\n` : ""}Site ID   : ${config.siteId || "N/A (Self-hosted)"}
-API Key   : ${config.apiKey || "N/A (Self-hosted)"}
-API URL   : ${config.baseUrl}
+${config.siteName ? `Site Name : ${config.siteName}\n` : ""}${isSelfHosted ? "" : `Site ID   : ${config.siteId}\nAPI Key   : ${config.apiKey}\n`}API URL   : ${config.baseUrl}
 `;
 
-    const base = baseIntro + credentials + `
+    const importantNotes = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT NOTES — READ BEFORE ACTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- \`client.collection(slug)\` is the primary API entrypoint. Do NOT use \`client.collections\`.
+- Blocks are stored as \`[{ blockType: '<slug>', ...fields }]\` — always switch on \`blockType\` when rendering.
+- MARKETING INDEPENDENCE: Always use a dynamic \`pages\` collection with a catch-all route. Marketing should create pages without a developer. (Exceptions: Special pages like Contact or those with complex forms may use static routes).
+- AUTO-SEEDING: Use \`initialData\` in all data fetches to ensure the site is never empty on first load.
+- Globals use \`client.global(slug).get()\` and \`client.global(slug).update(data)\`.
+- Relationship fields are populated to the specified \`depth\` (default: 1). Set \`depth: 0\` for IDs only.
+`;
+
+    const base = baseIntro + credentials + importantNotes + `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PHASE 0 — DATA PRESERVATION & STRATEGY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -499,19 +512,7 @@ const me = await dyrected.collection('customers').me()
       frameworks[framework] +
       `
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANT NOTES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- MARKETING INDEPENDENCE: Always use a dynamic \`pages\` collection with a catch-all route. Marketing should create pages without a developer.
-- AUTO-SEEDING: Use \`initialData\` in all data fetches to ensure the site is never empty on first load.
-- Blocks are stored as \`[{ blockType: '<slug>', ...fields }]\` — always switch on \`blockType\` when rendering.
-- \`client.collection(slug)\` is the primary API entrypoint. Do NOT use \`client.collections\`.
-- Globals use \`client.global(slug).get()\` and \`client.global(slug).update(data)\`.
-- After login, call \`client.setToken(token)\` to authenticate all subsequent requests.
-- The password field on auth collections is automatically stripped from all responses.
-- Relationship fields are populated to the specified \`depth\` (default: 1). Set \`depth: 0\` for IDs only.
-
-API Reference: ${config.baseUrl}/api/docs`
+  API Reference: ${config.baseUrl}/api/docs`
     );
   };
 

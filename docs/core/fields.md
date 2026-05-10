@@ -247,7 +247,7 @@ Links a field to documents in another collection. The value stored is the relate
 {
   name: 'author',
   type: 'relationship',
-  collection: 'users',   // slug of the target collection
+  relationTo: 'users',   // slug of the target collection
   required: true,
 }
 ```
@@ -258,7 +258,7 @@ Links a field to documents in another collection. The value stored is the relate
 {
   name: 'categories',
   type: 'relationship',
-  collection: 'categories',
+  relationTo: 'categories',
   // value will be string[] when populated from the admin
 }
 ```

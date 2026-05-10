@@ -137,10 +137,12 @@ const route = useRoute()
 const config = useRuntimeConfig()
 
 // Fetch initial data server-side
-const { data: initialPost } = await useDyrected<Post>('posts').find({
-  where: { slug: { equals: route.params.slug } },
-  depth: 1,
-})
+const { data: initialPost } = await useAsyncData('page', () =>
+  useDyrected().collection<Post>('posts').find({
+    where: { slug: { equals: route.params.slug } },
+    depth: 1,
+  }).exec()
+)
 
 // Enable live preview (client-side only)
 const { data: post, isLive } = useLivePreview({
@@ -207,11 +209,13 @@ export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get('token')
   if (!token) return new Response('Missing token', { status: 400 })
 
-  const client = createClient({ baseUrl: process.env.DYRECTED_URL! })
-  const previewData = await client.getPreviewData(token)
+  // Fetch draft data directly from the preview-data endpoint
+  const res = await fetch(`${process.env.DYRECTED_URL}/api/preview-data?token=${token}`)
+  if (!res.ok) return new Response('Invalid token', { status: 401 })
+  const previewData = await res.json()
 
   // Enable Next.js draft mode and redirect to the preview page
-  const response = NextResponse.redirect(`/posts/${previewData.data.slug}`)
+  const response = NextResponse.redirect(new URL(`/posts/${previewData.data.slug}`, req.url))
   // Store previewData in a cookie for the page to read
   response.cookies.set('preview-data', JSON.stringify(previewData.data))
   return response

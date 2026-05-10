@@ -13,6 +13,7 @@ The `@dyrected/admin` package is a React-based Admin UI that is **automatically 
 
 Create a catch-all page under your chosen admin path:
 
+```tsx
 import { AdminUI } from '@dyrected/admin'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import '@dyrected/admin/dist/index.css'
