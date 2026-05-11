@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,6 +57,16 @@
 
   .admin-ui {
     color-scheme: light;
+    @apply font-sans;
+  }
+
+  .admin-ui h1,
+  .admin-ui h2,
+  .admin-ui h3,
+  .admin-ui h4,
+  .admin-ui h5,
+  .admin-ui h6 {
+    @apply font-serif;
   }
 }
 

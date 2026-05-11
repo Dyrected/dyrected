@@ -156,7 +156,7 @@ function SidebarInner({
   const branding = schemas?.admin?.branding;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen admin-ui">
       {/* Logo */}
       <div
         className={cn(
@@ -177,11 +177,11 @@ function SidebarInner({
                 </div>
               ) : (
                 <div className="h-7 w-auto flex items-center justify-center shrink-0">
-                  <img src={logo} alt="Dyrected" className="h-10 w-auto" />
+                  <img src={logo} alt="Dyrected" className="h-8 w-auto" />
                 </div>
               )}
               {!collapsed && (
-                <span className="font-semibold text-sm tracking-tight text-foreground flex-1 truncate">
+                <span className="font-serif text-lg tracking-tight text-foreground flex-1 truncate">
                   {branding?.titleSuffix?.replace(/^- /, '') || ''}
                 </span>
               )}

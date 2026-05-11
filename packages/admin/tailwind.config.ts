@@ -18,6 +18,10 @@ const config: Config = {
   		}
   	},
   	extend: {
+  		fontFamily: {
+  			sans: ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			serif: ['"Instrument Serif"', 'ui-serif', 'Georgia', 'serif'],
+  		},
   		colors: {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
