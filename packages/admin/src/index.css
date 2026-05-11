@@ -7,6 +7,10 @@
 @layer base {
   /* Design Tokens — Light Foundation, Amber Accent */
   :root {
+    /* Fonts */
+    --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+
     /* Backgrounds */
     --background: 60 17% 97%;          /* #FAFAF8 warm white */
     --foreground: 60 3% 6%;            /* #111110 near-black, warm undertone */

@@ -96,10 +96,12 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
           --sidebar-accent-foreground: ${hsl};
           --sidebar-ring: ${hsl};
           --ring: ${hsl} / 0.15;
+          ${branding?.fontSans ? `--font-sans: ${branding.fontSans};` : ""}
+          ${branding?.fontSerif ? `--font-serif: ${branding.fontSerif};` : ""}
         }
       `}} />
     );
-  }, [branding?.primaryColor]);
+  }, [branding?.primaryColor, branding?.fontSans, branding?.fontSerif]);
 
   return (
     <>

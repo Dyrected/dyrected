@@ -240,7 +240,24 @@ export default defineConfig({
 | `branding.logoMark` | `string` | Compact mark used when sidebar is collapsed to icon-only mode. |
 | `branding.primaryColor` | `string` | Hex color used for primary buttons, active states, and focus rings. |
 | `branding.favicon` | `string` | URL or path to the favicon served by the admin. |
+| `branding.fontSans` | `string` | `"DM Sans"` | CSS font-family for body and UI elements. |
+| `branding.fontSerif` | `string` | `"Instrument Serif"` | CSS font-family for headings and display. |
 | `meta.titleSuffix` | `string` | Appended to the `<title>` tag on every admin page. |
+
+## Theming & CSS Overrides
+
+The Admin UI uses CSS variables for all design tokens. You can override these in your host application's global stylesheet to further customize the look and feel.
+
+```css
+/* In your global.css */
+:root {
+  --font-sans: "Inter", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  
+  /* You can also override colors directly */
+  --primary: 217 91% 60%; /* Custom blue in HSL */
+}
+```
 
 ---
 

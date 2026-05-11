@@ -237,6 +237,10 @@ export interface AdminConfig {
     primaryColor?: string;
     /** URL for the browser tab favicon. */
     favicon?: string;
+    /** Default font family for body and UI elements (sans-serif). */
+    fontSans?: string;
+    /** Default font family for headings and display elements (serif). */
+    fontSerif?: string;
   };
   meta?: {
     /** Appended to every Admin page title. Default: '- Dyrected' */

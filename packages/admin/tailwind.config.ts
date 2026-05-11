@@ -19,8 +19,8 @@ const config: Config = {
   	},
   	extend: {
   		fontFamily: {
-  			sans: ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-  			serif: ['"Instrument Serif"', 'ui-serif', 'Georgia', 'serif'],
+  			sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			serif: ['var(--font-serif)', 'ui-serif', 'Georgia', 'serif'],
   		},
   		colors: {
   			border: 'hsl(var(--border))',
