@@ -1,4 +1,4 @@
-import { CollectionConfig, DyrectedConfig, GlobalConfig } from './types';
+import { CollectionConfig, DyrectedConfig, GlobalConfig } from './types/index.js';
 
 /**
  * Define a collection configuration with full type safety.
@@ -21,7 +21,8 @@ export function defineConfig(config: DyrectedConfig): DyrectedConfig {
   return config;
 }
 
-export * from './app';
-export * from './types';
-export * from './services/population.service';
-export * from './services/media.service';
+export * from './app.js';
+export * from './types/index.js';
+export * from './services/population.service.js';
+export * from './services/media.service.js';
+export * from './utils/setup-prompt.js';

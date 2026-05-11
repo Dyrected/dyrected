@@ -10,13 +10,16 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.0",
+    "clsx": "^2.1.1",
     "fumadocs-core": "^16.8.9",
     "fumadocs-mdx": "^15.0.2",
     "fumadocs-ui": "^16.8.9",
+    "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "postcss": "^8.5.14",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {

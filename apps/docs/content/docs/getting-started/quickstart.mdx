@@ -40,15 +40,7 @@ export default defineConfig({
 })
 ```
 
-**4. Push your schema**
-
-```bash
-npx dyrected push
-```
-
-This sends your config to the Cloud, provisions the tables, and makes the API live.
-
-**5. Set environment variables**
+**4. Set environment variables**
 
 ```bash
 # .env.local
@@ -57,6 +49,14 @@ DYRECTED_SITE_ID=site_...
 NEXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
 NEXT_PUBLIC_DYRECTED_SITE_ID=site_...
 ```
+
+**5. Push your schema**
+
+```bash
+npx dyrected push
+```
+
+This sends your config to the Cloud, provisions the tables, and makes the API live. You must have your environment variables set for the CLI to authenticate.
 
 **6. Fetch content**
 
@@ -77,138 +77,49 @@ For the full Cloud setup including router mounting and multi-site patterns, see 
 </Tab>
 <Tab value="Next.js">
 
-**1. Install**
+The easiest way to get started with Next.js is using the interactive CLI.
+
+**1. Initialize**
 
 ```bash
-pnpm add @dyrected/core @dyrected/db-sqlite
+npx dyrected init
 ```
 
-Use `@dyrected/db-postgres` instead of `@dyrected/db-sqlite` for production. See [Database Adapters](/docs/adapters/databases).
+Choose **Next.js** and **SQLite** (for local development). The CLI will:
+- Install `@dyrected/core`, `@dyrected/next`, and `@dyrected/db-sqlite`.
+- Create a `dyrected.config.ts`.
+- Mount the API route at `app/dyrected/[...route]/route.ts`.
+- Mount the Admin UI at `app/cms/[[...route]]/page.tsx`.
+- Generate a `.env.example`.
 
-**2. Create your config**
+**2. Configure and Run**
 
-```ts
-// dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
-import { SqliteAdapter } from '@dyrected/db-sqlite'
-
-export default defineConfig({
-  db: new SqliteAdapter({ filename: './dyrected.db' }),
-  collections: [
-    {
-      slug: 'posts',
-      fields: [
-        { name: 'title',   type: 'text',     required: true },
-        { name: 'slug',    type: 'text',     required: true },
-        { name: 'content', type: 'richtext' },
-        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
-      ],
-    },
-  ],
-})
-```
-
-**3. Mount the router**
-
-```ts
-// app/dyrected/[...route]/route.ts
-import { createDyrectedApp } from '@dyrected/core'
-import config from '@/dyrected.config'
-
-const app = createDyrectedApp(config)
-
-export const GET    = app.fetch
-export const POST   = app.fetch
-export const PATCH  = app.fetch
-export const DELETE = app.fetch
-```
-
-**4. Set environment variables**
-
-```bash
-# .env.local
-DYRECTED_JWT_SECRET=a-long-random-secret
-DYRECTED_API_KEY=your-api-key
-```
-
-**5. Run and test**
-
-```bash
-pnpm dev
-```
-
-```bash
-curl http://localhost:3000/dyrected/collections/posts \
-  -H "x-api-key: your-api-key"
-```
+1. Copy `.env.example` to `.env` and set `DYRECTED_JWT_SECRET`.
+2. Run `pnpm dev`.
+3. Open `http://localhost:3000/cms` to start managing content.
 
 </Tab>
 <Tab value="Nuxt">
 
-**1. Install**
+The easiest way to get started with Nuxt is using the interactive CLI.
+
+**1. Initialize**
 
 ```bash
-pnpm add @dyrected/core @dyrected/nuxt @dyrected/db-sqlite
+npx dyrected init
 ```
 
-Use `@dyrected/db-postgres` instead of `@dyrected/db-sqlite` for production. See [Database Adapters](/docs/adapters/databases).
+Choose **Nuxt 3** and **SQLite**. The CLI will:
+- Install dependencies and create `dyrected.config.ts`.
+- Mount the Admin UI at `pages/cms/[[...route]].vue`.
+- Generate a `.env.example`.
 
-**2. Create your config**
+**2. Configure and Run**
 
-```ts
-// dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
-import { SqliteAdapter } from '@dyrected/db-sqlite'
-
-export default defineConfig({
-  db: new SqliteAdapter({ filename: './dyrected.db' }),
-  collections: [
-    {
-      slug: 'posts',
-      fields: [
-        { name: 'title',   type: 'text',     required: true },
-        { name: 'slug',    type: 'text',     required: true },
-        { name: 'content', type: 'richtext' },
-        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
-      ],
-    },
-  ],
-})
-```
-
-**3. Mount the module**
-
-```ts
-// nuxt.config.ts
-import config from './dyrected.config'
-
-export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt'],
-  dyrected: {
-    ...config,
-    apiBase: '/dyrected',
-  },
-})
-```
-
-**4. Set environment variables**
-
-```bash
-# .env
-DYRECTED_JWT_SECRET=a-long-random-secret
-DYRECTED_API_KEY=your-api-key
-```
-
-**5. Run and test**
-
-```bash
-pnpm dev
-```
-
-```bash
-curl http://localhost:3000/dyrected/collections/posts \
-  -H "x-api-key: your-api-key"
-```
+1. Add `'@dyrected/nuxt'` to your `modules` in `nuxt.config.ts`.
+2. Copy `.env.example` to `.env` and set `DYRECTED_JWT_SECRET`.
+3. Run `pnpm dev`.
+4. Open `http://localhost:3000/cms` to start managing content.
 
 </Tab>
 </Tabs>
@@ -224,13 +135,4 @@ curl http://localhost:3000/dyrected/collections/posts \
 
 ---
 
-## Using AI to scaffold
-
-Paste this into Claude, Cursor, or ChatGPT to generate the full setup:
-
-```
-Set up Dyrected in my [Next.js App Router / Nuxt 3] project. Install
-@dyrected/core and @dyrected/db-postgres. Create a dyrected.config.ts
-with two collections: Posts (title, slug, richtext content, status
-select) and Authors (name, bio, avatar upload). Mount the router.
-```
+The `npx dyrected init` command will generate a specialized AI prompt tailored to your project. Paste it into Claude, Cursor, or ChatGPT to instantly scaffold your content model and frontend logic.

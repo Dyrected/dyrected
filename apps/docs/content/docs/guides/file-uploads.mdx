@@ -52,15 +52,31 @@ The Admin UI renders a drag-and-drop media browser for upload collections. Drop 
 
 ## 4. Upload programmatically
 
-<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tabs items={['SDK (any)', 'Next.js', 'Nuxt']}>
+<Tab value="SDK (any)">
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey: process.env.DYRECTED_API_KEY!,
+})
+
+const form = new FormData()
+form.append('file', file)
+form.append('alt', 'My awesome image')
+
+const media = await client.collection('media').upload(form)
+```
+</Tab>
 <Tab value="Next.js">
 ```ts
-// From a Client Component or Server Action
+// Using raw fetch in a Client Component or Server Action
 const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
-const res = await fetch('/dyrected/collections/media', {
+const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/media`, {
   method: 'POST',
   headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
   body: form,
@@ -70,29 +86,16 @@ const media = await res.json()
 </Tab>
 <Tab value="Nuxt">
 ```ts
-// In a composable or component
+// Using $fetch in a composable or component
 const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
 const media = await $fetch('/dyrected/collections/media', {
   method: 'POST',
-  headers: { 'x-api-key': useRuntimeConfig().dyrectedApiKey },
+  headers: { 'x-api-key': useRuntimeConfig().public.dyrectedApiKey },
   body: form,
 })
-```
-</Tab>
-<Tab value="SDK (any)">
-```ts
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({ baseUrl: '/dyrected', apiKey: '...' })
-
-const form = new FormData()
-form.append('file', file)
-form.append('alt', file.name)
-
-const media = await client.collection('media').upload(form)
 ```
 </Tab>
 </Tabs>

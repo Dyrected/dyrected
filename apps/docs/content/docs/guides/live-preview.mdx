@@ -82,12 +82,19 @@ Pass `initialData` from a server component wrapper so the page renders before th
 
 ```tsx
 // app/blog/[slug]/preview/page.tsx
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey:  process.env.DYRECTED_API_KEY!,
+})
+
 export default async function PreviewWrapper({ params }: any) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[slug][equals]=${params.slug}&depth=1`,
-    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! }, cache: 'no-store' }
-  )
-  const { docs } = await res.json()
+  const { docs } = await client.collection('posts').find({
+    where: { slug: { equals: params.slug } },
+    depth: 1
+  })
+  
   return <PostPreviewPage initialData={docs[0] ?? {}} />
 }
 ```

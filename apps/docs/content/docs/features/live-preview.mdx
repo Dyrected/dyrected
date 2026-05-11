@@ -209,10 +209,14 @@ export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get('token')
   if (!token) return new Response('Missing token', { status: 400 })
 
+  const client = createClient({
+    baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+    apiKey: process.env.DYRECTED_API_KEY!,
+  })
+
   // Fetch draft data directly from the preview-data endpoint
-  const res = await fetch(`${process.env.DYRECTED_URL}/api/preview-data?token=${token}`)
-  if (!res.ok) return new Response('Invalid token', { status: 401 })
-  const previewData = await res.json()
+  const previewData = await client.getPreviewData(token)
+  if (!previewData) return new Response('Invalid token', { status: 401 })
 
   // Enable Next.js draft mode and redirect to the preview page
   const response = NextResponse.redirect(new URL(`/posts/${previewData.data.slug}`, req.url))

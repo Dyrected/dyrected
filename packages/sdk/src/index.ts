@@ -96,6 +96,14 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     return this.request('/api/schemas');
   }
 
+  /**
+   * Fetch draft data for a specific preview token.
+   * Used in "token" preview mode.
+   */
+  async getPreviewData(token: string): Promise<any> {
+    return this.request(`/api/preview-data?token=${token}`);
+  }
+
   async find<K extends keyof TSchema['collections']>(
     collection: K & string, 
     args: QueryArgs = {}

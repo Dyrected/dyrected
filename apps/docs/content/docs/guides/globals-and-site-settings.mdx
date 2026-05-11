@@ -54,15 +54,15 @@ export default defineConfig({
 <Tab value="Next.js">
 ```tsx
 // app/layout.tsx
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey: process.env.DYRECTED_API_KEY!,
+})
+
 async function getSiteSettings() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/globals/site-settings?depth=1`,
-    {
-      headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
-      next: { revalidate: 3600 },
-    }
-  )
-  return res.json()
+  return client.global('site-settings').get({ depth: 1 })
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

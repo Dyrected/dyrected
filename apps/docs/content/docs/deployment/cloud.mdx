@@ -121,19 +121,10 @@ export default defineNuxtConfig({
 
 ## 6. Fetch content
 
-Every request to the Cloud API needs the `x-site-id` header alongside your API key:
+Every request to the Cloud API needs the `x-site-id` header alongside your API key.
 
-```ts
-const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts`, {
-  headers: {
-    'x-api-key':  process.env.DYRECTED_API_KEY!,
-    'x-site-id':  process.env.DYRECTED_SITE_ID!,
-  },
-})
-```
-
-The SDK handles this automatically:
-
+<Tabs items={['SDK', 'REST API']}>
+<Tab value="SDK">
 ```ts
 import { createClient } from '@dyrected/sdk'
 
@@ -145,6 +136,18 @@ const client = createClient({
 
 const { docs } = await client.collection('posts').find()
 ```
+</Tab>
+<Tab value="REST API">
+```ts
+const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts`, {
+  headers: {
+    'x-api-key':  process.env.DYRECTED_API_KEY!,
+    'x-site-id':  process.env.DYRECTED_SITE_ID!,
+  },
+})
+```
+</Tab>
+</Tabs>
 
 ---
 

@@ -4,7 +4,7 @@ Parameters
 
 Licensor:             Ajola Technologies Ltd
 Licensed Work:        Dyrected
-Additional Use Grant: You may use the Licensed Work for commercial purposes provided you do not offer it as a hosted or managed service where the primary value is the Licensed Work itself.
+Additional Use Grant: Commercial use is permitted as long as it is not used to provide a hosted or managed service that competes with Dyrected.
 Change Date:          2030-05-11
 Change License:       Apache License 2.0
 

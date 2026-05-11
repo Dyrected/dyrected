@@ -69,8 +69,8 @@ All Dyrected REST endpoints are now available at `/dyrected/...`.
 
 ## Step 3 — Fetch data in Server Components
 
-### Using the SDK
-
+<Tabs items={['SDK', 'Direct DB', 'REST API']}>
+<Tab value="SDK">
 ```tsx
 // app/blog/page.tsx
 import { createClient } from '@dyrected/sdk'
@@ -96,9 +96,8 @@ export default async function BlogPage() {
   )
 }
 ```
-
-### Directly via the database adapter
-
+</Tab>
+<Tab value="Direct DB">
 When Dyrected is co-located with your Next.js app (self-hosted), you can bypass HTTP entirely:
 
 ```tsx
@@ -115,6 +114,33 @@ export default async function BlogPage() {
   return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>
 }
 ```
+</Tab>
+<Tab value="REST API">
+For environments where the SDK isn't available, use raw HTTP:
+
+```tsx
+// app/blog/page.tsx
+export default async function BlogPage() {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[status][equals]=published`,
+    { 
+      headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
+      next: { revalidate: 3600 } 
+    }
+  )
+  const { docs: posts } = await res.json()
+
+  return (
+    <ul>
+      {posts.map((post: any) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  )
+}
+```
+</Tab>
+</Tabs>
 
 This approach has zero network overhead and is the fastest option for self-hosted setups.
 

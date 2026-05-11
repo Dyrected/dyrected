@@ -9,9 +9,7 @@ import { handle } from "hono/vercel";
  * export const { GET, POST, PATCH, DELETE } = dyrectedNextHandler(config);
  */
 export function dyrectedNextHandler(config: DyrectedConfig) {
-  const app = createDyrectedApp(config);
-
-  const handler = handle(app);
+  const handler = handle(createDyrectedApp(config) as any);
 
   return {
     GET: handler,

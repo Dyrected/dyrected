@@ -99,19 +99,35 @@ Fields stripped by `read` access never appear in API responses for that user —
 
 ## 5. Check the role on the frontend
 
-<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tabs items={['SDK (any)', 'Next.js', 'Nuxt']}>
+<Tab value="SDK (any)">
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: '/dyrected' })
+client.setToken(userToken)
+
+const user = await client.collection('users').me()
+// user.role === 'admin' | 'editor' | 'viewer'
+```
+</Tab>
 <Tab value="Next.js">
 ```ts
 // In a Server Component
-import { cookies } from 'next/headers'
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
 
 async function getCurrentUser() {
   const token = cookies().get('dyrected-token')?.value
   if (!token) return null
-  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  return res.ok ? res.json() : null
+  
+  client.setToken(token)
+  try {
+    return await client.collection('users').me()
+  } catch {
+    return null
+  }
 }
 
 // In your component:
@@ -129,12 +145,6 @@ const { user } = useDyrectedAuth('users')
   <AdminControls v-if="user?.role === 'admin'" />
   <EditorControls v-else-if="user?.role === 'editor'" />
 </template>
-```
-</Tab>
-<Tab value="SDK (any)">
-```ts
-const user = await client.collection('users').me()
-// user.role === 'admin' | 'editor' | 'viewer'
 ```
 </Tab>
 </Tabs>

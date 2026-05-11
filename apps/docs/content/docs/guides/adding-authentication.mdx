@@ -35,20 +35,31 @@ The same secret must be set in every environment. Rotating it invalidates all ex
 
 ## 3. Log in
 
-<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tabs items={['SDK (any)', 'Next.js', 'Nuxt']}>
+<Tab value="SDK (any)">
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: '/dyrected' })
+
+const { token, user } = await client.collection('users').login(
+  'jane@example.com',
+  'hunter2'
+)
+```
+</Tab>
 <Tab value="Next.js">
 ```ts
 // app/login/actions.ts
 'use server'
 import { cookies } from 'next/headers'
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
 
 export async function login(email: string, password: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/users/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
-  const { token, user } = await res.json()
+  const { token, user } = await client.collection('users').login(email, password)
+  
   cookies().set('dyrected-token', token, { httpOnly: true, path: '/' })
   return user
 }
@@ -76,18 +87,6 @@ async function submit(e: Event) {
     <button type="submit">Log in</button>
   </form>
 </template>
-```
-</Tab>
-<Tab value="SDK (any)">
-```ts
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({ baseUrl: '/dyrected' })
-
-const { token, user } = await client.collection('users').login(
-  'jane@example.com',
-  'hunter2'
-)
 ```
 </Tab>
 </Tabs>
@@ -161,16 +160,20 @@ definePageMeta({ middleware: 'auth' })
 ```ts
 // In a Server Component
 import { cookies } from 'next/headers'
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
 
 async function getUser() {
   const token = cookies().get('dyrected-token')?.value
   if (!token) return null
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!res.ok) return null
-  return res.json()
+  client.setToken(token)
+  try {
+    return await client.collection('users').me()
+  } catch {
+    return null
+  }
 }
 ```
 </Tab>

@@ -87,14 +87,19 @@ Each item in `layout` includes a `blockType` matching the block's `slug`:
 ```tsx
 // app/[slug]/page.tsx
 import { notFound } from 'next/navigation'
+import { createClient } from '@dyrected/sdk'
 import { Block } from '@/components/Block'
 
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey: process.env.DYRECTED_API_KEY!,
+})
+
 async function getPage(slug: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/pages?where[slug][equals]=${slug}&depth=1`,
-    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
-  )
-  const { docs } = await res.json()
+  const { docs } = await client.collection('pages').find({
+    where: { slug: { equals: slug } },
+    depth: 1,
+  })
   return docs[0] ?? null
 }
 
@@ -112,10 +117,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
 }
 
 export async function generateStaticParams() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/pages?limit=100`, {
-    headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
-  })
-  const { docs } = await res.json()
+  const { docs } = await client.collection('pages').find({ limit: 100 })
   return docs.map((p: any) => ({ slug: p.slug }))
 }
 ```

@@ -7,7 +7,8 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@dyrected/core": ["../core/src/index.ts"]
     },
 
     /* Bundler mode */

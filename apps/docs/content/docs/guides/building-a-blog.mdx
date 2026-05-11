@@ -64,21 +64,29 @@ export default defineNuxtConfig({
 
 ## 3. Fetch the post list
 
-<Tabs items={['Next.js', 'Nuxt']}>
-<Tab value="Next.js">
+<Tabs items={['SDK (Next.js)', 'Nuxt', 'REST API']}>
+<Tab value="SDK (Next.js)">
 ```tsx
 // app/blog/page.tsx
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey: process.env.DYRECTED_API_KEY!,
+})
+
 export default async function BlogPage() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[status][equals]=published&sort=-publishedAt`,
-    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! }, next: { revalidate: 60 } }
-  )
-  const { docs } = await res.json()
+  const { docs: posts } = await client.collection('posts').find({
+    where: { status: { equals: 'published' } },
+    sort: '-publishedAt',
+  })
 
   return (
     <ul>
-      {docs.map((post: any) => (
-        <li key={post.id}><a href={`/blog/${post.slug}`}>{post.title}</a></li>
+      {posts.map((post) => (
+        <li key={post.id}>
+          <a href={`/blog/${post.slug}`}>{post.title}</a>
+        </li>
       ))}
     </ul>
   )
@@ -104,22 +112,49 @@ const { data } = await useDyrectedFind('posts', {
 </template>
 ```
 </Tab>
+<Tab value="REST API">
+```tsx
+// app/blog/page.tsx
+export default async function BlogPage() {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[status][equals]=published&sort=-publishedAt`,
+    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
+  )
+  const { docs } = await res.json()
+
+  return (
+    <ul>
+      {docs.map((post: any) => (
+        <li key={post.id}><a href={`/blog/${post.slug}`}>{post.title}</a></li>
+      ))}
+    </ul>
+  )
+}
+```
+</Tab>
 </Tabs>
 
 ---
 
 ## 4. Fetch a single post
 
-<Tabs items={['Next.js', 'Nuxt']}>
-<Tab value="Next.js">
+<Tabs items={['SDK (Next.js)', 'Nuxt', 'REST API']}>
+<Tab value="SDK (Next.js)">
 ```tsx
 // app/blog/[slug]/page.tsx
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey: process.env.DYRECTED_API_KEY!,
+})
+
 export default async function PostPage({ params }: { params: { slug: string } }) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[slug][equals]=${params.slug}&limit=1`,
-    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
-  )
-  const { docs } = await res.json()
+  const { docs } = await client.collection('posts').find({
+    where: { slug: { equals: params.slug } },
+    limit: 1,
+  })
+  
   const post = docs[0]
   if (!post) return <div>Not found</div>
 
@@ -147,6 +182,27 @@ const { data: post } = await useDyrectedDoc('posts', route.params.slug as string
   </article>
   <div v-else>Not found</div>
 </template>
+```
+</Tab>
+<Tab value="REST API">
+```tsx
+// app/blog/[slug]/page.tsx
+export default async function PostPage({ params }: { params: { slug: string } }) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[slug][equals]=${params.slug}&limit=1`,
+    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
+  )
+  const { docs } = await res.json()
+  const post = docs[0]
+  if (!post) return <div>Not found</div>
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <div dangerouslySetInnerHTML={{ __html: post.content }} />
+    </article>
+  )
+}
 ```
 </Tab>
 </Tabs>

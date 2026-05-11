@@ -7,6 +7,7 @@ import path from "path";
 import prompts from "prompts";
 import { execSync } from "child_process";
 import { createJiti } from "jiti";
+import { generateAIPrompt } from "@dyrected/core";
 
 const program = new Command();
 
@@ -35,28 +36,42 @@ program
       process.exit(0);
     }
 
-    const { db } = await prompts({
-      type: "select",
-      name: "db",
-      message: "Which database adapter?",
-      choices: [
-        { title: "PostgreSQL (recommended)", value: "postgres" },
-        { title: "SQLite (local dev)", value: "sqlite" },
-        { title: "MongoDB", value: "mongodb" },
-      ],
+    const { quickSetup } = await prompts({
+      type: "confirm",
+      name: "quickSetup",
+      message: "Use Quick Setup (SQLite + Local Storage)?",
+      initial: true,
     });
 
-    const { storage } = await prompts({
-      type: "select",
-      name: "storage",
-      message: "Which storage adapter?",
-      choices: [
-        { title: "Local filesystem", value: "local" },
-        { title: "AWS S3", value: "s3" },
-        { title: "Backblaze B2", value: "b2" },
-        { title: "Cloudinary", value: "cloudinary" },
-      ],
-    });
+    let db = "sqlite";
+    let storage = "local";
+
+    if (!quickSetup) {
+      const dbResponse = await prompts({
+        type: "select",
+        name: "value",
+        message: "Which database adapter?",
+        choices: [
+          { title: "PostgreSQL (recommended)", value: "postgres" },
+          { title: "SQLite (local dev)", value: "sqlite" },
+          { title: "MongoDB", value: "mongodb" },
+        ],
+      });
+      db = dbResponse.value;
+
+      const storageResponse = await prompts({
+        type: "select",
+        name: "value",
+        message: "Which storage adapter?",
+        choices: [
+          { title: "Local filesystem", value: "local" },
+          { title: "AWS S3", value: "s3" },
+          { title: "Backblaze B2", value: "b2" },
+          { title: "Cloudinary", value: "cloudinary" },
+        ],
+      });
+      storage = storageResponse.value;
+    }
 
     const cwd = process.cwd();
     const packageManager = detectPackageManager(cwd);
@@ -188,11 +203,18 @@ export default defineConfig({
 
     // ── Done ─────────────────────────────────────────────────────────────
     console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
-    console.log(chalk.dim("Next steps:"));
-    console.log(chalk.cyan("  1. Copy .env.example → .env and fill in your secrets"));
-    console.log(chalk.cyan("  2. Run your dev server"));
-    console.log(chalk.cyan("  3. Open /cms to access the admin panel"));
     console.log(chalk.cyan("  4. Run: npx dyrected generate:types\n"));
+
+    console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
+    console.log(chalk.dim("Copy this prompt and give it to your AI tool (Claude, GPT, etc.) to scaffold your CMS logic:\n"));
+
+    const promptText = generateAIPrompt(framework as any, {
+      baseUrl: "http://localhost:3000",
+      isSelfHosted: true,
+    });
+
+    console.log(chalk.white(promptText));
+    console.log("\n" + chalk.dim("━".repeat(50)) + "\n");
   });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -498,6 +520,7 @@ program
   .option("-s, --site-id <id>", "Your Dyrected Site ID")
   .option("-u, --url <url>", "Cloud API URL", "https://prodeegi-vault.onrender.com")
   .option("-c, --config <path>", "Path to your dyrected.config.ts", "./dyrected.config.ts")
+  .option("--skip-on-error", "Do not exit with error if sync fails (useful for local builds)")
   .action(async (options) => {
     try {
       const apiKey = options.apiKey || process.env.DYRECTED_API_KEY;
@@ -508,9 +531,12 @@ program
       const jiti = createJiti(configPath);
 
       if (!apiKey || !siteId) {
-        throw new Error(
-          "API Key and Site ID are required. Provide them via options or environment variables (DYRECTED_API_KEY, DYRECTED_SITE_ID).",
+        console.warn(
+          chalk.yellow(
+            "\n⚠  Skipping schema sync: API Key or Site ID missing. (Required for Cloud sync, but optional for self-hosted builds)\n",
+          ),
         );
+        return;
       }
 
       if (!(await fs.pathExists(configPath))) {
@@ -548,6 +574,10 @@ program
 
       console.log(chalk.green(`\nSuccess! Schema synced successfully for site ${siteId}`));
     } catch (error: any) {
+      if (options.skipOnError) {
+        console.warn(chalk.yellow(`\n⚠  Sync failed, but skipping error as requested: ${error.message}`));
+        return;
+      }
       console.error(chalk.red(`\nError: ${error.message}`));
       process.exit(1);
     }
