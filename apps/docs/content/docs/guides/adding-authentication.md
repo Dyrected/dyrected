@@ -3,16 +3,10 @@ title: Adding Authentication
 description: Add a users collection with login, JWT auth, and protected routes.
 ---
 
-This guide adds user authentication to a Dyrected app: a `users` collection with login/logout, JWT-protected API access, and route guards in Next.js.
-
----
-
 ## 1. Add an auth collection
 
-Set `auth: true` on the collection. Dyrected adds `email`, `password`, and token endpoints automatically.
-
 ```ts
-// dyrected.config.ts
+// dyrected.config.ts  (same for both frameworks)
 export default defineConfig({
   collections: [
     {
@@ -39,25 +33,30 @@ The same secret must be set in every environment. Rotating it invalidates all ex
 
 ---
 
-## 3. Log in with the SDK
+## 3. Log in
 
+<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tab value="Next.js">
 ```ts
-import { createClient } from '@dyrected/sdk'
+// app/login/actions.ts
+'use server'
+import { cookies } from 'next/headers'
 
-const client = createClient({ baseUrl: '/api/dyrected' })
-
-// Log in — stores JWT in the client instance
-const { token, user } = await client.collection('users').login('jane@example.com', 'hunter2')
-
-// Subsequent requests are automatically authenticated
-const { docs } = await client.collection('posts').find()
+export async function login(email: string, password: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/users/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  const { token, user } = await res.json()
+  cookies().set('dyrected-token', token, { httpOnly: true, path: '/' })
+  return user
+}
 ```
-
----
-
-## 4. Log in with the Nuxt composable
-
+</Tab>
+<Tab value="Nuxt">
 ```vue
+<!-- components/LoginForm.vue -->
 <script setup lang="ts">
 const { login, user, logout } = useDyrectedAuth('users')
 
@@ -68,29 +67,41 @@ async function submit(e: Event) {
 </script>
 
 <template>
-  <div v-if="user">Hello, {{ user.name }} — <button @click="logout">Log out</button></div>
+  <div v-if="user">
+    Hello, {{ user.name }} — <button @click="logout">Log out</button>
+  </div>
   <form v-else @submit.prevent="submit">
-    <input name="email" type="email" />
-    <input name="password" type="password" />
+    <input name="email" type="email" placeholder="Email" />
+    <input name="password" type="password" placeholder="Password" />
     <button type="submit">Log in</button>
   </form>
 </template>
 ```
+</Tab>
+<Tab value="SDK (any)">
+```ts
+import { createClient } from '@dyrected/sdk'
 
-See [Nuxt Integration](/integrations/nuxt) for full composable reference.
+const client = createClient({ baseUrl: '/api/dyrected' })
+
+const { token, user } = await client.collection('users').login(
+  'jane@example.com',
+  'hunter2'
+)
+```
+</Tab>
+</Tabs>
 
 ---
 
-## 5. Protect API routes
-
-Use `requireAuth()` middleware on any Hono route, or add an `access` function to a collection:
+## 4. Protect API routes
 
 ```ts
-// dyrected.config.ts
+// dyrected.config.ts — access functions work the same in both frameworks
 {
   slug: 'orders',
   access: {
-    read:   ({ user }) => !!user,        // logged-in users only
+    read:   ({ user }) => !!user,
     create: ({ user }) => !!user,
     update: ({ user, doc }) => user?.id === doc.userId,
     delete: ({ user }) => user?.role === 'admin',
@@ -100,8 +111,10 @@ Use `requireAuth()` middleware on any Hono route, or add an `access` function to
 
 ---
 
-## 6. Protect Next.js pages with middleware
+## 5. Protect frontend routes
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
 // middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
@@ -118,12 +131,35 @@ export const config = {
   matcher: ['/dashboard/:path*', '/account/:path*'],
 }
 ```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// middleware/auth.ts
+export default defineNuxtRouteMiddleware(() => {
+  const { user } = useDyrectedAuth('users')
+  if (!user.value) return navigateTo('/login')
+})
+```
+
+Apply it to a page:
+
+```vue
+<!-- pages/dashboard.vue -->
+<script setup>
+definePageMeta({ middleware: 'auth' })
+</script>
+```
+</Tab>
+</Tabs>
 
 ---
 
-## 7. Read the current user in a Server Component
+## 6. Get the current user
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
+// In a Server Component
 import { cookies } from 'next/headers'
 
 async function getUser() {
@@ -137,11 +173,25 @@ async function getUser() {
   return res.json()
 }
 ```
+</Tab>
+<Tab value="Nuxt">
+```vue
+<script setup lang="ts">
+const { user } = useDyrectedAuth('users')
+// reactive — updates automatically on login/logout
+</script>
+
+<template>
+  <span v-if="user">{{ user.name }}</span>
+</template>
+```
+</Tab>
+</Tabs>
 
 ---
 
 ## Next steps
 
-- [Invite-only registration](/guides/invite-only-registration) — restrict sign-up to invited users
-- [Access Control](/concepts/access-control) — full reference for `access` functions
-- [Auth Endpoints](/features/auth) — REST API for login, logout, forgot-password, etc.
+- [Invite-only registration](/docs/guides/invite-only-registration) — restrict sign-up to invited users
+- [Role-based access control](/docs/guides/role-based-access-control) — admin / editor / viewer roles
+- [Auth Endpoints](/docs/features/auth) — full REST API reference

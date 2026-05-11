@@ -5,9 +5,18 @@ description: Add Dyrected to an existing Next.js or Nuxt app in under 5 minutes.
 
 ## 1. Install
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```bash
 pnpm add @dyrected/core @dyrected/db-sqlite
 ```
+</Tab>
+<Tab value="Nuxt">
+```bash
+pnpm add @dyrected/core @dyrected/nuxt @dyrected/db-sqlite
+```
+</Tab>
+</Tabs>
 
 Use `@dyrected/db-postgres` instead of `@dyrected/db-sqlite` for production. See [Database Adapters](/docs/adapters/databases).
 
@@ -16,7 +25,7 @@ Use `@dyrected/db-postgres` instead of `@dyrected/db-sqlite` for production. See
 ## 2. Create your config
 
 ```ts
-// dyrected.config.ts
+// dyrected.config.ts  (same for both frameworks)
 import { defineConfig } from '@dyrected/core'
 import { SqliteAdapter } from '@dyrected/db-sqlite'
 
@@ -40,8 +49,8 @@ export default defineConfig({
 
 ## 3. Mount the router
 
-### Next.js
-
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
 // app/api/dyrected/[...route]/route.ts
 import { createApp } from '@dyrected/core'
@@ -54,9 +63,8 @@ export const POST   = app.fetch
 export const PATCH  = app.fetch
 export const DELETE = app.fetch
 ```
-
-### Nuxt
-
+</Tab>
+<Tab value="Nuxt">
 ```ts
 // nuxt.config.ts
 import config from './dyrected.config'
@@ -69,6 +77,8 @@ export default defineNuxtConfig({
   },
 })
 ```
+</Tab>
+</Tabs>
 
 ---
 
@@ -82,18 +92,34 @@ DYRECTED_API_KEY=your-api-key
 
 ---
 
-## 5. Run your app
+## 5. Run your app and test
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```bash
 pnpm dev
 ```
 
-Your API is live at `/api/dyrected`. Fetch your posts:
+Fetch your posts:
 
 ```bash
 curl http://localhost:3000/api/dyrected/collections/posts \
   -H "x-api-key: your-api-key"
 ```
+</Tab>
+<Tab value="Nuxt">
+```bash
+pnpm dev
+```
+
+Fetch your posts:
+
+```bash
+curl http://localhost:3000/api/dyrected/collections/posts \
+  -H "x-api-key: your-api-key"
+```
+</Tab>
+</Tabs>
 
 ---
 
@@ -108,11 +134,11 @@ curl http://localhost:3000/api/dyrected/collections/posts \
 
 ## Using AI to scaffold
 
-If you want to generate a full config from a prompt, paste this into Claude, Cursor, or ChatGPT:
+Paste this into Claude, Cursor, or ChatGPT to generate the full setup:
 
 ```
-Set up Dyrected in my Next.js App Router project. Install @dyrected/core and
-@dyrected/db-postgres. Create a dyrected.config.ts with two collections:
-Posts (title, slug, richtext content, status select) and Authors (name, bio,
-avatar upload). Mount the Hono router at app/api/dyrected/[...route]/route.ts.
+Set up Dyrected in my [Next.js App Router / Nuxt 3] project. Install
+@dyrected/core and @dyrected/db-postgres. Create a dyrected.config.ts
+with two collections: Posts (title, slug, richtext content, status
+select) and Authors (name, bio, avatar upload). Mount the router.
 ```

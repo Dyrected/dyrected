@@ -19,13 +19,36 @@ description: The two ways to run Dyrected and when to pick each.
 
 The Dyrected engine is an npm package that runs **inside your Next.js or Nuxt app**. There is no separate CMS process. Your config, your database, your server.
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
-// dyrected.config.ts — you own everything
-export default defineConfig({
-  db: new PostgresAdapter({ url: process.env.DATABASE_URL }),
-  collections: [...],
+// app/api/dyrected/[...route]/route.ts
+import { createApp } from '@dyrected/core'
+import config from '@/dyrected.config'
+
+const app = createApp(config)
+
+export const GET    = app.fetch
+export const POST   = app.fetch
+export const PATCH  = app.fetch
+export const DELETE = app.fetch
+```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// nuxt.config.ts
+import config from './dyrected.config'
+
+export default defineNuxtConfig({
+  modules: ['@dyrected/nuxt'],
+  dyrected: {
+    ...config,
+    apiBase: '/api/dyrected',
+  },
 })
 ```
+</Tab>
+</Tabs>
 
 Self-hosting is free under the [Business Source License](https://mariadb.com/bsl11/). You can use it commercially for client projects with no restrictions.
 
@@ -35,8 +58,37 @@ Self-hosting is free under the [Business Source License](https://mariadb.com/bsl
 
 Your app sends requests to `https://api.dyrected.cloud` using a Site API Key and Site ID. The database, storage, and admin users are managed by Dyrected. You still write the same `dyrected.config.ts` — the difference is where it runs.
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
-// nuxt.config.ts — cloud mode
+// dyrected.config.ts
+import { defineConfig } from '@dyrected/core'
+
+export default defineConfig({
+  // No db adapter needed — Cloud manages the database
+  serverURL: process.env.DYRECTED_CLOUD_URL,
+  apiKey:    process.env.DYRECTED_API_KEY,
+  siteId:    process.env.DYRECTED_SITE_ID,
+  collections: [...],
+})
+```
+
+```ts
+// app/api/dyrected/[...route]/route.ts — same as self-hosted
+import { createApp } from '@dyrected/core'
+import config from '@/dyrected.config'
+
+const app = createApp(config)
+
+export const GET    = app.fetch
+export const POST   = app.fetch
+export const PATCH  = app.fetch
+export const DELETE = app.fetch
+```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
@@ -46,6 +98,8 @@ export default defineNuxtConfig({
   },
 })
 ```
+</Tab>
+</Tabs>
 
 ---
 

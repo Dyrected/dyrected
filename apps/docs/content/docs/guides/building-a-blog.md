@@ -1,10 +1,6 @@
 ---
 title: Building a Blog
-description: Create a simple blog with a posts collection, Next.js frontend, and the Admin UI.
----
-
-This guide walks through building a blog from scratch: defining a `posts` collection, querying it from a Next.js page, and editing content through the Admin UI.
-
+description: Create a posts collection, fetch content in your frontend, and let clients edit through the Admin UI.
 ---
 
 ## 1. Define the collection
@@ -19,14 +15,12 @@ export default defineConfig({
   collections: [
     {
       slug: 'posts',
-      access: {
-        read: () => true,   // public reads
-      },
+      access: { read: () => true },
       fields: [
-        { name: 'title',     type: 'text',     required: true },
-        { name: 'slug',      type: 'text',     required: true },
-        { name: 'content',   type: 'richtext' },
-        { name: 'status',    type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
+        { name: 'title',       type: 'text',     required: true },
+        { name: 'slug',        type: 'text',     required: true },
+        { name: 'content',     type: 'richtext' },
+        { name: 'status',      type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
         { name: 'publishedAt', type: 'date' },
       ],
     },
@@ -36,8 +30,10 @@ export default defineConfig({
 
 ---
 
-## 2. Mount the Dyrected API
+## 2. Mount the API
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
 // app/api/dyrected/[...route]/route.ts
 import { createApp } from '@dyrected/core'
@@ -50,45 +46,81 @@ export const POST   = app.fetch
 export const PATCH  = app.fetch
 export const DELETE = app.fetch
 ```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// nuxt.config.ts
+import config from './dyrected.config'
+
+export default defineNuxtConfig({
+  modules: ['@dyrected/nuxt'],
+  dyrected: { ...config, apiBase: '/api/dyrected' },
+})
+```
+</Tab>
+</Tabs>
 
 ---
 
-## 3. Fetch posts in a Next.js page
+## 3. Fetch the post list
 
-```ts
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+```tsx
 // app/blog/page.tsx
 export default async function BlogPage() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[status][equals]=published&sort=-publishedAt`, {
-    headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
-    next: { revalidate: 60 },
-  })
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[status][equals]=published&sort=-publishedAt`,
+    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! }, next: { revalidate: 60 } }
+  )
   const { docs } = await res.json()
 
   return (
     <ul>
       {docs.map((post: any) => (
-        <li key={post.id}>
-          <a href={`/blog/${post.slug}`}>{post.title}</a>
-        </li>
+        <li key={post.id}><a href={`/blog/${post.slug}`}>{post.title}</a></li>
       ))}
     </ul>
   )
 }
 ```
+</Tab>
+<Tab value="Nuxt">
+```vue
+<!-- pages/blog/index.vue -->
+<script setup lang="ts">
+const { data } = await useDyrectedFind('posts', {
+  where: { status: { equals: 'published' } },
+  sort: '-publishedAt',
+})
+</script>
+
+<template>
+  <ul>
+    <li v-for="post in data?.docs" :key="post.id">
+      <NuxtLink :to="`/blog/${post.slug}`">{{ post.title }}</NuxtLink>
+    </li>
+  </ul>
+</template>
+```
+</Tab>
+</Tabs>
 
 ---
 
 ## 4. Fetch a single post
 
-```ts
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+```tsx
 // app/blog/[slug]/page.tsx
 export default async function PostPage({ params }: { params: { slug: string } }) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[slug][equals]=${params.slug}&limit=1`, {
-    headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
-  })
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[slug][equals]=${params.slug}&limit=1`,
+    { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
+  )
   const { docs } = await res.json()
   const post = docs[0]
-
   if (!post) return <div>Not found</div>
 
   return (
@@ -99,41 +131,88 @@ export default async function PostPage({ params }: { params: { slug: string } })
   )
 }
 ```
+</Tab>
+<Tab value="Nuxt">
+```vue
+<!-- pages/blog/[slug].vue -->
+<script setup lang="ts">
+const route = useRoute()
+const { data: post } = await useDyrectedDoc('posts', route.params.slug as string)
+</script>
+
+<template>
+  <article v-if="post">
+    <h1>{{ post.title }}</h1>
+    <div v-html="post.content" />
+  </article>
+  <div v-else>Not found</div>
+</template>
+```
+</Tab>
+</Tabs>
 
 ---
 
 ## 5. Revalidate on publish
 
-Use an `afterChange` hook to clear the Next.js page cache when a post is published:
-
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
 // dyrected.config.ts
 import { revalidatePath } from 'next/cache'
 
-{
-  slug: 'posts',
-  hooks: {
-    afterChange: [
-      async ({ doc }) => {
-        if (doc.status === 'published') {
-          revalidatePath('/blog')
-          revalidatePath(`/blog/${doc.slug}`)
-        }
-      },
-    ],
-  },
+hooks: {
+  afterChange: [
+    async ({ doc }) => {
+      if (doc.status === 'published') {
+        revalidatePath('/blog')
+        revalidatePath(`/blog/${doc.slug}`)
+      }
+    },
+  ],
 }
 ```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// dyrected.config.ts
+hooks: {
+  afterChange: [
+    async ({ doc }) => {
+      if (doc.status === 'published') {
+        await $fetch('/api/revalidate', {
+          method: 'POST',
+          body: { slug: doc.slug },
+        })
+      }
+    },
+  ],
+}
+```
+</Tab>
+</Tabs>
 
 ---
 
 ## 6. Embed the Admin UI
 
-Mount the Admin UI panel so editors can manage posts at `/admin`:
-
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
 // app/admin/[[...segments]]/page.tsx
 export { AdminPage as default } from '@dyrected/next'
 ```
+</Tab>
+<Tab value="Nuxt">
+The Admin UI mounts automatically at `/admin` when you add the `@dyrected/nuxt` module. Configure the path in `nuxt.config.ts`:
 
-See [Admin UI Overview](/admin/overview) for setup details.
+```ts
+dyrected: {
+  ...config,
+  adminPath: '/admin',
+}
+```
+</Tab>
+</Tabs>
+
+See [Admin UI Overview](/docs/admin/overview) for setup details.
