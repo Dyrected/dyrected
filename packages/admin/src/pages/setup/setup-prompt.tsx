@@ -11,6 +11,8 @@ import { cn } from "../../lib/utils";
 import { Button } from "../../components/ui/button";
 import { generateAIPrompt, type SetupPromptConfig } from "@dyrected/core";
 
+export type { SetupPromptConfig };
+
 export interface SetupPromptProps {
   config: SetupPromptConfig;
 }

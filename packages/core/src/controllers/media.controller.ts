@@ -1,5 +1,5 @@
-import { Context } from 'hono';
-import { DyrectedContext } from '../app.js';
+import type { Context } from 'hono';
+import type { DyrectedContext } from '../app.js';
 
 export class MediaController {
   private collection: string;
@@ -26,7 +26,7 @@ export class MediaController {
       return c.json({ message: 'No file uploaded' }, 400);
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const buffer = new Uint8Array(await file.arrayBuffer());
     
     const siteId = c.get('siteId');
     const workspaceId = c.get('workspaceId');

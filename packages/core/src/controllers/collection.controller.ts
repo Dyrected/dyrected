@@ -1,12 +1,16 @@
-import { Context } from 'hono';
-import { CollectionConfig } from '../types/index.js';
-import { DyrectedContext } from '../app.js';
+import type { Context } from 'hono';
+import type { CollectionConfig } from '../types/index.js';
+import type { DyrectedContext } from '../app.js';
 import { PopulationService } from '../services/population.service.js';
 import { DefaultsService } from '../services/defaults.service.js';
 import { AuditService } from '../services/audit.service.js';
 
 export class CollectionController {
-  constructor(private collection: CollectionConfig) {}
+  private collection: CollectionConfig;
+
+  constructor(collection: CollectionConfig) {
+    this.collection = collection;
+  }
 
   async find(c: Context<DyrectedContext>) {
     const config = c.get('config');
@@ -122,7 +126,7 @@ export class CollectionController {
     const file = formData.get('file') as any;
     if (!file) return c.json({ message: 'No file uploaded' }, 400);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const buffer = new Uint8Array(await file.arrayBuffer());
     const siteId = c.get('siteId');
     const workspaceId = c.get('workspaceId');
     const prefix = workspaceId ? `${workspaceId}/${siteId}` : siteId;

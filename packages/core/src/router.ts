@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { DyrectedContext } from "./app.js";
-import { DyrectedConfig } from "./types/index.js";
+import type { DyrectedContext } from "./app.js";
+import type { DyrectedConfig } from "./types/index.js";
 import { CollectionController } from "./controllers/collection.controller.js";
 import { GlobalController } from "./controllers/global.controller.js";
 import { MediaController } from "./controllers/media.controller.js";

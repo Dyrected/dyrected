@@ -1,5 +1,5 @@
-import { Context } from 'hono';
-import { DyrectedContext } from '../app.js';
+import type { Context } from 'hono';
+import type { DyrectedContext } from '../app.js';
 import { SignJWT, jwtVerify } from 'jose';
 import { TextEncoder } from 'node:util';
 

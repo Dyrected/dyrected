@@ -195,4 +195,4 @@ export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProp
 // ─── Re-exports for external use ──────────────────────────────────────────────
 
 export { SetupPromptUI } from "./pages/setup/setup-prompt";
-export type { SetupPromptProps, SetupPromptConfig } from "./pages/setup/setup-prompt";
+export type { SetupPromptProps } from "./pages/setup/setup-prompt";

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
-import { DyrectedConfig } from './types/index.js';
+import type { DyrectedConfig } from './types/index.js';
 import { registerRoutes } from './router.js';
 import { normalizeConfig } from './utils/config.js';
 import { optionalAuth } from './middleware/auth.js';

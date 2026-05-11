@@ -1,11 +1,15 @@
-import { Context } from "hono";
-import { DyrectedContext } from "../app.js";
-import { GlobalConfig } from "../types/index.js";
+import type { Context } from "hono";
+import type { DyrectedContext } from "../app.js";
+import type { GlobalConfig } from "../types/index.js";
 import { PopulationService } from "../services/population.service.js";
 import { DefaultsService } from "../services/defaults.service.js";
 
 export class GlobalController {
-  constructor(private global: GlobalConfig) {}
+  private global: GlobalConfig;
+
+  constructor(global: GlobalConfig) {
+    this.global = global;
+  }
 
   async get(c: Context<DyrectedContext>) {
     const config = c.get("config");

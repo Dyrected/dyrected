@@ -1,4 +1,4 @@
-import { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
+import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
 
 const AUDIT_COLLECTION_SLUG = '__audit';
 

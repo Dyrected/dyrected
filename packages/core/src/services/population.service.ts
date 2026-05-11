@@ -1,7 +1,13 @@
-import { CollectionConfig, DatabaseAdapter, Field, PaginatedResult } from '../types/index.js';
+import type { CollectionConfig, DatabaseAdapter, Field, PaginatedResult } from '../types/index.js';
 
 export class PopulationService {
-  constructor(private db: DatabaseAdapter, private collections: CollectionConfig[]) {}
+  private db: DatabaseAdapter;
+  private collections: CollectionConfig[];
+
+  constructor(db: DatabaseAdapter, collections: CollectionConfig[]) {
+    this.db = db;
+    this.collections = collections;
+  }
 
   /**
    * Recursively populate relationship fields in a document or array of documents.

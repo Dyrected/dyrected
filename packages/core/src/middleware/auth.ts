@@ -1,5 +1,5 @@
-import { Context, Next } from 'hono';
-import { DyrectedContext } from '../app.js';
+import type { Context, Next } from 'hono';
+import type { DyrectedContext } from '../app.js';
 import { verifyCollectionToken } from '../auth/token.js';
 
 /**

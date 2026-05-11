@@ -1,4 +1,4 @@
-import { Field } from '../types/index.js';
+import type { Field } from '../types/index.js';
 
 export class DefaultsService {
   /**

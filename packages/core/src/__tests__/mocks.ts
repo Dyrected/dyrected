@@ -1,4 +1,4 @@
-import { DatabaseAdapter } from '../types/index.js';
+import type { DatabaseAdapter } from '../types/index.js';
 
 export class MockDatabaseAdapter implements DatabaseAdapter {
   async find(params: { collection: string; limit?: number; page?: number; where?: any; sort?: string }) {

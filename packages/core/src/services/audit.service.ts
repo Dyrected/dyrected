@@ -1,4 +1,4 @@
-import { DatabaseAdapter } from '../types/index.js';
+import type { DatabaseAdapter } from '../types/index.js';
 
 export interface AuditLogArgs {
   operation: 'create' | 'update' | 'delete';

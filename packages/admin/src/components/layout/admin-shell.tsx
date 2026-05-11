@@ -185,26 +185,14 @@ function SidebarInner({
               )}
               {!collapsed && (
                 <span className="font-semibold text-sm tracking-tight text-foreground flex-1 truncate">
-                  {branding?.titleSuffix?.replace(/^- /, '') || 'Dyrected'}
+                  {branding?.titleSuffix?.replace(/^- /, '') || ''}
                 </span>
               )}
             </>
           )}
         </div>
         {/* Desktop Toggle - Only visible on desktop since mobile uses overlay */}
-        {onToggleCollapse && (
-          <button
-            onClick={onToggleCollapse}
-            className="hidden md:flex z-50 p-1.5 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-all"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
-        )}
+
       </div>
 
 

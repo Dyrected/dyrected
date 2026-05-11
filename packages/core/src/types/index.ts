@@ -219,11 +219,11 @@ export interface FileData {
 }
 
 export interface StorageAdapter {
-  upload(args: { filename: string; buffer: Buffer; mimeType: string; prefix?: string }): Promise<FileData>;
+  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;
   delete(args: { filename: string }): Promise<void>;
   getURL(args: { filename: string }): string;
   /** Retrieve file content for serving via API */
-  resolve?(args: { filename: string }): Promise<{ buffer: Buffer; mimeType: string } | null>;
+  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;
 }
 
 /** Branding and metadata configuration for the Admin UI. */
@@ -246,7 +246,7 @@ export interface AdminConfig {
 
 export interface ImageService {
   process(args: { 
-    buffer: Buffer; 
+    buffer: Uint8Array; 
     mimeType: string; 
     config?: CollectionConfig['upload'];
     focalPoint?: { x: number; y: number };
@@ -256,7 +256,7 @@ export interface ImageService {
       height?: number;
       blurhash?: string;
     };
-    sizes?: Record<string, { buffer: Buffer; width: number; height: number; filename: string }>;
+    sizes?: Record<string, { buffer: Uint8Array; width: number; height: number; filename: string }>;
   }>;
 }
 
