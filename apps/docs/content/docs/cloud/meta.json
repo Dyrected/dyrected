@@ -1,4 +1,4 @@
 {
   "title": "Cloud",
-  "pages": ["workspaces", "billing", "telemetry"]
+  "pages": ["workspaces", "billing"]
 }
