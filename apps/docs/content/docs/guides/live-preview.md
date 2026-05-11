@@ -3,24 +3,14 @@ title: Live Preview
 description: See content changes in real time while editing in the Admin UI.
 ---
 
-Live preview lets editors see their changes rendered in your actual frontend as they type — without publishing. This guide wires up live preview end-to-end in a Next.js app.
-
----
-
-## How it works
-
-1. The Admin UI renders your frontend in an iframe
-2. As the editor types, the Admin UI sends the draft document data to the iframe via `postMessage`
-3. Your frontend receives the message and re-renders with the draft data
-
-No polling, no extra API calls — just a direct message between the Admin iframe and your page.
+Live preview renders your frontend in an iframe inside the Admin UI. As the editor types, draft data is sent via `postMessage` and your page re-renders instantly — no publish, no page reload.
 
 ---
 
 ## 1. Configure live preview on the collection
 
 ```ts
-// dyrected.config.ts
+// dyrected.config.ts  (same for both frameworks)
 {
   slug: 'posts',
   admin: {
@@ -33,13 +23,13 @@ No polling, no extra API calls — just a direct message between the Admin ifram
 }
 ```
 
-The `url` function receives the current draft document and returns the URL the Admin UI loads in the iframe. The URL can be relative (used as-is) or constructed from the doc's fields.
-
 ---
 
-## 2. Create the preview route in Next.js
+## 2. Create the preview route
 
-The preview page renders the draft document passed via `postMessage`. It doesn't need to fetch from the API — the data arrives through the message.
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+**Option A — raw `postMessage`**
 
 ```tsx
 // app/blog/[slug]/preview/page.tsx
@@ -50,37 +40,24 @@ export default function PostPreviewPage() {
   const [post, setPost] = useState<any>(null)
 
   useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      if (event.data?.type === 'dyrected:preview') {
-        setPost(event.data.doc)
-      }
-    }
-    window.addEventListener('message', handleMessage)
-
-    // Tell the Admin UI this page is ready to receive messages
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'dyrected:preview') setPost(e.data.doc)
+    })
     window.parent.postMessage({ type: 'dyrected:preview:ready' }, '*')
-
-    return () => window.removeEventListener('message', handleMessage)
   }, [])
 
-  if (!post) {
-    return <div className="p-8 text-muted">Waiting for preview data…</div>
-  }
+  if (!post) return <div>Waiting for preview data…</div>
 
   return (
-    <article className="prose mx-auto py-12 px-4">
+    <article>
       <h1>{post.title}</h1>
-      {post.content && <div dangerouslySetInnerHTML={{ __html: post.content }} />}
+      <div dangerouslySetInnerHTML={{ __html: post.content }} />
     </article>
   )
 }
 ```
 
----
-
-## 3. Use the React hook (optional)
-
-If you prefer a hook over raw `useEffect`, Dyrected ships a `useLivePreview` hook:
+**Option B — `useLivePreview` hook**
 
 ```tsx
 'use client'
@@ -94,54 +71,77 @@ export default function PostPreviewPage({ initialData }: { initialData: any }) {
   })
 
   return (
-    <article className="prose mx-auto py-12 px-4">
+    <article>
       <h1>{post.title}</h1>
     </article>
   )
 }
 ```
 
-Pass `initialData` from a server component so the preview page has something to show before the first postMessage arrives:
+Pass `initialData` from a server component wrapper so the page renders before the first postMessage:
 
 ```tsx
-// app/blog/[slug]/preview/page.tsx (server component wrapper)
-export default async function PreviewPageWrapper({ params }: any) {
+// app/blog/[slug]/preview/page.tsx
+export default async function PreviewWrapper({ params }: any) {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[slug][equals]=${params.slug}&depth=1`,
     { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! }, cache: 'no-store' }
   )
   const { docs } = await res.json()
-
   return <PostPreviewPage initialData={docs[0] ?? {}} />
 }
 ```
-
----
-
-## 4. Use the Nuxt composable
+</Tab>
+<Tab value="Nuxt">
+**Option A — raw `postMessage`**
 
 ```vue
 <!-- pages/blog/[slug]/preview.vue -->
 <script setup lang="ts">
-const { data: post } = useDyrectedLivePreview({
-  depth: 1,
+const post = ref<any>(null)
+
+onMounted(() => {
+  window.addEventListener('message', (e) => {
+    if (e.data?.type === 'dyrected:preview') post.value = e.data.doc
+  })
+  window.parent.postMessage({ type: 'dyrected:preview:ready' }, '*')
 })
 </script>
 
 <template>
-  <article v-if="post" class="prose mx-auto py-12">
+  <div v-if="!post">Waiting for preview data…</div>
+  <article v-else>
     <h1>{{ post.title }}</h1>
+    <div v-html="post.content" />
+  </article>
+</template>
+```
+
+**Option B — `useDyrectedLivePreview` composable**
+
+```vue
+<!-- pages/blog/[slug]/preview.vue -->
+<script setup lang="ts">
+const { data: post } = useDyrectedLivePreview({ depth: 1 })
+</script>
+
+<template>
+  <article v-if="post">
+    <h1>{{ post.title }}</h1>
+    <div v-html="post.content" />
   </article>
   <div v-else>Waiting for preview data…</div>
 </template>
 ```
+</Tab>
+</Tabs>
 
 ---
 
-## 5. Secure the preview route
+## 3. Secure the preview route
 
-The preview URL should not be accessible to the public. Protect it with a middleware check that verifies the request came from the Admin UI:
-
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```ts
 // middleware.ts
 export function middleware(req: NextRequest) {
@@ -155,14 +155,31 @@ export function middleware(req: NextRequest) {
   return NextResponse.next()
 }
 ```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// middleware/preview-guard.ts
+export default defineNuxtRouteMiddleware((to) => {
+  if (!to.path.includes('/preview')) return
+
+  const referer = useRequestHeaders(['referer']).referer ?? ''
+  const adminUrl = useRuntimeConfig().public.adminUrl ?? '/admin'
+
+  if (!referer.includes(adminUrl)) {
+    return navigateTo('/')
+  }
+})
+```
+</Tab>
+</Tabs>
 
 ---
 
 ## Testing
 
 1. Open the Admin UI and edit a post
-2. Click the **Preview** button in the top-right
-3. The preview pane opens with your frontend loaded in an iframe
-4. Edit the title — it updates in the preview in real time
+2. Click **Preview** in the top-right corner
+3. The preview pane loads your frontend in an iframe
+4. Edit the title — it updates in real time
 
-See [Live Preview reference](/docs/features/live-preview) for the full config options.
+See [Live Preview reference](/docs/features/live-preview) for full config options.

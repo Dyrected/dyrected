@@ -3,18 +3,14 @@ title: Building a Page Builder
 description: Use the blocks field to let editors assemble pages from reusable content blocks.
 ---
 
-The `blocks` field lets editors pick from a defined set of block types and arrange them in any order — a hero, then a rich text section, then a call-to-action. This guide builds a `pages` collection with three block types and renders them in Next.js.
+The `blocks` field lets editors pick from a set of block types and arrange them in any order — a hero, then a rich text section, then a call-to-action. The config is the same for both frameworks; only the rendering code differs.
 
 ---
 
 ## 1. Define your blocks
 
-Each block has a `slug` and its own set of fields:
-
 ```ts
-// dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
-
+// dyrected.config.ts  (same for both frameworks)
 const HeroBlock = {
   slug: 'hero',
   labels: { singular: 'Hero', plural: 'Heroes' },
@@ -46,13 +42,7 @@ const CallToActionBlock = {
     { name: 'variant', type: 'select', options: ['primary', 'secondary'], defaultValue: 'primary' },
   ],
 }
-```
 
----
-
-## 2. Add the blocks field to a pages collection
-
-```ts
 export default defineConfig({
   collections: [
     {
@@ -74,43 +64,31 @@ export default defineConfig({
 
 ---
 
-## 3. What the API returns
+## 2. What the API returns
 
 Each item in `layout` includes a `blockType` matching the block's `slug`:
 
 ```json
 {
-  "title": "Home",
-  "slug": "home",
   "layout": [
-    {
-      "blockType": "hero",
-      "heading": "Ship content faster",
-      "subheading": "The CMS that lives in your codebase.",
-      "ctaLabel": "Get started",
-      "ctaUrl": "/docs"
-    },
-    {
-      "blockType": "richText",
-      "content": { ... }
-    },
-    {
-      "blockType": "callToAction",
-      "heading": "Ready to build?",
-      "label": "Start free",
-      "url": "https://app.dyrected.com",
-      "variant": "primary"
-    }
+    { "blockType": "hero", "heading": "Ship content faster", "ctaLabel": "Get started", "ctaUrl": "/docs" },
+    { "blockType": "richText", "content": { } },
+    { "blockType": "callToAction", "label": "Start free", "url": "https://app.dyrected.com", "variant": "primary" }
   ]
 }
 ```
 
 ---
 
-## 4. Fetch and render in Next.js
+## 3. Fetch and render
 
-```ts
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+```tsx
 // app/[slug]/page.tsx
+import { notFound } from 'next/navigation'
+import { Block } from '@/components/Block'
+
 async function getPage(slug: string) {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/pages?where[slug][equals]=${slug}&depth=1`,
@@ -132,14 +110,46 @@ export default async function Page({ params }: { params: { slug: string } }) {
     </main>
   )
 }
+
+export async function generateStaticParams() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/pages?limit=100`, {
+    headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
+  })
+  const { docs } = await res.json()
+  return docs.map((p: any) => ({ slug: p.slug }))
+}
 ```
+</Tab>
+<Tab value="Nuxt">
+```vue
+<!-- pages/[slug].vue -->
+<script setup lang="ts">
+const route = useRoute()
+const { data: page } = await useDyrectedFind('pages', {
+  where: { slug: { equals: route.params.slug } },
+  depth: 1,
+  limit: 1,
+})
+
+if (!page.value?.docs?.[0]) throw createError({ statusCode: 404 })
+const blocks = computed(() => page.value.docs[0].layout)
+</script>
+
+<template>
+  <main>
+    <BlockRenderer v-for="(block, i) in blocks" :key="i" :block="block" />
+  </main>
+</template>
+```
+</Tab>
+</Tabs>
 
 ---
 
-## 5. The block renderer
+## 4. The block renderer
 
-Switch on `blockType` to render each block with its own component:
-
+<Tabs items={['Next.js (React)', 'Nuxt (Vue)']}>
+<Tab value="Next.js (React)">
 ```tsx
 // components/Block.tsx
 import { Hero } from './blocks/Hero'
@@ -148,10 +158,10 @@ import { CallToAction } from './blocks/CallToAction'
 
 export function Block({ block }: { block: any }) {
   switch (block.blockType) {
-    case 'hero':        return <Hero {...block} />
-    case 'richText':    return <RichText {...block} />
+    case 'hero':         return <Hero {...block} />
+    case 'richText':     return <RichText {...block} />
     case 'callToAction': return <CallToAction {...block} />
-    default:            return null
+    default:             return null
   }
 }
 ```
@@ -163,33 +173,51 @@ export function Hero({ heading, subheading, ctaLabel, ctaUrl, image }: any) {
     <section className="py-24 text-center">
       {image && <img src={image.url} alt={image.alt} className="mx-auto mb-8" />}
       <h1 className="text-5xl font-bold">{heading}</h1>
-      {subheading && <p className="mt-4 text-xl text-muted">{subheading}</p>}
-      {ctaLabel && ctaUrl && (
-        <a href={ctaUrl} className="mt-8 inline-block rounded-md bg-black px-6 py-3 text-white">
-          {ctaLabel}
-        </a>
-      )}
+      {subheading && <p className="mt-4 text-xl">{subheading}</p>}
+      {ctaLabel && <a href={ctaUrl} className="mt-8 inline-block rounded-md bg-black px-6 py-3 text-white">{ctaLabel}</a>}
     </section>
   )
 }
 ```
+</Tab>
+<Tab value="Nuxt (Vue)">
+```vue
+<!-- components/BlockRenderer.vue -->
+<script setup lang="ts">
+defineProps<{ block: any }>()
+</script>
 
----
-
-## 6. Generate static paths
-
-```ts
-export async function generateStaticParams() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/pages?limit=100`, {
-    headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
-  })
-  const { docs } = await res.json()
-  return docs.map((page: any) => ({ slug: page.slug }))
-}
+<template>
+  <HeroBlock        v-if="block.blockType === 'hero'"         v-bind="block" />
+  <RichTextBlock    v-else-if="block.blockType === 'richText'" v-bind="block" />
+  <CallToActionBlock v-else-if="block.blockType === 'callToAction'" v-bind="block" />
+</template>
 ```
+
+```vue
+<!-- components/HeroBlock.vue -->
+<script setup lang="ts">
+defineProps<{ heading: string; subheading?: string; image?: any; ctaLabel?: string; ctaUrl?: string }>()
+</script>
+
+<template>
+  <section class="py-24 text-center">
+    <img v-if="image" :src="image.url" :alt="image.alt" class="mx-auto mb-8" />
+    <h1 class="text-5xl font-bold">{{ heading }}</h1>
+    <p v-if="subheading" class="mt-4 text-xl">{{ subheading }}</p>
+    <a v-if="ctaLabel" :href="ctaUrl" class="mt-8 inline-block rounded-md bg-black px-6 py-3 text-white">{{ ctaLabel }}</a>
+  </section>
+</template>
+```
+</Tab>
+</Tabs>
 
 ---
 
 ## Adding new block types
 
-Define a new block object, add it to the `blocks` array, create its renderer component, and add a case to the `Block` switch. The Admin UI picks up new block types automatically — no other changes needed.
+1. Define a new block object and add it to the `blocks` array in your config
+2. Create its renderer component
+3. Add a case to the `Block` switch (React) or a `v-else-if` (Vue)
+
+The Admin UI picks up new block types automatically.

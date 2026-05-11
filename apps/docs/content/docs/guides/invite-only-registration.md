@@ -3,16 +3,10 @@ title: Invite-Only Registration
 description: Restrict sign-up so new users can only join via invitation.
 ---
 
-By default, any visitor can register. This guide shows how to disable open registration and require that new users be invited by an existing admin.
-
----
-
 ## 1. Disable open registration
 
-Remove or lock down the `create` access function on your auth collection so anonymous users cannot self-register:
-
 ```ts
-// dyrected.config.ts
+// dyrected.config.ts  (same for both frameworks)
 {
   slug: 'users',
   auth: true,
@@ -29,70 +23,65 @@ Remove or lock down the `create` access function on your auth collection so anon
 }
 ```
 
-With `create: () => false`, calling `POST /api/collections/users` without a valid invite token returns `403`.
+With `create: () => false`, `POST /api/collections/users` without a valid invite token returns `403`.
 
 ---
 
 ## 2. Send an invitation
 
-Inviting is a protected endpoint — the caller must be authenticated:
-
+<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tab value="Next.js">
 ```ts
-// Server-side (e.g. an admin action)
-const res = await fetch('/api/dyrected/collections/users/invite', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${adminToken}`,
-  },
-  body: JSON.stringify({ email: 'newuser@example.com' }),
-})
-// { success: true, message: 'Invitation sent to newuser@example.com' }
+// app/admin/invite/actions.ts
+'use server'
+
+export async function inviteUser(email: string, adminToken: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/users/invite`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`,
+    },
+    body: JSON.stringify({ email }),
+  })
+  return res.json()
+}
 ```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// composables/useInvite.ts
+export function useInvite() {
+  const { token } = useDyrectedAuth('users')
 
-Dyrected signs a 7-day JWT with `purpose: 'invite'` and sends it to the email address. In development the invite link is logged to the console via Ethereal — no email config required.
+  async function inviteUser(email: string) {
+    return $fetch('/api/dyrected/collections/users/invite', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token.value}` },
+      body: { email },
+    })
+  }
 
-### With the SDK
-
+  return { inviteUser }
+}
+```
+</Tab>
+<Tab value="SDK (any)">
 ```ts
 const client = createClient({ baseUrl: '/api/dyrected', token: adminToken })
 await client.collection('users').invite('newuser@example.com')
 ```
+</Tab>
+</Tabs>
+
+Dyrected signs a 7-day JWT with `purpose: 'invite'` and emails it. In development the link is logged to the console via Ethereal — no email config needed.
 
 ---
 
 ## 3. Accept the invitation
 
-The invited user calls `accept-invite` with their token and chosen password. No auth is required for this endpoint.
-
-```ts
-const res = await fetch('/api/dyrected/collections/users/accept-invite', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    token: tokenFromEmailLink,
-    password: 'their-chosen-password',
-    name: 'Jane Smith',   // any extra fields defined on the collection
-  }),
-})
-const { token, user } = await res.json()
-// token is a session JWT — store it to log the user in immediately
-```
-
-### With the SDK
-
-```ts
-const { token, user } = await client.collection('users').acceptInvite(
-  tokenFromEmailLink,
-  'their-chosen-password',
-  { name: 'Jane Smith' }
-)
-```
-
----
-
-## 4. Build the accept-invite page (Next.js)
-
+<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tab value="Next.js">
 ```tsx
 // app/accept-invite/page.tsx
 'use client'
@@ -104,7 +93,7 @@ const client = createClient({ baseUrl: '/api/dyrected' })
 export default function AcceptInvitePage() {
   const params = useSearchParams()
   const router = useRouter()
-  const token = params.get('token') ?? ''
+  const inviteToken = params.get('token') ?? ''
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -112,31 +101,69 @@ export default function AcceptInvitePage() {
     const password = (form.elements.namedItem('password') as HTMLInputElement).value
     const name     = (form.elements.namedItem('name')     as HTMLInputElement).value
 
-    const { token: sessionToken } = await client.collection('users').acceptInvite(token, password, { name })
-    document.cookie = `dyrected-token=${sessionToken}; path=/`
+    const { token } = await client.collection('users').acceptInvite(inviteToken, password, { name })
+    document.cookie = `dyrected-token=${token}; path=/`
     router.push('/dashboard')
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <input name="name"     type="text"     placeholder="Your name"     required />
+      <input name="name"     type="text"     placeholder="Your name"      required />
       <input name="password" type="password" placeholder="Choose a password" required />
       <button type="submit">Join</button>
     </form>
   )
 }
 ```
+</Tab>
+<Tab value="Nuxt">
+```vue
+<!-- pages/accept-invite.vue -->
+<script setup lang="ts">
+const route = useRoute()
+const router = useRouter()
+const inviteToken = route.query.token as string
 
-The email link should point to `/accept-invite?token=<token>`. The invite template in `features/email.md` outputs this link by default.
+const name     = ref('')
+const password = ref('')
+
+async function submit() {
+  const { token } = await $fetch('/api/dyrected/collections/users/accept-invite', {
+    method: 'POST',
+    body: { token: inviteToken, password: password.value, name: name.value },
+  })
+  // store session token however your auth composable expects it
+  useDyrectedAuth('users').setToken(token)
+  router.push('/dashboard')
+}
+</script>
+
+<template>
+  <form @submit.prevent="submit">
+    <input v-model="name"     type="text"     placeholder="Your name"       required />
+    <input v-model="password" type="password" placeholder="Choose a password" required />
+    <button type="submit">Join</button>
+  </form>
+</template>
+```
+</Tab>
+<Tab value="SDK (any)">
+```ts
+const { token, user } = await client.collection('users').acceptInvite(
+  tokenFromEmailLink,
+  'their-chosen-password',
+  { name: 'Jane Smith' }
+)
+```
+</Tab>
+</Tabs>
 
 ---
 
-## 5. Customise the invite email
-
-Override the default invite email template in your config:
+## 4. Customise the invite email
 
 ```ts
-// dyrected.config.ts
+// dyrected.config.ts  (same for both frameworks)
 export default defineConfig({
   email: {
     from: 'no-reply@myapp.com',
@@ -145,8 +172,7 @@ export default defineConfig({
       invite: ({ token, invitedByEmail }) => ({
         subject: `You've been invited to MyApp`,
         html: `
-          <p>Hi there,</p>
-          <p>${invitedByEmail ? `${invitedByEmail} has invited you` : 'You have been invited'} to join MyApp.</p>
+          <p>${invitedByEmail ?? 'Someone'} has invited you to join MyApp.</p>
           <p><a href="https://myapp.com/accept-invite?token=${token}">Accept your invitation</a></p>
           <p>This link expires in 7 days.</p>
         `,
@@ -156,4 +182,4 @@ export default defineConfig({
 })
 ```
 
-See [Email](/features/email) for all template options and production provider examples.
+See [Email](/docs/features/email) for all template options and production provider examples.

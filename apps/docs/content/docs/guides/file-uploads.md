@@ -3,104 +3,59 @@ title: File Uploads
 description: Accept file uploads, store them locally or in S3/Cloudinary, and display images.
 ---
 
-This guide covers adding an upload collection, configuring a storage adapter, uploading files through the Admin UI or SDK, and rendering images in your frontend.
-
----
-
 ## 1. Configure a storage adapter
 
-### Local (development)
-
-Files are written to `public/uploads` and served from `<origin>/uploads/<filename>`.
-
 ```ts
-// dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
+// dyrected.config.ts  (same for both frameworks)
 import { LocalStorage } from '@dyrected/storage-local'
 
 export default defineConfig({
   storage: new LocalStorage({ dir: './public/uploads' }),
+  // For production use S3 — see Configuring Storage guide
 })
 ```
 
-### S3-compatible (production)
-
-```ts
-import { S3Storage } from '@dyrected/storage-s3'
-
-export default defineConfig({
-  storage: new S3Storage({
-    bucket:    process.env.S3_BUCKET!,
-    region:    process.env.S3_REGION!,
-    accessKey: process.env.S3_ACCESS_KEY!,
-    secretKey: process.env.S3_SECRET_KEY!,
-  }),
-})
-```
-
-See [Storage Adapters](/adapters/storage) for Cloudinary and all options.
+See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Cloudinary setup.
 
 ---
 
 ## 2. Define an upload collection
 
 ```ts
-// dyrected.config.ts
-import { ImageSizes } from '@dyrected/core'
-
-export default defineConfig({
-  collections: [
-    {
-      slug: 'media',
-      upload: {
-        mimeTypes:   ['image/jpeg', 'image/png', 'image/webp'],
-        maxFileSize: 5 * 1024 * 1024,   // 5 MB
-        imageSizes: [
-          { name: 'thumbnail', width: 300, height: 300, fit: 'cover' },
-          { name: 'card',      width: 800 },
-        ],
-      },
-      fields: [
-        { name: 'alt', type: 'text' },
-      ],
-    },
+// dyrected.config.ts  (same for both frameworks)
+{
+  slug: 'media',
+  upload: {
+    mimeTypes:   ['image/jpeg', 'image/png', 'image/webp'],
+    maxFileSize: 5 * 1024 * 1024,
+    imageSizes: [
+      { name: 'thumbnail', width: 300, height: 300, fit: 'cover' },
+      { name: 'card',      width: 800 },
+    ],
+  },
+  fields: [
+    { name: 'alt', type: 'text' },
   ],
-})
+}
 ```
 
 ---
 
 ## 3. Upload via the Admin UI
 
-The Admin UI automatically renders a file picker for upload collections. Drag-and-drop or click to select a file. Image sizes are generated on the server after upload.
+The Admin UI renders a drag-and-drop media browser for upload collections. Drop a file or click to select. Image sizes are generated server-side after upload.
 
 ---
 
-## 4. Upload via the SDK
+## 4. Upload programmatically
 
+<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tab value="Next.js">
 ```ts
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({
-  baseUrl: '/api/dyrected',
-  apiKey: process.env.DYRECTED_API_KEY,
-})
-
-async function uploadFile(file: File) {
-  const form = new FormData()
-  form.append('file', file)
-  form.append('alt', file.name)
-
-  const media = await client.collection('media').upload(form)
-  return media
-}
-```
-
-Or upload directly with `fetch`:
-
-```ts
+// From a Client Component or Server Action
 const form = new FormData()
 form.append('file', file)
+form.append('alt', file.name)
 
 const res = await fetch('/api/dyrected/collections/media', {
   method: 'POST',
@@ -109,14 +64,42 @@ const res = await fetch('/api/dyrected/collections/media', {
 })
 const media = await res.json()
 ```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// In a composable or component
+const form = new FormData()
+form.append('file', file)
+form.append('alt', file.name)
+
+const media = await $fetch('/api/dyrected/collections/media', {
+  method: 'POST',
+  headers: { 'x-api-key': useRuntimeConfig().dyrectedApiKey },
+  body: form,
+})
+```
+</Tab>
+<Tab value="SDK (any)">
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: '/api/dyrected', apiKey: '...' })
+
+const form = new FormData()
+form.append('file', file)
+form.append('alt', file.name)
+
+const media = await client.collection('media').upload(form)
+```
+</Tab>
+</Tabs>
 
 ---
 
 ## 5. Attach media to another collection
 
-Use a `relationship` field to link a media document to another collection:
-
 ```ts
+// dyrected.config.ts  (same for both frameworks)
 {
   slug: 'posts',
   fields: [
@@ -126,22 +109,23 @@ Use a `relationship` field to link a media document to another collection:
 }
 ```
 
-Query with `depth: 1` to inline the media document:
+Fetch with `depth: 1` to inline the media document:
 
 ```ts
-const { docs } = await client.collection('posts').find({ depth: 1 })
-// docs[0].coverImage.url  → full storage URL
+// docs[0].coverImage.url        → full storage URL
 // docs[0].coverImage.sizes.thumbnail.url
 ```
 
 ---
 
-## 6. Render images in Next.js
+## 6. Render images
 
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
 ```tsx
 import Image from 'next/image'
 
-export default function PostCard({ post }: { post: any }) {
+export function PostCard({ post }: { post: any }) {
   const cover = post.coverImage
   if (!cover) return null
 
@@ -156,4 +140,26 @@ export default function PostCard({ post }: { post: any }) {
 }
 ```
 
-> For `next/image` to allow external domains, add them to `images.remotePatterns` in `next.config.ts`.
+> Add external storage domains to `images.remotePatterns` in `next.config.ts`.
+</Tab>
+<Tab value="Nuxt">
+```vue
+<!-- components/PostCard.vue -->
+<script setup lang="ts">
+defineProps<{ post: any }>()
+</script>
+
+<template>
+  <img
+    v-if="post.coverImage"
+    :src="post.coverImage.sizes?.card?.url ?? post.coverImage.url"
+    :alt="post.coverImage.alt ?? ''"
+    width="800"
+    height="450"
+  />
+</template>
+```
+
+> For Nuxt Image optimisation, use `<NuxtImg>` from `@nuxt/image` and add your storage domain to `image.domains` in `nuxt.config.ts`.
+</Tab>
+</Tabs>

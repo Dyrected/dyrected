@@ -3,14 +3,10 @@ title: Role-Based Access Control
 description: Restrict what different users can read, create, edit, and delete based on their role.
 ---
 
-This guide builds a `users` collection with three roles — `admin`, `editor`, and `viewer` — and wires up access rules so each role can only do what it's supposed to.
-
----
-
 ## 1. Add a role field to your users collection
 
 ```ts
-// dyrected.config.ts
+// dyrected.config.ts  (same for both frameworks)
 {
   slug: 'users',
   auth: true,
@@ -22,8 +18,7 @@ This guide builds a `users` collection with three roles — `admin`, `editor`, a
       options: ['admin', 'editor', 'viewer'],
       defaultValue: 'viewer',
       access: {
-        // only admins can change someone's role
-        update: ({ user }) => user?.role === 'admin',
+        update: ({ user }) => user?.role === 'admin',  // only admins can change roles
       },
     },
   ],
@@ -35,17 +30,16 @@ This guide builds a `users` collection with three roles — `admin`, `editor`, a
 ## 2. Lock down the users collection
 
 ```ts
+// dyrected.config.ts  (same for both frameworks)
 {
   slug: 'users',
   auth: true,
   access: {
-    read:   ({ user }) => !!user,                          // must be logged in
-    create: () => false,                                   // no self-registration — use invite
-    update: ({ user, id }) =>
-      user?.role === 'admin' || user?.id === id,           // edit yourself or be admin
+    read:   ({ user }) => !!user,
+    create: () => false,                                    // use invite instead
+    update: ({ user, id }) => user?.role === 'admin' || user?.id === id,
     delete: ({ user }) => user?.role === 'admin',
   },
-  fields: [...],
 }
 ```
 
@@ -54,21 +48,25 @@ This guide builds a `users` collection with three roles — `admin`, `editor`, a
 ## 3. Apply roles to a content collection
 
 ```ts
+// dyrected.config.ts  (same for both frameworks)
 {
   slug: 'posts',
   access: {
-    // anyone can read published posts
-    read: ({ user, doc }) => {
-      if (doc?.status === 'published') return true
-      return !!user  // drafts require login
-    },
+    read: ({ user, doc }) => doc?.status === 'published' || !!user,
     create: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
     update: ({ user, doc }) => {
       if (user?.role === 'admin') return true
-      // editors can only update their own posts
       return user?.role === 'editor' && doc?.createdBy === user?.id
     },
     delete: ({ user }) => user?.role === 'admin',
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, operation, user }) => {
+        if (operation === 'create') return { ...data, createdBy: user?.id }
+        return data
+      },
+    ],
   },
   fields: [
     { name: 'title',     type: 'text' },
@@ -81,30 +79,10 @@ This guide builds a `users` collection with three roles — `admin`, `editor`, a
 
 ---
 
-## 4. Stamp `createdBy` automatically
-
-Use a `beforeChange` hook so the author is always set to the current user on create:
+## 4. Hide sensitive fields from lower roles
 
 ```ts
-hooks: {
-  beforeChange: [
-    ({ data, operation, user }) => {
-      if (operation === 'create') {
-        return { ...data, createdBy: user?.id }
-      }
-      return data
-    },
-  ],
-},
-```
-
----
-
-## 5. Hide sensitive fields from viewers
-
-Use field-level access to strip fields from API responses for lower-privilege users:
-
-```ts
+// dyrected.config.ts  (same for both frameworks)
 {
   name: 'internalNotes',
   type: 'textarea',
@@ -115,35 +93,57 @@ Use field-level access to strip fields from API responses for lower-privilege us
 }
 ```
 
+Fields stripped by `read` access never appear in API responses for that user — they're also hidden in the Admin UI.
+
 ---
 
-## 6. Check the role on the frontend
+## 5. Check the role on the frontend
 
-After login the JWT payload includes the user document. Decode it or hit `/me` to get the role:
-
+<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tab value="Next.js">
 ```ts
-const res = await fetch('/api/dyrected/collections/users/me', {
-  headers: { Authorization: `Bearer ${token}` },
-})
-const { role } = await res.json()
+// In a Server Component
+import { cookies } from 'next/headers'
 
-if (role === 'admin') {
-  // show admin controls
+async function getCurrentUser() {
+  const token = cookies().get('dyrected-token')?.value
+  if (!token) return null
+  const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/users/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  return res.ok ? res.json() : null
 }
+
+// In your component:
+const user = await getCurrentUser()
+if (user?.role === 'admin') { /* show admin controls */ }
 ```
+</Tab>
+<Tab value="Nuxt">
+```vue
+<script setup lang="ts">
+const { user } = useDyrectedAuth('users')
+</script>
 
-Or with the SDK:
-
+<template>
+  <AdminControls v-if="user?.role === 'admin'" />
+  <EditorControls v-else-if="user?.role === 'editor'" />
+</template>
+```
+</Tab>
+<Tab value="SDK (any)">
 ```ts
 const user = await client.collection('users').me()
 // user.role === 'admin' | 'editor' | 'viewer'
 ```
+</Tab>
+</Tabs>
 
 ---
 
 ## Summary
 
-| Role | Read posts | Create posts | Edit own posts | Edit any post | Delete | Manage users |
+| Role | Read posts | Create | Edit own | Edit any | Delete | Manage users |
 |---|---|---|---|---|---|---|
 | `admin` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `editor` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
