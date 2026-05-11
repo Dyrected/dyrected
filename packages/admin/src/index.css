@@ -3,82 +3,85 @@
 @tailwind utilities;
 
 @layer base {
-  /* Design Tokens */
+  /* Design Tokens — Light Foundation, Amber Accent */
   :root {
-    --background: 210 40% 99%;
-    --foreground: 222.2 84% 4.9%;
+    /* Backgrounds */
+    --background: 60 17% 97%;          /* #FAFAF8 warm white */
+    --foreground: 60 3% 6%;            /* #111110 near-black, warm undertone */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 60 10% 95%;                /* #F2F2EF soft grey surface */
+    --card-foreground: 60 3% 6%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 60 17% 97%;
+    --popover-foreground: 60 3% 6%;
 
-    --primary: 239 84% 67%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary — Amber (overridable via branding.primaryColor) */
+    --primary: 38 92% 50%;             /* #F59E0B amber */
+    --primary-foreground: 60 3% 6%;   /* dark text on amber */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary — surface tones */
+    --secondary: 60 10% 95%;           /* #F2F2EF */
+    --secondary-foreground: 60 3% 6%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted — for placeholders, subtle labels */
+    --muted: 60 10% 95%;
+    --muted-foreground: 60 4% 40%;    /* #6B6B63 brown-grey */
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent — very subtle hover tint */
+    --accent: 60 10% 95%;
+    --accent-foreground: 60 3% 6%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 60 17% 97%;
 
-    --border: 214.3 32% 91%;
-    --input: 214.3 32% 91%;
-    --ring: 239 84% 67% / 0.1;
+    /* Borders & inputs */
+    --border: 60 7% 89%;               /* #E4E4E0 */
+    --input: 60 7% 89%;
+    --ring: 38 92% 50% / 0.15;        /* amber ring */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 210 40% 99%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 239 84% 67%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96.1%;
-    --sidebar-accent-foreground: 239 84% 67%;
-    --sidebar-border: 214.3 32% 91%;
-    --sidebar-ring: 239 84% 67%;
+    /* Sidebar */
+    --sidebar-background: 60 17% 97%;
+    --sidebar-foreground: 60 3% 6%;
+    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary-foreground: 60 3% 6%;
+    --sidebar-accent: 60 10% 95%;
+    --sidebar-accent-foreground: 38 92% 50%;  /* amber for active items */
+    --sidebar-border: 60 7% 89%;
+    --sidebar-ring: 38 92% 50%;
   }
 
-  /* Global Softening (Non-Forcing) */
   .admin-ui {
     color-scheme: light;
   }
-
 }
 
 @layer utilities {
-  /* Left Accent Utility: Used for nesting without borders */
   .admin-ui .left-accent {
     @apply border-l-2 border-primary/10 pl-6 transition-all duration-200 bg-transparent;
   }
 
   .admin-ui .left-accent:hover {
-    @apply border-l-primary bg-primary/[0.01];
+    @apply border-l-primary bg-primary/[0.04];
   }
 
-  /* Flatness Utilities */
   .admin-ui .flat-container {
     @apply bg-transparent border-none shadow-none p-0;
   }
 }
 
 @layer components {
-  /* Refined Form Inputs (Non-Forcing) */
-  .admin-ui input, 
-  .admin-ui select, 
+  .admin-ui input,
+  .admin-ui select,
   .admin-ui textarea {
     @apply focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus:outline-none border-border/60 bg-transparent transition-all;
   }
 
-  .admin-ui input:focus, 
-  .admin-ui select:focus, 
+  .admin-ui input:focus,
+  .admin-ui select:focus,
   .admin-ui textarea:focus {
-    @apply border-primary/40;
+    @apply border-primary/50;
   }
 }
