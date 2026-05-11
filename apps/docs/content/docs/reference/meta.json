@@ -1,0 +1,4 @@
+{
+  "title": "API Reference",
+  "pages": ["introduction", "rest-api", "sdk", "openapi", "configuration"]
+}

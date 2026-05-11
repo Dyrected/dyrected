@@ -1,0 +1,4 @@
+{
+  "title": "Features",
+  "pages": ["auth", "uploads", "email", "live-preview"]
+}

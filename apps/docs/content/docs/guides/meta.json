@@ -1,0 +1,4 @@
+{
+  "title": "Guides",
+  "pages": ["building-a-blog", "adding-authentication", "file-uploads", "invite-only-registration"]
+}

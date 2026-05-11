@@ -7,7 +7,7 @@ Dyrected is the **AI-First Headless CMS**. It replaces manual UI-based schema bu
 ### Applications (`apps/`)
 - `apps/cloud`: The multi-tenant CMS platform backend.
 - `apps/platform`: **[NEW]** Internal operations dashboard for license & metrics management.
-- `apps/docs`: Developer documentation (Mintlify).
+- `apps/docs`: Developer documentation (Fumadocs).
 - `apps/admin`: The standalone Admin UI shell.
 
 ### Core Engine & SDKs (`packages/`)
@@ -30,14 +30,11 @@ For more details, see [specs/dyrected-installation.md](./specs/dyrected-installa
 
 ## Docs
 
-Developer documentation lives in `docs/` and is powered by [Mintlify](https://mintlify.com).
+Developer documentation lives in `apps/docs/` and is powered by [Fumadocs](https://fumadocs.vercel.app).
 
 To start the local docs server:
 
 ```bash
-# Install the Mintlify CLI once (if you haven't already)
-npm i -g mintlify
-
-# Start the dev server — runs on http://localhost:3000
-cd docs && mintlify dev
+# Start the dev server — runs on http://localhost:3001
+pnpm --filter @dyrected/docs dev
 ```

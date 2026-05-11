@@ -1,0 +1,15 @@
+{
+  "title": "Docs",
+  "pages": [
+    "getting-started",
+    "guides",
+    "concepts",
+    "features",
+    "admin",
+    "adapters",
+    "integrations",
+    "deployment",
+    "reference",
+    "cloud"
+  ]
+}
