@@ -25,12 +25,12 @@
     {
       "name": "API Reference",
       "icon": "code",
-      "url": "/api-reference/introduction"
+      "url": "api-reference/introduction"
     },
     {
       "name": "Cloud",
       "icon": "cloud",
-      "url": "/cloud/workspaces"
+      "url": "cloud/workspaces"
     }
   ],
   "navigation": [
@@ -38,14 +38,41 @@
       "group": "Getting Started",
       "pages": [
         "introduction",
-        "quickstart"
+        "quickstart",
+        "core/self-hosted-vs-cloud"
       ]
     },
     {
-      "group": "Framework Integrations",
+      "group": "Guides",
       "pages": [
-        "integrations/nextjs",
-        "integrations/nuxt"
+        "guides/building-a-blog",
+        "guides/adding-authentication",
+        "guides/file-uploads",
+        "guides/invite-only-registration"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "core/schema",
+        "core/fields",
+        "core/hooks",
+        "core/access-control"
+      ]
+    },
+    {
+      "group": "Features",
+      "pages": [
+        "core/auth",
+        "core/upload",
+        "core/email",
+        "admin/live-preview"
+      ]
+    },
+    {
+      "group": "Admin UI",
+      "pages": [
+        "admin/overview"
       ]
     },
     {
@@ -56,30 +83,18 @@
       ]
     },
     {
-      "group": "Core Engine",
+      "group": "Integrations",
       "pages": [
-        "core/configuration",
-        "core/schema",
-        "core/fields",
-        "core/admin-config",
-        "core/hooks",
-        "core/access-control",
-        "core/auth",
-        "core/upload"
+        "integrations/nextjs",
+        "integrations/nuxt",
+        "integrations/sdk"
       ]
     },
     {
-      "group": "Admin Dashboard",
+      "group": "Deployment",
       "pages": [
-        "admin/overview",
-        "admin/live-preview"
-      ]
-    },
-    {
-      "group": "Dyrected Cloud",
-      "pages": [
-        "cloud/workspaces",
-        "cloud/billing"
+        "deployment/vercel",
+        "deployment/docker"
       ]
     },
     {
@@ -88,14 +103,16 @@
         "api-reference/introduction",
         "api-reference/rest-api",
         "api-reference/sdk",
-        "api-reference/openapi"
+        "api-reference/openapi",
+        "core/configuration"
       ]
     },
     {
-      "group": "Deployment",
+      "group": "Cloud",
       "pages": [
-        "deployment/vercel",
-        "deployment/docker"
+        "cloud/workspaces",
+        "cloud/billing",
+        "cloud/telemetry"
       ]
     }
   ],
