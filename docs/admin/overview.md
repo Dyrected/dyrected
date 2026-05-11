@@ -156,7 +156,7 @@ export default defineConfig({
 })
 ```
 
-See [Admin Config Reference](/docs/core/admin-config) for the full property list.
+See [Admin Config Reference](/docs/admin/configuration) for the full property list.
 
 ---
 

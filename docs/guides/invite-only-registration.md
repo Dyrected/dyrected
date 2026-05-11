@@ -127,7 +127,7 @@ export default function AcceptInvitePage() {
 }
 ```
 
-The email link should point to `/accept-invite?token=<token>`. The invite template in `core/email.md` outputs this link by default.
+The email link should point to `/accept-invite?token=<token>`. The invite template in `features/email.md` outputs this link by default.
 
 ---
 
@@ -156,4 +156,4 @@ export default defineConfig({
 })
 ```
 
-See [Email](/core/email) for all template options and production provider examples.
+See [Email](/features/email) for all template options and production provider examples.

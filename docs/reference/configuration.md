@@ -97,7 +97,7 @@ export default defineConfig({
 })
 ```
 
-See [Email](/docs/core/email) for the full guide — provider examples, the Ethereal dev fallback, and custom template overrides.
+See [Email](/docs/features/email) for the full guide — provider examples, the Ethereal dev fallback, and custom template overrides.
 
 ---
 

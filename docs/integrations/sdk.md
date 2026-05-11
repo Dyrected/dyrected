@@ -5,7 +5,7 @@ description: Using @dyrected/sdk in vanilla JS, SvelteKit, Astro, and any other 
 
 `@dyrected/sdk` works anywhere JavaScript runs — Node.js, the browser, edge runtimes, and any framework. This guide covers setup patterns for environments outside of Next.js and Nuxt (which have their own integration guides).
 
-For the full method reference see [SDK Reference](/docs/api-reference/sdk).
+For the full method reference see [SDK Reference](/docs/reference/sdk).
 
 ---
 

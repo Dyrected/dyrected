@@ -23,7 +23,7 @@ Endpoints follow a consistent structure based on your collection and global slug
 | Schema | `GET /api/schemas` |
 | Preview | `POST /api/preview-token` · `GET /api/preview-data` |
 
-See [REST API Reference](/docs/api-reference/rest-api) for the full endpoint documentation, query parameters (`where`, `sort`, `limit`, `depth`), and error codes.
+See [REST API Reference](/docs/reference/rest-api) for the full endpoint documentation, query parameters (`where`, `sort`, `limit`, `depth`), and error codes.
 
 ---
 
@@ -46,7 +46,7 @@ const { docs } = await client.collection('posts').find({
 })
 ```
 
-See [SDK Reference](/docs/api-reference/sdk) for all methods, and [SDK Integration Guide](/docs/integrations/sdk) for framework-specific setup (SvelteKit, Astro, vanilla JS, etc.).
+See [SDK Reference](/docs/reference/sdk) for all methods, and [SDK Integration Guide](/docs/integrations/sdk) for framework-specific setup (SvelteKit, Astro, vanilla JS, etc.).
 
 ---
 

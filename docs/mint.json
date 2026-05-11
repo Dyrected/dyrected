@@ -25,7 +25,7 @@
     {
       "name": "API Reference",
       "icon": "code",
-      "url": "api-reference/introduction"
+      "url": "reference/introduction"
     },
     {
       "name": "Cloud",
@@ -37,9 +37,9 @@
     {
       "group": "Getting Started",
       "pages": [
-        "introduction",
-        "quickstart",
-        "core/self-hosted-vs-cloud"
+        "getting-started/introduction",
+        "getting-started/quickstart",
+        "getting-started/self-hosted-vs-cloud"
       ]
     },
     {
@@ -54,25 +54,26 @@
     {
       "group": "Core Concepts",
       "pages": [
-        "core/schema",
-        "core/fields",
-        "core/hooks",
-        "core/access-control"
+        "concepts/schema",
+        "concepts/fields",
+        "concepts/hooks",
+        "concepts/access-control"
       ]
     },
     {
       "group": "Features",
       "pages": [
-        "core/auth",
-        "core/upload",
-        "core/email",
-        "admin/live-preview"
+        "features/auth",
+        "features/uploads",
+        "features/email",
+        "features/live-preview"
       ]
     },
     {
       "group": "Admin UI",
       "pages": [
-        "admin/overview"
+        "admin/overview",
+        "admin/configuration"
       ]
     },
     {
@@ -100,11 +101,11 @@
     {
       "group": "API Reference",
       "pages": [
-        "api-reference/introduction",
-        "api-reference/rest-api",
-        "api-reference/sdk",
-        "api-reference/openapi",
-        "core/configuration"
+        "reference/introduction",
+        "reference/rest-api",
+        "reference/sdk",
+        "reference/openapi",
+        "reference/configuration"
       ]
     },
     {

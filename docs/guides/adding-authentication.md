@@ -143,5 +143,5 @@ async function getUser() {
 ## Next steps
 
 - [Invite-only registration](/guides/invite-only-registration) — restrict sign-up to invited users
-- [Access Control](/core/access-control) — full reference for `access` functions
-- [Auth Endpoints](/core/auth) — REST API for login, logout, forgot-password, etc.
+- [Access Control](/concepts/access-control) — full reference for `access` functions
+- [Auth Endpoints](/features/auth) — REST API for login, logout, forgot-password, etc.

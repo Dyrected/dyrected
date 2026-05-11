@@ -247,7 +247,7 @@ Enable it on the collection:
 }
 ```
 
-See [Live Preview](/docs/admin/live-preview) for the full guide.
+See [Live Preview](/docs/features/live-preview) for the full guide.
 
 ---
 
