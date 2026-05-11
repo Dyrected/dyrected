@@ -4,6 +4,7 @@ import { requestId } from 'hono/request-id';
 import { DyrectedConfig } from './types/index.js';
 import { registerRoutes } from './router.js';
 import { normalizeConfig } from './utils/config.js';
+import { optionalAuth } from './middleware/auth.js';
 
 export interface DyrectedContext {
   Variables: {
@@ -34,6 +35,8 @@ export async function createDyrectedApp(rawConfig: DyrectedConfig) {
 
   // 1. Standard Middleware
   app.use('*', requestId());
+  // Decode bearer token if present so user is available in CRUD hooks and audit logging.
+  app.use('*', optionalAuth());
   app.use('*', async (c, next) => {
     const start = Date.now();
     await next();

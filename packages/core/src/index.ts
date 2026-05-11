@@ -25,4 +25,5 @@ export * from './app.js';
 export * from './types/index.js';
 export * from './services/population.service.js';
 export * from './services/media.service.js';
+export * from './services/audit.service.js';
 export * from './utils/setup-prompt.js';

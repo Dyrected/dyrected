@@ -238,4 +238,4 @@ When the Admin UI loads:
 3. If valid, it stores the user in context and renders the dashboard.
 4. On 401, it clears the token and redirects to the login screen.
 
-The Admin UI automatically discovers which collection has `auth: true` from the `/api/schemas` response and uses the first one found as the login collection.
+The Admin UI prioritizes the `__admins` collection for login. If no `__admins` collection is present, it falls back to the first collection with `auth: true`. See [Separated Auth Model](/docs/features/separated-auth) for the full isolation model.

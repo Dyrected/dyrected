@@ -1,0 +1,97 @@
+---
+title: Audit Trail
+description: Automatic system metadata on every document and optional full activity logging via the __audit collection.
+---
+
+Dyrected tracks document lifecycle through two complementary layers: **system metadata** that is always injected, and **activity logs** that are opt-in per collection.
+
+---
+
+## System Metadata (Always On)
+
+Every collection automatically receives the following fields. You do not need to declare them in your `fields` array — Dyrected injects them during config normalization.
+
+| Field | Type | Description |
+|---|---|---|
+| `createdAt` | `date` | ISO timestamp set on creation. |
+| `updatedAt` | `date` | ISO timestamp updated on every write. |
+| `createdBy` | `text` | ID of the user who created the document. |
+| `updatedBy` | `text` | ID of the user who last modified the document. |
+
+These fields are read-only and hidden in the Admin UI. They are populated automatically from the authenticated user's JWT on every `POST` (create) and `PATCH` (update) request.
+
+---
+
+## Activity Logs (`audit: true`)
+
+For a complete change history — including document snapshots and field-level diffs — enable audit logging on a collection:
+
+```ts
+const posts = defineCollection({
+  slug: 'posts',
+  audit: true, // enables logging to __audit
+  fields: [
+    { name: 'title', type: 'text' },
+    { name: 'body',  type: 'richText' },
+  ],
+})
+```
+
+When `audit: true`, every `create`, `update`, and `delete` operation writes an entry to the built-in `__audit` collection.
+
+### The `__audit` Schema
+
+| Field | Description |
+|---|---|
+| `entity` | Slug of the collection affected. |
+| `entityId` | ID of the document affected. |
+| `action` | `create`, `update`, `delete`, or `publish`. |
+| `userId` | ID of the user who performed the action. |
+| `userCollection` | Which auth collection the user belongs to (e.g. `__admins`). |
+| `userEmail` | Email of the acting user at the time of the action. |
+| `changes` | JSON diff — for `update`, an object of `{ field: { old, new } }` pairs. |
+| `snapshot` | Full document copy at the time of the action, useful for rollback. |
+| `timestamp` | ISO timestamp of the action. |
+
+### Example Audit Entry (update)
+
+```json
+{
+  "entity": "posts",
+  "entityId": "abc123",
+  "action": "update",
+  "userId": "user_01",
+  "userEmail": "editor@example.com",
+  "changes": {
+    "title": { "old": "Hello World", "new": "Hello Dyrected" }
+  },
+  "snapshot": {
+    "id": "abc123",
+    "title": "Hello Dyrected",
+    "body": "..."
+  },
+  "timestamp": "2026-05-11T10:23:00.000Z"
+}
+```
+
+---
+
+## Querying Audit Logs
+
+The `__audit` collection is queryable via the standard collections API:
+
+```ts
+// Fetch audit history for a specific document
+const logs = await client.collection('__audit').find({
+  where: { entity: { equals: 'posts' }, entityId: { equals: 'abc123' } },
+  sort: '-timestamp',
+})
+```
+
+---
+
+## Notes
+
+- Audit logging never blocks the primary write operation — if logging fails, the error is recorded to the server console but the original request succeeds.
+- The `__audit` collection is hidden in the Admin UI by default. You can surface it by adding it to your config explicitly with `admin: { hidden: false }`.
+- Diffs are computed as a shallow comparison. Nested objects are compared by JSON serialization.

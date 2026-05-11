@@ -1,0 +1,96 @@
+---
+title: Separated Auth Model
+description: How Dyrected isolates admin dashboard authentication from your application's user collections using __admins.
+---
+
+Dyrected maintains a hard separation between the internal admin system and your application-level authentication. This prevents frontend user accounts from ever having implicit access to the dashboard.
+
+---
+
+## The `__admins` Collection
+
+The `__admins` collection is a dedicated, built-in auth collection that exclusively powers the Admin Dashboard login. It is:
+
+- **Private** — not modifiable via the standard developer collection config.
+- **Isolated** — completely separate from any frontend user sessions.
+- **Prioritized** — when present, the Admin UI uses `__admins` as the **sole** login gateway, ignoring all other auth collections.
+
+To use it, define it as an `auth` collection with the reserved slug:
+
+```ts
+const admins = defineCollection({
+  slug: '__admins',
+  auth: true,
+  fields: [
+    { name: 'name', type: 'text' },
+    { name: 'roles', type: 'multiSelect', options: ['admin', 'editor'] },
+  ],
+})
+```
+
+---
+
+## Application Auth
+
+Your application's user collections (e.g. `customers`, `members`) continue to use `auth: true` exactly as before. They have their own independent login endpoints and session tokens — they just don't power the admin dashboard.
+
+```ts
+// Login as a customer — completely independent of admin sessions
+const { token } = await client.collection('customers').login(email, password)
+```
+
+---
+
+## Key Benefits
+
+| Benefit | Detail |
+|---|---|
+| **Security isolation** | A compromised frontend user account grants zero access to the dashboard. |
+| **Clean data** | Admin/staff users don't appear in customer lists or affect statistics. |
+| **Independent sessions** | A user can be simultaneously logged in as an admin and as a customer in the same browser. |
+| **Multi-tenant friendly** | Each collection can use a different auth strategy (JWT, cookie) without impacting the admin environment. |
+
+---
+
+## Admin UI Auth Priority
+
+When the Admin UI loads, it resolves the login collection in this order:
+
+1. Look for a collection with slug `__admins`.
+2. If found, use it as the **sole** login gateway — no other auth collection is considered.
+3. If `__admins` is not found, fall back to the first collection with `auth: true`.
+
+This means if you have both `__admins` and `customers` with `auth: true`, the dashboard will always use `__admins`.
+
+---
+
+## Migrating from a `users` Collection
+
+If you currently use a `users` (or similarly named) collection for admin access, follow these steps to migrate to `__admins` without losing your existing records.
+
+### 1. Rename the database table
+
+Before restarting your server, rename the existing table. The table name is derived from the collection slug with a `collection_` prefix.
+
+**SQLite / PostgreSQL / MySQL:**
+```sql
+ALTER TABLE collection_users RENAME TO collection___admins;
+```
+
+### 2. Update your config
+
+```ts
+// Before
+const admins = defineCollection({ slug: 'users', auth: true, fields: [...] })
+
+// After
+const admins = defineCollection({ slug: '__admins', auth: true, fields: [...] })
+```
+
+### 3. Restart
+
+Once the table is renamed and the code updated, restart your server. The Admin UI will authenticate against the existing records in `collection___admins`.
+
+<Callout type="warning">
+  If you restart **before** renaming the table, Dyrected will create a new empty `collection___admins` table and prompt you to create a first user. Your old data will still exist in `collection_users` but will be inaccessible to the admin system.
+</Callout>

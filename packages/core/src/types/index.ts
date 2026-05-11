@@ -86,6 +86,8 @@ export interface CollectionConfig {
   upload?: boolean | UploadConfig;
   fields: Field[];
   timestamps?: boolean;
+  /** Enable full activity logging to the __audit collection for this collection. */
+  audit?: boolean;
   access?: {
     read?: AccessFunction;
     create?: AccessFunction;

@@ -77,8 +77,10 @@ export function DyrectedProvider({
     localStorage.setItem("dyrected_token", token);
     if (client) {
       client.setToken(token);
-      // Fetch user data
-      const authCollection = schemas?.collections.find((c: any) => c.auth);
+      // Prefer __admins for the dashboard session; fall back to the first auth collection.
+      const authCollection =
+        schemas?.collections.find((c: any) => c.slug === '__admins') ??
+        schemas?.collections.find((c: any) => c.auth);
       if (authCollection) {
         client.collection(authCollection.slug).me().then(setUser).catch(() => setUser(null));
       }

@@ -3,6 +3,7 @@ import { CollectionConfig } from '../types/index.js';
 import { DyrectedContext } from '../app.js';
 import { PopulationService } from '../services/population.service.js';
 import { DefaultsService } from '../services/defaults.service.js';
+import { AuditService, computeDiff } from '../services/audit.service.js';
 
 export class CollectionController {
   constructor(private collection: CollectionConfig) {}
@@ -17,7 +18,6 @@ export class CollectionController {
     const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
     const sort = c.req.query('sort') || undefined;
 
-    // Parse `where` from query string — accepts JSON-encoded object or qs-style nested params
     let where: any = undefined;
     const whereRaw = c.req.query('where');
     if (whereRaw) {
@@ -35,8 +35,7 @@ export class CollectionController {
       sort,
       where,
     });
-    
-    // Apply default values to each document
+
     result.docs = result.docs.map(doc => DefaultsService.apply(this.collection.fields, doc));
 
     if (depth > 0) {
@@ -46,7 +45,6 @@ export class CollectionController {
 
     return c.json(result);
   }
-
 
   async findOne(c: Context<DyrectedContext>) {
     const config = c.get('config');
@@ -88,7 +86,29 @@ export class CollectionController {
     }
 
     const body = await c.req.json();
-    const doc = await db!.create({ collection: this.collection.slug, data: body });
+    const user = c.get('user');
+    const now = new Date().toISOString();
+
+    const data = {
+      ...body,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user?.sub ?? null,
+      updatedBy: user?.sub ?? null,
+    };
+
+    const doc = await db!.create({ collection: this.collection.slug, data });
+
+    if (this.collection.audit && db) {
+      AuditService.log(db, {
+        action: 'create',
+        entity: this.collection.slug,
+        entityId: doc.id,
+        user: user ? { sub: user.sub, collection: user.collection, email: user.email } : undefined,
+        snapshot: doc,
+      });
+    }
+
     return c.json(doc, 201);
   }
 
@@ -98,7 +118,7 @@ export class CollectionController {
     if (!storage) return c.json({ message: 'Storage not configured' }, 500);
 
     const formData = await c.req.formData();
-    const file = formData.get('file') as any; // Hono File type
+    const file = formData.get('file') as any;
     if (!file) return c.json({ message: 'No file uploaded' }, 400);
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -120,11 +140,18 @@ export class CollectionController {
       }
     });
 
+    const user = c.get('user');
+    const now = new Date().toISOString();
+
     const doc = await config.db!.create({
       collection: this.collection.slug,
       data: {
         ...otherData,
         ...fileData,
+        createdAt: now,
+        updatedAt: now,
+        createdBy: user?.sub ?? null,
+        updatedBy: user?.sub ?? null,
       },
     });
 
@@ -132,23 +159,70 @@ export class CollectionController {
   }
 
   async update(c: Context<DyrectedContext>) {
-    const db = c.get('config').db;
+    const config = c.get('config');
+    const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
     const id = c.req.param('id');
     if (!id) return c.json({ message: 'Missing ID' }, 400);
+
     const body = await c.req.json();
-    const doc = await db!.update({ collection: this.collection.slug, id, data: body });
+    const user = c.get('user');
+
+    const data = {
+      ...body,
+      updatedAt: new Date().toISOString(),
+      updatedBy: user?.sub ?? null,
+    };
+
+    let original: any = null;
+    if (this.collection.audit) {
+      original = await db!.findOne({ collection: this.collection.slug, id });
+    }
+
+    const doc = await db!.update({ collection: this.collection.slug, id, data });
+
+    if (this.collection.audit && db) {
+      AuditService.log(db, {
+        action: 'update',
+        entity: this.collection.slug,
+        entityId: id,
+        user: user ? { sub: user.sub, collection: user.collection, email: user.email } : undefined,
+        changes: original ? computeDiff(original, doc) : undefined,
+        snapshot: doc,
+      });
+    }
+
     return c.json(doc);
   }
 
   async delete(c: Context<DyrectedContext>) {
-    const db = c.get('config').db;
+    const config = c.get('config');
+    const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
     const id = c.req.param('id');
     if (!id) return c.json({ message: 'Missing ID' }, 400);
+
+    const user = c.get('user');
+
+    let snapshot: any = null;
+    if (this.collection.audit) {
+      snapshot = await db!.findOne({ collection: this.collection.slug, id });
+    }
+
     await db!.delete({ collection: this.collection.slug, id });
+
+    if (this.collection.audit && db) {
+      AuditService.log(db, {
+        action: 'delete',
+        entity: this.collection.slug,
+        entityId: id,
+        user: user ? { sub: user.sub, collection: user.collection, email: user.email } : undefined,
+        snapshot,
+      });
+    }
+
     return c.json({ message: 'Deleted' });
   }
 
@@ -164,7 +238,6 @@ export class CollectionController {
       return c.json({ message: 'Invalid initial data' }, 400);
     }
 
-    // Check if collection is empty before seeding
     const result = await db.find({ collection: this.collection.slug, limit: 1 });
     if (result.total > 0) {
       return c.json({ message: 'Collection is not empty, skipping seed' });

@@ -16,8 +16,10 @@ import { FirstUserPage } from "../../pages/auth/first-user-page";
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { client, user, setToken, schemas } = useDyrected();
 
-  // 1. Fetch schemas to find the auth collection
-  const authCollection = schemas?.collections.find((c: any) => c.auth);
+  // 1. Prefer __admins as the sole dashboard auth collection; fall back to the first auth collection.
+  const authCollection =
+    schemas?.collections.find((c: any) => c.slug === '__admins') ??
+    schemas?.collections.find((c: any) => c.auth);
 
   // 2. Check if the collection is initialized
   const { data: initData, isLoading: isLoadingInit } = useQuery({
