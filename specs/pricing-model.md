@@ -124,7 +124,7 @@ Manage several client projects from one place. Spin up a new site in minutes. Le
 
 **What's included:**
 
-- 1 workspace
+- Multiple workspaces
 - Up to 10 sites
 - 60GB pooled storage
 - Admin UI for each site
@@ -144,7 +144,7 @@ One workspace, 25 client sites, a storage pool that doesn't run out, and room to
 
 **What's included:**
 
-- 1 workspace
+- Multiple workspaces
 - Up to 25 sites
 - 200GB pooled storage
 - Admin UI for each site
