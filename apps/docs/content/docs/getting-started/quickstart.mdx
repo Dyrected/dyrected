@@ -6,73 +6,23 @@ description: Get Dyrected running — choose Cloud for zero infrastructure or se
 <Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt']}>
 <Tab value="Dyrected Cloud">
 
-The fastest path to a live site. No database to configure, no storage bucket, no infrastructure.
+### 1. Create your site
+Sign up at [app.dyrected.com](https://app.dyrected.com) and create a new **Site**.
 
-**1. Create an account**
+### 2. Copy the AI Prompt
+Immediately after creating your site, you will see a **Setup Prompt**. This is pre-filled with your Site ID and API Key.
 
-Sign up at [app.dyrected.com](https://app.dyrected.com), create a Workspace, then create a Site. Copy the **Site API Key** and **Site ID** from the site settings.
+### 3. Give it to your AI
+Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.). 
 
-**2. Install**
+**The AI will automatically:**
+- Install the necessary dependencies (`@dyrected/admin`, `@dyrected/core`).
+- Create a `dyrected.config.ts` with your initial collections.
+- **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
+- **Sync your Schema**: The AI will run `npx dyrected sync:schema` for you so your cloud database is ready immediately.
 
-```bash
-pnpm add @dyrected/core
-```
-
-**3. Create your config**
-
-```ts
-// dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
-
-export default defineConfig({
-  // No db needed — Cloud manages the database
-  collections: [
-    {
-      slug: 'posts',
-      fields: [
-        { name: 'title',   type: 'text',     required: true },
-        { name: 'slug',    type: 'text',     required: true },
-        { name: 'content', type: 'richtext' },
-        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
-      ],
-    },
-  ],
-})
-```
-
-**4. Set environment variables**
-
-```bash
-# .env.local
-DYRECTED_API_KEY=sk_live_...
-DYRECTED_SITE_ID=site_...
-NEXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
-NEXT_PUBLIC_DYRECTED_SITE_ID=site_...
-```
-
-**5. Push your schema**
-
-```bash
-npx dyrected push
-```
-
-This sends your config to the Cloud, provisions the tables, and makes the API live. You must have your environment variables set for the CLI to authenticate.
-
-**6. Fetch content**
-
-```ts
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
-  apiKey:  process.env.DYRECTED_API_KEY!,
-  siteId:  process.env.DYRECTED_SITE_ID!,
-})
-
-const { docs } = await client.collection('posts').find()
-```
-
-For the full Cloud setup including router mounting and multi-site patterns, see [Deploy with Dyrected Cloud](/docs/deployment/cloud).
+### 4. Build and ship
+Run your site and your new dashboard will be live at `yourwebsite.com/admin`.
 
 </Tab>
 <Tab value="Next.js">

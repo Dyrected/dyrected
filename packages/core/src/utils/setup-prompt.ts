@@ -37,8 +37,9 @@ IMPORTANT NOTES — READ BEFORE ACTING
 - AUTO-SEEDING: Use \`initialData\` in all data fetches to ensure the site is never empty on first load.
 - Globals use \`client.global(slug).get()\` and \`client.global(slug).update(data)\`.
 - Relationship fields are populated to the specified \`depth\` (default: 1). Set \`depth: 0\` for IDs only.
-- SYNC SCHEMA: After creating the content model, you MUST run \`npx dyrected sync:schema\` to apply changes to the cloud.
+- SYNC SCHEMA: After creating the content model, you MUST execute \`npx dyrected sync:schema\` immediately. This is non-negotiable for a working setup.
 - EMBED ADMIN: You MUST create a route (e.g. \`/admin\`) and mount the Admin UI components described below.
+- ALL-IN-ONE: Your goal is to give the user a project that is READY TO SHIP. Do the setup, do the embedding, and do the sync in one go.
 `;
 
   const strategy = `
