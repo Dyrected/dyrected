@@ -203,6 +203,27 @@ const { token } = await client.collection('users').refreshToken()
 client.setToken(token)
 ```
 
+### `.invite(email)`
+
+Send an invitation to an email address (requires an authenticated token set via `setToken`).
+
+```ts
+await client.collection('users').invite('newuser@example.com')
+```
+
+### `.acceptInvite(token, password, extraFields?)`
+
+Create an account from an invite token. Returns `{ token, user }` — the user is logged in immediately.
+
+```ts
+const { token, user } = await client.collection('users').acceptInvite(inviteToken, 'my-password', {
+  name: 'Jane Doe',
+})
+client.setToken(token)
+```
+
+---
+
 ### `.setToken(token)` / `.clearToken()`
 
 Manually manage the authentication header.

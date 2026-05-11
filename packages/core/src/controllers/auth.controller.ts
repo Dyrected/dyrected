@@ -2,7 +2,14 @@ import { Context } from 'hono';
 import { DyrectedContext } from '../app.js';
 import { CollectionConfig } from '../types/index.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
-import { signCollectionToken } from '../auth/token.js';
+import { signCollectionToken, verifyCollectionToken } from '../auth/token.js';
+import {
+  sendEmail,
+  buildWelcomeEmail,
+  buildInviteEmail,
+  buildResetPasswordEmail,
+  buildPasswordChangedEmail,
+} from '../services/email.service.js';
 
 /**
  * Handles auth endpoints for collections with `auth: true`.
@@ -14,6 +21,8 @@ import { signCollectionToken } from '../auth/token.js';
  *   POST   /refresh-token
  *   POST   /forgot-password
  *   POST   /reset-password
+ *   POST   /invite
+ *   POST   /accept-invite
  */
 export class AuthController {
   constructor(private collection: CollectionConfig) {}
@@ -76,6 +85,12 @@ export class AuthController {
       email: user.email,
       collection: this.collection.slug,
     });
+
+    // Send welcome email (best-effort — never block login)
+    const { subject, html } = buildWelcomeEmail(config, { email: body.email });
+    sendEmail(config, { to: body.email, subject, html }).catch((err) =>
+      console.error('[dyrected/core] Failed to send welcome email:', err),
+    );
 
     const { password: _, ...safeUser } = user;
     return c.json({ token, user: safeUser });
@@ -192,28 +207,16 @@ export class AuthController {
 
     const user = result.docs[0];
 
-    if (user && config.email) {
+    if (user) {
       // Issue a short-lived reset token (1-hour)
       const resetToken = await signCollectionToken(
-        { sub: user.id, email: user.email, collection: this.collection.slug },
+        { sub: user.id, email: user.email, collection: this.collection.slug, purpose: 'reset' },
         '1h',
       );
 
       try {
-        await fetch('https://api.seamailer.com/v1/transactional/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${config.email.apiKey}`,
-          },
-          body: JSON.stringify({
-            from: { email: config.email.from, name: 'Dyrected' },
-            to: [{ email: user.email }],
-            subject: 'Reset your password',
-            html: `<p>Use the token below to reset your password. It expires in 1 hour.</p>
-                   <pre>${resetToken}</pre>`,
-          }),
-        });
+        const { subject, html } = buildResetPasswordEmail(config, { token: resetToken });
+        await sendEmail(config, { to: user.email, subject, html });
       } catch (err) {
         console.error('[dyrected/core] Failed to send password reset email:', err);
       }
@@ -242,13 +245,12 @@ export class AuthController {
     // Verify the reset token
     let payload: any;
     try {
-      const { verifyCollectionToken } = await import('../auth/token.js');
       payload = await verifyCollectionToken(body.token);
     } catch {
       return c.json({ error: true, message: 'Reset token is invalid or has expired.' }, 400);
     }
 
-    if (payload.collection !== this.collection.slug) {
+    if (payload.collection !== this.collection.slug || payload.purpose !== 'reset') {
       return c.json({ error: true, message: 'Reset token is invalid or has expired.' }, 400);
     }
 
@@ -259,6 +261,122 @@ export class AuthController {
       data: { password: hashedPassword },
     });
 
+    // Notify the user their password was changed (security alert)
+    const { subject, html } = buildPasswordChangedEmail(config, { email: payload.email });
+    sendEmail(config, { to: payload.email, subject, html }).catch((err) =>
+      console.error('[dyrected/core] Failed to send password-changed email:', err),
+    );
+
     return c.json({ success: true, message: 'Password has been reset. You can now log in.' });
+  }
+
+  // ---------------------------------------------------------------------------
+  // POST /invite
+  // Requires auth. Issues a signed invite token and emails it to the invitee.
+  // ---------------------------------------------------------------------------
+  async invite(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const requestUser = c.get('user') as any;
+    if (!requestUser) {
+      return c.json({ error: true, message: 'Authentication required.' }, 401);
+    }
+
+    const body = await c.req.json().catch(() => null);
+    if (!body?.email) {
+      return c.json({ error: true, message: 'email is required.' }, 400);
+    }
+
+    // Prevent inviting an email that already has an account
+    const existing = await db.find({
+      collection: this.collection.slug,
+      where: { email: body.email },
+      limit: 1,
+    });
+    if (existing.total > 0) {
+      return c.json({ error: true, message: 'An account with that email already exists.' }, 409);
+    }
+
+    // sub = invitee email (no user doc yet); purpose = 'invite'
+    const inviteToken = await signCollectionToken(
+      { sub: body.email, email: body.email, collection: this.collection.slug, purpose: 'invite' },
+      '7d',
+    );
+
+    try {
+      const { subject, html } = buildInviteEmail(config, {
+        token: inviteToken,
+        invitedByEmail: requestUser.email,
+      });
+      await sendEmail(config, { to: body.email, subject, html });
+    } catch (err) {
+      console.error('[dyrected/core] Failed to send invite email:', err);
+    }
+
+    return c.json({ success: true, message: `Invite sent to ${body.email}.` });
+  }
+
+  // ---------------------------------------------------------------------------
+  // POST /accept-invite
+  // Public. Validates the invite token and creates the user account.
+  // Body: { token, password, ...extraFields }
+  // ---------------------------------------------------------------------------
+  async acceptInvite(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const body = await c.req.json().catch(() => null);
+    if (!body?.token || !body?.password) {
+      return c.json({ error: true, message: 'token and password are required.' }, 400);
+    }
+
+    let payload: any;
+    try {
+      payload = await verifyCollectionToken(body.token);
+    } catch {
+      return c.json({ error: true, message: 'Invite token is invalid or has expired.' }, 400);
+    }
+
+    if (payload.collection !== this.collection.slug || payload.purpose !== 'invite') {
+      return c.json({ error: true, message: 'Invite token is invalid or has expired.' }, 400);
+    }
+
+    const inviteeEmail = payload.sub;
+
+    // Guard against double-accept
+    const existing = await db.find({
+      collection: this.collection.slug,
+      where: { email: inviteeEmail },
+      limit: 1,
+    });
+    if (existing.total > 0) {
+      return c.json({ error: true, message: 'An account with that email already exists.' }, 409);
+    }
+
+    const { token: _t, password: _p, ...extraFields } = body;
+    const hashedPassword = await hashPassword(body.password);
+    const user = await db.create({
+      collection: this.collection.slug,
+      data: { ...extraFields, email: inviteeEmail, password: hashedPassword },
+    });
+
+    // Log them in immediately
+    const sessionToken = await signCollectionToken({
+      sub: user.id,
+      email: inviteeEmail,
+      collection: this.collection.slug,
+    });
+
+    // Send welcome email (best-effort)
+    const { subject, html } = buildWelcomeEmail(config, { email: inviteeEmail });
+    sendEmail(config, { to: inviteeEmail, subject, html }).catch((err) =>
+      console.error('[dyrected/core] Failed to send welcome email:', err),
+    );
+
+    const { password: _, ...safeUser } = user;
+    return c.json({ token: sessionToken, user: safeUser }, 201);
   }
 }

@@ -107,6 +107,41 @@ Exchange a valid (non-expired) JWT for a fresh one with a new expiry.
 
 ---
 
+### `POST /api/collections/users/invite`
+
+Send an invitation to an email address. Requires `Authorization: Bearer <token>`.
+
+**Request:**
+```json
+{ "email": "newuser@example.com" }
+```
+
+**Response:** `200 OK`
+```json
+{ "success": true, "message": "Invite sent to newuser@example.com." }
+```
+
+Returns `409` if an account with that email already exists.
+
+---
+
+### `POST /api/collections/users/accept-invite`
+
+Create an account from a valid invite token. The `token` comes from the invite email. Any extra fields beyond `token` and `password` are saved on the new user document.
+
+**Request:**
+```json
+{
+  "token": "<invite-token>",
+  "password": "my-new-password",
+  "name": "Jane Doe"
+}
+```
+
+**Response:** `201 Created` — same shape as `/login`: `{ token, user }`. The user is logged in immediately.
+
+---
+
 ### `POST /api/collections/users/forgot-password`
 
 Sends a password-reset email to the provided address (requires `email` config).

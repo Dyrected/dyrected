@@ -496,6 +496,9 @@ importers:
       jose:
         specifier: ^6.2.3
         version: 6.2.3
+      nodemailer:
+        specifier: ^6.10.1
+        version: 6.10.1
       zod:
         specifier: ^3.22.0
         version: 3.25.76
@@ -503,6 +506,9 @@ importers:
       '@types/node':
         specifier: ^20.12.12
         version: 20.19.39
+      '@types/nodemailer':
+        specifier: ^6.4.23
+        version: 6.4.23
       tsup:
         specifier: ^8.0.0
         version: 8.5.1(typescript@5.9.3)
@@ -7676,6 +7682,12 @@ packages:
       undici-types: 7.19.2
     dev: true
 
+  /@types/nodemailer@6.4.23:
+    resolution: {integrity: sha512-aFV3/NsYFLSx9mbb5gtirBSXJnAlrusoKNuPbxsASWc7vrKLmIrTQRpdcxNcSFL3VW2A2XpeLEavwb2qMi6nlQ==}
+    dependencies:
+      '@types/node': 20.19.39
+    dev: true
+
   /@types/prompts@2.4.9:
     resolution: {integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==}
     dependencies:
@@ -13114,6 +13126,11 @@ packages:
       util: 0.12.5
       vm-browserify: 1.1.2
     dev: true
+
+  /nodemailer@6.10.1:
+    resolution: {integrity: sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA==}
+    engines: {node: '>=6.0.0'}
+    dev: false
 
   /nopt@8.1.0:
     resolution: {integrity: sha512-ieGu42u/Qsa4TFktmaKEwM6MQH0pOWnaB3htzh0JRtx84+Mebc0cbZYN5bC+6WTZ4+77xrL9Pn5m7CV6VIkV7A==}

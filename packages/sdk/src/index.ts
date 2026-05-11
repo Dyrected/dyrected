@@ -189,6 +189,22 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
           method: 'POST',
           body: JSON.stringify(data),
         }),
+      /** Send an invitation email to a new user. Requires authentication. */
+      invite: (email: string): Promise<{ success: boolean; message: string }> =>
+        this.request(`/api/collections/${slug}/invite`, {
+          method: 'POST',
+          body: JSON.stringify({ email }),
+        }),
+      /** Accept an invitation and create an account. Returns token + user. */
+      acceptInvite: (
+        token: string,
+        password: string,
+        extraFields?: Record<string, any>,
+      ): Promise<{ token: string; user: TSchema['collections'][K] }> =>
+        this.request(`/api/collections/${slug}/accept-invite`, {
+          method: 'POST',
+          body: JSON.stringify({ token, password, ...extraFields }),
+        }),
     };
   }
 

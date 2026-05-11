@@ -15,7 +15,7 @@ The `defineConfig` helper expects an object with the following properties:
 | `globals` | `GlobalConfig[]` | List of global singletons (single-entry). |
 | `db` | `DatabaseAdapter` | The database adapter to use (e.g., `@dyrected/db-postgres`). |
 | `storage` | `StorageAdapter` | (Optional) The storage adapter for media uploads. |
-| `email` | `EmailConfig` | (Optional) Configuration for transactional emails. |
+| `email` | `EmailConfig` | (Optional) Enables the forgot-password flow. Provide a `send` function wired to any email library. |
 | `redis` | `RedisConfig` | (Optional) Connection details for Redis (required for Cloud). |
 
 ---
@@ -79,6 +79,47 @@ Every field in a collection or global supports these base properties:
 1. **Keep Slugs Stable**: Changing a slug after deployment will result in a new database table and orphaned data.
 2. **Use `object` for Grouping**: Use the `object` field type to group related fields in the UI and API response without creating new tables.
 3. **Leverage `condition`**: Use `admin.condition` to show/hide fields based on the values of other fields in the same document.
+
+---
+
+## Email Configuration
+
+Setting `email` enables the built-in forgot-password flow. You provide a `send` function — Dyrected calls it with `{ to, subject, html }` and doesn't care which library or provider you use underneath.
+
+```ts
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export default defineConfig({
+  email: {
+    from: 'noreply@mysite.com',
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({ from: 'noreply@mysite.com', to, subject, html })
+    },
+  },
+  // ...
+})
+```
+
+Any library works — Nodemailer, Postmark, SendGrid, AWS SES, etc.:
+
+```ts
+import nodemailer from 'nodemailer'
+
+const transporter = nodemailer.createTransport({ host: 'smtp.myhost.com', port: 587, ... })
+
+export default defineConfig({
+  email: {
+    from: 'noreply@mysite.com',
+    send: async ({ to, subject, html }) => {
+      await transporter.sendMail({ from: 'noreply@mysite.com', to, subject, html })
+    },
+  },
+})
+```
+
+If `email` is not set, the `/forgot-password` endpoint still responds successfully but no email is sent.
 
 ---
 

@@ -267,9 +267,14 @@ export interface DyrectedConfig {
   /** Admin UI branding and meta configuration. */
   admin?: AdminConfig;
   email?: {
-    provider: string;
-    apiKey?: string;
     from: string;
+    send: (args: { to: string; subject: string; html: string }) => Promise<void>;
+    templates?: {
+      welcome?: (args: { email: string }) => { subject?: string; html: string };
+      invite?: (args: { token: string; invitedByEmail?: string }) => { subject?: string; html: string };
+      resetPassword?: (args: { token: string }) => { subject?: string; html: string };
+      passwordChanged?: (args: { email: string }) => { subject?: string; html: string };
+    };
   };
   redis?: {
     url: string;

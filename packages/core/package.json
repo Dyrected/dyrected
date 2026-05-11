@@ -18,10 +18,12 @@
     "hono": "^4.0.0",
     "jexl": "^2.3.0",
     "jose": "^6.2.3",
+    "nodemailer": "^6.10.1",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "@types/nodemailer": "^6.4.23",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"

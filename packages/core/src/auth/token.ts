@@ -2,9 +2,10 @@ import { SignJWT, jwtVerify, decodeJwt, type JWTPayload } from 'jose';
 import { TextEncoder } from 'node:util';
 
 export interface CollectionTokenPayload extends JWTPayload {
-  sub: string;       // document id
+  sub: string;       // document id (or invited email for invite tokens)
   email: string;
   collection: string; // which auth collection this token is for
+  purpose?: 'invite' | 'reset';
 }
 
 function getSecret(): Uint8Array {
