@@ -31,10 +31,10 @@ These were previously listed as missing or broken and are now done:
 
 | File | Problem |
 |---|---|
-| `adapters/databases.md` | No MySQL adapter (`@dyrected/db-mysql` package exists, zero docs). No `DatabaseAdapter` interface definition. No migration guidance. No connection pool config. |
-| `deployment/docker.md` | Uses stale `dyrected/vault` image name (no official image published yet). No health check. No Redis config. No volume mount examples. |
-| `deployment/vercel.md` | Only 19 lines. No ISR/edge config. No full env var list. No serverless function size limit notes. |
-| `api-reference/introduction.md` | Sparse overview — endpoint structure, query params, and error codes are now in `rest-api.md`. This file should link there or be merged. |
+| `adapters/databases.md` | ✅ Expanded — MySQL noted as planned, `DatabaseAdapter` interface, migration guidance, connection pool config |
+| `deployment/docker.md` | ✅ Rewritten — custom Dockerfile, Docker Compose with health checks, Redis, volume mounts, env var table |
+| `deployment/vercel.md` | ✅ Rewritten — full env var table, connection pooling, ISR revalidation, Edge runtime, bundle size fix |
+| `api-reference/introduction.md` | ✅ Rewritten — endpoint overview table, links to REST + SDK references, auth methods, OpenAPI note |
 | `core/schema.md` | Mostly duplicates `configuration.md`. Should be refocused on auth collections and upload collections specifically, since those have schema-level behaviour. |
 | `cloud/workspaces.md` | No site vs workspace distinction. No schema sync via CLI. No license key explanation. |
 | `cloud/billing.md` | No plan comparison table. No quota numbers. No overage policy. |

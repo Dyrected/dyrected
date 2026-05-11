@@ -3,57 +3,157 @@ title: Database Adapters
 description: Connect Dyrected to your preferred database.
 ---
 
-Dyrected is database-agnostic. You can choose the adapter that best fits your infrastructure.
+Dyrected is database-agnostic. Choose the adapter that fits your infrastructure and pass it to `defineConfig` as `db`. All adapters implement the same `DatabaseAdapter` interface, so your application code never changes when you switch.
 
-## Supported Databases
+---
 
-### 1. PostgreSQL (Recommended)
-The `@dyrected/db-postgres` adapter is the recommended choice for production environments. It uses standard SQL and supports advanced features like full-text search.
+## Supported Adapters
 
-```typescript
-import { PostgresAdapter } from '@dyrected/db-postgres';
+### PostgreSQL — `@dyrected/db-postgres` (Recommended)
+
+Best choice for production. Uses `postgres` (node-postgres) under the hood with full JSONB support.
+
+```ts
+import { PostgresAdapter } from '@dyrected/db-postgres'
 
 export default defineConfig({
   db: new PostgresAdapter({
-    url: process.env.DATABASE_URL,
+    url: process.env.DATABASE_URL,  // postgresql://user:pass@host:5432/db
   }),
-});
+})
 ```
 
-### 2. SQLite
-Great for local development or small, edge-deployed applications.
+**Connection pool config:**
 
-```typescript
-import { SqliteAdapter } from '@dyrected/db-sqlite';
+```ts
+new PostgresAdapter({
+  url: process.env.DATABASE_URL,
+  max: 10,       // maximum pool size (default: 10)
+  idle: 20_000,  // ms before an idle connection is closed (default: 20s)
+  connect: 30,   // connection timeout in seconds (default: 30)
+})
+```
+
+> **Vercel / serverless:** Set `max: 1` to avoid exhausting the connection pool across short-lived function instances.
+
+---
+
+### SQLite — `@dyrected/db-sqlite`
+
+Great for local development, single-server deployments, and edge environments. Uses `better-sqlite3`.
+
+```ts
+import { SqliteAdapter } from '@dyrected/db-sqlite'
 
 export default defineConfig({
   db: new SqliteAdapter({
-    filename: 'dyrected.db',
+    filename: 'dyrected.db',   // path to the SQLite file
   }),
-});
+})
 ```
 
-### 3. MongoDB
-If you prefer a document-based database, use the `@dyrected/db-mongodb` adapter.
+> **Note:** SQLite is not suitable for serverless deployments (Vercel, Cloudflare Workers) because the filesystem is ephemeral. Use PostgreSQL instead.
 
-```typescript
-import { MongoAdapter } from '@dyrected/db-mongodb';
+---
+
+### MongoDB — `@dyrected/db-mongodb`
+
+For document-based workloads. Uses the official MongoDB Node.js driver.
+
+```ts
+import { MongoAdapter } from '@dyrected/db-mongodb'
 
 export default defineConfig({
   db: new MongoAdapter({
-    url: process.env.MONGODB_URI,
+    url: process.env.MONGODB_URI,  // mongodb+srv://...
   }),
-});
+})
 ```
 
-## Writing Your Own Adapter
+---
 
-You can implement the `DatabaseAdapter` interface to support any database.
+### MySQL — `@dyrected/db-mysql` *(coming soon)*
 
-```typescript
-import { DatabaseAdapter } from '@dyrected/core';
+MySQL / PlanetScale support is planned. The package is reserved but not yet implemented. Use PostgreSQL or SQLite in the meantime.
+
+---
+
+## Schema sync
+
+On startup, Dyrected calls `db.sync()` to ensure the required tables or collections exist. This is non-destructive — it creates missing tables but never drops or alters existing columns.
+
+```ts
+// Called automatically by createApp(). No manual call needed.
+await config.db.sync(config.collections, config.globals)
+```
+
+> **Production note:** `sync()` is safe to run on every deploy. It is equivalent to `CREATE TABLE IF NOT EXISTS` — no data is ever lost.
+
+---
+
+## Migrations
+
+Dyrected does not have a built-in migration runner yet. When you add a new field to a collection, the underlying JSON/JSONB column approach means new fields appear automatically in new documents. However, if you need to add a SQL column (e.g., for a native index), handle it with your preferred migration tool:
+
+- **PostgreSQL:** [node-pg-migrate](https://github.com/salsita/node-pg-migrate), [Flyway](https://flywaydb.org), or raw `ALTER TABLE` scripts
+- **SQLite:** [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) with manual `ALTER TABLE`
+- **MongoDB:** No schema migration required — add fields to your config and they appear in new documents
+
+---
+
+## `DatabaseAdapter` interface
+
+Implement this interface to support any database. All methods are async.
+
+```ts
+import type { DatabaseAdapter, PaginatedResult } from '@dyrected/core'
 
 class MyCustomAdapter implements DatabaseAdapter {
-  // Implement find, findOne, create, update, delete, etc.
+  // Required: list documents
+  async find(args: {
+    collection: string
+    where?: Record<string, any>
+    limit?: number
+    page?: number
+    sort?: string
+  }): Promise<PaginatedResult> { ... }
+
+  // Required: single document by ID
+  async findOne(args: { collection: string; id: string }): Promise<any> { ... }
+
+  // Required: insert a document
+  async create(args: { collection: string; data: any }): Promise<any> { ... }
+
+  // Required: partial update by ID
+  async update(args: { collection: string; id: string; data: any }): Promise<any> { ... }
+
+  // Required: delete by ID
+  async delete(args: { collection: string; id: string }): Promise<any> { ... }
+
+  // Required: fetch a global singleton
+  async getGlobal(args: { slug: string }): Promise<any> { ... }
+
+  // Required: upsert a global singleton
+  async updateGlobal(args: { slug: string; data: any }): Promise<any> { ... }
+
+  // Optional: create tables/collections on startup
+  async sync?(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void> { ... }
+
+  // Optional: raw query execution
+  async execute?(query: string, params?: any[]): Promise<any> { ... }
+}
+```
+
+### `PaginatedResult` shape
+
+```ts
+interface PaginatedResult {
+  docs: any[]
+  total: number
+  limit: number
+  page: number
+  totalPages: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
 }
 ```
