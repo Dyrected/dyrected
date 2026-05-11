@@ -1,55 +1,35 @@
 import { DatabaseAdapter } from '../types/index.js';
 
 export interface AuditLogArgs {
-  action: 'create' | 'update' | 'delete' | 'publish';
-  entity: string;
-  entityId?: string;
-  user?: { sub: string; collection: string; email?: string };
-  /** Delta between old and new document (update only). */
-  changes?: Record<string, { old: any; new: any }>;
-  /** Full document snapshot at the time of the action. */
-  snapshot?: any;
-}
-
-/**
- * Computes a shallow diff between two objects, returning an object where each
- * changed key maps to { old, new }.
- */
-export function computeDiff(
-  original: Record<string, any>,
-  updated: Record<string, any>,
-): Record<string, { old: any; new: any }> {
-  const allKeys = new Set([...Object.keys(original), ...Object.keys(updated)]);
-  const diff: Record<string, { old: any; new: any }> = {};
-  for (const key of allKeys) {
-    const oldVal = original[key];
-    const newVal = updated[key];
-    if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-      diff[key] = { old: oldVal, new: newVal };
-    }
-  }
-  return diff;
+  operation: 'create' | 'update' | 'delete';
+  collection: string;
+  documentId?: string;
+  user?: { id: string; collection: string; email?: string };
+  /** Full state before the operation (null for create). */
+  before?: any;
+  /** Full state after the operation (null for delete). */
+  after?: any;
 }
 
 export class AuditService {
   /**
-   * Writes a single audit log entry to the __audit collection.
-   * Never throws — errors are swallowed to avoid blocking the primary operation.
+   * Writes a single entry to the __audit collection.
+   * Called without await — runs asynchronously and never blocks the primary operation.
    */
   static async log(db: DatabaseAdapter, args: AuditLogArgs): Promise<void> {
     try {
       await db.create({
         collection: '__audit',
         data: {
-          entity: args.entity,
-          entityId: args.entityId ?? null,
-          action: args.action,
-          userCollection: args.user?.collection ?? null,
-          userId: args.user?.sub ?? null,
-          userEmail: args.user?.email ?? null,
-          changes: args.changes ? JSON.stringify(args.changes) : null,
-          snapshot: args.snapshot ? JSON.stringify(args.snapshot) : null,
+          collection: args.collection,
+          documentId: args.documentId ?? null,
+          operation: args.operation,
+          user: args.user?.id ?? null,
           timestamp: new Date().toISOString(),
+          changes: JSON.stringify({
+            before: args.before ?? null,
+            after: args.after ?? null,
+          }),
         },
       });
     } catch (err) {

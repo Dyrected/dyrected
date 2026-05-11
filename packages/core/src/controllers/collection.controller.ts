@@ -3,7 +3,7 @@ import { CollectionConfig } from '../types/index.js';
 import { DyrectedContext } from '../app.js';
 import { PopulationService } from '../services/population.service.js';
 import { DefaultsService } from '../services/defaults.service.js';
-import { AuditService, computeDiff } from '../services/audit.service.js';
+import { AuditService } from '../services/audit.service.js';
 
 export class CollectionController {
   constructor(private collection: CollectionConfig) {}
@@ -101,11 +101,12 @@ export class CollectionController {
 
     if (this.collection.audit && db) {
       AuditService.log(db, {
-        action: 'create',
-        entity: this.collection.slug,
-        entityId: doc.id,
-        user: user ? { sub: user.sub, collection: user.collection, email: user.email } : undefined,
-        snapshot: doc,
+        operation: 'create',
+        collection: this.collection.slug,
+        documentId: doc.id,
+        user: user ? { id: user.sub, collection: user.collection, email: user.email } : undefined,
+        before: null,
+        after: doc,
       });
     }
 
@@ -175,21 +176,21 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     };
 
-    let original: any = null;
+    let before: any = null;
     if (this.collection.audit) {
-      original = await db!.findOne({ collection: this.collection.slug, id });
+      before = await db!.findOne({ collection: this.collection.slug, id });
     }
 
     const doc = await db!.update({ collection: this.collection.slug, id, data });
 
     if (this.collection.audit && db) {
       AuditService.log(db, {
-        action: 'update',
-        entity: this.collection.slug,
-        entityId: id,
-        user: user ? { sub: user.sub, collection: user.collection, email: user.email } : undefined,
-        changes: original ? computeDiff(original, doc) : undefined,
-        snapshot: doc,
+        operation: 'update',
+        collection: this.collection.slug,
+        documentId: id,
+        user: user ? { id: user.sub, collection: user.collection, email: user.email } : undefined,
+        before,
+        after: doc,
       });
     }
 
@@ -206,20 +207,21 @@ export class CollectionController {
 
     const user = c.get('user');
 
-    let snapshot: any = null;
+    let before: any = null;
     if (this.collection.audit) {
-      snapshot = await db!.findOne({ collection: this.collection.slug, id });
+      before = await db!.findOne({ collection: this.collection.slug, id });
     }
 
     await db!.delete({ collection: this.collection.slug, id });
 
     if (this.collection.audit && db) {
       AuditService.log(db, {
-        action: 'delete',
-        entity: this.collection.slug,
-        entityId: id,
-        user: user ? { sub: user.sub, collection: user.collection, email: user.email } : undefined,
-        snapshot,
+        operation: 'delete',
+        collection: this.collection.slug,
+        documentId: id,
+        user: user ? { id: user.sub, collection: user.collection, email: user.email } : undefined,
+        before,
+        after: null,
       });
     }
 
