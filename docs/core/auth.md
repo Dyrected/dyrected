@@ -138,13 +138,13 @@ Create an account from a valid invite token. The `token` comes from the invite e
 }
 ```
 
-**Response:** `201 Created` — same shape as `/login`: `{ token, user }`. The user is logged in immediately.
+**Response:** `201 Created` — same shape as `/login`: `{ token, user }`. The user is logged in immediately. A welcome email is sent to the new account.
 
 ---
 
 ### `POST /api/collections/users/forgot-password`
 
-Sends a password-reset email to the provided address (requires `email` config).
+Sends a password-reset email to the provided address. In development with no `email` config, the email is captured by Ethereal and a preview URL is logged to the console. Always responds with `200` regardless of whether the email exists (prevents email enumeration).
 
 **Request:**
 ```json
@@ -155,7 +155,7 @@ Sends a password-reset email to the provided address (requires `email` config).
 
 ### `POST /api/collections/users/reset-password`
 
-Resets the user's password using the token from the reset email.
+Resets the user's password using the token from the reset email. Sends a `passwordChanged` confirmation email to the user after a successful reset.
 
 **Request:**
 ```json

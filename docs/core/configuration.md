@@ -84,42 +84,20 @@ Every field in a collection or global supports these base properties:
 
 ## Email Configuration
 
-Setting `email` enables the built-in forgot-password flow. You provide a `send` function — Dyrected calls it with `{ to, subject, html }` and doesn't care which library or provider you use underneath.
+The `email` config enables transactional emails for all auth collection events (welcome, invite, password reset, password changed). In development with no config set, emails are automatically intercepted by Ethereal so you can preview them without any setup.
 
 ```ts
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export default defineConfig({
   email: {
     from: 'noreply@mysite.com',
     send: async ({ to, subject, html }) => {
-      await resend.emails.send({ from: 'noreply@mysite.com', to, subject, html })
-    },
-  },
-  // ...
-})
-```
-
-Any library works — Nodemailer, Postmark, SendGrid, AWS SES, etc.:
-
-```ts
-import nodemailer from 'nodemailer'
-
-const transporter = nodemailer.createTransport({ host: 'smtp.myhost.com', port: 587, ... })
-
-export default defineConfig({
-  email: {
-    from: 'noreply@mysite.com',
-    send: async ({ to, subject, html }) => {
-      await transporter.sendMail({ from: 'noreply@mysite.com', to, subject, html })
+      // wire in Resend, Nodemailer, Postmark, etc.
     },
   },
 })
 ```
 
-If `email` is not set, the `/forgot-password` endpoint still responds successfully but no email is sent.
+See [Email](/docs/core/email) for the full guide — provider examples, the Ethereal dev fallback, and custom template overrides.
 
 ---
 

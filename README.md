@@ -27,3 +27,17 @@ pnpm dev
 ```
 
 For more details, see [specs/dyrected-installation.md](./specs/dyrected-installation.md).
+
+## Docs
+
+Developer documentation lives in `docs/` and is powered by [Mintlify](https://mintlify.com).
+
+To start the local docs server:
+
+```bash
+# Install the Mintlify CLI once (if you haven't already)
+npm i -g mintlify
+
+# Start the dev server — runs on http://localhost:3000
+cd docs && mintlify dev
+```
