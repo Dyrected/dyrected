@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page'
+import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { source } from '@/app/source'
 
 interface Props {
@@ -19,7 +20,7 @@ export default async function Page({ params }: Props) {
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
-        <MDX />
+        <MDX components={{ ...defaultMdxComponents }} />
       </DocsBody>
     </DocsPage>
   )
