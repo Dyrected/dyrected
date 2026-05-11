@@ -200,7 +200,7 @@ import { dyrected } from "@dyrected/core";
 export const { GET, POST, PUT, PATCH, DELETE } = handle(dyrected);
 ```
 
-Drop into `app/api/dyrected/[...route]/route.ts`. Works on Vercel, Railway, and any Node host.
+Drop into `app/dyrected/[...route]/route.ts`. Works on Vercel, Railway, and any Node host.
 
 ### Nuxt / Nitro
 
@@ -210,7 +210,7 @@ import { fromNodeMiddleware } from "h3";
 import { dyrected } from "@dyrected/core";
 
 export default defineNitroPlugin((nitroApp) => {
-  nitroApp.h3App.use("/api/dyrected", fromNodeMiddleware(dyrected.fetch));
+  nitroApp.h3App.use("/dyrected", fromNodeMiddleware(dyrected.fetch));
 });
 ```
 

@@ -39,9 +39,9 @@ Go to your service → **Variables** and add:
 | `DATABASE_URL` | Auto-set by Railway when you add Postgres |
 | `DYRECTED_JWT_SECRET` | A long random string (32+ chars) |
 | `DYRECTED_API_KEY` | Your server-side API key |
-| `NEXT_PUBLIC_DYRECTED_URL` | `https://your-app.up.railway.app/api/dyrected` |
+| `NEXT_PUBLIC_DYRECTED_URL` | `https://your-app.up.railway.app/dyrected` |
 
-For file uploads, also add your S3 or Cloudinary credentials — Railway's filesystem is ephemeral, so `LocalStorage` won't persist between deploys.
+For file uploads, also add your S3 or Cloudinary credentials — Railway's filesystem is ephemeral, so `LocalStorageAdapter` won't persist between deploys.
 
 ---
 
@@ -67,7 +67,7 @@ export default defineConfig({
 
 Railway automatically deploys on every push to your connected branch. To trigger a manual deploy: **Deployments** → **Deploy Now**.
 
-Watch the build logs — the first deploy runs database migrations automatically when `createApp(config)` initialises.
+Watch the build logs — the first deploy runs database migrations automatically when `createDyrectedApp(config)` initialises.
 
 ---
 
@@ -86,7 +86,7 @@ If you need local file storage (not recommended for production), add a Railway v
 
 1. Service → **Volumes** → **Add Volume**
 2. Mount path: `/app/public/uploads`
-3. Set `LocalStorage` path to `./public/uploads` in your config
+3. Set `LocalStorageAdapter` path to `./public/uploads` in your config
 
 For anything beyond a single instance, use S3 or Cloudinary — see [Storage Adapters](/docs/adapters/storage).
 

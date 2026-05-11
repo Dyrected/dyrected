@@ -37,8 +37,8 @@ Pass an object instead of `true` for full control:
 
 ```ts
 upload: {
-  staticDir: './public/media',       // Local disk path to store files (LocalStorage only)
-  staticURL: '/media',               // Public URL prefix for locally stored files
+  uploadDir: './public/media',       // Local disk path to store files (LocalStorageAdapter only)
+  staticUrlPrefix: '/media',         // Public URL prefix for locally stored files
   allowedMimeTypes: ['image/*', 'application/pdf'],  // Allowed types (glob patterns)
   maxFileSize: 10_000_000,           // Max file size in bytes (10 MB)
   imageSizes: [
@@ -179,9 +179,9 @@ The `url` field returned for each file is resolved by your storage adapter. Ther
 
 | Adapter | `url` format |
 |---|---|
-| `LocalStorage` | `/uploads/filename.jpg` (relative, based on `staticURL`) |
-| `S3Storage` | `https://bucket.s3.region.amazonaws.com/filename.jpg` |
-| `CloudinaryStorage` | `https://res.cloudinary.com/cloud-name/image/upload/filename.jpg` |
+| `LocalStorageAdapter` | `/uploads/filename.jpg` (relative, based on `staticUrlPrefix`) |
+| `S3StorageAdapter` | `https://bucket.s3.region.amazonaws.com/filename.jpg` |
+| `CloudinaryStorageAdapter` | `https://res.cloudinary.com/cloud-name/image/upload/filename.jpg` |
 
 See [Storage Adapters](/docs/adapters/storage) for setup details.
 

@@ -41,9 +41,9 @@ export default function PostPreviewPage() {
 
   useEffect(() => {
     window.addEventListener('message', (e) => {
-      if (e.data?.type === 'dyrected:preview') setPost(e.data.doc)
+      if (e.data?.type === 'dyrected-live-preview') setPost(e.data.data)
     })
-    window.parent.postMessage({ type: 'dyrected:preview:ready' }, '*')
+    window.parent.postMessage({ type: 'dyrected-live-preview-ready' }, '*')
   }, [])
 
   if (!post) return <div>Waiting for preview data…</div>
@@ -61,7 +61,7 @@ export default function PostPreviewPage() {
 
 ```tsx
 'use client'
-import { useLivePreview } from '@dyrected/next/live-preview'
+import { useLivePreview } from '@dyrected/react'
 
 export default function PostPreviewPage({ initialData }: { initialData: any }) {
   const { data: post } = useLivePreview({
@@ -102,9 +102,9 @@ const post = ref<any>(null)
 
 onMounted(() => {
   window.addEventListener('message', (e) => {
-    if (e.data?.type === 'dyrected:preview') post.value = e.data.doc
+    if (e.data?.type === 'dyrected-live-preview') post.value = e.data.data
   })
-  window.parent.postMessage({ type: 'dyrected:preview:ready' }, '*')
+  window.parent.postMessage({ type: 'dyrected-live-preview-ready' }, '*')
 })
 </script>
 
@@ -122,7 +122,7 @@ onMounted(() => {
 ```vue
 <!-- pages/blog/[slug]/preview.vue -->
 <script setup lang="ts">
-const { data: post } = useDyrectedLivePreview({ depth: 1 })
+const { data: post } = useLivePreview({ initialData: null, depth: 1 })
 </script>
 
 <template>

@@ -152,8 +152,8 @@ app:
 
 | Path | What it stores | Notes |
 |---|---|---|
-| `/app/public/uploads` | Files from `LocalStorage` adapter | Not needed if using S3/Cloudinary |
+| `/app/public/uploads` | Files from `LocalStorageAdapter` adapter | Not needed if using S3/Cloudinary |
 | `/var/lib/postgresql/data` | PostgreSQL data | Mount in the `db` service |
 | `/data` (Redis) | Redis AOF/RDB persistence | Mount in the `redis` service |
 
-> If you use `LocalStorage` for file uploads, the `uploads` volume must be mounted. For production, prefer an S3-compatible storage adapter — it works across multiple replicas and doesn't need a volume.
+> If you use `LocalStorageAdapter` for file uploads, the `uploads` volume must be mounted. For production, prefer an S3-compatible storage adapter — it works across multiple replicas and doesn't need a volume.

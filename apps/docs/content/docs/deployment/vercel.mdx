@@ -23,7 +23,7 @@ Set these in your Vercel project under **Settings → Environment Variables**:
 | `DATABASE_URL` | ✅ | PostgreSQL connection string |
 | `DYRECTED_JWT_SECRET` | ✅ | Secret used to sign JWTs. Must be the same across all deployments. |
 | `DYRECTED_API_KEY` | ✅ | Server-side Site API Key. Never expose to the browser. |
-| `NEXT_PUBLIC_DYRECTED_URL` | ✅ | Full URL to the Dyrected API, e.g. `https://mysite.com/api/dyrected` |
+| `NEXT_PUBLIC_DYRECTED_URL` | ✅ | Full URL to the Dyrected API, e.g. `https://mysite.com/dyrected` |
 | `NEXT_PUBLIC_DYRECTED_API_KEY` | | Public API key for client-side reads. Safe to expose — access is controlled by your `access` functions. |
 | `NEXT_PUBLIC_SITE_ID` | Cloud mode | Site ID sent as `x-site-id` on requests to Cloud. |
 | `REVALIDATE_SECRET` | ISR | Secret for webhook-triggered ISR revalidation. |
@@ -98,13 +98,13 @@ export async function POST(req: NextRequest) {
 The Dyrected Hono router is compatible with the Vercel Edge Runtime for lower latency. Update your catch-all route:
 
 ```ts
-// app/api/dyrected/[...route]/route.ts
-import { createApp } from '@dyrected/core'
+// app/dyrected/[...route]/route.ts
+import { createDyrectedApp } from '@dyrected/core'
 import config from '@/dyrected.config'
 
 export const runtime = 'edge'
 
-const app = createApp(config)
+const app = createDyrectedApp(config)
 
 export const GET    = app.fetch
 export const POST   = app.fetch

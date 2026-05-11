@@ -55,7 +55,7 @@ export function useInvite() {
   const { token } = useDyrectedAuth('users')
 
   async function inviteUser(email: string) {
-    return $fetch('/api/dyrected/collections/users/invite', {
+    return $fetch('/dyrected/collections/users/invite', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token.value}` },
       body: { email },
@@ -68,7 +68,7 @@ export function useInvite() {
 </Tab>
 <Tab value="SDK (any)">
 ```ts
-const client = createClient({ baseUrl: '/api/dyrected', token: adminToken })
+const client = createClient({ baseUrl: '/dyrected', token: adminToken })
 await client.collection('users').invite('newuser@example.com')
 ```
 </Tab>
@@ -88,7 +88,7 @@ Dyrected signs a 7-day JWT with `purpose: 'invite'` and emails it. In developmen
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@dyrected/sdk'
 
-const client = createClient({ baseUrl: '/api/dyrected' })
+const client = createClient({ baseUrl: '/dyrected' })
 
 export default function AcceptInvitePage() {
   const params = useSearchParams()
@@ -128,7 +128,7 @@ const name     = ref('')
 const password = ref('')
 
 async function submit() {
-  const { token } = await $fetch('/api/dyrected/collections/users/accept-invite', {
+  const { token } = await $fetch('/dyrected/collections/users/accept-invite', {
     method: 'POST',
     body: { token: inviteToken, password: password.value, name: name.value },
   })

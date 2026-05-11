@@ -47,8 +47,8 @@ dyrected/
 ```yaml
 # pnpm-workspace.yaml
 packages:
-  - 'packages/*'
-  - 'apps/*'
+  - "packages/*"
+  - "apps/*"
 ```
 
 ```json
@@ -185,40 +185,40 @@ Cloud mode requires a valid license key. Without one, the app runs as self-hoste
 
 ```ts
 // apps/cloud/src/boot.ts
-async function resolveMode(): Promise<'cloud' | 'self-hosted'> {
-  const key = process.env.DYRECTED_LICENSE_KEY
-  if (!key) return 'self-hosted'
+async function resolveMode(): Promise<"cloud" | "self-hosted"> {
+  const key = process.env.DYRECTED_LICENSE_KEY;
+  if (!key) return "self-hosted";
 
-  const valid = await validateLicenseKey(key)
+  const valid = await validateLicenseKey(key);
   if (!valid) {
-    console.warn('[dyrected] Invalid or missing license key. Running in self-hosted mode.')
-    return 'self-hosted'
+    console.warn("[dyrected] Invalid or missing license key. Running in self-hosted mode.");
+    return "self-hosted";
   }
 
-  return 'cloud'
+  return "cloud";
 }
 
 async function validateLicenseKey(key: string): Promise<boolean> {
-  const res = await fetch('https://license.dyrected.com/validate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("https://license.dyrected.com/validate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       key,
-      product: 'dyrected-cloud',
+      product: "dyrected-cloud",
       instanceId: getInstanceId(),
     }),
-  })
-  return res.ok
+  });
+  return res.ok;
 }
 ```
 
 ### What the License Controls
 
-| Tier | License Key | What they get |
-|---|---|---|
-| Open source / self-hosted | None required | One site, schema from config file |
-| Cloud (managed, paid) | Issued automatically | Full cloud — workspaces, multi-site, admin schema management |
-| Enterprise self-hosted | Issued by you | `apps/cloud` Docker image + license key, self-managed infra |
+| Tier                      | License Key          | What they get                                                |
+| ------------------------- | -------------------- | ------------------------------------------------------------ |
+| Open source / self-hosted | None required        | One site, schema from config file                            |
+| Cloud (managed, paid)     | Issued automatically | Full cloud — workspaces, multi-site, admin schema management |
+| Enterprise self-hosted    | Issued by you        | `apps/cloud` Docker image + license key, self-managed infra  |
 
 ### Self-Hosted Has No MODE Flag
 
@@ -245,12 +245,12 @@ REDIS_URL=redis://... (required for cloud)
 
 ### How Modes Map to Packages
 
-| Mode | Package | Schema source | Multi-site | Workspaces |
-|---|---|---|---|---|
-| Self-hosted | `@dyrected/core` | `dyrected.config.ts` | ❌ | ❌ |
-| Embedded (Next/Nuxt) | `@dyrected/next` or `@dyrected/nuxt` | `dyrected.config.ts` | ❌ | ❌ |
-| Cloud managed | `apps/cloud` (private) | Database, via admin UI | ✅ | ✅ |
-| Enterprise self-hosted | `apps/cloud` (private, licensed) | Database, via admin UI | ✅ | ✅ |
+| Mode                   | Package                              | Schema source          | Multi-site | Workspaces |
+| ---------------------- | ------------------------------------ | ---------------------- | ---------- | ---------- |
+| Self-hosted            | `@dyrected/core`                     | `dyrected.config.ts`   | ❌         | ❌         |
+| Embedded (Next/Nuxt)   | `@dyrected/next` or `@dyrected/nuxt` | `dyrected.config.ts`   | ❌         | ❌         |
+| Cloud managed          | `apps/cloud` (private)               | Database, via admin UI | ✅         | ✅         |
+| Enterprise self-hosted | `apps/cloud` (private, licensed)     | Database, via admin UI | ✅         | ✅         |
 
 ### Self-Hosted and Embedded Are the Same Code Path
 
@@ -258,16 +258,16 @@ Embedded (Next.js / Nuxt) is self-hosted running inside a framework adapter. One
 
 ```ts
 // self-hosted standalone
-import { serve } from '@hono/node-server'
-import { dyrected } from '@dyrected/core'
+import { serve } from "@hono/node-server";
+import { dyrected } from "@dyrected/core";
 
-serve({ fetch: dyrected.fetch, port: 3000 })
+serve({ fetch: dyrected.fetch, port: 3000 });
 
 // embedded Next.js — same core, different mount
-import { handle } from 'hono/vercel'
-import { dyrected } from '@dyrected/core'
+import { handle } from "hono/vercel";
+import { dyrected } from "@dyrected/core";
 
-export const { GET, POST, PUT, PATCH, DELETE } = handle(dyrected)
+export const { GET, POST, PUT, PATCH, DELETE } = handle(dyrected);
 ```
 
 ---
@@ -314,13 +314,13 @@ The `resolveSite()` middleware is the single point where cloud and self-hosted d
 // packages/core/src/middleware/resolveSite.ts
 export const resolveSite = () => async (c: Context, next: Next) => {
   // Self-hosted/embedded default: pre-resolved at boot
-  c.set('siteId', 'default')
-  
+  c.set("siteId", "default");
+
   // Note: In Cloud mode, this middleware is preceded by the
   // cloud tenant resolver which sets siteId based on x-api-key
-  
-  return next()
-}
+
+  return next();
+};
 ```
 
 ---
@@ -331,19 +331,19 @@ The entire backend is a single Hono application exported from `@dyrected/core`.
 
 ```ts
 // packages/core/src/index.ts
-import { Hono } from 'hono'
-import { authRoutes } from './routes/auth'
-import { collectionsRoutes } from './routes/collections'
-import { globalsRoutes } from './routes/globals'
-import { schemasRoutes } from './routes/schemas'
+import { Hono } from "hono";
+import { authRoutes } from "./routes/auth";
+import { collectionsRoutes } from "./routes/collections";
+import { globalsRoutes } from "./routes/globals";
+import { schemasRoutes } from "./routes/schemas";
 
 export const dyrected = new Hono()
-  .route('/auth', authRoutes)
-  .route('/collections', collectionsRoutes)
-  .route('/globals', globalsRoutes)
-  .route('/schemas', schemasRoutes)
+  .route("/auth", authRoutes)
+  .route("/collections", collectionsRoutes)
+  .route("/globals", globalsRoutes)
+  .route("/schemas", schemasRoutes);
 
-export type DyrectedApp = typeof dyrected
+export type DyrectedApp = typeof dyrected;
 ```
 
 Framework adapters mount this app — they do not wrap or extend it.
@@ -352,32 +352,32 @@ Framework adapters mount this app — they do not wrap or extend it.
 
 ```ts
 // packages/next/src/index.ts
-import { handle } from 'hono/vercel'
-import { dyrected } from '@dyrected/core'
+import { handle } from "hono/vercel";
+import { dyrected } from "@dyrected/core";
 
-export const { GET, POST, PUT, PATCH, DELETE } = handle(dyrected)
+export const { GET, POST, PUT, PATCH, DELETE } = handle(dyrected);
 ```
 
 ### Nuxt / Nitro Adapter
 
 ```ts
 // packages/nuxt/src/runtime/plugin.ts
-import { fromNodeMiddleware } from 'h3'
-import { dyrected } from '@dyrected/core'
+import { fromNodeMiddleware } from "h3";
+import { dyrected } from "@dyrected/core";
 
 export default defineNitroPlugin((nitroApp) => {
-  nitroApp.h3App.use('/api/dyrected', fromNodeMiddleware(dyrected.fetch))
-})
+  nitroApp.h3App.use("/dyrected", fromNodeMiddleware(dyrected.fetch));
+});
 ```
 
 ### Standalone
 
 ```ts
 // apps/dev/src/index.ts
-import { serve } from '@hono/node-server'
-import { dyrected } from '@dyrected/core'
+import { serve } from "@hono/node-server";
+import { dyrected } from "@dyrected/core";
 
-serve({ fetch: dyrected.fetch, port: 3000 })
+serve({ fetch: dyrected.fetch, port: 3000 });
 ```
 
 ---
@@ -385,15 +385,15 @@ serve({ fetch: dyrected.fetch, port: 3000 })
 ## Middleware Stack
 
 ```ts
-dyrected.use('*', cors())
-dyrected.use('*', rateLimiter())
-dyrected.use('*', requestId())
-dyrected.use('*', logger())
-dyrected.use('/collections/*', resolveSite())
-dyrected.use('/globals/*',     resolveSite())
-dyrected.use('/workspaces/*',  authenticate())
-dyrected.use('/collections/*', authenticate({ optional: true }))
-dyrected.use('/globals/*',     authenticate({ optional: true }))
+dyrected.use("*", cors());
+dyrected.use("*", rateLimiter());
+dyrected.use("*", requestId());
+dyrected.use("*", logger());
+dyrected.use("/collections/*", resolveSite());
+dyrected.use("/globals/*", resolveSite());
+dyrected.use("/workspaces/*", authenticate());
+dyrected.use("/collections/*", authenticate({ optional: true }));
+dyrected.use("/globals/*", authenticate({ optional: true }));
 ```
 
 `authenticate({ optional: true })` attaches the user to context if a valid token is present but never rejects unauthenticated requests — the collection's own access functions make that decision.
@@ -433,18 +433,18 @@ Runs on pushes to `main` that touch `apps/cloud`. Builds the private Docker imag
 
 ## Decision Log
 
-| Decision | Choice | Reason |
-|---|---|---|
-| Package manager | pnpm | Faster installs, strict deps, leaner disk via content store |
-| Monorepo orchestration | Turborepo | Build ordering, caching, incremental CI — low config overhead |
-| Open/closed split | `packages/` open, `apps/cloud` closed | No env flag to abuse — cloud code doesn't exist in the OSS binary |
-| Cloud gate | License key, not MODE flag | Key must be issued by you — can't be self-generated |
-| MODE env var | Removed from public surface | Presence of `DYRECTED_LICENSE_KEY` is the only signal |
-| App instance name | `dyrected` | Avoids naming conflicts |
-| Self-hosted scope | One site per installation | Matches embedded framework use case; multi-site is a cloud revenue feature |
-| Site resolution | `x-api-key` header | Clean, stateless, works across runtimes |
-| Schema source | Config file (self-hosted) / DB (cloud) | Self-hosted schema changes require deploy — intentional, matches developer workflow |
+| Decision               | Choice                                 | Reason                                                                              |
+| ---------------------- | -------------------------------------- | ----------------------------------------------------------------------------------- |
+| Package manager        | pnpm                                   | Faster installs, strict deps, leaner disk via content store                         |
+| Monorepo orchestration | Turborepo                              | Build ordering, caching, incremental CI — low config overhead                       |
+| Open/closed split      | `packages/` open, `apps/cloud` closed  | No env flag to abuse — cloud code doesn't exist in the OSS binary                   |
+| Cloud gate             | License key, not MODE flag             | Key must be issued by you — can't be self-generated                                 |
+| MODE env var           | Removed from public surface            | Presence of `DYRECTED_LICENSE_KEY` is the only signal                               |
+| App instance name      | `dyrected`                             | Avoids naming conflicts                                                             |
+| Self-hosted scope      | One site per installation              | Matches embedded framework use case; multi-site is a cloud revenue feature          |
+| Site resolution        | `x-api-key` header                     | Clean, stateless, works across runtimes                                             |
+| Schema source          | Config file (self-hosted) / DB (cloud) | Self-hosted schema changes require deploy — intentional, matches developer workflow |
 
 ---
 
-*This document reflects decisions made during initial architecture planning.*
+_This document reflects decisions made during initial architecture planning._

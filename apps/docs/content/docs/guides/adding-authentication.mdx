@@ -82,7 +82,7 @@ async function submit(e: Event) {
 ```ts
 import { createClient } from '@dyrected/sdk'
 
-const client = createClient({ baseUrl: '/api/dyrected' })
+const client = createClient({ baseUrl: '/dyrected' })
 
 const { token, user } = await client.collection('users').login(
   'jane@example.com',

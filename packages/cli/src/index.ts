@@ -232,10 +232,10 @@ function buildStorageConfig(storage: string): string {
 }
 
 async function writeNextFiles(cwd: string) {
-  const apiRoutePath = path.join(cwd, "app/api/dyrected/[...route]/route.ts");
+  const apiRoutePath = path.join(cwd, "app/dyrected/[...route]/route.ts");
   if (!(await fs.pathExists(apiRoutePath))) {
     await fs.outputFile(apiRoutePath, `export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'\n`);
-    console.log(chalk.green("✔  app/api/dyrected/[...route]/route.ts written"));
+    console.log(chalk.green("✔  app/dyrected/[...route]/route.ts written"));
   }
 
   const adminPagePath = path.join(cwd, "app/cms/[[...route]]/page.tsx");
@@ -245,7 +245,7 @@ async function writeNextFiles(cwd: string) {
       `import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/api/dyrected" />
+  return <DyrectedAdmin apiPath="/dyrected" />
 }
 `,
     );
@@ -269,7 +269,7 @@ async function writeNuxtFiles(cwd: string) {
     await fs.outputFile(
       adminPagePath,
       `<template>
-  <DyrectedAdmin api-path="/api/dyrected" />
+  <DyrectedAdmin api-path="/dyrected" />
 </template>
 
 <script setup lang="ts">

@@ -1,16 +1,16 @@
-import { createDyrectedApp, DyrectedConfig } from '@dyrected/core';
-import { createClient, DyrectedClient } from '@dyrected/sdk';
-import { handle } from 'hono/vercel';
+import { createDyrectedApp, DyrectedConfig } from "@dyrected/core";
+import { createClient, DyrectedClient } from "@dyrected/sdk";
+import { handle } from "hono/vercel";
 
 /**
  * Creates a standard Next.js Route Handler for Dyrected CMS.
- * Usage in app/api/dyrected/[...dyrected]/route.ts:
- * 
+ * Usage in app/dyrected/[...dyrected]/route.ts:
+ *
  * export const { GET, POST, PATCH, DELETE } = dyrectedNextHandler(config);
  */
 export function dyrectedNextHandler(config: DyrectedConfig) {
   const app = createDyrectedApp(config);
-  
+
   const handler = handle(app);
 
   return {
@@ -28,7 +28,7 @@ export function dyrectedNextHandler(config: DyrectedConfig) {
  * Reads environment variables DYRECTED_URL and DYRECTED_API_KEY.
  */
 export function getDyrectedClient(): DyrectedClient {
-  const baseUrl = process.env.DYRECTED_URL || 'http://localhost:3000';
+  const baseUrl = process.env.DYRECTED_URL || "http://localhost:3000";
   const apiKey = process.env.DYRECTED_API_KEY;
 
   return createClient({
@@ -37,5 +37,5 @@ export function getDyrectedClient(): DyrectedClient {
   });
 }
 
-export * from './components/DyrectedMedia.js';
-export * from '@dyrected/sdk';
+export * from "./components/DyrectedMedia.js";
+export * from "@dyrected/sdk";

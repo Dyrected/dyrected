@@ -38,7 +38,7 @@ export default eventHandler(async (event) => {
 
   // 2. Determine the path Hono expects
   const originalUrl = req?.url || "/";
-  const apiBase = config.apiBase || "/api/dyrected";
+  const apiBase = config.apiBase || "/dyrected";
   const path = originalUrl.startsWith(apiBase) ? originalUrl.slice(apiBase.length) || "/" : originalUrl;
 
   // 3. Construct the full URL for the Request object

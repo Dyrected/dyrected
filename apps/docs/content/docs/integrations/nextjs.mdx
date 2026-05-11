@@ -51,11 +51,11 @@ export default defineConfig({
 Create a catch-all route that forwards all Dyrected requests to the Hono router:
 
 ```ts
-// app/api/dyrected/[...route]/route.ts
-import { createApp } from '@dyrected/core'
+// app/dyrected/[...route]/route.ts
+import { createDyrectedApp } from '@dyrected/core'
 import config from '@/dyrected.config'
 
-const app = createApp(config)
+const app = createDyrectedApp(config)
 
 export const GET    = app.fetch
 export const POST   = app.fetch
@@ -63,7 +63,7 @@ export const PATCH  = app.fetch
 export const DELETE = app.fetch
 ```
 
-All Dyrected REST endpoints are now available at `/api/dyrected/...`.
+All Dyrected REST endpoints are now available at `/dyrected/...`.
 
 ---
 
@@ -155,8 +155,8 @@ export default function AdminPage() {
 # .env.local
 DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
 
-# Dyrected API base URL (the Next.js app URL + /api/dyrected)
-NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000/api/dyrected
+# Dyrected API base URL (the Next.js app URL + /dyrected)
+NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000/dyrected
 
 # Server-side API key (never expose to browser)
 DYRECTED_API_KEY=sk_live_...

@@ -85,7 +85,7 @@ MySQL / PlanetScale support is planned. The package is reserved but not yet impl
 On startup, Dyrected calls `db.sync()` to ensure the required tables or collections exist. This is non-destructive — it creates missing tables but never drops or alters existing columns.
 
 ```ts
-// Called automatically by createApp(). No manual call needed.
+// Called automatically by createDyrectedApp(). No manual call needed.
 await config.db.sync(config.collections, config.globals)
 ```
 

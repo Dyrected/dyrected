@@ -38,11 +38,13 @@ This means one CMS can power dozens of completely different websites — all wit
 ## Core Concepts
 
 ### Globals
+
 Globals are single-instance content that exists once and applies across the entire site — Navbar, Footer, Cookie Banner, Site Settings, Announcement Bar. There is exactly one of each Global. They do not have multiple entries. They are not lists. They are just named containers for content that never changes in quantity, only in value.
 
 Examples: `navbar`, `footer`, `site-settings`, `cookie-banner`
 
 ### Collections
+
 Collections are lists of structured content — Pages, Blog Posts, Case Studies, Team Members, Products, FAQs. Each collection has a defined schema and can have as many entries as needed. A "Home Page" is an entry in a Pages collection. A "Blog Post" is an entry in a Posts collection.
 
 Collections are the primary way content scales. When a client needs 50 pages, they are 50 entries in the Pages collection — not 50 separate things to configure.
@@ -50,16 +52,19 @@ Collections are the primary way content scales. When a client needs 50 pages, th
 Examples: `pages`, `posts`, `team`, `case-studies`, `products`
 
 ### Blocks
+
 Blocks are named content groups inside a Global or a Collection entry — Hero, Features, Testimonials, CTA. Blocks group related fields together and give the editor a clear structure. They are not layout components. They carry no design information. They simply organise fields into logical areas.
 
 Examples: inside a Home page entry — `hero`, `features`, `testimonials`, `cta`
 
 ### Fields
+
 Fields are the atomic units of content — text, rich text, image, link, list, number, boolean. Fields are typed and validated. They are what clients actually edit.
 
 Examples: `headline`, `subheadline`, `cta_text`, `cover_image`, `body`
 
 ### Content Map
+
 The Content Map is the contract between your website and Dyrected. It is a TypeScript file in your project that declares every Global, Collection, Block, and Field your site needs. Dyrected reads this file, generates the editor UI automatically, and keeps itself in sync as your site evolves.
 
 ---
@@ -125,18 +130,19 @@ In self-hosted mode there are no workspaces or sites to manage — the concept s
 
 The "best" way to use Dyrected depends on your choice of AI builder or framework:
 
-| Tooling | Architecture | Why? |
-|---|---|---|
+| Tooling            | Architecture        | Why?                                                                                      |
+| ------------------ | ------------------- | ----------------------------------------------------------------------------------------- |
 | **Lovable / SPAs** | **Cloud-Connected** | SPAs lack a server process to "embed" the core engine. They connect to Cloud via the SDK. |
-| **Next.js / v0** | **Embedded** | Run your backend and frontend in one Vercel project. AI manages both in one file. |
-| **Nuxt / Nitro** | **Embedded** | Perfect for high-performance, edge-ready deployments. |
-| **Mobile Apps** | **Cloud-Connected** | Shared content hub for iOS/Android apps. |
+| **Next.js / v0**   | **Embedded**        | Run your backend and frontend in one Vercel project. AI manages both in one file.         |
+| **Nuxt / Nitro**   | **Embedded**        | Perfect for high-performance, edge-ready deployments.                                     |
+| **Mobile Apps**    | **Cloud-Connected** | Shared content hub for iOS/Android apps.                                                  |
 
 ### Cloud Hosting (Managed)
 
 The fastest way to get started. Dyrected runs on managed infrastructure. You connect your sites, invite your clients, and start editing. No servers. No configuration. No ops.
 
 **What you get:**
+
 - Hosted API at `api.dyrected.com`
 - Hosted admin dashboard at `app.dyrected.com`
 - Automatic SSL, backups, and uptime monitoring
@@ -148,6 +154,7 @@ The fastest way to get started. Dyrected runs on managed infrastructure. You con
 - Team members and role-based access per workspace
 
 **Who it is for:**
+
 - Agencies managing multiple client websites from one place
 - Teams without dedicated DevOps
 - Projects where hosting cost is lower than engineering time
@@ -163,6 +170,7 @@ The fastest way to get started. Dyrected runs on managed infrastructure. You con
 Run Dyrected on your own infrastructure. You own the data, the deployment, and the configuration. One installation = one site. There are no workspaces, no multi-site management, and no workspace UI. Dyrected gives you the tools — you decide where they run.
 
 **What self-hosting means:**
+
 - You deploy the Dyrected backend to your own server or platform
 - You bring your own PostgreSQL database
 - You bring your own Redis instance
@@ -172,6 +180,7 @@ Run Dyrected on your own infrastructure. You own the data, the deployment, and t
 - Schema is defined in `dyrected.config.ts` — changes require a redeploy
 
 **What Dyrected provides:**
+
 - A single Docker image containing the full backend
 - A standalone admin UI you can host anywhere
 - Full environment variable configuration — no code changes needed
@@ -180,18 +189,19 @@ Run Dyrected on your own infrastructure. You own the data, the deployment, and t
 
 **Deployment targets:**
 
-| Platform | Support |
-|---|---|
-| Docker (VPS, bare metal) | ✅ First-class |
-| Railway | ✅ One-click template |
-| Render | ✅ One-click template |
-| Fly.io | ✅ Supported |
-| Vercel (serverless) | ✅ Via Next.js adapter |
-| Cloudflare Workers | ✅ Via edge adapter |
-| Bun / Deno | ✅ Native support |
-| AWS Lambda | ✅ Via adapter |
+| Platform                 | Support                |
+| ------------------------ | ---------------------- |
+| Docker (VPS, bare metal) | ✅ First-class         |
+| Railway                  | ✅ One-click template  |
+| Render                   | ✅ One-click template  |
+| Fly.io                   | ✅ Supported           |
+| Vercel (serverless)      | ✅ Via Next.js adapter |
+| Cloudflare Workers       | ✅ Via edge adapter    |
+| Bun / Deno               | ✅ Native support      |
+| AWS Lambda               | ✅ Via adapter         |
 
 **Minimum requirements (Docker):**
+
 - 512MB RAM
 - 1 vCPU
 - PostgreSQL 14+
@@ -200,7 +210,7 @@ Run Dyrected on your own infrastructure. You own the data, the deployment, and t
 **Example Docker Compose setup:**
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   dyrected:
     image: dyrected/dyrected:latest
@@ -234,6 +244,7 @@ volumes:
 ```
 
 **Who it is for:**
+
 - Teams with strict data sovereignty requirements
 - Enterprises who cannot use third-party cloud services
 - Developers who want full control
@@ -254,11 +265,11 @@ npm install @dyrected/next
 ```
 
 ```ts
-// app/api/dyrected/[...route]/route.ts
-export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'
+// app/dyrected/[...route]/route.ts
+export { GET, POST, PUT, PATCH, DELETE } from "@dyrected/next";
 ```
 
-Your CMS API is now available at `/api/dyrected`. Your Next.js app and your CMS share one deployment on Vercel, Railway, or any Node host.
+Your CMS API is now available at `/dyrected`. Your Next.js app and your CMS share one deployment on Vercel, Railway, or any Node host.
 
 **Nuxt:**
 
@@ -269,18 +280,20 @@ npm install @dyrected/nuxt
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt']
-})
+  modules: ["@dyrected/nuxt"],
+});
 ```
 
-Dyrected mounts itself into Nitro. Your CMS API is available at `/api/dyrected`. One Nuxt app, one deployment, everything included.
+Dyrected mounts itself into Nitro. Your CMS API is available at `/dyrected`. One Nuxt app, one deployment, everything included.
 
 **What you still need:**
+
 - PostgreSQL (Neon, Supabase, Railway, or self-hosted)
 - Redis (Upstash, Railway, or self-hosted)
 - Storage (Backblaze B2 or S3-compatible)
 
 **Who it is for:**
+
 - Solo developers and small teams
 - Projects already on Vercel or similar platforms
 - Teams who want the simplest possible setup
@@ -292,13 +305,13 @@ Dyrected mounts itself into Nitro. Your CMS API is available at `/api/dyrected`.
 
 Dyrected is framework-agnostic at its core. The backend is a standard Hono application that runs on any JavaScript runtime. Framework adapters are thin wrappers — they do not change how Dyrected works, only where it runs.
 
-| Framework | Package | Status |
-|---|---|---|
-| Next.js | `@dyrected/next` | ✅ Available |
-| Nuxt | `@dyrected/nuxt` | ✅ Available |
-| SvelteKit | `@dyrected/sveltekit` | 🗓 Planned |
-| Astro | `@dyrected/astro` | 🗓 Planned |
-| Standalone | `@dyrected/core` | ✅ Available |
+| Framework  | Package               | Status       |
+| ---------- | --------------------- | ------------ |
+| Next.js    | `@dyrected/next`      | ✅ Available |
+| Nuxt       | `@dyrected/nuxt`      | ✅ Available |
+| SvelteKit  | `@dyrected/sveltekit` | 🗓 Planned   |
+| Astro      | `@dyrected/astro`     | 🗓 Planned   |
+| Standalone | `@dyrected/core`      | ✅ Available |
 
 ---
 
@@ -313,36 +326,27 @@ npm install @dyrected/sdk
 **React / Next.js:**
 
 ```tsx
-import { useBlock } from '@dyrected/sdk/react'
+import { useBlock } from "@dyrected/sdk/react";
 
-const hero = useBlock('home', 'hero')
+const hero = useBlock("home", "hero");
 
-return (
-  <Hero
-    title={hero.data.headline}
-    subtitle={hero.data.subheadline}
-    cta={hero.data.cta_text}
-  />
-)
+return <Hero title={hero.data.headline} subtitle={hero.data.subheadline} cta={hero.data.cta_text} />;
 ```
 
 **Vue / Nuxt:**
 
 ```vue
 <script setup>
-const hero = useBlock('home', 'hero')
+const hero = useBlock("home", "hero");
 </script>
 
 <template>
-  <Hero
-    :title="hero.data.headline"
-    :subtitle="hero.data.subheadline"
-    :cta="hero.data.cta_text"
-  />
+  <Hero :title="hero.data.headline" :subtitle="hero.data.subheadline" :cta="hero.data.cta_text" />
 </template>
 ```
 
 **What the SDK handles:**
+
 - Content fetching and caching
 - Live vs preview mode switching
 - Content Map sync on build
@@ -361,6 +365,7 @@ In cloud mode, the admin shows a workspace switcher and a list of sites under th
 In self-hosted mode, the admin opens directly to the content editor. There is no workspace switcher, no site list, and no workspace management. Clients see their collections and globals, nothing else.
 
 The admin is available as:
+
 - Hosted at `app.dyrected.com` (cloud)
 - Self-hosted as a standalone web app
 - Embedded in your Next.js or Nuxt app at `/admin`
@@ -392,34 +397,34 @@ The SDK exposes a simple `useForm()` hook for React and Vue that handles submiss
 
 ## Package Reference
 
-| Package | Purpose |
-|---|---|
-| `@dyrected/core` | Hono backend — the entire CMS engine |
-| `@dyrected/sdk` | Framework-agnostic content client |
-| `@dyrected/next` | Next.js adapter and hooks |
-| `@dyrected/nuxt` | Nuxt module and composables |
-| `@dyrected/admin` | Standalone React admin UI |
-| `@dyrected/cli` | Setup, migration, and management CLI |
+| Package           | Purpose                              |
+| ----------------- | ------------------------------------ |
+| `@dyrected/core`  | Hono backend — the entire CMS engine |
+| `@dyrected/sdk`   | Framework-agnostic content client    |
+| `@dyrected/next`  | Next.js adapter and hooks            |
+| `@dyrected/nuxt`  | Nuxt module and composables          |
+| `@dyrected/admin` | Standalone React admin UI            |
+| `@dyrected/cli`   | Setup, migration, and management CLI |
 
 ---
 
 ## Deployment Comparison
 
-| | Cloud | Self-Hosted | Embedded |
-|---|---|---|---|
-| Your own server | ❌ | ✅ | Optional |
-| Your own database | ❌ | ✅ | ✅ |
-| Data sovereignty | ❌ | ✅ | ✅ |
-| Zero ops | ✅ | ❌ | Partial |
-| Works on Vercel | ✅ | ❌ | ✅ |
-| Works on VPS | ✅ | ✅ | ✅ |
-| One deployment | ❌ | ❌ | ✅ |
-| Multiple sites | ✅ | ❌ | ❌ |
-| Workspace management | ✅ | ❌ | ❌ |
-| Schema from config file | ❌ | ✅ | ✅ |
-| Schema from admin UI | ✅ | ❌ | ❌ |
-| Setup time | 10 min | 30–60 min | 15 min |
+|                         | Cloud  | Self-Hosted | Embedded |
+| ----------------------- | ------ | ----------- | -------- |
+| Your own server         | ❌     | ✅          | Optional |
+| Your own database       | ❌     | ✅          | ✅       |
+| Data sovereignty        | ❌     | ✅          | ✅       |
+| Zero ops                | ✅     | ❌          | Partial  |
+| Works on Vercel         | ✅     | ❌          | ✅       |
+| Works on VPS            | ✅     | ✅          | ✅       |
+| One deployment          | ❌     | ❌          | ✅       |
+| Multiple sites          | ✅     | ❌          | ❌       |
+| Workspace management    | ✅     | ❌          | ❌       |
+| Schema from config file | ❌     | ✅          | ✅       |
+| Schema from admin UI    | ✅     | ❌          | ❌       |
+| Setup time              | 10 min | 30–60 min   | 15 min   |
 
 ---
 
-*Dyrected — direct edit your website content.*
+_Dyrected — direct edit your website content._

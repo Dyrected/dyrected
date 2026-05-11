@@ -7,10 +7,13 @@ description: Accept file uploads, store them locally or in S3/Cloudinary, and di
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
-import { LocalStorage } from '@dyrected/storage-local'
+import { LocalStorageAdapter } from '@dyrected/storage-local'
 
 export default defineConfig({
-  storage: new LocalStorage({ dir: './public/uploads' }),
+  storage: new LocalStorageAdapter({ 
+    uploadDir: './public/uploads',
+    staticUrlPrefix: '/uploads'
+  }),
   // For production use S3 — see Configuring Storage guide
 })
 ```
@@ -57,7 +60,7 @@ const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
-const res = await fetch('/api/dyrected/collections/media', {
+const res = await fetch('/dyrected/collections/media', {
   method: 'POST',
   headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
   body: form,
@@ -72,7 +75,7 @@ const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
-const media = await $fetch('/api/dyrected/collections/media', {
+const media = await $fetch('/dyrected/collections/media', {
   method: 'POST',
   headers: { 'x-api-key': useRuntimeConfig().dyrectedApiKey },
   body: form,
@@ -83,7 +86,7 @@ const media = await $fetch('/api/dyrected/collections/media', {
 ```ts
 import { createClient } from '@dyrected/sdk'
 
-const client = createClient({ baseUrl: '/api/dyrected', apiKey: '...' })
+const client = createClient({ baseUrl: '/dyrected', apiKey: '...' })
 
 const form = new FormData()
 form.append('file', file)

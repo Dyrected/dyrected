@@ -30,7 +30,7 @@ export default defineNuxtConfig({
     apiKey: process.env.DYRECTED_API_KEY,
     siteId: process.env.DYRECTED_SITE_ID,
     baseUrl: 'https://api.dyrected.cloud', // Or your custom cloud URL
-    apiBase: '/api/dyrected',              // Local proxy path
+    apiBase: '/dyrected',              // Local proxy path
   }
 })
 ```
@@ -46,7 +46,7 @@ export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
     ...config,
-    apiBase: '/api/dyrected',
+    apiBase: '/dyrected',
   },
   // Necessary for embedding the Admin UI dashboard
   build: {
@@ -266,7 +266,7 @@ definePageMeta({
 
 ## Server Handler
 
-The module automatically registers a server handler at `/api/dyrected/[...route]`. This proxies requests from your Nuxt frontend to your Dyrected backend, injecting the API key server-side so it is never exposed to the browser.
+The module automatically registers a server handler at `/dyrected/[...route]`. This proxies requests from your Nuxt frontend to your Dyrected backend, injecting the API key server-side so it is never exposed to the browser.
 
 You can customise the prefix:
 
@@ -275,7 +275,7 @@ You can customise the prefix:
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
-    apiBase: '/api/cms',   // defaults to '/api/dyrected'
+    apiBase: '/api/cms',   // defaults to '/dyrected'
   }
 })
 ```

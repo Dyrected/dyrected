@@ -12,7 +12,7 @@ In embedded mode, Dyrected mounts as middleware inside your framework applicatio
 
 ```
 /                   → your website
-/api/dyrected/      → Dyrected API (mounted by the adapter)
+/dyrected/      → Dyrected API (mounted by the adapter)
 /cms                → Dyrected admin (mounted by you, wherever you want)
 ```
 
@@ -46,16 +46,16 @@ Create `dyrected.config.ts` at the root of your Next.js project. This is identic
 
 ```ts
 // dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
-import { postgresAdapter } from '@dyrected/db-postgres'
-import { localAdapter } from '@dyrected/storage-local'
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+import { localAdapter } from "@dyrected/storage-local";
 
-import { Users } from './collections/users'
-import { Posts } from './collections/posts'
-import { Pages } from './collections/pages'
-import { Images } from './collections/images'
-import { Navbar } from './globals/navbar'
-import { Footer } from './globals/footer'
+import { Users } from "./collections/users";
+import { Posts } from "./collections/posts";
+import { Pages } from "./collections/pages";
+import { Images } from "./collections/images";
+import { Navbar } from "./globals/navbar";
+import { Footer } from "./globals/footer";
 
 export default defineConfig({
   collections: [Users, Posts, Pages, Images],
@@ -66,14 +66,14 @@ export default defineConfig({
   }),
 
   storage: localAdapter({
-    directory: './public/uploads',
-    serveFrom: '/uploads',
+    directory: "./public/uploads",
+    serveFrom: "/uploads",
   }),
 
   cors: {
     origins: [process.env.NEXT_PUBLIC_APP_URL],
   },
-})
+});
 ```
 
 ---
@@ -83,20 +83,20 @@ export default defineConfig({
 Create a single catch-all route handler. The adapter exports named HTTP method handlers that Next.js App Router expects.
 
 ```ts
-// app/api/dyrected/[...route]/route.ts
-export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'
+// app/dyrected/[...route]/route.ts
+export { GET, POST, PUT, PATCH, DELETE } from "@dyrected/next";
 ```
 
-That is the entire file. Dyrected now handles every request under `/api/dyrected/`.
+That is the entire file. Dyrected now handles every request under `/dyrected/`.
 
 All collection, global, auth, and schema endpoints are available at this path:
 
 ```
-POST   /api/dyrected/auth/users/login
-GET    /api/dyrected/collections/posts
-POST   /api/dyrected/collections/posts
-GET    /api/dyrected/collections/posts/:id
-GET    /api/dyrected/globals/navbar
+POST   /dyrected/auth/users/login
+GET    /dyrected/collections/posts
+POST   /dyrected/collections/posts
+GET    /dyrected/collections/posts/:id
+GET    /dyrected/globals/navbar
 ```
 
 ---
@@ -110,7 +110,7 @@ The admin is a standalone React app served by your Next.js application at a path
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/api/dyrected" />
+  return <DyrectedAdmin apiPath="/dyrected" />
 }
 ```
 
@@ -132,7 +132,7 @@ export default async function AdminPage() {
   const session = await getServerSession()
   if (!session) redirect('/login')
 
-  return <DyrectedAdmin apiPath="/api/dyrected" />
+  return <DyrectedAdmin apiPath="/dyrected" />
 }
 ```
 
@@ -140,22 +140,22 @@ Or use Next.js middleware to protect the entire `/cms` prefix:
 
 ```ts
 // middleware.ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('dyrected_token')
+  const token = request.cookies.get("dyrected_token");
 
-  if (request.nextUrl.pathname.startsWith('/cms') && !token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  if (request.nextUrl.pathname.startsWith("/cms") && !token) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/cms/:path*'],
-}
+  matcher: ["/cms/:path*"],
+};
 ```
 
 ---
@@ -290,36 +290,36 @@ For Client Components, use the standard `@dyrected/sdk` HTTP client pointed at y
 
 ```ts
 // lib/dyrected-client.ts
-import { createClient } from '@dyrected/sdk'
+import { createClient } from "@dyrected/sdk";
 
 export const dyrected = createClient({
-  apiUrl: '/api/dyrected',
+  apiUrl: "/dyrected",
   apiKey: process.env.NEXT_PUBLIC_DYRECTED_API_KEY,
-})
+});
 ```
 
 ```tsx
 // components/ContactForm.tsx
-'use client'
+"use client";
 
-import { dyrected } from '@/lib/dyrected-client'
-import { useState } from 'react'
+import { dyrected } from "@/lib/dyrected-client";
+import { useState } from "react";
 
 export function ContactForm() {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
+  const [status, setStatus] = useState<"idle" | "loading" | "done">("idle");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setStatus('loading')
-    const form = new FormData(e.currentTarget)
+    e.preventDefault();
+    setStatus("loading");
+    const form = new FormData(e.currentTarget);
 
-    await dyrected.collections.create('contact-submissions', {
-      name: form.get('name'),
-      email: form.get('email'),
-      message: form.get('message'),
-    })
+    await dyrected.collections.create("contact-submissions", {
+      name: form.get("name"),
+      email: form.get("email"),
+      message: form.get("message"),
+    });
 
-    setStatus('done')
+    setStatus("done");
   }
 
   return (
@@ -327,12 +327,12 @@ export function ContactForm() {
       <input name="name" />
       <input name="email" type="email" />
       <textarea name="message" />
-      <button type="submit" disabled={status === 'loading'}>
-        {status === 'loading' ? 'Sending...' : 'Send'}
+      <button type="submit" disabled={status === "loading"}>
+        {status === "loading" ? "Sending..." : "Send"}
       </button>
-      {status === 'done' && <p>Message sent.</p>}
+      {status === "done" && <p>Message sent.</p>}
     </form>
-  )
+  );
 }
 ```
 
@@ -348,21 +348,21 @@ pnpm dyrected generate:types
 
 ```ts
 // lib/dyrected-server.ts
-import { getDyrectedClient } from '@dyrected/next/server'
-import type { DyrectedTypes } from '../dyrected.types'
+import { getDyrectedClient } from "@dyrected/next/server";
+import type { DyrectedTypes } from "../dyrected.types";
 
-export const dyrected = getDyrectedClient<DyrectedTypes>()
+export const dyrected = getDyrectedClient<DyrectedTypes>();
 ```
 
 ```ts
 // lib/dyrected-client.ts
-import { createClient } from '@dyrected/sdk'
-import type { DyrectedTypes } from '../dyrected.types'
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedTypes } from "../dyrected.types";
 
 export const dyrected = createClient<DyrectedTypes>({
-  apiUrl: '/api/dyrected',
+  apiUrl: "/dyrected",
   apiKey: process.env.NEXT_PUBLIC_DYRECTED_API_KEY,
-})
+});
 ```
 
 Both clients share the same `DyrectedTypes` — one generated file covers the entire project.
@@ -397,13 +397,13 @@ The direct server client does not cache. Caching is handled by Next.js's native 
 
 ```ts
 // app/api/revalidate/route.ts
-import { revalidatePath } from 'next/cache'
-import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from "next/cache";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const { path } = await req.json()
-  revalidatePath(path)
-  return NextResponse.json({ revalidated: true })
+  const { path } = await req.json();
+  revalidatePath(path);
+  return NextResponse.json({ revalidated: true });
 }
 ```
 
@@ -412,19 +412,19 @@ Trigger this from an `afterUpdate` hook in your collection config:
 ```ts
 // collections/posts.ts
 export const Posts = defineCollection({
-  slug: 'posts',
+  slug: "posts",
   hooks: {
     afterUpdate: [
       async ({ doc }) => {
         await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/revalidate`, {
-          method: 'POST',
+          method: "POST",
           body: JSON.stringify({ path: `/blog/${doc.slug}` }),
-        })
+        });
       },
     ],
   },
   // ...
-})
+});
 ```
 
 ---
@@ -438,6 +438,7 @@ import { ... } from '@dyrected/next/admin'     // DyrectedAdmin — admin React 
 ```
 
 ---
+
 ---
 
 # @dyrected/nuxt
@@ -462,16 +463,16 @@ Create `dyrected.config.ts` at the root of your Nuxt project. Identical to the N
 
 ```ts
 // dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
-import { postgresAdapter } from '@dyrected/db-postgres'
-import { localAdapter } from '@dyrected/storage-local'
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+import { localAdapter } from "@dyrected/storage-local";
 
-import { Users } from './collections/users'
-import { Posts } from './collections/posts'
-import { Pages } from './collections/pages'
-import { Images } from './collections/images'
-import { Navbar } from './globals/navbar'
-import { Footer } from './globals/footer'
+import { Users } from "./collections/users";
+import { Posts } from "./collections/posts";
+import { Pages } from "./collections/pages";
+import { Images } from "./collections/images";
+import { Navbar } from "./globals/navbar";
+import { Footer } from "./globals/footer";
 
 export default defineConfig({
   collections: [Users, Posts, Pages, Images],
@@ -482,14 +483,14 @@ export default defineConfig({
   }),
 
   storage: localAdapter({
-    directory: './public/uploads',
-    serveFrom: '/uploads',
+    directory: "./public/uploads",
+    serveFrom: "/uploads",
   }),
 
   cors: {
     origins: [process.env.NUXT_PUBLIC_APP_URL],
   },
-})
+});
 ```
 
 ---
@@ -501,10 +502,10 @@ Add `@dyrected/nuxt` to your `nuxt.config.ts`. The module registers itself into 
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt'],
+  modules: ["@dyrected/nuxt"],
 
   dyrected: {
-    apiPath: '/api/dyrected',   // where the API is mounted (default: /api/dyrected)
+    apiPath: "/dyrected", // where the API is mounted (default: /dyrected)
   },
 
   runtimeConfig: {
@@ -513,10 +514,10 @@ export default defineNuxtConfig({
     dyrectedDatabaseUrl: process.env.DATABASE_URL,
     public: {
       dyrectedApiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY,
-      dyrectedApiPath: '/api/dyrected',
+      dyrectedApiPath: "/dyrected",
     },
   },
-})
+});
 ```
 
 The module does three things at startup: reads `dyrected.config.ts`, mounts the Dyrected Hono app into Nitro at `apiPath`, and makes the server client available via auto-imported composables.
@@ -530,11 +531,11 @@ Create a catch-all page at the path you want the admin to live. Nuxt does not ne
 ```vue
 <!-- pages/cms/[[...route]].vue -->
 <template>
-  <DyrectedAdmin api-path="/api/dyrected" />
+  <DyrectedAdmin api-path="/dyrected" />
 </template>
 
 <script setup lang="ts">
-import { DyrectedAdmin } from '@dyrected/nuxt/admin'
+import { DyrectedAdmin } from "@dyrected/nuxt/admin";
 </script>
 ```
 
@@ -547,12 +548,12 @@ Use Nuxt route middleware to protect the admin path:
 ```ts
 // middleware/admin-auth.ts
 export default defineNuxtRouteMiddleware((to) => {
-  const { token } = useDyrectedAuth()
+  const { token } = useDyrectedAuth();
 
-  if (to.path.startsWith('/cms') && !token.value) {
-    return navigateTo('/login')
+  if (to.path.startsWith("/cms") && !token.value) {
+    return navigateTo("/login");
   }
-})
+});
 ```
 
 Or protect it in the page itself using `definePageMeta`:
@@ -561,12 +562,12 @@ Or protect it in the page itself using `definePageMeta`:
 <!-- pages/cms/[[...route]].vue -->
 <script setup lang="ts">
 definePageMeta({
-  middleware: 'admin-auth',
-})
+  middleware: "admin-auth",
+});
 </script>
 
 <template>
-  <DyrectedAdmin api-path="/api/dyrected" />
+  <DyrectedAdmin api-path="/dyrected" />
 </template>
 ```
 
@@ -581,14 +582,14 @@ The module auto-imports `useDyrectedServer()` — a composable that returns the 
 ```vue
 <!-- pages/blog/index.vue -->
 <script setup lang="ts">
-const { data: posts } = await useAsyncData('posts', () => {
-  const dyrected = useDyrectedServer()
-  return dyrected.collections.find('posts', {
-    where: { status: { equals: 'published' } },
-    sort: '-publishedAt',
+const { data: posts } = await useAsyncData("posts", () => {
+  const dyrected = useDyrectedServer();
+  return dyrected.collections.find("posts", {
+    where: { status: { equals: "published" } },
+    sort: "-publishedAt",
     limit: 10,
-  })
-})
+  });
+});
 </script>
 
 <template>
@@ -605,23 +606,23 @@ const { data: posts } = await useAsyncData('posts', () => {
 ```vue
 <!-- pages/blog/[slug].vue -->
 <script setup lang="ts">
-const route = useRoute()
+const route = useRoute();
 
 const { data: post } = await useAsyncData(`post-${route.params.slug}`, () => {
-  const dyrected = useDyrectedServer()
-  return dyrected.collections.findBy('posts', {
-    field: 'slug',
+  const dyrected = useDyrectedServer();
+  return dyrected.collections.findBy("posts", {
+    field: "slug",
     value: route.params.slug as string,
-  })
-})
+  });
+});
 
-if (!post.value) throw createError({ statusCode: 404 })
+if (!post.value) throw createError({ statusCode: 404 });
 
 useSeoMeta({
   title: post.value.title,
   description: post.value.excerpt,
   ogImage: post.value.coverImage?.url,
-})
+});
 </script>
 
 <template>
@@ -634,18 +635,15 @@ useSeoMeta({
 ```ts
 // server/api/featured-posts.get.ts
 export default defineEventHandler(async (event) => {
-  const dyrected = useDyrectedServer()
+  const dyrected = useDyrectedServer();
 
-  return dyrected.collections.find('posts', {
+  return dyrected.collections.find("posts", {
     where: {
-      and: [
-        { status: { equals: 'published' } },
-        { featured: { equals: true } },
-      ],
+      and: [{ status: { equals: "published" } }, { featured: { equals: true } }],
     },
     limit: 5,
-  })
-})
+  });
+});
 ```
 
 ### Auth-Aware Server Fetching
@@ -655,14 +653,14 @@ Pass the event into `useDyrectedServer()` to make access-controlled requests on 
 ```vue
 <script setup lang="ts">
 // useRequestEvent() gives access to the current H3 event
-const event = useRequestEvent()
+const event = useRequestEvent();
 
-const { data: drafts } = await useAsyncData('drafts', () => {
-  const dyrected = useDyrectedServer({ event })
-  return dyrected.collections.find('posts', {
-    where: { status: { equals: 'draft' } },
-  })
-})
+const { data: drafts } = await useAsyncData("drafts", () => {
+  const dyrected = useDyrectedServer({ event });
+  return dyrected.collections.find("posts", {
+    where: { status: { equals: "draft" } },
+  });
+});
 </script>
 ```
 
@@ -675,24 +673,24 @@ For client-side interactions — form submissions, auth flows, mutations — use
 ```vue
 <!-- components/ContactForm.vue -->
 <script setup lang="ts">
-const status = ref<'idle' | 'loading' | 'done'>('idle')
+const status = ref<"idle" | "loading" | "done">("idle");
 
 async function handleSubmit(e: Event) {
-  e.preventDefault()
-  status.value = 'loading'
+  e.preventDefault();
+  status.value = "loading";
 
-  const form = e.target as HTMLFormElement
-  const data = Object.fromEntries(new FormData(form))
+  const form = e.target as HTMLFormElement;
+  const data = Object.fromEntries(new FormData(form));
 
-  const dyrected = useDyrectedClient()
+  const dyrected = useDyrectedClient();
 
-  await dyrected.collections.create('contact-submissions', {
+  await dyrected.collections.create("contact-submissions", {
     name: data.name,
     email: data.email,
     message: data.message,
-  })
+  });
 
-  status.value = 'done'
+  status.value = "done";
 }
 </script>
 
@@ -702,7 +700,7 @@ async function handleSubmit(e: Event) {
     <input name="email" type="email" />
     <textarea name="message" />
     <button type="submit" :disabled="status === 'loading'">
-      {{ status === 'loading' ? 'Sending...' : 'Send' }}
+      {{ status === "loading" ? "Sending..." : "Send" }}
     </button>
     <p v-if="status === 'done'">Message sent.</p>
   </form>
@@ -717,13 +715,13 @@ The module auto-imports `useDyrectedAuth()` — a thin wrapper around the SDK au
 
 ```vue
 <script setup lang="ts">
-const { login, logout, user, token } = useDyrectedAuth()
+const { login, logout, user, token } = useDyrectedAuth();
 
 async function handleLogin() {
-  await login('users', {
-    email: 'admin@example.com',
-    password: 'securepassword',
-  })
+  await login("users", {
+    email: "admin@example.com",
+    password: "securepassword",
+  });
 }
 </script>
 
@@ -753,10 +751,10 @@ The module picks up `dyrected.types.ts` automatically if it is present in the pr
 If you need to be explicit:
 
 ```ts
-import type { DyrectedTypes } from '~/dyrected.types'
+import type { DyrectedTypes } from "~/dyrected.types";
 
-const dyrected = useDyrectedServer<DyrectedTypes>()
-const dyrected = useDyrectedClient<DyrectedTypes>()
+const dyrected = useDyrectedServer<DyrectedTypes>();
+const dyrected = useDyrectedClient<DyrectedTypes>();
 ```
 
 ---
@@ -790,35 +788,35 @@ For large sites, you should invalidate by specific keys or tags.
 ```ts
 // collections/posts.ts
 export const Posts = defineCollection({
-  slug: 'posts',
+  slug: "posts",
   hooks: {
     afterUpdate: [
       async ({ doc }) => {
         // clear Nuxt's payload cache for this post and the blog index
-        await $fetch('/api/revalidate', {
-          method: 'POST',
-          body: { 
-            keys: [`post-${doc.slug}`, 'all-posts'] 
+        await $fetch("/api/revalidate", {
+          method: "POST",
+          body: {
+            keys: [`post-${doc.slug}`, "all-posts"],
           },
-        })
+        });
       },
     ],
   },
-})
+});
 ```
 
 ```ts
 // server/api/revalidate.post.ts
 export default defineEventHandler(async (event) => {
-  const { keys } = await readBody(event)
-  const storage = useStorage('cache')
-  
+  const { keys } = await readBody(event);
+  const storage = useStorage("cache");
+
   for (const key of keys) {
-    await storage.removeItem(key)
+    await storage.removeItem(key);
   }
-  
-  return { revalidated: true }
-})
+
+  return { revalidated: true };
+});
 ```
 
 ---
@@ -827,12 +825,12 @@ export default defineEventHandler(async (event) => {
 
 `@dyrected/nuxt` auto-imports the following into every component and composable without explicit imports:
 
-| Export | Type | Use |
-|---|---|---|
-| `useDyrectedServer()` | Composable | Direct in-process client for server-side fetching |
-| `useDyrectedClient()` | Composable | HTTP SDK client for client-side interactions |
-| `useDyrectedAuth()` | Composable | Auth state and methods (login, logout, user, token) |
-| `DyrectedAdmin` | Component | The admin UI component |
+| Export                | Type       | Use                                                 |
+| --------------------- | ---------- | --------------------------------------------------- |
+| `useDyrectedServer()` | Composable | Direct in-process client for server-side fetching   |
+| `useDyrectedClient()` | Composable | HTTP SDK client for client-side interactions        |
+| `useDyrectedAuth()`   | Composable | Auth state and methods (login, logout, user, token) |
+| `DyrectedAdmin`       | Component  | The admin UI component                              |
 
 ---
 
@@ -851,18 +849,18 @@ import { ... } from '@dyrected/nuxt/admin'     // DyrectedAdmin component
 
 ## Comparison: Next.js vs Nuxt
 
-| | `@dyrected/next` | `@dyrected/nuxt` |
-|---|---|---|
-| API mounting | Catch-all route handler file | Module auto-mounts into Nitro |
-| Server client | `getDyrectedClient()` — manual import | `useDyrectedServer()` — auto-imported |
-| Client SDK | `createClient()` from `@dyrected/sdk` | `useDyrectedClient()` — auto-imported |
-| Auth state | Manual — use your own session/cookie | `useDyrectedAuth()` — reactive, SSR-safe |
-| Admin mounting | `<DyrectedAdmin>` in a catch-all page | `<DyrectedAdmin>` in a catch-all page |
-| Admin protection | Middleware or layout auth check | Route middleware or `definePageMeta` |
-| TypeScript | Manual generic on `getDyrectedClient<T>()` | Auto-picked up from `dyrected.types.ts` |
-| Caching | Next.js fetch cache + `revalidatePath` | `useAsyncData` key + storage invalidation |
-| Config file | `dyrected.config.ts` at project root | `dyrected.config.ts` at project root |
+|                  | `@dyrected/next`                           | `@dyrected/nuxt`                          |
+| ---------------- | ------------------------------------------ | ----------------------------------------- |
+| API mounting     | Catch-all route handler file               | Module auto-mounts into Nitro             |
+| Server client    | `getDyrectedClient()` — manual import      | `useDyrectedServer()` — auto-imported     |
+| Client SDK       | `createClient()` from `@dyrected/sdk`      | `useDyrectedClient()` — auto-imported     |
+| Auth state       | Manual — use your own session/cookie       | `useDyrectedAuth()` — reactive, SSR-safe  |
+| Admin mounting   | `<DyrectedAdmin>` in a catch-all page      | `<DyrectedAdmin>` in a catch-all page     |
+| Admin protection | Middleware or layout auth check            | Route middleware or `definePageMeta`      |
+| TypeScript       | Manual generic on `getDyrectedClient<T>()` | Auto-picked up from `dyrected.types.ts`   |
+| Caching          | Next.js fetch cache + `revalidatePath`     | `useAsyncData` key + storage invalidation |
+| Config file      | `dyrected.config.ts` at project root       | `dyrected.config.ts` at project root      |
 
 ---
 
-*This document reflects the v1 adapter targets for `@dyrected/next` and `@dyrected/nuxt`.*
+_This document reflects the v1 adapter targets for `@dyrected/next` and `@dyrected/nuxt`._

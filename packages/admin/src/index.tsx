@@ -123,7 +123,7 @@ export interface AdminUIProps {
 
 export function AdminUI({
   apiKey,
-  baseUrl = "/api/dyrected",
+  baseUrl = "/dyrected",
   siteId,
   onNavigate,
   isEmbedded

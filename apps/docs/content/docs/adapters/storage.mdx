@@ -14,12 +14,12 @@ Dyrected delegates file storage to a **storage adapter**. The adapter determines
 Stores files on the server's local disk. Best for development and single-server deployments. **Not suitable** for serverless (Vercel, Cloudflare Workers) because the filesystem is ephemeral.
 
 ```ts
-import { LocalStorage } from '@dyrected/storage-local'
+import { LocalStorageAdapter } from '@dyrected/storage-local'
 
 export default defineConfig({
-  storage: new LocalStorage({
-    path: './public/uploads',   // Directory to write files to
-    baseUrl: '/uploads',        // Public URL prefix
+  storage: new LocalStorageAdapter({
+    uploadDir: './public/uploads',   // Directory to write files to
+    staticUrlPrefix: '/uploads',        // Public URL prefix
   }),
 })
 ```
@@ -33,10 +33,10 @@ Files are served as static assets by your framework's public directory. The `url
 Use for production and serverless environments. Compatible with **AWS S3**, **DigitalOcean Spaces**, **Backblaze B2**, **MinIO**, **Cloudflare R2**, and any other S3-compatible API.
 
 ```ts
-import { S3Storage } from '@dyrected/storage-s3'
+import { S3StorageAdapter } from '@dyrected/storage-s3'
 
 export default defineConfig({
-  storage: new S3Storage({
+  storage: new S3StorageAdapter({
     bucket: process.env.S3_BUCKET!,
     region: process.env.S3_REGION!,
     credentials: {
@@ -46,8 +46,8 @@ export default defineConfig({
     // Optional: custom endpoint for non-AWS S3-compatible providers
     endpoint: process.env.S3_ENDPOINT,      // e.g. 'https://nyc3.digitaloceanspaces.com'
     forcePathStyle: false,                  // Set true for MinIO
-    // Optional: CDN URL prefix — if set, this is used for `url` instead of the S3 URL
-    cdnUrl: process.env.CDN_URL,            // e.g. 'https://cdn.mysite.com'
+    // Optional: custom domain or CDN URL prefix
+    baseUrl: process.env.CDN_URL,            // e.g. 'https://cdn.mysite.com'
     // Optional: ACL for uploaded objects
     acl: 'public-read',                     // default: 'public-read'
   }),
@@ -57,7 +57,7 @@ export default defineConfig({
 ### DigitalOcean Spaces example
 
 ```ts
-new S3Storage({
+new S3StorageAdapter({
   bucket: 'my-space',
   region: 'nyc3',
   endpoint: 'https://nyc3.digitaloceanspaces.com',
@@ -65,14 +65,14 @@ new S3Storage({
     accessKeyId: process.env.DO_SPACES_KEY!,
     secretAccessKey: process.env.DO_SPACES_SECRET!,
   },
-  cdnUrl: 'https://my-space.nyc3.cdn.digitaloceanspaces.com',
+  baseUrl: 'https://my-space.nyc3.cdn.digitaloceanspaces.com',
 })
 ```
 
 ### Cloudflare R2 example
 
 ```ts
-new S3Storage({
+new S3StorageAdapter({
   bucket: 'my-r2-bucket',
   region: 'auto',
   endpoint: `https://${process.env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -80,7 +80,7 @@ new S3Storage({
     accessKeyId: process.env.R2_ACCESS_KEY!,
     secretAccessKey: process.env.R2_SECRET_KEY!,
   },
-  cdnUrl: process.env.R2_PUBLIC_DOMAIN,   // Your custom R2 public domain
+  baseUrl: process.env.R2_PUBLIC_DOMAIN,   // Your custom R2 public domain
 })
 ```
 
@@ -91,16 +91,14 @@ new S3Storage({
 For advanced image optimisation, transformations, and CDN delivery.
 
 ```ts
-import { CloudinaryStorage } from '@dyrected/storage-cloudinary'
+import { CloudinaryStorageAdapter } from '@dyrected/storage-cloudinary'
 
 export default defineConfig({
-  storage: new CloudinaryStorage({
+  storage: new CloudinaryStorageAdapter({
     cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
     apiKey:    process.env.CLOUDINARY_API_KEY!,
     apiSecret: process.env.CLOUDINARY_API_SECRET!,
     folder: 'my-project',       // Optional: upload into a specific folder
-    // Optional: default transformation applied to all uploaded images
-    transformation: { quality: 'auto', fetch_format: 'auto' },
   }),
 })
 ```
@@ -150,10 +148,10 @@ Always use `doc.url` from the API response — never hand-assemble paths:
 
 | Adapter | `url` value |
 |---|---|
-| `LocalStorage` | `/uploads/image.jpg` |
-| `S3Storage` (no CDN) | `https://bucket.s3.region.amazonaws.com/image.jpg` |
-| `S3Storage` (with `cdnUrl`) | `https://cdn.mysite.com/image.jpg` |
-| `CloudinaryStorage` | `https://res.cloudinary.com/cloud-name/image/upload/image.jpg` |
+| `LocalStorageAdapter` | `/uploads/image.jpg` |
+| `S3StorageAdapter` (no CDN) | `https://bucket.s3.region.amazonaws.com/image.jpg` |
+| `S3StorageAdapter` (with `baseUrl`) | `https://cdn.mysite.com/image.jpg` |
+| `CloudinaryStorageAdapter` | `https://res.cloudinary.com/cloud-name/image/upload/image.jpg` |
 
 For image sizes, each size's `url` is also pre-resolved:
 

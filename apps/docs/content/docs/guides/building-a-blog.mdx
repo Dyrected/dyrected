@@ -35,11 +35,11 @@ export default defineConfig({
 <Tabs items={['Next.js', 'Nuxt']}>
 <Tab value="Next.js">
 ```ts
-// app/api/dyrected/[...route]/route.ts
-import { createApp } from '@dyrected/core'
+// app/dyrected/[...route]/route.ts
+import { createDyrectedApp } from '@dyrected/core'
 import config from '@/dyrected.config'
 
-const app = createApp(config)
+const app = createDyrectedApp(config)
 
 export const GET    = app.fetch
 export const POST   = app.fetch
@@ -54,7 +54,7 @@ import config from './dyrected.config'
 
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
-  dyrected: { ...config, apiBase: '/api/dyrected' },
+  dyrected: { ...config, apiBase: '/dyrected' },
 })
 ```
 </Tab>
@@ -199,8 +199,22 @@ hooks: {
 <Tabs items={['Next.js', 'Nuxt']}>
 <Tab value="Next.js">
 ```ts
-// app/admin/[[...segments]]/page.tsx
-export { AdminPage as default } from '@dyrected/next'
+'use client'
+import { AdminUI } from '@dyrected/admin'
+import { useRouter } from 'next/navigation'
+import '@dyrected/admin/dist/index.css'
+
+export default function AdminPage() {
+  const router = useRouter()
+  return (
+    <AdminUI
+      baseUrl={process.env.NEXT_PUBLIC_DYRECTED_URL!}
+      apiKey={process.env.NEXT_PUBLIC_DYRECTED_API_KEY!}
+      basename="/admin"
+      onNavigate={(path) => router.push(`/admin${path}`)}
+    />
+  )
+}
 ```
 </Tab>
 <Tab value="Nuxt">

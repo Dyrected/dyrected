@@ -7,6 +7,7 @@ This guide walks you through installing Dyrected directly inside your Next.js or
 ## Prerequisites
 
 Before you begin, ensure you have:
+
 - A Next.js (App Router) or Nuxt 3 project.
 - A supported database (PostgreSQL is recommended for production).
 - A storage provider (S3, Backblaze B2, or Local Filesystem).
@@ -16,53 +17,60 @@ Before you begin, ensure you have:
 ## 1. Next.js Installation
 
 ### Step A: Install Dependencies
+
 ```bash
 pnpm add @dyrected/next @dyrected/db-postgres @dyrected/storage-local
 ```
 
 ### Step B: Create Configuration
+
 Create `dyrected.config.ts` in your project root.
+
 ```ts
-import { defineConfig } from '@dyrected/core'
-import { postgresAdapter } from '@dyrected/db-postgres'
-import { localAdapter } from '@dyrected/storage-local'
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+import { localAdapter } from "@dyrected/storage-local";
 
 export default defineConfig({
   collections: [], // Add your collections here
-  globals: [],     // Add your globals here
+  globals: [], // Add your globals here
   db: postgresAdapter({ url: process.env.DATABASE_URL }),
   storage: localAdapter({
-    directory: './public/uploads',
-    serveFrom: '/uploads',
+    directory: "./public/uploads",
+    serveFrom: "/uploads",
   }),
-})
+});
 ```
 
 ### Step C: Mount the API
-Create `app/api/dyrected/[...route]/route.ts` to handle CMS requests.
+
+Create `app/dyrected/[...route]/route.ts` to handle CMS requests.
+
 ```ts
-export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'
+export { GET, POST, PUT, PATCH, DELETE } from "@dyrected/next";
 ```
 
 ### Step D: Mount the Admin UI
-Create `app/admin/[[...path]]/page.tsx` to serve the editor.
-```tsx
-'use client'
 
-import { useRouter } from 'next/navigation'
-import { AdminUI } from '@dyrected/admin'
+Create `app/admin/[[...path]]/page.tsx` to serve the editor.
+
+```tsx
+"use client";
+
+import { useRouter } from "next/navigation";
+import { AdminUI } from "@dyrected/admin";
 
 export default function AdminPage() {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
-    <AdminUI 
+    <AdminUI
       baseUrl={process.env.NEXT_PUBLIC_DYRECTED_BASE_URL}
       apiKey={process.env.NEXT_PUBLIC_DYRECTED_API_KEY}
       basename="/admin"
-      onNavigate={(path) => router.push('/admin' + path)}
+      onNavigate={(path) => router.push("/admin" + path)}
     />
-  )
+  );
 }
 ```
 
@@ -71,31 +79,37 @@ export default function AdminPage() {
 ## 2. Nuxt Installation
 
 ### Step A: Install Dependencies
+
 ```bash
 pnpm add @dyrected/nuxt @dyrected/db-postgres @dyrected/storage-local
 ```
 
 ### Step B: Create Configuration
+
 Create `dyrected.config.ts` in your project root (same format as Next.js).
 
 ### Step C: Register the Module
+
 Update your `nuxt.config.ts`.
+
 ```ts
 export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt'],
+  modules: ["@dyrected/nuxt"],
   runtimeConfig: {
     public: {
       dyrectedApiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY,
-    }
-  }
-})
+    },
+  },
+});
 ```
 
 ### Step D: Setup the Admin Page
+
 Create `pages/admin/[...path].vue`.
+
 ```vue
 <template>
-  <AdminUI 
+  <AdminUI
     :base-url="config.public.dyrectedBaseUrl"
     :api-key="config.public.dyrectedApiKey"
     basename="/admin"
@@ -104,8 +118,8 @@ Create `pages/admin/[...path].vue`.
 </template>
 
 <script setup lang="ts">
-import { AdminUI } from '@dyrected/admin'
-const config = useRuntimeConfig()
+import { AdminUI } from "@dyrected/admin";
+const config = useRuntimeConfig();
 </script>
 ```
 
@@ -114,6 +128,7 @@ const config = useRuntimeConfig()
 ## 3. Environment Variables
 
 Create a `.env` file with your secrets.
+
 ```env
 DATABASE_URL=postgres://user:pass@localhost:5432/dyrected
 JWT_SECRET=your-32-character-secret
@@ -135,19 +150,19 @@ DYRECTED_LICENSE_KEY=your-license-key
 ## 4. Generate Types
 
 Once you've defined your collections, generate TypeScript types for full end-to-end safety.
+
 ```bash
 pnpm dyrected generate:types
 ```
 
 ### Usage
+
 ```ts
 // Next.js (Server Component)
-import { dyrected } from '@/lib/dyrected'
-const { docs: posts } = await dyrected.collection('posts').find()
+import { dyrected } from "@/lib/dyrected";
+const { docs: posts } = await dyrected.collection("posts").find();
 
 // Nuxt (Composable)
-const dyrected = useDyrected()
-const { data: posts } = await useAsyncData('posts', () => 
-  dyrected.collection('posts').find()
-)
+const dyrected = useDyrected();
+const { data: posts } = await useAsyncData("posts", () => dyrected.collection("posts").find());
 ```

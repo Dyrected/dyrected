@@ -117,7 +117,7 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 ### Phase 5.1: Foundation & Auth
 
 - [x] Set up the React application shell with Tailwind and Shadcn/UI.
-- [x] **Dynamic Navigation**: Build the sidebar that populates from the `/api/dyrected/schemas` endpoint.
+- [x] **Dynamic Navigation**: Build the sidebar that populates from the `/dyrected/schemas` endpoint.
 - [x] Implement the Auth wall (Login/Logout) and Site API Key state management.
 - [x] Set up the React Query (TanStack Query) provider for efficient data fetching.
 

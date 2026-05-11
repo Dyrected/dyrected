@@ -66,10 +66,10 @@ S3_SECRET_KEY=...
 ```
 
 ```ts
-import { S3Storage } from '@dyrected/storage-s3'
+import { S3StorageAdapter } from '@dyrected/storage-s3'
 
 export default defineConfig({
-  storage: new S3Storage({
+  storage: new S3StorageAdapter({
     bucket:    process.env.S3_BUCKET!,
     region:    process.env.S3_REGION!,
     credentials: {
@@ -116,7 +116,7 @@ R2_PUBLIC_URL=https://pub-xxxx.r2.dev   # or your custom domain
 ```
 
 ```ts
-new S3Storage({
+new S3StorageAdapter({
   bucket:   process.env.R2_BUCKET!,
   region:   'auto',
   endpoint: `https://${process.env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -124,7 +124,7 @@ new S3Storage({
     accessKeyId:     process.env.R2_ACCESS_KEY!,
     secretAccessKey: process.env.R2_SECRET_KEY!,
   },
-  cdnUrl: process.env.R2_PUBLIC_URL,
+  baseUrl: process.env.R2_PUBLIC_URL,
 })
 ```
 
@@ -156,7 +156,7 @@ DO_SPACES_CDN=https://my-space.nyc3.cdn.digitaloceanspaces.com
 ```
 
 ```ts
-new S3Storage({
+new S3StorageAdapter({
   bucket:   process.env.DO_SPACES_BUCKET!,
   region:   process.env.DO_SPACES_REGION!,
   endpoint: `https://${process.env.DO_SPACES_REGION}.digitaloceanspaces.com`,
@@ -164,7 +164,7 @@ new S3Storage({
     accessKeyId:     process.env.DO_SPACES_KEY!,
     secretAccessKey: process.env.DO_SPACES_SECRET!,
   },
-  cdnUrl: process.env.DO_SPACES_CDN,
+  baseUrl: process.env.DO_SPACES_CDN,
 })
 ```
 
@@ -187,10 +187,10 @@ CLOUDINARY_API_SECRET=...
 ```
 
 ```ts
-import { CloudinaryStorage } from '@dyrected/storage-cloudinary'
+import { CloudinaryStorageAdapter } from '@dyrected/storage-cloudinary'
 
 export default defineConfig({
-  storage: new CloudinaryStorage({
+  storage: new CloudinaryStorageAdapter({
     cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
     apiKey:    process.env.CLOUDINARY_API_KEY!,
     apiSecret: process.env.CLOUDINARY_API_SECRET!,
@@ -221,7 +221,7 @@ const thumbnailUrl = doc.url.replace(
 After configuring, test with a direct upload:
 
 ```bash
-curl -X POST https://yoursite.com/api/dyrected/collections/media \
+curl -X POST https://yoursite.com/dyrected/collections/media \
   -H "x-api-key: your-api-key" \
   -F "file=@test-image.jpg" \
   -F "alt=Test upload"
