@@ -1,175 +1,103 @@
 ---
-title: Deploy with Dyrected Cloud
-description: Get a site live in minutes with managed database, storage, and zero server config.
+title: Quickstart with Dyrected Cloud
+description: The fastest way to get your CMS live. Choose your path to integration.
 ---
 
-Dyrected Cloud manages your database, file storage, and multi-site workspace so you can focus on building. No connection strings, no storage buckets, no infrastructure to maintain.
-
----
-
-## 1. Create an account and workspace
-
-1. Sign up at [app.dyrected.com](https://app.dyrected.com)
-2. Create a **Workspace** — this is your billing unit. One workspace holds all your sites.
-3. Create a **Site** — each site gets its own database, storage bucket, and Admin UI.
-4. Copy the **Site API Key** and **Site ID** from the site settings.
+Dyrected Cloud handles the database, storage, and API, so you can focus on building your app. There are two main ways to get started:
 
 ---
 
-## 2. Install and configure
+<Tabs items={['AI-First (Recommended)', 'Manual Setup']}>
+<Tab value="AI-First (Recommended)">
 
-No database adapter needed.
+### 1. Create your site
+Sign up at [app.dyrected.com](https://app.dyrected.com) and create a new **Site**.
 
+### 2. Copy the AI Prompt
+Immediately after creating your site, you will see a **Setup Prompt**. This is pre-filled with your Site ID and API Key.
+
+### 3. Give it to your AI
+Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.). 
+
+**The AI will automatically:**
+- Install the necessary dependencies (`@dyrected/admin`, `@dyrected/core`).
+- Create a `dyrected.config.ts` with your initial collections.
+- **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
+
+### 4. Push your schema
+Once the AI has generated your files, run this command to sync your local config with the Cloud:
 ```bash
-pnpm add @dyrected/core
+npx dyrected sync:schema
 ```
 
+</Tab>
+<Tab value="Manual Setup">
+
+### 1. Install Dependencies
+```bash
+pnpm add @dyrected/admin @dyrected/core
+```
+
+### 2. Define your Config
+Create a `dyrected.config.ts` in your project root. No adapters are needed—Cloud handles everything.
+
 ```ts
-// dyrected.config.ts
 import { defineConfig } from '@dyrected/core'
 
 export default defineConfig({
-  // No db: needed — Cloud provides the database
   collections: [
     {
       slug: 'posts',
-      fields: [
-        { name: 'title',   type: 'text',     required: true },
-        { name: 'slug',    type: 'text',     required: true },
-        { name: 'content', type: 'richtext' },
-        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
-      ],
+      fields: [{ name: 'title', type: 'text', required: true }],
     },
   ],
 })
 ```
 
----
+### 3. Embed the Admin UI
+Create a page in your app to host the dashboard.
 
-## 3. Push your schema
+**Next.js (App Router):**
+```tsx
+// app/admin/[[...route]]/page.tsx
+import { DyrectedAdmin } from '@dyrected/next/admin'
 
+export default function AdminPage() {
+  return <DyrectedAdmin apiPath="/api/dyrected" />
+}
+```
+
+**React (Vite):**
+```tsx
+import { AdminUI } from '@dyrected/admin'
+import '@dyrected/admin/styles'
+
+export default function AdminPage() {
+  return <AdminUI apiKey="..." siteId="..." />
+}
+```
+
+### 4. Sync Schema
 ```bash
-npx dyrected push
+npx dyrected sync:schema
 ```
 
-This sends your `dyrected.config.ts` to the Cloud, provisions the necessary tables, and makes the API live. Run it every time you add or change a collection or field.
-
----
-
-## 4. Set environment variables
-
-<Tabs items={['Next.js', 'Nuxt']}>
-<Tab value="Next.js">
-```bash
-# .env.local
-DYRECTED_API_KEY=sk_live_...
-DYRECTED_SITE_ID=site_...
-NEXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
-NEXT_PUBLIC_DYRECTED_SITE_ID=site_...
-```
-</Tab>
-<Tab value="Nuxt">
-```bash
-# .env
-DYRECTED_API_KEY=sk_live_...
-DYRECTED_SITE_ID=site_...
-NUXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
-NUXT_PUBLIC_DYRECTED_SITE_ID=site_...
-```
-</Tab>
-</Tabs>
-
-Set the same variables in your hosting provider (Vercel, Railway, etc.) under environment variables.
-
----
-
-## 5. Mount the router
-
-The router setup is identical to self-hosted — Cloud is just a different target URL.
-
-<Tabs items={['Next.js', 'Nuxt']}>
-<Tab value="Next.js">
-```ts
-// app/api/dyrected/[...route]/route.ts
-import { createDyrectedApp } from '@dyrected/core'
-import config from '@/dyrected.config'
-
-const app = createDyrectedApp(config)
-
-export const GET    = app.fetch
-export const POST   = app.fetch
-export const PATCH  = app.fetch
-export const DELETE = app.fetch
-```
-</Tab>
-<Tab value="Nuxt">
-```ts
-// nuxt.config.ts
-export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt'],
-  dyrected: {
-    apiKey:  process.env.DYRECTED_API_KEY,
-    siteId:  process.env.DYRECTED_SITE_ID,
-    baseUrl: 'https://api.dyrected.cloud',
-  },
-})
-```
 </Tab>
 </Tabs>
 
 ---
 
-## 6. Fetch content
+## Managed Admin vs. Embedded Admin
 
-Every request to the Cloud API needs the `x-site-id` header alongside your API key.
-
-<Tabs items={['SDK', 'REST API']}>
-<Tab value="SDK">
-```ts
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
-  apiKey:  process.env.DYRECTED_API_KEY!,
-  siteId:  process.env.DYRECTED_SITE_ID!,
-})
-
-const { docs } = await client.collection('posts').find()
-```
-</Tab>
-<Tab value="REST API">
-```ts
-const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts`, {
-  headers: {
-    'x-api-key':  process.env.DYRECTED_API_KEY!,
-    'x-site-id':  process.env.DYRECTED_SITE_ID!,
-  },
-})
-```
-</Tab>
-</Tabs>
+While you can always use the [Hosted Dashboard](https://app.dyrected.com) to manage content, embedding it into your own app is the "Pro" way to work. It allows you to:
+- Keep everything under your own domain (e.g., `my-app.com/admin`).
+- Give your clients a white-labeled experience.
+- Build custom UI components alongside the CMS.
 
 ---
 
-## Managing multiple sites
+## Next Steps
 
-Each site in your workspace is independent — its own collections, its own data, its own Admin UI users. You can create as many sites as your plan allows from the Cloud dashboard without touching any code.
-
-Common patterns:
-- One site per client
-- One site per environment (staging + production)
-- One site for a blog, another for an e-commerce catalog
-
-See [Workspaces](/docs/cloud/workspaces) for the full workspace and site management reference.
-
----
-
-## Plans
-
-| | Starter | Studio | Agency |
-|---|---|---|---|
-| Sites | 3 | 10 | 25 |
-| Storage | 15 GB | 60 GB | 200 GB |
-| Price | $19/mo | $39/mo | $99/mo |
-
-[Full pricing and plan comparison →](/docs/cloud/billing)
+- [Managing Media](/docs/features/media)
+- [Authentication](/docs/features/auth)
+- [Self-Hosting Guide](/docs/deployment/self-hosted) if you want to host the database yourself.

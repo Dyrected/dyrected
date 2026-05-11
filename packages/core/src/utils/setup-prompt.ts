@@ -7,19 +7,24 @@ export interface SetupPromptConfig {
 }
 
 export function generateAIPrompt(activeTab: "next" | "nuxt" | "react" | "vue", config: SetupPromptConfig) {
-  const frameworkLabel = activeTab === "next" ? "Next.js" : activeTab === "nuxt" ? "Nuxt" : activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+  const frameworkLabel =
+    activeTab === "next"
+      ? "Next.js"
+      : activeTab === "nuxt"
+        ? "Nuxt"
+        : activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
   const backendPkg = activeTab === "nuxt" ? "@dyrected/nuxt" : "@dyrected/next";
   const isSelfHosted = config.isSelfHosted ?? (config.baseUrl?.includes("localhost") || !config.apiKey);
 
   const baseIntro = isSelfHosted
     ? `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${frameworkLabel}. This is a SELF-HOSTED installation.\nThe backend is already configured via ${backendPkg}.\nYour priority is DATA PRESERVATION and creating a CMS that empowers marketing teams.`
-    : `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${frameworkLabel}. Complete the entire setup automatically, prioritizing DATA PRESERVATION and marketing independence.`;
+    : `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${frameworkLabel}. Complete the entire setup automatically, including embedding the Admin UI and syncing the schema. Your priority is DATA PRESERVATION and marketing independence.`;
 
   const credentials = `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SITE CREDENTIALS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${config.siteName ? `Site Name : ${config.siteName}\n` : ""}${isSelfHosted ? "" : `Site ID   : ${config.siteId}\nAPI Key   : ${config.apiKey}\n`}API URL   : ${config.baseUrl || "http://localhost:3000"}
+${config.siteName ? `Site Name : ${config.siteName}\n` : ""}${isSelfHosted ? "" : `Site ID   : ${config.siteId}\nAPI Key   : ${config.apiKey}\n`}API URL   : ${config.baseUrl || "https://api.dyrected.cloud"}
 `;
 
   const importantNotes = `
@@ -32,6 +37,8 @@ IMPORTANT NOTES — READ BEFORE ACTING
 - AUTO-SEEDING: Use \`initialData\` in all data fetches to ensure the site is never empty on first load.
 - Globals use \`client.global(slug).get()\` and \`client.global(slug).update(data)\`.
 - Relationship fields are populated to the specified \`depth\` (default: 1). Set \`depth: 0\` for IDs only.
+- SYNC SCHEMA: After creating the content model, you MUST run \`npx dyrected sync:schema\` to apply changes to the cloud.
+- EMBED ADMIN: You MUST create a route (e.g. \`/admin\`) and mount the Admin UI components described below.
 `;
 
   const strategy = `
@@ -168,7 +175,10 @@ export default defineConfig({
 })
 \`\`\`
 
-${isSelfHosted ? "" : `
+${
+  isSelfHosted
+    ? ""
+    : `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 2 — CHOOSE YOUR MODE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -183,7 +193,8 @@ The developer can choose between two modes:
    - Do NOT use apiKey/siteId (unless for proxying).
    - Use a database adapter like \`SqliteAdapter\` from '@dyrected/db-sqlite'.
    - Content is stored locally in the developer's project.
-`}
+`
+}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP ${isSelfHosted ? "2" : "3"} — MOUNTING THE ADMIN UI
@@ -204,9 +215,13 @@ SDK CLIENT SETUP (\`lib/dyrected.ts\`):
 import { createClient } from '@dyrected/sdk'
 
 export const dyrected = createClient({
-  baseUrl: '${config.baseUrl || "http://localhost:3000"}',${isSelfHosted ? "" : `
+  baseUrl: '${config.baseUrl || "http://localhost:3000"}',${
+    isSelfHosted
+      ? ""
+      : `
   apiKey:  '${config.apiKey}',
-  siteId:  '${config.siteId}',`}
+  siteId:  '${config.siteId}',`
+  }
 })
 \`\`\``,
 
@@ -215,9 +230,13 @@ export const dyrected = createClient({
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
-    baseUrl: '${config.baseUrl || "http://localhost:3000"}',${isSelfHosted ? "" : `
+    baseUrl: '${config.baseUrl || "http://localhost:3000"}',${
+      isSelfHosted
+        ? ""
+        : `
     apiKey:  '${config.apiKey}',
-    siteId:  '${config.siteId}',`}
+    siteId:  '${config.siteId}',`
+    }
   },
 })
 \`\`\`
@@ -243,10 +262,32 @@ CLIENT SETUP (\`lib/dyrected.ts\`):
 import { createClient } from '@dyrected/sdk'
 
 export const dyrected = createClient({
-  baseUrl: '${config.baseUrl || "http://localhost:3000"}',${isSelfHosted ? "" : `
+  baseUrl: '${config.baseUrl || "https://api.dyrected.cloud"}',${
+    isSelfHosted
+      ? ""
+      : `
   apiKey:  '${config.apiKey}',
-  siteId:  '${config.siteId}',`}
+  siteId:  '${config.siteId}',`
+  }
 })
+\`\`\`
+
+MOUNTING THE ADMIN DASHBOARD (\`pages/admin.tsx\`):
+\`\`\`tsx
+import { AdminUI } from '@dyrected/admin'
+import '@dyrected/admin/styles'
+
+export default function AdminPage() {
+  return (
+    <div style={{ height: '100vh' }}>
+      <AdminUI 
+        apiKey='${config.apiKey}'
+        siteId='${config.siteId}'
+        baseUrl='${config.baseUrl || "https://api.dyrected.cloud"}'
+      />
+    </div>
+  )
+}
 \`\`\`
 `,
 
@@ -257,10 +298,36 @@ CLIENT SETUP (\`lib/dyrected.ts\`):
 import { createClient } from '@dyrected/sdk'
 
 export const dyrected = createClient({
-  baseUrl: '${config.baseUrl || "http://localhost:3000"}',${isSelfHosted ? "" : `
+  baseUrl: '${config.baseUrl || "https://api.dyrected.cloud"}',${
+    isSelfHosted
+      ? ""
+      : `
   apiKey:  '${config.apiKey}',
-  siteId:  '${config.siteId}',`}
+  siteId:  '${config.siteId}',`
+  }
 })
+\`\`\`
+
+MOUNTING THE ADMIN DASHBOARD (\`pages/admin.vue\`):
+\`\`\`vue
+<template>
+  <div ref="container" style="height: 100vh" />
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { renderAdminUI } from '@dyrected/admin'
+import '@dyrected/admin/styles'
+
+const container = ref(null)
+onMounted(() => {
+  renderAdminUI(container.value, {
+    apiKey: '${config.apiKey}',
+    siteId: '${config.siteId}',
+    baseUrl: '${config.baseUrl || "https://api.dyrected.cloud"}'
+  })
+})
+</script>
 \`\`\`
 `,
   };

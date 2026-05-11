@@ -43,6 +43,14 @@ program
       initial: true,
     });
 
+    const { adminPath } = await prompts({
+      type: "text",
+      name: "adminPath",
+      message: "What path should the admin dashboard use?",
+      initial: "cms",
+      format: (val) => val.replace(/^\//, "").replace(/\/$/, ""),
+    });
+
     let db = "sqlite";
     let storage = "local";
 
@@ -190,20 +198,63 @@ export default defineConfig({
 
     // ── 3. Framework-specific files ──────────────────────────────────────
     if (framework === "next") {
-      await writeNextFiles(cwd);
+      await writeNextFiles(cwd, adminPath);
     } else {
-      await writeNuxtFiles(cwd);
+      await writeNuxtFiles(cwd, adminPath);
     }
 
-    // ── 4. .env template ─────────────────────────────────────────────────
-    const envPath = path.join(cwd, ".env.example");
+    // ── 4. .env setup ───────────────────────────────────────────────────
     const envContent = buildEnvTemplate(db, storage, framework);
-    await fs.outputFile(envPath, envContent);
+    const envExamplePath = path.join(cwd, ".env.example");
+    await fs.outputFile(envExamplePath, envContent);
     console.log(chalk.green("✔  .env.example written"));
+
+    const envPath = path.join(cwd, ".env");
+    if (await fs.pathExists(envPath)) {
+      const existingEnv = await fs.readFile(envPath, "utf-8");
+      const missingVars = envContent
+        .split("\n")
+        .filter((line) => {
+          if (!line || line.startsWith("#")) return false;
+          const key = line.split("=")[0];
+          return !existingEnv.includes(`${key}=`);
+        })
+        .join("\n");
+
+      if (missingVars) {
+        const { appendEnv } = await prompts({
+          type: "confirm",
+          name: "appendEnv",
+          message: ".env already exists. Append missing Dyrected variables?",
+          initial: true,
+        });
+
+        if (appendEnv) {
+          await fs.appendFile(envPath, `\n# ── Dyrected CMS ──────────────────────────────────────────────────\n${missingVars}`);
+          console.log(chalk.green("✔  .env file updated with missing variables"));
+        }
+      } else {
+        console.log(chalk.dim("ℹ  .env already contains all required variables."));
+      }
+    } else {
+      const { createEnv } = await prompts({
+        type: "confirm",
+        name: "createEnv",
+        message: ".env file is missing. Create it now?",
+        initial: true,
+      });
+
+      if (createEnv) {
+        await fs.outputFile(envPath, envContent);
+        console.log(chalk.green("✔  .env file created"));
+      }
+    }
 
     // ── Done ─────────────────────────────────────────────────────────────
     console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
-    console.log(chalk.cyan("  4. Run: npx dyrected generate:types\n"));
+    console.log(chalk.cyan(`  1. Configure your environment variables in .env`));
+    console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
+    console.log(chalk.cyan("  3. Run: npx dyrected generate:types\n"));
 
     console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
     console.log(chalk.dim("Copy this prompt and give it to your AI tool (Claude, GPT, etc.) to scaffold your CMS logic:\n"));
@@ -253,14 +304,14 @@ function buildStorageConfig(storage: string): string {
   }
 }
 
-async function writeNextFiles(cwd: string) {
+async function writeNextFiles(cwd: string, adminPath: string) {
   const apiRoutePath = path.join(cwd, "app/dyrected/[...route]/route.ts");
   if (!(await fs.pathExists(apiRoutePath))) {
     await fs.outputFile(apiRoutePath, `export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'\n`);
     console.log(chalk.green("✔  app/dyrected/[...route]/route.ts written"));
   }
 
-  const adminPagePath = path.join(cwd, "app/cms/[[...route]]/page.tsx");
+  const adminPagePath = path.join(cwd, `app/${adminPath}/[[...route]]/page.tsx`);
   if (!(await fs.pathExists(adminPagePath))) {
     await fs.outputFile(
       adminPagePath,
@@ -271,11 +322,11 @@ export default function AdminPage() {
 }
 `,
     );
-    console.log(chalk.green("✔  app/cms/[[...route]]/page.tsx written"));
+    console.log(chalk.green(`✔  app/${adminPath}/[[...route]]/page.tsx written`));
   }
 }
 
-async function writeNuxtFiles(cwd: string) {
+async function writeNuxtFiles(cwd: string, adminPath: string) {
   console.log(chalk.yellow("\n⚠  Add the module to your nuxt.config.ts manually:"));
   console.log(
     chalk.dim(`
@@ -286,7 +337,7 @@ async function writeNuxtFiles(cwd: string) {
 `),
   );
 
-  const adminPagePath = path.join(cwd, "pages/cms/[[...route]].vue");
+  const adminPagePath = path.join(cwd, `pages/${adminPath}/[[...route]].vue`);
   if (!(await fs.pathExists(adminPagePath))) {
     await fs.outputFile(
       adminPagePath,
@@ -299,7 +350,7 @@ import { DyrectedAdmin } from '@dyrected/nuxt/admin'
 </script>
 `,
     );
-    console.log(chalk.green("✔  pages/cms/[[...route]].vue written"));
+    console.log(chalk.green(`✔  pages/${adminPath}/[[...route]].vue written`));
   }
 }
 
