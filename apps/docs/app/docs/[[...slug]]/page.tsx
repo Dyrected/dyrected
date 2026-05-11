@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page'
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
+import { CopyPageButton } from '@/components/copy-page-button'
 import { source } from '@/app/source'
 
 interface Props {
@@ -17,9 +18,18 @@ export default async function Page({ params }: Props) {
   const MDX = page.data.body
 
   return (
-    <DocsPage toc={page.data.toc} full={page.data.full}>
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{page.data.description}</DocsDescription>
+    <DocsPage 
+      toc={page.data.toc} 
+      full={page.data.full}
+      lastUpdate={(page.data as any).lastModified}
+    >
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <DocsTitle>{page.data.title}</DocsTitle>
+          <DocsDescription>{page.data.description}</DocsDescription>
+        </div>
+        <CopyPageButton content={(page as any)._exports?.raw ?? ''} />
+      </div>
       <DocsBody>
         <MDX components={{ ...defaultMdxComponents, Tab, Tabs }} />
       </DocsBody>

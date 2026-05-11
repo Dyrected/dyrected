@@ -1,5 +1,6 @@
 import React from 'react';
 import Image, { ImageProps } from 'next/image';
+const NextImage = Image as any;
 import { Media } from '@dyrected/sdk';
 
 export interface DyrectedMediaProps extends Partial<Omit<ImageProps, 'src' | 'alt'>> {
@@ -17,14 +18,14 @@ const getYouTubeId = (url: string) => {
   return (match && match[2].length === 11) ? match[2] : null;
 };
 
-export const DyrectedMedia: React.FC<DyrectedMediaProps> = ({ 
+export function DyrectedMedia({ 
   media, 
   alt, 
   width = 500, 
   height = 500,
   fallback,
   ...props 
-}) => {
+}: DyrectedMediaProps) {
   const url = typeof media === 'string' ? media : media.url;
   const mimeType = typeof media === 'string' ? null : media.mimeType;
   const type = typeof media === 'string' ? 'external' : (media.type || 'upload');
@@ -48,7 +49,7 @@ export const DyrectedMedia: React.FC<DyrectedMediaProps> = ({
   // 2. Check for Images
   if (mimeType?.startsWith('image/') || url.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)$/i)) {
     return (
-      <Image
+      <NextImage
         src={url}
         alt={alt || (typeof media !== 'string' ? media.filename : '')}
         width={Number(width)}

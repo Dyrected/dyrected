@@ -24,9 +24,15 @@ importers:
 
   apps/docs:
     dependencies:
+      '@radix-ui/react-slot':
+        specifier: ^1.2.4
+        version: 1.2.4(@types/react@19.2.14)(react@19.2.6)
       '@tailwindcss/postcss':
         specifier: ^4.3.0
         version: 4.3.0
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -177,6 +183,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.6)
+      '@dyrected/core':
+        specifier: workspace:^
+        version: link:../core
       '@dyrected/sdk':
         specifier: workspace:^
         version: link:../sdk
@@ -358,6 +367,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@dyrected/core':
+        specifier: workspace:^
+        version: link:../core
       '@types/prompts':
         specifier: ^2.4.9
         version: 2.4.9
@@ -489,6 +501,12 @@ importers:
       hono:
         specifier: ^4.0.0
         version: 4.12.18
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.6
+      react-dom:
+        specifier: '>=18.0.0'
+        version: 19.2.6(react@19.2.6)
     devDependencies:
       '@types/node':
         specifier: ^20.12.12
@@ -501,7 +519,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       next:
         specifier: ^14.2.3
-        version: 14.2.35(react-dom@18.3.1)(react@18.3.1)
+        version: 14.2.35(react-dom@19.2.6)(react@19.2.6)
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
@@ -12515,7 +12533,7 @@ packages:
       react-dom: 19.2.6(react@19.2.6)
     dev: false
 
-  /next@14.2.35(react-dom@18.3.1)(react@18.3.1):
+  /next@14.2.35(react-dom@19.2.6)(react@19.2.6):
     resolution: {integrity: sha512-KhYd2Hjt/O1/1aZVX3dCwGXM1QmOV4eNM2UTacK5gipDdPN/oHHK/4oVGy7X8GMfPMsUTUEmGlsy0EY1YGAkig==}
     engines: {node: '>=18.17.0'}
     hasBin: true
@@ -12539,9 +12557,9 @@ packages:
       caniuse-lite: 1.0.30001792
       graceful-fs: 4.2.11
       postcss: 8.4.31
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      styled-jsx: 5.1.1(react@18.3.1)
+      react: 19.2.6
+      react-dom: 19.2.6(react@19.2.6)
+      styled-jsx: 5.1.1(react@19.2.6)
     optionalDependencies:
       '@next/swc-darwin-arm64': 14.2.33
       '@next/swc-darwin-x64': 14.2.33
@@ -14193,7 +14211,6 @@ packages:
     dependencies:
       react: 19.2.6
       scheduler: 0.27.0
-    dev: false
 
   /react-dropzone@15.0.0(react@19.2.6):
     resolution: {integrity: sha512-lGjYV/EoqEjEWPnmiSvH4v5IoIAwQM2W4Z1C0Q/Pw2xD0eVzKPS359BQTUMum+1fa0kH2nrKjuavmTPOGhpLPg==}
@@ -14318,7 +14335,6 @@ packages:
   /react@19.2.6:
     resolution: {integrity: sha512-sfWGGfavi0xr8Pg0sVsyHMAOziVYKgPLNrS7ig+ivMNb3wbCBw3KxtflsGBAwD3gYQlE/AEZsTLgToRrSCjb0Q==}
     engines: {node: '>=0.10.0'}
-    dev: false
 
   /read-cache@1.0.0:
     resolution: {integrity: sha512-Owdv/Ft7IjOgm/i0xvNDZ1LrRANRfew4b2prF3OWMQLxLfu3bS8FVhCsrSCMK4lR56Y9ya+AThoTpDCTxCmpRA==}
@@ -14711,7 +14727,6 @@ packages:
 
   /scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
-    dev: false
 
   /scroll-into-view-if-needed@3.1.0:
     resolution: {integrity: sha512-49oNpRjWRvnU8NyGVmUaYG4jtTkNonFZI86MmGRDqBphEK2EXT9gdEUoQPZhuBM8yWHxCWbobltqYO5M4XrUvQ==}
@@ -15168,7 +15183,7 @@ packages:
       inline-style-parser: 0.2.7
     dev: false
 
-  /styled-jsx@5.1.1(react@18.3.1):
+  /styled-jsx@5.1.1(react@19.2.6):
     resolution: {integrity: sha512-pW7uC1l4mBZ8ugbiZrcIsiIvVx1UmTfw7UkC3Um2tmfUq9Bhk8IiyEIPl6F8agHgjzku6j0xQEZbfA5uSgSaCw==}
     engines: {node: '>= 12.0.0'}
     peerDependencies:
@@ -15182,7 +15197,7 @@ packages:
         optional: true
     dependencies:
       client-only: 0.0.1
-      react: 18.3.1
+      react: 19.2.6
     dev: true
 
   /styled-jsx@5.1.6(react@19.2.6):

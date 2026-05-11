@@ -1,5 +1,6 @@
 import React from 'react';
 import Image, { ImageProps } from 'next/image';
+const NextImage = Image as any;
 import { Media } from '@dyrected/sdk';
 
 export interface DyrectedImageProps extends Omit<ImageProps, 'src' | 'width' | 'height'> {
@@ -11,16 +12,16 @@ export interface DyrectedImageProps extends Omit<ImageProps, 'src' | 'width' | '
 /**
  * A wrapper around next/image that handles Dyrected Media objects.
  */
-export const DyrectedImage: React.FC<DyrectedImageProps> = ({ 
+export function DyrectedImage({ 
   media, 
   width, 
   height, 
   alt,
   ...props 
-}) => {
+}: DyrectedImageProps) {
   if (typeof media === 'string') {
     return (
-      <Image 
+      <NextImage 
         src={media} 
         width={width || 500} 
         height={height || 500} 
@@ -31,7 +32,7 @@ export const DyrectedImage: React.FC<DyrectedImageProps> = ({
   }
 
   return (
-    <Image
+    <NextImage
       src={media.url}
       width={width || media.width || 500}
       height={height || media.height || 500}
