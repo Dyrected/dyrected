@@ -23,6 +23,7 @@ import {
 import { useDyrected } from "../../providers/dyrected-provider"
 import { cn, getMediaUrl } from "../../lib/utils"
 import { BrandingProvider } from "./branding-provider"
+import logo from "@/assets/dyrected.svg"
 
 // ---------------------------------------------------------------------------
 // Single nav item
@@ -175,12 +176,8 @@ function SidebarInner({
                   />
                 </div>
               ) : (
-                <div className="h-7 w-7 bg-foreground rounded flex items-center justify-center text-background shrink-0">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-                    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                <div className="h-7 w-auto flex items-center justify-center shrink-0">
+                  <img src={logo} alt="Dyrected" className="h-10 w-auto" />
                 </div>
               )}
               {!collapsed && (
@@ -462,7 +459,7 @@ export function AdminShell({
           />
         </aside>
 
-        <main className="flex-1 min-w-0 overflow-auto flex flex-col relative bg-[#fcfcfc]">
+        <main className="flex-1 min-w-0 overflow-auto flex flex-col relative bg-background/50">
           {/* Mobile Floating Toggle */}
           <button
             onClick={() => setMobileOpen(true)}

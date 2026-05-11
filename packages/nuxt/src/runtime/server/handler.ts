@@ -1,5 +1,5 @@
 import { eventHandler } from "h3";
-import { createDyrectedApp } from "@dyrected/core";
+import { createDyrectedApp } from "@dyrected/core/server";
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
 

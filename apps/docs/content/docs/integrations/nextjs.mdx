@@ -52,7 +52,7 @@ Create a catch-all route that forwards all Dyrected requests to the Hono router:
 
 ```ts
 // app/dyrected/[...route]/route.ts
-import { createDyrectedApp } from '@dyrected/core'
+import { createDyrectedApp } from '@dyrected/core/server'
 import config from '@/dyrected.config'
 
 const app = createDyrectedApp(config)

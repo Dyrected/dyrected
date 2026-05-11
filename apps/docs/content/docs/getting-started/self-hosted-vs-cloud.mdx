@@ -23,7 +23,7 @@ The Dyrected engine is an npm package that runs **inside your Next.js or Nuxt ap
 <Tab value="Next.js">
 ```ts
 // app/dyrected/[...route]/route.ts
-import { createDyrectedApp } from '@dyrected/core'
+import { createDyrectedApp } from '@dyrected/core/server'
 import config from '@/dyrected.config'
 
 const app = createDyrectedApp(config)
@@ -75,7 +75,7 @@ export default defineConfig({
 
 ```ts
 // app/dyrected/[...route]/route.ts — same as self-hosted
-import { createDyrectedApp } from '@dyrected/core'
+import { createDyrectedApp } from '@dyrected/core/server'
 import config from '@/dyrected.config'
 
 const app = createDyrectedApp(config)
