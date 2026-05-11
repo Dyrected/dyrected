@@ -27,6 +27,4 @@ GET /api/docs
 - **SDK Generation:** Use tools like `openapi-generator` to create typed clients for any programming language.
 - **Validation:** Ensure your requests match the expected schema before they even reach your server.
 
-<Info>
-  The OpenAPI spec is dynamically updated whenever you change your `dyrected.config.ts`. No manual updates are required.
-</Info>
+> The OpenAPI spec is dynamically generated at runtime from your config — it updates automatically whenever you change your `dyrected.config.ts`.

@@ -23,5 +23,8 @@ out
 .DS_Store
 Thumbs.db
 
+# Local uploads
+apps/public/uploads
+
 # Types
 dyrected-types.d.ts

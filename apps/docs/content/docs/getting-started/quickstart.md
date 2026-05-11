@@ -1,86 +1,118 @@
 ---
 title: Quickstart
-description: Get up and running with Dyrected in under 2 minutes.
+description: Add Dyrected to an existing Next.js or Nuxt app in under 5 minutes.
 ---
 
-There are two ways to get started with Dyrected: using our **AI-First Cloud Setup** (recommended) or manual installation.
-
-## 🚀 AI Cloud Setup (Recommended)
-
-Copy and paste the following prompt into your favorite AI assistant (ChatGPT, Claude, or Cursor) to instantly scaffold a fully-featured Dyrected project.
-
-<Snippet name="ai-prompt">
-  "I want to build a modern web application using Dyrected. Please help me initialize a new Next.js project, install @dyrected/core, and configure it to use Dyrected Cloud for database and media storage. Generate a dyrected.config.ts file with two collections: 'Posts' (with title, slug, content, and author) and 'Authors' (with name, bio, and avatar). Finally, set up the Hono router integration in my App Router."
-</Snippet>
-
----
-
-## 🛠 Manual Setup
-
-If you prefer to set things up yourself, follow these steps:
-
-### 1. Install Dependencies
-
-Add the core package and your preferred database adapter to your project.
+## 1. Install
 
 ```bash
-pnpm add @dyrected/core @dyrected/db-postgres
+pnpm add @dyrected/core @dyrected/db-sqlite
 ```
 
-### 2. Configure Dyrected
+Use `@dyrected/db-postgres` instead of `@dyrected/db-sqlite` for production. See [Database Adapters](/docs/adapters/databases).
 
-Create a `dyrected.config.ts` file in your root directory.
+---
 
-```typescript
-import { defineConfig } from '@dyrected/core';
-import { PostgresAdapter } from '@dyrected/db-postgres';
+## 2. Create your config
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from '@dyrected/core'
+import { SqliteAdapter } from '@dyrected/db-sqlite'
 
 export default defineConfig({
-  db: new PostgresAdapter({
-    url: process.env.DATABASE_URL,
-  }),
+  db: new SqliteAdapter({ filename: './dyrected.db' }),
   collections: [
     {
       slug: 'posts',
       fields: [
-        { name: 'title', type: 'text', required: true },
-        { name: 'content', type: 'richText' },
+        { name: 'title',   type: 'text',     required: true },
+        { name: 'slug',    type: 'text',     required: true },
+        { name: 'content', type: 'richtext' },
+        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
       ],
     },
   ],
-});
+})
 ```
 
-### 3. Initialize the Router
+---
 
-#### In Next.js
-Create a catch-all route at `app/api/dyrected/[...route]/route.ts`.
+## 3. Mount the router
 
-```typescript
-import { createApp } from '@dyrected/core';
-import config from '@/dyrected.config';
+### Next.js
 
-const app = createApp(config);
+```ts
+// app/api/dyrected/[...route]/route.ts
+import { createApp } from '@dyrected/core'
+import config from '@/dyrected.config'
 
-export const GET = app.fetch;
-export const POST = app.fetch;
-export const PATCH = app.fetch;
-export const DELETE = app.fetch;
+const app = createApp(config)
+
+export const GET    = app.fetch
+export const POST   = app.fetch
+export const PATCH  = app.fetch
+export const DELETE = app.fetch
 ```
 
-#### In Nuxt 3
-Add the `@dyrected/nuxt` module to your `nuxt.config.ts`. The router is registered automatically.
+### Nuxt
 
-```typescript
+```ts
+// nuxt.config.ts
 import config from './dyrected.config'
 
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
     ...config,
-    apiBase: '/api/dyrected'
-  }
+    apiBase: '/api/dyrected',
+  },
 })
 ```
 
-Now, navigate to `/api/docs` to see your interactive documentation!
+---
+
+## 4. Set environment variables
+
+```bash
+# .env.local
+DYRECTED_JWT_SECRET=a-long-random-secret
+DYRECTED_API_KEY=your-api-key
+```
+
+---
+
+## 5. Run your app
+
+```bash
+pnpm dev
+```
+
+Your API is live at `/api/dyrected`. Fetch your posts:
+
+```bash
+curl http://localhost:3000/api/dyrected/collections/posts \
+  -H "x-api-key: your-api-key"
+```
+
+---
+
+## Next steps
+
+- [Mount the Admin UI](/docs/admin/overview) — let editors manage content at `/admin`
+- [Building a Blog](/docs/guides/building-a-blog) — full walkthrough with frontend pages
+- [Adding Authentication](/docs/guides/adding-authentication) — add a users collection with login
+- [Deploy to Vercel](/docs/deployment/vercel) — go to production
+
+---
+
+## Using AI to scaffold
+
+If you want to generate a full config from a prompt, paste this into Claude, Cursor, or ChatGPT:
+
+```
+Set up Dyrected in my Next.js App Router project. Install @dyrected/core and
+@dyrected/db-postgres. Create a dyrected.config.ts with two collections:
+Posts (title, slug, richtext content, status select) and Authors (name, bio,
+avatar upload). Mount the Hono router at app/api/dyrected/[...route]/route.ts.
+```

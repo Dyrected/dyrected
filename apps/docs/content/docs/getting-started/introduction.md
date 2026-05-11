@@ -1,36 +1,32 @@
 ---
 title: Introduction
-description: Welcome to Dyrected, the code-first, AI-ready CMS ecosystem.
+description: What Dyrected is and how the pieces fit together.
 ---
 
-Dyrected is a modern content management ecosystem designed for developers who value performance, type-safety, and AI-assisted workflows. Unlike traditional headless CMS platforms that rely on complex UI builders, Dyrected puts your **Content Contract** (code) at the center of your application.
+Dyrected is a code-first headless CMS. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates a REST API, an Admin UI, and a type-safe SDK from it automatically. No clicking through UI builders to create fields.
 
-## The Ecosystem
+The engine runs **inside your existing Next.js or Nuxt app** as a route handler. There is no separate CMS server to run.
 
-Dyrected is composed of four primary components:
+---
 
-<CardGroup cols={2}>
-  <Card title="Core" icon="engine">
-    The headless engine that lives inside your Next.js or Nuxt app.
-  </Card>
-  <Card title="Cloud" icon="cloud">
-    Managed infrastructure for your database, media, and team management.
-  </Card>
-  <Card title="Admin" icon="user-tie">
-    A beautiful, auto-generated dashboard for managing your content.
-  </Card>
-  <Card title="CLI" icon="terminal">
-    Scaffolding tools to help you get started in seconds.
-  </Card>
-</CardGroup>
+## How it fits together
 
-## The Big Vision
+**`@dyrected/core`** — the engine. Mount it as a catch-all route in Next.js or as a Nuxt module. It handles the database, REST API, file uploads, auth, and email.
 
-Our vision is a unified platform that merges the flexibility of a CMS with the power of an event-driven financial and administrative backend. Dyrected is built to scale from simple blogs to complex multi-tenant enterprise applications, all while being perfectly readable and writable by AI agents.
+**Admin UI** — auto-generated from your config. Mount it at `/admin`. Your clients use this to edit content. You never have to build a dashboard.
 
-## Why Dyrected?
+**`@dyrected/sdk`** — a typed TypeScript client for fetching content from your frontend, Node scripts, or any other environment.
 
-- **Code-First:** Define your schema in TypeScript. No more clicking around in UIs to create fields.
-- **AI-Ready:** Every part of the system is designed to be prompted. Use our AI Cloud Setup to build an entire backend in minutes.
-- **Framework Native:** Deep integrations with Next.js and Nuxt 3.
-- **Zero-Dependency UI:** The Admin dashboard is automatically generated based on your schema.
+**Dyrected Cloud** — optional managed hosting for the database, storage, and multi-site workspaces. If you'd rather manage your own infrastructure, self-hosting is free.
+
+---
+
+## Which path is right for you?
+
+**I want to ship a site this weekend** → [Quickstart](/docs/getting-started/quickstart)
+
+**I want to understand self-hosted vs cloud** → [Self-Hosted vs Cloud](/docs/getting-started/self-hosted-vs-cloud)
+
+**I want to add a blog to an existing Next.js app** → [Building a Blog](/docs/guides/building-a-blog)
+
+**I just need to know what API endpoints exist** → [REST API Reference](/docs/reference/rest-api)

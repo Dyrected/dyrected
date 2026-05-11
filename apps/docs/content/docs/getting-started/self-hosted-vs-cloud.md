@@ -1,100 +1,60 @@
 ---
-title: Self-Hosted vs. Cloud Mode
-description: Understanding the two primary ways to run Dyrected.
+title: Self-Hosted vs Cloud
+description: The two ways to run Dyrected and when to pick each.
 ---
 
-Dyrected offers two primary architectural modes: **Self-Hosted (Core)** and **Managed (Cloud)**. Both modes use the same `dyrected.config.ts` and the same Admin UI, but they differ in where the data lives and how the API is executed.
-
-## Comparison Overview
-
-| Feature             | Self-Hosted (Core)                     | Managed (Cloud)                        |
-| :------------------ | :------------------------------------- | :------------------------------------- |
-| **Engine Location** | Embedded in your App (Nitro/Next)      | Dyrected Cloud Servers                 |
-| **Database**        | Your own (SQLite, Postgres, etc.)      | Fully Managed                          |
-| **Media Storage**   | Local Disk or your S3/B2               | Fully Managed                          |
-| **Authentication**  | You manage user sessions               | Managed Auth & RBAC                    |
-| **Deployment**      | Part of your monolith                  | Decoupled / Serverless                 |
-| **Best For**        | Total control, data residency, offline | Speed, scalability, team collaboration |
+| | Self-Hosted | Cloud |
+|---|---|---|
+| **Engine** | Runs inside your app | Runs on Dyrected's servers |
+| **Database** | Your own (SQLite, Postgres, MySQL) | Fully managed |
+| **Storage** | Local disk or your S3/R2/Cloudinary | Fully managed |
+| **Auth** | You manage JWT secret and sessions | Managed, with workspace RBAC |
+| **Multi-site** | One site per deployment | Multiple sites per workspace |
+| **Price** | Free | Paid plans — see [Billing](/docs/cloud/billing) |
+| **Best for** | Full control, data residency, offline | Speed, teams, multiple client sites |
 
 ---
 
-## 1. Self-Hosted Mode (Core)
+## Self-Hosted
 
-In Self-Hosted mode, the Dyrected engine runs as a server handler inside your application (e.g., using `@dyrected/nuxt` or `@dyrected/next`).
-
-### How it works
-
-Your application imports `@dyrected/core` and a database adapter (like `@dyrected/db-sqlite`). When a request hits `/api/dyrected/*`, your app initializes the engine on-the-fly to query your database.
-
-### Example Nuxt Config
+The Dyrected engine is an npm package that runs **inside your Next.js or Nuxt app**. There is no separate CMS process. Your config, your database, your server.
 
 ```ts
-import config from "./dyrected.config";
-
-export default defineNuxtConfig({
-  modules: ["@dyrected/nuxt"],
-  dyrected: {
-    ...config,
-    apiBase: "/dyrected", // or '/backend' or whatever you like...
-  },
-});
+// dyrected.config.ts — you own everything
+export default defineConfig({
+  db: new PostgresAdapter({ url: process.env.DATABASE_URL }),
+  collections: [...],
+})
 ```
 
-Your `dyrected.config.ts` handles the database connection. You can use any supported adapter:
+Self-hosting is free under the [Business Source License](https://mariadb.com/bsl11/). You can use it commercially for client projects with no restrictions.
+
+---
+
+## Cloud
+
+Your app sends requests to `https://api.dyrected.cloud` using a Site API Key and Site ID. The database, storage, and admin users are managed by Dyrected. You still write the same `dyrected.config.ts` — the difference is where it runs.
 
 ```ts
-// For SQLite
-import { SqliteAdapter } from '@dyrected/db-sqlite'
-const db = new SqliteAdapter({ filename: 'dyrected.db' })
-
-// For Postgres
-import { PostgresAdapter } from '@dyrected/db-postgres'
-const db = new PostgresAdapter({ url: process.env.DATABASE_URL })
-
-export default defineConfig({
-  db,
-  collections: [...]
+// nuxt.config.ts — cloud mode
+export default defineNuxtConfig({
+  modules: ['@dyrected/nuxt'],
+  dyrected: {
+    apiKey:  process.env.DYRECTED_API_KEY,
+    siteId:  process.env.DYRECTED_SITE_ID,
+    baseUrl: 'https://api.dyrected.cloud',
+  },
 })
 ```
 
 ---
 
-## 2. Managed Mode (Cloud)
+## Can I switch later?
 
-In Cloud mode, your application acts as a client. The actual engine, database, and media storage are managed by Dyrected Cloud.
-
-### How it works
-
-Your app sends your `dyrected.config.ts` to the Cloud during deployment (via `dyrected sync:schema`). The Cloud then provisions the necessary infrastructure. Your app then communicates with the Cloud API using a **Site API Key**.
-
-### Example Nuxt Config
-
-```ts
-export default defineNuxtConfig({
-  modules: ["@dyrected/nuxt"],
-  dyrected: {
-    apiKey: process.env.DYRECTED_API_KEY,
-    siteId: process.env.DYRECTED_SITE_ID,
-    baseUrl: "https://api.dyrected.cloud",
-  },
-});
-```
+Yes. Both modes use the same `dyrected.config.ts`. To migrate from self-hosted to cloud: export your data, create a site in the Cloud dashboard, run `dyrected push` to sync your schema, and update your environment variables. No code changes needed.
 
 ---
 
-## FAQ
+## Can I use both at once?
 
-<AccordionGroup>
-  <Accordion title="Can I switch from Self-Hosted to Cloud later?">
-    Yes! Since both modes use the same `dyrected.config.ts`, you can migrate your data and simply update your `nuxt.config.ts` to point to the Cloud API.
-  </Accordion>
-  <Accordion title="Does Self-Hosted mode support multiple sites?">
-    Self-hosted mode is typically used for a single site per deployment. For multi-tenancy (multiple sites), the Cloud mode is recommended as it provides workspace isolation and shared resource management.
-  </Accordion>
-  <Accordion title="Where is my data stored in Cloud mode?">
-    Your data is stored in isolated database clusters managed by Dyrected. We use industry-standard encryption at rest and in transit.
-  </Accordion>
-  <Accordion title="Is there a performance difference?">
-    Self-hosted mode can be faster for internal queries since there is no network overhead to an external API. Cloud mode is optimized for global content delivery and high concurrency.
-  </Accordion>
-</AccordionGroup>
+Yes — common pattern for agencies: self-hosted locally during development, Cloud in production. Or self-hosted for internal tools, Cloud for client-facing sites.

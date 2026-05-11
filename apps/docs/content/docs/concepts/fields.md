@@ -294,7 +294,7 @@ Groups related fields into a nested object. Does **not** create a new database t
   fields: [
     { name: 'metaTitle', type: 'text' },
     { name: 'metaDescription', type: 'textarea' },
-    { name: 'ogImage', type: 'relationship', collection: 'media' },
+    { name: 'ogImage', type: 'relationship', relationTo: 'media' },
   ],
 }
 ```
