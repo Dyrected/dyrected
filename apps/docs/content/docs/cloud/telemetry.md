@@ -1,3 +1,8 @@
+---
+title: Platform Telemetry
+description: Capture high-value business and operational events across the platform.
+---
+
 # Platform Telemetry & Usage Tracking
 
 Dyrected Cloud includes a centralized telemetry system designed to capture high-value business and operational events across the platform.

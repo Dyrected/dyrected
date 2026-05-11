@@ -1,0 +1,9 @@
+# Next.js
+.next/
+out/
+
+# Fumadocs
+.source/
+
+# Production
+build/
