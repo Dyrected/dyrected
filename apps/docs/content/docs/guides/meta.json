@@ -1,4 +1,14 @@
 {
   "title": "Guides",
-  "pages": ["building-a-blog", "adding-authentication", "file-uploads", "invite-only-registration"]
+  "pages": [
+    "building-a-blog",
+    "adding-authentication",
+    "file-uploads",
+    "invite-only-registration",
+    "role-based-access-control",
+    "building-a-page-builder",
+    "configuring-storage",
+    "live-preview",
+    "globals-and-site-settings"
+  ]
 }
