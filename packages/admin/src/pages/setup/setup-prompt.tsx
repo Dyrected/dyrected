@@ -25,11 +25,11 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"next" | "nuxt" | "react" | "vue">("next");
 
-  const isSelfHosted = config.baseUrl?.startsWith("/") || 
-    config.baseUrl?.includes("localhost") || 
+  const isSelfHosted = config.baseUrl?.startsWith("/") ||
+    config.baseUrl?.includes("localhost") ||
     config.baseUrl?.includes("127.0.0.1") ||
     !config.apiKey;
-    
+
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
@@ -40,7 +40,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
     const frameworkLabel = framework === "next" ? "Next.js" : framework === "nuxt" ? "Nuxt" : framework.charAt(0).toUpperCase() + framework.slice(1);
     const backendPkg = framework === "nuxt" ? "@dyrected/nuxt" : "@dyrected/next";
 
-    const baseIntro = isSelfHosted 
+    const baseIntro = isSelfHosted
       ? `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${frameworkLabel}. This is a SELF-HOSTED installation.\nThe backend is already configured via ${backendPkg}.\nYour priority is DATA PRESERVATION and creating a CMS that empowers marketing teams.`
       : `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${config.siteName || "new"} project using ${frameworkLabel}. Complete the entire setup automatically, prioritizing DATA PRESERVATION and marketing independence.`;
 
@@ -137,7 +137,7 @@ const customers = defineCollection({
     { name: 'name', type: 'text', required: true },
     { name: 'email', type: 'email', required: true, unique: true },
     // 'password' is auto-added when auth: true
-    { name: 'avatar', type: 'relationship', collection: 'media' },
+    { name: 'avatar', type: 'relationship', relationTo: 'media' },
     { name: 'role', type: 'select', admin: { layout: 'radio' }, options: [
         { label: 'Member', value: 'member' },
         { label: 'VIP', value: 'vip' },
@@ -156,7 +156,7 @@ const pages = defineCollection({
     { name: 'seo', type: 'object', fields: [
         { name: 'metaTitle',       type: 'text' },
         { name: 'metaDescription', type: 'textarea' },
-        { name: 'ogImage',         type: 'relationship', collection: 'media' },
+        { name: 'ogImage',         type: 'relationship', relationTo: 'media' },
     ]},
     {
       name: 'layout',
@@ -169,7 +169,7 @@ const pages = defineCollection({
           fields: [
             { name: 'heading',    type: 'text',         required: true },
             { name: 'subheading', type: 'textarea' },
-            { name: 'image',      type: 'relationship', collection: 'media' },
+            { name: 'image',      type: 'relationship', relationTo: 'media' },
             { name: 'ctaLabel',   type: 'text' },
             { name: 'ctaLink',    type: 'url' },
           ],
@@ -187,7 +187,7 @@ const pages = defineCollection({
           fields: [
             { name: 'title', type: 'text' },
             { name: 'images', type: 'array', fields: [
-                { name: 'image',   type: 'relationship', collection: 'media' },
+                { name: 'image',   type: 'relationship', relationTo: 'media' },
                 { name: 'caption', type: 'text' },
             ]},
             { name: 'columns', type: 'select', options: [
@@ -227,8 +227,8 @@ const posts = defineCollection({
     { name: 'slug',     type: 'text',         required: true, unique: true },
     { name: 'excerpt',  type: 'textarea' },
     { name: 'content',  type: 'richText' },
-    { name: 'image',    type: 'relationship', collection: 'media' },
-    { name: 'author',   type: 'relationship', collection: 'customers' },
+    { name: 'image',    type: 'relationship', relationTo: 'media' },
+    { name: 'author',   type: 'relationship', relationTo: 'customers' },
     { name: 'tags',     type: 'multiSelect',  options: [
         { label: 'News',      value: 'news' },
         { label: 'Tutorial',  value: 'tutorial' },
@@ -265,7 +265,7 @@ const navigation = defineGlobal({
       fields: [
         { name: 'label', type: 'text' },
         { name: 'url',   type: 'url' },
-        { name: 'page',  type: 'relationship', collection: 'pages' },
+        { name: 'page',  type: 'relationship', relationTo: 'pages' },
         { name: 'openInNewTab', type: 'boolean', defaultValue: false },
         { name: 'children', type: 'array', fields: [
             { name: 'label', type: 'text' },
@@ -282,8 +282,8 @@ const settings = defineGlobal({
   fields: [
     { name: 'siteName',    type: 'text' },
     { name: 'tagline',     type: 'text' },
-    { name: 'logo',        type: 'relationship', collection: 'media' },
-    { name: 'favicon',     type: 'relationship', collection: 'media' },
+    { name: 'logo',        type: 'relationship', relationTo: 'media' },
+    { name: 'favicon',     type: 'relationship', relationTo: 'media' },
     { name: 'footerText',  type: 'textarea' },
     { name: 'socialLinks', type: 'object', fields: [
         { name: 'twitter',   type: 'url' },

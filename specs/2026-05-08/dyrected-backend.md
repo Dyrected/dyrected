@@ -6,15 +6,15 @@ This document describes the complete technical architecture of the Dyrected back
 
 ## Stack
 
-| Concern | Choice | Reason |
-|---|---|---|
-| Runtime | Node.js / Bun / Deno | Via Hono's runtime adapters |
-| Framework | Hono | Runtime-agnostic, typed, fast |
-| Database | Pluggable via adapter | PostgreSQL, MySQL, MongoDB, SQLite |
-| Cache | Redis | Optional: Session storage, rate limiting, preview tokens |
-| Auth | JWT + Refresh Tokens | Stateless, works across runtimes |
-| Storage | Pluggable via adapter | S3, Backblaze B2, Cloudinary, Local |
-| Email | Pluggable via adapter | Seamailer, Resend, SMTP, custom |
+| Concern   | Choice                | Reason                                                   |
+| --------- | --------------------- | -------------------------------------------------------- |
+| Runtime   | Node.js / Bun / Deno  | Via Hono's runtime adapters                              |
+| Framework | Hono                  | Runtime-agnostic, typed, fast                            |
+| Database  | Pluggable via adapter | PostgreSQL, MySQL, MongoDB, SQLite                       |
+| Cache     | Redis                 | Optional: Session storage, rate limiting, preview tokens |
+| Auth      | JWT + Refresh Tokens  | Stateless, works across runtimes                         |
+| Storage   | Pluggable via adapter | S3, Backblaze B2, Cloudinary, Local                      |
+| Email     | Pluggable via adapter | Seamailer, Resend, SMTP, custom                          |
 
 ---
 
@@ -24,19 +24,19 @@ The entire backend is a single Hono application exported from `@dyrected/core`. 
 
 ```ts
 // packages/core/src/index.ts
-import { Hono } from 'hono'
-import { authRoutes } from './routes/auth'
-import { collectionsRoutes } from './routes/collections'
-import { globalsRoutes } from './routes/globals'
-import { schemasRoutes } from './routes/schemas'
+import { Hono } from "hono";
+import { authRoutes } from "./routes/auth";
+import { collectionsRoutes } from "./routes/collections";
+import { globalsRoutes } from "./routes/globals";
+import { schemasRoutes } from "./routes/schemas";
 
 export const dyrected = new Hono()
-  .route('/auth', authRoutes)
-  .route('/collections', collectionsRoutes)
-  .route('/globals', globalsRoutes)
-  .route('/schemas', schemasRoutes)
+  .route("/auth", authRoutes)
+  .route("/collections", collectionsRoutes)
+  .route("/globals", globalsRoutes)
+  .route("/schemas", schemasRoutes);
 
-export type DyrectedApp = typeof dyrected
+export type DyrectedApp = typeof dyrected;
 ```
 
 Media and forms are not special routes — they are collections. Media is a collection with `upload: true`. A contact form is a collection with `access.create: () => true`. There are no separate route groups for them.
@@ -64,31 +64,33 @@ A **site** is the content boundary. One site has one set of collections, globals
 Dyrected uses a function-based access control system. Access can be defined at the **Collection** or **Field** level.
 
 ### Access Functions
+
 Access functions receive the current user context and should return:
+
 - `boolean`: Simple allow/deny.
 - `object`: A filter object to restrict the query (e.g., `{ author: user.id }`).
 
 ```ts
 export const Posts = defineCollection({
-  slug: 'posts',
+  slug: "posts",
   access: {
     read: () => true, // public
     update: ({ req: { user } }) => {
-      if (user.role === 'admin') return true
-      return { author: user.id } // users can only update their own posts
+      if (user.role === "admin") return true;
+      return { author: user.id }; // users can only update their own posts
     },
-    delete: ({ req: { user } }) => user.role === 'admin',
+    delete: ({ req: { user } }) => user.role === "admin",
   },
   fields: [
     {
-      name: 'internalNotes',
-      type: 'text',
+      name: "internalNotes",
+      type: "text",
       access: {
-        read: ({ req: { user } }) => user.role === 'admin',
-      }
-    }
-  ]
-})
+        read: ({ req: { user } }) => user.role === "admin",
+      },
+    },
+  ],
+});
 ```
 
 ---
@@ -98,6 +100,7 @@ export const Posts = defineCollection({
 Hooks allow you to execute logic at specific points in the document lifecycle.
 
 ### Collection Hooks
+
 Supported: `beforeRead`, `afterRead`, `beforeChange`, `afterChange`, `beforeDelete`, `afterDelete`.
 
 ```ts
@@ -119,6 +122,7 @@ hooks: {
 ```
 
 ### Field Hooks
+
 Fields can also have hooks for transformation or validation.
 
 ```ts
@@ -132,7 +136,9 @@ Fields can also have hooks for transformation or validation.
 ```
 
 ### Auth Hooks
+
 Global hooks for authentication events.
+
 - `afterLogin`
 - `afterForgotPassword`
 
@@ -164,15 +170,15 @@ ClientB workspace (if they want their own login)
 
 ---
 
-| Behaviour | `cloud` | `self-hosted` |
-|---|---|---|
-| Workspaces | Multi, managed via API | Single, implicit — not exposed |
-| Sites | Multiple per workspace | Single, hardcoded from config |
-| Billing routes | Enabled | Disabled |
-| Invite system | Enabled | Disabled |
-| Site resolution | Dynamic DB lookup by API key | Pre-resolved singleton at boot |
-| Schema source | Stored in DB, managed via admin | Read from `dyrected.config.ts` at boot |
-| Admin UI | Workspace switcher + site list | Content editor only |
+| Behaviour       | `cloud`                         | `self-hosted`                          |
+| --------------- | ------------------------------- | -------------------------------------- |
+| Workspaces      | Multi, managed via API          | Single, implicit — not exposed         |
+| Sites           | Multiple per workspace          | Single, hardcoded from config          |
+| Billing routes  | Enabled                         | Disabled                               |
+| Invite system   | Enabled                         | Disabled                               |
+| Site resolution | Dynamic DB lookup by API key    | Pre-resolved singleton at boot         |
+| Schema source   | Stored in DB, managed via admin | Read from `dyrected.config.ts` at boot |
+| Admin UI        | Workspace switcher + site list  | Content editor only                    |
 
 Cloud mode is activated by a `DYRECTED_LICENSE_KEY` environment variable issued by Dyrected — it is not configurable in the code. Self-hosted is the default.
 
@@ -188,10 +194,10 @@ Embedded (Next.js / Nuxt) is self-hosted running inside a framework adapter — 
 
 ```ts
 // packages/next/src/index.ts
-import { handle } from 'hono/vercel'
-import { dyrected } from '@dyrected/core'
+import { handle } from "hono/vercel";
+import { dyrected } from "@dyrected/core";
 
-export const { GET, POST, PUT, PATCH, DELETE } = handle(dyrected)
+export const { GET, POST, PUT, PATCH, DELETE } = handle(dyrected);
 ```
 
 Drop into `app/api/dyrected/[...route]/route.ts`. Works on Vercel, Railway, and any Node host.
@@ -200,22 +206,22 @@ Drop into `app/api/dyrected/[...route]/route.ts`. Works on Vercel, Railway, and 
 
 ```ts
 // packages/nuxt/src/runtime/plugin.ts
-import { fromNodeMiddleware } from 'h3'
-import { dyrected } from '@dyrected/core'
+import { fromNodeMiddleware } from "h3";
+import { dyrected } from "@dyrected/core";
 
 export default defineNitroPlugin((nitroApp) => {
-  nitroApp.h3App.use('/api/dyrected', fromNodeMiddleware(dyrected.fetch))
-})
+  nitroApp.h3App.use("/api/dyrected", fromNodeMiddleware(dyrected.fetch));
+});
 ```
 
 ### Standalone (Node / Bun / Deno)
 
 ```ts
 // apps/dev/src/index.ts
-import { serve } from '@hono/node-server'
-import { dyrected } from '@dyrected/core'
+import { serve } from "@hono/node-server";
+import { dyrected } from "@dyrected/core";
 
-serve({ fetch: dyrected.fetch, port: 3000 })
+serve({ fetch: dyrected.fetch, port: 3000 });
 ```
 
 ---
@@ -228,25 +234,25 @@ Dyrected never talks to a database directly. It talks to a `DatabaseAdapter` int
 
 ```ts
 interface DatabaseAdapter {
-  find(collection: string, query: QueryOptions): Promise<PaginatedResult>
-  findOne(collection: string, id: string): Promise<Record | null>
-  findWhere(collection: string, where: WhereClause): Promise<Record[]>
-  create(collection: string, data: Record): Promise<Record>
-  update(collection: string, id: string, data: Record): Promise<Record>
-  delete(collection: string, id: string): Promise<void>
-  migrate(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>
-  transaction<T>(fn: (tx: Transaction) => Promise<T>): Promise<T>
+  find(collection: string, query: QueryOptions): Promise<PaginatedResult>;
+  findOne(collection: string, id: string): Promise<Record | null>;
+  findWhere(collection: string, where: WhereClause): Promise<Record[]>;
+  create(collection: string, data: Record): Promise<Record>;
+  update(collection: string, id: string, data: Record): Promise<Record>;
+  delete(collection: string, id: string): Promise<void>;
+  migrate(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;
+  transaction<T>(fn: (tx: Transaction) => Promise<T>): Promise<T>;
 }
 ```
 
 ### Official Adapters
 
-| Database | Package | Notes |
-|---|---|---|
+| Database   | Package                 | Notes                                                  |
+| ---------- | ----------------------- | ------------------------------------------------------ |
 | PostgreSQL | `@dyrected/db-postgres` | Drizzle ORM, JSONB storage, recommended for production |
-| MySQL | `@dyrected/db-mysql` | Drizzle ORM, JSON column storage |
-| MongoDB | `@dyrected/db-mongodb` | Native driver, document storage |
-| SQLite | `@dyrected/db-sqlite` | Drizzle ORM, zero-dependency, ideal for local dev |
+| MySQL      | `@dyrected/db-mysql`    | Drizzle ORM, JSON column storage                       |
+| MongoDB    | `@dyrected/db-mongodb`  | Native driver, document storage                        |
+| SQLite     | `@dyrected/db-sqlite`   | Drizzle ORM, zero-dependency, ideal for local dev      |
 
 SQLite is deliberately supported — it makes local development require zero external services. Run `dyrected dev` and everything works with no setup.
 
@@ -254,33 +260,33 @@ SQLite is deliberately supported — it makes local development require zero ext
 
 ```ts
 // PostgreSQL
-import { postgresAdapter } from '@dyrected/db-postgres'
+import { postgresAdapter } from "@dyrected/db-postgres";
 
 defineConfig({
   db: postgresAdapter({
     url: process.env.DATABASE_URL,
     pool: { min: 2, max: 10 },
   }),
-})
+});
 
 // MongoDB
-import { mongoAdapter } from '@dyrected/db-mongodb'
+import { mongoAdapter } from "@dyrected/db-mongodb";
 
 defineConfig({
   db: mongoAdapter({
     url: process.env.MONGODB_URL,
-    dbName: 'dyrected',
+    dbName: "dyrected",
   }),
-})
+});
 
 // SQLite (local dev)
-import { sqliteAdapter } from '@dyrected/db-sqlite'
+import { sqliteAdapter } from "@dyrected/db-sqlite";
 
 defineConfig({
   db: sqliteAdapter({
-    filename: './dyrected.db',
+    filename: "./dyrected.db",
   }),
-})
+});
 ```
 
 ### Custom Adapter
@@ -312,27 +318,27 @@ File storage follows the same adapter pattern. Dyrected calls a `StorageAdapter`
 ```ts
 interface StorageAdapter {
   upload(args: {
-    file: Buffer | ReadableStream
-    filename: string
-    mimeType: string
-    size: number
-    prefix?: string
-  }): Promise<{ url: string; key: string }>
+    file: Buffer | ReadableStream;
+    filename: string;
+    mimeType: string;
+    size: number;
+    prefix?: string;
+  }): Promise<{ url: string; key: string }>;
 
-  delete(key: string): Promise<void>
+  delete(key: string): Promise<void>;
 
-  getSignedUrl?(key: string, expiresInSeconds: number): Promise<string>
+  getSignedUrl?(key: string, expiresInSeconds: number): Promise<string>;
 }
 ```
 
 ### Official Adapters
 
-| Provider | Package | Notes |
-|---|---|---|
-| AWS S3 | `@dyrected/storage-s3` | Also works with any S3-compatible API |
-| Backblaze B2 | `@dyrected/storage-b2` | Cheap egress, S3-compatible API |
-| Cloudinary | `@dyrected/storage-cloudinary` | Auto image transformation support |
-| Local filesystem | `@dyrected/storage-local` | For self-hosted or dev environments |
+| Provider         | Package                        | Notes                                 |
+| ---------------- | ------------------------------ | ------------------------------------- |
+| AWS S3           | `@dyrected/storage-s3`         | Also works with any S3-compatible API |
+| Backblaze B2     | `@dyrected/storage-b2`         | Cheap egress, S3-compatible API       |
+| Cloudinary       | `@dyrected/storage-cloudinary` | Auto image transformation support     |
+| Local filesystem | `@dyrected/storage-local`      | For self-hosted or dev environments   |
 
 The local filesystem adapter serves files directly through the Hono app — no external service required. Useful for small self-hosted deployments and development.
 
@@ -414,69 +420,69 @@ You can define as many upload collections as you need, each with different stora
 
 ```ts
 export const Media = defineCollection({
-  slug: 'media',
+  slug: "media",
   upload: true,
   fields: [
-    { name: 'alt', type: 'text' },
-    { name: 'caption', type: 'text' },
+    { name: "alt", type: "text" },
+    { name: "caption", type: "text" },
   ],
   access: {
     read: () => true,
     create: ({ user }) => !!user,
     update: ({ user }) => !!user,
-    delete: ({ user }) => user?.role === 'admin',
+    delete: ({ user }) => user?.role === "admin",
   },
-})
+});
 ```
 
 When `upload: true`, Dyrected automatically manages these metadata fields — never define them manually:
 
-| Field | Type | Description |
-|---|---|---|
-| `url` | string | Full public URL of the file |
-| `filename` | string | Stored filename (UUID-based) |
-| `originalFilename` | string | Original name from the upload |
-| `mimeType` | string | MIME type of the file |
-| `filesize` | number | Size in bytes |
-| `width` | number | Image width in px (images only) |
-| `height` | number | Image height in px (images only) |
+| Field              | Type   | Description                      |
+| ------------------ | ------ | -------------------------------- |
+| `url`              | string | Full public URL of the file      |
+| `filename`         | string | Stored filename (UUID-based)     |
+| `originalFilename` | string | Original name from the upload    |
+| `mimeType`         | string | MIME type of the file            |
+| `filesize`         | number | Size in bytes                    |
+| `width`            | number | Image width in px (images only)  |
+| `height`           | number | Image height in px (images only) |
 
 ### Multiple Upload Collections
 
 ```ts
 // images only — public read, with auto-generated sizes
 export const Images = defineCollection({
-  slug: 'images',
+  slug: "images",
   upload: {
-    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-    maxFileSize: 10 * 1024 * 1024,   // 10MB
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    maxFileSize: 10 * 1024 * 1024, // 10MB
     imageSizes: [
-      { name: 'thumbnail', width: 400, height: 300 },
-      { name: 'card', width: 800, height: 600 },
+      { name: "thumbnail", width: 400, height: 300 },
+      { name: "card", width: 800, height: 600 },
     ],
   },
-  fields: [{ name: 'alt', type: 'text', required: true }],
+  fields: [{ name: "alt", type: "text", required: true }],
   access: {
     read: () => true,
     create: ({ user }) => !!user,
-    delete: ({ user }) => user?.role === 'admin',
+    delete: ({ user }) => user?.role === "admin",
   },
-})
+});
 
 // PDFs — restricted to authenticated users
 export const Documents = defineCollection({
-  slug: 'documents',
+  slug: "documents",
   upload: {
-    allowedMimeTypes: ['application/pdf'],
-    maxFileSize: 25 * 1024 * 1024,  // 25MB
+    allowedMimeTypes: ["application/pdf"],
+    maxFileSize: 25 * 1024 * 1024, // 25MB
   },
-  fields: [{ name: 'title', type: 'text', required: true }],
+  fields: [{ name: "title", type: "text", required: true }],
   access: {
     read: ({ user }) => !!user,
     create: ({ user }) => !!user,
-    delete: ({ user }) => user?.role === 'admin',
+    delete: ({ user }) => user?.role === "admin",
   },
-})
+});
 ```
 
 When `imageSizes` is defined, Dyrected generates resized versions on upload and stores each URL alongside the original:
@@ -507,20 +513,20 @@ This means you can have multiple authenticatable collections — `users`, `admin
 
 ```ts
 export const Users = defineCollection({
-  slug: 'users',
+  slug: "users",
   auth: true,
   fields: [
-    { name: 'firstName', type: 'text', required: true },
-    { name: 'lastName', type: 'text', required: true },
-    { name: 'role', type: 'select', options: ['admin', 'editor', 'viewer'] },
+    { name: "firstName", type: "text", required: true },
+    { name: "lastName", type: "text", required: true },
+    { name: "role", type: "select", options: ["admin", "editor", "viewer"] },
   ],
   access: {
     read: ({ user }) => !!user,
-    create: ({ user }) => user?.role === 'admin',
-    update: ({ user, doc }) => user?.id === doc.id || user?.role === 'admin',
-    delete: ({ user }) => user?.role === 'admin',
+    create: ({ user }) => user?.role === "admin",
+    update: ({ user, doc }) => user?.id === doc.id || user?.role === "admin",
+    delete: ({ user }) => user?.role === "admin",
   },
-})
+});
 ```
 
 ### Auth Endpoints (Auto-Generated Per Auth Collection)
@@ -558,11 +564,11 @@ Access control is function-based. Every collection and global defines its own ac
 
 ```ts
 type AccessFunction = (args: {
-  user: AuthenticatedUser | null
-  doc?: Record<string, any>
-  data?: Record<string, any>
-  req: HonoRequest
-}) => boolean | Promise<boolean>
+  user: AuthenticatedUser | null;
+  doc?: Record<string, any>;
+  data?: Record<string, any>;
+  req: HonoRequest;
+}) => boolean | Promise<boolean>;
 ```
 
 ### Examples
@@ -620,20 +626,20 @@ Collections are the primary data model. Each collection is backed by a table (SQ
 
 ```ts
 export const Posts = defineCollection({
-  slug: 'posts',
-  label: { singular: 'Post', plural: 'Posts' },
+  slug: "posts",
+  label: { singular: "Post", plural: "Posts" },
   admin: {
-    useAsTitle: 'title',
-    defaultColumns: ['title', 'status', 'author', 'publishedAt'],
+    useAsTitle: "title",
+    defaultColumns: ["title", "status", "author", "publishedAt"],
   },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'slug', type: 'text', unique: true },
-    { name: 'status', type: 'select', options: ['draft', 'published'], defaultValue: 'draft' },
-    { name: 'author', type: 'relationship', collection: 'users', required: true },
-    { name: 'cover', type: 'relationship', collection: 'images' },
-    { name: 'body', type: 'richText' },
-    { name: 'publishedAt', type: 'date' },
+    { name: "title", type: "text", required: true },
+    { name: "slug", type: "text", unique: true },
+    { name: "status", type: "select", options: ["draft", "published"], defaultValue: "draft" },
+    { name: "author", type: "relationship", relationTo: "users", required: true },
+    { name: "cover", type: "relationship", relationTo: "images" },
+    { name: "body", type: "richText" },
+    { name: "publishedAt", type: "date" },
   ],
   hooks: {
     beforeCreate: [setAuthorFromSession, generateSlug],
@@ -641,12 +647,12 @@ export const Posts = defineCollection({
     beforeUpdate: [validateSlugUniqueness],
   },
   access: {
-    read: ({ user, doc }) => doc?.status === 'published' || !!user,
+    read: ({ user, doc }) => doc?.status === "published" || !!user,
     create: ({ user }) => !!user,
-    update: ({ user, doc }) => user?.id === doc?.authorId || user?.role === 'admin',
-    delete: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.id === doc?.authorId || user?.role === "admin",
+    delete: ({ user }) => user?.role === "admin",
   },
-})
+});
 ```
 
 ### Auto-Generated REST Endpoints Per Collection
@@ -666,16 +672,16 @@ Available hooks: `beforeRead`, `afterRead`, `beforeCreate`, `afterCreate`, `befo
 
 ```ts
 type BeforeCreateHook = (args: {
-  data: Record<string, any>
-  user: AuthenticatedUser | null
-  req: HonoRequest
-}) => Promise<Record<string, any>>
+  data: Record<string, any>;
+  user: AuthenticatedUser | null;
+  req: HonoRequest;
+}) => Promise<Record<string, any>>;
 
 type AfterCreateHook = (args: {
-  doc: Record<string, any>
-  user: AuthenticatedUser | null
-  req: HonoRequest
-}) => Promise<void>
+  doc: Record<string, any>;
+  user: AuthenticatedUser | null;
+  req: HonoRequest;
+}) => Promise<void>;
 ```
 
 ---
@@ -686,26 +692,26 @@ Globals are single-instance documents. There is exactly one document per Global 
 
 ```ts
 export const Navbar = defineGlobal({
-  slug: 'navbar',
-  label: 'Navigation',
+  slug: "navbar",
+  label: "Navigation",
   fields: [
-    { name: 'logo', type: 'relationship', collection: 'images' },
+    { name: "logo", type: "relationship", relationTo: "images" },
     {
-      name: 'links',
-      type: 'array',
+      name: "links",
+      type: "array",
       fields: [
-        { name: 'label', type: 'text' },
-        { name: 'url', type: 'url' },
+        { name: "label", type: "text" },
+        { name: "url", type: "url" },
       ],
     },
-    { name: 'ctaText', type: 'text' },
-    { name: 'ctaUrl', type: 'url' },
+    { name: "ctaText", type: "text" },
+    { name: "ctaUrl", type: "url" },
   ],
   access: {
     read: () => true,
     update: ({ user }) => !!user,
   },
-})
+});
 ```
 
 ### Endpoints Per Global
@@ -724,19 +730,19 @@ The entire CMS is driven by a single config file. Developers define this. Everyt
 
 ```ts
 // dyrected.config.ts
-import { defineConfig } from '@dyrected/core'
-import { postgresAdapter } from '@dyrected/db-postgres'
-import { s3Adapter } from '@dyrected/storage-s3'
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
+import { s3Adapter } from "@dyrected/storage-s3";
 
-import { Users } from './collections/users'
-import { Posts } from './collections/posts'
-import { Pages } from './collections/pages'
-import { Images } from './collections/images'
-import { Documents } from './collections/documents'
-import { ContactSubmissions } from './collections/contact-submissions'
-import { Navbar } from './globals/navbar'
-import { Footer } from './globals/footer'
-import { SiteSettings } from './globals/site-settings'
+import { Users } from "./collections/users";
+import { Posts } from "./collections/posts";
+import { Pages } from "./collections/pages";
+import { Images } from "./collections/images";
+import { Documents } from "./collections/documents";
+import { ContactSubmissions } from "./collections/contact-submissions";
+import { Navbar } from "./globals/navbar";
+import { Footer } from "./globals/footer";
+import { SiteSettings } from "./globals/site-settings";
 
 export default defineConfig({
   collections: [Users, Posts, Pages, Images, Documents, ContactSubmissions],
@@ -754,9 +760,9 @@ export default defineConfig({
   }),
 
   email: {
-    provider: 'seamailer',
+    provider: "seamailer",
     apiKey: process.env.SEAMAILER_API_KEY,
-    from: 'noreply@dyrected.com',
+    from: "noreply@dyrected.com",
   },
 
   redis: {
@@ -764,9 +770,9 @@ export default defineConfig({
   },
 
   cors: {
-    origins: ['https://yoursite.com', 'http://localhost:3000'],
+    origins: ["https://yoursite.com", "http://localhost:3000"],
   },
-})
+});
 ```
 
 There is no `mode` flag in the config file. Self-hosted is the default. Cloud mode is activated by a `DYRECTED_LICENSE_KEY` environment variable issued by Dyrected — it is not configurable by the developer. The config file is always the schema source of truth for self-hosted installations. Schema changes require a config edit and redeploy.
@@ -848,15 +854,15 @@ POST   /schemas/diff/:id/approve
 ## Middleware Stack
 
 ```ts
-dyrected.use('*', cors())
-dyrected.use('*', rateLimiter())
-dyrected.use('*', requestId())
-dyrected.use('*', logger())
-dyrected.use('/collections/*', resolveSite())
-dyrected.use('/globals/*',     resolveSite())
-dyrected.use('/workspaces/*',  authenticate())
-dyrected.use('/collections/*', authenticate({ optional: true }))
-dyrected.use('/globals/*',     authenticate({ optional: true }))
+dyrected.use("*", cors());
+dyrected.use("*", rateLimiter());
+dyrected.use("*", requestId());
+dyrected.use("*", logger());
+dyrected.use("/collections/*", resolveSite());
+dyrected.use("/globals/*", resolveSite());
+dyrected.use("/workspaces/*", authenticate());
+dyrected.use("/collections/*", authenticate({ optional: true }));
+dyrected.use("/globals/*", authenticate({ optional: true }));
 ```
 
 ### Site Resolution Middleware
@@ -866,20 +872,20 @@ dyrected.use('/globals/*',     authenticate({ optional: true }))
 ```ts
 // middleware/resolveSite.ts
 export const resolveSite = () => async (c, next) => {
-  if (config.mode === 'self-hosted') {
-    c.set('site', config._singletonSite)
-    c.set('workspace', config._singletonWorkspace)
-    return next()
+  if (config.mode === "self-hosted") {
+    c.set("site", config._singletonSite);
+    c.set("workspace", config._singletonWorkspace);
+    return next();
   }
 
-  const apiKey = c.req.header('x-api-key')
-  const site = await db.findSiteByApiKey(apiKey)
-  if (!site) return c.json({ error: true, code: 'INVALID_API_KEY' }, 401)
+  const apiKey = c.req.header("x-api-key");
+  const site = await db.findSiteByApiKey(apiKey);
+  if (!site) return c.json({ error: true, code: "INVALID_API_KEY" }, 401);
 
-  c.set('site', site)
-  c.set('workspace', site.workspace)
-  return next()
-}
+  c.set("site", site);
+  c.set("workspace", site.workspace);
+  return next();
+};
 ```
 
 `authenticate({ optional: true })` attaches the user to context if a valid token is present but never rejects unauthenticated requests — the collection's access functions make that decision.
@@ -962,22 +968,22 @@ In self-hosted mode, `workspace_id` and `site_id` columns still exist but always
 
 ## Field Types
 
-| Type | Description |
-|---|---|
-| `text` | Short single-line string |
-| `textarea` | Multi-line string |
-| `richText` | Structured rich text (Lexical) |
-| `number` | Numeric value |
-| `boolean` | True / false |
-| `date` | ISO date string |
-| `select` | Single value from defined options |
-| `multiSelect` | Multiple values from defined options |
-| `email` | Validated email string |
-| `url` | Validated URL string |
+| Type           | Description                                 |
+| -------------- | ------------------------------------------- |
+| `text`         | Short single-line string                    |
+| `textarea`     | Multi-line string                           |
+| `richText`     | Structured rich text (Lexical)              |
+| `number`       | Numeric value                               |
+| `boolean`      | True / false                                |
+| `date`         | ISO date string                             |
+| `select`       | Single value from defined options           |
+| `multiSelect`  | Multiple values from defined options        |
+| `email`        | Validated email string                      |
+| `url`          | Validated URL string                        |
 | `relationship` | Reference to another collection entry by ID |
-| `array` | Repeatable group of sub-fields |
-| `object` | Nested non-repeatable group of sub-fields |
-| `json` | Raw JSON (escape hatch) |
+| `array`        | Repeatable group of sub-fields              |
+| `object`       | Nested non-repeatable group of sub-fields   |
+| `json`         | Raw JSON (escape hatch)                     |
 
 Image and file fields are `relationship` fields pointing to an upload collection. There are no separate `image` or `file` field types — relationships to upload collections carry all the metadata automatically.
 
@@ -985,22 +991,22 @@ Image and file fields are `relationship` fields pointing to an upload collection
 
 ## Package Reference
 
-| Package | Purpose |
-|---|---|
-| `@dyrected/core` | Hono backend — the entire CMS engine |
-| `@dyrected/db-postgres` | PostgreSQL database adapter (Drizzle) |
-| `@dyrected/db-mysql` | MySQL database adapter (Drizzle) |
-| `@dyrected/db-mongodb` | MongoDB database adapter |
-| `@dyrected/db-sqlite` | SQLite database adapter — local dev |
-| `@dyrected/storage-s3` | AWS S3 / S3-compatible storage adapter |
-| `@dyrected/storage-b2` | Backblaze B2 storage adapter |
-| `@dyrected/storage-cloudinary` | Cloudinary storage adapter |
-| `@dyrected/storage-local` | Local filesystem storage adapter |
-| `@dyrected/sdk` | Framework-agnostic content client |
-| `@dyrected/next` | Next.js adapter and hooks |
-| `@dyrected/nuxt` | Nuxt module and composables |
-| `@dyrected/admin` | Standalone React admin UI |
-| `@dyrected/cli` | Setup, migration, and management CLI |
+| Package                        | Purpose                                |
+| ------------------------------ | -------------------------------------- |
+| `@dyrected/core`               | Hono backend — the entire CMS engine   |
+| `@dyrected/db-postgres`        | PostgreSQL database adapter (Drizzle)  |
+| `@dyrected/db-mysql`           | MySQL database adapter (Drizzle)       |
+| `@dyrected/db-mongodb`         | MongoDB database adapter               |
+| `@dyrected/db-sqlite`          | SQLite database adapter — local dev    |
+| `@dyrected/storage-s3`         | AWS S3 / S3-compatible storage adapter |
+| `@dyrected/storage-b2`         | Backblaze B2 storage adapter           |
+| `@dyrected/storage-cloudinary` | Cloudinary storage adapter             |
+| `@dyrected/storage-local`      | Local filesystem storage adapter       |
+| `@dyrected/sdk`                | Framework-agnostic content client      |
+| `@dyrected/next`               | Next.js adapter and hooks              |
+| `@dyrected/nuxt`               | Nuxt module and composables            |
+| `@dyrected/admin`              | Standalone React admin UI              |
+| `@dyrected/cli`                | Setup, migration, and management CLI   |
 
 ---
 
@@ -1063,4 +1069,4 @@ CORS_ORIGINS=https://yoursite.com,http://localhost:3000
 
 ---
 
-*This document reflects the v1 implementation target.*
+_This document reflects the v1 implementation target._
