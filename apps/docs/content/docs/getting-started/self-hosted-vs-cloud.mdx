@@ -22,7 +22,7 @@ The Dyrected engine is an npm package that runs **inside your Next.js or Nuxt ap
 <Tabs items={['Next.js', 'Nuxt']}>
 <Tab value="Next.js">
 ```ts
-// app/api/dyrected/[...route]/route.ts
+// app/dyrected/[...route]/route.ts
 import { createApp } from '@dyrected/core'
 import config from '@/dyrected.config'
 
@@ -43,7 +43,7 @@ export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
     ...config,
-    apiBase: '/api/dyrected',
+    apiBase: '/dyrected',
   },
 })
 ```
@@ -74,7 +74,7 @@ export default defineConfig({
 ```
 
 ```ts
-// app/api/dyrected/[...route]/route.ts — same as self-hosted
+// app/dyrected/[...route]/route.ts — same as self-hosted
 import { createApp } from '@dyrected/core'
 import config from '@/dyrected.config'
 
@@ -103,9 +103,21 @@ export default defineNuxtConfig({
 
 ---
 
+## When Cloud makes sense
+
+- **You're an agency** building sites for multiple clients — each client gets their own site in one workspace, billed together, managed from one dashboard
+- **You want to ship fast** — no Postgres to provision, no S3 bucket to configure, no server to maintain
+- **You're on Vercel or Railway** and don't want to manage a separate database service
+- **You need multi-site** — Cloud workspaces let you spin up a new site without touching any code
+- **You're a solo developer** who wants a low-maintenance stack — $19/month is cheaper than provisioning and operating your own managed Postgres + storage
+
+→ [Deploy with Dyrected Cloud](/docs/deployment/cloud) — full setup guide with pricing
+
+---
+
 ## Can I switch later?
 
-Yes. Both modes use the same `dyrected.config.ts`. To migrate from self-hosted to cloud: export your data, create a site in the Cloud dashboard, run `dyrected push` to sync your schema, and update your environment variables. No code changes needed.
+Yes. Both modes use the same `dyrected.config.ts`. To migrate from self-hosted to Cloud: export your data, create a site in the Cloud dashboard, run `dyrected push` to sync your schema, and update your environment variables. No code changes needed.
 
 ---
 

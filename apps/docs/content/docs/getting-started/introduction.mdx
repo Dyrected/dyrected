@@ -17,13 +17,40 @@ The engine runs **inside your existing Next.js or Nuxt app** as a route handler.
 
 **`@dyrected/sdk`** — a typed TypeScript client for fetching content from your frontend, Node scripts, or any other environment.
 
-**Dyrected Cloud** — optional managed hosting for the database, storage, and multi-site workspaces. If you'd rather manage your own infrastructure, self-hosting is free.
+**Dyrected Cloud** — managed hosting for the database, storage, and multi-site workspaces. The fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
+
+---
+
+## Why Dyrected?
+
+| | Dyrected | Payload CMS | Sanity | Contentful |
+|---|---|---|---|---|
+| **Config** | TypeScript in your repo | TypeScript in your repo | Studio UI | Web UI |
+| **Runs in your app** | Yes — no separate server | Yes | No | No |
+| **Managed cloud option** | Yes ([Dyrected Cloud](/docs/deployment/cloud)) | No | Yes | Yes |
+| **Self-hostable** | Yes — free | Yes — free | Limited | No |
+| **Multi-site** | Yes (Cloud workspaces) | Manual | Project-based | Organisation-based |
+| **License** | BSL → Apache 2 | MIT | Proprietary | Proprietary |
+
+The short version: Dyrected gives you Payload's developer experience (config-as-code, no separate process) with the managed cloud option of Sanity or Contentful.
+
+---
+
+## Self-hosted or Cloud?
+
+**[Dyrected Cloud](/docs/deployment/cloud)** — create an account, run `dyrected push`, set two env vars, and your site is live. No database to provision, no storage bucket to configure, no infrastructure to maintain. Starts at $19/month.
+
+**Self-hosted** — bring your own Postgres/SQLite/MongoDB and storage. Free under the BSL. Right for teams with strict data residency requirements or who already have infrastructure in place.
+
+Not sure? Read [Self-Hosted vs Cloud](/docs/getting-started/self-hosted-vs-cloud).
 
 ---
 
 ## Which path is right for you?
 
-**I want to ship a site this weekend** → [Quickstart](/docs/getting-started/quickstart)
+**I want the fastest path to a live site** → [Deploy with Dyrected Cloud](/docs/deployment/cloud)
+
+**I want to get started locally first** → [Quickstart](/docs/getting-started/quickstart)
 
 **I want to understand self-hosted vs cloud** → [Self-Hosted vs Cloud](/docs/getting-started/self-hosted-vs-cloud)
 

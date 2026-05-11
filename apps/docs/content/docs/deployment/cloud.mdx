@@ -1,0 +1,172 @@
+---
+title: Deploy with Dyrected Cloud
+description: Get a site live in minutes with managed database, storage, and zero server config.
+---
+
+Dyrected Cloud manages your database, file storage, and multi-site workspace so you can focus on building. No connection strings, no storage buckets, no infrastructure to maintain.
+
+---
+
+## 1. Create an account and workspace
+
+1. Sign up at [app.dyrected.com](https://app.dyrected.com)
+2. Create a **Workspace** — this is your billing unit. One workspace holds all your sites.
+3. Create a **Site** — each site gets its own database, storage bucket, and Admin UI.
+4. Copy the **Site API Key** and **Site ID** from the site settings.
+
+---
+
+## 2. Install and configure
+
+No database adapter needed.
+
+```bash
+pnpm add @dyrected/core
+```
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from '@dyrected/core'
+
+export default defineConfig({
+  // No db: needed — Cloud provides the database
+  collections: [
+    {
+      slug: 'posts',
+      fields: [
+        { name: 'title',   type: 'text',     required: true },
+        { name: 'slug',    type: 'text',     required: true },
+        { name: 'content', type: 'richtext' },
+        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
+      ],
+    },
+  ],
+})
+```
+
+---
+
+## 3. Push your schema
+
+```bash
+npx dyrected push
+```
+
+This sends your `dyrected.config.ts` to the Cloud, provisions the necessary tables, and makes the API live. Run it every time you add or change a collection or field.
+
+---
+
+## 4. Set environment variables
+
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+```bash
+# .env.local
+DYRECTED_API_KEY=sk_live_...
+DYRECTED_SITE_ID=site_...
+NEXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
+NEXT_PUBLIC_DYRECTED_SITE_ID=site_...
+```
+</Tab>
+<Tab value="Nuxt">
+```bash
+# .env
+DYRECTED_API_KEY=sk_live_...
+DYRECTED_SITE_ID=site_...
+NUXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
+NUXT_PUBLIC_DYRECTED_SITE_ID=site_...
+```
+</Tab>
+</Tabs>
+
+Set the same variables in your hosting provider (Vercel, Railway, etc.) under environment variables.
+
+---
+
+## 5. Mount the router
+
+The router setup is identical to self-hosted — Cloud is just a different target URL.
+
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+```ts
+// app/api/dyrected/[...route]/route.ts
+import { createDyrectedApp } from '@dyrected/core'
+import config from '@/dyrected.config'
+
+const app = createDyrectedApp(config)
+
+export const GET    = app.fetch
+export const POST   = app.fetch
+export const PATCH  = app.fetch
+export const DELETE = app.fetch
+```
+</Tab>
+<Tab value="Nuxt">
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['@dyrected/nuxt'],
+  dyrected: {
+    apiKey:  process.env.DYRECTED_API_KEY,
+    siteId:  process.env.DYRECTED_SITE_ID,
+    baseUrl: 'https://api.dyrected.cloud',
+  },
+})
+```
+</Tab>
+</Tabs>
+
+---
+
+## 6. Fetch content
+
+Every request to the Cloud API needs the `x-site-id` header alongside your API key:
+
+```ts
+const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts`, {
+  headers: {
+    'x-api-key':  process.env.DYRECTED_API_KEY!,
+    'x-site-id':  process.env.DYRECTED_SITE_ID!,
+  },
+})
+```
+
+The SDK handles this automatically:
+
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey:  process.env.DYRECTED_API_KEY!,
+  siteId:  process.env.DYRECTED_SITE_ID!,
+})
+
+const { docs } = await client.collection('posts').find()
+```
+
+---
+
+## Managing multiple sites
+
+Each site in your workspace is independent — its own collections, its own data, its own Admin UI users. You can create as many sites as your plan allows from the Cloud dashboard without touching any code.
+
+Common patterns:
+- One site per client
+- One site per environment (staging + production)
+- One site for a blog, another for an e-commerce catalog
+
+See [Workspaces](/docs/cloud/workspaces) for the full workspace and site management reference.
+
+---
+
+## Plans
+
+| | Starter | Studio | Agency |
+|---|---|---|---|
+| Sites | 3 | 10 | 25 |
+| Storage | 15 GB | 60 GB | 200 GB |
+| Price | $19/mo | $39/mo | $99/mo |
+
+[Full pricing and plan comparison →](/docs/cloud/billing)

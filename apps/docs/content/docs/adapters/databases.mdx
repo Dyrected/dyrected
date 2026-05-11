@@ -5,6 +5,8 @@ description: Connect Dyrected to your preferred database.
 
 Dyrected is database-agnostic. Choose the adapter that fits your infrastructure and pass it to `defineConfig` as `db`. All adapters implement the same `DatabaseAdapter` interface, so your application code never changes when you switch.
 
+> **On Dyrected Cloud, no database adapter is needed.** The database is fully managed — just omit the `db` field from your config and run `dyrected push`. [Learn more →](/docs/deployment/cloud)
+
 ---
 
 ## Supported Adapters

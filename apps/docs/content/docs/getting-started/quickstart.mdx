@@ -1,31 +1,94 @@
 ---
 title: Quickstart
-description: Add Dyrected to an existing Next.js or Nuxt app in under 5 minutes.
+description: Get Dyrected running — choose Cloud for zero infrastructure or self-hosted for full control.
 ---
 
-## 1. Install
+<Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt']}>
+<Tab value="Dyrected Cloud">
 
-<Tabs items={['Next.js', 'Nuxt']}>
+The fastest path to a live site. No database to configure, no storage bucket, no infrastructure.
+
+**1. Create an account**
+
+Sign up at [app.dyrected.com](https://app.dyrected.com), create a Workspace, then create a Site. Copy the **Site API Key** and **Site ID** from the site settings.
+
+**2. Install**
+
+```bash
+pnpm add @dyrected/core
+```
+
+**3. Create your config**
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from '@dyrected/core'
+
+export default defineConfig({
+  // No db needed — Cloud manages the database
+  collections: [
+    {
+      slug: 'posts',
+      fields: [
+        { name: 'title',   type: 'text',     required: true },
+        { name: 'slug',    type: 'text',     required: true },
+        { name: 'content', type: 'richtext' },
+        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
+      ],
+    },
+  ],
+})
+```
+
+**4. Push your schema**
+
+```bash
+npx dyrected push
+```
+
+This sends your config to the Cloud, provisions the tables, and makes the API live.
+
+**5. Set environment variables**
+
+```bash
+# .env.local
+DYRECTED_API_KEY=sk_live_...
+DYRECTED_SITE_ID=site_...
+NEXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
+NEXT_PUBLIC_DYRECTED_SITE_ID=site_...
+```
+
+**6. Fetch content**
+
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+  apiKey:  process.env.DYRECTED_API_KEY!,
+  siteId:  process.env.DYRECTED_SITE_ID!,
+})
+
+const { docs } = await client.collection('posts').find()
+```
+
+For the full Cloud setup including router mounting and multi-site patterns, see [Deploy with Dyrected Cloud](/docs/deployment/cloud).
+
+</Tab>
 <Tab value="Next.js">
+
+**1. Install**
+
 ```bash
 pnpm add @dyrected/core @dyrected/db-sqlite
 ```
-</Tab>
-<Tab value="Nuxt">
-```bash
-pnpm add @dyrected/core @dyrected/nuxt @dyrected/db-sqlite
-```
-</Tab>
-</Tabs>
 
 Use `@dyrected/db-postgres` instead of `@dyrected/db-sqlite` for production. See [Database Adapters](/docs/adapters/databases).
 
----
-
-## 2. Create your config
+**2. Create your config**
 
 ```ts
-// dyrected.config.ts  (same for both frameworks)
+// dyrected.config.ts
 import { defineConfig } from '@dyrected/core'
 import { SqliteAdapter } from '@dyrected/db-sqlite'
 
@@ -45,26 +108,76 @@ export default defineConfig({
 })
 ```
 
----
+**3. Mount the router**
 
-## 3. Mount the router
-
-<Tabs items={['Next.js', 'Nuxt']}>
-<Tab value="Next.js">
 ```ts
-// app/api/dyrected/[...route]/route.ts
-import { createApp } from '@dyrected/core'
+// app/dyrected/[...route]/route.ts
+import { createDyrectedApp } from '@dyrected/core'
 import config from '@/dyrected.config'
 
-const app = createApp(config)
+const app = createDyrectedApp(config)
 
 export const GET    = app.fetch
 export const POST   = app.fetch
 export const PATCH  = app.fetch
 export const DELETE = app.fetch
 ```
+
+**4. Set environment variables**
+
+```bash
+# .env.local
+DYRECTED_JWT_SECRET=a-long-random-secret
+DYRECTED_API_KEY=your-api-key
+```
+
+**5. Run and test**
+
+```bash
+pnpm dev
+```
+
+```bash
+curl http://localhost:3000/dyrected/collections/posts \
+  -H "x-api-key: your-api-key"
+```
+
 </Tab>
 <Tab value="Nuxt">
+
+**1. Install**
+
+```bash
+pnpm add @dyrected/core @dyrected/nuxt @dyrected/db-sqlite
+```
+
+Use `@dyrected/db-postgres` instead of `@dyrected/db-sqlite` for production. See [Database Adapters](/docs/adapters/databases).
+
+**2. Create your config**
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from '@dyrected/core'
+import { SqliteAdapter } from '@dyrected/db-sqlite'
+
+export default defineConfig({
+  db: new SqliteAdapter({ filename: './dyrected.db' }),
+  collections: [
+    {
+      slug: 'posts',
+      fields: [
+        { name: 'title',   type: 'text',     required: true },
+        { name: 'slug',    type: 'text',     required: true },
+        { name: 'content', type: 'richtext' },
+        { name: 'status',  type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
+      ],
+    },
+  ],
+})
+```
+
+**3. Mount the module**
+
 ```ts
 // nuxt.config.ts
 import config from './dyrected.config'
@@ -73,51 +186,30 @@ export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
     ...config,
-    apiBase: '/api/dyrected',
+    apiBase: '/dyrected',
   },
 })
 ```
-</Tab>
-</Tabs>
 
----
-
-## 4. Set environment variables
+**4. Set environment variables**
 
 ```bash
-# .env.local
+# .env
 DYRECTED_JWT_SECRET=a-long-random-secret
 DYRECTED_API_KEY=your-api-key
 ```
 
----
+**5. Run and test**
 
-## 5. Run your app and test
-
-<Tabs items={['Next.js', 'Nuxt']}>
-<Tab value="Next.js">
 ```bash
 pnpm dev
 ```
 
-Fetch your posts:
-
 ```bash
-curl http://localhost:3000/api/dyrected/collections/posts \
+curl http://localhost:3000/dyrected/collections/posts \
   -H "x-api-key: your-api-key"
 ```
-</Tab>
-<Tab value="Nuxt">
-```bash
-pnpm dev
-```
 
-Fetch your posts:
-
-```bash
-curl http://localhost:3000/api/dyrected/collections/posts \
-  -H "x-api-key: your-api-key"
-```
 </Tab>
 </Tabs>
 
@@ -128,7 +220,7 @@ curl http://localhost:3000/api/dyrected/collections/posts \
 - [Mount the Admin UI](/docs/admin/overview) — let editors manage content at `/admin`
 - [Building a Blog](/docs/guides/building-a-blog) — full walkthrough with frontend pages
 - [Adding Authentication](/docs/guides/adding-authentication) — add a users collection with login
-- [Deploy to Vercel](/docs/deployment/vercel) — go to production
+- [Deploy with Dyrected Cloud](/docs/deployment/cloud) — go live with zero infrastructure
 
 ---
 

@@ -1,4 +1,4 @@
 {
   "title": "Deployment",
-  "pages": ["vercel", "docker", "railway"]
+  "pages": ["cloud", "vercel", "docker", "railway"]
 }
