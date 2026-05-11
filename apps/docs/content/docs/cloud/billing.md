@@ -1,30 +1,49 @@
 ---
-title: Billing & Quotas
-description: Understanding plans and usage limits on Dyrected Cloud.
+title: Billing & Plans
+description: Plan limits, quotas, and what happens when you hit them.
 ---
 
-Dyrected Cloud uses a transparent, usage-based billing model powered by **Paystack**.
+Billing is managed through the Cloud Dashboard under **Settings → Billing**, powered by Paystack. Pricing is shown in USD for international users and NGN for Nigerian users.
 
-## Pricing Plans
+---
 
-We offer several plans designed to scale with your project's needs:
+## Plan limits
 
-- **Hobby:** Free for personal projects and experimentation. Includes limited storage and bandwidth.
-- **Pro:** For professional developers and small teams. Higher quotas and priority support.
-- **Enterprise:** Custom limits, dedicated infrastructure, and advanced security features.
+| | Starter | Studio | Agency | Multi-Tenancy |
+|---|---|---|---|---|
+| **Sites** | 3 | 10 | 25 | Unlimited |
+| **Storage** | 15 GB | 60 GB | 200 GB | Custom |
+| **Extra site** | — | — | $8 / ₦8,000 /mo | — |
 
-## Managing Subscriptions
+Self-hosted instances have no cloud quotas — storage and site limits are determined by your own infrastructure.
 
-You can manage your billing settings directly from the Cloud Dashboard.
+---
 
-1. Go to **Settings > Billing**.
-2. From here, you can upgrade/downgrade your plan, view invoices, and update your payment method.
+## Quota enforcement
 
-## Usage Quotas
+| Quota | Behaviour when exceeded |
+|---|---|
+| **Storage** | File uploads return `413 Payload Too Large`. Existing files and reads are unaffected. |
+| **Site limit** | Creating a new site via the Dashboard is blocked. Existing sites continue working. |
 
-Quotas are calculated at the Workspace level. If you exceed your quota for the month:
-- **Storage:** You will be unable to upload new files until you upgrade or delete existing ones.
-- **API Requests:** Your API calls may be throttled.
-- **Sites:** You will need to upgrade to add more sites to your workspace.
+You'll receive email warnings at 80% and 100% of your storage quota.
 
-You will receive email notifications as you approach your usage limits.
+---
+
+## Upgrading and downgrading
+
+Upgrades take effect immediately — the prorated difference is charged to your payment method. Downgrades take effect at the end of the current billing cycle.
+
+To change your plan: **Settings → Billing → Change plan**.
+
+---
+
+## Multi-Tenancy License
+
+If you're embedding Dyrected inside your own SaaS product (giving your customers isolated workspaces), you need the Multi-Tenancy License rather than a standard cloud plan. It covers commercial redistribution rights under the BSL. [Contact us](mailto:support@dyrected.com) to set this up.
+
+---
+
+## Business Source License (BSL)
+
+Self-hosted usage is free under the BSL. The one restriction: you cannot offer Dyrected itself as a managed hosting service to third parties. Building client sites on your own self-hosted instance is fully permitted. The licence converts to Apache 2.0 after 4 years.
