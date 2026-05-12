@@ -254,7 +254,7 @@ export default defineConfig({
     console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
     console.log(chalk.cyan(`  1. Configure your environment variables in .env`));
     console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
-    console.log(chalk.cyan("  3. Run: npx dyrected generate:types\n"));
+    console.log(chalk.cyan("  3. Run: npx @dyrected/cli generate:types\n"));
 
     console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
     console.log(chalk.dim("Copy this prompt and give it to your AI tool (Claude, GPT, etc.) to scaffold your CMS logic:\n"));

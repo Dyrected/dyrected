@@ -19,7 +19,7 @@ Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.).
 - Install the necessary dependencies (`@dyrected/admin`, `@dyrected/core`).
 - Create a `dyrected.config.ts` with your initial collections.
 - **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
-- **Sync your Schema**: The AI will run `npx dyrected sync:schema` for you so your cloud database is ready immediately.
+- **Sync your Schema**: The AI will run `npx @dyrected/cli sync:schema` for you so your cloud database is ready immediately.
 
 ### 4. Build and ship
 Run your site and your new dashboard will be live at `yourwebsite.com/admin`.
@@ -32,7 +32,7 @@ The easiest way to get started with Next.js is using the interactive CLI.
 **1. Initialize**
 
 ```bash
-npx dyrected init
+npx @dyrected/cli init
 ```
 
 Choose **Next.js** and **SQLite** (for local development). The CLI will:
@@ -56,7 +56,7 @@ The easiest way to get started with Nuxt is using the interactive CLI.
 **1. Initialize**
 
 ```bash
-npx dyrected init
+npx @dyrected/cli init
 ```
 
 Choose **Nuxt 3** and **SQLite**. The CLI will:
@@ -85,4 +85,4 @@ Choose **Nuxt 3** and **SQLite**. The CLI will:
 
 ---
 
-The `npx dyrected init` command will generate a specialized AI prompt tailored to your project. Paste it into Claude, Cursor, or ChatGPT to instantly scaffold your content model and frontend logic.
+The `npx @dyrected/cli init` command will generate a specialized AI prompt tailored to your project. Paste it into Claude, Cursor, or ChatGPT to instantly scaffold your content model and frontend logic.

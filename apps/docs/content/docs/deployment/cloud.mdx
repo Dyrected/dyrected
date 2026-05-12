@@ -23,7 +23,7 @@ Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.).
 - Install the necessary dependencies (`@dyrected/admin`, `@dyrected/core`).
 - Create a `dyrected.config.ts` with your initial collections.
 - **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
-- **Sync your Schema**: The AI will run `npx dyrected sync:schema` for you so your cloud database is ready immediately.
+- **Sync your Schema**: The AI will run `npx @dyrected/cli sync:schema` for you so your cloud database is ready immediately.
 
 ### 4. Open your site
 Run your site and your new dashboard will be live at `yourwebsite.com/admin`.
@@ -77,7 +77,7 @@ export default function AdminPage() {
 
 ### 4. Sync Schema
 ```bash
-npx dyrected sync:schema
+npx @dyrected/cli sync:schema
 ```
 
 </Tab>
