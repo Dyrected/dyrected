@@ -94,7 +94,7 @@ export function EditEntryPage() {
       })
 
       if (!isEdit && data?.id) {
-        navigate(`/collections/${slug}/${data.id}`)
+        navigate(`/collections/${slug}/edit/${data.id}`, { replace: true })
       }
     },
     onError: (error: any) => {
