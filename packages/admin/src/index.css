@@ -76,11 +76,19 @@
 
 @layer utilities {
   .admin-ui .left-accent {
-    @apply border-l-2 border-primary/10 pl-6 transition-all duration-200 bg-transparent;
+    @apply border-l-2 border-primary/10 px-4 -mx-8 py-4  transition-all duration-200 bg-transparent;
   }
 
   .admin-ui .left-accent:hover {
     @apply border-l-primary bg-primary/[0.04];
+  }
+
+  .admin-ui .left-accent .left-accent {
+    @apply px-4 -mx-4;
+  }
+
+  .admin-ui .left-accent .left-accent .left-accent{
+    @apply px-4 mx-0;
   }
 
   .admin-ui .flat-container {

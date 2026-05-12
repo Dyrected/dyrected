@@ -7,11 +7,9 @@ export const GalleryBlockConfig: Block = {
     { name: "title", type: "text" },
     {
       name: "images",
-      type: "array",
-      fields: [
-        { name: "image", type: "image" },
-        { name: "caption", type: "text" },
-      ],
+      type: "relationship",
+      relationTo: "media",
+      hasMany: true,
     },
     {
       name: "columns",

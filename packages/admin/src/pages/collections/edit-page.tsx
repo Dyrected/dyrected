@@ -8,7 +8,7 @@ import { ChevronLeft } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn } from "../../lib/utils"
-import { Archive, Eye, EyeOff, Sparkles } from "lucide-react"
+import { Archive, Eye, EyeOff, Save } from "lucide-react"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
 import jexl from 'jexl'
 
@@ -32,6 +32,18 @@ export function EditEntryPage() {
     window.addEventListener("beforeunload", handleBeforeUnload)
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [isDirty])
+
+  // Cmd+S to save
+  useEffect(() => {
+    const handleSave = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault()
+        document.getElementById('dyrected-form-submit')?.click()
+      }
+    }
+    window.addEventListener("keydown", handleSave)
+    return () => window.removeEventListener("keydown", handleSave)
+  }, [])
 
   // Fetch schema
   const { data: schemas } = useQuery({
@@ -181,12 +193,12 @@ export function EditEntryPage() {
                 className="h-9 w-9 rounded-lg shadow-sm"
                 onClick={() => document.getElementById('dyrected-form-submit')?.click()}
                 disabled={saveMutation.isPending || (isEdit ? !canUpdate : !canCreate)}
-                title={isEdit ? "Save Changes" : "Create Entry"}
+                title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
               >
                 {saveMutation.isPending ? (
                   <div className="h-4 w-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
                 ) : (
-                  <Sparkles className="h-4 w-4" />
+                  <Save className="h-4 w-4" />
                 )}
               </Button>
             </div>
@@ -228,13 +240,13 @@ export function EditEntryPage() {
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Created At</p>
                       <p className="text-xs font-medium text-muted-foreground/80">
-                        {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
+                        {entry?.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
                       </p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Last Updated</p>
                       <p className="text-xs font-medium text-muted-foreground/80">
-                        {entry.updatedAt ? new Date(entry.updatedAt).toLocaleString() : 'N/A'}
+                        {entry?.updatedAt ? new Date(entry.updatedAt).toLocaleString() : 'N/A'}
                       </p>
                     </div>
                   </>

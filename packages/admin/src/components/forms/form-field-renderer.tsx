@@ -9,7 +9,7 @@ import {
   FormMessage,
 } from "../ui/form"
 import { Button } from "../ui/button"
-import { Plus, Trash2, Sparkles, Layers } from "lucide-react"
+import { Plus, Trash2, Layers } from "lucide-react"
 import { MediaLibraryDialog } from "../media/media-library-dialog"
 import { cn } from "../../lib/utils"
 import jexl from 'jexl'
@@ -150,10 +150,22 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
 
 function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema: FieldSchema, basePath: string, control: any, collection: string }) {
   const { fields, append, remove } = useFieldArray({ control, name: basePath })
+  const { schemas } = useDyrected()
   const [isBulkOpen, setIsBulkOpen] = React.useState(false)
 
-  // Find if there is an image field in the array
-  const imageField = schema.fields?.find(f => f.type === 'image' || (f.type === 'relationship' && f.relationTo === 'media'))
+  // Find if there is an image field or a relationship to an upload collection
+  const imageField = React.useMemo(() => {
+    return schema.fields?.find(f => {
+      if (f.type === 'image') return true
+      if (f.type === 'relationship' && f.relationTo) {
+        const relatedSchema = schemas?.collections?.find(s => s.slug === f.relationTo)
+        return relatedSchema?.upload === true
+      }
+      return false
+    })
+  }, [schema.fields, schemas])
+
+  const bulkCollection = (imageField?.type === 'relationship' ? imageField.relationTo : 'media') || 'media'
 
   const handleBulkAdd = (ids: string[]) => {
     ids.forEach(id => {
@@ -179,18 +191,6 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
           )}
         </div>
         <div className="flex items-center gap-2">
-          {imageField && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 text-[11px] font-bold rounded-xl border-dashed hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
-              onClick={() => setIsBulkOpen(true)}
-            >
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Bulk Add
-            </Button>
-          )}
           <Button
             type="button"
             variant="outline"
@@ -204,11 +204,10 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
         </div>
       </div>
 
-      <div className="space-y-8 pl-4 border-l-2 border-muted/30">
+      <div className="space-y-8 pl-0 border-l border-muted/30">
         {fields.map((item, index) => (
           <div key={item.id} className="relative group animate-in slide-in-from-left-2 duration-300">
-            <div className="absolute -left-[21px] top-4 w-2.5 h-2.5 rounded-full bg-muted border-2 border-background group-hover:bg-primary transition-colors" />
-            <div className="bg-muted/5 rounded-3xl p-6 border border-transparent hover:border-border/50 hover:bg-white hover:shadow-2xl hover:shadow-black/5 transition-all relative">
+            <div className="bg-muted/5 left-accent transition-all relative">
               <Button
                 type="button"
                 variant="ghost"
@@ -256,12 +255,12 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
 
       {imageField && (
         <MediaLibraryDialog
-          collection="media"
+          collection={bulkCollection}
           isOpen={isBulkOpen}
           onOpenChange={setIsBulkOpen}
           selectedValues={[]}
           multiple={true}
-          onSelect={() => { }} 
+          onSelect={() => { }}
           onConfirm={(ids: string[]) => handleBulkAdd(ids)}
         />
       )}

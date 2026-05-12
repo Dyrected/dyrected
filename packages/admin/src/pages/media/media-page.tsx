@@ -19,11 +19,11 @@ import {
 } from "../../components/ui/dialog"
 import { ScrollArea } from "../../components/ui/scroll-area"
 import { AspectRatio } from "../../components/ui/aspect-ratio"
-import { 
-  Upload, 
-  Search, 
-  FileIcon, 
-  Trash2, 
+import {
+  Upload,
+  Search,
+  FileIcon,
+  Trash2,
   ExternalLink,
   Image as ImageIcon,
   Copy,
@@ -31,10 +31,10 @@ import {
 } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
   SheetTitle,
 } from "../../components/ui/sheet"
 import { Separator } from "../../components/ui/separator"
@@ -66,7 +66,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
       })
     }
   })
-  
+
   const updateMutation = useMutation({
     mutationFn: (args: { id: string, data: any }) => client!.update(collectionSlug || "media", args.id, args.data),
     onSuccess: (data) => {
@@ -87,7 +87,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
     }
   }, [])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     noClick: true, // Only trigger on drop, not on background click
   })
@@ -95,7 +95,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   return (
     <div {...getRootProps()} className="min-h-full space-y-8 animate-in relative">
       <input {...getInputProps()} />
-      
+
       {isDragActive && (
         <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-[2px] border-4 border-dashed border-primary rounded-2xl flex items-center justify-center pointer-events-none">
           <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
@@ -129,12 +129,12 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
             <DialogHeader className="pb-4 border-b border-border/40">
               <DialogTitle className="text-xl font-bold">Upload Media Assets</DialogTitle>
             </DialogHeader>
-            <FileUploader 
+            <FileUploader
               collectionSlug={collectionSlug}
               onComplete={() => {
                 setIsUploadOpen(false)
                 queryClient.invalidateQueries({ queryKey: ["media", collectionSlug] })
-              }} 
+              }}
             />
           </DialogContent>
         </Dialog>
@@ -170,10 +170,10 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-8">
             {mediaResponse?.map((item) => (
-              <MediaCard 
-                key={item.id} 
-                item={item} 
-                baseUrl={client!.getBaseUrl()} 
+              <MediaCard
+                key={item.id}
+                item={item}
+                baseUrl={client!.getBaseUrl()}
                 onDelete={() => deleteMutation.mutate(item.id)}
                 onClick={() => setSelectedItem(item)}
                 isSelected={selectedItem?.id === item.id}
@@ -183,9 +183,9 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
         )}
       </ScrollArea>
 
-      <MediaSidebar 
-        item={selectedItem} 
-        onClose={() => setSelectedItem(null)} 
+      <MediaSidebar
+        item={selectedItem}
+        onClose={() => setSelectedItem(null)}
         baseUrl={client!.getBaseUrl()}
         onUpdate={(data) => updateMutation.mutate({ id: selectedItem.id, data })}
       />
@@ -193,9 +193,9 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   )
 }
 
-function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: { 
-  item: any, 
-  baseUrl: string, 
+function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
+  item: any,
+  baseUrl: string,
   onDelete: () => void,
   onClick: () => void,
   isSelected: boolean
@@ -204,7 +204,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   const url = getMediaUrl(item, baseUrl)
 
   return (
-    <Card 
+    <Card
       className={cn(
         "overflow-hidden group relative border-border/40 bg-white shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl cursor-pointer",
         isSelected && "ring-2 ring-primary ring-offset-2 shadow-lg scale-[0.98]"
@@ -255,9 +255,9 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
         </div>
       </CardContent>
       <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button 
-          size="icon" 
-          variant="destructive" 
+        <Button
+          size="icon"
+          variant="destructive"
           className="h-7 w-7 rounded-lg shadow-lg"
           onClick={(e) => {
             e.stopPropagation()
@@ -273,11 +273,11 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   )
 }
 
-function MediaSidebar({ item, onClose, baseUrl, onUpdate }: { 
-  item: any, 
-  onClose: () => void, 
+function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
+  item: any,
+  onClose: () => void,
   baseUrl: string,
-  onUpdate: (data: any) => void 
+  onUpdate: (data: any) => void
 }) {
   const [formData, setFormData] = React.useState<any>({})
   const [isSaving, setIsSaving] = React.useState(false)
@@ -306,9 +306,9 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
     }
   }
 
-  const hasChanges = 
-    formData.alt !== (item.alt || "") || 
-    formData.caption !== (item.caption || "") || 
+  const hasChanges =
+    formData.alt !== (item.alt || "") ||
+    formData.caption !== (item.caption || "") ||
     formData.filename !== (item.filename || "")
 
   return (
@@ -320,7 +320,7 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
             File Details
           </SheetTitle>
         </SheetHeader>
-        
+
         <ScrollArea className="flex-1 bg-white">
           <div className="p-6 space-y-8">
             <div className="rounded-xl overflow-hidden border border-border/40 bg-muted/10 relative shadow-inner">
@@ -353,16 +353,16 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Filename</label>
-                  <Input 
-                    value={formData.filename} 
+                  <Input
+                    value={formData.filename}
                     onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
                     className="h-10 rounded-lg bg-white border-border/60 focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Alt Text</label>
-                  <Input 
-                    value={formData.alt} 
+                  <Input
+                    value={formData.alt}
                     onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
                     placeholder="Describe the image for accessibility..."
                     className="h-10 rounded-lg bg-white border-border/60 focus:ring-1 focus:ring-primary/20"
@@ -370,8 +370,8 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Caption</label>
-                  <textarea 
-                    value={formData.caption} 
+                  <textarea
+                    value={formData.caption}
                     onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
                     placeholder="Add a caption..."
                     className="flex min-h-[80px] w-full rounded-lg border border-border/60 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
@@ -387,9 +387,9 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
                 <DetailItem label="Type" value={item.mimeType || "Unknown"} />
                 <DetailItem label="Dimensions" value={item.width ? `${item.width}x${item.height}` : "N/A"} />
               </div>
-              
+
               <DetailItem label="URL" value={url} copyable />
-              <DetailItem label="Created At" value={new Date(item.createdAt).toLocaleString()} />
+              <DetailItem label="Created At" value={item?.createdAt ? new Date(item?.createdAt).toLocaleString() : "N/A"} />
             </div>
 
             {/* {isImage && (
@@ -409,10 +409,10 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
             )} */}
           </div>
         </ScrollArea>
-        
+
         <div className="p-6 border-t border-border/40 bg-muted/5 space-y-3">
           {hasChanges && (
-            <Button 
+            <Button
               className="w-full h-12 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 animate-in fade-in slide-in-from-bottom-2"
               onClick={handleSave}
               disabled={isSaving}
@@ -432,9 +432,9 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
   )
 }
 
-function DetailItem({ label, value, copyable }: { 
-  label: string, 
-  value: string, 
+function DetailItem({ label, value, copyable }: {
+  label: string,
+  value: string,
   copyable?: boolean
 }) {
   return (
@@ -443,9 +443,9 @@ function DetailItem({ label, value, copyable }: {
       <div className="flex items-center gap-2 group">
         <p className="text-sm font-medium text-foreground truncate flex-1">{value}</p>
         {copyable && (
-          <Button 
-            size="icon" 
-            variant="ghost" 
+          <Button
+            size="icon"
+            variant="ghost"
             className="h-7 w-7 text-muted-foreground hover:text-primary transition-colors"
             onClick={() => navigator.clipboard.writeText(value)}
           >
@@ -493,13 +493,12 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
 
   return (
     <div className="space-y-6 py-6 px-4">
-      <div 
-        {...getRootProps()} 
-        className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${
-          isDragActive 
-            ? "border-primary bg-primary/5 scale-[0.98]" 
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${isDragActive
+            ? "border-primary bg-primary/5 scale-[0.98]"
             : "border-muted-foreground/20 hover:border-primary/40 hover:bg-muted/5"
-        }`}
+          }`}
       >
         <input {...getInputProps()} />
         <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
@@ -517,7 +516,7 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
               Clear All
             </Button>
           </div>
-          
+
           <div className="max-h-[240px] overflow-auto space-y-2 pr-2 custom-scrollbar">
             {files.map((file, idx) => (
               <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 border border-border/40 rounded-xl text-sm group transition-colors hover:bg-muted/50">
@@ -545,8 +544,8 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
           )}
 
           <div className="flex justify-end pt-4 border-t border-border/40">
-            <Button 
-              onClick={handleUpload} 
+            <Button
+              onClick={handleUpload}
               disabled={uploading || files.length === 0}
               className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
             >

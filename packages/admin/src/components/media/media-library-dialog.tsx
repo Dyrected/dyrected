@@ -59,7 +59,7 @@ export function MediaLibraryDialog({
     queryKey: [collection, searchQuery],
     queryFn: () => client!.listMedia({
       where: searchQuery ? { filename: { contains: searchQuery } } : undefined
-    }).then((r: any) => r.docs),
+    }, collection).then((r: any) => r.docs),
     enabled: isOpen && !!client,
   })
 
@@ -96,7 +96,7 @@ export function MediaLibraryDialog({
         mimeType = 'video/youtube'
         filename = `YouTube: ${ytMatch[1]}`
         idPrefix = `yt_${ytMatch[1]}`
-      } 
+      }
       // Vimeo Detection
       else if (externalUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/)) {
         const vimeoId = externalUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/)![1]
@@ -115,14 +115,14 @@ export function MediaLibraryDialog({
         filename = externalUrl.split('/').pop()?.split('?')[0] || 'External File'
       }
 
-      const result = await client.collection('media').create({
+      const result = await client.collection(collection).create({
         filename,
         url: externalUrl,
         mimeType,
         filesize: 0,
         id: idPrefix
       })
-      
+
       await refetch()
       onSelect(result.id)
       if (!multiple) onOpenChange(false)
@@ -146,7 +146,7 @@ export function MediaLibraryDialog({
       // Vimeo thumbnails are harder to get purely client side without API, 
       // but we can use a placeholder or better, try to fetch if we had a proper utility.
       // For now, let's use a generic vimeo-style placeholder or icon
-      return "https://vimeo.com/assets/images/logo_vimeo_blue.png" 
+      return "https://vimeo.com/assets/images/logo_vimeo_blue.png"
     }
     if (item.mimeType === 'image/external') {
       return item.url
@@ -253,8 +253,8 @@ export function MediaLibraryDialog({
                           }}
                           className={cn(
                             "relative group rounded-2xl overflow-hidden border-2 aspect-square transition-all hover:scale-[1.02] active:scale-95 shadow-sm bg-muted/5",
-                            selectedItem?.id === item.id 
-                              ? "border-primary ring-4 ring-primary/10 shadow-lg shadow-primary/5" 
+                            selectedItem?.id === item.id
+                              ? "border-primary ring-4 ring-primary/10 shadow-lg shadow-primary/5"
                               : "border-border/40 hover:border-border"
                           )}
                         >
@@ -306,7 +306,7 @@ export function MediaLibraryDialog({
                           </h4>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary px-2 py-1 rounded-md border border-primary/10">
-                              {selectedItem.mimeType.split('/')[1] || selectedItem.mimeType}
+                              {selectedItem.mimeType?.split('/')[1] || selectedItem.mimeType}
                             </span>
                             <span className="text-[10px] font-bold text-muted-foreground/60">
                               {selectedItem.filesize ? `${(selectedItem.filesize / 1024).toFixed(1)} KB` : 'External Asset'}
@@ -414,9 +414,9 @@ export function MediaLibraryDialog({
                         onChange={(e) => setExternalUrl(e.target.value)}
                       />
                     </div>
-                    <Button 
-                      onClick={handleExternalUrlSubmit} 
-                      disabled={isUploading || !externalUrl} 
+                    <Button
+                      onClick={handleExternalUrlSubmit}
+                      disabled={isUploading || !externalUrl}
                       className="h-14 rounded-2xl px-10 font-bold shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 transition-all active:scale-95"
                     >
                       {isUploading ? "Adding..." : "Add URL"}
@@ -449,8 +449,8 @@ export function MediaLibraryDialog({
                       <Info className="h-4 w-4" />
                     </div>
                     <p className="text-[11px] text-muted-foreground/80 font-medium leading-relaxed">
-                      <span className="font-bold text-foreground">Pro Tip:</span> External videos are better streamed from 
-                      <span className="text-red-600 font-bold ml-1">YouTube</span> or 
+                      <span className="font-bold text-foreground">Pro Tip:</span> External videos are better streamed from
+                      <span className="text-red-600 font-bold ml-1">YouTube</span> or
                       <span className="text-blue-500 font-bold ml-1">Vimeo</span> to ensure smooth playback on all devices.
                     </p>
                   </div>

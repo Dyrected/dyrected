@@ -41,9 +41,16 @@ export class PopulationService {
         if (Array.isArray(value)) {
           // Multi-relationship
           populatedDoc[field.name] = await Promise.all(
-            value.map(async (id: string) => {
-              const doc = await this.db.findOne({ collection: field.relationTo!, id });
-              if (!doc) return id;
+            value.map(async (id: any) => {
+              if (!id) return id;
+              
+              let doc = id;
+              if (typeof id === 'string') {
+                doc = await this.db.findOne({ collection: field.relationTo!, id });
+              }
+              
+              if (!doc || typeof doc !== 'object') return id;
+
               return this.populate({
                 data: doc,
                 fields: relatedCollection.fields,
@@ -52,10 +59,14 @@ export class PopulationService {
               });
             })
           );
-        } else if (typeof value === 'string') {
+        } else if (value) {
           // Single relationship
-          const doc = await this.db.findOne({ collection: field.relationTo, id: value });
-          if (doc) {
+          let doc = value;
+          if (typeof value === 'string') {
+            doc = await this.db.findOne({ collection: field.relationTo, id: value });
+          }
+
+          if (doc && typeof doc === 'object') {
             populatedDoc[field.name] = await this.populate({
               data: doc,
               fields: relatedCollection.fields,

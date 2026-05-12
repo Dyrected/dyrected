@@ -98,7 +98,8 @@ export class SqliteAdapter implements DatabaseAdapter {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     const stmt = this.sqlite.prepare(`SELECT * FROM ${tableName} WHERE id = ?`);
-    const row = stmt.get(params.id) as any;
+    const id = (params.id && typeof params.id === 'object') ? (params.id as any).id : params.id;
+    const row = stmt.get(id) as any;
     if (!row) return null;
     return { 
       id: row.id, 
