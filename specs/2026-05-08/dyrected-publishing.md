@@ -41,41 +41,34 @@ pnpm changeset
 ```
 *Follow the interactive prompts to write a description of your changes.*
 
-### Step 2.3: Version the Packages
-When you are ready to release, run the version command. This consumes the changesets, updates the `package.json` versions (and dependent versions), and generates `CHANGELOG.md` files.
+### Step 2.3: Automated Release Flow (GitHub Actions)
+Dyrected uses a "Version PR" flow via GitHub Actions. You do NOT need to run the version or publish commands manually.
 
-```bash
-pnpm changeset version
-```
-*Review the updated `package.json` files and commit the changes.*
-
-```bash
-git add .
-git commit -m "chore: version packages"
-```
+1.  **Commit and Push**: Push your code changes along with the new changeset file to the `main` branch.
+2.  **Version PR**: The "Release" GitHub Action will detect the changeset and automatically open a Pull Request named **"Version Packages"**. This PR contains the version bumps and updated changelogs.
+3.  **Merge**: Once you review and merge the "Version Packages" PR back into `main`, the Action will automatically:
+    - Run the build pipeline (`pnpm build`).
+    - Publish the new versions to the npm registry.
+    - Create git tags for each package version.
 
 ---
 
-## 3. Publishing to npm
+## 3. Manual Release (Emergency/Local Only)
 
-Once the packages are built and versioned, you are ready to publish.
+In rare cases where you need to release manually from your local machine:
 
-### Step 3.1: Authenticate with npm
-Ensure you are logged into your npm account and have write access to the `@dyrected` organization.
-
+### Step 3.1: Versioning
 ```bash
-npm login
+pnpm changeset version
 ```
+*Review the updated `package.json` files and commit.*
 
-### Step 3.2: Publish the Workspace
-You can publish all updated, non-private packages in the workspace simultaneously using pnpm's recursive publish command, or let changesets handle it:
+### Step 3.2: Publishing
+Ensure you have an `NPM_TOKEN` or are logged in via `npm login`.
 
 ```bash
-# Using Changesets (Recommended):
+pnpm build
 pnpm changeset publish
-
-# Alternatively, using native pnpm:
-pnpm publish -r --access public
 ```
 
 ---
@@ -105,6 +98,11 @@ npm install /path/to/dyrected/packages/core/dyrected-core-1.0.0.tgz
 
 ## 5. Continuous Integration (CI)
 
-For automated deployments, you can set up a GitHub Action to publish packages whenever code is merged into the `main` branch.
+Dyrected is configured with a GitHub Action (`.github/workflows/release.yml`) that automates the entire release process.
 
-Use the official Changesets GitHub Action (`changesets/action`) to automatically open a "Version Packages" Pull Request. When you merge that PR, the action will automatically run `pnpm build` and `pnpm changeset publish`.
+### Required Secrets
+To enable the automated release flow, ensure the following secret is added to the GitHub repository (**Settings > Secrets and variables > Actions**):
+
+- `NPM_TOKEN`: An npm automation token with publish permissions for the `@dyrected` scope.
+
+The `GITHUB_TOKEN` is provided automatically by GitHub Actions and is used to create the Versioning PRs and Git tags.
