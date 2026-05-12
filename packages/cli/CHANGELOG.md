@@ -1,5 +1,13 @@
 # @dyrected/cli
 
+## 1.0.6
+
+### Patch Changes
+
+- Standardize framework integrations for Next.js and Nuxt. Refactor AI setup prompt into a Senior Content Architect mission with explicit architecture and discovery requirements. Fix CLI Nuxt template for zero-import architecture.
+- Updated dependencies
+  - @dyrected/core@1.0.6
+
 ## 1.0.5
 
 ### Patch Changes

@@ -2,7 +2,7 @@ Business Source License 1.1
 
 Parameters
 
-Licensor:             Ajola Technologies Ltd
+Licensor:             Dyrected
 Licensed Work:        Dyrected
 Additional Use Grant: Commercial use is permitted as long as it is not used to provide a hosted or managed service that competes with Dyrected.
 Change Date:          2030-05-11
