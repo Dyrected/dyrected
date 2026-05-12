@@ -1,5 +1,11 @@
 # @dyrected/sdk
 
+## 1.0.1
+
+### Patch Changes
+
+- bfc3468: Initial public release of the Dyrected CMS ecosystem.
+
 ## 1.0.0
 
 ### Major Changes

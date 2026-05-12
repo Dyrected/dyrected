@@ -1,5 +1,13 @@
 # @dyrected/storage-b2
 
+## 1.0.1
+
+### Patch Changes
+
+- bfc3468: Initial public release of the Dyrected CMS ecosystem.
+- Updated dependencies [bfc3468]
+  - @dyrected/core@1.0.1
+
 ## 1.0.0
 
 ### Major Changes

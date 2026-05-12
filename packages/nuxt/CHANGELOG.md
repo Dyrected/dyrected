@@ -1,5 +1,15 @@
 # @dyrected/nuxt
 
+## 1.0.1
+
+### Patch Changes
+
+- bfc3468: Initial public release of the Dyrected CMS ecosystem.
+- Updated dependencies [bfc3468]
+  - @dyrected/admin@1.0.1
+  - @dyrected/core@1.0.1
+  - @dyrected/sdk@1.0.1
+
 ## 1.0.0
 
 ### Major Changes
