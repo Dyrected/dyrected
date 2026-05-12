@@ -1,5 +1,11 @@
 # @dyrected/nuxt
 
+## 1.0.8
+
+### Patch Changes
+
+- fix: use defineEventHandler and upgrade h3 to resolve deprecation warnings in Nuxt module
+
 ## 1.0.7
 
 ### Patch Changes

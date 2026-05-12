@@ -1,11 +1,11 @@
-import { eventHandler } from "h3";
+import { defineEventHandler } from "h3";
 import { createDyrectedApp } from "@dyrected/core/server";
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
 
 let app: any;
 
-export default eventHandler(async (event) => {
+export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig().dyrected;
   if (!app) {
     const dyrectedConfig = { ...config };
