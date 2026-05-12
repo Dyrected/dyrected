@@ -545,8 +545,8 @@ importers:
         specifier: ^3.11.2
         version: 3.21.4
       h3:
-        specifier: 2.0.1-rc.22
-        version: 2.0.1-rc.22
+        specifier: ^1.15.0
+        version: 1.15.11
     devDependencies:
       '@nuxt/module-builder':
         specifier: ^0.5.5
@@ -10806,20 +10806,6 @@ packages:
       radix3: 1.1.2
       ufo: 1.6.4
       uncrypto: 0.1.3
-
-  /h3@2.0.1-rc.22:
-    resolution: {integrity: sha512-Esv0DMIuPkCTSWCA0vO73vcTqwzH1wjSrAO1TXNu/K3up1sZHa9EKMapbmxCDYBeymC3fVTk4qxp7ogQWQ+KgA==}
-    engines: {node: '>=20.11.1'}
-    hasBin: true
-    peerDependencies:
-      crossws: ^0.4.1
-    peerDependenciesMeta:
-      crossws:
-        optional: true
-    dependencies:
-      rou3: 0.8.1
-      srvx: 0.11.15
-    dev: false
 
   /has-property-descriptors@1.0.2:
     resolution: {integrity: sha512-55JNKuIW+vq4Ke1BjOTjM2YctQIvCT7GFzHwmfZPGo5wnrgkid0YQtnAleFSqumZm4az3n2BS+erby5ipJdgrg==}
