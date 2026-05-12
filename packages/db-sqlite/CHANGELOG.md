@@ -1,5 +1,19 @@
 # @dyrected/db-sqlite
 
+## 2.0.0
+
+### Major Changes
+
+- Updated all storage adapters to support `Uint8Array` buffers and file prefixing.
+  - **Storage API Update**: The `buffer` parameter in `StorageAdapter.upload` and `resolve` now expects a `Uint8Array` instead of a Node.js `Buffer`. This ensures better compatibility across different JavaScript environments.
+  - **File Prefixing**: Added support for an optional `prefix` parameter in `StorageAdapter.upload` to allow organizing files into subfolders or prefixes (supported by Cloudinary, S3, B2, and Local storage).
+  - **Alignment**: Standardized `CloudinaryStorageAdapter`, `LocalStorageAdapter`, `S3StorageAdapter`, and `B2StorageAdapter` to strictly follow the `@dyrected/core` interface.
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@2.0.0
+
 ## 1.0.9
 
 ### Patch Changes
