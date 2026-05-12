@@ -209,9 +209,9 @@ STEP ${isSelfHosted ? "3" : "4"} — FRONTEND IMPLEMENTATION
 `;
 
   const frameworks: Record<string, string> = {
-    next: `Install \`@dyrected/sdk\` (or \`@dyrected/next\` if you want Next.js server helpers).
+    next: `Install \`@dyrected/next\` and \`@dyrected/admin\`.
 
-SDK CLIENT SETUP (\`lib/dyrected.ts\`):
+1. **SDK Setup** (\`lib/dyrected.ts\`):
 \`\`\`ts
 import { createClient } from '@dyrected/sdk'
 
@@ -224,7 +224,17 @@ export const dyrected = createClient({
   siteId:  '${config.siteId}',`
   }
 })
-\`\`\``,
+\`\`\`
+
+2. **Admin Dashboard** (\`app/admin/[[...slug]]/page.tsx\`):
+\`\`\`tsx
+import { DyrectedAdmin } from '@dyrected/next/admin'
+
+export default function AdminPage() {
+  return <DyrectedAdmin basename="/admin" />
+}
+\`\`\`
+`,
 
     nuxt: `Install \`@dyrected/nuxt\` and add it to \`nuxt.config.ts\`:
 \`\`\`ts
@@ -242,15 +252,16 @@ export default defineNuxtConfig({
 })
 \`\`\`
 
-MOUNTING THE ADMIN DASHBOARD (\`pages/cms-admin.vue\`):
+MOUNTING THE ADMIN DASHBOARD (\`pages/admin.vue\`):
 \`\`\`vue
 <script setup lang="ts">
+// DyrectedAdmin is auto-imported by the module
 definePageMeta({ layout: false })
 </script>
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/cms-admin" />
+    <DyrectedAdmin basename="/admin" />
   </ClientOnly>
 </template>
 \`\`\`

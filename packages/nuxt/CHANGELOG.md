@@ -1,5 +1,13 @@
 # @dyrected/nuxt
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@1.0.5
+  - @dyrected/sdk@1.0.3
+
 ## 1.0.4
 
 ### Patch Changes

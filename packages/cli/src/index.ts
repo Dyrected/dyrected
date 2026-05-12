@@ -340,11 +340,15 @@ async function writeNuxtFiles(cwd: string, adminPath: string) {
     await fs.outputFile(
       adminPagePath,
       `<template>
-  <DyrectedAdmin api-path="/dyrected" />
+  <ClientOnly>
+    <DyrectedAdmin basename="/${adminPath}" />
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
-import { DyrectedAdmin } from '@dyrected/nuxt/admin'
+definePageMeta({
+  layout: false,
+});
 </script>
 `,
     );

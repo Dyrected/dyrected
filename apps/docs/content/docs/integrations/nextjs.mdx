@@ -10,8 +10,12 @@ Dyrected integrates natively with the Next.js App Router via a catch-all API rou
 ## Installation
 
 ```bash
-pnpm add @dyrected/core @dyrected/sdk @dyrected/admin @dyrected/db-postgres
+pnpm add @dyrected/core @dyrected/sdk @dyrected/next @dyrected/db-postgres
 ```
+
+> [!NOTE]
+> The `@dyrected/next` package provides the specialized `<DyrectedAdmin />` component and utilities for seamless Next.js App Router integration.
+
 
 ---
 
@@ -148,30 +152,26 @@ This approach has zero network overhead and is the fastest option for self-hoste
 
 ## Step 4 — Embed the Admin UI
 
-Create an optional catch-all page at `app/admin/[[...route]]/page.tsx`. This ensures that the root `/admin` and all internal admin sub-routes (like `/admin/collections/posts`) are handled by this single page. We use `onNavigate` to sync the internal admin history with the Next.js router.
+Create a catch-all page at `app/admin/[[...route]]/page.tsx`. This ensures that the root `/admin` and all internal admin sub-routes are handled by this single page.
+
+The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the Next.js router integration, CSS imports, and "Client Only" mounting for you.
 
 ```tsx
 // app/admin/[[...route]]/page.tsx
-'use client'
-
-import { AdminUI } from '@dyrected/admin'
-import { useRouter } from 'next/navigation'
-import '@dyrected/admin/dist/index.css'
+import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  const router = useRouter()
-
   return (
-    <AdminUI
-      baseUrl={process.env.NEXT_PUBLIC_DYRECTED_URL!}
-      apiKey={process.env.NEXT_PUBLIC_DYRECTED_API_KEY!}
-      siteId={process.env.NEXT_PUBLIC_SITE_ID}
+    <DyrectedAdmin 
       basename="/admin"
-      onNavigate={(path) => router.push(`/admin${path}`)}
     />
   )
 }
 ```
+
+> [!TIP]
+> `DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
+
 
 ---
 

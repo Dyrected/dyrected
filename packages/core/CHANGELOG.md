@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 1.0.5
+
+### Patch Changes
+
+- Standardize framework integrations for Next.js and Nuxt. Fix CLI generation for Nuxt admin pages to use zero-import architecture and framework-aware env var prefixes.
+
 ## 1.0.4
 
 ### Patch Changes

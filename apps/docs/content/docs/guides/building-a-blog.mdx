@@ -251,36 +251,36 @@ hooks: {
 ---
 
 ## 6. Embed the Admin UI
-
 <Tabs items={['Next.js', 'Nuxt']}>
 <Tab value="Next.js">
-```ts
-'use client'
-import { AdminUI } from '@dyrected/admin'
-import { useRouter } from 'next/navigation'
-import '@dyrected/admin/dist/index.css'
+Create a catch-all page at `app/admin/[[...route]]/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the mounting and routing isolation for you.
+
+```tsx
+// app/admin/[[...route]]/page.tsx
+import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  const router = useRouter()
   return (
-    <AdminUI
-      baseUrl={process.env.NEXT_PUBLIC_DYRECTED_URL!}
-      apiKey={process.env.NEXT_PUBLIC_DYRECTED_API_KEY!}
-      basename="/admin"
-      onNavigate={(path) => router.push(`/admin${path}`)}
-    />
+    <DyrectedAdmin basename="/admin" />
   )
 }
 ```
 </Tab>
 <Tab value="Nuxt">
-The Admin UI mounts automatically at `/admin` when you add the `@dyrected/nuxt` module. Configure the path in `nuxt.config.ts`:
+The Admin UI mounts automatically at `/admin` when you add the `@dyrected/nuxt` module. You can also create a custom admin page if you want to use a different route (like `/cms-admin`):
 
-```ts
-dyrected: {
-  ...config,
-  adminPath: '/admin',
-}
+```vue
+<!-- pages/cms-admin.vue -->
+<template>
+  <ClientOnly>
+    <DyrectedAdmin basename="/cms-admin" />
+  </ClientOnly>
+</template>
+
+<script setup lang="ts">
+// No import needed - DyrectedAdmin is auto-imported
+definePageMeta({ layout: false })
+</script>
 ```
 </Tab>
 </Tabs>

@@ -11,27 +11,19 @@ The `@dyrected/admin` package is a React-based Admin UI that is **automatically 
 
 ### In Next.js
 
-Create a catch-all page under your chosen admin path:
+The `@dyrected/next` package provides a `<DyrectedAdmin />` component for easy embedding. Create a catch-all page at `app/admin/[[...route]]/page.tsx`:
 
 ```tsx
-import { AdminUI } from '@dyrected/admin'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import '@dyrected/admin/dist/index.css'
+// app/admin/[[...route]]/page.tsx
+import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  const router = useRouter()
-
   return (
-    <AdminUI
-      baseUrl={process.env.NEXT_PUBLIC_CMS_URL!}
-      apiKey={process.env.NEXT_PUBLIC_CMS_API_KEY!}
-      siteId={process.env.NEXT_PUBLIC_SITE_ID}
-      basename="/admin"
-      onNavigate={(path) => router.push(`/admin${path}`)}
-    />
+    <DyrectedAdmin basename="/admin" />
   )
 }
 ```
+
 
 ### In Nuxt
 
