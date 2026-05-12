@@ -106,3 +106,32 @@ To enable the automated release flow, ensure the following secret is added to th
 - `NPM_TOKEN`: An npm automation token with publish permissions for the `@dyrected` scope.
 
 The `GITHUB_TOKEN` is provided automatically by GitHub Actions and is used to create the Versioning PRs and Git tags.
+
+---
+
+## 6. Troubleshooting Deployment (Vercel)
+
+If you encounter native compilation errors (e.g., `better-sqlite3` failing to build) during deployment on Vercel, it is often due to an incompatible Node.js version or missing Python dependencies for building native modules.
+
+### Common Error: `better-sqlite3` Build Failure
+Vercel's build machines may try to build native modules even if they are not directly used by the app being deployed.
+
+**Solution 1: Use Node.js 20 or 22 (LTS)**
+Set your Vercel Node.js version to `20.x` or `22.x` in Project Settings. Newer versions (like Node 24) may lack prebuilt binaries for `better-sqlite3`, triggering a compilation that requires Python `distutils`.
+
+**Solution 2: Ignore Scripts in Install Command**
+Change your Vercel **Install Command** to bypass native module building:
+```bash
+pnpm install --filter @dyrected/docs --ignore-scripts
+```
+
+**Solution 3: Blacklist Native Builds**
+In your root `package.json`, you can explicitly tell pnpm never to build specific dependencies:
+```json
+"pnpm": {
+  "neverBuiltDependencies": [
+    "better-sqlite3"
+  ]
+}
+```
+*Note: Only use this if you are sure you don't need the native module in the deployed environment.*
