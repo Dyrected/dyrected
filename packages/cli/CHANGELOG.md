@@ -1,5 +1,13 @@
 # @dyrected/cli
 
+## 1.0.8
+
+### Patch Changes
+
+- d8e1f29: bump package versions and update export conditions for admin package
+- Updated dependencies [d8e1f29]
+  - @dyrected/core@1.0.9
+
 ## 1.0.7
 
 ### Patch Changes
