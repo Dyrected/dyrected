@@ -1,5 +1,13 @@
 # @dyrected/next
 
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@1.0.8
+  - @dyrected/sdk@1.0.5
+
 ## 1.0.7
 
 ### Patch Changes

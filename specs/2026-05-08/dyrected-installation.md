@@ -28,16 +28,16 @@ Create `dyrected.config.ts` in your project root.
 
 ```ts
 import { defineConfig } from "@dyrected/core";
-import { postgresAdapter } from "@dyrected/db-postgres";
-import { localAdapter } from "@dyrected/storage-local";
+import { PostgresAdapter } from "@dyrected/db-postgres";
+import { LocalStorageAdapter } from "@dyrected/storage-local";
 
 export default defineConfig({
   collections: [], // Add your collections here
   globals: [], // Add your globals here
-  db: postgresAdapter({ url: process.env.DATABASE_URL }),
-  storage: localAdapter({
-    directory: "./public/uploads",
-    serveFrom: "/uploads",
+  db: new PostgresAdapter({ url: process.env.DATABASE_URL }),
+  storage: new LocalStorageAdapter({
+    uploadDir: "./public/uploads",
+    staticUrlPrefix: "/uploads",
   }),
 });
 ```

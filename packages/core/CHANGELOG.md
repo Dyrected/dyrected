@@ -1,5 +1,12 @@
 # @dyrected/core
 
+## 1.0.8
+
+### Patch Changes
+
+- ### Summary of Changes
+  - **AI Setup Prompt**: Updated `packages/core/src/utils/setup-prompt.ts` to generate configuration code using class-based instantiation. This ensures that AI assistants helping with project setup will provide the preferred 1.0.x syntax.
+
 ## 1.0.7
 
 ### Patch Changes
