@@ -77,7 +77,7 @@ function SortableBlockItem({
   if (!blockConfig) return null
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group left-accent mb-4 animate-in">
+    <div ref={setNodeRef} style={style} className="relative group left-accent mb-4 py-4 animate-in">
       {/* Header / Drag Handle */}
       <div className="flex items-center justify-between pb-3">
         <div className="flex items-center justify-between gap-2">

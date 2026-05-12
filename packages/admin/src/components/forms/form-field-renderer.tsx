@@ -1,3 +1,4 @@
+import * as React from "react"
 import { useWatch, useFieldArray } from "react-hook-form"
 import { useDyrected } from "../../providers/dyrected-provider"
 import {
@@ -8,7 +9,8 @@ import {
   FormMessage,
 } from "../ui/form"
 import { Button } from "../ui/button"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Sparkles, Layers } from "lucide-react"
+import { MediaLibraryDialog } from "../media/media-library-dialog"
 import { cn } from "../../lib/utils"
 import jexl from 'jexl'
 import type { Field as FieldSchema } from "@dyrected/sdk"
@@ -36,7 +38,7 @@ interface FormFieldRendererProps {
  */
 export function FormFieldRenderer({ schema, basePath, control, collection }: FormFieldRendererProps) {
   const { user, schemas } = useDyrected()
-  
+
   if (schema.admin?.hidden) return null
 
   const formValues = useWatch({ control })
@@ -148,39 +150,121 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
 
 function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema: FieldSchema, basePath: string, control: any, collection: string }) {
   const { fields, append, remove } = useFieldArray({ control, name: basePath })
+  const [isBulkOpen, setIsBulkOpen] = React.useState(false)
+
+  // Find if there is an image field in the array
+  const imageField = schema.fields?.find(f => f.type === 'image' || (f.type === 'relationship' && f.relationTo === 'media'))
+
+  const handleBulkAdd = (ids: string[]) => {
+    ids.forEach(id => {
+      const newItem = buildDefaultValues(schema.fields || [], {})
+      if (imageField) {
+        newItem[imageField.name] = id
+      }
+      append(newItem)
+    })
+    setIsBulkOpen(false)
+  }
+
   return (
-    <div className="space-y-4 transition-all">
-      <div className="flex justify-between items-center pb-2">
-        <div>
-          <h4 className="font-bold text-sm text-foreground tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+    <div className="space-y-6 transition-all py-6">
+      <div className="flex justify-between items-end pb-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary" />
+            <h4 className="font-serif font-bold text-base text-foreground tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+          </div>
           {schema.admin?.description && (
-            <p className="text-[11px] text-muted-foreground/60 italic">{schema.admin.description}</p>
+            <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">{schema.admin.description}</p>
           )}
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] rounded-md border-primary/20 hover:bg-primary/5 hover:text-primary" onClick={() => append(buildDefaultValues(schema.fields || [], {}))}>
-          <Plus className="w-3 h-3 mr-1" />
-          Add Item
-        </Button>
-      </div>
-      <div className="space-y-6">
-        {fields.map((item, index) => (
-          <div key={item.id} className="relative group left-accent animate-in">
-            <Button type="button" variant="ghost" size="icon" className="absolute -top-1 -right-2 h-6 w-6 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => remove(index)}>
-              <Trash2 className="w-3 h-3" />
+        <div className="flex items-center gap-2">
+          {imageField && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 text-[11px] font-bold rounded-xl border-dashed hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+              onClick={() => setIsBulkOpen(true)}
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
+              Bulk Add
             </Button>
-            <div className="space-y-6">
-              {schema.fields?.map(subField => (
-                <FormFieldRenderer key={subField.name} schema={subField} basePath={`${basePath}.${index}`} control={control} collection={collection} />
-              ))}
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 text-[11px] font-bold rounded-xl border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+            onClick={() => append(buildDefaultValues(schema.fields || [], {}))}
+          >
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            Add Item
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-8 pl-4 border-l-2 border-muted/30">
+        {fields.map((item, index) => (
+          <div key={item.id} className="relative group animate-in slide-in-from-left-2 duration-300">
+            <div className="absolute -left-[21px] top-4 w-2.5 h-2.5 rounded-full bg-muted border-2 border-background group-hover:bg-primary transition-colors" />
+            <div className="bg-muted/5 rounded-3xl p-6 border border-transparent hover:border-border/50 hover:bg-white hover:shadow-2xl hover:shadow-black/5 transition-all relative">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 h-8 w-8 text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                onClick={() => remove(index)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+              <div className="space-y-6">
+                {schema.fields?.map(subField => (
+                  <FormFieldRenderer
+                    key={subField.name}
+                    schema={subField}
+                    basePath={`${basePath}.${index}`}
+                    control={control}
+                    collection={collection}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         ))}
+
         {fields.length === 0 && (
-          <div className="text-center py-6 border border-dashed border-border/40 rounded-md">
-            <p className="text-[11px] text-muted-foreground/50">No items added yet.</p>
+          <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-muted rounded-3xl bg-muted/5 space-y-3">
+            <div className="p-3 bg-muted rounded-full">
+              <Layers className="h-6 w-6 text-muted-foreground/40" />
+            </div>
+            <p className="text-xs font-medium text-muted-foreground/50">No items added yet</p>
           </div>
         )}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full h-10 text-xs font-bold rounded-2xl border-dashed border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+          onClick={() => append(buildDefaultValues(schema.fields || [], {}))}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Item
+        </Button>
       </div>
+
+      {imageField && (
+        <MediaLibraryDialog
+          collection="media"
+          isOpen={isBulkOpen}
+          onOpenChange={setIsBulkOpen}
+          selectedValues={[]}
+          multiple={true}
+          onSelect={() => { }} 
+          onConfirm={(ids: string[]) => handleBulkAdd(ids)}
+        />
+      )}
     </div>
   )
 }

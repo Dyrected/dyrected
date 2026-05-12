@@ -34,7 +34,7 @@ export interface Field {
   defaultValue?: any;
   options?: string[] | { label: string; value: string }[]; // For select/multiSelect
   relationTo?: string; // For relationship
-  hasMany?: boolean; // For relationship/multiSelect
+  hasMany?: boolean; // For relationship/multiSelect/image
   fields?: Field[]; // For array/object
   blocks?: Block[]; // For blocks
   access?: {

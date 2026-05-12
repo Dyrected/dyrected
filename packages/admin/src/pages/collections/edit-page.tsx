@@ -7,7 +7,8 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
-import { Archive, Eye, EyeOff } from "lucide-react"
+import { cn } from "../../lib/utils"
+import { Archive, Eye, EyeOff, Sparkles } from "lucide-react"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
 import jexl from 'jexl'
 
@@ -18,6 +19,7 @@ export function EditEntryPage() {
   const queryClient = useQueryClient()
   const [showPreview, setShowPreview] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
+  const [previewData, setPreviewData] = useState<any>(null)
   const isEdit = !!id
 
   useEffect(() => {
@@ -31,8 +33,6 @@ export function EditEntryPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [isDirty])
 
-  const [previewData, setPreviewData] = useState<any>(null)
-
   // Fetch schema
   const { data: schemas } = useQuery({
     queryKey: ["schemas"],
@@ -41,6 +41,13 @@ export function EditEntryPage() {
   })
 
   const schema = schemas?.collections.find((c: any) => c.slug === slug)
+
+  // Effect to default preview if available
+  useEffect(() => {
+    if (schema?.admin?.previewUrl) {
+      setShowPreview(true)
+    }
+  }, [schema])
 
   // Fetch entry data if in edit mode
   const { data: entry, isLoading: isEntryLoading } = useQuery({
@@ -69,7 +76,7 @@ export function EditEntryPage() {
       if (isEdit) {
         queryClient.invalidateQueries({ queryKey: ["entry", slug, id] })
       }
-      
+
       toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
         description: `${schema.label || schema.slug} has been saved.`
       })
@@ -119,65 +126,76 @@ export function EditEntryPage() {
   const canUpdate = (schema.access as any)?.update !== false
 
   return (
-    <div className={`space-y-6 md:space-y-8 animate-in ${previewUrl ? "" : "max-w-6xl"} mx-auto px-0 md:px-4 lg:px-0`}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-6">
-        <div className="flex items-start gap-4 md:items-center md:gap-5">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 md:h-10 md:w-10 rounded-lg shadow-sm bg-white hover:bg-muted shrink-0"
-            onClick={() => navigate(`/collections/${slug}`)}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground truncate">
-                {isEdit ? `Edit ${schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
-              </h1>
-              {hasStatus && (
-                <Badge className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${currentStatus === "published" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200" : "bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200"}`} variant="outline">
-                  {currentStatus === "published" ? "Live" : "Draft"}
-                </Badge>
-              )}
+    <div className="flex h-[calc(100vh-0px)] overflow-hidden -mt-6 -mx-4 lg:-mt-10 lg:-mx-6">
+      {/* Left Column: Header + Form */}
+      <div className={cn(
+        "flex-1 overflow-y-auto px-6 py-6 lg:px-10 lg:py-10 transition-all duration-500",
+        showPreview ? "max-w-2xl xl:max-w-3xl" : "max-w-5xl mx-auto w-full"
+      )}>
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg hover:bg-muted shrink-0"
+                onClick={() => navigate(`/collections/${slug}`)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-lg font-serif font-bold tracking-tight text-foreground truncate">
+                    {isEdit ? `Edit ${schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
+                  </h1>
+                  {hasStatus && (
+                    <Badge className={cn(
+                      "px-2 py-0 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      currentStatus === "published" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"
+                    )} variant="outline">
+                      {currentStatus === "published" ? "Live" : "Draft"}
+                    </Badge>
+                  )}
+                </div>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {isEdit ? "Modify and update your content entry." : "Fill in the details to create a new entry."}
-            </p>
+
+            <div className="flex items-center gap-2">
+              {previewUrl && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "h-9 w-9 rounded-lg transition-colors",
+                    showPreview ? "bg-primary/10 text-primary hover:bg-primary/20" : "hover:bg-muted"
+                  )}
+                  onClick={() => setShowPreview(!showPreview)}
+                  title={showPreview ? "Hide Preview" : "Live Preview"}
+                >
+                  {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              )}
+              <Button
+                size="icon"
+                className="h-9 w-9 rounded-lg shadow-sm"
+                onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                disabled={saveMutation.isPending || (isEdit ? !canUpdate : !canCreate)}
+                title={isEdit ? "Save Changes" : "Create Entry"}
+              >
+                {saveMutation.isPending ? (
+                  <div className="h-4 w-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {previewUrl && (
-            <Button
-              variant="outline"
-              size="sm"
-              className={`gap-2 ${showPreview ? "bg-primary/10 text-primary border-primary/20" : ""}`}
-              onClick={() => setShowPreview(!showPreview)}
-            >
-              {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              <span className="hidden sm:inline">{showPreview ? "Hide Preview" : "Live Preview"}</span>
-            </Button>
-          )}
-          <Button
-            onClick={() => document.getElementById('dyrected-form-submit')?.click()}
-            disabled={saveMutation.isPending || (isEdit ? !canUpdate : !canCreate)}
-          >
-            {saveMutation.isPending ? "Saving..." : (
-              <>
-                <span className="hidden sm:inline">{isEdit ? "Save Changes" : "Create Entry"}</span>
-                <span className="sm:hidden">{isEdit ? "Save" : "Create"}</span>
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
-
-      <div className={`grid gap-6 lg:gap-10 items-start ${showPreview ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 lg:grid-cols-12"}`}>
-        <div className={`${showPreview ? "" : "lg:col-span-8 xl:col-span-6"} space-y-6 order-2 lg:order-1`}>
-          <div className="animate-in space-y-8">
+          {/* Form */}
+          <div className="animate-in space-y-8 pb-20">
             {!canUpdate && isEdit && (
-              <div className="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
+              <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
                 <Archive className="h-4 w-4" />
                 You have read-only access to this collection.
               </div>
@@ -195,7 +213,7 @@ export function EditEntryPage() {
             />
             <button id="dyrected-form-submit" type="submit" className="hidden" />
 
-            {/* Document Meta moved here */}
+            {/* Document Meta */}
             <div className="pt-8 border-t border-border/40">
               <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
                 <div className="space-y-1">
@@ -213,7 +231,6 @@ export function EditEntryPage() {
                         {entry.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
                       </p>
                     </div>
-
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Last Updated</p>
                       <p className="text-xs font-medium text-muted-foreground/80">
@@ -222,30 +239,30 @@ export function EditEntryPage() {
                     </div>
                   </>
                 )}
-
-                {hasStatus && (
-                  <div className="space-y-1 max-w-xs">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Publishing</p>
-                    <p className="text-[10px] leading-tight text-muted-foreground/60 italic">
-                      Workflow enabled. Set status to <strong>Published</strong> to go live.
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {previewUrl && (
-          <div className={`${showPreview ? "max-w-none mx-[-1.5rem] lg:mx-0 lg:max-w-full opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none hidden"} transition-all duration-500 h-[600px] sm:h-[700px] lg:h-[calc(100vh-180px)] lg:sticky top-12 rounded-2xl overflow-hidden border border-border/40 shadow-2xl order-1 lg:order-2`}>
+      {/* Right Column: Preview (starts from top) */}
+      {previewUrl && (
+        <div className={cn(
+          "hidden lg:block border-l border-border/50 bg-muted/5 transition-all duration-500 overflow-hidden",
+          showPreview ? "flex-1 opacity-100" : "w-0 opacity-0 border-l-0"
+        )}>
+          {/* We use negative margins to pull the preview up and out to the shell's padding edges if possible, 
+              but since we're inside a parent with padding, we'll just make it height-full.
+          */}
+          <div className="h-full">
             <LivePreviewPane
               previewUrl={previewUrl}
               data={previewData || entry}
               mode={schema.admin?.previewMode}
             />
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
