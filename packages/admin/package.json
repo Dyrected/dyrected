@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/admin",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "type": "module",
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
@@ -8,7 +8,9 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
+      "import": "./dist/index.mjs",
+      "browser": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     },
     "./styles": "./dist/admin.css"
   },
