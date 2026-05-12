@@ -6,9 +6,7 @@
     "module": "esnext",
     "types": ["node"],
     "skipLibCheck": true,
-    "paths": {
-      "@dyrected/core": ["../core/src/index.ts"]
-    },
+    "paths": {},
 
     /* Bundler mode */
     "moduleResolution": "bundler",

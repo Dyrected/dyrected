@@ -1,5 +1,13 @@
 # @dyrected/storage-s3
 
+## 1.0.7
+
+### Patch Changes
+
+- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt.
+- Updated dependencies
+  - @dyrected/core@1.0.7
+
 ## 1.0.6
 
 ### Patch Changes

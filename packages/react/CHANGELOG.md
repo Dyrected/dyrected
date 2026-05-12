@@ -1,5 +1,13 @@
 # @dyrected/react
 
+## 1.0.5
+
+### Patch Changes
+
+- Add functional exports for all database and storage adapters (e.g., mongodbAdapter, sqliteAdapter, s3Storage) to provide a more ergonomic API and fix runtime re-attachment errors in Nuxt.
+- Updated dependencies
+  - @dyrected/sdk@1.0.5
+
 ## 1.0.4
 
 ### Patch Changes
