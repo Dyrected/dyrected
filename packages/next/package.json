@@ -27,5 +27,16 @@
     "@types/react-dom": "^19.2.3",
     "next": "^14.2.3",
     "typescript": "^5.4.5"
-  }
+  },
+  "license": "BSL-1.1",
+  "author": "Ajola Technologies Ltd",
+  "homepage": "https://dyrected.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Next.js integration for Dyrected CMS"
 }

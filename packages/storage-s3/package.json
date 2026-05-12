@@ -19,5 +19,16 @@
   "devDependencies": {
     "@types/node": "^20.12.12",
     "typescript": "^5.4.5"
-  }
+  },
+  "license": "BSL-1.1",
+  "author": "Ajola Technologies Ltd",
+  "homepage": "https://dyrected.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "S3 storage adapter for Dyrected CMS"
 }

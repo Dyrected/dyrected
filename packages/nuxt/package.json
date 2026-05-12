@@ -25,5 +25,16 @@
     "@types/react-dom": "^19.2.3",
     "nuxt": "^3.11.2",
     "vue": "^3.5.34"
-  }
+  },
+  "license": "BSL-1.1",
+  "author": "Ajola Technologies Ltd",
+  "homepage": "https://dyrected.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Nuxt integration for Dyrected CMS"
 }

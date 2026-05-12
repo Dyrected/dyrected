@@ -40,5 +40,16 @@
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
-  }
+  },
+  "license": "BSL-1.1",
+  "author": "Ajola Technologies Ltd",
+  "homepage": "https://dyrected.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Core engine and schema handling for Dyrected CMS"
 }

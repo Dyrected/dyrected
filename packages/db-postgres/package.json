@@ -18,5 +18,16 @@
   },
   "devDependencies": {
     "typescript": "^5.4.5"
-  }
+  },
+  "license": "BSL-1.1",
+  "author": "Ajola Technologies Ltd",
+  "homepage": "https://dyrected.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "PostgreSQL adapter for Dyrected CMS"
 }

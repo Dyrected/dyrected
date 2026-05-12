@@ -1,6 +1,5 @@
 {
   "name": "@dyrected/admin",
-  "private": true,
   "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.mjs",
@@ -85,5 +84,16 @@
     "typescript-eslint": "^8.58.2",
     "vite": "^8.0.10",
     "vite-plugin-node-polyfills": "^0.26.0"
-  }
+  },
+  "license": "BSL-1.1",
+  "author": "Ajola Technologies Ltd",
+  "homepage": "https://dyrected.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Premium Admin UI for Dyrected CMS"
 }
