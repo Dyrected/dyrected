@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 1.0.9
+
+### Patch Changes
+
+- d8e1f29: bump package versions and update export conditions for admin package
+
 ## 1.0.8
 
 ### Patch Changes
