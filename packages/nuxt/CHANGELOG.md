@@ -1,5 +1,33 @@
 # @dyrected/nuxt
 
+## 1.0.4
+
+### Patch Changes
+
+- Standardized environment variable handling across Next.js and Nuxt (prioritizing `NEXT_PUBLIC_` and `NUXT_PUBLIC_` prefixes).
+  Improved CLI initialization flow by saving AI setup prompts to `dyrected-ai-prompt.md` and refining the framework-specific setup instructions.
+  Fixed type emission and dependency exports for `@dyrected/admin` to ensure stable builds in consuming applications.
+  Added a drop-in `DyrectedAdmin` component for Next.js.
+  Updated documentation with clearer self-hosted and cloud integration steps.
+- Updated dependencies
+  - @dyrected/core@1.0.4
+  - @dyrected/admin@1.0.4
+  - @dyrected/sdk@1.0.3
+
+## 1.0.3
+
+### Patch Changes
+
+- Standardized environment variable handling across Next.js and Nuxt integrations.
+  - CLI now generates .env templates with framework-specific prefixes (NEXT*PUBLIC* / NUXT*PUBLIC*).
+  - Next.js and Nuxt clients automatically resolve these prefixed variables for client-side use.
+  - Added a dedicated `@dyrected/next/admin` component for easy dashboard embedding in Next.js.
+  - Fixed TypeScript type generation for the Admin UI package.
+- Updated dependencies
+  - @dyrected/admin@1.0.3
+  - @dyrected/core@1.0.3
+  - @dyrected/sdk@1.0.3
+
 ## 1.0.1
 
 ### Patch Changes

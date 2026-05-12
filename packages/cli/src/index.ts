@@ -256,16 +256,17 @@ export default defineConfig({
     console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
     console.log(chalk.cyan("  3. Run: npx @dyrected/cli generate:types\n"));
 
-    console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
-    console.log(chalk.dim("Copy this prompt and give it to your AI tool (Claude, GPT, etc.) to scaffold your CMS logic:\n"));
-
     const promptText = generateAIPrompt(framework as any, {
       baseUrl: "http://localhost:3000",
       isSelfHosted: true,
     });
 
-    console.log(chalk.white(promptText));
-    console.log("\n" + chalk.dim("━".repeat(50)) + "\n");
+    const promptPath = path.join(cwd, "dyrected-ai-prompt.md");
+    await fs.outputFile(promptPath, promptText);
+
+    console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
+    console.log(chalk.cyan(`  Prompt saved to: ${chalk.bold("dyrected-ai-prompt.md")}`));
+    console.log(chalk.dim("  Copy the contents of this file to your AI (Claude, GPT, etc.) to scaffold your CMS logic.\n"));
   });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -327,13 +328,10 @@ export default function AdminPage() {
 }
 
 async function writeNuxtFiles(cwd: string, adminPath: string) {
-  console.log(chalk.yellow("\n⚠  Add the module to your nuxt.config.ts manually:"));
+  console.log(chalk.yellow("\n⚠  Add the module to your nuxt.config.ts:"));
   console.log(
     chalk.dim(`
   modules: ['@dyrected/nuxt'],
-  runtimeConfig: {
-    public: { dyrectedApiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY }
-  }
 `),
   );
 
@@ -371,10 +369,9 @@ function buildEnvTemplate(db: string, storage: string, framework: string): strin
     lines.push(`CLOUDINARY_CLOUD_NAME=`, `CLOUDINARY_API_KEY=`, `CLOUDINARY_API_SECRET=`);
   }
 
-  lines.push(
-    ``,
-    framework === "next" ? `NEXT_PUBLIC_DYRECTED_API_KEY=local-dev` : `NUXT_PUBLIC_DYRECTED_API_KEY=local-dev`,
-  );
+  const prefix = framework === "next" ? "NEXT_PUBLIC_" : "NUXT_PUBLIC_";
+
+  lines.push(``, `${prefix}DYRECTED_URL=http://localhost:3000`, `${prefix}DYRECTED_API_KEY=local-dev`);
   return lines.join("\n") + "\n";
 }
 

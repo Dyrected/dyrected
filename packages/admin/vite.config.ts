@@ -2,11 +2,16 @@ import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import dts from "vite-plugin-dts";
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    dts({
+      tsconfigPath: "./tsconfig.app.json",
+      insertTypesEntry: true,
+    }),
     nodePolyfills({
       // Whether to polyfill `node:` protocol imports.
       protocolImports: true,
@@ -33,4 +38,3 @@ export default defineConfig({
     },
   },
 });
-

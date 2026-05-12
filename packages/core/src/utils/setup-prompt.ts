@@ -24,7 +24,7 @@ export function generateAIPrompt(activeTab: "next" | "nuxt" | "react" | "vue", c
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SITE CREDENTIALS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${config.siteName ? `Site Name : ${config.siteName}\n` : ""}${isSelfHosted ? "" : `Site ID   : ${config.siteId}\nAPI Key   : ${config.apiKey}\n`}API URL   : ${config.baseUrl || "https://api.dyrected.cloud"}
+${config.siteName ? `Site Name : ${config.siteName}\n` : ""}${isSelfHosted ? "" : `Site ID   : ${config.siteId}\nAPI Key   : ${config.apiKey}\n`}API URL   : ${config.baseUrl || "http://localhost:3000"}
 `;
 
   const importantNotes = `
@@ -340,7 +340,6 @@ onMounted(() => {
     strategy +
     (frameworks[activeTab] || frameworks.next) +
     `
-
-  API Reference: ${config.baseUrl || "http://localhost:3000"}/api/docs`
+  API Reference: https://docs.dyrected.com`
   );
 }

@@ -111,8 +111,8 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // Public config for client-side
     nuxt.options.runtimeConfig.public.dyrected = {
-      baseUrl: options.apiBase,
-      apiKey: options.apiKey,
+      baseUrl: process.env.NUXT_PUBLIC_DYRECTED_URL || options.apiBase || `/${configPath}`,
+      apiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY || options.apiKey,
       siteId: options.siteId,
     };
   },

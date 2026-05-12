@@ -1,5 +1,24 @@
 # @dyrected/storage-local
 
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@1.0.4
+
+## 1.0.3
+
+### Patch Changes
+
+- Standardized environment variable handling across Next.js and Nuxt integrations.
+  - CLI now generates .env templates with framework-specific prefixes (NEXT*PUBLIC* / NUXT*PUBLIC*).
+  - Next.js and Nuxt clients automatically resolve these prefixed variables for client-side use.
+  - Added a dedicated `@dyrected/next/admin` component for easy dashboard embedding in Next.js.
+  - Fixed TypeScript type generation for the Admin UI package.
+- Updated dependencies
+  - @dyrected/core@1.0.3
+
 ## 1.0.1
 
 ### Patch Changes

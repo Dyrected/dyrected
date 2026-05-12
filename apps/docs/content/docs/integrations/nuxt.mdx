@@ -27,10 +27,10 @@ Use this if you are using Dyrected Cloud to host your backend.
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
   dyrected: {
-    apiKey: process.env.DYRECTED_API_KEY,
-    siteId: process.env.DYRECTED_SITE_ID,
-    baseUrl: 'https://api.dyrected.cloud', // Or your custom cloud URL
-    apiBase: '/dyrected',              // Local proxy path
+    // These are optional if you have NUXT_PUBLIC_DYRECTED_* env vars defined!
+    // apiKey: 'sk_live_...',
+    // siteId: 'site_...',
+    // baseUrl: 'https://api.dyrected.cloud',
   }
 })
 ```
@@ -85,14 +85,25 @@ export default defineConfig({
 
 ---
 
-## Environment Variables
-
-For Cloud mode, you should use environment variables for your keys:
+For Cloud mode, you should use framework-prefixed environment variables. The Nuxt module will automatically pick these up:
 
 ```bash
 # .env
-DYRECTED_API_KEY=sk_live_...
-DYRECTED_SITE_ID=site_...
+NUXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
+NUXT_PUBLIC_DYRECTED_API_KEY=sk_live_...
+NUXT_PUBLIC_DYRECTED_SITE_ID=site_...
+```
+
+If you are using **Self-Hosted** mode, you'll also need your database and secret keys:
+
+```bash
+# .env
+DATABASE_URL=postgres://...
+JWT_SECRET=...
+ENCRYPTION_KEY=...
+
+# Standard prefixes work too
+NUXT_PUBLIC_DYRECTED_URL=http://localhost:3000
 ```
 
 ---
