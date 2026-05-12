@@ -19,26 +19,28 @@ export class B2StorageAdapter implements StorageAdapter {
     });
   }
 
-  async upload(args: { filename: string; buffer: Buffer; mimeType: string }): Promise<FileData> {
+  async upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData> {
     await this.b2.authorize();
     
     const uploadUrlResponse = await this.b2.getUploadUrl({
       bucketId: this.config.bucketId,
     });
 
+    const fileName = args.prefix ? `${args.prefix}/${args.filename}` : args.filename;
+
     const uploadResponse = await (this.b2 as any).uploadFile({
       uploadUrl: uploadUrlResponse.data.uploadUrl,
       uploadAuthToken: uploadUrlResponse.data.authorizationToken,
-      fileName: args.filename,
-      data: args.buffer,
+      fileName,
+      data: Buffer.from(args.buffer),
       contentType: args.mimeType,
     });
 
     return {
-      filename: args.filename,
+      filename: fileName,
       filesize: args.buffer.length,
       mimeType: args.mimeType,
-      url: this.getURL({ filename: args.filename }),
+      url: this.getURL({ filename: fileName }),
       provider_metadata: uploadResponse.data,
     };
   }

@@ -26,12 +26,14 @@ export class S3StorageAdapter implements StorageAdapter {
     });
   }
 
-  async upload(args: { filename: string; buffer: Buffer; mimeType: string }): Promise<FileData> {
+  async upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData> {
+    const key = args.prefix ? `${args.prefix}/${args.filename}` : args.filename;
+
     const upload = new Upload({
       client: this.client,
       params: {
         Bucket: this.config.bucket,
-        Key: args.filename,
+        Key: key,
         Body: args.buffer,
         ContentType: args.mimeType,
       },
@@ -40,10 +42,10 @@ export class S3StorageAdapter implements StorageAdapter {
     await upload.done();
 
     return {
-      filename: args.filename,
+      filename: key,
       filesize: args.buffer.length,
       mimeType: args.mimeType,
-      url: this.getURL({ filename: args.filename }),
+      url: this.getURL({ filename: key }),
     };
   }
 

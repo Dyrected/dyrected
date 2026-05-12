@@ -17,12 +17,16 @@ export class CloudinaryStorageAdapter implements StorageAdapter {
     });
   }
 
-  async upload(args: { filename: string; buffer: Buffer; mimeType: string }): Promise<FileData> {
+  async upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData> {
+    const folder = args.prefix 
+      ? (this.config.folder ? `${this.config.folder}/${args.prefix}` : args.prefix)
+      : this.config.folder;
+
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           public_id: args.filename.split('.')[0], // Remove extension
-          folder: this.config.folder,
+          folder,
           resource_type: 'auto',
         },
         (error, result) => {
@@ -41,7 +45,7 @@ export class CloudinaryStorageAdapter implements StorageAdapter {
         }
       );
 
-      uploadStream.end(args.buffer);
+      uploadStream.end(Buffer.from(args.buffer));
     });
   }
 
