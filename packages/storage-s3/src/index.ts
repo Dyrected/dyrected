@@ -62,3 +62,5 @@ export class S3StorageAdapter implements StorageAdapter {
     return `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${args.filename}`;
   }
 }
+
+export const s3Storage = (config: S3StorageConfig) => new S3StorageAdapter(config);

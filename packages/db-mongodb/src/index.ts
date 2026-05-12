@@ -119,3 +119,5 @@ export class MongoAdapter implements DatabaseAdapter {
     }
   }
 }
+
+export const mongodbAdapter = (config: MongoAdapterConfig) => new MongoAdapter(config);

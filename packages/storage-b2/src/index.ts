@@ -70,3 +70,5 @@ export class B2StorageAdapter implements StorageAdapter {
     return `https://f000.backblazeb2.com/file/${this.config.bucketName}/${args.filename}`;
   }
 }
+
+export const b2Storage = (config: B2StorageConfig) => new B2StorageAdapter(config);

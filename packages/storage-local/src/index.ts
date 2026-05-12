@@ -65,3 +65,5 @@ export class LocalStorageAdapter implements StorageAdapter {
     return { buffer, mimeType };
   }
 }
+
+export const localStorage = (config: LocalStorageConfig) => new LocalStorageAdapter(config);

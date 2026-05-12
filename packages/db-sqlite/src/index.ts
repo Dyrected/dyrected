@@ -169,3 +169,5 @@ export class SqliteAdapter implements DatabaseAdapter {
     return params.data;
   }
 }
+
+export const sqliteAdapter = (config: SqliteAdapterConfig) => new SqliteAdapter(config);

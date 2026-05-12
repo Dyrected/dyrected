@@ -153,3 +153,5 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
   }
 }
+
+export const postgresAdapter = (config: PostgresAdapterConfig) => new PostgresAdapter(config);

@@ -53,3 +53,5 @@ export class CloudinaryStorageAdapter implements StorageAdapter {
     return cloudinary.url(args.filename, { secure: true });
   }
 }
+
+export const cloudinaryStorage = (config: CloudinaryStorageConfig) => new CloudinaryStorageAdapter(config);
