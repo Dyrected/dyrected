@@ -526,7 +526,9 @@ export function generateFreshSetupPrompt(
       ? "Next.js"
       : activeTab === "nuxt"
         ? "Nuxt.js"
-        : activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+        : activeTab
+          ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+          : "the project's detected framework";
 
   const isSelfHosted = config.isSelfHosted === true || (!config.apiKey && !config.siteId);
 
@@ -896,7 +898,9 @@ export function generateAIPrompt(activeTab: "next" | "nuxt" | "react" | "vue", c
       ? "Next.js"
       : activeTab === "nuxt"
         ? "Nuxt.js"
-        : activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+        : activeTab
+          ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+          : "the project's detected framework";
 
   const isSelfHosted = config.isSelfHosted === true || (!config.apiKey && !config.siteId);
 
