@@ -11,7 +11,9 @@ export default defineNitroPlugin(async (nitroApp: any) => {
   if (runtimeConfig?.configPath) {
     try {
       const configPath = (runtimeConfig as any).configPath;
-      const { default: userConfig } = await import(configPath);
+      // Use pathToFileURL to ensure Windows absolute paths are valid file:// URLs for import()
+      const { pathToFileURL } = await import("url");
+      const { default: userConfig } = await import(pathToFileURL(configPath).href);
       if (userConfig && userConfig.db) {
         (globalThis as any).__dyrected_db = userConfig.db;
         console.log("[dyrected/nuxt] Database re-attached to global context");
