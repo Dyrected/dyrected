@@ -1,5 +1,17 @@
 # @dyrected/admin
 
+## 2.4.0
+
+### Minor Changes
+
+- Infrastructure standardization, MySQL adapter improvements, and SDK robustness testing.
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@2.4.0
+  - @dyrected/sdk@2.4.0
+
 ## 2.3.0
 
 ### Minor Changes

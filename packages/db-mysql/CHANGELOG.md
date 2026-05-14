@@ -1,5 +1,16 @@
 # @dyrected/db-mysql
 
+## 4.0.0
+
+### Minor Changes
+
+- Infrastructure standardization, MySQL adapter improvements, and SDK robustness testing.
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@2.4.0
+
 ## 3.0.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.4.0
+
+### Minor Changes
+
+- Infrastructure standardization, MySQL adapter improvements, and SDK robustness testing.
+
 ## 2.3.0
 
 ### Minor Changes
