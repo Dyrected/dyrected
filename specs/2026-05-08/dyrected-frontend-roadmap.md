@@ -1,6 +1,7 @@
 # Dyrected Frontend Roadmap
 
 This document covers all outstanding frontend work needed across the Dyrected ecosystem:
+
 - Admin UI improvements and config parity
 - Live Preview system
 - Relationship & Media display
@@ -15,45 +16,45 @@ The Admin UI (`@dyrected/admin`) must fully reflect every option in `CollectionC
 
 ### 1.1 Collection-Level Config Properties Not Yet Wired
 
-| Config Property | Current State | Required Admin Behavior |
-|---|---|---|
-| `labels.singular / plural` | Partially used | Use `plural` in list heading; `singular` in Create button and breadcrumb |
-| `admin.group` | **Used** | Group sidebar links under the `group` label with a collapsible section |
-| `admin.hidden` | Not enforced | Hide collection from sidebar and refuse navigation to its routes |
-| `admin.useAsTitle` | Used in search key only | Use as the primary display column in list table and as the document title in edit header |
-| `admin.defaultColumns` | Partially used | Respect the ordered column list exactly; show a column picker UI to override |
-| `auth: true` | Not reflected | Show a "Login" badge on the collection card; suppress Create button if access denied |
-| `upload: true / UploadConfig` | Switches to MediaPage | Show allowed MIME types as a hint in the upload dropzone; enforce `maxFileSize` client-side |
-| `access.*` | Not enforced | Hide Create/Edit/Delete buttons when the user's role would be denied (see §4) |
-| `hooks.*` | N/A in UI | No UI change needed; hooks run server-side |
-| `shared: true` | Not surfaced | Show a "Shared" badge; explain it appears across all sites |
+| Config Property               | Current State           | Required Admin Behavior                                                                     |
+| ----------------------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
+| `labels.singular / plural`    | Partially used          | Use `plural` in list heading; `singular` in Create button and breadcrumb                    |
+| `admin.group`                 | **Used**                | Group sidebar links under the `group` label with a collapsible section                      |
+| `admin.hidden`                | Not enforced            | Hide collection from sidebar and refuse navigation to its routes                            |
+| `admin.useAsTitle`            | Used in search key only | Use as the primary display column in list table and as the document title in edit header    |
+| `admin.defaultColumns`        | Partially used          | Respect the ordered column list exactly; show a column picker UI to override                |
+| `auth: true`                  | Not reflected           | Show a "Login" badge on the collection card; suppress Create button if access denied        |
+| `upload: true / UploadConfig` | Switches to MediaPage   | Show allowed MIME types as a hint in the upload dropzone; enforce `maxFileSize` client-side |
+| `access.*`                    | Not enforced            | Hide Create/Edit/Delete buttons when the user's role would be denied (see §4)               |
+| `hooks.*`                     | N/A in UI               | No UI change needed; hooks run server-side                                                  |
+| `shared: true`                | Not surfaced            | Show a "Shared" badge; explain it appears across all sites                                  |
 
 ### 1.2 Field-Level Config Properties Not Yet Wired
 
-| Field Property | Current State | Required Admin Behavior |
-|---|---|---|
-| `label` | Used | — (already correct) |
-| `required` | Used via Zod | Show red asterisk on label |
-| `unique` | Ignored | Show a "unique" badge on the field label |
-| `defaultValue` | Used in buildDefaultValues | — |
-| `options` (string[]) | Not handled | Normalise to `{ label, value }[]` before passing to Select/MultiSelect |
-| `admin.placeholder` | Used | — |
-| `admin.description` | Used | — |
-| `admin.hidden` | Used | — |
-| `admin.readOnly` | Used | — |
-| `admin.condition` | **Implemented** | Evaluate `condition(watchedValues)` on every form change; hide/show field dynamically |
-| `access.read` | **Not enforced** | Strip field from form if `read` returns false for current user |
-| `access.update` | **Not enforced** | Set field `readOnly` if `update` returns false |
+| Field Property       | Current State              | Required Admin Behavior                                                               |
+| -------------------- | -------------------------- | ------------------------------------------------------------------------------------- |
+| `label`              | Used                       | — (already correct)                                                                   |
+| `required`           | Used via Zod               | Show red asterisk on label                                                            |
+| `unique`             | Ignored                    | Show a "unique" badge on the field label                                              |
+| `defaultValue`       | Used in buildDefaultValues | —                                                                                     |
+| `options` (string[]) | Not handled                | Normalise to `{ label, value }[]` before passing to Select/MultiSelect                |
+| `admin.placeholder`  | Used                       | —                                                                                     |
+| `admin.description`  | Used                       | —                                                                                     |
+| `admin.hidden`       | Used                       | —                                                                                     |
+| `admin.readOnly`     | Used                       | —                                                                                     |
+| `admin.condition`    | **Implemented**            | Evaluate `condition(watchedValues)` on every form change; hide/show field dynamically |
+| `access.read`        | **Not enforced**           | Strip field from form if `read` returns false for current user                        |
+| `access.update`      | **Not enforced**           | Set field `readOnly` if `update` returns false                                        |
 
 ### 1.3 Global-Level Config Properties Not Yet Wired
 
-| Config Property | Current State | Required Admin Behavior |
-|---|---|---|
-| `label` | Used | — |
-| `admin.group` | Not used | Same grouping logic as collections |
-| `admin.hidden` | Not used | Hide from sidebar |
-| `access.read` | Not enforced | Show 403 state if denied |
-| `access.update` | Not enforced | Disable Save button if denied |
+| Config Property | Current State | Required Admin Behavior            |
+| --------------- | ------------- | ---------------------------------- |
+| `label`         | Used          | —                                  |
+| `admin.group`   | Not used      | Same grouping logic as collections |
+| `admin.hidden`  | Not used      | Hide from sidebar                  |
+| `access.read`   | Not enforced  | Show 403 state if denied           |
+| `access.update` | Not enforced  | Disable Save button if denied      |
 
 ---
 
@@ -62,17 +63,20 @@ The Admin UI (`@dyrected/admin`) must fully reflect every option in `CollectionC
 ### 2.1 Current Problems
 
 **In the List Table (`list-page.tsx`):**
+
 - Relationship field values arrive as raw IDs (strings) when `depth=0` or when the cell renderer doesn't know the field type.
 - The generic cell renderer calls `String(value ?? "-")` — an ID like `"abc123"` is shown raw.
 - Media relationships are rendered as an `<img>` tag only for `field.type === "image"`, but the standard media relationship type is `"relationship"`.
 
 **In the Relationship Picker (`relationship-picker.tsx`):**
+
 - Display label fallback is `item.title || item.name || item.slug || item.id` — does not respect `admin.useAsTitle` from the related collection's schema.
 - No thumbnail for media relationships — it shows the title text even if the related collection is an upload collection.
 - Single-value only — no support for `string[]` multi-relationship values.
 - Loads all 100 items at once — no search debounce against the API.
 
 **In the Media Picker (`media-picker.tsx`):**
+
 - Matches by `filename` instead of `id` — `value === item.filename` — inconsistent with how relationships are stored.
 - Preview URL is hand-assembled: `` `${client.getBaseUrl()}/media/${filename}` `` — breaks for S3/Cloudinary where `item.url` is already the full absolute URL.
 - Grid does not show filename or file size.
@@ -84,17 +88,17 @@ The Admin UI (`@dyrected/admin`) must fully reflect every option in `CollectionC
 
 ```tsx
 // Determine title field from the related collection schema
-const relatedSchema = schemas?.collections.find(c => c.slug === relationTo)
-const titleField = relatedSchema?.admin?.useAsTitle || 'title'
+const relatedSchema = schemas?.collections.find((c) => c.slug === relationTo);
+const titleField = relatedSchema?.admin?.useAsTitle || "title";
 
-const getDisplayLabel = (item: any) =>
-  item[titleField] || item.title || item.name || item.slug || item.id
+const getDisplayLabel = (item: any) => item[titleField] || item.title || item.name || item.slug || item.id;
 
 // Media thumbnail: if the related collection has upload:true, show a thumbnail
-const isMediaCollection = !!relatedSchema?.upload
+const isMediaCollection = !!relatedSchema?.upload;
 ```
 
 Add props:
+
 - `multiple?: boolean` — when true, value is `string[]` and renders tags.
 - `searchQuery` state with a 300 ms debounce that passes `?where[title][like]=...` to the API.
 
@@ -110,19 +114,19 @@ Add props:
 In `list-page.tsx`, fetch with `depth=1` so relationships arrive populated, then add a type-aware cell renderer:
 
 ```tsx
-if (field.type === 'relationship') {
-  const relatedSchema = schemas?.collections.find(c => c.slug === field.relationTo)
-  const titleField = relatedSchema?.admin?.useAsTitle || 'title'
-  const isMedia = !!relatedSchema?.upload
+if (field.type === "relationship") {
+  const relatedSchema = schemas?.collections.find((c) => c.slug === field.relationTo);
+  const titleField = relatedSchema?.admin?.useAsTitle || "title";
+  const isMedia = !!relatedSchema?.upload;
 
-  if (isMedia && typeof value === 'object') {
-    return <img src={value.url} className="h-8 w-8 rounded object-cover" alt={value.alt || ''} />
+  if (isMedia && typeof value === "object") {
+    return <img src={value.url} className="h-8 w-8 rounded object-cover" alt={value.alt || ""} />;
   }
-  if (typeof value === 'object') {
-    return <span>{value[titleField] || value.id}</span>
+  if (typeof value === "object") {
+    return <span>{value[titleField] || value.id}</span>;
   }
   // Fallback: raw ID
-  return <span className="font-mono text-xs text-muted-foreground">{value}</span>
+  return <span className="font-mono text-xs text-muted-foreground">{value}</span>;
 }
 ```
 
@@ -130,7 +134,7 @@ if (field.type === 'relationship') {
 
 ## 3. Live Preview System
 
-Live Preview lets editors see how content looks on their frontend *before* saving. The admin sends the current (unsaved) form state to the frontend via `postMessage` or a preview URL with a token.
+Live Preview lets editors see how content looks on their frontend _before_ saving. The admin sends the current (unsaved) form state to the frontend via `postMessage` or a preview URL with a token.
 
 ### 3.1 Architecture
 
@@ -184,9 +188,9 @@ In `edit-page.tsx`, add a toggle in the sidebar:
 ```tsx
 // packages/admin/src/components/live-preview/LivePreviewPane.tsx
 interface LivePreviewPaneProps {
-  previewUrl: string
-  formValues: any
-  mode: 'postMessage' | 'token'
+  previewUrl: string;
+  formValues: any;
+  mode: "postMessage" | "token";
 }
 ```
 
@@ -209,34 +213,34 @@ Package: `@dyrected/react` (new package, or added to `@dyrected/sdk`)
 
 ```ts
 // packages/react/src/useLivePreview.ts
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from "react";
 
 interface UseLivePreviewOptions<T> {
-  initialData: T
-  serverURL: string   // The admin URL (origin for postMessage validation)
-  depth?: number
+  initialData: T;
+  serverURL: string; // The admin URL (origin for postMessage validation)
+  depth?: number;
 }
 
 export function useLivePreview<T = any>(options: UseLivePreviewOptions<T>) {
-  const { initialData, serverURL } = options
-  const [data, setData] = useState<T>(initialData)
-  const [isLive, setIsLive] = useState(false)
+  const { initialData, serverURL } = options;
+  const [data, setData] = useState<T>(initialData);
+  const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.origin !== serverURL) return
-      if (event.data?.type === 'dyrected-live-preview') {
-        setData(event.data.data)
-        setIsLive(true)
+      if (event.origin !== serverURL) return;
+      if (event.data?.type === "dyrected-live-preview") {
+        setData(event.data.data);
+        setIsLive(true);
       }
-    }
-    window.addEventListener('message', handler)
+    };
+    window.addEventListener("message", handler);
     // Signal readiness to parent
-    window.parent?.postMessage({ type: 'dyrected-preview-ready' }, serverURL)
-    return () => window.removeEventListener('message', handler)
-  }, [serverURL])
+    window.parent?.postMessage({ type: "dyrected-preview-ready" }, serverURL);
+    return () => window.removeEventListener("message", handler);
+  }, [serverURL]);
 
-  return { data, isLive }
+  return { data, isLive };
 }
 ```
 
@@ -244,14 +248,14 @@ export function useLivePreview<T = any>(options: UseLivePreviewOptions<T>) {
 
 ```tsx
 // app/posts/[slug]/page.tsx (client component for preview)
-'use client'
-import { useLivePreview } from '@dyrected/react'
+"use client";
+import { useLivePreview } from "@dyrected/react";
 
 export default function PostPreview({ initialPost }: { initialPost: Post }) {
   const { data: post, isLive } = useLivePreview({
     initialData: initialPost,
     serverURL: process.env.NEXT_PUBLIC_CMS_URL!,
-  })
+  });
 
   return (
     <article>
@@ -259,7 +263,7 @@ export default function PostPreview({ initialPost }: { initialPost: Post }) {
       <h1>{post.title}</h1>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
     </article>
-  )
+  );
 }
 ```
 
@@ -269,33 +273,30 @@ Package: Added to `@dyrected/nuxt` runtime composables.
 
 ```ts
 // packages/nuxt/src/runtime/composables/useLivePreview.ts
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from "vue";
 
-export function useLivePreview<T>(options: {
-  initialData: T
-  serverURL: string
-}) {
-  const data = ref<T>(options.initialData)
-  const isLive = ref(false)
+export function useLivePreview<T>(options: { initialData: T; serverURL: string }) {
+  const data = ref<T>(options.initialData);
+  const isLive = ref(false);
 
   function handleMessage(event: MessageEvent) {
-    if (event.origin !== options.serverURL) return
-    if (event.data?.type === 'dyrected-live-preview') {
-      data.value = event.data.data as T
-      isLive.value = true
+    if (event.origin !== options.serverURL) return;
+    if (event.data?.type === "dyrected-live-preview") {
+      data.value = event.data.data as T;
+      isLive.value = true;
     }
   }
 
   onMounted(() => {
-    window.addEventListener('message', handleMessage)
-    window.parent?.postMessage({ type: 'dyrected-preview-ready' }, options.serverURL)
-  })
+    window.addEventListener("message", handleMessage);
+    window.parent?.postMessage({ type: "dyrected-preview-ready" }, options.serverURL);
+  });
 
   onUnmounted(() => {
-    window.removeEventListener('message', handleMessage)
-  })
+    window.removeEventListener("message", handleMessage);
+  });
 
-  return { data, isLive }
+  return { data, isLive };
 }
 ```
 
@@ -304,9 +305,9 @@ export function useLivePreview<T>(options: {
 ```vue
 <script setup lang="ts">
 const { data: page, isLive } = useLivePreview({
-  initialData: await useDyrectedDoc('pages', route.params.slug),
+  initialData: await useDyrectedDoc("pages", route.params.slug),
   serverURL: useRuntimeConfig().public.cmsUrl,
-})
+});
 </script>
 
 <template>
@@ -362,27 +363,30 @@ In `router.ts`, call each access function with the current user from the request
 
 ```ts
 const resolveAccess = async (fn: AccessFunction | undefined, args: any): Promise<boolean> => {
-  if (!fn) return true
-  const result = await fn(args)
-  if (typeof result === 'boolean') return result
+  if (!fn) return true;
+  const result = await fn(args);
+  if (typeof result === "boolean") return result;
   // object result means "allowed with filter" — true for UI purposes
-  return true
-}
+  return true;
+};
 ```
 
 ### 4.2 Admin UI: Access-Aware Components
 
 **List Page:**
+
 - Hide "Create" button if `access.create === false`.
 - Hide "Delete" action in row menu if `access.delete === false`.
 - Hide "Edit" link if `access.update === false`.
 
 **Edit Page:**
+
 - If `access.update === false`, render form in read-only mode (all fields disabled, "Save" button hidden, show "View Only" badge).
 - Strip fields where `field.access.read === false` from the form entirely.
 - Set `readOnly` on fields where `field.access.update === false`.
 
 **Sidebar:**
+
 - Hide collections where `admin.hidden === true`.
 - Show a lock icon on collections where `access.read === true` but `access.create/update/delete === false`.
 
@@ -392,17 +396,17 @@ The `DyrectedProvider` needs to store the current user's resolved access. After 
 
 ```ts
 interface CollectionAccess {
-  create: boolean
-  read: boolean
-  update: boolean
-  delete: boolean
+  create: boolean;
+  read: boolean;
+  update: boolean;
+  delete: boolean;
 }
 
 // In useDyrected hook
 const getCollectionAccess = (slug: string): CollectionAccess => {
-  const schema = schemas?.collections.find(c => c.slug === slug)
-  return schema?.access ?? { create: true, read: true, update: true, delete: true }
-}
+  const schema = schemas?.collections.find((c) => c.slug === slug);
+  return schema?.access ?? { create: true, read: true, update: true, delete: true };
+};
 ```
 
 ---
@@ -443,22 +447,22 @@ const getCollectionAccess = (slug: string): CollectionAccess => {
 
 ## 6. Implementation Order
 
-| Priority | Item | Effort |
-|---|---|---|
-| P0 | Fix relationship cells in list table (§2.2.3) | S |
-| P0 | Fix MediaPicker to use `item.id` and `item.url` (§2.2.2) | S |
-| P0 | Wire Delete action in list-page row menu (§5.1) | S |
-| P1 | RelationshipPicker: multi-value + useAsTitle + thumbnail (§2.2.1) | M |
-| P1 | Field `admin.condition` evaluation (§1.2) | M |
-| P1 | Schema endpoint resolved access + Admin UI RBAC (§4) | L |
-| P1 | Live Preview — postMessage mode + `useLivePreview` hooks (§3) | L |
-| P2 | List page pagination + search (§5.1) | M |
-| P2 | Edit page unsaved-changes guard + publish shortcut (§5.2) | M |
-| P2 | Admin sidebar grouping by `admin.group` (§1.1) | S |
-| P2 | Media page drag-and-drop + file details panel (§5.3) | M |
-| P3 | Live Preview — token mode + backend endpoint (§3.2) | L |
-| P3 | Bulk operations in list table (§5.1) | M |
-| P3 | Autosave draft (§5.2) | M |
+| Priority | Item                                                              | Effort |
+| -------- | ----------------------------------------------------------------- | ------ |
+| P0       | Fix relationship cells in list table (§2.2.3)                     | S      |
+| P0       | Fix MediaPicker to use `item.id` and `item.url` (§2.2.2)          | S      |
+| P0       | Wire Delete action in list-page row menu (§5.1)                   | S      |
+| P1       | RelationshipPicker: multi-value + useAsTitle + thumbnail (§2.2.1) | M      |
+| P1       | Field `admin.condition` evaluation (§1.2)                         | M      |
+| P1       | Schema endpoint resolved access + Admin UI RBAC (§4)              | L      |
+| P1       | Live Preview — postMessage mode + `useLivePreview` hooks (§3)     | L      |
+| P2       | List page pagination + search (§5.1)                              | M      |
+| P2       | Edit page unsaved-changes guard + publish shortcut (§5.2)         | M      |
+| P2       | Admin sidebar grouping by `admin.group` (§1.1)                    | S      |
+| P2       | Media page drag-and-drop + file details panel (§5.3)              | M      |
+| P3       | Live Preview — token mode + backend endpoint (§3.2)               | L      |
+| P3       | Bulk operations in list table (§5.1)                              | M      |
+| P3       | Autosave draft (§5.2)                                             | M      |
 
 ---
 
@@ -519,13 +523,20 @@ Tested so far: **React (Next.js App Router)** — confirmed broken. Behaviour in
 
 ### 8.3 Solution Options
 
-#### Option A — `basename` prop + `MemoryRouter` sync (Recommended)
+#### Option C — HashRouter (Selected & Implemented)
+
+Switch to `HashRouter` internally. URLs become `/admin#/collections/posts`.
+
+**Pros:** Works out of the box with any host; no catch-all needed; zero server-side routing configuration required.
+**Cons:** `#` in URLs; not compatible with SSR meta tags per page (not a requirement for admin tools).
+
+#### Option A — `basename` prop + `MemoryRouter` sync (Deprecated)
 
 Pass a `basename` prop to `<AdminUI>` that tells the Admin where it is mounted. The Admin uses `BrowserRouter` with this `basename`, and all internal navigations produce real URLs that the host can intercept.
 
 ```tsx
 // Host app (Next.js)
-// app/admin/[[...route]]/page.tsx
+// app/admin/page.tsx
 <AdminUI
   basename="/admin"
   baseUrl={...}
@@ -537,12 +548,12 @@ The Admin's router is then configured:
 
 ```tsx
 // Inside @dyrected/admin
-<BrowserRouter basename={props.basename ?? '/admin'}>
+<BrowserRouter basename={props.basename ?? "/admin"}>
   <Routes>...</Routes>
 </BrowserRouter>
 ```
 
-With `basename="/admin"`, the Admin navigates to `/admin/collections/posts` — a real URL. The host Next.js catch-all `[[...route]]` page handles it by always rendering `<AdminUI>`, and the Admin restores its state from `window.location.pathname`.
+With `basename="/admin"`, the Admin navigates to `/admin/collections/posts` — a real URL. The host Next.js page handles it by always rendering `<AdminUI>`, and the Admin restores its state from `window.location.pathname`.
 
 **Pros:** Real URLs, bookmarkable, Back/Forward works.  
 **Cons:** Host must use a catch-all route that renders `<AdminUI>` regardless of path.
@@ -552,46 +563,34 @@ With `basename="/admin"`, the Admin navigates to `/admin/collections/posts` — 
 Expose an `onNavigate(path: string)` prop. The Admin calls it on every internal route change. The host app decides how to reflect that (e.g., `router.push(path)` in Next.js, `useRouter().push(path)` in Nuxt).
 
 ```tsx
-<AdminUI
-  basename="/admin"
-  onNavigate={(path) => router.push(path)}
-/>
+<AdminUI basename="/admin" onNavigate={(path) => router.push(path)} />
 ```
 
 **Pros:** Gives the host full control; works in any framework.  
 **Cons:** Requires host-side wiring; URLs only update when the host calls `router.push`.
 
-#### Option C — HashRouter (simpler, no catch-all needed)
-
-Switch to `HashRouter` internally. URLs become `/admin#/collections/posts`.
-
-**Pros:** Works out of the box with any host; no catch-all needed.  
-**Cons:** `#` in URLs looks dated; not compatible with SSR meta tags per page; harder to link to specific admin pages from external sources.
-
 ---
 
-### 8.4 Recommended Approach
+### 8.4 Selected Approach
 
-Implement **Option A** as the default, with **Option B** as an escape hatch for unusual host setups:
+We have implemented **Option C (HashRouter)** as the default routing strategy for the Admin UI. This significantly simplifies integration for end-users as it eliminates the need for complex catch-all route configurations in the host application.
 
-1. Add `basename?: string` prop to `<AdminUI>` (default: `'/admin'`).
-2. Replace the current router instantiation with `<BrowserRouter basename={basename}>`.
-3. Add `onNavigate?: (path: string) => void` prop — call it via a `useEffect` + `useLocation()` listener inside the router.
-4. Update docs (`docs/admin/overview.md`) with the catch-all route setup for Next.js and Nuxt.
-5. Test in a Nuxt host app — verify `navigateTo()` works when wired through `onNavigate`.
+1. The Admin UI now uses `HashRouter` by default.
+2. CLI initialization has been updated to generate simple `page.tsx` (Next.js) or `index.vue` (Nuxt) files.
+3. Catch-all routes are no longer required or recommended for mounting the Admin UI.
 
 ---
 
 ### 8.5 Files to Change
 
-| File | Change |
-|---|---|
+| File                                               | Change                                                                                                             |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `packages/admin/src/app.tsx` (or root router file) | Pass `basename` prop to `BrowserRouter`; add `NavigationSync` component that calls `onNavigate` on location change |
-| `packages/admin/src/components/AdminUI.tsx` | Accept `basename?: string` and `onNavigate?: (path: string) => void` props; forward to app |
-| `packages/admin/src/types.ts` | Add `basename` and `onNavigate` to `AdminUIProps` |
-| `docs/admin/overview.md` | Document `basename` prop; update Next.js and Nuxt embedding examples with catch-all route |
-| `docs/integrations/nextjs.md` | Update admin embed section with `[[...route]]` catch-all and `basename` |
-| `docs/integrations/nuxt.md` | Document equivalent Nuxt page setup |
+| `packages/admin/src/components/AdminUI.tsx`        | Accept `basename?: string` and `onNavigate?: (path: string) => void` props; forward to app                         |
+| `packages/admin/src/types.ts`                      | Add `basename` and `onNavigate` to `AdminUIProps`                                                                  |
+| `docs/admin/overview.md`                           | Document `basename` prop; update Next.js and Nuxt embedding examples with catch-all route                          |
+| `docs/integrations/nextjs.md`                      | Update admin embed section with /admin and `basename`                                                              |
+| `docs/integrations/nuxt.md`                        | Document equivalent Nuxt page setup                                                                                |
 
 ---
 

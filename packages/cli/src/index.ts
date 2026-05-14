@@ -230,7 +230,10 @@ export default defineConfig({
         });
 
         if (appendEnv) {
-          await fs.appendFile(envPath, `\n# ── Dyrected CMS ──────────────────────────────────────────────────\n${missingVars}`);
+          await fs.appendFile(
+            envPath,
+            `\n# ── Dyrected CMS ──────────────────────────────────────────────────\n${missingVars}`,
+          );
           console.log(chalk.green("✔  .env file updated with missing variables"));
         }
       } else {
@@ -266,7 +269,9 @@ export default defineConfig({
 
     console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
     console.log(chalk.cyan(`  Prompt saved to: ${chalk.bold("dyrected-ai-prompt.md")}`));
-    console.log(chalk.dim("  Copy the contents of this file to your AI (Claude, GPT, etc.) to scaffold your CMS logic.\n"));
+    console.log(
+      chalk.dim("  Copy the contents of this file to your AI (Claude, GPT, etc.) to scaffold your CMS logic.\n"),
+    );
   });
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -312,7 +317,7 @@ async function writeNextFiles(cwd: string, adminPath: string) {
     console.log(chalk.green("✔  app/dyrected/[...route]/route.ts written"));
   }
 
-  const adminPagePath = path.join(cwd, `app/${adminPath}/[[...route]]/page.tsx`);
+  const adminPagePath = path.join(cwd, `app/${adminPath}/page.tsx`);
   if (!(await fs.pathExists(adminPagePath))) {
     await fs.outputFile(
       adminPagePath,
@@ -323,7 +328,7 @@ export default function AdminPage() {
 }
 `,
     );
-    console.log(chalk.green(`✔  app/${adminPath}/[[...route]]/page.tsx written`));
+    console.log(chalk.green(`✔  app/${adminPath}/page.tsx written`));
   }
 }
 
@@ -335,7 +340,7 @@ async function writeNuxtFiles(cwd: string, adminPath: string) {
 `),
   );
 
-  const adminPagePath = path.join(cwd, `pages/${adminPath}/[[...route]].vue`);
+  const adminPagePath = path.join(cwd, `pages/${adminPath}/index.vue`);
   if (!(await fs.pathExists(adminPagePath))) {
     await fs.outputFile(
       adminPagePath,
@@ -352,7 +357,7 @@ definePageMeta({
 </script>
 `,
     );
-    console.log(chalk.green(`✔  pages/${adminPath}/[[...route]].vue written`));
+    console.log(chalk.green(`✔  pages/${adminPath}/index.vue written`));
   }
 }
 

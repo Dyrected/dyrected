@@ -253,10 +253,10 @@ hooks: {
 ## 6. Embed the Admin UI
 <Tabs items={['Next.js', 'Nuxt']}>
 <Tab value="Next.js">
-Create a catch-all page at `app/admin/[[...route]]/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the mounting and routing isolation for you.
+Create a catch-all page at `app/admin/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the mounting and routing isolation for you.
 
 ```tsx
-// app/admin/[[...route]]/page.tsx
+// app/admin/page.tsx
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
