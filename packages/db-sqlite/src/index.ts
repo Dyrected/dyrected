@@ -13,6 +13,8 @@ export class SqliteAdapter implements DatabaseAdapter {
 
   constructor(config: SqliteAdapterConfig) {
     this.sqlite = new Database(config.filename);
+    // Drizzle is initialized for future-proofing and metadata handling,
+    // but we use raw better-sqlite3 (this.sqlite) for CRUD to support dynamic runtime schemas.
     this.db = drizzle(this.sqlite);
     this.initInternalTables();
   }

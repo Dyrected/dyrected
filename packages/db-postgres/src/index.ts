@@ -13,6 +13,8 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   constructor(config: PostgresAdapterConfig) {
     this.sql = postgres(config.url);
+    // Drizzle is initialized for future-proofing and metadata handling,
+    // but we use raw SQL (this.sql) for CRUD to support dynamic runtime schemas.
     this.db = drizzle(this.sql);
     this.initInternalTables();
   }
