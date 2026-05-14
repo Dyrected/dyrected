@@ -10,7 +10,7 @@ interface RenderCellProps {
 }
 
 export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
-  if (value === null || value === undefined) return <span className="text-muted-foreground">-</span>
+  if (value === null || value === undefined) return <span className="dy-text-muted-foreground">-</span>
 
   // Handle Boolean
   if (field.type === "boolean" || typeof value === "boolean") {
@@ -21,9 +21,9 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   if (field.type === "date") {
     const date = new Date(value)
     return (
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Calendar className="h-3 w-3" />
-        <span className="text-xs">{date.toLocaleDateString()}</span>
+      <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-muted-foreground">
+        <Calendar className="dy-h-3 dy-w-3" />
+        <span className="dy-text-xs">{date.toLocaleDateString()}</span>
       </div>
     )
   }
@@ -32,15 +32,15 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   const relationTo = field.relationTo || field.collection
   if (field.type === "image" || (field.type === "relationship" && isUploadCollection(relationTo, schemas))) {
     const media = value
-    if (!media) return <span className="text-muted-foreground">-</span>
+    if (!media) return <span className="dy-text-muted-foreground">-</span>
 
     const url = getMediaUrl(value, client?.getBaseUrl() || "")
     
-    if (!url) return <span className="text-muted-foreground">-</span>
+    if (!url) return <span className="dy-text-muted-foreground">-</span>
 
     return (
-      <div className="h-8 w-8 rounded overflow-hidden border bg-muted shadow-sm">
-        <img src={url} className="h-full w-full object-cover" alt="" />
+      <div className="dy-h-8 dy-w-8 dy-rounded dy-overflow-hidden dy-border dy-bg-muted dy-shadow-sm">
+        <img src={url} className="dy-h-full dy-w-full dy-object-cover" alt="" />
       </div>
     )
   }
@@ -53,8 +53,8 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     const displayValue = value[displayField] || value.name || value.id || "Unknown"
 
     return (
-      <div className="flex items-center gap-2">
-        <Badge variant="outline" className="font-normal border-primary/20 bg-primary/5 text-primary">
+      <div className="dy-flex dy-items-center dy-gap-2">
+        <Badge variant="outline" className="dy-font-normal dy-border-primary/20 dy-bg-primary/5 dy-text-primary">
           {String(displayValue)}
         </Badge>
       </div>
@@ -64,14 +64,14 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   // Handle Array of strings or IDs
   if (Array.isArray(value)) {
     return (
-      <div className="flex flex-wrap gap-1">
+      <div className="dy-flex dy-flex-wrap dy-gap-1">
         {value.slice(0, 2).map((item, i) => (
-          <Badge key={i} variant="outline" className="text-[10px] px-1.5 h-5">
+          <Badge key={i} variant="outline" className="dy-text-[10px] dy-px-1.5 dy-h-5">
             {typeof item === 'object' ? (item.title || item.name || item.id) : String(item)}
           </Badge>
         ))}
         {value.length > 2 && (
-          <span className="text-[10px] text-muted-foreground">+{value.length - 2} more</span>
+          <span className="dy-text-[10px] dy-text-muted-foreground">+{value.length - 2} more</span>
         )}
       </div>
     )
@@ -85,7 +85,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     
     if (entries.length > 0) {
       return (
-        <span className="text-[11px] text-muted-foreground font-medium leading-tight">
+        <span className="dy-text-[11px] dy-text-muted-foreground dy-font-medium dy-leading-tight">
           {entries.map(([k, v]) => `${k}: ${String(v)}`).join(", ")}
           {Object.keys(value).length > 3 ? "..." : ""}
         </span>
@@ -93,14 +93,14 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     }
 
     return (
-      <span className="text-[11px] text-muted-foreground font-mono bg-muted/30 px-1 rounded">
+      <span className="dy-text-[11px] dy-text-muted-foreground dy-font-mono dy-bg-muted/30 dy-px-1 dy-rounded">
         {JSON.stringify(value).slice(0, 30)}
         {JSON.stringify(value).length > 30 ? "..." : ""}
       </span>
     )
   }
 
-  return <span className="text-sm font-medium">{typeof value === 'object' ? JSON.stringify(value).slice(0, 50) : String(value)}</span>
+  return <span className="dy-text-sm dy-font-medium">{typeof value === 'object' ? JSON.stringify(value).slice(0, 50) : String(value)}</span>
 }
 
 function isUploadCollection(slug: string | undefined, schemas: any) {

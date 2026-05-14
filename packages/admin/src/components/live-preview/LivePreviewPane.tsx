@@ -51,16 +51,16 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
   };
 
   return (
-    <div className="flex flex-col h-full bg-muted/20 border-l border-border/60">
-      <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-border/40">
-        <div className="flex items-center gap-2">
+    <div className="dy-flex dy-flex-col dy-h-full dy-bg-muted/20 dy-border-l dy-border-border/60">
+      <div className="dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-2 dy-bg-white dy-border-b dy-border-border/40">
+        <div className="dy-flex dy-items-center dy-gap-2">
           <Button
             variant="ghost"
             size="icon"
             className={`h-8 w-8 ${viewMode === 'desktop' ? 'bg-muted' : ''}`}
             onClick={() => setViewMode('desktop')}
           >
-            <Monitor className="h-4 w-4" />
+            <Monitor className="dy-h-4 dy-w-4" />
           </Button>
           <Button
             variant="ghost"
@@ -68,12 +68,12 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
             className={`h-8 w-8 ${viewMode === 'mobile' ? 'bg-muted' : ''}`}
             onClick={() => setViewMode('mobile')}
           >
-            <Smartphone className="h-4 w-4" />
+            <Smartphone className="dy-h-4 dy-w-4" />
           </Button>
 
           {viewMode === 'desktop' && (
-            <div className="flex items-center gap-1 ml-2 pl-2 border-l border-border/40">
-              <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider mr-1">Zoom</span>
+            <div className="dy-flex dy-items-center dy-gap-1 dy-ml-2 dy-pl-2 dy-border-l dy-border-border/40">
+              <span className="dy-text-[10px] dy-font-bold dy-text-muted-foreground/50 dy-uppercase dy-tracking-wider dy-mr-1">Zoom</span>
               {[0.50, 0.75, 1.0].map((z) => (
                 <Button
                   key={z}
@@ -89,19 +89,19 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={reload}>
-            <RotateCcw className="h-3.5 w-3.5" />
+        <div className="dy-flex dy-items-center dy-gap-2">
+          <Button variant="ghost" size="icon" className="dy-h-8 dy-w-8" onClick={reload}>
+            <RotateCcw className="dy-h-3.5 dy-w-3.5" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <Button variant="ghost" size="icon" className="dy-h-8 dy-w-8" asChild>
             <a href={previewUrl} target="_blank" rel="noreferrer">
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="dy-h-3.5 dy-w-3.5" />
             </a>
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-0 overflow-hidden bg-muted/5">
+      <div className="dy-flex-1 dy-flex dy-items-center dy-justify-center dy-p-0 dy-overflow-hidden dy-bg-muted/5">
         <div
           className={`bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 overflow-hidden border border-border/40 ${viewMode === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-full'
             }`}
@@ -109,7 +109,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
           <iframe
             ref={iframeRef}
             src={previewUrl}
-            className="border-none transition-transform duration-300"
+            className="dy-border-none dy-transition-transform dy-duration-300"
             style={viewMode === 'desktop' ? {
               width: `${100 / zoom}%`,
               height: `${100 / zoom}%`,

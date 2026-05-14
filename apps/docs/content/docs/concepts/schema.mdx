@@ -92,7 +92,7 @@ If you rename a field, use `renameTo` to ensure old data is still readable under
 ```
 
 ### `promoted` (Performance)
-By default, Dyrected stores data in a JSON blob. For fields that need native SQL indexing or unique constraints, set `promoted: true`.
+By default, Dyrected stores data in a JSON blob. This is great for flexibility, but large collections can suffer if you frequently filter by non-indexed fields. For fields that need native SQL indexing, set `promoted: true`.
 
 ```typescript
 {
@@ -102,3 +102,31 @@ By default, Dyrected stores data in a JSON blob. For fields that need native SQL
   promoted: true, // Extracted to a real SQL column
 }
 ```
+
+**How it works:**
+1. When you run `sync:schema` (or when the service starts), Dyrected inspects your configuration.
+2. For every `promoted: true` field, it ensures a matching column exists in your SQL table (SQLite, Postgres, or MySQL).
+3. Queries using that field will automatically use the native SQL column instead of the JSON path, enabling the database to use its indexes.
+
+**Supported Types for Promotion:**
+- `text` (VARCHAR/TEXT)
+- `number` (INTEGER/FLOAT)
+- `checkbox` (BOOLEAN)
+- `date` (TIMESTAMP)
+
+---
+
+### `renameTo` (Lazy Migration)
+Renaming fields in a live database is usually a nightmare. Dyrected handles this with "Lazy Migrations". If you rename a field in your config, add the `renameTo` property pointing to the old name.
+
+```typescript
+{
+  name: 'fullName',
+  type: 'text',
+  renameTo: 'name', // Checks 'name' if 'fullName' is missing
+}
+```
+
+**Lifecycle:**
+- **Read**: When fetching data, if `fullName` is missing, Dyrected will look for `name`.
+- **Write**: When you save the document, it will be saved under the new key (`fullName`). Over time, your data naturally migrates to the new schema as entries are updated.

@@ -10,14 +10,14 @@ interface MediaGridProps {
 export function MediaGrid({ items, baseUrl, onDelete, slug }: MediaGridProps) {
   if (!items || items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[300px] border-2 border-dashed border-border/60 rounded-3xl bg-muted/5">
-        <p className="text-sm text-muted-foreground font-medium">No media assets found</p>
+      <div className="dy-flex dy-flex-col dy-items-center dy-justify-center dy-h-[300px] dy-border-2 dy-border-dashed dy-border-border/60 dy-rounded-3xl dy-bg-muted/5">
+        <p className="dy-text-sm dy-text-muted-foreground dy-font-medium">No media assets found</p>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+    <div className="dy-grid dy-grid-cols-2 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-6 dy-gap-6">
       {items.map((item) => (
         <MediaCard
           key={item.id}

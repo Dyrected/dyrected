@@ -27,14 +27,14 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-      inset && "pl-8",
+      "dy-flex dy-cursor-default dy-select-none dy-items-center dy-gap-2 dy-rounded-sm dy-px-2 dy-py-1.5 dy-text-sm dy-outline-none focus:dy-bg-accent data-[state=open]:dy-bg-accent [&_svg]:dy-pointer-events-none [&_svg]:dy-size-4 [&_svg]:dy-shrink-0",
+      inset && "dy-pl-8",
       className
     )}
     {...props}
   >
     {children}
-    <ChevronRight className="ml-auto" />
+    <ChevronRight className="dy-ml-auto" />
   </DropdownMenuPrimitive.SubTrigger>
 ))
 DropdownMenuSubTrigger.displayName =
@@ -47,7 +47,7 @@ const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-dropdown-menu-content-transform-origin]",
+      "dy-z-50 dy-min-w-[8rem] dy-overflow-hidden dy-rounded-md dy-border dy-bg-popover dy-p-1 dy-text-popover-foreground dy-shadow-lg data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=open]:dy-fade-in-0 data-[state=closed]:dy-zoom-out-95 data-[state=open]:dy-zoom-in-95 data-[side=bottom]:dy-slide-in-from-top-2 data-[side=left]:dy-slide-in-from-right-2 data-[side=right]:dy-slide-in-from-left-2 data-[side=top]:dy-slide-in-from-bottom-2 dy-origin-[--radix-dropdown-menu-content-transform-origin]",
       className
     )}
     {...props}
@@ -83,8 +83,8 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-      inset && "pl-8",
+      "dy-relative dy-flex dy-cursor-default dy-select-none dy-items-center dy-gap-2 dy-rounded-sm dy-px-2 dy-py-1.5 dy-text-sm dy-outline-none dy-transition-colors focus:dy-bg-accent focus:dy-text-accent-foreground data-[disabled]:dy-pointer-events-none data-[disabled]:dy-opacity-50 [&_svg]:dy-pointer-events-none [&_svg]:dy-size-4 [&_svg]:dy-shrink-0",
+      inset && "dy-pl-8",
       className
     )}
     {...props}
@@ -99,15 +99,15 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "dy-relative dy-flex dy-cursor-default dy-select-none dy-items-center dy-rounded-sm dy-py-1.5 dy-pl-8 dy-pr-2 dy-text-sm dy-outline-none dy-transition-colors focus:dy-bg-accent focus:dy-text-accent-foreground data-[disabled]:dy-pointer-events-none data-[disabled]:dy-opacity-50",
       className
     )}
     checked={checked}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="dy-absolute dy-left-2 dy-flex dy-h-3.5 dy-w-3.5 dy-items-center dy-justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
+        <Check className="dy-h-4 dy-w-4" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -123,14 +123,14 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "dy-relative dy-flex dy-cursor-default dy-select-none dy-items-center dy-rounded-sm dy-py-1.5 dy-pl-8 dy-pr-2 dy-text-sm dy-outline-none dy-transition-colors focus:dy-bg-accent focus:dy-text-accent-foreground data-[disabled]:dy-pointer-events-none data-[disabled]:dy-opacity-50",
       className
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="dy-absolute dy-left-2 dy-flex dy-h-3.5 dy-w-3.5 dy-items-center dy-justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Circle className="h-2 w-2 fill-current" />
+        <Circle className="dy-h-2 dy-w-2 dy-fill-current" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -147,8 +147,8 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "px-2 py-1.5 text-sm font-semibold",
-      inset && "pl-8",
+      "dy-px-2 dy-py-1.5 dy-text-sm dy-font-semibold",
+      inset && "dy-pl-8",
       className
     )}
     {...props}
@@ -162,7 +162,7 @@ const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    className={cn("dy--mx-1 dy-my-1 dy-h-px dy-bg-muted", className)}
     {...props}
   />
 ))
@@ -174,7 +174,7 @@ const DropdownMenuShortcut = ({
 }: React.HTMLAttributes<HTMLSpanElement>) => {
   return (
     <span
-      className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
+      className={cn("dy-ml-auto dy-text-xs dy-tracking-widest dy-opacity-60", className)}
       {...props}
     />
   )

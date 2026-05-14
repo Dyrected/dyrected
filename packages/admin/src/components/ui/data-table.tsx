@@ -88,8 +88,8 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-4">
+    <div className="dy-w-full dy-space-y-4">
+      <div className="dy-flex dy-items-center dy-gap-4">
         {searchKey && (
           <Input
             placeholder={`Search ${searchKey}...`}
@@ -97,11 +97,11 @@ export function DataTable<TData, TValue>({
             onChange={(event) =>
               table.getColumn(searchKey)?.setFilterValue(event.target.value)
             }
-            className="max-w-sm"
+            className="dy-max-w-sm"
           />
         )}
         {bulkActions && table.getFilteredSelectedRowModel().rows.length > 0 && (
-          <div className="flex items-center gap-2 animate-in slide-in-from-left-2">
+          <div className="dy-flex dy-items-center dy-gap-2 dy-animate-in dy-slide-in-from-left-2">
             {bulkActions(
               table
                 .getFilteredSelectedRowModel()
@@ -111,8 +111,8 @@ export function DataTable<TData, TValue>({
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="ml-auto flex h-8 gap-2">
-              <Settings2 className="h-4 w-4" />
+            <Button variant="outline" size="sm" className="dy-ml-auto dy-flex dy-h-8 dy-gap-2">
+              <Settings2 className="dy-h-4 dy-w-4" />
               View
             </Button>
           </DropdownMenuTrigger>
@@ -124,7 +124,7 @@ export function DataTable<TData, TValue>({
                 return (
                   <DropdownMenuCheckboxItem
                     key={column.id}
-                    className="capitalize"
+                    className="dy-capitalize"
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) => column.toggleVisibility(!!value)}
                   >
@@ -135,7 +135,7 @@ export function DataTable<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="overflow-hidden">
+      <div className="dy-overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -155,16 +155,16 @@ export function DataTable<TData, TValue>({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody className="border-t border-border/40">
+          <TableBody className="dy-border-t dy-border-border/40">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-none even:bg-primary/[0.03] hover:bg-primary/[0.06] transition-colors duration-200"
+                  className="dy-border-none even:dy-bg-primary/[0.03] hover:dy-bg-primary/[0.06] dy-transition-colors dy-duration-200"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="py-4 px-4 border-none first:pl-4 last:pr-4">
+                    <TableCell key={cell.id} className="dy-py-4 dy-px-4 dy-border-none first:dy-pl-4 last:dy-pr-4">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -177,7 +177,7 @@ export function DataTable<TData, TValue>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="dy-h-24 dy-text-center"
                 >
                   No results.
                 </TableCell>
@@ -186,21 +186,21 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between px-2">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="dy-flex dy-items-center dy-justify-between dy-px-2">
+        <div className="dy-flex-1 dy-text-sm dy-text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="dy-flex dy-items-center dy-space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="dy-h-4 dy-w-4" />
           </Button>
-          <span className="text-sm font-medium">
+          <span className="dy-text-sm dy-font-medium">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </span>
@@ -210,7 +210,7 @@ export function DataTable<TData, TValue>({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="dy-h-4 dy-w-4" />
           </Button>
         </div>
       </div>

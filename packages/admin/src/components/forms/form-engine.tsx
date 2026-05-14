@@ -62,8 +62,8 @@ export function FormEngine({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="grid gap-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="dy-space-y-8">
+        <div className="dy-grid dy-gap-6">
           {fields.filter(f => !f.admin?.hidden).map((field) => (
             <FormFieldRenderer
               key={field.name}
@@ -74,7 +74,7 @@ export function FormEngine({
             />
           ))}
         </div>
-        <div className="flex justify-end gap-4">
+        <div className="dy-flex dy-justify-end dy-gap-4">
           {!readOnly && (
             <Button type="submit" disabled={isLoading}>
               {isLoading ? "Saving..." : submitLabel}

@@ -2,6 +2,7 @@ import type { Config } from "tailwindcss"
 import tailwindAnimate from "tailwindcss-animate"
 
 const config: Config = {
+  prefix: 'dy-',
   darkMode: ["class"],
   content: [
     './pages/**/*.{ts,tsx}',

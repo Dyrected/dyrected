@@ -133,14 +133,14 @@ export function AdminUI({
 
   if (!mounted) {
     return (
-      <div className="flex-1 flex items-center justify-center p-12 bg-muted/5 animate-pulse">
-        <div className="text-muted-foreground/40 text-sm font-medium">Loading Dashboard...</div>
+      <div className="dy-flex-1 dy-flex dy-items-center dy-justify-center dy-p-12 dy-bg-muted/5 dy-animate-pulse">
+        <div className="dy-text-muted-foreground/40 dy-text-sm dy-font-medium">Loading Dashboard...</div>
       </div>
     );
   }
 
   return (
-    <div className="admin-ui h-full">
+    <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
         <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
           <QueryProvider>
@@ -179,7 +179,7 @@ export interface AdminStandaloneProps {
 
 export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProps) {
   return (
-    <div className="admin-ui h-full">
+    <div className="dy-admin-ui dy-h-full">
       <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
         <QueryProvider>
           <MemoryRouter>

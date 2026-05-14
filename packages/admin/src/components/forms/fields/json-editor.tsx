@@ -44,19 +44,19 @@ export function JsonEditor({ value, onChange, label, disabled }: JsonEditorProps
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {label && <label className="text-sm font-medium leading-none">{label}</label>}
+    <div className="dy-flex dy-flex-col dy-gap-2">
+      {label && <label className="dy-text-sm dy-font-medium dy-leading-none">{label}</label>}
       <Textarea
         value={internalValue}
         onChange={handleChange}
         disabled={disabled}
         className={cn(
-          "font-mono text-xs min-h-[150px]",
-          error && "border-destructive focus-visible:ring-destructive"
+          "dy-font-mono dy-text-xs dy-min-h-[150px]",
+          error && "dy-border-destructive focus-visible:dy-ring-destructive"
         )}
         placeholder='{ "key": "value" }'
       />
-      {error && <span className="text-xs text-destructive">{error}</span>}
+      {error && <span className="dy-text-xs dy-text-destructive">{error}</span>}
     </div>
   )
 }

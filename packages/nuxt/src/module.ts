@@ -23,6 +23,8 @@ export interface ModuleOptions extends DyrectedConfig {
   siteId?: string;
   /** Optional manual path to the dyrected config file (absolute or relative to root). */
   configPath?: string;
+  /** Base URL for the Dyrected API. Defaults to the host + apiBase. */
+  baseUrl?: string;
 }
 
 import { NuxtModule } from "@nuxt/schema";
@@ -109,11 +111,20 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     nuxt.options.runtimeConfig.dyrected = runtimeConfig as any;
 
+    // Combine baseUrl and apiBase if necessary
+    const apiBase = options.apiBase || "/dyrected";
+    let baseUrl = process.env.NUXT_PUBLIC_DYRECTED_URL || options.baseUrl || apiBase;
+
+    // If baseUrl is an absolute URL and doesn't already include apiBase, append it
+    if (baseUrl.startsWith("http") && apiBase.startsWith("/") && !baseUrl.endsWith(apiBase)) {
+      baseUrl = baseUrl.replace(/\/$/, "") + apiBase;
+    }
+
     // 5. Public config for client-side
     nuxt.options.runtimeConfig.public.dyrected = {
-      baseUrl: process.env.NUXT_PUBLIC_DYRECTED_URL || options.apiBase,
-      apiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY || options.apiKey,
-      siteId: options.siteId,
+      baseUrl,
+      apiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY || options.apiKey || "local-dev",
+      siteId: process.env.NUXT_PUBLIC_DYRECTED_SITE_ID || options.siteId || "default",
     };
 
     // 6. Ensure @dyrected/admin is resolved by Vite/Nuxt
@@ -139,13 +150,10 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // any file that comes from the admin package.
     nuxt.hook("vite:extendConfig", (config) => {
       const plugins = (config.plugins ?? []) as any[];
-      const unctxPlugin = plugins.find(
-        (p: any) => p && typeof p === "object" && p.name === "unctx:transform"
-      ) as any;
+      const unctxPlugin = plugins.find((p: any) => p && typeof p === "object" && p.name === "unctx:transform") as any;
       if (!unctxPlugin) return;
 
-      const isAdminFile = (id: string) =>
-        id.includes("@dyrected/admin") || id.includes("/packages/admin/dist/");
+      const isAdminFile = (id: string) => id.includes("@dyrected/admin") || id.includes("/packages/admin/dist/");
 
       // The transform field can be either a plain function or a {order, handler} object (Vite 5+).
       if (typeof unctxPlugin.transform === "function") {

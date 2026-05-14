@@ -127,7 +127,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       {
         accessorKey: "id",
         header: "ID",
-        cell: ({ row }) => <span className="font-mono text-xs">{row.getValue("id")}</span>,
+        cell: ({ row }) => <span className="dy-font-mono dy-text-xs">{row.getValue("id")}</span>,
       },
     ]
 
@@ -173,9 +173,9 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       cell: ({ row }) => {
         const date = new Date(row.getValue("updatedAt"))
         return (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            <span className="text-xs">{date.toLocaleDateString()}</span>
+          <div className="dy-flex dy-items-center dy-gap-2 dy-text-muted-foreground">
+            <Calendar className="dy-h-3 dy-w-3" />
+            <span className="dy-text-xs">{date.toLocaleDateString()}</span>
           </div>
         )
       }
@@ -189,9 +189,9 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+              <Button variant="ghost" className="dy-h-8 dy-w-8 dy-p-0">
+                <span className="dy-sr-only">Open menu</span>
+                <MoreHorizontal className="dy-h-4 dy-w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -201,17 +201,17 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <Link to={`/collections/${slug}/edit/${item.id}`}>
-                <DropdownMenuItem className="flex gap-2">
-                  <Pencil className="h-4 w-4" />
+                <DropdownMenuItem className="dy-flex dy-gap-2">
+                  <Pencil className="dy-h-4 dy-w-4" />
                   Edit
                 </DropdownMenuItem>
               </Link>
               <DropdownMenuItem
-                className="flex gap-2 text-destructive focus:text-destructive"
+                className="dy-flex dy-gap-2 dy-text-destructive focus:dy-text-destructive"
                 onClick={() => handleDelete(item.id)}
                 disabled={deleteMutation.isPending}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="dy-h-4 dy-w-4" />
                 {deleteMutation.isPending ? "Deleting..." : "Delete"}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -246,8 +246,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-[400px] items-center justify-center">
-        <div className="animate-spin rounded-full border-4 border-primary border-t-transparent h-8 w-8"></div>
+      <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
+        <div className="dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent dy-h-8 dy-w-8"></div>
       </div>
     )
   }
@@ -258,15 +258,15 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   if (slug === "media") {
     return (
-      <div className="space-y-8 animate-in">
+      <div className="dy-space-y-8 dy-animate-in">
         <PageHeader 
           title="Media Library" 
           description="Manage your media assets and uploads." 
           icon={ImageIcon}
         >
           <Link to={`/collections/${slug}/new`}>
-            <Button className="h-8 px-4 text-[11px] rounded-md bg-primary hover:bg-primary/90 shadow-sm transition-all active:scale-95">
-              <Plus className="mr-1.5 h-3 w-3" />
+            <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
+              <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
               Upload New
             </Button>
           </Link>
@@ -285,28 +285,28 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           hasPrevPage={hasPrevPage}
           hasNextPage={hasNextPage}
           onPageChange={setPage}
-          className="mt-8"
+          className="dy-mt-8"
         />
       </div>
     )
   }
 
   return (
-    <div className="space-y-8 animate-in">
+    <div className="dy-space-y-8 dy-animate-in">
       <PageHeader 
         title={schema.labels?.plural || schema.label || schema.slug} 
         description={`Manage your ${schema.slug} entries and update content.`} 
         icon={Database}
       >
         <Link to={`/collections/${slug}/new`}>
-          <Button className="h-8 px-4 text-[11px] rounded-md bg-primary hover:bg-primary/90 shadow-sm transition-all active:scale-95">
-            <Plus className="mr-1.5 h-3 w-3" />
+          <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
+            <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
             Create New
           </Button>
         </Link>
       </PageHeader>
 
-      <div className="overflow-hidden">
+      <div className="dy-overflow-hidden">
         <DataTable
           key={slug}
           columns={columns}
@@ -320,11 +320,11 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             <Button
               variant="destructive"
               size="sm"
-              className="h-8"
+              className="dy-h-8"
               onClick={() => handleBulkDelete(selectedIds)}
               disabled={bulkDeleteMutation.isPending}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="dy-h-4 dy-w-4 dy-mr-2" />
               Delete Selected ({selectedIds.length})
             </Button>
           )}

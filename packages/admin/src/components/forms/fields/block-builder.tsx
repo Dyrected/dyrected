@@ -77,33 +77,33 @@ function SortableBlockItem({
   if (!blockConfig) return null
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group left-accent mb-4 py-4 animate-in">
+    <div ref={setNodeRef} style={style} className="dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in">
       {/* Header / Drag Handle */}
-      <div className="flex items-center justify-between pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <div {...attributes} {...listeners} className="cursor-grab opacity-20 group-hover:opacity-100 hover:bg-muted p-1 rounded-md transition-all">
-            <GripVertical className="w-3.5 h-3.5 text-muted-foreground" />
+      <div className="dy-flex dy-items-center dy-justify-between dy-pb-3">
+        <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+          <div {...attributes} {...listeners} className="dy-cursor-grab dy-opacity-20 dy-group-hover:dy-opacity-100 hover:dy-bg-muted dy-p-1 dy-rounded-md dy-transition-all">
+            <GripVertical className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground" />
           </div>
-          <span className="font-bold text-xs text-foreground/70 tracking-tight">
+          <span className="dy-font-bold dy-text-xs dy-text-foreground/70 dy-tracking-tight">
             {blockConfig.labels?.singular || blockConfig.slug}
           </span>
-          <span className="text-[10px] text-muted-foreground/40 ml-2 uppercase tracking-widest font-semibold">
+          <span className="dy-text-[10px] dy-text-muted-foreground/40 dy-ml-2 dy-uppercase dy-tracking-widest dy-font-semibold">
             Item {index + 1}
           </span>
         </div>
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/40" onClick={() => setIsExpanded(!isExpanded)}>
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        <div className="dy-flex dy-items-center dy-gap-1 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
+          <Button type="button" variant="ghost" size="icon" className="dy-h-7 dy-w-7 dy-text-muted-foreground/40" onClick={() => setIsExpanded(!isExpanded)}>
+            {isExpanded ? <ChevronUp className="dy-w-3.5 dy-h-3.5" /> : <ChevronDown className="dy-w-3.5 dy-h-3.5" />}
           </Button>
-          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/30 hover:text-destructive hover:bg-destructive/10" onClick={() => remove(index)}>
-            <X className="w-3.5 h-3.5" />
+          <Button type="button" variant="ghost" size="icon" className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10" onClick={() => remove(index)}>
+            <X className="dy-w-3.5 dy-h-3.5" />
           </Button>
         </div>
       </div>
 
       {/* Content */}
       {isExpanded && (
-        <div className="space-y-6">
+        <div className="dy-space-y-6">
           {blockConfig.fields.map(subField => (
             <FormFieldRenderer
               key={subField.name}
@@ -148,26 +148,26 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center pb-2">
+    <div className="dy-space-y-4">
+      <div className="dy-flex dy-justify-between dy-items-center dy-pb-2">
         <div>
-          <h4 className="font-bold text-sm text-foreground tracking-tight">{schema.label}</h4>
+          <h4 className="dy-font-bold dy-text-sm dy-text-foreground dy-tracking-tight">{schema.label}</h4>
           {schema.admin?.description && (
-            <p className="text-[11px] text-muted-foreground/60 italic">{schema.admin.description}</p>
+            <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-italic">{schema.admin.description}</p>
           )}
         </div>
 
         {schema.blocks && schema.blocks.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="h-7 text-[11px] rounded-md border-primary/20 hover:bg-primary/5 hover:text-primary">
+              <Button type="button" variant="outline" size="sm" className="dy-h-7 dy-text-[11px] dy-rounded-md dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary">
                 Add Block
-                <ChevronDown className="w-3 h-3 ml-1.5" />
+                <ChevronDown className="dy-w-3 dy-h-3 dy-ml-1.5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-lg border-border/40 shadow-xl">
+            <DropdownMenuContent align="end" className="dy-rounded-lg dy-border-border/40 dy-shadow-xl">
               {schema.blocks.map((block) => (
-                <DropdownMenuItem key={block.slug} onClick={() => handleAddBlock(block)} className="text-[13px] rounded-md focus:bg-primary/5 focus:text-primary transition-colors">
+                <DropdownMenuItem key={block.slug} onClick={() => handleAddBlock(block)} className="dy-text-[13px] dy-rounded-md focus:dy-bg-primary/5 focus:dy-text-primary dy-transition-colors">
                   {block.labels?.singular || block.slug}
                 </DropdownMenuItem>
               ))}
@@ -177,8 +177,8 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
       </div>
 
       {fields.length === 0 ? (
-        <div className="text-center p-8 border border-dashed border-border/40 rounded-md">
-          <p className="text-[11px] text-muted-foreground/50">No blocks added yet.</p>
+        <div className="dy-text-center dy-p-8 dy-border dy-border-dashed dy-border-border/40 dy-rounded-md">
+          <p className="dy-text-[11px] dy-text-muted-foreground/50">No blocks added yet.</p>
         </div>
       ) : (
         <DndContext
@@ -190,7 +190,7 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
             items={fields.map(f => f.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="pt-2">
+            <div className="dy-pt-2">
               {fields.map((item, index) => (
                 <SortableBlockItem
                   key={item.id}

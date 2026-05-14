@@ -138,33 +138,33 @@ export function EditEntryPage() {
   const canUpdate = (schema.access as any)?.update !== false
 
   return (
-    <div className="flex h-[calc(100vh-0px)] overflow-hidden -mt-6 -mx-4 lg:-mt-10 lg:-mx-6">
+    <div className="dy-flex dy-h-[calc(100vh-0px)] dy-overflow-hidden dy--mt-6 dy--mx-4 lg:dy--mt-10 lg:dy--mx-6">
       {/* Left Column: Header + Form */}
       <div className={cn(
-        "flex-1 overflow-y-auto px-6 py-6 lg:px-10 lg:py-10 transition-all duration-500",
-        showPreview ? "max-w-2xl xl:max-w-3xl" : "max-w-5xl mx-auto w-full"
+        "dy-flex-1 dy-overflow-y-auto dy-px-6 dy-py-6 lg:dy-px-10 lg:dy-py-10 dy-transition-all dy-duration-500",
+        showPreview ? "dy-max-w-2xl xl:dy-max-w-3xl" : "dy-max-w-5xl dy-mx-auto dy-w-full"
       )}>
-        <div className="space-y-8">
+        <div className="dy-space-y-8">
           {/* Header */}
-          <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-6">
-            <div className="flex items-center gap-4">
+          <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border/50 dy-pb-6">
+            <div className="dy-flex dy-items-center dy-gap-4">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-lg hover:bg-muted shrink-0"
+                className="dy-h-8 dy-w-8 dy-rounded-lg hover:dy-bg-muted dy-shrink-0"
                 onClick={() => navigate(`/collections/${slug}`)}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="dy-h-4 dy-w-4" />
               </Button>
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-lg font-serif font-bold tracking-tight text-foreground truncate">
+                <div className="dy-flex dy-items-center dy-gap-3">
+                  <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
                     {isEdit ? `Edit ${schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
                   </h1>
                   {hasStatus && (
                     <Badge className={cn(
-                      "px-2 py-0 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      currentStatus === "published" ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-amber-100 text-amber-700 border-amber-200"
+                      "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider",
+                      currentStatus === "published" ? "dy-bg-emerald-100 dy-text-emerald-700 dy-border-emerald-200" : "dy-bg-amber-100 dy-text-amber-700 dy-border-amber-200"
                     )} variant="outline">
                       {currentStatus === "published" ? "Live" : "Draft"}
                     </Badge>
@@ -173,42 +173,42 @@ export function EditEntryPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="dy-flex dy-items-center dy-gap-2">
               {previewUrl && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "h-9 w-9 rounded-lg transition-colors",
-                    showPreview ? "bg-primary/10 text-primary hover:bg-primary/20" : "hover:bg-muted"
+                    "dy-h-9 dy-w-9 dy-rounded-lg dy-transition-colors",
+                    showPreview ? "dy-bg-primary/10 dy-text-primary hover:dy-bg-primary/20" : "hover:dy-bg-muted"
                   )}
                   onClick={() => setShowPreview(!showPreview)}
                   title={showPreview ? "Hide Preview" : "Live Preview"}
                 >
-                  {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPreview ? <EyeOff className="dy-h-4 dy-w-4" /> : <Eye className="dy-h-4 dy-w-4" />}
                 </Button>
               )}
               <Button
                 size="icon"
-                className="h-9 w-9 rounded-lg shadow-sm"
+                className="dy-h-9 dy-w-9 dy-rounded-lg dy-shadow-sm"
                 onClick={() => document.getElementById('dyrected-form-submit')?.click()}
                 disabled={saveMutation.isPending || (isEdit ? !canUpdate : !canCreate)}
                 title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
               >
                 {saveMutation.isPending ? (
-                  <div className="h-4 w-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
+                  <div className="dy-h-4 dy-w-4 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
                 ) : (
-                  <Save className="h-4 w-4" />
+                  <Save className="dy-h-4 dy-w-4" />
                 )}
               </Button>
             </div>
           </div>
 
           {/* Form */}
-          <div className="animate-in space-y-8 pb-20">
+          <div className="dy-animate-in dy-space-y-8 dy-pb-20">
             {!canUpdate && isEdit && (
-              <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
-                <Archive className="h-4 w-4" />
+              <div className="dy-p-4 dy-rounded-lg dy-bg-amber-50 dy-border dy-border-amber-200 dy-text-amber-800 dy-text-sm dy-flex dy-items-center dy-gap-3">
+                <Archive className="dy-h-4 dy-w-4" />
                 You have read-only access to this collection.
               </div>
             )}
@@ -223,29 +223,29 @@ export function EditEntryPage() {
               submitLabel={isEdit ? "Save Changes" : "Create Entry"}
               readOnly={isEdit ? !canUpdate : !canCreate}
             />
-            <button id="dyrected-form-submit" type="submit" className="hidden" />
+            <button id="dyrected-form-submit" type="submit" className="dy-hidden" />
 
             {/* Document Meta */}
-            <div className="pt-8 border-t border-border/40">
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Document ID</p>
-                  <code className="text-xs font-mono text-muted-foreground/80 select-all">
+            <div className="dy-pt-8 dy-border-t dy-border-border/40">
+              <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-x-8 dy-gap-y-4">
+                <div className="dy-space-y-1">
+                  <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/40 dy-text-nowrap">Document ID</p>
+                  <code className="dy-text-xs dy-font-mono dy-text-muted-foreground/80 dy-select-all">
                     {isEdit ? id : "Pending..."}
                   </code>
                 </div>
 
                 {isEdit && (
                   <>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Created At</p>
-                      <p className="text-xs font-medium text-muted-foreground/80">
+                    <div className="dy-space-y-1">
+                      <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/40 dy-text-nowrap">Created At</p>
+                      <p className="dy-text-xs dy-font-medium dy-text-muted-foreground/80">
                         {entry?.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
                       </p>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/40 text-nowrap">Last Updated</p>
-                      <p className="text-xs font-medium text-muted-foreground/80">
+                    <div className="dy-space-y-1">
+                      <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/40 dy-text-nowrap">Last Updated</p>
+                      <p className="dy-text-xs dy-font-medium dy-text-muted-foreground/80">
                         {entry?.updatedAt ? new Date(entry.updatedAt).toLocaleString() : 'N/A'}
                       </p>
                     </div>
@@ -260,13 +260,13 @@ export function EditEntryPage() {
       {/* Right Column: Preview (starts from top) */}
       {previewUrl && (
         <div className={cn(
-          "hidden lg:block border-l border-border/50 bg-muted/5 transition-all duration-500 overflow-hidden",
-          showPreview ? "flex-1 opacity-100" : "w-0 opacity-0 border-l-0"
+          "dy-hidden lg:dy-block dy-border-l dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden",
+          showPreview ? "dy-flex-1 dy-opacity-100" : "dy-w-0 dy-opacity-0 dy-border-l-0"
         )}>
           {/* We use negative margins to pull the preview up and out to the shell's padding edges if possible, 
               but since we're inside a parent with padding, we'll just make it height-full.
           */}
-          <div className="h-full">
+          <div className="dy-h-full">
             <LivePreviewPane
               previewUrl={previewUrl}
               data={previewData || entry}

@@ -80,14 +80,14 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
 
   if (schema.type === "object") {
     return (
-      <div className="left-accent space-y-6">
-        <div className="flex items-center gap-2 mb-2">
-          <h4 className="font-bold text-sm text-foreground/80 tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+      <div className="dy-left-accent dy-space-y-6">
+        <div className="dy-flex dy-items-center dy-gap-2 dy-mb-2">
+          <h4 className="dy-font-bold dy-text-sm dy-text-foreground/80 dy-tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
           {schema.admin?.description && (
-            <p className="text-[10px] text-muted-foreground/50 italic">{schema.admin.description}</p>
+            <p className="dy-text-[10px] dy-text-muted-foreground/50 dy-italic">{schema.admin.description}</p>
           )}
         </div>
-        <div className="space-y-6">
+        <div className="dy-space-y-6">
           {schema.fields?.map(subField => (
             <FormFieldRenderer key={subField.name} schema={subField} basePath={fullPath} control={control} collection={collection} />
           ))}
@@ -113,24 +113,24 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
       render={({ field: formField }: { field: any }) => (
         <FormItem className={cn(
           isBoolean
-            ? "flex flex-row items-center justify-between rounded-xl border border-border/40 p-4 bg-white/50 shadow-sm space-y-0"
-            : "space-y-3"
+            ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-white/50 dy-shadow-sm dy-space-y-0"
+            : "dy-space-y-3"
         )}>
-          <div className={cn(isBoolean ? "space-y-1" : "flex items-center gap-2 mb-1")}>
-            <FormLabel className="text-sm font-semibold text-foreground/80 cursor-pointer">
+          <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-gap-2 dy-mb-1")}>
+            <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
               {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
-              {schema.required && <span className="text-destructive ml-1">*</span>}
+              {schema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
             </FormLabel>
             {schema.admin?.description && (
               <p className={cn(
-                "text-muted-foreground/60 italic",
-                isBoolean ? "text-[11px] leading-tight" : "text-[11px] leading-relaxed"
+                "dy-text-muted-foreground/60 dy-italic",
+                isBoolean ? "dy-text-[11px] dy-leading-tight" : "dy-text-[11px] dy-leading-relaxed"
               )}>
                 {schema.admin.description}
               </p>
             )}
             {!isBoolean && schema.unique && (
-              <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary ring-1 ring-inset ring-primary/10">
+              <span className="dy-inline-flex dy-items-center dy-rounded-full dy-bg-primary/10 dy-px-1.5 dy-py-0.5 dy-text-[10px] dy-font-medium dy-text-primary dy-ring-1 dy-ring-inset dy-ring-primary/10">
                 Unique
               </span>
             )}
@@ -139,9 +139,9 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
             <FieldRenderer schema={schema} field={formField} collection={collection} context={{ user, schemas, siblingData: conditionData }} />
           </FormControl>
           {!isBoolean && schema.admin?.description && (
-            <p className="text-[11px] text-muted-foreground/70 leading-relaxed italic">{schema.admin.description}</p>
+            <p className="dy-text-[11px] dy-text-muted-foreground/70 dy-leading-relaxed dy-italic">{schema.admin.description}</p>
           )}
-          <FormMessage className="text-xs font-medium" />
+          <FormMessage className="dy-text-xs dy-font-medium" />
         </FormItem>
       )}
     />
@@ -179,45 +179,45 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
   }
 
   return (
-    <div className="space-y-6 transition-all py-6">
-      <div className="flex justify-between items-end pb-2">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-primary" />
-            <h4 className="font-serif font-bold text-base text-foreground tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+    <div className="dy-space-y-6 dy-transition-all dy-py-6">
+      <div className="dy-flex dy-justify-between dy-items-end dy-pb-2">
+        <div className="dy-space-y-1">
+          <div className="dy-flex dy-items-center dy-gap-2">
+            <Layers className="dy-h-4 dy-w-4 dy-text-primary" />
+            <h4 className="dy-font-serif dy-font-bold dy-text-base dy-text-foreground dy-tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
           </div>
           {schema.admin?.description && (
-            <p className="text-[11px] text-muted-foreground/60 italic leading-relaxed">{schema.admin.description}</p>
+            <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-italic dy-leading-relaxed">{schema.admin.description}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="dy-flex dy-items-center dy-gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-9 text-[11px] font-bold rounded-xl border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+            className="dy-h-9 dy-text-[11px] dy-font-bold dy-rounded-xl dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
             onClick={() => append(buildDefaultValues(schema.fields || [], {}))}
           >
-            <Plus className="w-3.5 h-3.5 mr-1.5" />
+            <Plus className="dy-w-3.5 dy-h-3.5 dy-mr-1.5" />
             Add Item
           </Button>
         </div>
       </div>
 
-      <div className="space-y-8 pl-0 border-l border-muted/30">
+      <div className="dy-space-y-8 dy-pl-0 dy-border-l dy-border-muted/30">
         {fields.map((item, index) => (
-          <div key={item.id} className="relative group animate-in slide-in-from-left-2 duration-300">
-            <div className="bg-muted/5 left-accent transition-all relative">
+          <div key={item.id} className="dy-relative dy-group dy-animate-in dy-slide-in-from-left-2 dy-duration-300">
+            <div className="dy-bg-muted/5 dy-left-accent dy-transition-all dy-relative">
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute top-4 right-4 h-8 w-8 text-muted-foreground/20 hover:text-destructive hover:bg-destructive/10 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
+                className="dy-absolute dy-top-4 dy-right-4 dy-h-8 dy-w-8 dy-text-muted-foreground/20 hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-xl dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all"
                 onClick={() => remove(index)}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="dy-w-4 dy-h-4" />
               </Button>
-              <div className="space-y-6">
+              <div className="dy-space-y-6">
                 {schema.fields?.map(subField => (
                   <FormFieldRenderer
                     key={subField.name}
@@ -233,11 +233,11 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
         ))}
 
         {fields.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-muted rounded-3xl bg-muted/5 space-y-3">
-            <div className="p-3 bg-muted rounded-full">
-              <Layers className="h-6 w-6 text-muted-foreground/40" />
+          <div className="dy-flex dy-flex-col dy-items-center dy-justify-center dy-py-12 dy-border-2 dy-border-dashed dy-border-muted dy-rounded-3xl dy-bg-muted/5 dy-space-y-3">
+            <div className="dy-p-3 dy-bg-muted dy-rounded-full">
+              <Layers className="dy-h-6 dy-w-6 dy-text-muted-foreground/40" />
             </div>
-            <p className="text-xs font-medium text-muted-foreground/50">No items added yet</p>
+            <p className="dy-text-xs dy-font-medium dy-text-muted-foreground/50">No items added yet</p>
           </div>
         )}
 
@@ -245,10 +245,10 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
           type="button"
           variant="outline"
           size="sm"
-          className="w-full h-10 text-xs font-bold rounded-2xl border-dashed border-primary/20 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+          className="dy-w-full dy-h-10 dy-text-xs dy-font-bold dy-rounded-2xl dy-border-dashed dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
           onClick={() => append(buildDefaultValues(schema.fields || [], {}))}
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="dy-w-4 dy-h-4 dy-mr-2" />
           Add Item
         </Button>
       </div>

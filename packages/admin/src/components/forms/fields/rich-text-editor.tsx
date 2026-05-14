@@ -45,109 +45,109 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
   }
 
   return (
-    <div className="border border-input rounded-t-md p-1 flex flex-wrap gap-1 items-center bg-muted/50">
+    <div className="dy-border dy-border-input dy-rounded-t-md dy-p-1 dy-flex dy-flex-wrap dy-gap-1 dy-items-center dy-bg-muted/50">
       <Toggle
         size="sm"
         pressed={editor.isActive("bold")}
         onPressedChange={() => editor.chain().focus().toggleBold().run()}
       >
-        <Bold className="h-4 w-4" />
+        <Bold className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive("italic")}
         onPressedChange={() => editor.chain().focus().toggleItalic().run()}
       >
-        <Italic className="h-4 w-4" />
+        <Italic className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive("underline")}
         onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
       >
-        <UnderlineIcon className="h-4 w-4" />
+        <UnderlineIcon className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive("strike")}
         onPressedChange={() => editor.chain().focus().toggleStrike().run()}
       >
-        <Strikethrough className="h-4 w-4" />
+        <Strikethrough className="dy-h-4 dy-w-4" />
       </Toggle>
 
-      <div className="w-[1px] h-6 bg-border mx-1" />
+      <div className="dy-w-[1px] dy-h-6 dy-bg-border dy-mx-1" />
 
       <Toggle
         size="sm"
         pressed={editor.isActive("heading", { level: 1 })}
         onPressedChange={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
       >
-        <Heading1 className="h-4 w-4" />
+        <Heading1 className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive("heading", { level: 2 })}
         onPressedChange={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       >
-        <Heading2 className="h-4 w-4" />
+        <Heading2 className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive("bulletList")}
         onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
       >
-        <List className="h-4 w-4" />
+        <List className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive("orderedList")}
         onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
       >
-        <ListOrdered className="h-4 w-4" />
+        <ListOrdered className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive("blockquote")}
         onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
       >
-        <Quote className="h-4 w-4" />
+        <Quote className="dy-h-4 dy-w-4" />
       </Toggle>
 
-      <div className="w-[1px] h-6 bg-border mx-1" />
+      <div className="dy-w-[1px] dy-h-6 dy-bg-border dy-mx-1" />
 
       <Toggle
         size="sm"
         pressed={editor.isActive({ textAlign: "left" })}
         onPressedChange={() => editor.chain().focus().setTextAlign("left").run()}
       >
-        <AlignLeft className="h-4 w-4" />
+        <AlignLeft className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive({ textAlign: "center" })}
         onPressedChange={() => editor.chain().focus().setTextAlign("center").run()}
       >
-        <AlignCenter className="h-4 w-4" />
+        <AlignCenter className="dy-h-4 dy-w-4" />
       </Toggle>
       <Toggle
         size="sm"
         pressed={editor.isActive({ textAlign: "right" })}
         onPressedChange={() => editor.chain().focus().setTextAlign("right").run()}
       >
-        <AlignRight className="h-4 w-4" />
+        <AlignRight className="dy-h-4 dy-w-4" />
       </Toggle>
 
-      <div className="w-[1px] h-6 bg-border mx-1" />
+      <div className="dy-w-[1px] dy-h-6 dy-bg-border dy-mx-1" />
 
       <Toggle
         size="sm"
         pressed={editor.isActive("link")}
         onPressedChange={addLink}
       >
-        <LinkIcon className="h-4 w-4" />
+        <LinkIcon className="dy-h-4 dy-w-4" />
       </Toggle>
       
-      <div className="ml-auto">
+      <div className="dy-ml-auto">
         <MediaPicker
           collection={collection}
           variant="icon"
@@ -213,11 +213,11 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
   }, [value, editor])
 
   return (
-    <div className="space-y-2">
-      {label && <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{label}</label>}
-      <div className="flex flex-col w-full">
+    <div className="dy-space-y-2">
+      {label && <label className="dy-text-sm dy-font-medium dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">{label}</label>}
+      <div className="dy-flex dy-flex-col dy-w-full">
         {!disabled && <MenuBar editor={editor} collection={collection} />}
-        <EditorContent editor={editor} className={cn(disabled && "opacity-80")} />
+        <EditorContent editor={editor} className={cn(disabled && "dy-opacity-80")} />
       </div>
     </div>
   )

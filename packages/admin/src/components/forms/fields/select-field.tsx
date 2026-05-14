@@ -20,12 +20,12 @@ export function SelectField({ schema, field, disabled }: SelectFieldProps) {
 
   return (
     <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
-      <SelectTrigger className="h-12 rounded-xl border-border/40 bg-white/50 focus:ring-0 focus:ring-offset-0 focus:bg-white shadow-sm transition-all hover:shadow-md">
+      <SelectTrigger className="dy-h-12 dy-rounded-xl dy-border-border/40 dy-bg-white/50 focus:dy-ring-0 focus:dy-ring-offset-0 focus:dy-bg-white dy-shadow-sm dy-transition-all hover:dy-shadow-md">
         <SelectValue placeholder={schema.admin?.placeholder || `Select ${label.toLowerCase()}`} />
       </SelectTrigger>
-      <SelectContent className="rounded-xl border-border/40 shadow-xl animate-in fade-in zoom-in-95">
+      <SelectContent className="dy-rounded-xl dy-border-border/40 dy-shadow-xl dy-animate-in dy-fade-in dy-zoom-in-95">
         {options.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value} className="rounded-lg focus:bg-primary/5 focus:text-primary transition-colors">
+          <SelectItem key={opt.value} value={opt.value} className="dy-rounded-lg focus:dy-bg-primary/5 focus:dy-text-primary dy-transition-colors">
             {opt.label}
           </SelectItem>
         ))}

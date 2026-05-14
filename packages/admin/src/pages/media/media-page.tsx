@@ -93,41 +93,41 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   })
 
   return (
-    <div {...getRootProps()} className="min-h-full space-y-8 animate-in relative">
+    <div {...getRootProps()} className="dy-min-h-full dy-space-y-8 dy-animate-in dy-relative">
       <input {...getInputProps()} />
 
       {isDragActive && (
-        <div className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-[2px] border-4 border-dashed border-primary rounded-2xl flex items-center justify-center pointer-events-none">
-          <div className="bg-white p-8 rounded-2xl shadow-2xl flex flex-col items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Upload className="h-8 w-8 text-primary animate-bounce" />
+        <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-primary/10 dy-backdrop-blur-[2px] dy-border-4 dy-border-dashed dy-border-primary dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
+          <div className="dy-bg-white dy-p-8 dy-rounded-2xl dy-shadow-2xl dy-flex dy-flex-col dy-items-center dy-gap-4">
+            <div className="dy-h-16 dy-w-16 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
+              <Upload className="dy-h-8 dy-w-8 dy-text-primary dy-animate-bounce" />
             </div>
-            <p className="text-xl font-bold">Drop to upload assets</p>
+            <p className="dy-text-xl dy-font-bold">Drop to upload assets</p>
           </div>
         </div>
       )}
-      <div className="flex items-end justify-between border-b border-border/50 pb-6">
+      <div className="dy-flex dy-items-end dy-justify-between dy-border-b dy-border-border/50 dy-pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ImageIcon className="h-5 w-5 text-primary" />
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
+            <ImageIcon className="dy-h-5 dy-w-5 dy-text-primary" />
+            <h1 className="dy-text-3xl dy-font-bold dy-tracking-tight dy-text-foreground">
               {schema?.labels?.plural ?? schema?.label ?? "Media Library"}
             </h1>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="dy-text-sm dy-text-muted-foreground">
             Manage your images, documents, and other assets for this site.
           </p>
         </div>
         <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
           <DialogTrigger asChild>
-            <Button className="h-10 px-4 rounded-lg bg-primary hover:bg-primary/90 shadow-md transition-all active:scale-95">
-              <Upload className="mr-2 h-4 w-4" />
+            <Button className="dy-h-10 dy-px-4 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-shadow-md dy-transition-all active:dy-scale-95">
+              <Upload className="dy-mr-2 dy-h-4 dy-w-4" />
               Upload Assets
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] rounded-2xl overflow-hidden border-none shadow-2xl">
-            <DialogHeader className="pb-4 border-b border-border/40">
-              <DialogTitle className="text-xl font-bold">Upload Media Assets</DialogTitle>
+          <DialogContent className="sm:dy-max-w-[600px] dy-rounded-2xl dy-overflow-hidden dy-border-none dy-shadow-2xl">
+            <DialogHeader className="dy-pb-4 dy-border-b dy-border-border/40">
+              <DialogTitle className="dy-text-xl dy-font-bold">Upload Media Assets</DialogTitle>
             </DialogHeader>
             <FileUploader
               collectionSlug={collectionSlug}
@@ -140,35 +140,35 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+      <div className="dy-flex dy-items-center dy-gap-4">
+        <div className="dy-relative dy-flex-1 dy-max-w-sm">
+          <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
           <Input
             placeholder="Search assets by filename..."
-            className="pl-10 h-11 bg-white border-border/60 rounded-xl shadow-sm focus-visible:ring-primary/20"
+            className="dy-pl-10 dy-h-11 dy-bg-white dy-border-border/60 dy-rounded-xl dy-shadow-sm focus-visible:dy-ring-primary/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-320px)] pr-4">
+      <ScrollArea className="dy-h-[calc(100vh-320px)] dy-pr-4">
         {isLoading ? (
-          <div className="flex h-60 items-center justify-center">
-            <div className="animate-spin rounded-full border-4 border-primary/20 border-t-primary h-10 w-10"></div>
+          <div className="dy-flex dy-h-60 dy-items-center dy-justify-center">
+            <div className="dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary/20 dy-border-t-primary dy-h-10 dy-w-10"></div>
           </div>
         ) : mediaResponse?.length === 0 ? (
-          <div className="flex h-80 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/60 bg-muted/5 text-center animate-in">
-            <div className="h-16 w-16 rounded-2xl bg-muted/40 flex items-center justify-center mb-4">
-              <FileIcon className="h-8 w-8 text-muted-foreground/50" />
+          <div className="dy-flex dy-h-80 dy-flex-col dy-items-center dy-justify-center dy-rounded-2xl dy-border-2 dy-border-dashed dy-border-border/60 dy-bg-muted/5 dy-text-center dy-animate-in">
+            <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-muted/40 dy-flex dy-items-center dy-justify-center dy-mb-4">
+              <FileIcon className="dy-h-8 dy-w-8 dy-text-muted-foreground/50" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">No assets found</h3>
-            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            <h3 className="dy-text-lg dy-font-bold dy-text-foreground">No assets found</h3>
+            <p className="dy-text-sm dy-text-muted-foreground dy-max-w-xs dy-mx-auto">
               Your media library is empty. Upload some files to start building your content.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 pb-8">
+          <div className="dy-grid dy-grid-cols-2 md:dy-grid-cols-3 lg:dy-grid-cols-4 xl:dy-grid-cols-5 2xl:dy-grid-cols-6 dy-gap-6 dy-pb-8">
             {mediaResponse?.map((item) => (
               <MediaCard
                 key={item.id}
@@ -206,17 +206,17 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   return (
     <Card
       className={cn(
-        "overflow-hidden group relative border-border/40 bg-white shadow-sm hover:shadow-xl transition-all duration-300 rounded-xl cursor-pointer",
-        isSelected && "ring-2 ring-primary ring-offset-2 shadow-lg scale-[0.98]"
+        "dy-overflow-hidden dy-group dy-relative dy-border-border/40 dy-bg-white dy-shadow-sm hover:dy-shadow-xl dy-transition-all dy-duration-300 dy-rounded-xl dy-cursor-pointer",
+        isSelected && "dy-ring-2 dy-ring-primary dy-ring-offset-2 dy-shadow-lg dy-scale-[0.98]"
       )}
       onClick={onClick}
     >
-      <CardHeader className="p-0 border-b border-border/10">
-        <AspectRatio ratio={1 / 1} className="bg-muted/30 overflow-hidden relative">
+      <CardHeader className="dy-p-0 dy-border-b dy-border-border/10">
+        <AspectRatio ratio={1 / 1} className="dy-bg-muted/30 dy-overflow-hidden dy-relative">
           {isImage ? (
             <>
               {item.blurhash && (
-                <div className="absolute inset-0 z-0">
+                <div className="dy-absolute dy-inset-0 dy-z-0">
                   <Blurhash
                     hash={item.blurhash}
                     width="100%"
@@ -230,35 +230,35 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
               <img
                 src={url}
                 alt={item.filename}
-                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110 relative z-10"
+                className="dy-object-cover dy-w-full dy-h-full dy-transition-transform dy-duration-500 dy-group-hover:dy-scale-110 dy-relative dy-z-10"
                 loading="lazy"
               />
             </>
           ) : (
-            <div className="flex items-center justify-center h-full bg-primary/5">
-              <FileIcon className="h-10 w-10 text-primary/40" />
+            <div className="dy-flex dy-items-center dy-justify-center dy-h-full dy-bg-primary/5">
+              <FileIcon className="dy-h-10 dy-w-10 dy-text-primary/40" />
             </div>
           )}
         </AspectRatio>
       </CardHeader>
-      <CardContent className="p-3 bg-white">
-        <p className="text-[11px] font-bold truncate text-foreground/90 mb-0.5" title={item.filename}>
+      <CardContent className="dy-p-3 dy-bg-white">
+        <p className="dy-text-[11px] dy-font-bold dy-truncate dy-text-foreground/90 dy-mb-0.5" title={item.filename}>
           {item.filename}
         </p>
-        <div className="flex items-center justify-between">
-          <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">
+        <div className="dy-flex dy-items-center dy-justify-between">
+          <p className="dy-text-[9px] dy-text-muted-foreground dy-font-bold dy-uppercase dy-tracking-wider">
             {item.mimeType?.split("/")[1] || "file"}
           </p>
-          <p className="text-[9px] text-muted-foreground font-medium">
+          <p className="dy-text-[9px] dy-text-muted-foreground dy-font-medium">
             {((item.filesize || item.size || 0) / 1024).toFixed(1)} KB
           </p>
         </div>
       </CardContent>
-      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="dy-absolute dy-top-2 dy-right-2 dy-flex dy-gap-2 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
         <Button
           size="icon"
           variant="destructive"
-          className="h-7 w-7 rounded-lg shadow-lg"
+          className="dy-h-7 dy-w-7 dy-rounded-lg dy-shadow-lg"
           onClick={(e) => {
             e.stopPropagation()
             if (confirm("Are you sure you want to delete this file?")) {
@@ -266,7 +266,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
             }
           }}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="dy-h-3.5 dy-w-3.5" />
         </Button>
       </div>
     </Card>
@@ -313,22 +313,22 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
 
   return (
     <Sheet open={!!item} onOpenChange={onClose}>
-      <SheetContent className="sm:max-w-md p-0 flex flex-col h-full border-l border-border/40 bg-white shadow-2xl">
-        <SheetHeader className="p-6 border-b border-border/40 bg-white">
-          <SheetTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5 text-primary" />
+      <SheetContent className="sm:dy-max-w-md dy-p-0 dy-flex dy-flex-col dy-h-full dy-border-l dy-border-border/40 dy-bg-white dy-shadow-2xl">
+        <SheetHeader className="dy-p-6 dy-border-b dy-border-border/40 dy-bg-white">
+          <SheetTitle className="dy-flex dy-items-center dy-gap-2">
+            <Info className="dy-h-5 dy-w-5 dy-text-primary" />
             File Details
           </SheetTitle>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 bg-white">
-          <div className="p-6 space-y-8">
-            <div className="rounded-xl overflow-hidden border border-border/40 bg-muted/10 relative shadow-inner">
+        <ScrollArea className="dy-flex-1 dy-bg-white">
+          <div className="dy-p-6 dy-space-y-8">
+            <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-muted/10 dy-relative dy-shadow-inner">
               <AspectRatio ratio={16 / 9}>
                 {isImage ? (
                   <>
                     {item.blurhash && (
-                      <div className="absolute inset-0 z-0">
+                      <div className="dy-absolute dy-inset-0 dy-z-0">
                         <Blurhash
                           hash={item.blurhash}
                           width="100%"
@@ -339,49 +339,49 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
                         />
                       </div>
                     )}
-                    <img src={url} alt={item.filename} className="object-contain w-full h-full bg-checkered relative z-10" />
+                    <img src={url} alt={item.filename} className="dy-object-contain dy-w-full dy-h-full dy-bg-checkered dy-relative dy-z-10" />
                   </>
                 ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <FileIcon className="h-16 w-16 text-muted-foreground/30" />
+                  <div className="dy-flex dy-items-center dy-justify-center dy-h-full">
+                    <FileIcon className="dy-h-16 dy-w-16 dy-text-muted-foreground/30" />
                   </div>
                 )}
               </AspectRatio>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Filename</label>
+            <div className="dy-space-y-6">
+              <div className="dy-space-y-4">
+                <div className="dy-space-y-2">
+                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Filename</label>
                   <Input
                     value={formData.filename}
                     onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
-                    className="h-10 rounded-lg bg-white border-border/60 focus:ring-1 focus:ring-primary/20"
+                    className="dy-h-10 dy-rounded-lg dy-bg-white dy-border-border/60 focus:dy-ring-1 focus:dy-ring-primary/20"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Alt Text</label>
+                <div className="dy-space-y-2">
+                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Alt Text</label>
                   <Input
                     value={formData.alt}
                     onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
                     placeholder="Describe the image for accessibility..."
-                    className="h-10 rounded-lg bg-white border-border/60 focus:ring-1 focus:ring-primary/20"
+                    className="dy-h-10 dy-rounded-lg dy-bg-white dy-border-border/60 focus:dy-ring-1 focus:dy-ring-primary/20"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Caption</label>
+                <div className="dy-space-y-2">
+                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Caption</label>
                   <textarea
                     value={formData.caption}
                     onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
                     placeholder="Add a caption..."
-                    className="flex min-h-[80px] w-full rounded-lg border border-border/60 bg-white px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="dy-flex dy-min-h-[80px] dy-w-full dy-rounded-lg dy-border dy-border-border/60 dy-bg-white dy-px-3 dy-py-2 dy-text-sm dy-ring-offset-background placeholder:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-1 focus-visible:dy-ring-primary/20 disabled:dy-cursor-not-allowed disabled:dy-opacity-50"
                   />
                 </div>
               </div>
 
-              <Separator className="bg-border/40" />
+              <Separator className="dy-bg-border/40" />
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="dy-grid dy-grid-cols-2 dy-gap-6">
                 <DetailItem label="File ID" value={item.id} copyable />
                 <DetailItem label="Size" value={`${((item.filesize || item.size || 0) / 1024).toFixed(1)} KB`} />
                 <DetailItem label="Type" value={item.mimeType || "Unknown"} />
@@ -393,10 +393,10 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
             </div>
 
             {/* {isImage && (
-              <div className="space-y-4">
-                <Separator className="bg-border/40" />
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">Focal Point</label>
+              <div className="dy-space-y-4">
+                <Separator className="dy-bg-border/40" />
+                <div className="dy-space-y-4">
+                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Focal Point</label>
                   <FocalPointPicker 
                     url={url} 
                     value={item.focalPoint} 
@@ -410,19 +410,19 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
           </div>
         </ScrollArea>
 
-        <div className="p-6 border-t border-border/40 bg-muted/5 space-y-3">
+        <div className="dy-p-6 dy-border-t dy-border-border/40 dy-bg-muted/5 dy-space-y-3">
           {hasChanges && (
             <Button
-              className="w-full h-12 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 animate-in fade-in slide-in-from-bottom-2"
+              className="dy-w-full dy-h-12 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-white dy-shadow-lg dy-shadow-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-bottom-2"
               onClick={handleSave}
               disabled={isSaving}
             >
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           )}
-          <Button className="w-full h-11 rounded-xl font-bold gap-2 bg-white" variant="outline" asChild>
+          <Button className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-white" variant="outline" asChild>
             <a href={url} target="_blank" rel="noreferrer">
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="dy-h-4 dy-w-4" />
               Open Original
             </a>
           </Button>
@@ -438,18 +438,18 @@ function DetailItem({ label, value, copyable }: {
   copyable?: boolean
 }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">{label}</label>
-      <div className="flex items-center gap-2 group">
-        <p className="text-sm font-medium text-foreground truncate flex-1">{value}</p>
+    <div className="dy-space-y-1.5">
+      <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">{label}</label>
+      <div className="dy-flex dy-items-center dy-gap-2 dy-group">
+        <p className="dy-text-sm dy-font-medium dy-text-foreground dy-truncate dy-flex-1">{value}</p>
         {copyable && (
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-primary transition-colors"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-primary dy-transition-colors"
             onClick={() => navigator.clipboard.writeText(value)}
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy className="dy-h-3.5 dy-w-3.5" />
           </Button>
         )}
       </div>
@@ -492,7 +492,7 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
   }
 
   return (
-    <div className="space-y-6 py-6 px-4">
+    <div className="dy-space-y-6 dy-py-6 dy-px-4">
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${isDragActive
@@ -501,32 +501,32 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
           }`}
       >
         <input {...getInputProps()} />
-        <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-          <Upload className="h-8 w-8 text-primary" />
+        <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-4">
+          <Upload className="dy-h-8 dy-w-8 dy-text-primary" />
         </div>
-        <p className="text-xl font-bold text-foreground">Drag & drop assets</p>
-        <p className="text-sm text-muted-foreground mt-1">or click to browse your files</p>
+        <p className="dy-text-xl dy-font-bold dy-text-foreground">Drag & drop assets</p>
+        <p className="dy-text-sm dy-text-muted-foreground dy-mt-1">or click to browse your files</p>
       </div>
 
       {files.length > 0 && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-foreground">{files.length} assets selected</p>
-            <Button variant="ghost" size="sm" onClick={() => setFiles([])} disabled={uploading} className="text-xs h-8">
+        <div className="dy-space-y-4 dy-animate-in dy-fade-in dy-slide-in-from-bottom-4">
+          <div className="dy-flex dy-items-center dy-justify-between">
+            <p className="dy-text-sm dy-font-bold dy-text-foreground">{files.length} assets selected</p>
+            <Button variant="ghost" size="sm" onClick={() => setFiles([])} disabled={uploading} className="dy-text-xs dy-h-8">
               Clear All
             </Button>
           </div>
 
-          <div className="max-h-[240px] overflow-auto space-y-2 pr-2 custom-scrollbar">
+          <div className="dy-max-h-[240px] dy-overflow-auto dy-space-y-2 dy-pr-2 dy-custom-scrollbar">
             {files.map((file, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 bg-muted/30 border border-border/40 rounded-xl text-sm group transition-colors hover:bg-muted/50">
-                <div className="flex items-center gap-3 truncate">
-                  <div className="h-8 w-8 rounded-lg bg-white border border-border/60 flex items-center justify-center flex-shrink-0">
-                    <FileIcon className="h-4 w-4 text-muted-foreground" />
+              <div key={idx} className="dy-flex dy-items-center dy-justify-between dy-p-3 dy-bg-muted/30 dy-border dy-border-border/40 dy-rounded-xl dy-text-sm dy-group dy-transition-colors hover:dy-bg-muted/50">
+                <div className="dy-flex dy-items-center dy-gap-3 dy-truncate">
+                  <div className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-white dy-border dy-border-border/60 dy-flex dy-items-center dy-justify-center dy-flex-shrink-0">
+                    <FileIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
                   </div>
-                  <span className="truncate font-medium text-foreground/80">{file.name}</span>
+                  <span className="dy-truncate dy-font-medium dy-text-foreground/80">{file.name}</span>
                 </div>
-                <span className="text-muted-foreground text-[10px] font-bold bg-white px-2 py-1 rounded border border-border/40 ml-4">
+                <span className="dy-text-muted-foreground dy-text-[10px] dy-font-bold dy-bg-white dy-px-2 dy-py-1 dy-rounded dy-border dy-border-border/40 dy-ml-4">
                   {(file.size / 1024).toFixed(1)} KB
                 </span>
               </div>
@@ -534,24 +534,24 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
           </div>
 
           {uploading && (
-            <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="dy-space-y-2 dy-pt-2">
+              <div className="dy-flex dy-justify-between dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
                 <span>Uploading...</span>
                 <span>{Math.round(progress)}%</span>
               </div>
-              <Progress value={progress} className="h-2 rounded-full" />
+              <Progress value={progress} className="dy-h-2 dy-rounded-full" />
             </div>
           )}
 
-          <div className="flex justify-end pt-4 border-t border-border/40">
+          <div className="dy-flex dy-justify-end dy-pt-4 dy-border-t dy-border-border/40">
             <Button
               onClick={handleUpload}
               disabled={uploading || files.length === 0}
-              className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
+              className="dy-w-full dy-h-12 dy-rounded-xl dy-bg-primary hover:dy-bg-primary/90 dy-text-white dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98]"
             >
               {uploading ? (
-                <span className="flex items-center gap-2">
-                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="dy-flex dy-items-center dy-gap-2">
+                  <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-white/30 dy-border-t-white dy-rounded-full dy-animate-spin" />
                   Uploading Assets...
                 </span>
               ) : `Upload ${files.length} Assets`}

@@ -20,26 +20,26 @@ export function RadioField({ schema, field, disabled }: RadioFieldProps) {
       defaultValue={field.value}
       disabled={disabled}
       className={cn(
-        "gap-4",
-        isHorizontal ? "flex flex-wrap items-center" : "flex flex-col"
+        "dy-gap-4",
+        isHorizontal ? "dy-flex dy-flex-wrap dy-items-center" : "dy-flex dy-flex-col"
       )}
     >
       {options.map((opt) => (
         <div key={opt.value} className={cn(
-          "relative flex items-center",
-          isHorizontal ? "min-w-[120px]" : "w-full"
+          "dy-relative dy-flex dy-items-center",
+          isHorizontal ? "dy-min-w-[120px]" : "dy-w-full"
         )}>
           <RadioGroupItem
             value={opt.value}
             id={`${field.name}-${opt.value}`}
-            className="peer absolute left-4 z-10"
+            className="dy-peer dy-absolute dy-left-4 dy-z-10"
           />
           <Label
             htmlFor={`${field.name}-${opt.value}`}
             className={cn(
-              "flex flex-1 items-center pl-12 pr-4 py-3 rounded-xl border border-border/40 bg-white/50 cursor-pointer transition-all hover:bg-white/80 hover:shadow-sm",
-              "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 peer-data-[state=checked]:shadow-md peer-data-[state=checked]:ring-1 peer-data-[state=checked]:ring-primary/20",
-              "text-sm font-medium text-foreground/70 peer-data-[state=checked]:text-primary"
+              "dy-flex dy-flex-1 dy-items-center dy-pl-12 dy-pr-4 dy-py-3 dy-rounded-xl dy-border dy-border-border/40 dy-bg-white/50 dy-cursor-pointer dy-transition-all hover:dy-bg-white/80 hover:dy-shadow-sm",
+              "dy-peer-data-[state=checked]:dy-border-primary dy-peer-data-[state=checked]:dy-bg-primary/5 dy-peer-data-[state=checked]:dy-shadow-md dy-peer-data-[state=checked]:dy-ring-1 dy-peer-data-[state=checked]:dy-ring-primary/20",
+              "dy-text-sm dy-font-medium dy-text-foreground/70 dy-peer-data-[state=checked]:dy-text-primary"
             )}
           >
             {opt.label}

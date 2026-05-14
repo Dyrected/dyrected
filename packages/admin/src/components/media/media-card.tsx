@@ -14,30 +14,30 @@ export function MediaCard({ item, baseUrl, onDelete, editPath }: MediaCardProps)
   const url = getMediaUrl(item, baseUrl)
   
   return (
-    <div className="group relative aspect-square rounded-2xl overflow-hidden bg-white border border-border/40 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
+    <div className="dy-group dy-relative dy-aspect-square dy-rounded-2xl dy-overflow-hidden dy-bg-white dy-border dy-border-border/40 dy-shadow-sm hover:dy-shadow-xl hover:dy-border-primary/20 dy-transition-all dy-duration-300">
       <img 
         src={url}
         alt={item.filename}
-        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-duration-500 dy-group-hover:dy-scale-110"
       />
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-[2px]">
+      <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all dy-duration-300 dy-flex dy-items-center dy-justify-center dy-gap-3 dy-backdrop-blur-[2px]">
         <Link to={editPath}>
-          <Button size="icon" variant="secondary" className="h-9 w-9 rounded-full bg-white/90 hover:bg-white text-foreground shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-            <Pencil className="h-4 w-4" />
+          <Button size="icon" variant="secondary" className="dy-h-9 dy-w-9 dy-rounded-full dy-bg-white/90 hover:dy-bg-white dy-text-foreground dy-shadow-lg dy-transform dy-translate-y-2 dy-group-hover:dy-translate-y-0 dy-transition-transform dy-duration-300">
+            <Pencil className="dy-h-4 dy-w-4" />
           </Button>
         </Link>
         <Button 
           size="icon" 
           variant="destructive" 
-          className="h-9 w-9 rounded-full bg-destructive/90 hover:bg-destructive shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 delay-75"
+          className="dy-h-9 dy-w-9 dy-rounded-full dy-bg-destructive/90 hover:dy-bg-destructive dy-shadow-lg dy-transform dy-translate-y-2 dy-group-hover:dy-translate-y-0 dy-transition-transform dy-duration-300 dy-delay-75"
           onClick={() => onDelete(item.id)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="dy-h-4 dy-w-4" />
         </Button>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <p className="text-[10px] text-white truncate font-medium">{item.filename}</p>
-        <p className="text-[8px] text-white/60 uppercase tracking-wider mt-0.5">{item.mimeType}</p>
+      <div className="dy-absolute dy-bottom-0 dy-left-0 dy-right-0 dy-p-3 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity dy-duration-300">
+        <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item.filename}</p>
+        <p className="dy-text-[8px] dy-text-white/60 dy-uppercase dy-tracking-wider dy-mt-0.5">{item.mimeType}</p>
       </div>
     </div>
   )

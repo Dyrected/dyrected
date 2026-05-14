@@ -68,18 +68,44 @@ const result = await client.collection('posts').find({
 
 #### Where Operators
 
+Dyrected supports a rich set of operators for filtering your data. These work seamlessly across all database adapters.
+
+| Operator | Description | Example |
+|---|---|---|
+| `equals` | Strict equality | `{ status: { equals: 'published' } }` |
+| `not_equals` | Inequality | `{ status: { not_equals: 'draft' } }` |
+| `in` | Value exists in array | `{ category: { in: ['news', 'events'] } }` |
+| `not_in` | Value does not exist in array | `{ category: { not_in: ['spam'] } }` |
+| `exists` | Field is present (or not) | `{ publishedAt: { exists: true } }` |
+| `greater_than` | Numeric/Date comparison | `{ price: { greater_than: 100 } }` |
+| `less_than` | Numeric/Date comparison | `{ price: { less_than: 500 } }` |
+| `like` | Case-insensitive contains | `{ title: { like: 'typescript' } }` |
+
+**Combining Filters:**
+You can use `and` and `or` to group filters:
+
 ```ts
 where: {
-  title: { like: 'typescript' },         // case-insensitive contains
-  price: { greater_than: 100, less_than: 500 },
-  status: { in: ['draft', 'published'] },
-  publishedAt: { exists: true },
   or: [
     { status: { equals: 'published' } },
     { featured: { equals: true } },
   ],
+  and: [
+    { price: { greater_than: 0 } }
+  ]
 }
 ```
+
+### Relationship Depth
+
+The `depth` parameter controls how many levels of relationships are automatically "hydrated" (populated) in a single request.
+
+- **`depth: 0`**: Only returns the ID of the related document.
+- **`depth: 1`** (Default): Populates the first level of relationships with their full document data.
+- **`depth: 2+`**: Recursively populates nested relationships.
+
+> [!TIP]
+> Use `depth: 0` for high-performance listing pages where you only need IDs, and higher depth for detail pages where you need full author/category info.
 
 ---
 

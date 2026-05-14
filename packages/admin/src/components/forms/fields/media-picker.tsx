@@ -98,70 +98,70 @@ export function MediaPicker({
 
   if (multiple && !isIcon) {
     return (
-      <div className="space-y-4">
+      <div className="dy-space-y-4">
         {label && (
-          <label className="text-sm font-semibold text-foreground/70 tracking-tight leading-none">
+          <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none">
             {label}
           </label>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="dy-grid dy-grid-cols-2 md:dy-grid-cols-3 lg:dy-grid-cols-4 dy-gap-4">
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="group relative aspect-square rounded-xl border-2 border-dashed border-muted hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-3 overflow-hidden"
+            className="dy-group dy-relative dy-aspect-square dy-rounded-xl dy-border-2 dy-border-dashed dy-border-muted hover:dy-border-primary/40 hover:dy-bg-primary/5 dy-transition-all dy-flex dy-flex-col dy-items-center dy-justify-center dy-gap-3 dy-overflow-hidden"
           >
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="h-12 w-12 bg-muted rounded-full flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all shadow-inner">
-              <Plus className="h-6 w-6" />
+            <div className="dy-absolute dy-inset-0 dy-bg-primary/5 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity" />
+            <div className="dy-h-12 dy-w-12 dy-bg-muted dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-muted-foreground dy-group-hover:dy-bg-primary/10 dy-group-hover:dy-text-primary dy-transition-all dy-shadow-inner">
+              <Plus className="dy-h-6 dy-w-6" />
             </div>
-            <div className="text-center px-4">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">Add Media</p>
-              <p className="text-[10px] text-muted-foreground/40 mt-1 font-medium group-hover:text-primary/60">Select or upload</p>
+            <div className="dy-text-center dy-px-4">
+              <p className="dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground dy-group-hover:dy-text-primary dy-transition-colors">Add Media</p>
+              <p className="dy-text-[10px] dy-text-muted-foreground/40 dy-mt-1 dy-font-medium dy-group-hover:dy-text-primary/60">Select or upload</p>
             </div>
           </button>
 
           {selectedValues.map((val, index) => {
             const item = media?.find((m: any) => m.id === val)
             return (
-              <div key={val} className="relative group animate-in zoom-in duration-300">
+              <div key={val} className="dy-relative dy-group dy-animate-in dy-zoom-in dy-duration-300">
                 <div className={cn(
-                  "relative aspect-square rounded-xl overflow-hidden border-2 bg-muted/20 transition-all shadow-sm",
-                  index === 0 ? "border-primary ring-4 ring-primary/10" : "border-border/40 hover:border-border/80"
+                  "dy-relative dy-aspect-square dy-rounded-xl dy-overflow-hidden dy-border-2 dy-bg-muted/20 dy-transition-all dy-shadow-sm",
+                  index === 0 ? "dy-border-primary dy-ring-4 dy-ring-primary/10" : "dy-border-border/40 hover:dy-border-border/80"
                 )}>
                   {item ? (
                     <img
                       src={getPreviewUrl(item)}
                       alt=""
-                      className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
                     />
                   ) : (
-                    <div className="w-full h-full animate-pulse bg-muted/50 flex items-center justify-center">
-                      <ImageIcon className="h-6 w-6 text-muted-foreground/20" />
+                    <div className="dy-w-full dy-h-full dy-animate-pulse dy-bg-muted/50 dy-flex dy-items-center dy-justify-center">
+                      <ImageIcon className="dy-h-6 dy-w-6 dy-text-muted-foreground/20" />
                     </div>
                   )}
 
                   {index === 0 && (
-                    <div className="absolute top-0 left-0 w-full text-center z-10 px-3 py-1 bg-primary text-white text-[9px] font-black uppercase tracking-widest shadow-primary/20">
+                    <div className="dy-absolute dy-top-0 dy-left-0 dy-w-full dy-text-center dy-z-10 dy-px-3 dy-py-1 dy-bg-primary dy-text-white dy-text-[9px] dy-font-black dy-uppercase dy-tracking-widest dy-shadow-primary/20">
                       Main Image
                     </div>
                   )}
 
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-start justify-end backdrop-blur-[2px]">
+                  <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all dy-flex dy-items-start dy-justify-end dy-backdrop-blur-[2px]">
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="h-8 w-8 rounded-lg text-destructive bg-destructive-foreground shadow-2xl scale-75 group-hover:scale-100 transition-all"
+                      className="dy-h-8 dy-w-8 dy-rounded-lg dy-text-destructive dy-bg-destructive-foreground dy-shadow-2xl dy-scale-75 dy-group-hover:dy-scale-100 dy-transition-all"
                       onClick={() => toggleValue(val)}
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="dy-w-5 dy-h-5" />
                     </Button>
                   </div>
 
                   {item && (
-                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[10px] text-white truncate font-medium">{item.filename}</p>
+                    <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
+                      <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item.filename}</p>
                     </div>
                   )}
                 </div>
@@ -186,41 +186,41 @@ export function MediaPicker({
   return (
     <div className={isIcon ? "" : "space-y-3"}>
       {label && !isIcon && (
-        <label className="text-sm font-semibold text-foreground/70 tracking-tight leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+        <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
           {label}
         </label>
       )}
 
       <div className={isIcon ? "" : "relative flex items-center gap-2"}>
         {!isIcon && (
-          <div className="relative flex-1 group">
+          <div className="dy-relative dy-flex-1 dy-group">
             <Input
               value={displayValue}
               readOnly
               disabled={disabled}
               placeholder={placeholder || "No media selected"}
-              className="pr-24 bg-muted/30 border-dashed focus-visible:ring-offset-0 focus-visible:ring-1 h-10 rounded-xl"
+              className="dy-pr-24 dy-bg-muted/30 dy-border-dashed focus-visible:dy-ring-offset-0 focus-visible:dy-ring-1 dy-h-10 dy-rounded-xl"
             />
-            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 pr-1">
+            <div className="dy-absolute dy-right-1 dy-top-1/2 dy--translate-y-1/2 dy-flex dy-items-center dy-gap-1 dy-pr-1">
               {value && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-destructive transition-colors rounded-lg"
+                  className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-destructive dy-transition-colors dy-rounded-lg"
                   onClick={(e) => {
                     e.preventDefault();
                     onChange(multiple ? [] : "");
                   }}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="dy-h-4 dy-w-4" />
                 </Button>
               )}
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="h-8 text-xs font-bold px-3 rounded-lg shadow-sm border border-border/50"
+                className="dy-h-8 dy-text-xs dy-font-bold dy-px-3 dy-rounded-lg dy-shadow-sm dy-border dy-border-border/50"
                 disabled={disabled}
                 onClick={() => setIsOpen(true)}
               >
@@ -231,8 +231,8 @@ export function MediaPicker({
         )}
 
         {isIcon && (
-          <Button variant="ghost" size="sm" className="px-2 h-8 w-8 rounded-lg" disabled={disabled} onClick={() => setIsOpen(true)}>
-            <ImageIcon className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="dy-px-2 dy-h-8 dy-w-8 dy-rounded-lg" disabled={disabled} onClick={() => setIsOpen(true)}>
+            <ImageIcon className="dy-h-4 dy-w-4" />
           </Button>
         )}
 
@@ -248,33 +248,33 @@ export function MediaPicker({
       </div>
 
       {!isIcon && selectedValues.length > 0 && !multiple && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pt-2">
+        <div className="dy-grid dy-grid-cols-2 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 dy-gap-4 dy-pt-2">
           {selectedValues.map((val) => {
             const item = media?.find((m: any) => m.id === val)
             if (!item) return (
-              <div key={val} className="aspect-square rounded-xl bg-muted/20 animate-pulse border-2 border-dashed border-border/50" />
+              <div key={val} className="dy-aspect-square dy-rounded-xl dy-bg-muted/20 dy-animate-pulse dy-border-2 dy-border-dashed dy-border-border/50" />
             )
             return (
               <div
                 key={val}
-                className="relative aspect-square group rounded-2xl overflow-hidden border-2 border-border/50 hover:border-primary/50 transition-all bg-muted/20 shadow-sm"
+                className="dy-relative dy-aspect-square dy-group dy-rounded-2xl dy-overflow-hidden dy-border-2 dy-border-border/50 hover:dy-border-primary/50 dy-transition-all dy-bg-muted/20 dy-shadow-sm"
               >
                 <img
                   src={getPreviewUrl(item)}
                   alt=""
-                  className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                  className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
                 />
                 {!disabled && (
                   <button
                     type="button"
                     onClick={() => toggleValue(val)}
-                    className="absolute top-2 right-2 p-1.5 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg border-2 border-white"
+                    className="dy-absolute dy-top-2 dy-right-2 dy-p-1.5 dy-bg-destructive dy-text-destructive-foreground dy-rounded-full dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all hover:dy-scale-110 dy-shadow-lg dy-border-2 dy-border-white"
                   >
-                    <X className="h-3.5 w-3.5" />
+                    <X className="dy-h-3.5 dy-w-3.5" />
                   </button>
                 )}
-                <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-[10px] text-white truncate font-medium">{item.filename}</p>
+                <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
+                  <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item.filename}</p>
                 </div>
               </div>
             )

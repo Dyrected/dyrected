@@ -61,8 +61,8 @@ export function MultiSelect({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {label && <label className="text-sm font-medium leading-none">{label}</label>}
+    <div className="dy-flex dy-flex-col dy-gap-2">
+      {label && <label className="dy-text-sm dy-font-medium dy-leading-none">{label}</label>}
       <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -70,11 +70,11 @@ export function MultiSelect({
             role="combobox"
             aria-expanded={open}
             disabled={disabled}
-            className="w-full justify-between h-auto min-h-10 font-normal"
+            className="dy-w-full dy-justify-between dy-h-auto dy-min-h-10 dy-font-normal"
           >
-            <div className="flex flex-wrap gap-1 items-center">
+            <div className="dy-flex dy-flex-wrap dy-gap-1 dy-items-center">
               {value.length === 0 && (
-                <span className="text-muted-foreground">{placeholder}</span>
+                <span className="dy-text-muted-foreground">{placeholder}</span>
               )}
               {value.map((val) => {
                 const option = options.find((opt) => opt.value === val)
@@ -82,14 +82,14 @@ export function MultiSelect({
                   <Badge
                     key={val}
                     variant="secondary"
-                    className="mr-1 mb-1 items-center gap-1"
+                    className="dy-mr-1 dy-mb-1 dy-items-center dy-gap-1"
                   >
                     {option?.label || val}
                     {!disabled && (
                       <div
                         role="button"
                         tabIndex={0}
-                        className="ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        className="dy-ring-offset-background dy-rounded-full dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handleRemove(val)
@@ -101,17 +101,17 @@ export function MultiSelect({
                         }}
                         onClick={() => handleRemove(val)}
                       >
-                        <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                        <X className="dy-h-3 dy-w-3 dy-text-muted-foreground hover:dy-text-foreground" />
                       </div>
                     )}
                   </Badge>
                 )
               })}
             </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="dy-ml-2 dy-h-4 dy-w-4 dy-shrink-0 dy-opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
+        <PopoverContent className="dy-w-[400px] dy-p-0" align="start">
           <Command>
             <CommandInput placeholder="Search options..." />
             <CommandList>
@@ -127,8 +127,8 @@ export function MultiSelect({
                     >
                       <Check
                         className={cn(
-                          "mr-2 h-4 w-4",
-                          isSelected ? "opacity-100" : "opacity-0"
+                          "dy-mr-2 dy-h-4 dy-w-4",
+                          isSelected ? "dy-opacity-100" : "dy-opacity-0"
                         )}
                       />
                       {option.label}

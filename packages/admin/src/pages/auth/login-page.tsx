@@ -37,15 +37,15 @@ export function LoginPage({
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">Enter your credentials to access the dashboard</p>
+    <div className="dy-flex dy-min-h-screen dy-items-center dy-justify-center dy-bg-background dy-px-4">
+      <div className="dy-w-full dy-max-w-sm dy-space-y-8">
+        <div className="dy-space-y-2 dy-text-center">
+          <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">Welcome back</h1>
+          <p className="dy-text-sm dy-text-muted-foreground">Enter your credentials to access the dashboard</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="dy-space-y-4">
+          <div className="dy-space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -54,11 +54,11 @@ export function LoginPage({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-transparent"
+              className="dy-bg-transparent"
             />
           </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="dy-space-y-2">
+            <div className="dy-flex dy-items-center dy-justify-between">
               <Label htmlFor="password">Password</Label>
             </div>
             <Input
@@ -67,22 +67,22 @@ export function LoginPage({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-transparent"
+              className="dy-bg-transparent"
             />
           </div>
 
           {error && (
-            <div className="text-xs text-destructive font-medium bg-destructive/10 p-3 rounded-md">
+            <div className="dy-text-xs dy-text-destructive dy-font-medium dy-bg-destructive/10 dy-p-3 dy-rounded-md">
               {error}
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="dy-w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground uppercase tracking-widest">
+        <p className="dy-text-center dy-text-xs dy-text-muted-foreground dy-uppercase dy-tracking-widest">
           Dyrected CMS
         </p>
       </div>

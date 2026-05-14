@@ -59,53 +59,53 @@
     --sidebar-ring: 38 92% 50%;
   }
 
-  .admin-ui {
+  .dy-admin-ui {
     color-scheme: light;
-    @apply font-sans;
+    @apply dy-font-sans;
   }
 
-  .admin-ui h1,
-  .admin-ui h2,
-  .admin-ui h3,
-  .admin-ui h4,
-  .admin-ui h5,
-  .admin-ui h6 {
-    @apply font-serif;
+  .dy-admin-ui h1,
+  .dy-admin-ui h2,
+  .dy-admin-ui h3,
+  .dy-admin-ui h4,
+  .dy-admin-ui h5,
+  .dy-admin-ui h6 {
+    @apply dy-font-serif;
   }
 }
 
 @layer utilities {
-  .admin-ui .left-accent {
-    @apply border-l-2 border-primary/10 px-4 -mx-8 py-4  transition-all duration-200 bg-transparent;
+  .dy-admin-ui .left-accent {
+    @apply dy-border-l-2 dy-border-primary/10 dy-px-4 dy--mx-8 dy-py-4 dy-transition-all dy-duration-200 dy-bg-transparent;
   }
 
-  .admin-ui .left-accent:hover {
-    @apply border-l-primary bg-primary/[0.04];
+  .dy-admin-ui .left-accent:hover {
+    @apply dy-border-l-primary dy-bg-primary/[0.04];
   }
 
-  .admin-ui .left-accent .left-accent {
-    @apply px-4 -mx-4;
+  .dy-admin-ui .left-accent .left-accent {
+    @apply dy-px-4 dy--mx-4;
   }
 
-  .admin-ui .left-accent .left-accent .left-accent{
-    @apply px-4 mx-0;
+  .dy-admin-ui .left-accent .left-accent .left-accent{
+    @apply dy-px-4 dy-mx-0;
   }
 
-  .admin-ui .flat-container {
-    @apply bg-transparent border-none shadow-none p-0;
+  .dy-admin-ui .flat-container {
+    @apply dy-bg-transparent dy-border-none dy-shadow-none dy-p-0;
   }
 }
 
 @layer components {
-  .admin-ui input,
-  .admin-ui select,
-  .admin-ui textarea {
-    @apply focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none focus:outline-none border-border/60 bg-transparent transition-all;
+  .dy-admin-ui input,
+  .dy-admin-ui select,
+  .dy-admin-ui textarea {
+    @apply focus-visible:dy-ring-0 focus-visible:dy-ring-offset-0 focus-visible:dy-outline-none focus:dy-outline-none dy-border-border/60 dy-bg-transparent dy-transition-all;
   }
 
-  .admin-ui input:focus,
-  .admin-ui select:focus,
-  .admin-ui textarea:focus {
-    @apply border-primary/50;
+  .dy-admin-ui input:focus,
+  .dy-admin-ui select:focus,
+  .dy-admin-ui textarea:focus {
+    @apply dy-border-primary/50;
   }
 }

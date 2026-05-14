@@ -72,40 +72,40 @@ export function GlobalEditorPage() {
   if (isGlobalLoading) return <div>Loading global settings...</div>
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between gap-4 border-b border-border/50 pb-6">
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0">
-            <Globe className="h-5 w-5" />
+    <div className="dy-space-y-8 dy-max-w-5xl dy-mx-auto">
+      <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border/50 dy-pb-6">
+        <div className="dy-flex dy-items-center dy-gap-4">
+          <div className="dy-p-2 dy-bg-primary/10 dy-text-primary dy-rounded-lg dy-shrink-0">
+            <Globe className="dy-h-5 dy-w-5" />
           </div>
           <div>
-            <h1 className="text-lg font-serif font-bold tracking-tight text-foreground truncate">
+            <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
               {schema.label || schema.slug}
             </h1>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 leading-none mt-1">
+            <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/40 dy-leading-none dy-mt-1">
               Global Configuration
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="dy-flex dy-items-center dy-gap-2">
           <Button
             size="icon"
-            className="h-9 w-9 rounded-lg shadow-sm"
+            className="dy-h-9 dy-w-9 dy-rounded-lg dy-shadow-sm"
             onClick={() => document.getElementById('dyrected-form-submit')?.click()}
             disabled={saveMutation.isPending}
             title="Save Changes (⌘S)"
           >
             {saveMutation.isPending ? (
-              <div className="h-4 w-4 animate-spin border-2 border-current border-t-transparent rounded-full" />
+              <div className="dy-h-4 dy-w-4 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
             ) : (
-              <Save className="h-4 w-4" />
+              <Save className="dy-h-4 dy-w-4" />
             )}
           </Button>
         </div>
       </div>
 
-      <div className="animate-in space-y-8 pb-20">
+      <div className="dy-animate-in dy-space-y-8 dy-pb-20">
         <FormEngine
           collection={slug!}
           fields={schema.fields}
@@ -115,7 +115,7 @@ export function GlobalEditorPage() {
           onChange={(dirty) => setIsDirty(dirty)}
           submitLabel="Save Changes"
         />
-        <button id="dyrected-form-submit" type="submit" className="hidden" />
+        <button id="dyrected-form-submit" type="submit" className="dy-hidden" />
       </div>
     </div>
   )

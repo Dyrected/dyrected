@@ -32,10 +32,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground animate-pulse">Authenticating...</p>
+      <div className="dy-flex dy-h-screen dy-items-center dy-justify-center dy-bg-background">
+        <div className="dy-flex dy-flex-col dy-items-center dy-gap-4">
+          <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary dy-border-t-transparent" />
+          <p className="dy-text-sm dy-text-muted-foreground dy-animate-pulse">Authenticating...</p>
         </div>
       </div>
     );

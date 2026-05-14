@@ -10,19 +10,19 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
   return (
-    <div className="flex items-end justify-between mb-8">
+    <div className="dy-flex dy-items-end dy-justify-between dy-mb-8">
       <div>
-        <div className="flex items-center gap-3 mb-1">
-          {Icon && <Icon className="h-4 w-4 text-primary/60" />}
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+        <div className="dy-flex dy-items-center dy-gap-3 dy-mb-1">
+          {Icon && <Icon className="dy-h-4 dy-w-4 dy-text-primary/60" />}
+          <h1 className="dy-text-2xl dy-font-bold dy-tracking-tight dy-text-foreground">{title}</h1>
         </div>
         {description && (
-          <p className="text-[11px] text-muted-foreground/60 font-medium">
+          <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-font-medium">
             {description}
           </p>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="dy-flex dy-items-center dy-gap-3">
         {children}
       </div>
     </div>

@@ -47,18 +47,18 @@ export function FirstUserPage({
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="space-y-2 text-center">
-          <div className="mx-auto h-12 w-12 rounded-full bg-primary/5 flex items-center justify-center mb-4">
-            <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-pulse" />
+    <div className="dy-flex dy-min-h-screen dy-items-center dy-justify-center dy-bg-background dy-px-4">
+      <div className="dy-w-full dy-max-w-sm dy-space-y-8">
+        <div className="dy-space-y-2 dy-text-center">
+          <div className="dy-mx-auto dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/5 dy-flex dy-items-center dy-justify-center dy-mb-4">
+            <div className="dy-h-6 dy-w-6 dy-rounded-full dy-border-2 dy-border-primary dy-border-t-transparent dy-animate-pulse" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Setup Admin Account</h1>
-          <p className="text-sm text-muted-foreground">Create the first administrative user to get started</p>
+          <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">Setup Admin Account</h1>
+          <p className="dy-text-sm dy-text-muted-foreground">Create the first administrative user to get started</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="dy-space-y-4">
+          <div className="dy-space-y-2">
             <Label htmlFor="email">Admin Email</Label>
             <Input
               id="email"
@@ -67,10 +67,10 @@ export function FirstUserPage({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-transparent"
+              className="dy-bg-transparent"
             />
           </div>
-          <div className="space-y-2">
+          <div className="dy-space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
@@ -78,10 +78,10 @@ export function FirstUserPage({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-transparent"
+              className="dy-bg-transparent"
             />
           </div>
-          <div className="space-y-2">
+          <div className="dy-space-y-2">
             <Label htmlFor="confirm-password">Confirm Password</Label>
             <Input
               id="confirm-password"
@@ -89,23 +89,23 @@ export function FirstUserPage({
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="bg-transparent"
+              className="dy-bg-transparent"
             />
           </div>
 
           {error && (
-            <div className="text-xs text-destructive font-medium bg-destructive/10 p-3 rounded-md">
+            <div className="dy-text-xs dy-text-destructive dy-font-medium dy-bg-destructive/10 dy-p-3 dy-rounded-md">
               {error}
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="dy-w-full" disabled={loading}>
             {loading ? "Creating account..." : "Create Admin Account"}
           </Button>
         </form>
 
-        <div className="pt-4 border-t text-center space-y-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+        <div className="dy-pt-4 dy-border-t dy-text-center dy-space-y-2">
+          <p className="dy-text-[10px] dy-text-muted-foreground dy-uppercase dy-tracking-widest">
             Dyrected CMS · Initial Setup
           </p>
         </div>

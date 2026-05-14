@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // DyrectedAdmin is auto-imported by @dyrected/nuxt.
-definePageMeta({ layout: false })
+definePageMeta({ layout: false });
 </script>
 
 <template>
@@ -10,3 +10,8 @@ definePageMeta({ layout: false })
     </ClientOnly>
   </div>
 </template>
+<style lang="css">
+html {
+  background-color: #fff;
+}
+</style>

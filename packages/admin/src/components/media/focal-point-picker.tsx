@@ -32,33 +32,33 @@ export function FocalPointPicker({ url, value, onChange, className }: FocalPoint
   };
 
   return (
-    <div className="space-y-2">
+    <div className="dy-space-y-2">
       <div 
         ref={containerRef}
-        className={cn("relative cursor-crosshair overflow-hidden rounded-xl border border-border/40 bg-muted/20 group", className)}
+        className={cn("dy-relative dy-cursor-crosshair dy-overflow-hidden dy-rounded-xl dy-border dy-border-border/40 dy-bg-muted/20 dy-group", className)}
         onClick={handleClick}
       >
         <img 
           src={url} 
           alt="Focal point picker" 
-          className="w-full h-auto pointer-events-none select-none max-h-[400px] object-contain bg-checkered" 
+          className="dy-w-full dy-h-auto dy-pointer-events-none dy-select-none dy-max-h-[400px] dy-object-contain dy-bg-checkered" 
         />
         
         {/* Focal point indicator */}
         <div 
-          className="absolute w-8 h-8 -ml-4 -mt-4 border-2 border-white rounded-full shadow-2xl flex items-center justify-center pointer-events-none transition-all duration-200 ease-out"
+          className="dy-absolute dy-w-8 dy-h-8 dy--ml-4 dy--mt-4 dy-border-2 dy-border-white dy-rounded-full dy-shadow-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none dy-transition-all dy-duration-200 dy-ease-out"
           style={{ left: `${focalPoint.x}%`, top: `${focalPoint.y}%` }}
         >
-          <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />
-          <div className="absolute w-full h-px bg-white/40" />
-          <div className="absolute h-full w-px bg-white/40" />
+          <div className="dy-w-1.5 dy-h-1.5 dy-bg-white dy-rounded-full dy-shadow-sm" />
+          <div className="dy-absolute dy-w-full dy-h-px dy-bg-white/40" />
+          <div className="dy-absolute dy-h-full dy-w-px dy-bg-white/40" />
         </div>
         
-        <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] text-white font-bold tracking-widest border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="dy-absolute dy-bottom-3 dy-left-3 dy-bg-black/60 dy-backdrop-blur-md dy-px-2.5 dy-py-1 dy-rounded-lg dy-text-[10px] dy-text-white dy-font-bold dy-tracking-widest dy-border dy-border-white/10 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
           X: {focalPoint.x}% / Y: {focalPoint.y}%
         </div>
       </div>
-      <p className="text-[10px] text-muted-foreground font-medium px-1">
+      <p className="dy-text-[10px] dy-text-muted-foreground dy-font-medium dy-px-1">
         Click on the image to set the focal point for smart cropping.
       </p>
     </div>

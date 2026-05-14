@@ -163,53 +163,53 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden gap-0 bg-background border-none shadow-2xl">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-[650px]">
-          <div className="px-6 py-4 border-b flex items-center justify-between bg-muted/20">
-            <div className="flex items-center gap-4">
-              <DialogTitle className="text-xl font-serif font-bold tracking-tight">Media Library</DialogTitle>
+      <DialogContent className="sm:dy-max-w-[900px] dy-p-0 dy-overflow-hidden dy-gap-0 dy-bg-background dy-border-none dy-shadow-2xl">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-flex-col dy-h-[650px]">
+          <div className="dy-px-6 dy-py-4 dy-border-b dy-flex dy-items-center dy-justify-between dy-bg-muted/20">
+            <div className="dy-flex dy-items-center dy-gap-4">
+              <DialogTitle className="dy-text-xl dy-font-serif dy-font-bold dy-tracking-tight">Media Library</DialogTitle>
               {multiple && selectedValues.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 animate-in fade-in slide-in-from-left-2">
-                  <span className="text-xs font-bold text-primary">{selectedValues.length} Selected</span>
-                  <Button variant="ghost" size="icon" className="h-4 w-4 text-primary hover:bg-transparent" onClick={handleConfirm}>
-                    <Check className="h-3 w-3" />
+                <div className="dy-flex dy-items-center dy-gap-2 dy-px-3 dy-py-1 dy-bg-primary/10 dy-rounded-full dy-border dy-border-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-left-2">
+                  <span className="dy-text-xs dy-font-bold dy-text-primary">{selectedValues.length} Selected</span>
+                  <Button variant="ghost" size="icon" className="dy-h-4 dy-w-4 dy-text-primary hover:dy-bg-transparent" onClick={handleConfirm}>
+                    <Check className="dy-h-3 dy-w-3" />
                   </Button>
                 </div>
               )}
             </div>
-            <TabsList className="bg-muted/50 p-1 rounded-xl">
-              <TabsTrigger value="library" className="gap-2 rounded-lg px-4 font-bold text-xs uppercase tracking-wider transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Library className="h-3.5 w-3.5" /> Library
+            <TabsList className="dy-bg-muted/50 dy-p-1 dy-rounded-xl">
+              <TabsTrigger value="library" className="dy-gap-2 dy-rounded-lg dy-px-4 dy-font-bold dy-text-xs dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm">
+                <Library className="dy-h-3.5 dy-w-3.5" /> Library
               </TabsTrigger>
-              <TabsTrigger value="upload" className="gap-2 rounded-lg px-4 font-bold text-xs uppercase tracking-wider transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Upload className="h-3.5 w-3.5" /> Upload
+              <TabsTrigger value="upload" className="dy-gap-2 dy-rounded-lg dy-px-4 dy-font-bold dy-text-xs dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm">
+                <Upload className="dy-h-3.5 dy-w-3.5" /> Upload
               </TabsTrigger>
-              <TabsTrigger value="external" className="gap-2 rounded-lg px-4 font-bold text-xs uppercase tracking-wider transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm">
-                <Globe className="h-3.5 w-3.5" /> External URL
+              <TabsTrigger value="external" className="dy-gap-2 dy-rounded-lg dy-px-4 dy-font-bold dy-text-xs dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm">
+                <Globe className="dy-h-3.5 dy-w-3.5" /> External URL
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-hidden">
-            <TabsContent value="library" className="h-full m-0 p-0 focus-visible:ring-0">
-              <div className="flex h-full">
-                <div className="flex-1 flex flex-col p-6 space-y-4 border-r">
-                  <div className="flex items-center gap-4">
-                    <div className="relative flex-1 group">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <div className="dy-flex-1 dy-overflow-hidden">
+            <TabsContent value="library" className="dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0">
+              <div className="dy-flex dy-h-full">
+                <div className="dy-flex-1 dy-flex dy-flex-col dy-p-6 dy-space-y-4 dy-border-r">
+                  <div className="dy-flex dy-items-center dy-gap-4">
+                    <div className="dy-relative dy-flex-1 dy-group">
+                      <Search className="dy-absolute dy-left-3.5 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground dy-group-focus-within:dy-text-primary dy-transition-colors" />
                       <Input
                         placeholder="Search your media library..."
-                        className="pl-11 h-11 rounded-xl border-muted bg-muted/10 focus:bg-background transition-all"
+                        className="dy-pl-11 dy-h-11 dy-rounded-xl dy-border-muted dy-bg-muted/10 focus:dy-bg-background dy-transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
                     {multiple && (
-                      <div className="flex items-center gap-1 bg-muted/30 p-1 rounded-lg">
+                      <div className="dy-flex dy-items-center dy-gap-1 dy-bg-muted/30 dy-p-1 dy-rounded-lg">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-[10px] font-bold uppercase tracking-wider px-3 hover:bg-background rounded-md"
+                          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 hover:dy-bg-background dy-rounded-md"
                           onClick={() => {
                             media?.forEach((item: any) => {
                               if (!selectedValues.includes(item.id)) onSelect(item.id)
@@ -218,11 +218,11 @@ export function MediaLibraryDialog({
                         >
                           Select All
                         </Button>
-                        <div className="w-px h-4 bg-border/50 mx-1" />
+                        <div className="dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1" />
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 text-[10px] font-bold uppercase tracking-wider px-3 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-md"
+                          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
                           onClick={() => {
                             selectedValues.forEach(id => onSelect(id))
                           }}
@@ -232,8 +232,8 @@ export function MediaLibraryDialog({
                       </div>
                     )}
                   </div>
-                  <ScrollArea className="flex-1 -mx-2 px-2">
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 pb-4">
+                  <ScrollArea className="dy-flex-1 dy--mx-2 dy-px-2">
+                    <div className="dy-grid dy-grid-cols-3 sm:dy-grid-cols-4 md:dy-grid-cols-5 dy-gap-4 dy-pb-4">
                       {media?.map((item: any) => (
                         <button
                           key={item.id}
@@ -252,31 +252,31 @@ export function MediaLibraryDialog({
                             }
                           }}
                           className={cn(
-                            "relative group rounded-2xl overflow-hidden border-2 aspect-square transition-all hover:scale-[1.02] active:scale-95 shadow-sm bg-muted/5",
+                            "dy-relative dy-group dy-rounded-2xl dy-overflow-hidden dy-border-2 dy-aspect-square dy-transition-all hover:dy-scale-[1.02] active:dy-scale-95 dy-shadow-sm dy-bg-muted/5",
                             selectedItem?.id === item.id
-                              ? "border-primary ring-4 ring-primary/10 shadow-lg shadow-primary/5"
-                              : "border-border/40 hover:border-border"
+                              ? "dy-border-primary dy-ring-4 dy-ring-primary/10 dy-shadow-lg dy-shadow-primary/5"
+                              : "dy-border-border/40 hover:dy-border-border"
                           )}
                         >
                           <img
                             src={getPreviewUrl(item)}
                             alt={item.filename}
-                            className="object-cover w-full h-full"
+                            className="dy-object-cover dy-w-full dy-h-full"
                           />
                           {selectedValues.includes(item.id) && (
-                            <div className="absolute top-2.5 right-2.5 h-7 w-7 bg-primary rounded-full flex items-center justify-center text-white shadow-xl animate-in zoom-in border-2 border-white">
-                              <Check className="h-4 w-4" />
+                            <div className="dy-absolute dy-top-2.5 dy-right-2.5 dy-h-7 dy-w-7 dy-bg-primary dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-white dy-shadow-xl dy-animate-in dy-zoom-in dy-border-2 dy-border-white">
+                              <Check className="dy-h-4 dy-w-4" />
                             </div>
                           )}
                           {(item.mimeType?.startsWith('video/') || item.mimeType === 'video/youtube' || item.mimeType === 'video/vimeo') && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
-                              <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 shadow-2xl">
-                                <Video className="h-5 w-5 text-white" />
+                            <div className="dy-absolute dy-inset-0 dy-flex dy-items-center dy-justify-center dy-bg-black/20 dy-group-hover:dy-bg-black/40 dy-transition-colors">
+                              <div className="dy-h-10 dy-w-10 dy-bg-white/20 dy-backdrop-blur-md dy-rounded-full dy-flex dy-items-center dy-justify-center dy-border dy-border-white/30 dy-shadow-2xl">
+                                <Video className="dy-h-5 dy-w-5 dy-text-white" />
                               </div>
                             </div>
                           )}
-                          <div className="absolute inset-x-0 bottom-0 p-2.5 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            <p className="text-[10px] text-white truncate font-bold uppercase tracking-wider">{item.filename}</p>
+                          <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2.5 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
+                            <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{item.filename}</p>
                           </div>
                         </button>
                       ))}
@@ -284,42 +284,42 @@ export function MediaLibraryDialog({
                   </ScrollArea>
                 </div>
 
-                <div className="w-80 bg-muted/5 p-6 flex flex-col gap-6 overflow-y-auto border-l border-muted/20">
+                <div className="dy-w-80 dy-bg-muted/5 dy-p-6 dy-flex dy-flex-col dy-gap-6 dy-overflow-y-auto dy-border-l dy-border-muted/20">
                   {selectedItem ? (
                     <>
-                      <div className="space-y-5">
-                        <div className="aspect-square rounded-3xl overflow-hidden border bg-background shadow-2xl group relative ring-1 ring-border/50">
+                      <div className="dy-space-y-5">
+                        <div className="dy-aspect-square dy-rounded-3xl dy-overflow-hidden dy-border dy-bg-background dy-shadow-2xl dy-group dy-relative dy-ring-1 dy-ring-border/50">
                           <img
                             src={getPreviewUrl(selectedItem)}
-                            className="w-full h-full object-contain p-2"
+                            className="dy-w-full dy-h-full dy-object-contain dy-p-2"
                             alt=""
                           />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                            <Button variant="secondary" size="sm" className="rounded-full shadow-lg font-bold" onClick={() => window.open(getPreviewUrl(selectedItem), '_blank')}>
+                          <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity dy-flex dy-items-center dy-justify-center dy-backdrop-blur-sm">
+                            <Button variant="secondary" size="sm" className="dy-rounded-full dy-shadow-lg dy-font-bold" onClick={() => window.open(getPreviewUrl(selectedItem), '_blank')}>
                               View Full
                             </Button>
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <h4 className="font-bold text-sm truncate leading-tight" title={selectedItem.filename}>
+                        <div className="dy-space-y-2">
+                          <h4 className="dy-font-bold dy-text-sm dy-truncate dy-leading-tight" title={selectedItem.filename}>
                             {selectedItem.filename}
                           </h4>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[9px] font-black uppercase tracking-widest bg-primary/10 text-primary px-2 py-1 rounded-md border border-primary/10">
+                          <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2">
+                            <span className="dy-text-[9px] dy-font-black dy-uppercase dy-tracking-widest dy-bg-primary/10 dy-text-primary dy-px-2 dy-py-1 dy-rounded-md dy-border dy-border-primary/10">
                               {selectedItem.mimeType?.split('/')[1] || selectedItem.mimeType}
                             </span>
-                            <span className="text-[10px] font-bold text-muted-foreground/60">
+                            <span className="dy-text-[10px] dy-font-bold dy-text-muted-foreground/60">
                               {selectedItem.filesize ? `${(selectedItem.filesize / 1024).toFixed(1)} KB` : 'External Asset'}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="space-y-3 pt-6 border-t border-muted/20">
+                      <div className="dy-space-y-3 dy-pt-6 dy-border-t dy-border-muted/20">
                         {multiple ? (
                           <>
                             <Button
-                              className="w-full h-11 rounded-xl shadow-sm font-bold tracking-tight transition-all"
+                              className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-sm dy-font-bold dy-tracking-tight dy-transition-all"
                               variant={selectedValues.includes(selectedItem.id) ? "outline" : "default"}
                               onClick={() => onSelect(selectedItem.id)}
                             >
@@ -327,17 +327,17 @@ export function MediaLibraryDialog({
                             </Button>
                             {selectedValues.length > 0 && (
                               <Button
-                                className="w-full h-11 rounded-xl shadow-xl bg-primary hover:bg-primary/90 font-bold tracking-tight transition-all group"
+                                className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-xl dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-tracking-tight dy-transition-all dy-group"
                                 onClick={handleConfirm}
                               >
                                 <span>Confirm {selectedValues.length} {selectedValues.length === 1 ? 'Asset' : 'Assets'}</span>
-                                <Sparkles className="ml-2 h-4 w-4 opacity-50 group-hover:opacity-100 group-hover:scale-110 transition-all" />
+                                <Sparkles className="dy-ml-2 dy-h-4 dy-w-4 dy-opacity-50 dy-group-hover:dy-opacity-100 dy-group-hover:dy-scale-110 dy-transition-all" />
                               </Button>
                             )}
                           </>
                         ) : (
                           <Button
-                            className="w-full h-11 rounded-xl shadow-lg font-bold tracking-tight bg-primary hover:bg-primary/90 transition-all"
+                            className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-lg dy-font-bold dy-tracking-tight dy-bg-primary hover:dy-bg-primary/90 dy-transition-all"
                             onClick={() => {
                               onSelect(selectedItem.id)
                               onOpenChange(false)
@@ -349,13 +349,13 @@ export function MediaLibraryDialog({
                       </div>
                     </>
                   ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-center space-y-5 text-muted-foreground/30">
-                      <div className="p-6 bg-muted/10 rounded-full border border-muted/20 shadow-inner">
-                        <ImageIcon className="h-10 w-10" />
+                    <div className="dy-flex-1 dy-flex dy-flex-col dy-items-center dy-justify-center dy-text-center dy-space-y-5 dy-text-muted-foreground/30">
+                      <div className="dy-p-6 dy-bg-muted/10 dy-rounded-full dy-border dy-border-muted/20 dy-shadow-inner">
+                        <ImageIcon className="dy-h-10 dy-w-10" />
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-xs font-bold uppercase tracking-widest">No Selection</p>
-                        <p className="text-[10px] font-medium max-w-[150px] leading-relaxed">Select an item from the library to view details and metadata</p>
+                      <div className="dy-space-y-1">
+                        <p className="dy-text-xs dy-font-bold dy-uppercase dy-tracking-widest">No Selection</p>
+                        <p className="dy-text-[10px] dy-font-medium dy-max-w-[150px] dy-leading-relaxed">Select an item from the library to view details and metadata</p>
                       </div>
                     </div>
                   )}
@@ -363,53 +363,53 @@ export function MediaLibraryDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="upload" className="h-full m-0 p-8 focus-visible:ring-0">
-              <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-primary/20 rounded-[2.5rem] bg-primary/5 hover:bg-primary/10 transition-all group relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_100%)] opacity-[0.03]" />
+            <TabsContent value="upload" className="dy-h-full dy-m-0 dy-p-8 focus-visible:dy-ring-0">
+              <div className="dy-h-full dy-flex dy-flex-col dy-items-center dy-justify-center dy-border-2 dy-border-dashed dy-border-primary/20 dy-rounded-[2.5rem] dy-bg-primary/5 hover:dy-bg-primary/10 dy-transition-all dy-group dy-relative dy-overflow-hidden">
+                <div className="dy-absolute dy-inset-0 dy-bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_100%)] dy-opacity-[0.03]" />
                 <input
                   type="file"
                   id="media-upload-dialog"
-                  className="hidden"
+                  className="dy-hidden"
                   onChange={handleUpload}
                   disabled={isUploading}
                 />
                 <label
                   htmlFor="media-upload-dialog"
-                  className="flex flex-col items-center gap-8 cursor-pointer p-12 text-center relative z-10"
+                  className="dy-flex dy-flex-col dy-items-center dy-gap-8 dy-cursor-pointer dy-p-12 dy-text-center dy-relative dy-z-10"
                 >
-                  <div className="h-24 w-24 bg-background rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-all shadow-2xl shadow-primary/20 border border-primary/10">
-                    <Upload className="h-10 w-10" />
+                  <div className="dy-h-24 dy-w-24 dy-bg-background dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-primary dy-group-hover:dy-scale-110 dy-transition-all dy-shadow-2xl dy-shadow-primary/20 dy-border dy-border-primary/10">
+                    <Upload className="dy-h-10 dy-w-10" />
                   </div>
-                  <div className="space-y-2">
-                    <p className="font-serif font-bold text-3xl tracking-tight">Upload new assets</p>
-                    <p className="text-muted-foreground/60 font-medium">Drag and drop files here or click to browse your computer</p>
+                  <div className="dy-space-y-2">
+                    <p className="dy-font-serif dy-font-bold dy-text-3xl dy-tracking-tight">Upload new assets</p>
+                    <p className="dy-text-muted-foreground/60 dy-font-medium">Drag and drop files here or click to browse your computer</p>
                   </div>
-                  <Button variant="secondary" className="rounded-full px-8 h-12 font-bold shadow-sm pointer-events-none group-hover:bg-primary group-hover:text-white transition-all">
+                  <Button variant="secondary" className="dy-rounded-full dy-px-8 dy-h-12 dy-font-bold dy-shadow-sm dy-pointer-events-none dy-group-hover:dy-bg-primary dy-group-hover:dy-text-white dy-transition-all">
                     Choose Files
                   </Button>
                 </label>
               </div>
             </TabsContent>
 
-            <TabsContent value="external" className="h-full m-0 p-12 focus-visible:ring-0">
-              <div className="max-w-2xl mx-auto space-y-10 pt-4">
-                <div className="text-center space-y-4">
-                  <div className="h-20 w-20 bg-primary/10 text-primary rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm rotate-3 group-hover:rotate-0 transition-transform">
-                    <Globe className="h-10 w-10" />
+            <TabsContent value="external" className="dy-h-full dy-m-0 dy-p-12 focus-visible:dy-ring-0">
+              <div className="dy-max-w-2xl dy-mx-auto dy-space-y-10 dy-pt-4">
+                <div className="dy-text-center dy-space-y-4">
+                  <div className="dy-h-20 dy-w-20 dy-bg-primary/10 dy-text-primary dy-rounded-3xl dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-6 dy-shadow-sm dy-rotate-3 dy-group-hover:dy-rotate-0 dy-transition-transform">
+                    <Globe className="dy-h-10 dy-w-10" />
                   </div>
-                  <h3 className="text-3xl font-serif font-bold tracking-tight">Add External Resource</h3>
-                  <p className="text-sm text-muted-foreground/70 leading-relaxed max-w-md mx-auto">
+                  <h3 className="dy-text-3xl dy-font-serif dy-font-bold dy-tracking-tight">Add External Resource</h3>
+                  <p className="dy-text-sm dy-text-muted-foreground/70 dy-leading-relaxed dy-max-w-md dy-mx-auto">
                     Paste a link to any image, YouTube video, Vimeo link, or file to add it to your library without uploading.
                   </p>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="flex gap-3">
-                    <div className="relative flex-1">
-                      <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="dy-space-y-6">
+                  <div className="dy-flex dy-gap-3">
+                    <div className="dy-relative dy-flex-1">
+                      <LinkIcon className="dy-absolute dy-left-4 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground" />
                       <Input
                         placeholder="https://example.com/image.jpg or video link..."
-                        className="h-14 rounded-2xl shadow-xl border-muted bg-muted/5 pl-12 text-base font-medium focus:bg-background transition-all"
+                        className="dy-h-14 dy-rounded-2xl dy-shadow-xl dy-border-muted dy-bg-muted/5 dy-pl-12 dy-text-base dy-font-medium focus:dy-bg-background dy-transition-all"
                         value={externalUrl}
                         onChange={(e) => setExternalUrl(e.target.value)}
                       />
@@ -417,41 +417,41 @@ export function MediaLibraryDialog({
                     <Button
                       onClick={handleExternalUrlSubmit}
                       disabled={isUploading || !externalUrl}
-                      className="h-14 rounded-2xl px-10 font-bold shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 transition-all active:scale-95"
+                      className="dy-h-14 dy-rounded-2xl dy-px-10 dy-font-bold dy-shadow-xl dy-shadow-primary/20 dy-bg-primary hover:dy-bg-primary/90 dy-transition-all active:dy-scale-95"
                     >
                       {isUploading ? "Adding..." : "Add URL"}
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-2xl bg-red-50/50 border border-red-100 flex items-start gap-3">
-                      <div className="mt-0.5 p-1.5 bg-red-100 rounded-lg text-red-600">
-                        <Video className="h-4 w-4" />
+                  <div className="dy-grid dy-grid-cols-2 dy-gap-4">
+                    <div className="dy-p-4 dy-rounded-2xl dy-bg-red-50/50 dy-border dy-border-red-100 dy-flex dy-items-start dy-gap-3">
+                      <div className="dy-mt-0.5 dy-p-1.5 dy-bg-red-100 dy-rounded-lg dy-text-red-600">
+                        <Video className="dy-h-4 dy-w-4" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-red-900">Video Streaming</p>
-                        <p className="text-[10px] text-red-700/70 leading-relaxed font-medium mt-0.5">Supports YouTube & Vimeo. We recommend these for the best performance and compatibility.</p>
+                        <p className="dy-text-xs dy-font-bold dy-text-red-900">Video Streaming</p>
+                        <p className="dy-text-[10px] dy-text-red-700/70 dy-leading-relaxed dy-font-medium dy-mt-0.5">Supports YouTube & Vimeo. We recommend these for the best performance and compatibility.</p>
                       </div>
                     </div>
-                    <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 flex items-start gap-3">
-                      <div className="mt-0.5 p-1.5 bg-blue-100 rounded-lg text-blue-600">
-                        <ImageIcon className="h-4 w-4" />
+                    <div className="dy-p-4 dy-rounded-2xl dy-bg-blue-50/50 dy-border dy-border-blue-100 dy-flex dy-items-start dy-gap-3">
+                      <div className="dy-mt-0.5 dy-p-1.5 dy-bg-blue-100 dy-rounded-lg dy-text-blue-600">
+                        <ImageIcon className="dy-h-4 dy-w-4" />
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-blue-900">External Assets</p>
-                        <p className="text-[10px] text-blue-700/70 leading-relaxed font-medium mt-0.5">Add direct links to images or files from other CDNs. We'll automatically detect the type.</p>
+                        <p className="dy-text-xs dy-font-bold dy-text-blue-900">External Assets</p>
+                        <p className="dy-text-[10px] dy-text-blue-700/70 dy-leading-relaxed dy-font-medium dy-mt-0.5">Add direct links to images or files from other CDNs. We'll automatically detect the type.</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/20 border border-muted/30">
-                    <div className="p-2 bg-background rounded-xl shadow-sm text-muted-foreground">
-                      <Info className="h-4 w-4" />
+                  <div className="dy-flex dy-items-center dy-gap-3 dy-p-4 dy-rounded-2xl dy-bg-muted/20 dy-border dy-border-muted/30">
+                    <div className="dy-p-2 dy-bg-background dy-rounded-xl dy-shadow-sm dy-text-muted-foreground">
+                      <Info className="dy-h-4 dy-w-4" />
                     </div>
-                    <p className="text-[11px] text-muted-foreground/80 font-medium leading-relaxed">
-                      <span className="font-bold text-foreground">Pro Tip:</span> External videos are better streamed from
-                      <span className="text-red-600 font-bold ml-1">YouTube</span> or
-                      <span className="text-blue-500 font-bold ml-1">Vimeo</span> to ensure smooth playback on all devices.
+                    <p className="dy-text-[11px] dy-text-muted-foreground/80 dy-font-medium dy-leading-relaxed">
+                      <span className="dy-font-bold dy-text-foreground">Pro Tip:</span> External videos are better streamed from
+                      <span className="dy-text-red-600 dy-font-bold dy-ml-1">YouTube</span> or
+                      <span className="dy-text-blue-500 dy-font-bold dy-ml-1">Vimeo</span> to ensure smooth playback on all devices.
                     </p>
                   </div>
                 </div>

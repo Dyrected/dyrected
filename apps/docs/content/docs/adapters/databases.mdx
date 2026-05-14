@@ -75,18 +75,33 @@ export default defineConfig({
 ---
 
 ### MySQL — `@dyrected/db-mysql`
-
+ 
 Best for massive scale and high-concurrency workloads. Supports standard MySQL and PlanetScale (using `mysql2`).
-
+ 
 ```ts
-import { MySqlAdapter } from '@dyrected/db-mysql'
-
+import { MysqlAdapter } from '@dyrected/db-mysql'
+ 
 export default defineConfig({
-  db: new MySqlAdapter({
+  db: new MysqlAdapter({
     url: process.env.DATABASE_URL,  // mysql://user:pass@host:3306/db
   }),
 })
 ```
+
+**Connection options:**
+
+```ts
+new MysqlAdapter({
+  host: 'localhost',
+  user: 'root',
+  password: '...',
+  database: 'test',
+  // Or use a URL
+  url: 'mysql://...', 
+})
+```
+
+> **Performance:** The MySQL adapter automatically uses connection pooling via `mysql2/promise`, making it ideal for multi-tenant CMS environments.
 
 ---
 

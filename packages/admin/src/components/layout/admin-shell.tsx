@@ -48,23 +48,23 @@ function NavItem({
       to={to}
       onClick={onClick}
       className={cn(
-        "group flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150",
-        collapsed ? "justify-center px-2" : "",
+        "dy-group dy-flex dy-items-center dy-gap-3 dy-rounded-md dy-px-3 dy-py-2 dy-text-[13px] dy-font-medium dy-transition-all dy-duration-150",
+        collapsed ? "dy-justify-center dy-px-2" : "",
         active
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+          ? "dy-bg-primary dy-text-primary-foreground"
+          : "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground"
       )}
     >
       <Icon
         className={cn(
-          "shrink-0 transition-colors",
-          collapsed ? "h-[17px] w-[17px]" : "h-[15px] w-[15px]",
-          active ? "text-background" : "text-muted-foreground group-hover:text-foreground"
+          "dy-shrink-0 dy-transition-colors",
+          collapsed ? "dy-h-[17px] dy-w-[17px]" : "dy-h-[15px] dy-w-[15px]",
+          active ? "dy-text-background" : "dy-text-muted-foreground dy-group-hover:dy-text-foreground"
         )}
       />
-      {!collapsed && <span className="truncate">{label}</span>}
+      {!collapsed && <span className="dy-truncate">{label}</span>}
       {!collapsed && active && (
-        <ChevronRight className="ml-auto h-3.5 w-3.5 opacity-50 shrink-0" />
+        <ChevronRight className="dy-ml-auto dy-h-3.5 dy-w-3.5 dy-opacity-50 dy-shrink-0" />
       )}
     </Link>
   )
@@ -88,29 +88,29 @@ function NavGroup({
 
   if (collapsed) {
     return (
-      <div className="space-y-1">
-        <div className="my-2 mx-3 h-px bg-border" />
+      <div className="dy-space-y-1">
+        <div className="dy-my-2 dy-mx-3 dy-h-px dy-bg-border" />
         {children}
       </div>
     )
   }
 
   return (
-    <div className="space-y-1">
+    <div className="dy-space-y-1">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between px-3 mt-4 mb-1 group"
+        className="dy-flex dy-w-full dy-items-center dy-justify-between dy-px-3 dy-mt-4 dy-mb-1 dy-group"
       >
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+        <span className="dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/40 dy-group-hover:dy-text-muted-foreground/60 dy-transition-colors">
           {label}
         </span>
         {expanded ? (
-          <ChevronDown className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
+          <ChevronDown className="dy-h-3 dy-w-3 dy-text-muted-foreground/30 dy-group-hover:dy-text-muted-foreground/50" />
         ) : (
-          <ChevronRight className="h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground/50" />
+          <ChevronRight className="dy-h-3 dy-w-3 dy-text-muted-foreground/30 dy-group-hover:dy-text-muted-foreground/50" />
         )}
       </button>
-      <div className={cn("space-y-0.5 overflow-hidden transition-all duration-200", expanded ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0")}>
+      <div className={cn("dy-space-y-0.5 dy-overflow-hidden dy-transition-all dy-duration-200", expanded ? "dy-max-h-[1000px] dy-opacity-100" : "dy-max-h-0 dy-opacity-0")}>
         {children}
       </div>
     </div>
@@ -146,42 +146,42 @@ function SidebarInner({
 
   const groupLabel = (text: string) =>
     !collapsed ? (
-      <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+      <p className="dy-px-3 dy-mb-1.5 dy-text-[10px] dy-font-semibold dy-uppercase dy-tracking-widest dy-text-muted-foreground/50">
         {text}
       </p>
     ) : (
-      <div className="my-2 mx-3 h-px bg-border" />
+      <div className="dy-my-2 dy-mx-3 dy-h-px dy-bg-border" />
     )
 
   const branding = schemas?.admin?.branding;
 
   return (
-    <div className="flex flex-col min-h-screen admin-ui">
+    <div className="dy-flex dy-flex-col dy-min-h-screen dy-admin-ui">
       {/* Logo */}
       <div
         className={cn(
-          "flex items-center h-14 shrink-0 transition-all",
-          collapsed ? "justify-center px-2" : "gap-2.5 px-4"
+          "dy-flex dy-items-center dy-h-14 dy-shrink-0 dy-transition-all",
+          collapsed ? "dy-justify-center dy-px-2" : "dy-gap-2.5 dy-px-4"
         )}
       >
         <div>
           {!isEmbedded && (
             <>
               {branding?.logo || branding?.logoMark ? (
-                <div className="h-7 w-7 flex items-center justify-center shrink-0">
+                <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-shrink-0">
                   <img
                     src={getMediaUrl(collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark), client?.getBaseUrl() || "")}
                     alt="Logo"
-                    className="max-h-full max-w-full object-contain"
+                    className="dy-max-h-full dy-max-w-full dy-object-contain"
                   />
                 </div>
               ) : (
-                <div className="h-7 w-auto flex items-center justify-center shrink-0">
-                  <img src={logo} alt="Dyrected" className="h-8 w-auto" />
+                <div className="dy-h-7 dy-w-auto dy-flex dy-items-center dy-justify-center dy-shrink-0">
+                  <img src={logo} alt="Dyrected" className="dy-h-8 dy-w-auto" />
                 </div>
               )}
               {!collapsed && (
-                <span className="font-serif text-lg tracking-tight text-foreground flex-1 truncate">
+                <span className="dy-font-serif dy-text-lg dy-tracking-tight dy-text-foreground dy-flex-1 dy-truncate">
                   {branding?.titleSuffix?.replace(/^- /, '') || ''}
                 </span>
               )}
@@ -194,7 +194,7 @@ function SidebarInner({
 
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-4">
+      <nav className="dy-flex-1 dy-overflow-y-auto dy-py-4 dy-px-2 dy-space-y-4">
         <div>
           <NavItem
             to="/"
@@ -226,9 +226,9 @@ function SidebarInner({
         {(isLoading || collections.filter((c: any) => !c.upload).length > 0) && (
           <div>
             {isLoading ? (
-              <div className="space-y-1 px-1">
+              <div className="dy-space-y-1 dy-px-1">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className={cn("h-8 rounded-md bg-muted/60 animate-pulse", collapsed ? "mx-1" : "mx-2")} />
+                  <div key={i} className={cn("dy-h-8 dy-rounded-md dy-bg-muted/60 dy-animate-pulse", collapsed ? "dy-mx-1" : "dy-mx-2")} />
                 ))}
               </div>
             ) : (() => {
@@ -251,13 +251,13 @@ function SidebarInner({
               const renderCollectionItem = (col: any) => {
                 const isReadOnly = col.access?.read && !col.access?.create && !col.access?.update && !col.access?.delete
                 const navLabel = (
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="truncate">{col.labels?.plural ?? col.label ?? col.slug}</span>
+                  <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
+                    <span className="dy-truncate">{col.labels?.plural ?? col.label ?? col.slug}</span>
                     {!collapsed && (
-                      <div className="flex gap-1 shrink-0">
-                        {col.auth && <Shield className="h-4 w-4 text-primary/70" />}
-                        {col.shared && <Share2 className="h-4 w-4 text-purple-500/70" />}
-                        {isReadOnly && <Lock className="h-4 w-4 text-muted-foreground/40" />}
+                      <div className="dy-flex dy-gap-1 dy-shrink-0">
+                        {col.auth && <Shield className="dy-h-4 dy-w-4 dy-text-primary/70" />}
+                        {col.shared && <Share2 className="dy-h-4 dy-w-4 dy-text-purple-500/70" />}
+                        {isReadOnly && <Lock className="dy-h-4 dy-w-4 dy-text-muted-foreground/40" />}
                       </div>
                     )}
                   </div>
@@ -277,7 +277,7 @@ function SidebarInner({
               }
 
               return (
-                <div className="space-y-1">
+                <div className="dy-space-y-1">
                   {/* Grouped sections */}
                   {Array.from(groups.entries()).map(([groupName, cols]) => (
                     <NavGroup key={groupName} label={groupName} collapsed={collapsed} defaultExpanded={true}>
@@ -301,7 +301,7 @@ function SidebarInner({
         {globals.length > 0 && (
           <div>
             {groupLabel("Configuration")}
-            <div className="space-y-0.5">
+            <div className="dy-space-y-0.5">
               {globals.map((glob: any) => (
                 <NavItem
                   key={glob.slug}
@@ -319,7 +319,7 @@ function SidebarInner({
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-border px-2 py-3 shrink-0 space-y-0.5">
+      <div className="dy-border-t dy-border-border dy-px-2 dy-py-3 dy-shrink-0 dy-space-y-0.5">
         {/* Integration guide — always visible so embedded users can access the prompt */}
         <NavItem
           to="/setup"
@@ -335,11 +335,11 @@ function SidebarInner({
             onClick={logout}
             title={collapsed ? "Logout" : undefined}
             className={cn(
-              "flex w-full items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
-              collapsed ? "justify-center px-2" : ""
+              "dy-flex dy-w-full dy-items-center dy-gap-3 dy-rounded-md dy-px-3 dy-py-2 dy-text-[13px] dy-font-medium dy-text-muted-foreground dy-transition-colors hover:dy-bg-destructive/10 hover:dy-text-destructive",
+              collapsed ? "dy-justify-center dy-px-2" : ""
             )}
           >
-            <LogOut className="h-[15px] w-[15px] shrink-0" />
+            <LogOut className="dy-h-[15px] dy-w-[15px] dy-shrink-0" />
             {!collapsed && <span>Logout</span>}
           </button>
         )}
@@ -347,21 +347,21 @@ function SidebarInner({
 
       {/* Desktop Collapse Toggle at Bottom */}
       {onToggleCollapse && !isEmbedded && (
-        <div className="mt-auto p-4 border-t border-border/40">
+        <div className="dy-mt-auto dy-p-4 dy-border-t dy-border-border/40">
           <button
             onClick={onToggleCollapse}
             className={cn(
-              "w-full flex items-center gap-3 p-2.5 rounded-xl text-muted-foreground/60 hover:text-foreground hover:bg-accent/50 transition-all group/btn",
-              collapsed ? "justify-center" : "px-3"
+              "dy-w-full dy-flex dy-items-center dy-gap-3 dy-p-2.5 dy-rounded-xl dy-text-muted-foreground/60 hover:dy-text-foreground hover:dy-bg-accent/50 dy-transition-all dy-group/btn",
+              collapsed ? "dy-justify-center" : "dy-px-3"
             )}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
-              <PanelLeftOpen className="h-5 w-5" />
+              <PanelLeftOpen className="dy-h-5 dy-w-5" />
             ) : (
               <>
-                <PanelLeftClose className="h-5 w-5 group-hover/btn:-translate-x-0.5 transition-transform" />
-                <span className="text-sm font-medium text-[13px]">Collapse Sidebar</span>
+                <PanelLeftClose className="dy-h-5 dy-w-5 dy-group-hover/btn:dy--translate-x-0.5 dy-transition-transform" />
+                <span className="dy-text-sm dy-font-medium dy-text-[13px]">Collapse Sidebar</span>
               </>
             )}
           </button>
@@ -411,12 +411,12 @@ export function AdminShell({
 
   return (
     <BrandingProvider>
-      <div className={cn("flex w-full relative", isEmbedded ? "h-full min-h-[600px]" : "min-h-screen")}>
+      <div className={cn("dy-flex dy-w-full dy-relative", isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-min-h-screen")}>
         {/* ... existing sidebar and main content ... */}
         <aside
           className={cn(
-            "hidden md:flex flex-col shrink-0 h-full border-r border-border bg-background transition-all duration-300 overflow-hidden",
-            collapsed ? "w-[56px]" : "w-[220px]"
+            "dy-hidden md:dy-flex dy-flex-col dy-shrink-0 dy-h-full dy-border-r dy-border-border dy-bg-background dy-transition-all dy-duration-300 dy-overflow-hidden",
+            collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
           )}
         >
           <SidebarInner
@@ -432,21 +432,21 @@ export function AdminShell({
 
         {mobileOpen && (
           <div
-            className="fixed inset-0 z-30 bg-black/30 md:hidden"
+            className="dy-fixed dy-inset-0 dy-z-30 dy-bg-black/30 md:dy-hidden"
             onClick={() => setMobileOpen(false)}
           />
         )}
         <aside
           className={cn(
-            "fixed top-0 left-0 z-40 h-full w-[220px] flex flex-col border-r border-border bg-background transition-transform duration-300 ease-in-out md:hidden",
-            mobileOpen ? "translate-x-0" : "-translate-x-full"
+            "dy-fixed dy-top-0 dy-left-0 dy-z-40 dy-h-full dy-w-[220px] dy-flex dy-flex-col dy-border-r dy-border-border dy-bg-background dy-transition-transform dy-duration-300 dy-ease-in-out md:dy-hidden",
+            mobileOpen ? "dy-translate-x-0" : "dy--translate-x-full"
           )}
         >
           <button
             onClick={() => setMobileOpen(false)}
-            className="absolute top-3.5 right-3 p-1.5 rounded-md text-muted-foreground hover:bg-muted transition-colors"
+            className="dy-absolute dy-top-3.5 dy-right-3 dy-p-1.5 dy-rounded-md dy-text-muted-foreground hover:dy-bg-muted dy-transition-colors"
           >
-            <X className="h-4 w-4" />
+            <X className="dy-h-4 dy-w-4" />
           </button>
           <SidebarInner
             schemas={schemas}
@@ -459,17 +459,17 @@ export function AdminShell({
           />
         </aside>
 
-        <main className="flex-1 min-w-0 overflow-auto flex flex-col relative bg-background/50">
+        <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/50">
           {/* Mobile Floating Toggle */}
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden fixed bottom-8 right-8 z-50 h-14 w-14 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-[0_8px_30px_rgb(0,0,0,0.3)] flex items-center justify-center transition-all active:scale-90 hover:scale-105 border border-white/20"
+            className="md:dy-hidden dy-fixed dy-bottom-8 dy-right-8 dy-z-50 dy-h-14 dy-w-14 dy-rounded-full dy-bg-gradient-to-br dy-from-primary dy-to-primary/80 dy-text-primary-foreground dy-shadow-[0_8px_30px_rgb(0,0,0,0.3)] dy-flex dy-items-center dy-justify-center dy-transition-all active:dy-scale-90 hover:dy-scale-105 dy-border dy-border-white/20"
             aria-label="Open menu"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="dy-h-6 dy-w-6" />
           </button>
 
-          <div className="flex-1 py-6 px-4 lg:py-10 lg:px-6">
+          <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
             {children}
           </div>
         </main>

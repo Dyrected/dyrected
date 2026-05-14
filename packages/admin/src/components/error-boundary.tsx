@@ -27,12 +27,12 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="flex-1 flex flex-col items-center justify-center p-12 bg-destructive/5 text-destructive min-h-[400px]">
-          <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
-          <p className="text-sm opacity-80 mb-4">{this.state.error?.message}</p>
+        <div className="dy-flex-1 dy-flex dy-flex-col dy-items-center dy-justify-center dy-p-12 dy-bg-destructive/5 dy-text-destructive dy-min-h-[400px]">
+          <h2 className="dy-text-xl dy-font-bold dy-mb-2">Something went wrong</h2>
+          <p className="dy-text-sm dy-opacity-80 dy-mb-4">{this.state.error?.message}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm font-medium hover:bg-destructive/90 transition-colors"
+            className="dy-px-4 dy-py-2 dy-bg-destructive dy-text-destructive-foreground dy-rounded-md dy-text-sm dy-font-medium hover:dy-bg-destructive/90 dy-transition-colors"
           >
             Reload Page
           </button>

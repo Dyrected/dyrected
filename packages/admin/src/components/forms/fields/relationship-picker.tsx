@@ -61,8 +61,8 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
   const selectedItems = values.map(v => data?.find((item: any) => item.id === v)).filter(Boolean)
 
   return (
-    <div className="flex flex-col gap-2">
-      {label && <label className="text-sm font-medium leading-none">{label}</label>}
+    <div className="dy-flex dy-flex-col dy-gap-2">
+      {label && <label className="dy-text-sm dy-font-medium dy-leading-none">{label}</label>}
       <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -70,25 +70,25 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
             role="combobox"
             aria-expanded={open}
             disabled={disabled}
-            className="w-full justify-between font-normal"
+            className="dy-w-full dy-justify-between dy-font-normal"
           >
             {isLoading ? (
               "Loading..."
             ) : selectedItems.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
+              <div className="dy-flex dy-flex-wrap dy-gap-1">
                 {selectedItems.map((item: any) => (
-                  <Badge key={item.id} variant="secondary" className="text-[10px] h-5 px-1.5">
+                  <Badge key={item.id} variant="secondary" className="dy-text-[10px] dy-h-5 dy-px-1.5">
                     {getDisplayLabel(item)}
                   </Badge>
                 ))}
               </div>
             ) : (
-              <span className="text-muted-foreground">Select {relationTo}...</span>
+              <span className="dy-text-muted-foreground">Select {relationTo}...</span>
             )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="dy-ml-2 dy-h-4 dy-w-4 dy-shrink-0 dy-opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
+        <PopoverContent className="dy-w-[400px] dy-p-0" align="start">
           <Command>
             <CommandInput 
               placeholder={`Search ${relationTo}...`} 
@@ -113,20 +113,20 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
                       }
                     }}
                   >
-                    <div className="flex items-center gap-3 flex-1">
+                    <div className="dy-flex dy-items-center dy-gap-3 dy-flex-1">
                       {isUpload && (
-                        <div className="h-6 w-6 rounded border bg-muted overflow-hidden flex-shrink-0">
+                        <div className="dy-h-6 dy-w-6 dy-rounded dy-border dy-bg-muted dy-overflow-hidden dy-flex-shrink-0">
                           <img 
                             src={getMediaUrl(item, client?.getBaseUrl() || "")} 
-                            className="h-full w-full object-cover" 
+                            className="dy-h-full dy-w-full dy-object-cover" 
                             alt="" 
                           />
                         </div>
                       )}
-                      <span className="flex-1">{getDisplayLabel(item)}</span>
+                      <span className="dy-flex-1">{getDisplayLabel(item)}</span>
                       <Check
                         className={cn(
-                          "h-4 w-4",
+                          "dy-h-4 dy-w-4",
                           values.includes(item.id) ? "opacity-100" : "opacity-0"
                         )}
                       />
