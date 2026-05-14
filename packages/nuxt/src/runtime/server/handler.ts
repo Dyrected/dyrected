@@ -8,7 +8,13 @@ let app: any;
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig().dyrected;
   if (!app) {
-    const dyrectedConfig = { ...config };
+    let dyrectedConfig = { ...config };
+    
+    // Merge from global config if available
+    if ((globalThis as any).__dyrected_config) {
+      dyrectedConfig = { ...dyrectedConfig, ...(globalThis as any).__dyrected_config };
+    }
+
     // Re-hydrate DB from global context if missing (populated by the Nitro plugin)
     if (!dyrectedConfig.db || typeof (dyrectedConfig.db as any).find !== "function") {
       dyrectedConfig.db = (globalThis as any).__dyrected_db;

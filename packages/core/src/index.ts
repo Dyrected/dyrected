@@ -24,3 +24,4 @@ export function defineConfig(config: DyrectedConfig): DyrectedConfig {
 export * from './types/index.js';
 export * from './utils/setup-prompt.js';
 export * from './utils/config.js';
+export * from './app.js';

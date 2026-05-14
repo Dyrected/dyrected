@@ -1,7 +1,12 @@
-import tailwindcss from '@tailwindcss/vite'
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+  modules: ["@dyrected/nuxt"],
+  dyrected: {
+    apiBase: "/dyrected",
+    baseUrl: process.env.NUXT_PUBLIC_DYRECTED_URL || "http://localhost:3009",
+  },
+  compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   vite: {
     plugins: [tailwindcss()],
@@ -9,5 +14,5 @@ export default defineNuxtConfig({
   devServer: {
     port: 3009,
   },
-  css: ['~/assets/css/main.css'],
-})
+  css: ["~/assets/css/main.css"],
+});

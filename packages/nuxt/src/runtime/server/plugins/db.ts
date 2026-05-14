@@ -14,13 +14,17 @@ export default defineNitroPlugin(async (nitroApp: any) => {
       // Use pathToFileURL to ensure Windows absolute paths are valid file:// URLs for import()
       const { pathToFileURL } = await import("url");
       const { default: userConfig } = await import(pathToFileURL(configPath).href);
-      if (userConfig && userConfig.db) {
-        (globalThis as any).__dyrected_db = userConfig.db;
-        console.log("[dyrected/nuxt] Database re-attached to global context");
-      }
-      if (userConfig && userConfig.storage) {
-        (globalThis as any).__dyrected_storage = userConfig.storage;
-        console.log("[dyrected/nuxt] Storage adapter re-attached to global context");
+      if (userConfig) {
+        (globalThis as any).__dyrected_config = userConfig;
+        
+        if (userConfig.db) {
+          (globalThis as any).__dyrected_db = userConfig.db;
+          console.log("[dyrected/nuxt] Database re-attached to global context");
+        }
+        if (userConfig.storage) {
+          (globalThis as any).__dyrected_storage = userConfig.storage;
+          console.log("[dyrected/nuxt] Storage adapter re-attached to global context");
+        }
       }
     } catch (err) {
       console.error("[dyrected/nuxt] Failed to re-attach database:", err);

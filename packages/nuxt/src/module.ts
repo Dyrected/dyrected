@@ -117,17 +117,51 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     };
 
     // 6. Ensure @dyrected/admin is resolved by Vite/Nuxt
-    nuxt.options.build.transpile.push("@dyrected/admin");
-    
-    // 7. Vite-specific optimization (only if the host is using Vite)
-    if (nuxt.options.vite !== false) {
+    // (Removed build.transpile to prevent unctx and auto-import conflicts on the large React bundle)
+
+    // 7. Vite-specific optimization — exclude @dyrected/admin from dep optimization.
+    // It's a pre-built ESM library; Vite should serve it as-is without re-bundling.
+    if (nuxt.options.vite) {
       nuxt.options.vite = nuxt.options.vite || {};
       nuxt.options.vite.optimizeDeps = nuxt.options.vite.optimizeDeps || {};
-      nuxt.options.vite.optimizeDeps.include = nuxt.options.vite.optimizeDeps.include || [];
-      if (!nuxt.options.vite.optimizeDeps.include.includes("@dyrected/admin")) {
-        nuxt.options.vite.optimizeDeps.include.push("@dyrected/admin");
+      nuxt.options.vite.optimizeDeps.exclude = nuxt.options.vite.optimizeDeps.exclude || [];
+      if (!nuxt.options.vite.optimizeDeps.exclude.includes("@dyrected/admin")) {
+        nuxt.options.vite.optimizeDeps.exclude.push("@dyrected/admin");
       }
     }
+
+    // 8. Patch the unctx:transform plugin to skip @dyrected/admin's dist bundle.
+    // unctx injects Vue composable identifiers (toValue, h, ref, …) at the top of
+    // every file it processes. The admin bundle is a pre-built React library whose
+    // internal variable names can collide with those injections, causing a
+    // "Identifier has already been declared" parse error. We intercept the plugin
+    // *after* Nuxt has registered it and wrap its transform to bail out early for
+    // any file that comes from the admin package.
+    nuxt.hook("vite:extendConfig", (config) => {
+      const plugins = (config.plugins ?? []) as any[];
+      const unctxPlugin = plugins.find(
+        (p: any) => p && typeof p === "object" && p.name === "unctx:transform"
+      ) as any;
+      if (!unctxPlugin) return;
+
+      const isAdminFile = (id: string) =>
+        id.includes("@dyrected/admin") || id.includes("/packages/admin/dist/");
+
+      // The transform field can be either a plain function or a {order, handler} object (Vite 5+).
+      if (typeof unctxPlugin.transform === "function") {
+        const original = unctxPlugin.transform;
+        unctxPlugin.transform = function (code: string, id: string, ...rest: any[]) {
+          if (isAdminFile(id)) return null;
+          return original.call(this, code, id, ...rest);
+        };
+      } else if (unctxPlugin.transform && typeof unctxPlugin.transform.handler === "function") {
+        const originalHandler = unctxPlugin.transform.handler;
+        unctxPlugin.transform.handler = function (code: string, id: string, ...rest: any[]) {
+          if (isAdminFile(id)) return null;
+          return originalHandler.call(this, code, id, ...rest);
+        };
+      }
+    });
   },
 });
 
