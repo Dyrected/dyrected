@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../../components/ui/button";
-import { generateAIPrompt, generateFreshSetupPrompt, type SetupPromptConfig } from "@dyrected/core";
+import { generateAIPrompt, generateFreshSetupPrompt, type SetupPromptConfig } from "@dyrected/sdk";
 
 export type { SetupPromptConfig };
 

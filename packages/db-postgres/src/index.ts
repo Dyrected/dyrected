@@ -1,21 +1,15 @@
-import { DatabaseAdapter, PaginatedResult } from '@dyrected/core';
+import { DatabaseAdapter, PaginatedResult, parseSqlWhere } from '@dyrected/core';
 import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { sql } from 'drizzle-orm';
 
 export interface PostgresAdapterConfig {
   url: string;
 }
 
 export class PostgresAdapter implements DatabaseAdapter {
-  private db: any;
   private sql: postgres.Sql;
 
   constructor(config: PostgresAdapterConfig) {
     this.sql = postgres(config.url);
-    // Drizzle is initialized for future-proofing and metadata handling,
-    // but we use raw SQL (this.sql) for CRUD to support dynamic runtime schemas.
-    this.db = drizzle(this.sql);
     this.initInternalTables();
   }
 
@@ -37,7 +31,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     return this.sql(`collection_${slug}`);
   }
 
-  private async ensureTable(slug: string) {
+  private async ensureTable(slug: string, fields: any[] = []) {
     const table = this.getTableIdentifier(slug);
     await this.sql`
       CREATE TABLE IF NOT EXISTS ${table} (
@@ -47,6 +41,25 @@ export class PostgresAdapter implements DatabaseAdapter {
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
     `;
+
+    // Handle Promoted Fields
+    const cols = await this.sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = ${`collection_${slug}`}
+    `;
+    const existingCols = cols.map(c => c.column_name);
+
+    for (const field of fields) {
+      if (field.promoted && !existingCols.includes(field.name)) {
+        console.log(`[dyrected/postgres] Promoting field "${field.name}" to column in ${slug}`);
+        let sqlType = 'TEXT';
+        if (field.type === 'number') sqlType = 'NUMERIC';
+        if (field.type === 'boolean') sqlType = 'BOOLEAN';
+        
+        await this.sql.unsafe(`ALTER TABLE ${slug.includes('.') ? slug : `collection_${slug}`} ADD COLUMN "${field.name}" ${sqlType}`);
+      }
+    }
   }
 
   async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
@@ -55,40 +68,54 @@ export class PostgresAdapter implements DatabaseAdapter {
     const page = args.page || 1;
     const offset = (page - 1) * limit;
 
-    let whereClause = this.sql``;
-    if (args.where) {
-      const conditions = Object.entries(args.where).map(([key, value]) => {
-        if (key === 'id') return this.sql`id = ${value as any}`;
-        return this.sql`data->>${key} = ${value as any}`;
-      });
-      if (conditions.length > 0) {
-        whereClause = this.sql`WHERE ${conditions.reduce((acc, curr) => this.sql`${acc} AND ${curr}`)}`;
-      }
+    // Inspect columns for promoted fields
+    const cols = await this.sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = ${`collection_${args.collection}`}
+    `;
+    const existingCols = cols.map(c => c.column_name);
+
+    // Build parameterized WHERE using the shared DSL translator (Postgres JSON path)
+    let whereFragment = this.sql``;
+    if (args.where && Object.keys(args.where).length > 0) {
+      const { sql: whereSql, params } = parseSqlWhere(
+        args.where,
+        (field: string) => {
+          if (existingCols.includes(field) && !['id', 'data'].includes(field)) {
+            return `"${field}"`;
+          }
+          return `data->>'${field}'`;
+        },
+        'pg',
+      );
+      whereFragment = this.sql`WHERE ${this.sql.unsafe(whereSql, params)}`;
     }
 
-    // Fetch total count
-    const countRes = await this.sql`SELECT count(*) as total FROM ${table} ${whereClause}`;
+    // Fetch total count with same filter
+    const countRes = await this.sql`SELECT count(*) as total FROM ${table} ${whereFragment}`;
     const total = parseInt(countRes[0].total);
 
-    // Fetch data
+    // Normalize sort field names from camelCase to snake_case
     let sort = args.sort || 'createdAt DESC';
-    sort = sort.replace('createdAt', 'created_at').replace('updatedAt', 'updated_at');
+    sort = sort.replace(/\bcreatedAt\b/g, 'created_at').replace(/\bupdatedAt\b/g, 'updated_at');
+
     const rows = await this.sql`
-      SELECT * FROM ${table} 
-      ${whereClause} 
+      SELECT * FROM ${table}
+      ${whereFragment}
       ORDER BY ${this.sql.unsafe(sort)}
       LIMIT ${limit} OFFSET ${offset}
     `;
 
     const totalPages = Math.ceil(total / limit);
     return {
-      docs: rows.map(r => ({ id: r.id, ...r.data })),
+      docs: rows.map((r) => ({ id: r.id, ...r.data })),
       total,
       limit,
       page,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPrevPage: page > 1
+      hasPrevPage: page > 1,
     };
   }
 
@@ -102,19 +129,77 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async create(params: { collection: string; data: any }) {
     const table = this.getTableIdentifier(params.collection);
+    
+    // Inspect columns for promoted fields
+    const cols = await this.sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = ${`collection_${params.collection}`}
+    `;
+    const existingCols = cols.map(c => c.column_name);
+
     const id = params.data.id || Math.random().toString(36).substring(7);
     const data = { ...params.data };
     delete data.id;
 
-    await this.sql`INSERT INTO ${table} (id, data) VALUES (${id}, ${data})`;
+    // Extract promoted fields
+    const promotedValues: Record<string, any> = {};
+    for (const col of existingCols) {
+      if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
+      if (data[col] !== undefined) {
+        promotedValues[col] = data[col];
+      }
+    }
+
+    if (Object.keys(promotedValues).length > 0) {
+      const allData = { id, data, ...promotedValues };
+      await this.sql`INSERT INTO ${table} ${this.sql(allData)}`;
+    } else {
+      await this.sql`INSERT INTO ${table} (id, data) VALUES (${id}, ${data})`;
+    }
 
     return { id, ...data };
   }
 
   async update(params: { collection: string; id: string; data: any }) {
     const table = this.getTableIdentifier(params.collection);
-    await this.sql`UPDATE ${table} SET data = data || ${params.data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
+    
+    // Inspect columns for promoted fields
+    const cols = await this.sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = ${`collection_${params.collection}`}
+    `;
+    const existingCols = cols.map(c => c.column_name);
+
+    const data = { ...params.data };
+    const promotedValues: Record<string, any> = {};
+    for (const col of existingCols) {
+      if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
+      if (data[col] !== undefined) {
+        promotedValues[col] = data[col];
+      }
+    }
+
+    if (Object.keys(promotedValues).length > 0) {
+      await this.sql`
+        UPDATE ${table} 
+        SET data = data || ${data}::jsonb, 
+            updated_at = CURRENT_TIMESTAMP,
+            ${this.sql(promotedValues)}
+        WHERE id = ${params.id}
+      `;
+    } else {
+      await this.sql`UPDATE ${table} SET data = data || ${data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
+    }
+
     return { id: params.id, ...params.data };
+  }
+
+  async sync(collections: any[]) {
+    for (const col of collections) {
+      await this.ensureTable(col.slug, col.fields);
+    }
   }
 
   async delete(params: { collection: string; id: string }) {

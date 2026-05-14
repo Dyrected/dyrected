@@ -1,21 +1,16 @@
 import { DatabaseAdapter, CollectionConfig, GlobalConfig } from '@dyrected/core';
+import { parseSqlWhere } from '@dyrected/core';
 import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { sql } from 'drizzle-orm';
 
 export interface SqliteAdapterConfig {
   filename: string;
 }
 
 export class SqliteAdapter implements DatabaseAdapter {
-  private db: any;
   private sqlite: Database.Database;
 
   constructor(config: SqliteAdapterConfig) {
     this.sqlite = new Database(config.filename);
-    // Drizzle is initialized for future-proofing and metadata handling,
-    // but we use raw better-sqlite3 (this.sqlite) for CRUD to support dynamic runtime schemas.
-    this.db = drizzle(this.sqlite);
     this.initInternalTables();
   }
 
@@ -34,11 +29,8 @@ export class SqliteAdapter implements DatabaseAdapter {
     return `collection_${slug}`;
   }
 
-  private async ensureTable(slug: string) {
+  private async ensureTable(slug: string, fields: any[] = []) {
     const tableName = this.getTableName(slug);
-    // Simple dynamic table creation for MVP
-    // In a real scenario, we'd map fields to columns.
-    // For now, we'll use a JSON 'data' column for flexibility.
     this.sqlite.exec(`
       CREATE TABLE IF NOT EXISTS ${tableName} (
         id TEXT PRIMARY KEY,
@@ -59,32 +51,77 @@ export class SqliteAdapter implements DatabaseAdapter {
     if (!hasUpdatedAt) {
       this.sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`);
     }
+
+    // Handle Promoted Fields
+    for (const field of fields) {
+      if (field.promoted) {
+        const hasColumn = tableInfo.some(col => col.name === field.name);
+        if (!hasColumn) {
+          console.log(`[dyrected/sqlite] Promoting field "${field.name}" to column in ${tableName}`);
+          // Simplified type mapping
+          let sqlType = 'TEXT';
+          if (field.type === 'number') sqlType = 'NUMERIC';
+          if (field.type === 'boolean') sqlType = 'INTEGER';
+          
+          this.sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN ${field.name} ${sqlType}`);
+        }
+      }
+    }
   }
 
   async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }) {
     await this.ensureTable(args.collection);
     const tableName = this.getTableName(args.collection);
-    
+
     const limit = args.limit || 10;
     const page = args.page || 1;
     const offset = (page - 1) * limit;
 
-    // Count total
-    const countStmt = this.sqlite.prepare(`SELECT COUNT(*) as count FROM ${tableName}`);
-    const { count } = countStmt.get() as { count: number };
+    // Inspect columns for promoted fields
+    const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
+    const columns = tableInfo.map(col => col.name);
 
-    // Fetch data
-    const sort = args.sort || 'created_at DESC';
-    const stmt = this.sqlite.prepare(`SELECT * FROM ${tableName} ORDER BY ${sort} LIMIT ? OFFSET ?`);
-    const rows = stmt.all(limit, offset) as any[];
-    const docs = rows.map(r => ({ 
-      id: r.id, 
+    // Build WHERE clause from the DSL (sqlite dialect: json_extract)
+    let whereSql = '';
+    let whereParams: any[] = [];
+    if (args.where && Object.keys(args.where).length > 0) {
+      const result = parseSqlWhere(
+        args.where,
+        (field: string) => {
+          if (columns.includes(field) && !['id', 'data'].includes(field)) {
+            return field;
+          }
+          return `json_extract(data, '$.${field}')`;
+        },
+        '?',
+      );
+      whereSql = `WHERE ${result.sql}`;
+      whereParams = result.params;
+    }
+
+    // Normalize sort — json fields live inside the data blob
+    const rawSort = args.sort || 'created_at DESC';
+    const sort = rawSort
+      .replace(/\bcreatedAt\b/g, 'created_at')
+      .replace(/\bupdatedAt\b/g, 'updated_at');
+
+    // Count with same filter so pagination totals are accurate
+    const { count } = this.sqlite
+      .prepare(`SELECT COUNT(*) as count FROM ${tableName} ${whereSql}`)
+      .get(...whereParams) as { count: number };
+
+    const rows = this.sqlite
+      .prepare(`SELECT * FROM ${tableName} ${whereSql} ORDER BY ${sort} LIMIT ? OFFSET ?`)
+      .all(...whereParams, limit, offset) as any[];
+
+    const docs = rows.map((r) => ({
+      id: r.id,
       ...JSON.parse(r.data),
       createdAt: r.created_at,
-      updatedAt: r.updated_at
+      updatedAt: r.updated_at,
     }));
-    const totalPages = Math.ceil(count / limit);
 
+    const totalPages = Math.ceil(count / limit);
     return {
       docs,
       total: count,
@@ -92,7 +129,7 @@ export class SqliteAdapter implements DatabaseAdapter {
       page,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPrevPage: page > 1
+      hasPrevPage: page > 1,
     };
   }
 
@@ -114,6 +151,11 @@ export class SqliteAdapter implements DatabaseAdapter {
   async create(params: { collection: string; data: any }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
+    
+    // Inspect columns to handle promoted fields
+    const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
+    const columns = tableInfo.map(col => col.name);
+    
     const id = params.data.id || Math.random().toString(36).substring(7);
     const now = new Date().toISOString();
     const createdAt = params.data.createdAt || now;
@@ -124,8 +166,23 @@ export class SqliteAdapter implements DatabaseAdapter {
     delete data.createdAt;
     delete data.updatedAt;
 
-    const stmt = this.sqlite.prepare(`INSERT INTO ${tableName} (id, data, created_at, updated_at) VALUES (?, ?, ?, ?)`);
-    stmt.run(id, JSON.stringify(data), createdAt, updatedAt);
+    // Extract promoted fields
+    const promotedValues: Record<string, any> = {};
+    for (const col of columns) {
+      if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
+      if (data[col] !== undefined) {
+        promotedValues[col] = data[col];
+        // We keep it in the JSON blob for now to ensure compatibility, 
+        // but it's now also in a real column for indexing.
+      }
+    }
+
+    const colNames = ['id', 'data', 'created_at', 'updated_at', ...Object.keys(promotedValues)];
+    const placeholders = colNames.map(() => '?').join(', ');
+    const values = [id, JSON.stringify(data), createdAt, updatedAt, ...Object.values(promotedValues)];
+
+    const stmt = this.sqlite.prepare(`INSERT INTO ${tableName} (${colNames.join(', ')}) VALUES (${placeholders})`);
+    stmt.run(...values);
 
     return { id, ...data, createdAt, updatedAt };
   }
@@ -133,6 +190,11 @@ export class SqliteAdapter implements DatabaseAdapter {
   async update(params: { collection: string; id: string; data: any }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
+    
+    // Inspect columns for promoted fields
+    const tableInfo = this.sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as any[];
+    const columns = tableInfo.map(col => col.name);
+
     const existing = await this.findOne({ collection: params.collection, id: params.id });
     const now = new Date().toISOString();
     const newData = { ...(existing || {}), ...params.data };
@@ -140,8 +202,21 @@ export class SqliteAdapter implements DatabaseAdapter {
     delete (newData as any).createdAt;
     delete (newData as any).updatedAt;
 
-    const stmt = this.sqlite.prepare(`UPDATE ${tableName} SET data = ?, updated_at = ? WHERE id = ?`);
-    stmt.run(JSON.stringify(newData), now, params.id);
+    // Extract promoted fields
+    const promotedValues: Record<string, any> = {};
+    for (const col of columns) {
+      if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
+      if (newData[col] !== undefined) {
+        promotedValues[col] = newData[col];
+      }
+    }
+
+    const setClauses = ['data = ?', 'updated_at = ?', ...Object.keys(promotedValues).map(k => `${k} = ?`)];
+    const values = [JSON.stringify(newData), now, ...Object.values(promotedValues), params.id];
+
+    const stmt = this.sqlite.prepare(`UPDATE ${tableName} SET ${setClauses.join(', ')} WHERE id = ?`);
+    stmt.run(...values);
+    
     return { id: params.id, ...newData, createdAt: existing?.createdAt, updatedAt: now };
   }
 

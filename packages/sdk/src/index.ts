@@ -1,24 +1,16 @@
-import qs from 'qs';
-import { 
-  PaginatedResult, 
+import qs from "qs";
+import {
+  PaginatedResult,
   FileData as Media,
   Field,
   Block,
   CollectionConfig,
   GlobalConfig,
-  FieldType
-} from '@dyrected/core';
-import { QueryBuilder, QueryArgs } from './query-builder.js';
+  FieldType,
+} from "@dyrected/core";
+import { QueryBuilder, QueryArgs } from "./query-builder.js";
 
-export type { 
-  PaginatedResult, 
-  Media,
-  Field,
-  Block,
-  CollectionConfig,
-  GlobalConfig,
-  FieldType
-};
+export type { PaginatedResult, Media, Field, Block, CollectionConfig, GlobalConfig, FieldType };
 
 /**
  * Structured error thrown by the SDK when the server returns a non-2xx response.
@@ -27,13 +19,9 @@ export class DyrectedError extends Error {
   readonly statusCode: number;
   readonly errors: { field?: string; message: string }[];
 
-  constructor(
-    message: string,
-    statusCode: number,
-    errors: { field?: string; message: string }[] = [],
-  ) {
+  constructor(message: string, statusCode: number, errors: { field?: string; message: string }[] = []) {
     super(message);
-    this.name = 'DyrectedError';
+    this.name = "DyrectedError";
     this.statusCode = statusCode;
     this.errors = errors;
   }
@@ -61,13 +49,13 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
   private defaultDepth: number;
 
   constructor(config: DyrectedClientConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '');
+    this.baseUrl = config.baseUrl.replace(/\/$/, "");
     this.fetch = config.fetch || fetch;
     this.defaultDepth = config.defaultDepth ?? 1;
     this.headers = {
-      'Content-Type': 'application/json',
-      ...(config.apiKey ? { 'x-api-key': config.apiKey } : {}),
-      ...(config.siteId ? { 'x-site-id': config.siteId } : {}),
+      "Content-Type": "application/json",
+      ...(config.apiKey ? { "x-api-key": config.apiKey } : {}),
+      ...(config.siteId ? { "x-site-id": config.siteId } : {}),
       ...config.headers,
     };
   }
@@ -77,7 +65,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
    * Call this after a successful login.
    */
   setToken(token: string): void {
-    this.headers['Authorization'] = `Bearer ${token}`;
+    this.headers["Authorization"] = `Bearer ${token}`;
   }
 
   /**
@@ -85,15 +73,15 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
    * Call this after logout.
    */
   clearToken(): void {
-    delete this.headers['Authorization'];
+    delete this.headers["Authorization"];
   }
 
   getBaseUrl() {
     return this.baseUrl;
   }
 
-  async getSchemas(): Promise<{ collections: any[], globals: any[] }> {
-    return this.request('/api/schemas');
+  async getSchemas(): Promise<{ collections: any[]; globals: any[] }> {
+    return this.request("/api/schemas");
   }
 
   /**
@@ -104,20 +92,22 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     return this.request(`/api/preview-data?token=${token}`);
   }
 
-  async find<K extends keyof TSchema['collections']>(
-    collection: K & string, 
-    args: QueryArgs = {}
-  ): Promise<PaginatedResult<TSchema['collections'][K]>> {
+  async find<K extends keyof TSchema["collections"]>(
+    collection: K & string,
+    args: QueryArgs = {},
+  ): Promise<PaginatedResult<TSchema["collections"][K]>> {
     const { initialData, ...queryArgs } = args;
-    
+
     // Normalize where clause for the server (expects JSON string)
     const normalizedArgs = { ...queryArgs };
-    if (normalizedArgs.where && typeof normalizedArgs.where === 'object') {
+    if (normalizedArgs.where && typeof normalizedArgs.where === "object") {
       normalizedArgs.where = JSON.stringify(normalizedArgs.where);
     }
 
     const query = qs.stringify(normalizedArgs, { addQueryPrefix: true });
-    const res = (await this.request(`/api/collections/${collection}${query}`)) as PaginatedResult<TSchema['collections'][K]>;
+    const res = (await this.request(`/api/collections/${collection}${query}`)) as PaginatedResult<
+      TSchema["collections"][K]
+    >;
 
     if (res.docs.length === 0 && initialData && initialData.length > 0) {
       // Trigger background seed
@@ -143,10 +133,10 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
   /**
    * Returns a fluent query builder for a collection.
    */
-  collection<K extends keyof TSchema['collections']>(slug: K & string) {
+  collection<K extends keyof TSchema["collections"]>(slug: K & string) {
     return {
       find: (args?: QueryArgs) => {
-        const qb = new QueryBuilder<TSchema['collections'][K]>(slug, (c, a) => this.find(c as any, a));
+        const qb = new QueryBuilder<TSchema["collections"][K]>(slug, (c, a) => this.find(c as any, a));
         if (args) {
           if (args.where) qb.where(args.where);
           if (args.sort) qb.sort(args.sort);
@@ -157,50 +147,47 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
         }
         return qb;
       },
-      findOne: (id: string, args: { depth?: number; initialData?: TSchema['collections'][K] } = {}) => 
-        this.findOne<TSchema['collections'][K]>(slug, id, args),
-      create: (data: any) => this.create<TSchema['collections'][K]>(slug, data),
-      update: (id: string, data: any) => this.update<TSchema['collections'][K]>(slug, id, data),
+      findOne: (id: string, args: { depth?: number; initialData?: TSchema["collections"][K] } = {}) =>
+        this.findOne<TSchema["collections"][K]>(slug, id, args),
+      create: (data: any) => this.create<TSchema["collections"][K]>(slug, data),
+      update: (id: string, data: any) => this.update<TSchema["collections"][K]>(slug, id, data),
       delete: (id: string) => this.delete(slug, id),
+      deleteMany: (ids: string[]) => this.deleteMany(slug, ids),
       /**
        * Upload a file to this collection. Sends as multipart/form-data.
        * @param file - A File or Blob (browser) or Buffer with filename/mimeType (Node.js)
        * @param data - Additional metadata fields to save alongside the file (e.g. alt, caption)
        */
-      upload: (file: File | Blob, data?: Record<string, string>) =>
-        this._upload(slug, file, data),
+      upload: (file: File | Blob, data?: Record<string, string>) => this._upload(slug, file, data),
       // ---- Auth methods (only meaningful when the collection has auth: true) ----
       /**
        * Log in with email + password. Returns a JWT token and the user document.
        * Call `client.setToken(token)` afterwards to authenticate subsequent requests.
        */
-      login: (email: string, password: string): Promise<{ token: string; user: TSchema['collections'][K] }> =>
+      login: (email: string, password: string): Promise<{ token: string; user: TSchema["collections"][K] }> =>
         this.request(`/api/collections/${slug}/login`, {
-          method: 'POST',
+          method: "POST",
           body: JSON.stringify({ email, password }),
         }),
       /** Log out. Stateless — token must be discarded client-side; call client.clearToken() too. */
-      logout: (): Promise<{ success: boolean }> =>
-        this.request(`/api/collections/${slug}/logout`, { method: 'POST' }),
+      logout: (): Promise<{ success: boolean }> => this.request(`/api/collections/${slug}/logout`, { method: "POST" }),
       /** Return the currently authenticated user (requires a token via setToken). */
-      me: (): Promise<TSchema['collections'][K]> =>
-        this.request(`/api/collections/${slug}/me`),
+      me: (): Promise<TSchema["collections"][K]> => this.request(`/api/collections/${slug}/me`),
       /** Issue a fresh token for the currently authenticated user. */
       refreshToken: (): Promise<{ token: string }> =>
-        this.request(`/api/collections/${slug}/refresh-token`, { method: 'POST' }),
+        this.request(`/api/collections/${slug}/refresh-token`, { method: "POST" }),
       /** Check if this auth collection has any users (initialized). */
-      isInitialized: (): Promise<{ initialized: boolean }> =>
-        this.request(`/api/collections/${slug}/init`),
+      isInitialized: (): Promise<{ initialized: boolean }> => this.request(`/api/collections/${slug}/init`),
       /** Register the very first user in an empty auth collection. */
-      registerFirstUser: (data: any): Promise<{ token: string; user: TSchema['collections'][K] }> =>
+      registerFirstUser: (data: any): Promise<{ token: string; user: TSchema["collections"][K] }> =>
         this.request(`/api/collections/${slug}/first-user`, {
-          method: 'POST',
+          method: "POST",
           body: JSON.stringify(data),
         }),
       /** Send an invitation email to a new user. Requires authentication. */
       invite: (email: string): Promise<{ success: boolean; message: string }> =>
         this.request(`/api/collections/${slug}/invite`, {
-          method: 'POST',
+          method: "POST",
           body: JSON.stringify({ email }),
         }),
       /** Accept an invitation and create an account. Returns token + user. */
@@ -208,32 +195,31 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
         token: string,
         password: string,
         extraFields?: Record<string, any>,
-      ): Promise<{ token: string; user: TSchema['collections'][K] }> =>
+      ): Promise<{ token: string; user: TSchema["collections"][K] }> =>
         this.request(`/api/collections/${slug}/accept-invite`, {
-          method: 'POST',
+          method: "POST",
           body: JSON.stringify({ token, password, ...extraFields }),
         }),
     };
   }
-
 
   /**
    * Access a global by its slug with a fluent builder.
    * @example client.global('site-settings').get()
    * @example client.global('site-settings').update({ siteName: 'My Site' })
    */
-  global<K extends keyof TSchema['globals']>(slug: K & string) {
+  global<K extends keyof TSchema["globals"]>(slug: K & string) {
     return {
-      get: (args: { depth?: number; initialData?: TSchema['globals'][K] } = {}) => 
-        this.getGlobal<TSchema['globals'][K]>(slug, args),
-      update: (data: any) => this.updateGlobal<TSchema['globals'][K]>(slug, data),
+      get: (args: { depth?: number; initialData?: TSchema["globals"][K] } = {}) =>
+        this.getGlobal<TSchema["globals"][K]>(slug, args),
+      update: (data: any) => this.updateGlobal<TSchema["globals"][K]>(slug, data),
     };
   }
 
   async findOne<T = any>(collection: string, id: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
     const { initialData, ...queryArgs } = args;
     const query = qs.stringify(queryArgs, { addQueryPrefix: true });
-    
+
     try {
       return await this.request(`/api/collections/${collection}/${id}${query}`);
     } catch (err) {
@@ -242,8 +228,10 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
         this.request(`/api/collections/${collection}/seed`, {
           method: "POST",
           body: JSON.stringify({ data: [{ id, ...initialData }] }),
-        }).catch((err) => console.error(`[dyrected/sdk] Failed to auto-seed document "${id}" in collection "${collection}":`, err));
-        
+        }).catch((err) =>
+          console.error(`[dyrected/sdk] Failed to auto-seed document "${id}" in collection "${collection}":`, err),
+        );
+
         return initialData;
       }
       throw err;
@@ -252,28 +240,35 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
   async create<T = any>(collection: string, data: any): Promise<T> {
     return this.request(`/api/collections/${collection}`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async update<T = any>(collection: string, id: string, data: any): Promise<T> {
     return this.request(`/api/collections/${collection}/${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
   async delete(collection: string, id: string): Promise<{ message: string }> {
     return this.request(`/api/collections/${collection}/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
+    });
+  }
+
+  async deleteMany(collection: string, ids: string[]): Promise<{ message: string }> {
+    return this.request(`/api/collections/${collection}/delete-many`, {
+      method: "DELETE",
+      body: qs.stringify({ ids }),
     });
   }
 
   async getGlobal<T = any>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
     const { initialData, ...queryArgs } = args;
     const query = qs.stringify(queryArgs, { addQueryPrefix: true });
-    
+
     try {
       const res = await this.request(`/api/globals/${slug}${query}`);
       // Check if global is empty (some adapters return {} for missing globals)
@@ -299,30 +294,26 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
   async updateGlobal<T = any>(slug: string, data: any): Promise<T> {
     return this.request(`/api/globals/${slug}`, {
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
-  async listMedia(args: QueryArgs = {}, collection: string = 'media'): Promise<PaginatedResult<Media>> {
+  async listMedia(args: QueryArgs = {}, collection: string = "media"): Promise<PaginatedResult<Media>> {
     return this.find(collection as any, args) as any;
   }
 
   /** @deprecated Use client.collection('media').upload(file, data) instead */
-  async uploadMedia(file: File, collection: string = 'media'): Promise<Media> {
+  async uploadMedia(file: File, collection: string = "media"): Promise<Media> {
     return this._upload(collection, file);
   }
 
   /**
    * Internal upload implementation shared by collection().upload() and uploadMedia().
    */
-  private async _upload(
-    collection: string,
-    file: File | Blob,
-    data?: Record<string, string>,
-  ): Promise<any> {
+  private async _upload(collection: string, file: File | Blob, data?: Record<string, string>): Promise<any> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     // Append any extra metadata fields (e.g. alt, caption)
     if (data) {
@@ -332,19 +323,19 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     }
 
     // Remove Content-Type so the browser/fetch sets the multipart boundary automatically
-    const { 'Content-Type': _, ...headers } = this.headers;
+    const { "Content-Type": _, ...headers } = this.headers;
 
     return this.request(`/api/collections/${collection}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         ...headers,
-        'Content-Type': undefined as any,
+        "Content-Type": undefined as any,
       },
       body: formData,
     });
   }
 
-  async deleteMedia(id: string, collection: string = 'media'): Promise<{ message: string }> {
+  async deleteMedia(id: string, collection: string = "media"): Promise<{ message: string }> {
     return this.delete(collection, id);
   }
 
@@ -368,7 +359,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     });
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({ message: 'Unknown error' }));
+      const body = await res.json().catch(() => ({ message: "Unknown error" }));
       throw new DyrectedError(
         body.message || `Request failed with status ${res.status}`,
         res.status,
@@ -381,7 +372,10 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 }
 
 export function createClient<TSchema extends { collections: any; globals: any } = any>(
-  config: DyrectedClientConfig
+  config: DyrectedClientConfig,
 ): DyrectedClient<TSchema> {
   return new DyrectedClient<TSchema>(config);
 }
+
+// Setup prompt utilities (browser-safe, no server deps)
+export * from "./utils/setup-prompt.js";

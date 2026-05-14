@@ -61,3 +61,44 @@ You can control how your collections appear in the Admin UI:
   }
 }
 ```
+
+## Seeding & Migrations
+
+Dyrected provides built-in tools for managing data over time.
+
+### `initialData` (Auto-Seeding)
+You can provide an array of objects to automatically seed a collection or global when it is first created (or if it is empty).
+
+```typescript
+{
+  slug: 'categories',
+  initialData: [
+    { name: 'News', slug: 'news' },
+    { name: 'Events', slug: 'events' },
+  ],
+  fields: [...]
+}
+```
+
+### `renameTo` (Lazy Migration)
+If you rename a field, use `renameTo` to ensure old data is still readable under the new name.
+
+```typescript
+{
+  name: 'fullName',
+  type: 'text',
+  renameTo: 'name', // Checks 'name' if 'fullName' is missing
+}
+```
+
+### `promoted` (Performance)
+By default, Dyrected stores data in a JSON blob. For fields that need native SQL indexing or unique constraints, set `promoted: true`.
+
+```typescript
+{
+  name: 'slug',
+  type: 'text',
+  unique: true,
+  promoted: true, // Extracted to a real SQL column
+}
+```

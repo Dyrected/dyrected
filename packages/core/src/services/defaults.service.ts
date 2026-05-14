@@ -8,7 +8,16 @@ export class DefaultsService {
     const result = { ...(data || {}) };
 
     fields.forEach((field) => {
-      const value = result[field.name];
+      let value = result[field.name];
+      
+      // If value is missing, check if it was renamed (migration support)
+      if ((value === undefined || value === null) && field.renameTo) {
+        const legacyValue = result[field.renameTo];
+        if (legacyValue !== undefined && legacyValue !== null) {
+          value = legacyValue;
+          result[field.name] = legacyValue;
+        }
+      }
 
       // If value is missing or null, apply defaultValue
       if (value === undefined || value === null) {

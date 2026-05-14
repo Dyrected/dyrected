@@ -215,10 +215,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.get(path, accessGate(collection, 'read'), (c) => controller.find(c));
     app.post(path, accessGate(collection, 'create'), (c) => controller.create(c));
     app.post(`${path}/media`, accessGate(collection, 'create'), (c) => controller.create(c));
+    // delete-many must be registered before /:id to avoid the wildcard swallowing it
+    app.delete(`${path}/delete-many`, accessGate(collection, 'delete'), (c) => controller.deleteMany(c));
     app.get(`${path}/:id`, accessGate(collection, 'read'), (c) => controller.findOne(c));
     app.patch(`${path}/:id`, accessGate(collection, 'update'), (c) => controller.update(c));
     app.delete(`${path}/:id`, accessGate(collection, 'delete'), (c) => controller.delete(c));
-    app.post(`${path}/seed`, (c) => controller.seed(c)); // Seeding usually doesn't need gate or has its own logic
+    app.post(`${path}/seed`, (c) => controller.seed(c));
   }
 
   // 5. Global Routes (Static)
@@ -281,8 +283,10 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         if (id) {
           if (method === "GET") return controller.findOne(c);
           if (method === "PATCH") return controller.update(c);
+          if (method === "DELETE" && id === "delete-many") return controller.deleteMany(c);
           if (method === "DELETE") return controller.delete(c);
           if (method === "POST" && id === "media") return controller.create(c);
+          if (method === "POST" && id === "seed") return controller.seed(c);
         } else {
           if (method === "GET") return controller.find(c);
           if (method === "POST") return controller.create(c);

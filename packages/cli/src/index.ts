@@ -7,7 +7,7 @@ import path from "path";
 import prompts from "prompts";
 import { execSync } from "child_process";
 import { createJiti } from "jiti";
-import { generateAIPrompt } from "@dyrected/core";
+import { generateAIPrompt } from "@dyrected/sdk";
 
 const program = new Command();
 

@@ -74,9 +74,19 @@ export default defineConfig({
 
 ---
 
-### MySQL — `@dyrected/db-mysql` *(coming soon)*
+### MySQL — `@dyrected/db-mysql`
 
-MySQL / PlanetScale support is planned. The package is reserved but not yet implemented. Use PostgreSQL or SQLite in the meantime.
+Best for massive scale and high-concurrency workloads. Supports standard MySQL and PlanetScale (using `mysql2`).
+
+```ts
+import { MySqlAdapter } from '@dyrected/db-mysql'
+
+export default defineConfig({
+  db: new MySqlAdapter({
+    url: process.env.DATABASE_URL,  // mysql://user:pass@host:3306/db
+  }),
+})
+```
 
 ---
 
@@ -93,13 +103,36 @@ await config.db.sync(config.collections, config.globals)
 
 ---
 
-## Migrations
+## Database Migrations
 
-Dyrected does not have a built-in migration runner yet. When you add a new field to a collection, the underlying JSON/JSONB column approach means new fields appear automatically in new documents. However, if you need to add a SQL column (e.g., for a native index), handle it with your preferred migration tool:
+Dyrected uses a "Schema-Flexible" approach. Because data is stored in JSON columns, you can add new fields to your `defineCollection` config without ever running a SQL migration. New fields will simply appear as `null` for old documents and work perfectly for new ones.
 
-- **PostgreSQL:** [node-pg-migrate](https://github.com/salsita/node-pg-migrate), [Flyway](https://flywaydb.org), or raw `ALTER TABLE` scripts
-- **SQLite:** [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) with manual `ALTER TABLE`
-- **MongoDB:** No schema migration required — add fields to your config and they appear in new documents
+However, for production systems, you may eventually need to rename fields or optimize performance. Dyrected provides built-in "Lazy Migrations":
+
+### 1. Renaming Fields (`renameTo`)
+When you rename a field in your config, Dyrected can automatically migrate data from the old key on-the-fly.
+
+```ts
+{
+  name: 'fullName',
+  type: 'text',
+  renameTo: 'name', // If 'fullName' is missing, it reads from 'name'
+}
+```
+
+### 2. Field Promotion (`promoted`)
+If a field becomes critical for performance (e.g., needs a high-speed native index or a unique constraint), you can "promote" it to a real SQL column.
+
+```ts
+{
+  name: 'slug',
+  type: 'text',
+  unique: true,
+  promoted: true, // Dyrected will extract this to a dedicated column
+}
+```
+
+> **Note:** Promoted fields require a one-time SQL migration to create the column. Once created, Dyrected handles the extraction automatically.
 
 ---
 

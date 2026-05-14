@@ -40,6 +40,22 @@ export class CollectionController {
       where,
     });
 
+    // Auto-seeding if empty and initialData is provided
+    if (result.total === 0 && this.collection.initialData && !where && page === 1) {
+      console.log(`[dyrected/core] Auto-seeding collection "${this.collection.slug}" from config.initialData`);
+      for (const data of this.collection.initialData) {
+        await db!.create({ collection: this.collection.slug, data });
+      }
+      // Re-fetch result after seeding
+      result = await db!.find({
+        collection: this.collection.slug,
+        limit,
+        page,
+        sort,
+        where,
+      });
+    }
+
     result.docs = result.docs.map(doc => DefaultsService.apply(this.collection.fields, doc));
 
     if (depth > 0) {
@@ -230,6 +246,66 @@ export class CollectionController {
     }
 
     return c.json({ message: 'Deleted' });
+  }
+
+  async deleteMany(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const user = c.get('user');
+
+    // ids may arrive as a query-string array (?ids[]=a&ids[]=b) or JSON body
+    let ids: string[] = [];
+    try {
+      const body = await c.req.json().catch(() => null);
+      if (body?.ids && Array.isArray(body.ids)) {
+        ids = body.ids;
+      }
+    } catch {
+      // fall through to query-string
+    }
+
+    if (!ids.length) {
+      const raw = c.req.queries('ids') ?? c.req.queries('ids[]') ?? [];
+      ids = raw.filter(Boolean);
+    }
+
+    if (!ids.length) return c.json({ message: 'No IDs provided' }, 400);
+
+    const deleted: string[] = [];
+    const failed: { id: string; error: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        let before: any = null;
+        if (this.collection.audit) {
+          before = await db.findOne({ collection: this.collection.slug, id });
+        }
+
+        await db.delete({ collection: this.collection.slug, id });
+        deleted.push(id);
+
+        if (this.collection.audit) {
+          AuditService.log(db, {
+            operation: 'delete',
+            collection: this.collection.slug,
+            documentId: id,
+            user: user ? { id: user.sub, collection: user.collection, email: user.email } : undefined,
+            before,
+            after: null,
+          });
+        }
+      } catch (err: any) {
+        failed.push({ id, error: err?.message ?? 'Unknown error' });
+      }
+    }
+
+    return c.json({
+      message: `Deleted ${deleted.length} document(s)`,
+      deleted,
+      ...(failed.length ? { failed } : {}),
+    });
   }
 
   async seed(c: Context<DyrectedContext>) {

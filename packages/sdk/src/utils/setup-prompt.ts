@@ -112,10 +112,7 @@ function buildConstraintsSection(): string {
 - RESILIENCE         : If Dyrected backend is unreachable, fall back to
                        initialData and show stale content — never an error page.
                        All relationship fields must handle null gracefully.
-                       Every block renderer must have a default fallback case.
-- AUTO-SEEDING        : Use initialData: [...] in CollectionConfig or GlobalConfig
-                        to automatically populate the database on first run.
-                        This is great for demo content or default settings.`;
+                       Every block renderer must have a default fallback case.`;
 }
 
 function buildSchemaRulesSection(): string {
@@ -125,10 +122,8 @@ function buildSchemaRulesSection(): string {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Never drop existing fields from the schema. Mark unused fields as deprecated only.
 - All new fields must have a defaultValue.
-- Use renameTo: 'oldName' to lazily migrate data when renaming fields.
-- Use promoted: true for fields that need high-performance SQL indexing or unique constraints.
-- For Cloud deployments, run npx @dyrected/cli sync:schema after every config change. Self-hosted deployments sync automatically on startup.
-`;
+- Never rename a field slug — add a new field and migrate data separately.
+- For Cloud deployments, run npx @dyrected/cli sync:schema after every config change. Self-hosted deployments sync automatically on startup.`;
 }
 
 function buildDoNotSection(): string {
@@ -177,8 +172,6 @@ FIELD OPTIONS:
 - unique             — database-level uniqueness constraint
 - hasMany            — allow multiple values (for relationship, select, image)
 - defaultValue       — fallback value (required on all new fields added to existing schemas)
-- promoted           — extracts field to a real SQL column for native indexing (SQL adapters only)
-- renameTo           — name of the old field key to migrate data from (lazy migration)
 - admin.condition    — Jexl expression string to conditionally show/hide field
                        e.g. "status == \\"published\\""
 - admin.readOnly     — display only, not editable
@@ -277,7 +270,6 @@ const settings = defineGlobal({
 export default defineConfig({
   collections: [media, pages],
   globals:     [settings],
-  // Use SqliteAdapter for local, PostgresAdapter or MySqlAdapter for production
   db: new SqliteAdapter({ filename: './dyrected.db' }),
 })
 \`\`\``;

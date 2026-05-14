@@ -54,6 +54,10 @@ export interface Field {
     layout?: "radio" | "select" | string;
     direction?: "horizontal" | "vertical";
   };
+  /** For database migrations: if set, data from this key will be migrated to the current field name. */
+  renameTo?: string;
+  /** For database migrations: if true, this field will be extracted to a real SQL column for performance. */
+  promoted?: boolean;
 }
 
 export type AccessFunction = (args: {
@@ -86,6 +90,8 @@ export interface CollectionConfig {
   upload?: boolean | UploadConfig;
   fields: Field[];
   timestamps?: boolean;
+  /** Initial data to seed this collection with on first fetch if it is empty. */
+  initialData?: any[];
   /** Enable full activity logging to the __audit collection for this collection. */
   audit?: boolean;
   access?: {
@@ -160,6 +166,8 @@ export interface GlobalConfig {
     group?: string;
     hidden?: boolean;
   };
+  /** Initial data to seed this global with on first fetch if it is empty. */
+  initialData?: any;
 }
 
 export interface PaginatedResult<T = any> {

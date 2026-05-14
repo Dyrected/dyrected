@@ -17,7 +17,14 @@ export class GlobalController {
     if (!db) return c.json({ message: "Database not configured" }, 500);
 
     const depth = c.req.query("depth") !== undefined ? Number(c.req.query("depth")) : 1;
-    const data = await db.getGlobal({ slug: this.global.slug });
+    let data = await db.getGlobal({ slug: this.global.slug });
+    const isEmpty = !data || Object.keys(data).length === 0;
+
+    if (isEmpty && this.global.initialData) {
+      console.log(`[dyrected/core] Auto-seeding global "${this.global.slug}" from config.initialData`);
+      await db.updateGlobal({ slug: this.global.slug, data: this.global.initialData });
+      data = this.global.initialData;
+    }
 
     const dataWithDefaults = DefaultsService.apply(this.global.fields, data);
 
