@@ -11,7 +11,14 @@ const media = defineCollection({
 
 const pages = defineCollection({
   slug: "pages",
-  admin: { useAsTitle: "title", group: "Content" },
+  admin: {
+    useAsTitle: "title",
+    group: "Content",
+    previewUrl: (doc: any) => {
+      const slug = doc.slug === "home" ? "" : doc.slug;
+      return `/${slug}`;
+    },
+  },
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },
@@ -214,7 +221,11 @@ const pages = defineCollection({
 
 const blog = defineCollection({
   slug: "blog",
-  admin: { useAsTitle: "title", group: "Content" },
+  admin: {
+    useAsTitle: "title",
+    group: "Content",
+    previewUrl: (doc: any) => `http://localhost:3000/blog/${doc.slug}`,
+  },
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },

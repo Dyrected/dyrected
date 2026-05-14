@@ -28,20 +28,16 @@ useHead({
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-[#050d1a]">
-    <AppNavbar />
-    <main v-if="page">
-      <BlockRenderer v-for="(block, i) in page.layout" :key="i" :block="block" />
-    </main>
-    <div v-else-if="slug === 'home'" class="flex-1 flex items-center justify-center">
-      <div class="min-h-screen flex flex-col items-center justify-center text-center px-6">
-        <h1 class="text-4xl font-black text-white mb-4">Welcome to SnackTrack Pro</h1>
-        <p class="text-slate-400 mb-8">
-          Start by creating a page with the slug "home" in the
-          <a href="/admin" class="text-[#f5c842] underline">Admin Dashboard</a>.
-        </p>
-      </div>
+  <main v-if="page">
+    <BlockRenderer v-for="(block, i) in page.layout" :key="i" :block="block" />
+  </main>
+  <div v-else-if="slug === 'home'" class="flex-1 flex items-center justify-center">
+    <div class="min-h-screen flex flex-col items-center justify-center text-center px-6">
+      <h1 class="text-4xl font-black text-white mb-4">Welcome to SnackTrack Pro</h1>
+      <p class="text-slate-400 mb-8">
+        Start by creating a page with the slug "home" in the
+        <a href="/admin" class="text-[#f5c842] underline">Admin Dashboard</a>.
+      </p>
     </div>
-    <AppFooter />
   </div>
 </template>
