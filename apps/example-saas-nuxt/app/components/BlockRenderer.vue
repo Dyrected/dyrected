@@ -16,6 +16,14 @@ const blockComponents: Record<string, any> = {
   cta: defineAsyncComponent(() => import("~/components/blocks/Cta.vue")),
   pricing: defineAsyncComponent(() => import("~/components/blocks/Pricing.vue")),
   timeline: defineAsyncComponent(() => import("~/components/blocks/Timeline.vue")),
+  logos: defineAsyncComponent(() => import("~/components/blocks/Logos.vue")),
+  stats: defineAsyncComponent(() => import("~/components/blocks/Stats.vue")),
+  team: defineAsyncComponent(() => import("~/components/blocks/Team.vue")),
+  press: defineAsyncComponent(() => import("~/components/blocks/Press.vue")),
+  faq: defineAsyncComponent(() => import("~/components/blocks/Faq.vue")),
+  testimonial: defineAsyncComponent(() => import("~/components/blocks/Testimonial.vue")),
+  comparison: defineAsyncComponent(() => import("~/components/blocks/Comparison.vue")),
+  contactForm: defineAsyncComponent(() => import("~/components/blocks/ContactForm.vue")),
 }
 
 const SelectedBlock = computed(() => blockComponents[props.block.blockType])

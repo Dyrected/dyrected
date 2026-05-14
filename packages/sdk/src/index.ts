@@ -341,6 +341,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
   private async request(path: string, init?: RequestInit): Promise<any> {
     const url = `${this.baseUrl}${path}`;
+    
     const allHeaders: any = {
       ...this.headers,
       ...init?.headers,
@@ -358,16 +359,16 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
       headers: allHeaders,
     });
 
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ message: "Unknown error" }));
-      throw new DyrectedError(
-        body.message || `Request failed with status ${res.status}`,
-        res.status,
-        body.errors || [],
-      );
+    // Support both standard fetch (Response object) and Nuxt $fetch (parsed data)
+    if (res && typeof res.ok === "boolean") {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: "Unknown error" }));
+        throw new DyrectedError(body.message || `Request failed with status ${res.status}`, res.status, body.code);
+      }
+      return res.json();
     }
 
-    return res.json();
+    return res;
   }
 }
 

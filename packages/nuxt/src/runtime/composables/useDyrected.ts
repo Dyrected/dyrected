@@ -1,13 +1,16 @@
 // @ts-ignore
-import { useRuntimeConfig, useAsyncData, useState, useCookie } from '#app'
+import { useRuntimeConfig, useAsyncData, useState, useCookie, useRequestFetch } from '#app'
 import { createClient, type DyrectedClient, type BaseSchema } from '@dyrected/sdk'
 
 function getClient<TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> {
   const config = useRuntimeConfig().public.dyrected
+  const fetcher = useRequestFetch()
+  
   return createClient<TSchema>({
     baseUrl: config.baseUrl,
     apiKey: config.apiKey,
     siteId: config.siteId,
+    fetch: fetcher as any,
   })
 }
 
@@ -48,8 +51,9 @@ export const useDyrectedCollection = <T = any, TSchema extends BaseSchema = any>
   }
 ) => {
   const client = getClient<TSchema>()
+  const key = `dyrected:coll:${collection as string}:${JSON.stringify(options || {})}`
   return useAsyncData(
-    `dyrected:collection:${collection as string}`,
+    key,
     () => client.collection<any>(collection as any).find(options).exec()
   )
 }
@@ -63,8 +67,9 @@ export function useDyrectedGlobal<T = any, TSchema extends BaseSchema = any>(
   options?: { depth?: number; initialData?: T; watch?: any[] }
 ) {
   const client = getClient<TSchema>()
+  const key = `dyrected:global:${slug as string}:${JSON.stringify(options || {})}`
   return useAsyncData<T>(
-    `dyrected:global:${slug as string}`,
+    key,
     () => client.global<any>(slug as any).get(options),
     { watch: options?.watch }
   )

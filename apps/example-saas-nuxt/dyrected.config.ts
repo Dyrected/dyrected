@@ -89,6 +89,102 @@ const pages = defineCollection({
           ],
         },
         {
+          slug: "logos",
+          labels: { singular: "Logo Bar", plural: "Logo Bars" },
+          fields: [
+            { name: "heading", type: "text" },
+            { name: "items", type: "array", fields: [{ name: "name", type: "text" }] },
+          ],
+        },
+        {
+          slug: "stats",
+          labels: { singular: "Stats Grid", plural: "Stats Grids" },
+          fields: [
+            {
+              name: "items",
+              type: "array",
+              fields: [
+                { name: "value", type: "text", required: true },
+                { name: "label", type: "text", required: true },
+              ],
+            },
+          ],
+        },
+        {
+          slug: "team",
+          labels: { singular: "Team Grid", plural: "Team Grids" },
+          fields: [
+            { name: "heading", type: "text" },
+            {
+              name: "members",
+              type: "array",
+              fields: [
+                { name: "name", type: "text", required: true },
+                { name: "role", type: "text" },
+                { name: "bio", type: "textarea" },
+                { name: "initials", type: "text" },
+              ],
+            },
+          ],
+        },
+        {
+          slug: "press",
+          labels: { singular: "Press Mentions", plural: "Press Mentions" },
+          fields: [
+            {
+              name: "items",
+              type: "array",
+              fields: [
+                { name: "publication", type: "text", required: true },
+                { name: "quote", type: "textarea", required: true },
+                { name: "date", type: "text" },
+              ],
+            },
+          ],
+        },
+        {
+          slug: "faq",
+          labels: { singular: "FAQ Accordion", plural: "FAQ Accordions" },
+          fields: [
+            { name: "heading", type: "text" },
+            {
+              name: "items",
+              type: "array",
+              fields: [
+                { name: "question", type: "text", required: true },
+                { name: "answer", type: "textarea", required: true },
+              ],
+            },
+          ],
+        },
+        {
+          slug: "testimonial",
+          labels: { singular: "Testimonial", plural: "Testimonials" },
+          fields: [
+            { name: "quote", type: "textarea", required: true },
+            { name: "author", type: "text", required: true },
+            { name: "role", type: "text" },
+            { name: "initials", type: "text" },
+          ],
+        },
+        {
+          slug: "comparison",
+          labels: { singular: "Comparison Table", plural: "Comparison Tables" },
+          fields: [
+            { name: "heading", type: "text" },
+            {
+              name: "rows",
+              type: "array",
+              fields: [
+                { name: "feature", type: "text", required: true },
+                { name: "snacktrack", type: "boolean" },
+                { name: "competitorA", type: "text", label: "Competitor A Value/Status" },
+                { name: "competitorB", type: "text", label: "Competitor B Value/Status" },
+              ],
+            },
+          ],
+        },
+        {
           slug: "timeline",
           labels: { singular: "Timeline", plural: "Timelines" },
           fields: [
@@ -101,6 +197,14 @@ const pages = defineCollection({
                 { name: "description", type: "textarea" },
               ],
             },
+          ],
+        },
+        {
+          slug: "contactForm",
+          labels: { singular: "Contact Form", plural: "Contact Forms" },
+          fields: [
+            { name: "heading", type: "text", label: "Heading" },
+            { name: "subheading", type: "text", label: "Subheading" },
           ],
         },
       ],

@@ -78,6 +78,14 @@ export default defineEventHandler(async (event) => {
   });
 
   const response = await app.fetch(request);
+  const responseData = await response.clone().json().catch(() => null);
+  
+  if (process.env.DEBUG_DYRECTED) {
+    console.log(`[dyrected/api] ${method} ${path} ${response.status}`);
+    if (responseData) {
+      console.log(`[dyrected/api] Response Docs Count:`, responseData.docs?.length);
+    }
+  }
 
   if (response.status === 404) {
     console.warn(`[dyrected/nuxt] 404 Not Found: ${path}`);
