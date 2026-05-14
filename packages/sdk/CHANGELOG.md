@@ -1,5 +1,16 @@
 # @dyrected/sdk
 
+## 2.3.0
+
+### Minor Changes
+
+- Standardize database infrastructure and implement field promotion.
+  - **Field Promotion**: Added 'promoted' option to Collection fields to extract JSON data into native SQL columns for indexing and performance.
+  - **Lazy Migrations**: Added 'renameTo' support for seamless field renames without breaking existing data.
+  - **Auto-Seeding**: Standardized 'initialData' seeding logic across all adapters.
+  - **MySQL Adapter**: New robust MySQL adapter implementation.
+  - **Strict Filtering**: Improved query translation parity across all SQL-based adapters.
+
 ## 2.0.0
 
 ### Major Changes

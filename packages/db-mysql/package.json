@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/db-mysql",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "MySQL adapter for Dyrected CMS",
   "type": "module",
   "main": "./dist/index.cjs",
