@@ -17,9 +17,9 @@ description: The two ways to run Dyrected and when to pick each.
 
 ## Self-Hosted
 
-The Dyrected engine is an npm package that runs **inside your Next.js or Nuxt app**. There is no separate CMS process. Your config, your database, your server.
+The Dyrected engine is an npm package that runs **inside your Next.js or Nuxt.js app**. There is no separate CMS process. Your config, your database, your server.
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // app/dyrected/[...route]/route.ts
@@ -34,7 +34,7 @@ export const PATCH  = app.fetch
 export const DELETE = app.fetch
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // nuxt.config.ts
 import config from './dyrected.config'
@@ -58,7 +58,7 @@ Self-hosting is free under the [Business Source License](https://mariadb.com/bsl
 
 Your app sends requests to `https://api.dyrected.cloud` using a Site API Key and Site ID. The database, storage, and admin users are managed by Dyrected. You still write the same `dyrected.config.ts` — the difference is where it runs.
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // dyrected.config.ts
@@ -86,7 +86,7 @@ export const PATCH  = app.fetch
 export const DELETE = app.fetch
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
@@ -117,7 +117,7 @@ export default defineNuxtConfig({
 
 ## Can I switch later?
 
-Yes. Both modes use the same `dyrected.config.ts`. To migrate from self-hosted to Cloud: export your data, create a site in the Cloud dashboard, run `dyrected push` to sync your schema, and update your environment variables. No code changes needed.
+Yes. Both modes use the same `dyrected.config.ts`. To migrate from self-hosted to Cloud: export your data, create a site in the Cloud dashboard, run `npx @dyrected/cli sync:schema` to sync your schema, and update your environment variables. No code changes needed.
 
 ---
 

@@ -52,7 +52,7 @@ The Admin UI renders a drag-and-drop media browser for upload collections. Drop 
 
 ## 4. Upload programmatically
 
-<Tabs items={['SDK (any)', 'Next.js', 'Nuxt']}>
+<Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
 ```ts
 import { createClient } from '@dyrected/sdk'
@@ -84,7 +84,7 @@ const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/med
 const media = await res.json()
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // Using $fetch in a composable or component
 const form = new FormData()
@@ -126,7 +126,7 @@ Fetch with `depth: 1` to inline the media document:
 
 ## 6. Render images
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```tsx
 import Image from 'next/image'
@@ -148,7 +148,7 @@ export function PostCard({ post }: { post: any }) {
 
 > Add external storage domains to `images.remotePatterns` in `next.config.ts`.
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <!-- components/PostCard.vue -->
 <script setup lang="ts">
@@ -166,6 +166,6 @@ defineProps<{ post: any }>()
 </template>
 ```
 
-> For Nuxt Image optimisation, use `<NuxtImg>` from `@nuxt/image` and add your storage domain to `image.domains` in `nuxt.config.ts`.
+> For Nuxt.js Image optimisation, use `<NuxtImg>` from `@nuxt/image` and add your storage domain to `image.domains` in `nuxt.config.ts`.
 </Tab>
 </Tabs>

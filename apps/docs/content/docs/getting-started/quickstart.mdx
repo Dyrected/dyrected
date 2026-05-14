@@ -3,7 +3,14 @@ title: Quickstart
 description: Get Dyrected running — choose Cloud for zero infrastructure or self-hosted for full control.
 ---
 
-<Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt']}>
+## Prerequisites
+
+Before you start, ensure you have:
+- [Node.js 18+](https://nodejs.org) installed
+- A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`)
+- Basic familiarity with your chosen framework (Next.js or Nuxt.js)
+
+<Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt.js']}>
 <Tab value="Dyrected Cloud">
 
 ### 1. Create your site
@@ -39,7 +46,7 @@ Choose **Next.js** and **SQLite** (for local development). The CLI will:
 - Install `@dyrected/core`, `@dyrected/next`, and `@dyrected/db-sqlite`.
 - Create a `dyrected.config.ts`.
 - Mount the API route at `app/dyrected/[...route]/route.ts`.
-- Mount the Admin UI at `app/cms/[[...route]]/page.tsx`.
+- Mount the Admin UI at `app/cms/page.tsx`.
 - Generate a `.env.example`.
 
 **2. Configure and Run**
@@ -47,11 +54,12 @@ Choose **Next.js** and **SQLite** (for local development). The CLI will:
 1. Copy `.env.example` to `.env` and set `DYRECTED_JWT_SECRET`.
 2. Run `pnpm dev`.
 3. Open `http://localhost:3000/cms` to start managing content.
+> **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
 
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 
-The easiest way to get started with Nuxt is using the interactive CLI.
+The easiest way to get started with Nuxt.js is using the interactive CLI.
 
 **1. Initialize**
 
@@ -59,9 +67,9 @@ The easiest way to get started with Nuxt is using the interactive CLI.
 npx @dyrected/cli init
 ```
 
-Choose **Nuxt 3** and **SQLite**. The CLI will:
+Choose **Nuxt.js 3** and **SQLite**. The CLI will:
 - Install dependencies and create `dyrected.config.ts`.
-- Mount the Admin UI at `pages/cms/[[...route]].vue`.
+- Mount the Admin UI at `pages/cms/index.vue`.
 - Generate a `.env.example`.
 
 **2. Configure and Run**
@@ -70,6 +78,7 @@ Choose **Nuxt 3** and **SQLite**. The CLI will:
 2. **Environment**: Copy `.env.example` to `.env` and configure your secrets.
 3. **Run**: Start your project with `pnpm dev`.
 4. **Dashboard**: Open `http://localhost:3000/cms` to start managing content.
+> **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
 
 </Tab>
 </Tabs>

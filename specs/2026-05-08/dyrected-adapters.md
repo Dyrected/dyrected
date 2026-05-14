@@ -103,10 +103,10 @@ GET    /dyrected/globals/navbar
 
 ## Mounting the Admin
 
-The admin is a standalone React app served by your Next.js application at a path you choose. Mount it by creating a catch-all route for your chosen path and rendering the admin component inside it.
+The admin is a standalone React app served by your Next.js application at a path you choose. Mount it by creating a simple page at your chosen path and rendering the admin component inside it.
 
 ```ts
-// app/cms/[[...route]]/page.tsx
+// app/cms/page.tsx
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
@@ -123,7 +123,7 @@ The admin is now available at `/cms`. Change the folder name to change the path 
 The admin route is a normal Next.js route. Protect it however you protect other routes in your app — middleware, layout-level auth checks, or a dedicated auth wrapper.
 
 ```ts
-// app/cms/[[...route]]/page.tsx
+// app/cms/page.tsx
 import { DyrectedAdmin } from '@dyrected/next/admin'
 import { redirect } from 'next/navigation'
 import { getServerSession } from '@/lib/session'
@@ -526,10 +526,10 @@ The module does three things at startup: reads `dyrected.config.ts`, mounts the 
 
 ## Mounting the Admin
 
-Create a catch-all page at the path you want the admin to live. Nuxt does not need a special file convention — any `[[...route]].vue` page works.
+Create a simple page at the path you want the admin to live. Nuxt does not need a special file convention — any `index.vue` page works.
 
 ```vue
-<!-- pages/cms/[[...route]].vue -->
+<!-- pages/cms/index.vue -->
 <template>
   <DyrectedAdmin api-path="/dyrected" />
 </template>
@@ -559,7 +559,7 @@ export default defineNuxtRouteMiddleware((to) => {
 Or protect it in the page itself using `definePageMeta`:
 
 ```vue
-<!-- pages/cms/[[...route]].vue -->
+<!-- pages/cms/index.vue -->
 <script setup lang="ts">
 definePageMeta({
   middleware: "admin-auth",

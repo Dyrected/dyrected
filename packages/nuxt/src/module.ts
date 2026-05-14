@@ -109,12 +109,25 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     nuxt.options.runtimeConfig.dyrected = runtimeConfig as any;
 
-    // Public config for client-side
+    // 5. Public config for client-side
     nuxt.options.runtimeConfig.public.dyrected = {
-      baseUrl: process.env.NUXT_PUBLIC_DYRECTED_URL || options.apiBase || `/${configPath}`,
+      baseUrl: process.env.NUXT_PUBLIC_DYRECTED_URL || options.apiBase,
       apiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY || options.apiKey,
       siteId: options.siteId,
     };
+
+    // 6. Ensure @dyrected/admin is resolved by Vite/Nuxt
+    nuxt.options.build.transpile.push("@dyrected/admin");
+    
+    // 7. Vite-specific optimization (only if the host is using Vite)
+    if (nuxt.options.vite !== false) {
+      nuxt.options.vite = nuxt.options.vite || {};
+      nuxt.options.vite.optimizeDeps = nuxt.options.vite.optimizeDeps || {};
+      nuxt.options.vite.optimizeDeps.include = nuxt.options.vite.optimizeDeps.include || [];
+      if (!nuxt.options.vite.optimizeDeps.include.includes("@dyrected/admin")) {
+        nuxt.options.vite.optimizeDeps.include.push("@dyrected/admin");
+      }
+    }
   },
 });
 

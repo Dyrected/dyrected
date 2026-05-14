@@ -27,7 +27,7 @@ Live preview renders your frontend in an iframe inside the Admin UI. As the edit
 
 ## 2. Create the preview route
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 **Option A — raw `postMessage`**
 
@@ -99,7 +99,7 @@ export default async function PreviewWrapper({ params }: any) {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 **Option A — raw `postMessage`**
 
 ```vue
@@ -147,7 +147,7 @@ const { data: post } = useLivePreview({ initialData: null, depth: 1 })
 
 ## 3. Secure the preview route
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // middleware.ts
@@ -163,7 +163,7 @@ export function middleware(req: NextRequest) {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // middleware/preview-guard.ts
 export default defineNuxtRouteMiddleware((to) => {

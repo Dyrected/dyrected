@@ -152,12 +152,12 @@ This approach has zero network overhead and is the fastest option for self-hoste
 
 ## Step 4 — Embed the Admin UI
 
-Create a catch-all page at `app/admin/[[...route]]/page.tsx`. This ensures that the root `/admin` and all internal admin sub-routes are handled by this single page.
+Create a simple page at `app/admin/page.tsx`. This page will handle the root `/admin` and all internal admin sub-routes via hash-based navigation.
 
 The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the Next.js router integration, CSS imports, and "Client Only" mounting for you.
 
 ```tsx
-// app/admin/[[...route]]/page.tsx
+// app/admin/page.tsx
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {

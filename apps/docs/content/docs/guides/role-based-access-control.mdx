@@ -99,7 +99,7 @@ Fields stripped by `read` access never appear in API responses for that user —
 
 ## 5. Check the role on the frontend
 
-<Tabs items={['SDK (any)', 'Next.js', 'Nuxt']}>
+<Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
 ```ts
 import { createClient } from '@dyrected/sdk'
@@ -113,29 +113,16 @@ const user = await client.collection('users').me()
 </Tab>
 <Tab value="Next.js">
 ```ts
-// In a Server Component
-import { createClient } from '@dyrected/sdk'
+// Server action protection
+import { getDyrectedAuth } from '@dyrected/next'
 
-const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
-
-async function getCurrentUser() {
-  const token = cookies().get('dyrected-token')?.value
-  if (!token) return null
-  
-  client.setToken(token)
-  try {
-    return await client.collection('users').me()
-  } catch {
-    return null
-  }
+const { user } = await getDyrectedAuth()
+if (!user?.role === 'admin') {
+  throw new Error('Forbidden')
 }
-
-// In your component:
-const user = await getCurrentUser()
-if (user?.role === 'admin') { /* show admin controls */ }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <script setup lang="ts">
 const { user } = useDyrectedAuth('users')

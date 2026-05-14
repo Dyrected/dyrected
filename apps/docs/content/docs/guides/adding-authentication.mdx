@@ -35,7 +35,7 @@ The same secret must be set in every environment. Rotating it invalidates all ex
 
 ## 3. Log in
 
-<Tabs items={['SDK (any)', 'Next.js', 'Nuxt']}>
+<Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
 ```ts
 import { createClient } from '@dyrected/sdk'
@@ -65,7 +65,7 @@ export async function login(email: string, password: string) {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <!-- components/LoginForm.vue -->
 <script setup lang="ts">
@@ -112,7 +112,7 @@ async function submit(e: Event) {
 
 ## 5. Protect frontend routes
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // middleware.ts
@@ -131,7 +131,7 @@ export const config = {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // middleware/auth.ts
 export default defineNuxtRouteMiddleware(() => {
@@ -155,7 +155,7 @@ definePageMeta({ middleware: 'auth' })
 
 ## 6. Get the current user
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // In a Server Component
@@ -177,7 +177,7 @@ async function getUser() {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <script setup lang="ts">
 const { user } = useDyrectedAuth('users')
