@@ -1,5 +1,13 @@
 # @dyrected/storage-s3
 
+## 2.3.2
+
+### Patch Changes
+
+- 5dd7403: fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
+- Updated dependencies [5dd7403]
+  - @dyrected/core@2.4.1
+
 ## 2.3.1
 
 ### Patch Changes

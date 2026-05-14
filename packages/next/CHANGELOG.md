@@ -1,5 +1,15 @@
 # @dyrected/next
 
+## 2.3.3
+
+### Patch Changes
+
+- 5dd7403: fix: resolve SSR data fetching and dynamic route rendering in Nuxt and SDK
+- Updated dependencies [5dd7403]
+  - @dyrected/admin@2.4.2
+  - @dyrected/core@2.4.1
+  - @dyrected/sdk@2.4.1
+
 ## 2.3.2
 
 ### Patch Changes
