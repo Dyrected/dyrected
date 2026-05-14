@@ -131,7 +131,7 @@ function buildDoNotSection(): string {
 - Do NOT add custom auth middleware to the admin route.
   Dyrected handles admin authentication internally. Do not wrap,
   protect, or redirect the admin route yourself.
-- Do NOT use renderAdminUI in a Nuxt project. Use the DyrectedAdmin
+- Do NOT use renderAdminUI in a Nuxt.js project. Use the DyrectedAdmin
   component which is auto-imported by @dyrected/nuxt.
 - Do NOT modify or overwrite existing pages without first preserving their data.
 - Do NOT drop, rename, or remove fields from an existing schema.
@@ -147,23 +147,26 @@ function buildTechnicalReferenceSection(): string {
 Use defineCollection, defineGlobal, and defineConfig from '@dyrected/core'.
 
 FIELD TYPES:
-- Primitive  : text | textarea | richText | number | boolean | date | email | url | json
+- Primitive  : text | textarea | richText | number | boolean | date | email | url | json | image
 - Choice     : select | multiSelect           (requires options: [{ label, value }])
 - Structural : array | object                 (requires nested fields: [...])
-- Relation   : relationship                   (requires collection: '<slug>')
+- Relation   : relationship                   (requires relationTo: '<slug>')
 - Media      : relationship to an upload collection (e.g. 'media')
 - Blocks     : blocks                         (requires blocks: [{ slug, labels, fields }])
 
 COLLECTION OPTIONS:
 - upload: true       — media library with file upload support
 - auth: true         — adds login/me endpoints; password field is auto-managed
+- audit: true        — enables activity logging
 - admin.useAsTitle   — field used as display title in admin list view
 - admin.group        — groups collection under a sidebar heading
 - admin.hidden       — hides collection from the sidebar (internal/system use)
 
 FIELD OPTIONS:
+- label              — user-friendly display name (REQUIRED for all fields)
 - required           — validation
 - unique             — database-level uniqueness constraint
+- hasMany            — allow multiple values (for relationship, select, image)
 - defaultValue       — fallback value (required on all new fields added to existing schemas)
 - admin.condition    — Jexl expression string to conditionally show/hide field
                        e.g. "status == \\"published\\""
@@ -191,7 +194,7 @@ const media = defineCollection({
   slug: 'media',
   upload: true,
   fields: [
-    { name: 'alt', type: 'text', label: 'Alt Text' },
+    { name: 'alt', label: 'Alt Text', type: 'text' },
   ],
 })
 
@@ -199,44 +202,45 @@ const pages = defineCollection({
   slug: 'pages',
   admin: { useAsTitle: 'title', group: 'Content' },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'slug',  type: 'text', required: true, unique: true },
-    { name: 'seo', type: 'object', fields: [
-      { name: 'metaTitle',       type: 'text' },
-      { name: 'metaDescription', type: 'textarea' },
-      { name: 'ogImage',         type: 'relationship', collection: 'media' },
+    { name: 'title', label: 'Title', type: 'text', required: true },
+    { name: 'slug',  label: 'URL Slug', type: 'text', required: true, unique: true },
+    { name: 'seo', label: 'SEO Metadata', type: 'object', fields: [
+      { name: 'metaTitle',       label: 'Meta Title',       type: 'text' },
+      { name: 'metaDescription', label: 'Meta Description', type: 'textarea' },
+      { name: 'ogImage',         label: 'OG Image',         type: 'relationship', relationTo: 'media' },
     ]},
     {
       name: 'layout',
+      label: 'Page Layout',
       type: 'blocks',
       blocks: [
         {
           slug: 'hero',
           labels: { singular: 'Hero', plural: 'Heroes' },
           fields: [
-            { name: 'heading',    type: 'text',         required: true },
-            { name: 'subheading', type: 'textarea' },
-            { name: 'image',      type: 'relationship', collection: 'media' },
-            { name: 'ctaLabel',   type: 'text' },
-            { name: 'ctaLink',    type: 'url' },
+            { name: 'heading',    label: 'Heading',    type: 'text',         required: true },
+            { name: 'subheading', label: 'Subheading', type: 'textarea' },
+            { name: 'image',      label: 'Hero Image', type: 'relationship', relationTo: 'media' },
+            { name: 'ctaLabel',   label: 'Button Label', type: 'text' },
+            { name: 'ctaLink',    label: 'Button Link',  type: 'url' },
           ],
         },
         {
           slug: 'richContent',
           labels: { singular: 'Rich Content', plural: 'Rich Content Blocks' },
           fields: [
-            { name: 'content', type: 'richText', required: true },
+            { name: 'content', label: 'Content', type: 'richText', required: true },
           ],
         },
         {
           slug: 'callToAction',
           labels: { singular: 'Call to Action', plural: 'Calls to Action' },
           fields: [
-            { name: 'heading',     type: 'text', required: true },
-            { name: 'description', type: 'textarea' },
-            { name: 'buttonLabel', type: 'text' },
-            { name: 'buttonLink',  type: 'url' },
-            { name: 'theme', type: 'select', options: [
+            { name: 'heading',     label: 'Heading',     type: 'text', required: true },
+            { name: 'description', label: 'Description', type: 'textarea' },
+            { name: 'buttonLabel', label: 'Button Text', type: 'text' },
+            { name: 'buttonLink',  label: 'Button Link',  type: 'url' },
+            { name: 'theme', label: 'Theme', type: 'select', options: [
               { label: 'Primary',   value: 'primary' },
               { label: 'Secondary', value: 'secondary' },
               { label: 'Dark',      value: 'dark' },
@@ -252,10 +256,10 @@ const settings = defineGlobal({
   slug: 'settings',
   label: 'Site Settings',
   fields: [
-    { name: 'siteName',   type: 'text' },
-    { name: 'tagline',    type: 'text' },
-    { name: 'logo',       type: 'relationship', collection: 'media' },
-    { name: 'footerText', type: 'textarea' },
+    { name: 'siteName',   label: 'Site Name',    type: 'text' },
+    { name: 'tagline',    label: 'Site Tagline', type: 'text' },
+    { name: 'logo',       label: 'Site Logo',    type: 'relationship', relationTo: 'media' },
+    { name: 'footerText', label: 'Footer Text',  type: 'textarea' },
   ],
 })
 
@@ -282,7 +286,8 @@ Return your response in exactly this order. Do not combine steps. Do not skip st
 6. Migration/fallback strategy — numbered steps
 7. Schema sync command
 
-API Reference: https://docs.dyrected.com`;
+API Reference: https://docs.dyrected.com
+If you are unsure about any syntax or property, refer to the documentation above.`;
 }
 
 // ─────────────────────────────────────────────
@@ -318,14 +323,14 @@ export const dyrected = createClient({
 })
 \`\`\`
 
-2. Admin Route (app/admin/[[...slug]]/page.tsx):
+2. Admin Route (app/cms/page.tsx):
 \`\`\`tsx
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
   // DyrectedAdmin handles routing, auth, and CSS automatically.
   // Do NOT wrap this in custom auth middleware.
-  return <DyrectedAdmin basename="/admin" />
+  return <DyrectedAdmin basename="/cms" />
 }
 \`\`\`
 
@@ -369,7 +374,7 @@ export default defineNuxtConfig({
 })
 \`\`\`
 
-2. Admin Route (pages/admin.vue):
+2. Admin Route (pages/cms/index.vue):
 \`\`\`vue
 <script setup lang="ts">
 // DyrectedAdmin is auto-imported by @dyrected/nuxt.
@@ -381,7 +386,7 @@ definePageMeta({ layout: false })
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin basename="/cms" />
   </ClientOnly>
 </template>
 \`\`\`
@@ -433,7 +438,7 @@ export const dyrected = createClient({
 })
 \`\`\`
 
-2. Admin Route (pages/admin.tsx):
+2. Admin Route (pages/cms.tsx):
 \`\`\`tsx
 import { AdminUI } from '@dyrected/admin'
 import '@dyrected/admin/styles'
@@ -474,7 +479,7 @@ export const dyrected = createClient({
 })
 \`\`\`
 
-2. Admin Route (pages/admin.vue):
+2. Admin Route (pages/cms.vue):
 \`\`\`vue
 <template>
   <div ref="container" style="height: 100vh" />
@@ -512,7 +517,10 @@ onUnmounted(() => cleanup?.())
 // Fresh install prompt (no Dyrected installed yet)
 // ─────────────────────────────────────────────
 
-export function generateFreshSetupPrompt(activeTab: "next" | "nuxt" | "react" | "vue", config: SetupPromptConfig): string {
+export function generateFreshSetupPrompt(
+  activeTab: "next" | "nuxt" | "react" | "vue",
+  config: SetupPromptConfig,
+): string {
   const frameworkLabel =
     activeTab === "next"
       ? "Next.js"
@@ -643,7 +651,7 @@ export const dyrected = createClient({
 })
 \`\`\`
 
-STEP 3 — Mount the Admin UI (pages/admin.tsx):
+STEP 3 — Mount the Admin UI (pages/cms.tsx):
 \`\`\`tsx
 import { AdminUI } from '@dyrected/admin'
 import '@dyrected/admin/styles'
@@ -689,7 +697,7 @@ export const dyrected = createClient({
 })
 \`\`\`
 
-STEP 3 — Mount the Admin UI (pages/admin.vue):
+STEP 3 — Mount the Admin UI (pages/cms.vue):
 \`\`\`vue
 <template>
   <div ref="container" style="height: 100vh" />
@@ -838,6 +846,7 @@ RULES for this phase:
 - Always use initialData in all data fetches
 - Use a catch-all pages collection for marketing-managed pages
 - Use blocks for flexible page layouts
+- Use type: 'relationship', relationTo: 'collectionSlug' for relations
 - Never throw during render — fall back to initialData on errors
 - All relationship fields must handle null gracefully
 
@@ -867,12 +876,13 @@ DO NOT
 - Do NOT show all steps at once — one step at a time always
 - Do NOT use client.collections — use client.collection(slug)
 - Do NOT add custom auth middleware to the admin route
-- Do NOT use renderAdminUI in a Nuxt project
+- Do NOT use renderAdminUI in a Nuxt.js project
 - Do NOT skip the confirmation after each installation step
-- Do NOT assume the installation worked — ask the user to confirm
 - Do NOT use jargon without explaining it in plain English first
+- Do NOT assume the installation worked — ask the user to confirm
 
-API Reference: https://docs.dyrected.com`,
+API Reference: https://docs.dyrected.com
+If you are unsure about any syntax, refer to the official documentation above.`,
   ].join("\n");
 }
 
@@ -892,8 +902,12 @@ export function generateAIPrompt(activeTab: "next" | "nuxt" | "react" | "vue", c
 
   const existingSite = config.existingSite ?? false;
 
+  const missionText = existingSite
+    ? `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into an EXISTING ${frameworkLabel} project. Your absolute priority is DATA PRESERVATION and MIGRATION of existing hardcoded content into a flexible, blocks-based schema that empowers marketing teams to move independently.`
+    : `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a NEW ${frameworkLabel} project. Your priority is DATA PRESERVATION and creating a CMS that empowers marketing teams to move independently without raising tickets to engineering.`;
+
   const sections = [
-    `You are a Senior Content Architect. Your mission is to integrate Dyrected CMS into a ${frameworkLabel} project. Your priority is DATA PRESERVATION and creating a CMS that empowers marketing teams to move independently without raising tickets to engineering.`,
+    missionText,
     buildEnvironmentSection(frameworkLabel, isSelfHosted, config),
     buildDiagnosticSection(),
     buildConstraintsSection(),
