@@ -5,13 +5,13 @@ description: What Dyrected is and how the pieces fit together.
 
 Dyrected is a code-first headless CMS. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates a REST API, an Admin UI, and a type-safe SDK from it automatically. No clicking through UI builders to create fields.
 
-The engine runs **inside your existing Next.js or Nuxt app** as a route handler. There is no separate CMS server to run.
+The engine runs **inside your existing Next.js or Nuxt.js app** as a route handler. There is no separate CMS server to run.
 
 ---
 
 ## How it fits together
 
-**`@dyrected/core`** — the engine. Mount it as a catch-all route in Next.js or as a Nuxt module. It handles the database, REST API, file uploads, auth, and email.
+**`@dyrected/core`** — the engine. Mount it as a catch-all route in Next.js or as a Nuxt.js module. It handles the database, REST API, file uploads, auth, and email.
 
 **Admin UI** — auto-generated from your config. Mount it at `/admin`. Your clients use this to edit content. You never have to build a dashboard.
 
@@ -38,7 +38,7 @@ The short version: Dyrected gives you Payload's developer experience (config-as-
 
 ## Self-hosted or Cloud?
 
-**[Dyrected Cloud](/docs/deployment/cloud)** — create an account, run `dyrected push`, set two env vars, and your site is live. No database to provision, no storage bucket to configure, no infrastructure to maintain. Starts at $19/month.
+**[Dyrected Cloud](/docs/deployment/cloud)** — create an account, run `npx @dyrected/cli sync:schema`, set two env vars, and your site is live. No database to provision, no storage bucket to configure, no infrastructure to maintain. Starts at $19/month.
 
 **Self-hosted** — bring your own Postgres/SQLite/MongoDB and storage. Free under the BSL. Right for teams with strict data residency requirements or who already have infrastructure in place.
 

@@ -82,7 +82,7 @@ Each item in `layout` includes a `blockType` matching the block's `slug`:
 
 ## 3. Fetch and render
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```tsx
 // app/[slug]/page.tsx
@@ -122,7 +122,7 @@ export async function generateStaticParams() {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <!-- pages/[slug].vue -->
 <script setup lang="ts">
@@ -150,7 +150,7 @@ const blocks = computed(() => page.value.docs[0].layout)
 
 ## 4. The block renderer
 
-<Tabs items={['Next.js (React)', 'Nuxt (Vue)']}>
+<Tabs items={['Next.js (React)', 'Nuxt.js (Vue)']}>
 <Tab value="Next.js (React)">
 ```tsx
 // components/Block.tsx
@@ -182,7 +182,7 @@ export function Hero({ heading, subheading, ctaLabel, ctaUrl, image }: any) {
 }
 ```
 </Tab>
-<Tab value="Nuxt (Vue)">
+<Tab value="Nuxt.js (Vue)">
 ```vue
 <!-- components/BlockRenderer.vue -->
 <script setup lang="ts">

@@ -45,7 +45,7 @@ export default function MyDashboard() {
 
 ---
 
-## Vue / Nuxt Integration
+## Vue / Nuxt.js Integration
 
 Since the Admin UI is built with React, we provide a `renderAdminUI` helper that works in any environment, including Vue.
 
@@ -101,7 +101,7 @@ onUnmounted(() => {
 The Admin UI package is a standalone application that communicates with the Dyrected API via HTTP. 
 
 - **No Server Needed**: You can host this dashboard as a static site on Vercel, Netlify, or even GitHub Pages.
-- **Auto-Sync**: When you update your `dyrected.config.ts` and push your schema, the embedded UI automatically reflects those changes (new fields, new collections).
+- **Auto-Sync**: In **Self-Hosted** mode, the UI reflects changes as soon as you save your `dyrected.config.ts`. In **Cloud** mode, run `npx @dyrected/cli sync:schema` to push your local changes to the cloud API.
 - **Authentication**: By default, the UI handles its own login state, securely storing the session token in the browser.
 
 ---

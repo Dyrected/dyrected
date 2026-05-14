@@ -50,7 +50,7 @@ export default defineConfig({
 
 ## 2. Fetch a global in your layout
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```tsx
 // app/layout.tsx
@@ -85,7 +85,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <!-- app.vue -->
 <script setup lang="ts">
@@ -140,7 +140,7 @@ Content-Type: application/json
 
 ## 5. Revalidate when a global changes
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // dyrected.config.ts
@@ -161,7 +161,7 @@ Content-Type: application/json
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // dyrected.config.ts
 {
@@ -169,7 +169,7 @@ Content-Type: application/json
   hooks: {
     afterChange: [
       async () => {
-        // Nuxt uses event-driven cache invalidation
+        // Nuxt.js uses event-driven cache invalidation
         await $fetch('/api/revalidate', { method: 'POST' })
       },
     ],

@@ -29,7 +29,7 @@ With `create: () => false`, `POST /api/collections/users` without a valid invite
 
 ## 2. Send an invitation
 
-<Tabs items={['SDK (any)', 'Next.js', 'Nuxt']}>
+<Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
 ```ts
 import { createClient } from '@dyrected/sdk'
@@ -54,7 +54,7 @@ export async function inviteUser(email: string, adminToken: string) {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // Using the auth composable in a component or server action
 const { token } = useDyrectedAuth('users')
@@ -74,7 +74,7 @@ Dyrected signs a 7-day JWT with `purpose: 'invite'` and emails it. In developmen
 
 ## 3. Accept the invitation
 
-<Tabs items={['Next.js', 'Nuxt', 'SDK (any)']}>
+<Tabs items={['Next.js', 'Nuxt.js', 'SDK (any)']}>
 <Tab value="Next.js">
 ```tsx
 // app/accept-invite/page.tsx
@@ -110,7 +110,7 @@ export default function AcceptInvitePage() {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <!-- pages/accept-invite.vue -->
 <script setup lang="ts">

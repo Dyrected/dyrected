@@ -32,7 +32,7 @@ export default defineConfig({
 
 ## 2. Mount the API
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // app/dyrected/[...route]/route.ts
@@ -47,7 +47,7 @@ export const PATCH  = app.fetch
 export const DELETE = app.fetch
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // nuxt.config.ts
 import config from './dyrected.config'
@@ -64,7 +64,7 @@ export default defineNuxtConfig({
 
 ## 3. Fetch the post list
 
-<Tabs items={['SDK (Next.js)', 'Nuxt', 'REST API']}>
+<Tabs items={['SDK (Next.js)', 'Nuxt.js', 'REST API']}>
 <Tab value="SDK (Next.js)">
 ```tsx
 // app/blog/page.tsx
@@ -93,7 +93,7 @@ export default async function BlogPage() {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <!-- pages/blog/index.vue -->
 <script setup lang="ts">
@@ -138,7 +138,7 @@ export default async function BlogPage() {
 
 ## 4. Fetch a single post
 
-<Tabs items={['SDK (Next.js)', 'Nuxt', 'REST API']}>
+<Tabs items={['SDK (Next.js)', 'Nuxt.js', 'REST API']}>
 <Tab value="SDK (Next.js)">
 ```tsx
 // app/blog/[slug]/page.tsx
@@ -167,7 +167,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```vue
 <!-- pages/blog/[slug].vue -->
 <script setup lang="ts">
@@ -211,7 +211,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
 
 ## 5. Revalidate on publish
 
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
 // dyrected.config.ts
@@ -229,7 +229,7 @@ hooks: {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 ```ts
 // dyrected.config.ts
 hooks: {
@@ -251,7 +251,7 @@ hooks: {
 ---
 
 ## 6. Embed the Admin UI
-<Tabs items={['Next.js', 'Nuxt']}>
+<Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 Create a catch-all page at `app/admin/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the mounting and routing isolation for you.
 
@@ -266,7 +266,7 @@ export default function AdminPage() {
 }
 ```
 </Tab>
-<Tab value="Nuxt">
+<Tab value="Nuxt.js">
 The Admin UI mounts automatically at `/admin` when you add the `@dyrected/nuxt` module. You can also create a custom admin page if you want to use a different route (like `/cms-admin`):
 
 ```vue
