@@ -1,5 +1,14 @@
 # @dyrected/nuxt
 
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [220818c]
+  - @dyrected/admin@2.0.1
+  - @dyrected/core@2.1.0
+  - @dyrected/sdk@2.0.0
+
 ## 2.0.0
 
 ### Major Changes
