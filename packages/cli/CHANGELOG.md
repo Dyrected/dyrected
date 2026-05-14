@@ -1,5 +1,11 @@
 # @dyrected/cli
 
+## 2.3.1
+
+### Patch Changes
+
+- fix: include dist directory in npm package
+
 ## 2.3.0
 
 ### Minor Changes

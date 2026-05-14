@@ -1,5 +1,12 @@
 # @dyrected/nuxt
 
+## 2.3.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/admin@2.4.1
+
 ## 2.3.1
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @dyrected/admin
 
+## 2.4.1
+
+### Patch Changes
+
+- fix: include dist directory in npm package
+
 ## 2.4.0
 
 ### Minor Changes

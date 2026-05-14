@@ -1,7 +1,10 @@
 {
   "name": "@dyrected/admin",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

@@ -1,7 +1,10 @@
 {
   "name": "@dyrected/cli",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "bin": {
     "dyrected": "./dist/index.js"
   },

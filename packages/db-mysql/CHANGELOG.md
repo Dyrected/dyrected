@@ -1,5 +1,11 @@
 # @dyrected/db-mysql
 
+## 4.0.1
+
+### Patch Changes
+
+- fix: include dist directory in npm package
+
 ## 4.0.0
 
 ### Minor Changes
