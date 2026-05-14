@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Button } from "../../components/ui/button";
-import { generateAIPrompt, type SetupPromptConfig } from "@dyrected/core";
+import { generateAIPrompt, generateFreshSetupPrompt, type SetupPromptConfig } from "@dyrected/core";
 
 export type { SetupPromptConfig };
 
@@ -19,9 +19,12 @@ export interface SetupPromptProps {
 
 export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [isFresh, setIsFresh] = useState(false);
   const [activeTab, setActiveTab] = useState<"next" | "nuxt" | "react" | "vue">("next");
 
-  const promptText = generateAIPrompt(activeTab, config);
+  const promptText = isFresh 
+    ? generateFreshSetupPrompt(activeTab, config)
+    : generateAIPrompt(activeTab, config);
 
   const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -40,7 +43,9 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           Connect Your Application
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Use the AI prompt below to set up your frontend automatically, or follow the steps manually.
+          {isFresh 
+            ? "Get a conversational walkthrough to set up Dyrected from scratch."
+            : "Use the AI prompt below to set up your frontend automatically, or follow the steps manually."}
         </p>
       </div>
 
@@ -105,9 +110,33 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {tab === "next" ? "Next.js" : tab === "nuxt" ? "Nuxt" : tab}
+                    {tab === "next" ? "Next.js" : tab === "nuxt" ? "Nuxt.js" : tab}
                   </button>
                 ))}
+              </div>
+              <div className="flex gap-2 bg-muted/50 p-1 rounded-lg w-fit">
+                <button
+                  onClick={() => setIsFresh(false)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                    !isFresh
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Existing Project
+                </button>
+                <button
+                  onClick={() => setIsFresh(true)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                    isFresh
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Fresh Installation
+                </button>
               </div>
               <p className="text-sm text-muted-foreground">
                 Copy and paste this into your AI developer to handle everything automatically
