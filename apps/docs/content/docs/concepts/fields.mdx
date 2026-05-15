@@ -11,7 +11,7 @@ Every field in a collection or global is defined by a `Field` object. All fields
 
 | Property | Type | Required | Description |
 |---|---|---|---|
-| `name` | `string` | ✅ | The key used in the database and JSON responses. Use camelCase. |
+| `name` | `string` | ✅ (omit for `row`) | The key used in the database and JSON responses. Use camelCase. Layout fields (`row`) do not require a name since they produce no database column. |
 | `type` | `FieldType` | ✅ | The field type (see below). |
 | `label` | `string` | | Display name in the Admin UI. Defaults to a title-cased version of `name`. |
 | `required` | `boolean` | | If `true`, the field must have a non-empty value. Enforced on both client and server. |
@@ -107,6 +107,52 @@ A text input that validates the value is a correctly formatted email address.
 - **Stored as:** `VARCHAR` / `string`
 - **API returns:** `string`
 - **Admin UI:** `<input type="email" />`
+
+---
+
+### `icon`
+
+A searchable icon picker backed by the [Lucide](https://lucide.dev) icon library. Stores the selected icon name as a plain string.
+
+```ts
+{
+  name: 'featureIcon',
+  type: 'icon',
+  label: 'Feature Icon',
+  admin: {
+    description: 'Choose an icon to represent this feature.',
+  }
+}
+```
+
+- **Stored as:** `VARCHAR` / `string` — the Lucide component name, e.g. `"Rocket"`, `"ShieldCheck"`
+- **API returns:** `string`
+- **Admin UI:** Button that opens a searchable grid of all Lucide icons; selected icon is previewed beside the picker
+
+#### Rendering on the frontend (Vue / Nuxt)
+
+```vue
+<script setup>
+import * as LucideIcons from 'lucide-vue-next'
+const props = defineProps(['iconName'])
+const Icon = LucideIcons[props.iconName]
+</script>
+
+<template>
+  <component :is="Icon" v-if="Icon" class="w-5 h-5" />
+</template>
+```
+
+#### Rendering on the frontend (React / Next.js)
+
+```tsx
+import * as LucideIcons from 'lucide-react'
+
+export function DynamicIcon({ name }: { name: string }) {
+  const Icon = (LucideIcons as any)[name]
+  return Icon ? <Icon className="w-5 h-5" /> : null
+}
+```
 
 ---
 
@@ -217,6 +263,30 @@ Options can also be a plain string array — Dyrected will convert `'draft'` to 
 - **API returns:** The selected `value` string
 - **Admin UI:** Dropdown `<Select />`
 
+#### Radio layout
+
+For 2–5 options where you want all choices visible at once, set `admin.layout: 'radio'`:
+
+```ts
+{
+  name: 'status',
+  type: 'select',
+  options: [
+    { label: 'Draft',     value: 'draft' },
+    { label: 'Published', value: 'published' },
+    { label: 'Archived',  value: 'archived' },
+  ],
+  admin: {
+    layout: 'radio',
+    direction: 'horizontal', // or 'vertical' (default)
+  }
+}
+```
+
+- `direction: 'horizontal'` — radio buttons in a wrapping row.
+- `direction: 'vertical'` — stacked column (default).
+- Stored and returned identically to a standard `select`.
+
 ---
 
 ### `multiSelect`
@@ -278,6 +348,27 @@ GET /api/collections/posts/abc?depth=2  // populate nested relationships too
 ```
 
 > **Tip:** Set `depth=0` when you only need IDs (e.g. for a sidebar count), and `depth=1` when you need to display related data.
+
+---
+
+### `join`
+
+A virtual read-only field that shows documents from another collection that reference the current document. No data is stored on this side — the relationship lives on the related document's `relationship` field.
+
+```ts
+{
+  type: 'join',
+  label: 'Comments',
+  collection: 'comments',  // target collection slug
+  on: 'post',              // the relationship field on the target collection
+}
+```
+
+- **Stored as:** Nothing — this is a virtual field; no column is created
+- **API returns:** Nothing — join fields are UI-only and are not included in API responses
+- **Admin UI:** A read-only list of linked documents with links to their edit pages. Includes a "Create new" button that pre-fills the relationship field pointing back to the current document.
+
+> **Note:** The `join` field has no `name` property and does not contribute to the document's data shape. If the current document has not been saved yet, the join panel will prompt you to save first.
 
 ---
 
@@ -386,6 +477,30 @@ A raw JSON editor for arbitrary structured data. Use when no other field type fi
 
 ---
 
+## Layout Fields
+
+### `row`
+
+A virtual layout-only field that arranges its children side-by-side in a horizontal row. No database column is created; children write their values at the top-level document path as if the `row` wrapper didn't exist.
+
+```ts
+{
+  type: 'row',
+  fields: [
+    { name: 'firstName', type: 'text', admin: { width: '50%' } },
+    { name: 'lastName',  type: 'text', admin: { width: '50%' } },
+  ],
+}
+```
+
+- **Stored as:** Nothing — `row` is layout-only; each child field stores its own value normally
+- **API returns:** Nothing for the row itself — children appear at the parent level as usual
+- **Admin UI:** Children are rendered in a flex-wrap row. Each child's width is controlled by `admin.width` (any CSS value). Children without a `width` grow equally to fill the remaining space.
+
+> **Note:** `row` does not require a `name` property. Since it produces no database column, naming it is optional and unused.
+
+---
+
 ## Admin Field Options
 
 The `admin` object on a field controls how it behaves in the Admin UI. None of these affect the API or database.
@@ -400,17 +515,77 @@ The `admin` object on a field controls how it behaves in the Admin UI. None of t
     readOnly: false,
     hidden: false,
     condition: (data) => data.status === 'published',
+    tab: 'Advanced',
   }
 }
 ```
 
-| Property | Type | Description |
+| Property | Type | Applies to | Description |
+|---|---|---|---|
+| `placeholder` | `string` | `text`, `textarea`, `url`, `email` | Input placeholder text. |
+| `description` | `string` | All | Help text rendered below the field. |
+| `readOnly` | `boolean` | All | Renders the field as disabled. The value is still submitted. |
+| `hidden` | `boolean` | All | Hides the field from the form entirely. The value is preserved in the database. |
+| `condition` | `(data: any) => boolean` | All | A function that receives the current document values and returns `true` to show the field, `false` to hide it. Evaluated reactively as the editor types. |
+| `tab` | `string` | All | Assigns the field to a named tab. When any field in a collection has a `tab`, the form renders a tab bar. Fields without a `tab` are placed in a "General" tab. |
+| `layout` | `'radio'` | `select` | Renders the select as radio buttons instead of a dropdown. Recommended for 2–5 options. |
+| `direction` | `'horizontal' \| 'vertical'` | `select` (radio layout) | Controls the orientation of radio buttons. Defaults to `'vertical'`. |
+| `width` | `string` | Fields inside a `row` | CSS width of the field within its row container (e.g. `'50%'`, `'200px'`). Fields without a `width` grow equally. |
+
+### Tabs layout
+
+When at least one field in a collection has `admin.tab` set, the entire form switches to a tabbed layout. You can mix tabbed and un-tabbed fields freely — un-tabbed fields are automatically grouped under a **General** tab.
+
+```ts
+fields: [
+  { name: 'title',       type: 'text' },                              // → General tab
+  { name: 'body',        type: 'richText' },                          // → General tab
+  { name: 'metaTitle',   type: 'text',     admin: { tab: 'SEO' } },
+  { name: 'metaDesc',    type: 'textarea', admin: { tab: 'SEO' } },
+  { name: 'publishedAt', type: 'date',     admin: { tab: 'Publishing' } },
+  { name: 'status',      type: 'select',   options: ['draft', 'published'], admin: { tab: 'Publishing' } },
+]
+```
+
+### Custom admin input components
+
+You can replace the default input for any field with your own React component using `admin.component`:
+
+```ts
+{
+  name: 'color',
+  type: 'text',
+  admin: {
+    component: ColorPickerInput,
+  }
+}
+```
+
+The component receives a standard set of props:
+
+| Prop | Type | Description |
 |---|---|---|
-| `placeholder` | `string` | Input placeholder text. |
-| `description` | `string` | Help text rendered below the field. |
-| `readOnly` | `boolean` | Renders the field as disabled. The value is still submitted. |
-| `hidden` | `boolean` | Hides the field from the form entirely. The value is preserved in the database. |
-| `condition` | `(data: any) => boolean` | A function that receives the current document values and returns `true` to show the field, `false` to hide it. Evaluated reactively as the editor types. |
+| `value` | `any` | The current field value from the form state. |
+| `onChange` | `(value: any) => void` | Call this to update the field value. |
+| `field` | `FieldSchema` | The full field definition from the collection config. |
+| `readOnly` | `boolean` | Whether the field should be rendered as non-editable. |
+
+```tsx
+// Example: a simple hex color picker
+export function ColorPickerInput({ value, onChange, readOnly }: AdminInputProps) {
+  return (
+    <input
+      type="color"
+      value={value || '#000000'}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={readOnly}
+      className="h-10 w-20 cursor-pointer rounded border border-input"
+    />
+  )
+}
+```
+
+Custom components are purely presentational — validation, default values, and `required`/`unique` constraints all continue to work based on the field definition.
 
 ---
 

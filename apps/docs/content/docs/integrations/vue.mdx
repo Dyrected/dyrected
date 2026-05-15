@@ -1,0 +1,161 @@
+---
+title: Vue 3 Integration
+description: Use Dyrected in a standard Vue 3 application with composables, live preview, and the Admin UI bridge.
+---
+
+The `@dyrected/vue` package provides Vue 3 composables, a React-in-Vue Admin bridge, and live preview support for any Vite-based or framework-agnostic Vue 3 app. If you are using Nuxt, use [`@dyrected/nuxt`](/docs/integrations/nuxt) instead — it re-exports everything from this package and adds Nuxt-specific glue.
+
+---
+
+## Installation
+
+```bash
+pnpm add @dyrected/vue @dyrected/sdk
+```
+
+---
+
+## Embedding the Admin UI
+
+`@dyrected/vue` ships a `<DyrectedAdmin />` component that mounts the React-based Admin UI into your Vue app using a React-in-Vue bridge:
+
+```vue
+<!-- src/pages/Admin.vue -->
+<script setup lang="ts">
+import { DyrectedAdmin } from '@dyrected/vue'
+</script>
+
+<template>
+  <DyrectedAdmin
+    base-url="https://api.dyrected.cloud"
+    api-key="sk_live_..."
+    basename="/admin"
+  />
+</template>
+```
+
+### Props
+
+| Prop | Type | Required | Description |
+|---|---|---|---|
+| `baseUrl` | `string` | ✅ | The base URL of your Dyrected API. |
+| `apiKey` | `string` | ✅ | The Site API key used to authenticate requests. |
+| `siteId` | `string` | | Required in Cloud mode. |
+| `basename` | `string` | | The URL path prefix for the admin (default: `/admin`). |
+
+### Passing Vue components as custom field inputs
+
+You can inject Vue components as custom admin field inputs. The bridge wraps them automatically:
+
+```vue
+<script setup lang="ts">
+import { DyrectedAdmin } from '@dyrected/vue'
+import MyColorPicker from './components/MyColorPicker.vue'
+</script>
+
+<template>
+  <DyrectedAdmin
+    base-url="..."
+    api-key="..."
+    :components="{
+      fields: {
+        'products.brandColor': MyColorPicker,
+      }
+    }"
+  />
+</template>
+```
+
+The Vue component receives the same props as a React custom input: `value`, `onChange`, `field`, and `readOnly`.
+
+---
+
+## Fetching Content — `useDyrected`
+
+```vue
+<script setup lang="ts">
+import { useDyrected } from '@dyrected/vue'
+
+const { doc, pending, error } = useDyrected('pages', 'home')
+</script>
+
+<template>
+  <div v-if="pending">Loading...</div>
+  <div v-else-if="error">{{ error.message }}</div>
+  <div v-else>
+    <h1>{{ doc?.title }}</h1>
+  </div>
+</template>
+```
+
+---
+
+## Live Preview — `useLivePreview`
+
+The `useLivePreview` composable subscribes to `postMessage` events from the Dyrected Admin UI and updates your component data reactively.
+
+```vue
+<!-- pages/PostPreview.vue -->
+<script setup lang="ts">
+import { useLivePreview } from '@dyrected/vue'
+
+const props = defineProps<{ initialPost: Post }>()
+
+const { data: post, isLive } = useLivePreview({
+  initialData: props.initialPost,
+  serverURL: import.meta.env.VITE_CMS_ADMIN_URL,
+})
+</script>
+
+<template>
+  <div v-if="isLive" class="preview-banner">Preview Mode</div>
+  <h1>{{ post?.title }}</h1>
+</template>
+```
+
+**Composable API:**
+
+```ts
+const { data, isLive } = useLivePreview<T>({
+  initialData: T,      // Shown until the first postMessage arrives
+  serverURL?: string,  // Admin origin for origin validation (defaults to '*')
+})
+```
+
+| Return | Type | Description |
+|---|---|---|
+| `data` | `Ref<T>` | Reactive live data — updates on every `postMessage` from the Admin |
+| `isLive` | `Ref<boolean>` | `true` once the first preview message has been received |
+
+### Inline editing support
+
+Add `data-dy-path` attributes to your template elements to enable click-to-field navigation in the Admin's Edit Mode:
+
+```vue
+<template>
+  <article>
+    <h1 data-dy-path="title">{{ post?.title }}</h1>
+    <p data-dy-path="excerpt">{{ post?.excerpt }}</p>
+    <img :src="post?.coverImage?.url" data-dy-path="coverImage" />
+  </article>
+</template>
+```
+
+When the editor activates Edit Mode in the preview toolbar, clicking any marked element sends the field path back to the Admin, which scrolls to and focuses the corresponding form input. The `useLivePreview` composable wires up all the hover and click listeners automatically.
+
+---
+
+## Package Structure
+
+```text
+packages/vue/
+├── src/
+│   ├── components/
+│   │   └── DyrectedAdmin.vue      # React-in-Vue bridge component
+│   ├── composables/
+│   │   ├── useDyrected.ts         # Content fetching
+│   │   └── useLivePreview.ts      # Live preview + inline editing
+│   ├── bridge/
+│   │   └── react-in-vue.ts        # React root mounting + prop sync
+│   └── index.ts
+```

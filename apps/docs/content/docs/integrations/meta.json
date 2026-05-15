@@ -1,4 +1,4 @@
 {
   "title": "Integrations",
-  "pages": ["nextjs", "nuxt", "sdk"]
+  "pages": ["nextjs", "nuxt", "vue", "sdk"]
 }

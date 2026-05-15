@@ -88,7 +88,8 @@ The landing page. Shows a count of all collections and globals, quick links to r
 A sortable, searchable data table for any collection.
 
 - **Search:** The search input queries the field specified by `admin.useAsTitle` (or the first visible field).
-- **Columns:** Controlled by `admin.defaultColumns`. Falls back to the first three non-hidden fields.
+- **Title column:** The column for the `admin.useAsTitle` field (or the first visible field) is rendered as a clickable link that navigates directly to the edit page.
+- **Columns:** Controlled by `admin.defaultColumns`. Falls back to the first three non-hidden fields. `row` and `join` virtual fields are excluded from columns automatically.
 - **Status column:** Automatically added if the collection has a `status` field.
 - **Actions:** Edit (navigates to edit page), Copy ID, Delete.
 
@@ -199,12 +200,15 @@ Your component receives:
 | `number` | Number input | |
 | `boolean` | Toggle switch | |
 | `date` | Calendar picker | |
-| `select` | Dropdown | |
+| `select` | Dropdown | Supports `admin.layout: 'radio'` for radio button rendering |
 | `multiSelect` | Tag-based multi-select | |
 | `email` | Email input | Client-side format validation |
 | `url` | URL input | With "Open in new tab" button |
+| `icon` | Icon picker popover | Searchable grid of all Lucide icons; stores icon name as string |
 | `relationship` | Searchable combobox | Thumbnail grid for upload collections |
+| `join` | Read-only related-docs list | Virtual field — no data stored; shows docs from another collection that reference this one |
 | `array` | Repeatable card list | Drag-to-reorder |
 | `object` | Grouped field panel | Collapsible |
 | `json` | Code editor | JSON syntax highlighting |
 | `blocks` | Block picker + inline editor | One editor per block type |
+| `row` | Flex row container | Virtual layout field — arranges children side-by-side; no data stored |
