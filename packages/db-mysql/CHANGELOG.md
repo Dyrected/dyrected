@@ -1,5 +1,13 @@
 # @dyrected/db-mysql
 
+## 5.0.1
+
+### Patch Changes
+
+- improve Nuxt server request URL handling
+- Updated dependencies
+  - @dyrected/core@2.5.1
+
 ## 5.0.0
 
 ### Patch Changes

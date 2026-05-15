@@ -1,5 +1,14 @@
 # @dyrected/cli
 
+## 2.3.4
+
+### Patch Changes
+
+- improve Nuxt server request URL handling
+- Updated dependencies
+  - @dyrected/core@2.5.1
+  - @dyrected/sdk@2.4.5
+
 ## 2.3.3
 
 ### Patch Changes

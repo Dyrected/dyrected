@@ -1,5 +1,16 @@
 # @dyrected/nuxt
 
+## 2.3.8
+
+### Patch Changes
+
+- improve Nuxt server request URL handling
+- Updated dependencies
+  - @dyrected/admin@2.5.2
+  - @dyrected/core@2.5.1
+  - @dyrected/sdk@2.4.5
+  - @dyrected/vue@2.5.4
+
 ## 2.3.7
 
 ### Patch Changes

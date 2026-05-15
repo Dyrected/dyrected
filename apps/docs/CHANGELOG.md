@@ -1,5 +1,11 @@
 # @dyrected/docs
 
+## 0.1.4
+
+### Patch Changes
+
+- improve Nuxt server request URL handling
+
 ## 0.1.3
 
 ### Patch Changes

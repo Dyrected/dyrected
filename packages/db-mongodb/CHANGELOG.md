@@ -1,5 +1,13 @@
 # @dyrected/db-mongodb
 
+## 2.3.4
+
+### Patch Changes
+
+- improve Nuxt server request URL handling
+- Updated dependencies
+  - @dyrected/core@2.5.1
+
 ## 2.3.3
 
 ### Patch Changes

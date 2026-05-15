@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.5.1
+
+### Patch Changes
+
+- improve Nuxt server request URL handling
+
 ## 2.5.0
 
 ### Minor Changes

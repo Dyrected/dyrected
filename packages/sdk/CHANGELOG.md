@@ -1,5 +1,11 @@
 # @dyrected/sdk
 
+## 2.4.5
+
+### Patch Changes
+
+- improve Nuxt server request URL handling
+
 ## 2.4.4
 
 ### Patch Changes
