@@ -152,11 +152,14 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
       control={control}
       name={fullPath}
       render={({ field: formField }: { field: any }) => (
-        <FormItem className={cn(
-          isBoolean
-            ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-white/50 dy-shadow-sm dy-space-y-0"
-            : "dy-space-y-3"
-        )}>
+        <FormItem
+          data-dy-field={schema.name}
+          className={cn(
+            isBoolean
+              ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-white/50 dy-shadow-sm dy-space-y-0"
+              : "dy-space-y-3"
+          )}
+        >
           <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-gap-2 dy-mb-1")}>
             <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
               {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}

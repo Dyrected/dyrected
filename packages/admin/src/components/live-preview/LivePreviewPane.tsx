@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
-import { ExternalLink, Smartphone, Monitor, RotateCcw } from 'lucide-react';
+import { ExternalLink, Smartphone, Monitor, RotateCcw, MousePointer2 } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 interface LivePreviewPaneProps {
   previewUrl: string;
   data: any;
   mode?: 'postMessage' | 'token';
+  onFieldFocus?: (path: string) => void;
 }
 
-export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: LivePreviewPaneProps) {
+export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFieldFocus }: LivePreviewPaneProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isReady, setIsReady] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
-  const [zoom, setZoom] = useState(0.50); // 85% zoom by default for desktop
+  const [zoom, setZoom] = useState(0.50);
+  const [editMode, setEditMode] = useState(false);
 
   // Handle postMessage communication
   useEffect(() => {
@@ -21,17 +24,20 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'dyrected-live-preview-ready') {
         setIsReady(true);
-        // Send initial data once ready
         iframeRef.current?.contentWindow?.postMessage(
           { type: 'dyrected-live-preview', data },
           '*'
         );
       }
+
+      if (event.data?.type === 'dyrected-element-clicked' && event.data.path) {
+        onFieldFocus?.(event.data.path);
+      }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [mode, data]);
+  }, [mode, data, onFieldFocus]);
 
   // Sync data whenever it changes
   useEffect(() => {
@@ -43,10 +49,20 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
     }
   }, [data, isReady, mode]);
 
+  // Notify iframe when edit mode changes
+  useEffect(() => {
+    if (!isReady) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: editMode ? 'dyrected-enter-edit-mode' : 'dyrected-exit-edit-mode' },
+      '*'
+    );
+  }, [editMode, isReady]);
+
   const reload = () => {
     if (iframeRef.current) {
       iframeRef.current.src = previewUrl;
       setIsReady(false);
+      setEditMode(false);
     }
   };
 
@@ -87,6 +103,25 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
               ))}
             </div>
           )}
+
+          {/* Edit Mode toggle */}
+          <div className="dy-ml-2 dy-pl-2 dy-border-l dy-border-border/40">
+            <Button
+              variant="ghost"
+              size="sm"
+              title={editMode ? 'Exit Edit Mode' : 'Enter Edit Mode — click elements to focus fields'}
+              className={cn(
+                'dy-h-7 dy-gap-1.5 dy-px-2 dy-text-[11px] dy-font-semibold dy-transition-all',
+                editMode
+                  ? 'dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90'
+                  : 'dy-text-muted-foreground/60 hover:dy-text-foreground'
+              )}
+              onClick={() => setEditMode(v => !v)}
+            >
+              <MousePointer2 className="dy-h-3.5 dy-w-3.5" />
+              {editMode ? 'Editing' : 'Edit'}
+            </Button>
+          </div>
         </div>
 
         <div className="dy-flex dy-items-center dy-gap-2">
@@ -109,7 +144,10 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage' }: Live
           <iframe
             ref={iframeRef}
             src={previewUrl}
-            className="dy-border-none dy-transition-transform dy-duration-300"
+            className={cn(
+              'dy-border-none dy-transition-transform dy-duration-300',
+              editMode && 'dy-cursor-crosshair'
+            )}
             style={viewMode === 'desktop' ? {
               width: `${100 / zoom}%`,
               height: `${100 / zoom}%`,

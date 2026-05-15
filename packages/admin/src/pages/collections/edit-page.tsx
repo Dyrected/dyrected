@@ -137,6 +137,14 @@ export function EditEntryPage() {
   const canCreate = (schema.access as any)?.create !== false
   const canUpdate = (schema.access as any)?.update !== false
 
+  const handleFieldFocus = (path: string) => {
+    const el = document.querySelector(`[data-dy-field="${path}"]`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const input = el.querySelector<HTMLElement>('input, textarea, [contenteditable], button[role="combobox"]')
+    input?.focus()
+  }
+
   return (
     <div className="dy-flex dy-h-[calc(100vh-0px)] dy-overflow-hidden dy--mt-6 dy--mx-4 lg:dy--mt-10 lg:dy--mx-6">
       {/* Left Column: Header + Form */}
@@ -271,6 +279,7 @@ export function EditEntryPage() {
               previewUrl={previewUrl}
               data={previewData || entry}
               mode={schema.admin?.previewMode}
+              onFieldFocus={handleFieldFocus}
             />
           </div>
         </div>
