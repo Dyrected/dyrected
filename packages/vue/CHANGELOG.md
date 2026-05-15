@@ -1,5 +1,20 @@
 # @dyrected/vue
 
+## 2.5.3
+
+### Patch Changes
+
+- fix react dependency issues
+- Updated dependencies
+  - @dyrected/sdk@2.4.4
+
+## 2.5.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/sdk@2.4.3
+
 ## 2.5.1
 
 ### Patch Changes

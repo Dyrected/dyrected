@@ -1,5 +1,5 @@
 import { h, createApp, ref, type Component, type App } from 'vue';
-import React, { useEffect, useRef } from 'react';
+import * as React from 'react';
 
 /**
  * wrapVueComponent — Higher-order component that wraps a Vue 3 component 
@@ -7,16 +7,16 @@ import React, { useEffect, useRef } from 'react';
  */
 export function wrapVueComponent(VueComp: Component) {
   const ReactWrapper = (props: any) => {
-    const containerRef = useRef<HTMLDivElement>(null);
-    const appRef = useRef<App | null>(null);
-    const propsRef = useRef(ref(props));
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const appRef = React.useRef<App | null>(null);
+    const propsRef = React.useRef(ref(props));
 
     // Update the reactive propsRef when React props change
-    useEffect(() => {
+    React.useEffect(() => {
       propsRef.current.value = props;
     }, [props]);
 
-    useEffect(() => {
+    React.useEffect(() => {
       if (containerRef.current) {
         const app = createApp({
           setup() {

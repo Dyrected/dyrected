@@ -1,5 +1,22 @@
 # @dyrected/nuxt
 
+## 2.3.7
+
+### Patch Changes
+
+- fix react dependency issues
+- Updated dependencies
+  - @dyrected/sdk@2.4.4
+  - @dyrected/vue@2.5.3
+
+## 2.3.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/sdk@2.4.3
+  - @dyrected/vue@2.5.2
+
 ## 2.3.5
 
 ### Patch Changes

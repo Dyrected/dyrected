@@ -1,5 +1,17 @@
 # @dyrected/sdk
 
+## 2.4.4
+
+### Patch Changes
+
+- fix react dependency issues
+
+## 2.4.3
+
+### Patch Changes
+
+- change the way we import qs
+
 ## 2.4.2
 
 ### Patch Changes

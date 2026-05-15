@@ -1,5 +1,20 @@
 # @dyrected/next
 
+## 2.3.7
+
+### Patch Changes
+
+- fix react dependency issues
+- Updated dependencies
+  - @dyrected/sdk@2.4.4
+
+## 2.3.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/sdk@2.4.3
+
 ## 2.3.5
 
 ### Patch Changes

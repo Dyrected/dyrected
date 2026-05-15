@@ -156,8 +156,15 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // 7. Vite-specific optimization — exclude @dyrected/admin from dep optimization.
     // It's a pre-built ESM library; Vite should serve it as-is without re-bundling.
     if (nuxt.options.vite) {
-      nuxt.options.vite = nuxt.options.vite || {};
       nuxt.options.vite.optimizeDeps = nuxt.options.vite.optimizeDeps || {};
+      nuxt.options.vite.optimizeDeps.include = nuxt.options.vite.optimizeDeps.include || [];
+      const toInclude = ["react", "react-dom", "react-router-dom", "@tanstack/react-query", "qs"];
+      for (const dep of toInclude) {
+        if (!nuxt.options.vite.optimizeDeps.include.includes(dep)) {
+          nuxt.options.vite.optimizeDeps.include.push(dep);
+        }
+      }
+
       nuxt.options.vite.optimizeDeps.exclude = nuxt.options.vite.optimizeDeps.exclude || [];
       if (!nuxt.options.vite.optimizeDeps.exclude.includes("@dyrected/admin")) {
         nuxt.options.vite.optimizeDeps.exclude.push("@dyrected/admin");
@@ -167,7 +174,10 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       }
     }
 
-    // 8. Patch the unctx:transform plugin to skip @dyrected/admin's dist bundle.
+    // 8. Transpile Dyrected packages
+    nuxt.options.build.transpile.push("@dyrected/sdk", "@dyrected/vue", "@dyrected/admin");
+
+    // 9. Patch the unctx:transform plugin to skip @dyrected/admin's dist bundle.
     // unctx injects Vue composable identifiers (toValue, h, ref, …) at the top of
     // every file it processes. The admin bundle is a pre-built React library whose
     // internal variable names can collide with those injections, causing a
