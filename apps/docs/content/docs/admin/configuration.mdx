@@ -246,18 +246,112 @@ export default defineConfig({
 
 ## Theming & CSS Overrides
 
-The Admin UI uses CSS variables for all design tokens. You can override these in your host application's global stylesheet to further customize the look and feel.
+The Admin UI uses CSS custom properties for all design tokens. You can override any of them in your host application's global stylesheet — the changes take effect inside the `.dy-admin-ui` root element.
+
+All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS convention): `H S% L%`.
 
 ```css
-/* In your global.css */
+/* In your global.css — override any token you need */
 :root {
-  --font-sans: "Inter", sans-serif;
-  --font-serif: "Playfair Display", serif;
-  
-  /* You can also override colors directly */
-  --primary: 217 91% 60%; /* Custom blue in HSL */
+  /* ── Fonts ─────────────────────────────────────────── */
+  --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+
+  /* ── Page surface ───────────────────────────────────── */
+  --background:         0 0% 100%;   /* page background */
+  --foreground:         240 10% 4%;  /* default text */
+
+  /* ── Card / panel surfaces ──────────────────────────── */
+  --card:               0 0% 100%;
+  --card-foreground:    240 10% 4%;
+
+  /* ── Popover / dropdown surfaces ────────────────────── */
+  --popover:            0 0% 100%;
+  --popover-foreground: 240 10% 4%;
+
+  /* ── Primary accent (buttons, active states, rings) ─── */
+  --primary:            38 92% 50%;  /* default: amber */
+  --primary-foreground: 60 3% 6%;   /* text on primary bg */
+
+  /* ── Secondary (subtle buttons, tags) ───────────────── */
+  --secondary:            60 10% 95%;
+  --secondary-foreground: 60 3% 6%;
+
+  /* ── Muted (placeholders, helper text, disabled) ─────── */
+  --muted:            60 10% 95%;
+  --muted-foreground: 60 4% 40%;
+
+  /* ── Accent (hover tints) ───────────────────────────── */
+  --accent:            60 10% 95%;
+  --accent-foreground: 60 3% 6%;
+
+  /* ── Destructive (delete buttons, error states) ──────── */
+  --destructive:            0 84% 60%;
+  --destructive-foreground: 60 17% 97%;
+
+  /* ── Borders & inputs ───────────────────────────────── */
+  --border: 60 7% 89%;   /* field borders, dividers */
+  --input:  60 7% 89%;   /* input border color */
+  --ring:   38 92% 50%;  /* focus ring color */
+
+  /* ── Border radius ──────────────────────────────────── */
+  --radius: 0.5rem;      /* applied to cards, inputs, buttons */
+
+  /* ── Sidebar ────────────────────────────────────────── */
+  --sidebar-background:         60 17% 97%;
+  --sidebar-foreground:         60 3% 6%;
+  --sidebar-primary:            38 92% 50%;  /* active item accent */
+  --sidebar-primary-foreground: 60 3% 6%;
+  --sidebar-accent:             60 10% 95%;  /* hover background */
+  --sidebar-accent-foreground:  38 92% 50%;  /* hover text */
+  --sidebar-border:             60 7% 89%;
+  --sidebar-ring:               38 92% 50%;
 }
 ```
+
+### Common customisations
+
+**Change the accent color to blue:**
+```css
+:root {
+  --primary:            217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+  --ring:               217 91% 60%;
+  --sidebar-primary:            217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent-foreground:  217 91% 60%;
+  --sidebar-ring:               217 91% 60%;
+}
+```
+
+**Use a neutral grey palette (no warm tint):**
+```css
+:root {
+  --background:      0 0% 98%;
+  --card:            0 0% 100%;
+  --muted:           0 0% 94%;
+  --muted-foreground: 0 0% 42%;
+  --border:          0 0% 88%;
+  --input:           0 0% 88%;
+  --sidebar-background: 0 0% 97%;
+  --sidebar-border:     0 0% 88%;
+}
+```
+
+**Swap fonts (using a Google Font):**
+```html
+<!-- In your <head> -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet" />
+```
+```css
+:root {
+  --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora", ui-serif, Georgia, serif;
+}
+```
+
+> **Scope:** All CSS variables are declared on `:root` but only consumed inside `.dy-admin-ui`. Overriding them on `:root` is safe and will not leak into the rest of your application's styles.
 
 ---
 
