@@ -5,8 +5,11 @@ const props = defineProps<{
   block: {
     blockType: string
     [key: string]: any
-  }
+  },
+  index?: number
 }>()
+
+const path = computed(() => props.index !== undefined ? `layout.${props.index}` : undefined)
 
 // Map block slugs to components
 const blockComponents: Record<string, any> = {
@@ -34,6 +37,7 @@ const SelectedBlock = computed(() => blockComponents[props.block.blockType])
     :is="SelectedBlock"
     v-if="SelectedBlock"
     v-bind="block"
+    :data-dy-path="path"
   />
   <div v-else class="p-12 border-2 border-dashed border-red-500/20 text-red-400 text-center rounded-xl my-8">
     Unknown block type: <strong>{{ block.blockType }}</strong>

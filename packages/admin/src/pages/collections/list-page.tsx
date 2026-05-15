@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
@@ -240,10 +241,10 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   const initialColumnVisibility = React.useMemo(() => {
     if (!schema) return {}
-    
+
     const visibility: Record<string, boolean> = {}
     const displayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
-    
+
     let visibleFieldNames: string[] = []
     if (schema.admin?.defaultColumns && Array.isArray(schema.admin.defaultColumns)) {
       visibleFieldNames = schema.admin.defaultColumns
@@ -274,9 +275,9 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   if (slug === "media") {
     return (
       <div className="dy-space-y-8 dy-animate-in">
-        <PageHeader 
-          title="Media Library" 
-          description="Manage your media assets and uploads." 
+        <PageHeader
+          title="Media Library"
+          description="Manage your media assets and uploads."
           icon={ImageIcon}
         >
           <Link to={`/collections/${slug}/new`}>
@@ -287,14 +288,14 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           </Link>
         </PageHeader>
 
-        <MediaGrid 
-          items={response?.docs || []} 
-          baseUrl={client?.getBaseUrl() || ""} 
+        <MediaGrid
+          items={response?.docs || []}
+          baseUrl={client?.getBaseUrl() || ""}
           onDelete={handleDelete}
           slug={slug}
         />
 
-        <Pagination 
+        <Pagination
           page={page}
           totalPages={totalPages}
           hasPrevPage={hasPrevPage}
@@ -308,9 +309,9 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   return (
     <div className="dy-space-y-8 dy-animate-in">
-      <PageHeader 
-        title={schema.labels?.plural || schema.label || schema.slug} 
-        description={`Manage your ${schema.slug} entries and update content.`} 
+      <PageHeader
+        title={schema.labels?.plural || schema.label || schema.slug}
+        description={`Manage your ${schema.slug} entries and update content.`}
         icon={Database}
       >
         <Link to={`/collections/${slug}/new`}>
@@ -344,7 +345,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             </Button>
           )}
         />
-        <Pagination 
+        <Pagination
           page={page}
           totalPages={totalPages}
           total={response?.total}

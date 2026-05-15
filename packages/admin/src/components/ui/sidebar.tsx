@@ -238,20 +238,20 @@ const Sidebar = React.forwardRef<
             "dy-group-data-[collapsible=offcanvas]:dy-w-0",
             "dy-group-data-[side=right]:dy-rotate-180",
             variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+              ? "group-data-[collapsible=icon]:dy-w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
+              : "group-data-[collapsible=icon]:dy-w-[--sidebar-width-icon]"
           )}
         />
         <div
           className={cn(
             "dy-fixed dy-inset-y-0 dy-z-10 dy-hidden dy-h-svh dy-w-[--sidebar-width] dy-transition-[left,right,width] dy-duration-200 dy-ease-linear md:dy-flex",
             side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
+              ? "dy-left-0 group-data-[collapsible=offcanvas]:dy-left-[calc(var(--sidebar-width)*-1)]"
+              : "dy-right-0 group-data-[collapsible=offcanvas]:dy-right-[calc(var(--sidebar-width)*-1)]",
             // Adjust the padding for floating and inset variants.
             variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              ? "dy-p-2 group-data-[collapsible=icon]:dy-w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
+              : "group-data-[collapsible=icon]:dy-w-[--sidebar-width-icon] group-data-[side=left]:dy-border-r group-data-[side=right]:dy-border-l",
             className
           )}
           {...props}
@@ -528,12 +528,12 @@ const sidebarMenuButtonVariants = cva(
       variant: {
         default: "hover:dy-bg-sidebar-accent hover:dy-text-sidebar-accent-foreground",
         outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+          "dy-bg-background dy-shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:dy-bg-sidebar-accent hover:dy-text-sidebar-accent-foreground hover:dy-shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "h-8 text-sm",
-        sm: "h-7 text-xs",
-        lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
+        default: "dy-h-8 dy-text-sm",
+        sm: "dy-h-7 dy-text-xs",
+        lg: "dy-h-12 dy-text-sm group-data-[collapsible=icon]:!dy-p-0",
       },
     },
     defaultVariants: {

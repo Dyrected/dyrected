@@ -10,7 +10,12 @@ const { data: response } = await useDyrectedCollection("pages", {
   limit: 1,
 });
 
-const page = computed(() => response.value?.docs?.[0]);
+const pageData = computed(() => response.value?.docs?.[0]);
+
+// Enable Live Preview
+const { data: page } = useLivePreview({
+  initialData: pageData.value,
+});
 
 if (!page.value && slug.value !== "home") {
   throw createError({ statusCode: 404, statusMessage: "Page Not Found" });
@@ -29,7 +34,7 @@ useHead({
 
 <template>
   <main v-if="page">
-    <BlockRenderer v-for="(block, i) in page.layout" :key="i" :block="block" />
+    <BlockRenderer v-for="(block, i) in page.layout" :key="i" :block="block" :index="i" />
   </main>
   <div v-else-if="slug === 'home'" class="flex-1 flex items-center justify-center">
     <div class="min-h-screen flex flex-col items-center justify-center text-center px-6">

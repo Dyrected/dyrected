@@ -51,12 +51,12 @@ function Calendar({
         ),
         button_previous: cn(
           buttonVariants({ variant: buttonVariant }),
-          "h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50",
+          "dy-h-[--cell-size] dy-w-[--cell-size] dy-select-none dy-p-0 aria-disabled:dy-opacity-50",
           defaultClassNames.button_previous
         ),
         button_next: cn(
           buttonVariants({ variant: buttonVariant }),
-          "h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50",
+          "dy-h-[--cell-size] dy-w-[--cell-size] dy-select-none dy-p-0 aria-disabled:dy-opacity-50",
           defaultClassNames.button_next
         ),
         month_caption: cn(
@@ -82,7 +82,7 @@ function Calendar({
             : "[&>svg]:dy-text-muted-foreground dy-flex dy-h-8 dy-items-center dy-gap-1 dy-rounded-md dy-pl-2 dy-pr-1 dy-text-sm [&>svg]:dy-size-3.5",
           defaultClassNames.caption_label
         ),
-        table: "w-full border-collapse",
+        table: "dy-w-full dy-border-collapse",
         weekdays: cn("dy-grid dy-grid-cols-7 dy-mb-2", defaultClassNames.weekdays),
         weekday: cn(
           "dy-text-muted-foreground dy-text-center dy-select-none dy-text-[0.8rem] dy-font-medium",

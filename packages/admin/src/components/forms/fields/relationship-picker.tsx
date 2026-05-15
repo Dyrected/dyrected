@@ -127,7 +127,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
                       <Check
                         className={cn(
                           "dy-h-4 dy-w-4",
-                          values.includes(item.id) ? "opacity-100" : "opacity-0"
+                          values.includes(item.id) ? "dy-opacity-100" : "dy-opacity-0"
                         )}
                       />
                     </div>

@@ -9,14 +9,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg group-[.toaster]:rounded-xl",
-          description: "group-[.toast]:text-muted-foreground",
+            "group toast group-[.toaster]:dy-bg-background group-[.toaster]:dy-text-foreground group-[.toaster]:dy-border-border group-[.toaster]:dy-shadow-lg group-[.toaster]:dy-rounded-xl",
+          description: "group-[.toast]:dy-text-muted-foreground",
           actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+            "group-[.toast]:dy-bg-primary group-[.toast]:dy-text-primary-foreground",
           cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-          success: "group-[.toaster]:border-emerald-500/20 group-[.toaster]:bg-emerald-50 group-[.toaster]:text-emerald-900",
-          error: "group-[.toaster]:border-red-500/20 group-[.toaster]:bg-red-50 group-[.toaster]:text-red-900",
+            "group-[.toast]:dy-bg-muted group-[.toast]:dy-text-muted-foreground",
+          success: "group-[.toaster]:dy-border-emerald-500/20 group-[.toaster]:dy-bg-emerald-50 group-[.toaster]:dy-text-emerald-900",
+          error: "group-[.toaster]:dy-border-red-500/20 group-[.toaster]:dy-bg-red-50 group-[.toaster]:dy-text-red-900",
         },
       }}
       {...props}

@@ -23,7 +23,7 @@ export function Pagination({
   if (totalPages <= 1) return null
 
   return (
-    <div className={`flex items-center justify-between px-4 py-4 border-t border-border/40 ${className}`}>
+    <div className={`dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-4 dy-border-t dy-border-border/40 ${className}`}>
       <p className="dy-text-xs dy-text-muted-foreground">
         Showing page <strong>{page}</strong> of <strong>{totalPages}</strong>
         {total != null && (

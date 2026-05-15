@@ -73,7 +73,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
           <Button
             variant="ghost"
             size="icon"
-            className={`h-8 w-8 ${viewMode === 'desktop' ? 'bg-muted' : ''}`}
+            className={`dy-h-8 dy-w-8 ${viewMode === 'desktop' ? 'dy-bg-muted' : ''}`}
             onClick={() => setViewMode('desktop')}
           >
             <Monitor className="dy-h-4 dy-w-4" />
@@ -81,7 +81,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
           <Button
             variant="ghost"
             size="icon"
-            className={`h-8 w-8 ${viewMode === 'mobile' ? 'bg-muted' : ''}`}
+            className={`dy-h-8 dy-w-8 ${viewMode === 'mobile' ? 'dy-bg-muted' : ''}`}
             onClick={() => setViewMode('mobile')}
           >
             <Smartphone className="dy-h-4 dy-w-4" />
@@ -95,7 +95,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
                   key={z}
                   variant="ghost"
                   size="sm"
-                  className={`h-7 px-2 text-[10px] font-medium ${zoom === z ? 'bg-primary/10 text-primary' : 'text-muted-foreground/60'}`}
+                  className={`dy-h-7 dy-px-2 dy-text-[10px] dy-font-medium ${zoom === z ? 'dy-bg-primary/10 dy-text-primary' : 'dy-text-muted-foreground/60'}`}
                   onClick={() => setZoom(z)}
                 >
                   {Math.round(z * 100)}%
@@ -138,7 +138,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
 
       <div className="dy-flex-1 dy-flex dy-items-center dy-justify-center dy-p-0 dy-overflow-hidden dy-bg-muted/5">
         <div
-          className={`bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] transition-all duration-500 overflow-hidden border border-border/40 ${viewMode === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-full'
+          className={`dy-bg-white dy-shadow-[0_20px_50px_rgba(0,0,0,0.1)] dy-transition-all dy-duration-500 dy-overflow-hidden dy-border dy-border-border/40 ${viewMode === 'mobile' ? 'dy-w-[375px] dy-h-[667px]' : 'dy-w-full dy-h-full'
             }`}
         >
           <iframe

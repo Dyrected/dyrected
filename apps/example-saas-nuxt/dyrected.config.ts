@@ -14,10 +14,7 @@ const pages = defineCollection({
   admin: {
     useAsTitle: "title",
     group: "Content",
-    previewUrl: (doc: any) => {
-      const slug = doc.slug === "home" ? "" : doc.slug;
-      return `/${slug}`;
-    },
+    previewUrl: "slug == 'home' ? '/' : '/' + slug",
   },
   fields: [
     { name: "title", type: "text", required: true },
@@ -224,7 +221,7 @@ const blog = defineCollection({
   admin: {
     useAsTitle: "title",
     group: "Content",
-    previewUrl: (doc: any) => `http://localhost:3000/blog/${doc.slug}`,
+    previewUrl: "'/blog/' + slug",
   },
   fields: [
     { name: "title", type: "text", required: true },

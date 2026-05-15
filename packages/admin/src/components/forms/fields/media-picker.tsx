@@ -184,14 +184,14 @@ export function MediaPicker({
   }
 
   return (
-    <div className={isIcon ? "" : "space-y-3"}>
+    <div className={isIcon ? "" : "dy-space-y-3"}>
       {label && !isIcon && (
         <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
           {label}
         </label>
       )}
 
-      <div className={isIcon ? "" : "relative flex items-center gap-2"}>
+      <div className={isIcon ? "" : "dy-relative dy-flex dy-items-center dy-gap-2"}>
         {!isIcon && (
           <div className="dy-relative dy-flex-1 dy-group">
             <Input

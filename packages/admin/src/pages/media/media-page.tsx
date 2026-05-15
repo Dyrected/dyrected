@@ -495,9 +495,9 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
     <div className="dy-space-y-6 dy-py-6 dy-px-4">
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${isDragActive
-            ? "border-primary bg-primary/5 scale-[0.98]"
-            : "border-muted-foreground/20 hover:border-primary/40 hover:bg-muted/5"
+        className={`dy-border-2 dy-border-dashed dy-rounded-2xl dy-p-12 dy-text-center dy-cursor-pointer dy-transition-all dy-duration-300 ${isDragActive
+            ? "dy-border-primary dy-bg-primary/5 dy-scale-[0.98]"
+            : "dy-border-muted-foreground/20 hover:dy-border-primary/40 hover:dy-bg-muted/5"
           }`}
       >
         <input {...getInputProps()} />

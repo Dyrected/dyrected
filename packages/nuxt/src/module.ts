@@ -9,6 +9,7 @@ import {
 } from "@nuxt/kit";
 import { join } from "path";
 import { existsSync } from "fs";
+import { createRequire } from "module";
 import { DyrectedConfig } from "@dyrected/core";
 
 export interface ModuleOptions extends DyrectedConfig {
@@ -39,6 +40,21 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   } as any,
   setup(options, nuxt) {
     const resolver = createResolver(import.meta.url);
+
+    // Inject admin UI CSS globally. We use createRequire so the path resolves
+    // from this module's location (packages/nuxt), where @dyrected/admin is a
+    // workspace symlink with a built dist/. The app-level node_modules may not
+    // have the dist built yet, so we must not rely on Vite resolving it at the
+    // app level.
+    const _require = createRequire(import.meta.url);
+    try {
+      const adminCssPath = _require.resolve("@dyrected/admin/styles");
+      if (!nuxt.options.css.includes(adminCssPath)) {
+        nuxt.options.css.push(adminCssPath);
+      }
+    } catch {
+      console.warn("[dyrected/nuxt] Could not resolve @dyrected/admin/styles — admin UI may be unstyled.");
+    }
 
     // 1. Add Server Handler (Nitro) - only if apiBase is a relative path
     if (options.apiBase?.startsWith("/")) {
