@@ -3,7 +3,13 @@ title: Next.js Integration
 description: Complete guide to using Dyrected in a Next.js App Router project.
 ---
 
-Dyrected integrates natively with the Next.js App Router via a catch-all API route. You can fetch data server-side, client-side, or use the SDK in Server Components.
+Dyrected integrates natively with Next.js via a catch-all API route. Supports both App Router and Pages Router. You can fetch data server-side, client-side, or use the SDK in Server Components.
+
+> **Recommended:** Use the CLI to set up Dyrected automatically. It detects App Router vs Pages Router, your `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
+> ```bash
+> npx @dyrected/cli init
+> ```
+> The steps below cover manual setup and all available options.
 
 ---
 
@@ -14,7 +20,7 @@ pnpm add @dyrected/core @dyrected/sdk @dyrected/next @dyrected/db-postgres
 ```
 
 > [!NOTE]
-> The `@dyrected/next` package provides the specialized `<DyrectedAdmin />` component and utilities for seamless Next.js App Router integration.
+> The `@dyrected/next` package provides the `<DyrectedAdmin />` component and utilities for Next.js App Router and Pages Router integration.
 
 
 ---
@@ -52,22 +58,23 @@ export default defineConfig({
 
 ## Step 2 — Mount the API route
 
-Create a catch-all route that forwards all Dyrected requests to the Hono router:
+### App Router
 
 ```ts
-// app/dyrected/[...route]/route.ts
-import { createDyrectedApp } from '@dyrected/core/server'
-import config from '@/dyrected.config'
-
-const app = createDyrectedApp(config)
-
-export const GET    = app.fetch
-export const POST   = app.fetch
-export const PATCH  = app.fetch
-export const DELETE = app.fetch
+// app/dyrected/[...route]/route.ts  (or src/app/dyrected/[...route]/route.ts)
+export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'
 ```
 
 All Dyrected REST endpoints are now available at `/dyrected/...`.
+
+### Pages Router
+
+```ts
+// pages/api/dyrected/[...route].ts  (or src/pages/api/dyrected/[...route].ts)
+export { default } from '@dyrected/next'
+```
+
+All Dyrected REST endpoints are available at `/api/dyrected/...`.
 
 ---
 
@@ -152,25 +159,47 @@ This approach has zero network overhead and is the fastest option for self-hoste
 
 ## Step 4 — Embed the Admin UI
 
-Create a simple page at `app/admin/page.tsx`. This page will handle the root `/admin` and all internal admin sub-routes via hash-based navigation.
+The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles Next.js router integration, CSS imports, and client-only mounting.
 
-The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the Next.js router integration, CSS imports, and "Client Only" mounting for you.
+If you used `npx @dyrected/cli init`, this file is already written in the correct location — the CLI detects your `src/` layout and whether you're using App Router or Pages Router.
+
+### App Router
 
 ```tsx
-// app/admin/page.tsx
+// app/cms/page.tsx  (or src/app/cms/page.tsx)
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  return (
-    <DyrectedAdmin 
-      basename="/admin"
-    />
-  )
+  return <DyrectedAdmin apiPath="/dyrected" />
+}
+```
+
+### Pages Router
+
+```tsx
+// pages/cms.tsx  (or src/pages/cms.tsx)
+import { DyrectedAdmin } from '@dyrected/next/admin'
+
+export default function AdminPage() {
+  return <DyrectedAdmin apiPath="/api/dyrected" />
 }
 ```
 
 > [!TIP]
 > `DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
+
+---
+
+## Dev server URL logging
+
+When you run `npx @dyrected/cli init`, it generates an `instrumentation.ts` file at your project root (or `src/instrumentation.ts` for `src/` layouts). This uses Next.js's built-in instrumentation hook to log the admin and API URLs whenever the server starts:
+
+```
+  ➜  Dyrected admin:  http://localhost:3000/cms
+  ➜  Dyrected API:    http://localhost:3000/dyrected
+```
+
+The base URL is read from `NEXT_PUBLIC_APP_URL`, falling back to `http://localhost:3000`. This works in both development and production.
 
 
 ---

@@ -7,7 +7,7 @@ description: Get Dyrected running — choose Cloud for zero infrastructure or se
 
 Before you start, ensure you have:
 - [Node.js 18+](https://nodejs.org) installed
-- A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`)
+- A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
 
 <Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt.js']}>
@@ -42,18 +42,21 @@ The easiest way to get started with Next.js is using the interactive CLI.
 npx @dyrected/cli init
 ```
 
-Choose **Next.js** and **SQLite** (for local development). The CLI will:
+The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
 - Install `@dyrected/core`, `@dyrected/next`, and `@dyrected/db-sqlite`.
 - Create a `dyrected.config.ts`.
-- Mount the API route at `app/dyrected/[...route]/route.ts`.
-- Mount the Admin UI at `app/cms/page.tsx`.
+- Detect your project layout (`src/` directory, App Router vs Pages Router) and write files in the right place.
+- Mount the API route at `app/dyrected/[...route]/route.ts` (or `pages/api/dyrected/[...route].ts` for Pages Router).
+- Mount the Admin UI at `app/cms/page.tsx` (or `pages/cms.tsx` for Pages Router).
+- Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
 
 **2. Configure and Run**
 
-1. Copy `.env.example` to `.env` and set `DYRECTED_JWT_SECRET`.
+1. Copy `.env.example` to `.env` and fill in the values.
 2. Run `pnpm dev`.
-3. Open `http://localhost:3000/cms` to start managing content.
+3. The admin URL is printed to the console on startup — open it to start managing content.
+
 > **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
 
 </Tab>
@@ -67,17 +70,18 @@ The easiest way to get started with Nuxt.js is using the interactive CLI.
 npx @dyrected/cli init
 ```
 
-Choose **Nuxt.js 3** and **SQLite**. The CLI will:
+The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
 - Install dependencies and create `dyrected.config.ts`.
-- Mount the Admin UI at `pages/cms/index.vue`.
+- Detect whether you use an `app/` directory and write the admin page to the correct location (`app/pages/cms/index.vue` or `pages/cms/index.vue`).
+- Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
 - Generate a `.env.example`.
 
 **2. Configure and Run**
 
-1. **Register the module**: Add `'@dyrected/nuxt'` to your `modules` in `nuxt.config.ts`.
-2. **Environment**: Copy `.env.example` to `.env` and configure your secrets.
-3. **Run**: Start your project with `pnpm dev`.
-4. **Dashboard**: Open `http://localhost:3000/cms` to start managing content.
+1. Copy `.env.example` to `.env` and configure your secrets.
+2. Run `pnpm dev`.
+3. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL to start managing content.
+
 > **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
 
 </Tab>

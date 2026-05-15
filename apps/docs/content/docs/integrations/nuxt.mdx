@@ -5,6 +5,12 @@ description: Complete guide to using Dyrected in a Nuxt 3 application with SSR a
 
 The `@dyrected/nuxt` module provides first-class Nuxt 3 support: automatic server handler registration, SSR-aware composables, and live preview support.
 
+> **Recommended:** Use the CLI to set up Dyrected automatically. It detects your project layout, installs dependencies, writes the admin page, and patches `nuxt.config.ts` for you.
+> ```bash
+> npx @dyrected/cli init
+> ```
+> The steps below cover manual setup and all available options.
+
 ---
 
 ## Installation
@@ -43,27 +49,21 @@ Use this if you want to run the Dyrected engine directly inside your Nuxt app. W
 import config from './dyrected.config'
 
 export default defineNuxtConfig({
-  modules: ['@dyrected/nuxt'],
+  modules: [['@dyrected/nuxt', { adminPath: 'cms' }]],
   dyrected: {
     ...config,
     apiBase: '/dyrected',
   },
-  // Necessary for embedding the Admin UI dashboard
-  build: {
-    transpile: ["@dyrected/admin"],
-  },
-  vite: {
-    optimizeDeps: {
-      include: [
-        "react",
-        "react-dom",
-        "react-router-dom",
-        "@tanstack/react-query",
-        "lucide-react"
-      ],
-    },
-  },
 })
+```
+
+> The module automatically handles `build.transpile` and `vite.optimizeDeps` for React and the admin bundle — no manual configuration needed.
+
+The `adminPath` option tells the module where your admin page lives, so it can print the URL when the dev server starts:
+
+```
+  ➜  Dyrected admin:  http://localhost:3000/cms
+  ➜  Dyrected API:    http://localhost:3000/dyrected
 ```
 
 And your `dyrected.config.ts` (using SQLite as an example):
@@ -249,12 +249,13 @@ const { data: page, isLive } = useLivePreview({
 
 The Admin UI is a React-based dashboard. The `@dyrected/nuxt` module provides a `<DyrectedAdmin />` component that handles all the React-to-Vue bridging, mounting, and routing isolation for you.
 
-Create a file at `pages/cms-admin.vue`.
+If you used `npx @dyrected/cli init`, this file is already created in the right place. The CLI detects whether your project uses an `app/` directory (Nuxt's `srcDir`) and writes to `app/pages/cms/index.vue` or `pages/cms/index.vue` accordingly.
+
+For manual setup, create the file at `pages/cms/index.vue` (or `app/pages/cms/index.vue` if using `srcDir`):
 
 ```vue
-<!-- pages/cms-admin.vue -->
+<!-- pages/cms/index.vue -->
 <script setup lang="ts">
-// Disable Nuxt layout for the dashboard to provide a full-screen experience
 definePageMeta({
   layout: false,
 });
@@ -262,13 +263,12 @@ definePageMeta({
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/cms-admin" />
+    <DyrectedAdmin basename="/cms" />
   </ClientOnly>
 </template>
 ```
 
-> [!IMPORTANT]
-> Ensure you have added `@dyrected/admin` to your `build.transpile` and relevant React dependencies to `vite.optimizeDeps.include` in your `nuxt.config.ts` as shown in Step 1.
+> No additional `build.transpile` or `vite.optimizeDeps` config is needed — the module handles all of that automatically.
 
 > [!TIP]
 > If you are using Cloud mode and want to connect directly to the Cloud API from the browser (bypassing the proxy), you can pass `baseUrl`, `apiKey`, and `siteId` props to `<AdminUI />`.
