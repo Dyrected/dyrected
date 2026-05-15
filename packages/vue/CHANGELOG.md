@@ -1,5 +1,14 @@
 # @dyrected/vue
 
+## 2.5.5
+
+### Patch Changes
+
+- Updated the CLI DX
+- Updated dependencies
+  - @dyrected/admin@2.5.3
+  - @dyrected/sdk@2.4.6
+
 ## 2.5.4
 
 ### Patch Changes

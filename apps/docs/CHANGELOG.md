@@ -1,5 +1,11 @@
 # @dyrected/docs
 
+## 0.1.5
+
+### Patch Changes
+
+- Updated the CLI DX
+
 ## 0.1.4
 
 ### Patch Changes
