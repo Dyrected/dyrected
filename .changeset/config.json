@@ -2,7 +2,26 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@dyrected/admin",
+      "@dyrected/cli",
+      "@dyrected/core",
+      "@dyrected/db-mongodb",
+      "@dyrected/db-mysql",
+      "@dyrected/db-postgres",
+      "@dyrected/db-sqlite",
+      "@dyrected/next",
+      "@dyrected/nuxt",
+      "@dyrected/react",
+      "@dyrected/sdk",
+      "@dyrected/storage-b2",
+      "@dyrected/storage-cloudinary",
+      "@dyrected/storage-local",
+      "@dyrected/storage-s3",
+      "@dyrected/vue"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
