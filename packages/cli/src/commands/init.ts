@@ -31,24 +31,27 @@ After running init:
 
       const cwd = process.cwd();
       const detectedFramework = await detectFramework(cwd);
+
+      let framework: string;
       if (detectedFramework) {
-        console.log(chalk.dim(`  Detected framework: ${detectedFramework === "next" ? "Next.js" : "Nuxt 3"}\n`));
-      }
-
-      const { framework } = await prompts({
-        type: "select",
-        name: "framework",
-        message: "Which framework are you using?",
-        choices: [
-          { title: "Next.js", value: "next" },
-          { title: "Nuxt 3", value: "nuxt" },
-        ],
-        initial: detectedFramework === "nuxt" ? 1 : 0,
-      });
-
-      if (!framework) {
-        console.log(chalk.yellow("\nAborted."));
-        process.exit(0);
+        const label = detectedFramework === "next" ? "Next.js" : "Nuxt 3";
+        console.log(chalk.dim(`  Detected framework: ${label} — skipping prompt\n`));
+        framework = detectedFramework;
+      } else {
+        const answer = await prompts({
+          type: "select",
+          name: "framework",
+          message: "Which framework are you using?",
+          choices: [
+            { title: "Next.js", value: "next" },
+            { title: "Nuxt 3", value: "nuxt" },
+          ],
+        });
+        if (!answer.framework) {
+          console.log(chalk.yellow("\nAborted."));
+          process.exit(0);
+        }
+        framework = answer.framework;
       }
 
       const { quickSetup } = await prompts({
