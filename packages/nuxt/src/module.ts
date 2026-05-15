@@ -26,6 +26,12 @@ export interface ModuleOptions extends DyrectedConfig {
   configPath?: string;
   /** Base URL for the Dyrected API. Defaults to the host + apiBase. */
   baseUrl?: string;
+  /**
+   * Path where the Dyrected admin page is mounted.
+   * Used only for the dev-server console log.
+   * @default 'cms'
+   */
+  adminPath?: string;
 }
 
 import { NuxtModule } from "@nuxt/schema";
@@ -120,6 +126,15 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     } else {
       console.warn("[dyrected/nuxt] Could not find dyrected.config.ts. Self-hosted database re-hydration might fail.");
     }
+
+    // Log admin + API URLs when the dev server starts listening
+    nuxt.hook("listen", (_server, listener) => {
+      const base = listener.url.replace(/\/$/, "");
+      const adminSlug = options.adminPath || "cms";
+      const apiSlug = options.apiBase || "/dyrected";
+      console.log(`\n  ➜  Dyrected admin:  ${base}/${adminSlug}`);
+      console.log(`  ➜  Dyrected API:    ${base}${apiSlug}\n`);
+    });
 
     // Ensure 'db' is attached but non-enumerable to avoid serialization crashes in DevTools.
     // The Nitro plugin will re-attach it on the server if it's lost.
