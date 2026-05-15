@@ -150,19 +150,32 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
     // Include all non-hidden fields as columns
     const allDisplayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
+    const titleFieldName = schema.admin?.useAsTitle || allDisplayFields[0]?.name
 
     allDisplayFields.forEach((field: any) => {
+      const isTitleField = field.name === titleFieldName
       cols.push({
         accessorKey: field.name,
         header: field.label || field.name,
-        cell: ({ row }) => (
-          <RenderCell
-            value={row.getValue(field.name)}
-            field={field}
-            client={client}
-            schemas={schemas}
-          />
-        ),
+        cell: ({ row }) => {
+          const cell = (
+            <RenderCell
+              value={row.getValue(field.name)}
+              field={field}
+              client={client}
+              schemas={schemas}
+            />
+          )
+          if (!isTitleField) return cell
+          return (
+            <Link
+              to={`/collections/${slug}/edit/${(row.original as any).id}`}
+              className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
+            >
+              {cell}
+            </Link>
+          )
+        },
       })
     })
 
