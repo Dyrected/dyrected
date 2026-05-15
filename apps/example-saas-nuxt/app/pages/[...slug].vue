@@ -36,7 +36,7 @@ useHead({
       <h1 class="text-4xl font-black text-white mb-4">Welcome to SnackTrack Pro</h1>
       <p class="text-slate-400 mb-8">
         Start by creating a page with the slug "home" in the
-        <a href="/admin" class="text-[#f5c842] underline">Admin Dashboard</a>.
+        <a href="/admin" class="text-gold-400 underline">Admin Dashboard</a>.
       </p>
     </div>
   </div>

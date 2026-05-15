@@ -48,7 +48,10 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       });
     }
 
-    // 2. Add Components
+    // 2. Add Plugin
+    addPlugin(resolver.resolve("./runtime/plugin"));
+
+    // 3. Add Components
     addComponent({
       name: "DyrectedMedia",
       filePath: resolver.resolve("./runtime/components/DyrectedMedia.vue"),
@@ -62,6 +65,10 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     // 3. Add Composables
     addImports([
       { name: "useDyrected", from: resolver.resolve("./runtime/composables/useDyrected") },
+      { name: "useDyrectedClient", from: resolver.resolve("./runtime/composables/useDyrected") },
+      { name: "useDyrectedData", from: resolver.resolve("./runtime/composables/useDyrected") },
+      { name: "useDyrectedCollectionData", from: resolver.resolve("./runtime/composables/useDyrected") },
+      { name: "useDyrectedGlobalData", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedDoc", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedCollection", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedGlobal", from: resolver.resolve("./runtime/composables/useDyrected") },
@@ -138,6 +145,9 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       nuxt.options.vite.optimizeDeps.exclude = nuxt.options.vite.optimizeDeps.exclude || [];
       if (!nuxt.options.vite.optimizeDeps.exclude.includes("@dyrected/admin")) {
         nuxt.options.vite.optimizeDeps.exclude.push("@dyrected/admin");
+      }
+      if (!nuxt.options.vite.optimizeDeps.exclude.includes("@dyrected/vue")) {
+        nuxt.options.vite.optimizeDeps.exclude.push("@dyrected/vue");
       }
     }
 

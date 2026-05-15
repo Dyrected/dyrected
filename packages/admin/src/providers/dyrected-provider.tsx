@@ -14,6 +14,10 @@ interface DyrectedContextType {
   schemas: { collections: any[]; globals: any[]; admin?: any } | null;
   user: any | null;
   setToken: (token: string) => void;
+  components?: {
+    fields?: Record<string, React.ComponentType<any>>;
+    [key: string]: any;
+  };
 }
 
 const DyrectedContext = createContext<DyrectedContextType | undefined>(undefined);
@@ -23,13 +27,15 @@ export interface DyrectedProviderProps {
   apiKey?: string;
   baseUrl?: string;
   siteId?: string;
+  components?: DyrectedContextType['components'];
 }
 
 export function DyrectedProvider({ 
   children, 
   apiKey: initialApiKey, 
   baseUrl: initialBaseUrl,
-  siteId: initialSiteId
+  siteId: initialSiteId,
+  components
 }: DyrectedProviderProps) {
   const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_url") : null) || "");
   const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_key") : null) || undefined);
@@ -108,7 +114,8 @@ export function DyrectedProvider({
       logout,
       isAuthenticated: !!baseUrl && !!apiKey,
       schemas,
-      user
+      user,
+      components
     }}>
       {children}
     </DyrectedContext.Provider>

@@ -11,7 +11,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { DyrectedProvider, useDyrected } from "./providers/dyrected-provider";
+import { DyrectedProvider, useDyrected, type DyrectedProviderProps } from "./providers/dyrected-provider";
 import { QueryProvider } from "./providers/query-provider";
 import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";
@@ -116,7 +116,8 @@ export interface AdminUIProps {
    *   <AdminUI onNavigate={(path) => navigateTo('/admin' + path)} ... />
    */
   onNavigate?: (path: string) => void;
-  isEmbedded?: boolean
+  isEmbedded?: boolean;
+  components?: DyrectedProviderProps['components'];
 }
 
 // ─── Embedded component (BrowserRouter — real URL + history) ─────────────────
@@ -126,7 +127,8 @@ export function AdminUI({
   baseUrl = "/dyrected",
   siteId,
   onNavigate,
-  isEmbedded
+  isEmbedded,
+  components
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -142,7 +144,7 @@ export function AdminUI({
   return (
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
-        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
+        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components}>
           <QueryProvider>
             <HashRouter>
               <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />

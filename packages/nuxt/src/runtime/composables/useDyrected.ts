@@ -1,6 +1,11 @@
 // @ts-ignore
 import { useRuntimeConfig, useAsyncData, useState, useCookie, useRequestFetch } from '#app'
 import { createClient, type DyrectedClient, type BaseSchema } from '@dyrected/sdk'
+import { 
+  useDyrected as useGenericDyrected,
+  useDyrectedCollection as useGenericCollection,
+  useDyrectedGlobal as useGenericGlobal
+} from '@dyrected/vue'
 
 function getClient<TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> {
   const config = useRuntimeConfig().public.dyrected
@@ -14,12 +19,14 @@ function getClient<TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> 
   })
 }
 
-// ---------------------------------------------------------------------------
-// useDyrected — returns the raw SDK client (SSR-friendly singleton per request)
-// ---------------------------------------------------------------------------
-export const useDyrected = <TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> => {
+export const useDyrectedClient = <TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> => {
   return getClient<TSchema>()
 }
+
+export const useDyrected = useDyrectedClient
+export const useDyrectedData = useGenericDyrected
+export const useDyrectedCollectionData = useGenericCollection
+export const useDyrectedGlobalData = useGenericGlobal
 
 // ---------------------------------------------------------------------------
 // useDyrectedDoc — convenience shorthand for a single document
