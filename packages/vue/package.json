@@ -2,9 +2,18 @@
   "name": "@dyrected/vue",
   "version": "2.4.1",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./dist/*.css": "./dist/*.css",
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
