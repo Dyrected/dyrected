@@ -10,6 +10,7 @@ import { RichTextEditor } from "./fields/rich-text-editor"
 import { JsonEditor } from "./fields/json-editor"
 import { DatePicker } from "./fields/date-picker"
 import { RelationshipPicker } from "./fields/relationship-picker"
+import { IconPicker } from "./fields/icon-picker"
 import jexl from 'jexl'
 
 interface FieldRendererProps {
@@ -80,6 +81,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+    case "icon":
+      return <IconPicker schema={schema} field={field} disabled={disabled} />
     case "relationship":
       const isMediaRel = (schema as any).relationTo === "media" ||
         (context?.schemas?.collections?.find((c: any) => c.slug === (schema as any).relationTo)?.upload)

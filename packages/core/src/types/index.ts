@@ -14,7 +14,9 @@ export type FieldType =
   | "blocks"
   | "image"
   | "email"
-  | "url";
+  | "url"
+  | "icon"
+  | "join";
 
 export interface Block {
   slug: string;
@@ -37,6 +39,8 @@ export interface Field {
   hasMany?: boolean; // For relationship/multiSelect/image
   fields?: Field[]; // For array/object
   blocks?: Block[]; // For blocks
+  collection?: string; // For join fields - the target collection slug
+  on?: string; // For join fields - the field in the target collection that references this one
   access?: {
     read?: AccessFunction;
     update?: AccessFunction;
@@ -53,6 +57,7 @@ export interface Field {
     condition?: ((data: any, siblingData: any) => boolean) | string;
     layout?: "radio" | "select" | string;
     direction?: "horizontal" | "vertical";
+    tab?: string;
   };
   /** For database migrations: if set, data from this key will be migrated to the current field name. */
   renameTo?: string;

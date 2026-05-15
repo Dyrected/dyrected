@@ -33,8 +33,10 @@ export function buildSchemaShape(fields: FieldSchema[]) {
       return
     }
 
+    if ((field.type as string) === "join") return
+
     const fieldType = field.type as string
-    if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "image" || fieldType === "richText" || fieldType === "relationship" || fieldType === "date") {
+    if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "image" || fieldType === "richText" || fieldType === "relationship" || fieldType === "date" || fieldType === "icon") {
       validator = z.string()
       if (field.required) validator = validator.min(1, `${label} is required`)
     } else if (field.type === "email") {
@@ -73,6 +75,8 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
       acc[field.name] = buildDefaultValues(field.fields, defaultVal || {})
       return acc
     }
+
+    if ((field.type as string) === "join") return acc
 
     if (field.type === "array") {
       acc[field.name] = Array.isArray(defaultVal) ? defaultVal : []

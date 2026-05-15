@@ -10,6 +10,7 @@ import {
 } from "../ui/form"
 import { Button } from "../ui/button"
 import { Plus, Trash2, Layers } from "lucide-react"
+import { JoinField } from "./fields/join-field"
 import { MediaLibraryDialog } from "../media/media-library-dialog"
 import { cn } from "../../lib/utils"
 import jexl from 'jexl'
@@ -77,6 +78,22 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
   if (!canRead) return null
 
   const fullPath = basePath ? `${basePath}.${schema.name}` : schema.name
+
+  if ((schema.type as string) === "join") {
+    return (
+      <div className="dy-space-y-3">
+        <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
+          <label className="dy-text-sm dy-font-semibold dy-text-foreground/80">
+            {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
+          </label>
+          {schema.admin?.description && (
+            <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-italic">{schema.admin.description}</p>
+          )}
+        </div>
+        <JoinField schema={schema} />
+      </div>
+    )
+  }
 
   if (schema.type === "object") {
     return (
