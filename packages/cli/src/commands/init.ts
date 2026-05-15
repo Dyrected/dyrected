@@ -218,6 +218,20 @@ function buildDyrectedConfig(dbImport: string, storageImport: string, dbConfig: 
 ${dbImport}
 ${storageImport}
 
+// ── Admin Auth ────────────────────────────────────────────────────────────
+// Reserved collection — sole login gateway for the Dyrected dashboard.
+// Email + password are auto-managed; declare only extra fields here.
+
+const admins = defineCollection({
+  slug: '__admins',
+  labels: { singular: 'Admin', plural: 'Admins' },
+  auth: true,
+  fields: [
+    { name: 'name', type: 'text', required: true },
+    { name: 'role', type: 'select', options: ['admin', 'editor'], defaultValue: 'admin' },
+  ],
+})
+
 // ── Collections ──────────────────────────────────────────────────────────
 
 const media = defineCollection({
@@ -280,7 +294,7 @@ const settings = defineGlobal({
 // ── Config ────────────────────────────────────────────────────────────────
 
 export default defineConfig({
-  collections: [media, pages, posts],
+  collections: [admins, media, pages, posts],
   globals: [navigation, settings],
   db: ${dbConfig},
   storage: ${storageConfig},
