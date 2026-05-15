@@ -50,7 +50,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
   constructor(config: DyrectedClientConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
-    this.fetch = config.fetch || fetch;
+    this.fetch = (config.fetch || fetch).bind(globalThis);
     this.defaultDepth = config.defaultDepth ?? 1;
     this.headers = {
       "Content-Type": "application/json",

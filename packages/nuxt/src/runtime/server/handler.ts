@@ -1,4 +1,4 @@
-import { defineEventHandler } from "h3";
+import { defineEventHandler, getRequestURL } from "h3";
 import { createDyrectedApp } from "@dyrected/core/server";
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
@@ -47,10 +47,9 @@ export default defineEventHandler(async (event) => {
   const apiBase = config.apiBase || "/dyrected";
   const path = originalUrl.startsWith(apiBase) ? originalUrl.slice(apiBase.length) || "/" : originalUrl;
 
-  // 3. Construct the full URL for the Request object
-  const protocol = headers["x-forwarded-proto"] || "http";
-  const host = headers["host"] || "localhost:3000";
-  const fullUrl = new URL(path, `${protocol}://${host}`);
+  // 3. Construct the full URL for the Request object using the incoming request origin
+  const url = getRequestURL(event);
+  const fullUrl = new URL(path, url.origin);
 
   // 4. Robustly read the request body from stream or web-req
   let body: any = undefined;

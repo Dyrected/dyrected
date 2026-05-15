@@ -11,9 +11,9 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "scripts": {
@@ -35,7 +35,7 @@
   "homepage": "https://dyrected.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+    "url": "git+https://github.com/Dyrected/dyrected.git"
   },
   "publishConfig": {
     "access": "public"

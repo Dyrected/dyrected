@@ -33,7 +33,7 @@
   "homepage": "https://dyrected.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/she-WritesCode/dyrected.git"
+    "url": "git+https://github.com/Dyrected/dyrected.git"
   },
   "publishConfig": {
     "access": "public"
