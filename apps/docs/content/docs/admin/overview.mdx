@@ -9,55 +9,156 @@ The `@dyrected/admin` package is a React-based Admin UI that is **automatically 
 
 ## Embedding the Admin
 
-### In Next.js
+The Admin UI is a React application exported from `@dyrected/admin`. Every framework integration is a thin wrapper around one of two primitives:
 
-The `@dyrected/next` package provides a `<DyrectedAdmin />` component for easy embedding. Create a catch-all page at `app/admin/page.tsx`:
+| Primitive | When to use |
+|---|---|
+| `<AdminUI />` | You are already in a React tree (Next.js, Vite + React, CRA) |
+| `renderAdminUI(el, props)` | You are outside React (Vue, Nuxt, Svelte, vanilla JS) |
+
+---
+
+### Next.js
+
+`@dyrected/next` wraps `<AdminUI />` with server-component guards. Create a catch-all route:
 
 ```tsx
-// app/admin/page.tsx
+// app/admin/[[...path]]/page.tsx
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
+  return <DyrectedAdmin basename="/admin" />
+}
+```
+
+---
+
+### React (Vite / CRA)
+
+Use `<AdminUI />` directly from `@dyrected/admin`:
+
+```tsx
+// src/pages/Admin.tsx
+import { AdminUI } from '@dyrected/admin'
+
+export function AdminPage() {
   return (
-    <DyrectedAdmin basename="/admin" />
+    <div style={{ height: '100vh' }}>
+      <AdminUI
+        baseUrl={import.meta.env.VITE_DYRECTED_URL}
+        apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+        basename="/admin"
+      />
+    </div>
   )
 }
 ```
 
+---
 
-### In Nuxt
+### Vue 3
 
-The `@dyrected/nuxt` module provides a `<DyrectedAdmin />` component for easy embedding. Create a catch-all page or a dedicated admin route:
+`@dyrected/vue` ships a `<DyrectedAdmin />` component that calls `renderAdminUI` internally. The Admin UI must be client-side only — wrap it in a conditional or use your framework's client-only mechanism:
 
 ```vue
-<!-- pages/cms-admin.vue -->
+<!-- src/pages/Admin.vue -->
 <script setup lang="ts">
-// Disable Nuxt layout for the dashboard
+import { DyrectedAdmin } from '@dyrected/vue'
+</script>
+
+<template>
+  <DyrectedAdmin
+    base-url="https://api.dyrected.cloud"
+    api-key="sk_live_..."
+    basename="/admin"
+  />
+</template>
+```
+
+---
+
+### Nuxt
+
+`@dyrected/nuxt` auto-imports `<DyrectedAdmin />` globally. Always render it inside `<ClientOnly>` since the Admin UI requires the browser DOM:
+
+```vue
+<!-- pages/admin.vue -->
+<script setup lang="ts">
 definePageMeta({ layout: false })
 </script>
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/cms-admin" />
+    <DyrectedAdmin basename="/admin" />
   </ClientOnly>
 </template>
 ```
 
-### Standalone (self-hosted)
+---
 
-When running the `@dyrected/core` app directly, the Admin UI is served at `/admin` automatically. No separate setup is needed.
+### Svelte / Vanilla JS — `renderAdminUI`
+
+`renderAdminUI(container, props)` mounts the Admin UI into any DOM element and returns an unmount function. Use it in any non-React environment:
+
+```ts
+import { renderAdminUI } from '@dyrected/admin'
+
+const container = document.getElementById('admin-root')!
+
+const unmount = renderAdminUI(container, {
+  baseUrl: 'https://api.dyrected.cloud',
+  apiKey: 'sk_live_...',
+  basename: '/admin',
+})
+
+// To tear down (e.g. on SPA route leave):
+// unmount()
+```
+
+**Svelte example:**
+
+```svelte
+<script>
+  import { onMount, onDestroy } from 'svelte'
+  import { renderAdminUI } from '@dyrected/admin'
+
+  let container
+  let unmount
+
+  onMount(() => {
+    unmount = renderAdminUI(container, {
+      baseUrl: import.meta.env.VITE_DYRECTED_URL,
+      apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+      basename: '/admin',
+    })
+  })
+
+  onDestroy(() => unmount?.())
+</script>
+
+<div bind:this={container} style="height: 100vh" />
+```
 
 ---
 
-## `AdminUI` Props
+### Standalone (self-hosted)
+
+When running `@dyrected/core` directly, the Admin UI is served at `/admin` automatically. No embedding needed.
+
+---
+
+## `AdminUI` / `renderAdminUI` Props
+
+Both accept the same props:
 
 | Prop | Type | Required | Description |
 |---|---|---|---|
 | `baseUrl` | `string` | ✅ | The base URL of your Dyrected API (e.g. `https://cms.mysite.com`). |
 | `apiKey` | `string` | ✅ | The Site API key used to authenticate all Admin requests. |
 | `siteId` | `string` | | The Site ID sent as `X-Site-Id` on every request (required in Cloud mode). |
-| `basename` | `string` | | The base path where the admin is mounted (default: `/admin`). |
-| `onNavigate` | `function` | | Callback fired on internal route change. Receives the `path` (relative to basename). |
+| `basename` | `string` | | The URL path prefix where the admin is mounted (default: `/admin`). |
+| `onNavigate` | `(path: string) => void` | | Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded. |
+| `components` | `object` | | Custom field components. See [Custom Field Components](#custom-field-components). |
 
 ---
 
