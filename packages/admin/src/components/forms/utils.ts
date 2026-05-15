@@ -9,31 +9,36 @@ export function normalizeOptions(options: string[] | { label: string; value: str
 export function buildSchemaShape(fields: FieldSchema[]) {
   const shape: Record<string, z.ZodTypeAny> = {}
   fields.forEach((field) => {
+    if ((field.type as string) === "join") return
+    if ((field.type as string) === "row" && field.fields) {
+      Object.assign(shape, buildSchemaShape(field.fields))
+      return
+    }
+
+    const name = field.name!
     let validator: any = z.any()
-    const label = field.label || field.name.charAt(0).toUpperCase() + field.name.slice(1)
+    const label = field.label || name.charAt(0).toUpperCase() + name.slice(1)
 
     if (field.type === "object" && field.fields) {
       validator = z.object(buildSchemaShape(field.fields))
       if (!field.required) validator = validator.optional()
-      shape[field.name] = validator
+      shape[name] = validator
       return
     }
 
     if (field.type === "blocks") {
       validator = z.array(z.any())
       if (!field.required) validator = validator.optional()
-      shape[field.name] = validator
+      shape[name] = validator
       return
     }
 
     if (field.type === "array" && field.fields) {
       validator = z.array(z.object(buildSchemaShape(field.fields)))
       if (!field.required) validator = validator.optional()
-      shape[field.name] = validator
+      shape[name] = validator
       return
     }
-
-    if ((field.type as string) === "join") return
 
     const fieldType = field.type as string
     if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "image" || fieldType === "richText" || fieldType === "relationship" || fieldType === "date" || fieldType === "icon") {
@@ -62,29 +67,34 @@ export function buildSchemaShape(fields: FieldSchema[]) {
       validator = validator.optional()
     }
 
-    shape[field.name] = validator
+    shape[name] = validator
   })
   return shape
 }
 
 export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
   return fields.reduce((acc, field) => {
-    let defaultVal = defaults[field.name] ?? field.defaultValue
-
-    if (field.type === "object" && field.fields) {
-      acc[field.name] = buildDefaultValues(field.fields, defaultVal || {})
+    if ((field.type as string) === "join") return acc
+    if ((field.type as string) === "row" && field.fields) {
+      Object.assign(acc, buildDefaultValues(field.fields, defaults))
       return acc
     }
 
-    if ((field.type as string) === "join") return acc
+    const name = field.name!
+    let defaultVal = defaults[name] ?? field.defaultValue
+
+    if (field.type === "object" && field.fields) {
+      acc[name] = buildDefaultValues(field.fields, defaultVal || {})
+      return acc
+    }
 
     if (field.type === "array") {
-      acc[field.name] = Array.isArray(defaultVal) ? defaultVal : []
+      acc[name] = Array.isArray(defaultVal) ? defaultVal : []
       return acc
     }
 
     if (field.type === "blocks") {
-      acc[field.name] = Array.isArray(defaultVal) ? defaultVal : []
+      acc[name] = Array.isArray(defaultVal) ? defaultVal : []
       return acc
     }
 
@@ -95,7 +105,7 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
       else defaultVal = ""
     }
 
-    acc[field.name] = defaultVal
+    acc[name] = defaultVal
     return acc
   }, {} as any)
 }

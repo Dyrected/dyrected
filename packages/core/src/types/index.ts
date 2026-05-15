@@ -16,7 +16,8 @@ export type FieldType =
   | "email"
   | "url"
   | "icon"
-  | "join";
+  | "join"
+  | "row";
 
 export interface Block {
   slug: string;
@@ -28,7 +29,7 @@ export interface Block {
 }
 
 export interface Field {
-  name: string;
+  name?: string;
   type: FieldType;
   label?: string;
   required?: boolean;
@@ -58,6 +59,7 @@ export interface Field {
     layout?: "radio" | "select" | string;
     direction?: "horizontal" | "vertical";
     tab?: string;
+    width?: string;
   };
   /** For database migrations: if set, data from this key will be migrated to the current field name. */
   renameTo?: string;

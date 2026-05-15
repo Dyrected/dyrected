@@ -148,8 +148,10 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       })
     }
 
-    // Include all non-hidden fields as columns
-    const allDisplayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
+    // Include all non-hidden, non-layout fields as columns
+    const allDisplayFields = schema.fields.filter((f: any) =>
+      f.name !== "status" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+    )
     const titleFieldName = schema.admin?.useAsTitle || allDisplayFields[0]?.name
 
     allDisplayFields.forEach((field: any) => {

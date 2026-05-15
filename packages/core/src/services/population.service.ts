@@ -31,6 +31,13 @@ export class PopulationService {
     const populatedDoc = { ...data };
 
     for (const field of fields) {
+      if ((field.type as string) === 'join') continue;
+      if ((field.type as string) === 'row' && field.fields) {
+        const rowPopulated = await this.populate({ data, fields: field.fields, currentDepth, maxDepth });
+        Object.assign(populatedDoc, rowPopulated);
+        continue;
+      }
+      if (!field.name) continue;
       const value = populatedDoc[field.name];
 
       // Handle Relationship Fields

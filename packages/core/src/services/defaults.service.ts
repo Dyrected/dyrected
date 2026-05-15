@@ -8,6 +8,12 @@ export class DefaultsService {
     const result = { ...(data || {}) };
 
     fields.forEach((field) => {
+      if ((field.type as string) === 'join') return;
+      if ((field.type as string) === 'row' && field.fields) {
+        Object.assign(result, this.apply(field.fields, data));
+        return;
+      }
+      if (!field.name) return;
       let value = result[field.name];
       
       // If value is missing, check if it was renamed (migration support)

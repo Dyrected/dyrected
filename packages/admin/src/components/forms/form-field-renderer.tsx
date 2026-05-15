@@ -77,14 +77,38 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
 
   if (!canRead) return null
 
-  const fullPath = basePath ? `${basePath}.${schema.name}` : schema.name
+  const fullPath = basePath ? `${basePath}.${schema.name!}` : schema.name!
+
+  if ((schema.type as string) === "row") {
+    return (
+      <div className="dy-flex dy-flex-wrap dy-gap-6 dy-items-start">
+        {schema.fields?.map((subField, i) => (
+          <div
+            key={subField.name ?? i}
+            style={{
+              width: subField.admin?.width,
+              flexGrow: subField.admin?.width ? 0 : 1,
+              minWidth: '180px',
+            }}
+          >
+            <FormFieldRenderer
+              schema={subField}
+              basePath={basePath}
+              control={control}
+              collection={collection}
+            />
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   if ((schema.type as string) === "join") {
     return (
       <div className="dy-space-y-3">
         <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
           <label className="dy-text-sm dy-font-semibold dy-text-foreground/80">
-            {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
+            {schema.label || schema.name?.charAt(0).toUpperCase() + (schema.name?.slice(1) ?? '')}
           </label>
           {schema.admin?.description && (
             <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-italic">{schema.admin.description}</p>
@@ -99,7 +123,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
     return (
       <div className="dy-left-accent dy-space-y-6">
         <div className="dy-flex dy-items-center dy-gap-2 dy-mb-2">
-          <h4 className="dy-font-bold dy-text-sm dy-text-foreground/80 dy-tracking-tight">{schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}</h4>
+          <h4 className="dy-font-bold dy-text-sm dy-text-foreground/80 dy-tracking-tight">{schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}</h4>
           {schema.admin?.description && (
             <p className="dy-text-[10px] dy-text-muted-foreground/50 dy-italic">{schema.admin.description}</p>
           )}
@@ -135,7 +159,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
         )}>
           <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-gap-2 dy-mb-1")}>
             <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
-              {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)}
+              {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
               {schema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
             </FormLabel>
             {schema.admin?.description && (

@@ -264,6 +264,7 @@ function fieldsToProperties(fields: Field[]) {
   const required: string[] = [];
 
   for (const field of fields) {
+    if (!field.name || (field.type as string) === 'join' || (field.type as string) === 'row') continue;
     props[field.name] = fieldToSchema(field);
     if (field.required) {
       required.push(field.name);
