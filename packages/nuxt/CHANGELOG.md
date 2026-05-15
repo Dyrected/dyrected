@@ -1,5 +1,14 @@
 # @dyrected/nuxt
 
+## 2.3.5
+
+### Patch Changes
+
+- cdc953e: Fixed mising CSS and added dy- prefix to all classes in components
+- Updated dependencies [cdc953e]
+  - @dyrected/admin@2.5.1
+  - @dyrected/vue@2.5.1
+
 ## 2.3.4
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @dyrected/admin
 
+## 2.5.1
+
+### Patch Changes
+
+- cdc953e: Fixed mising CSS and added dy- prefix to all classes in components
+
 ## 2.5.0
 
 ### Minor Changes

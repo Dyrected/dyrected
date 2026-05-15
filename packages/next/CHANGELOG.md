@@ -1,5 +1,12 @@
 # @dyrected/next
 
+## 2.3.5
+
+### Patch Changes
+
+- Updated dependencies [cdc953e]
+  - @dyrected/admin@2.5.1
+
 ## 2.3.4
 
 ### Patch Changes

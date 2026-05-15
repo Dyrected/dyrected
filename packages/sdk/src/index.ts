@@ -1,4 +1,4 @@
-import qs from "qs";
+import * as qs from "qs";
 import {
   PaginatedResult,
   FileData as Media,
@@ -341,7 +341,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
   private async request(path: string, init?: RequestInit): Promise<any> {
     const url = `${this.baseUrl}${path}`;
-    
+
     const allHeaders: any = {
       ...this.headers,
       ...init?.headers,
