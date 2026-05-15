@@ -1,0 +1,122 @@
+---
+title: React Integration
+description: Use Dyrected in a Vite, CRA, or any non-Next.js React application.
+---
+
+The `@dyrected/react` package provides hooks and a context provider for using Dyrected in any React app. If you are using **Next.js**, use [`@dyrected/next`](/docs/integrations/nextjs) instead — it wraps this package and adds SSR data fetching helpers.
+
+---
+
+## Installation
+
+```bash
+pnpm add @dyrected/react @dyrected/sdk
+```
+
+---
+
+## Step 1 — Wrap your app with `DyrectedProvider`
+
+`DyrectedProvider` makes a configured `DyrectedClient` available to any component in the tree via `useDyrected()`.
+
+```tsx
+// src/main.tsx
+import { DyrectedProvider } from '@dyrected/react'
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: import.meta.env.VITE_DYRECTED_URL,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+})
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <DyrectedProvider client={client}>
+    <App />
+  </DyrectedProvider>
+)
+```
+
+---
+
+## Step 2 — Fetch content with `useDyrected`
+
+`useDyrected()` returns the shared `DyrectedClient` instance:
+
+```tsx
+import { useDyrected } from '@dyrected/react'
+import { useEffect, useState } from 'react'
+
+export function PostList() {
+  const { client } = useDyrected()
+  const [posts, setPosts] = useState([])
+
+  useEffect(() => {
+    client.collection('posts').find().exec().then(res => setPosts(res.docs))
+  }, [client])
+
+  return (
+    <ul>
+      {posts.map(post => <li key={post.id}>{post.title}</li>)}
+    </ul>
+  )
+}
+```
+
+---
+
+## Live Preview — `useLivePreview`
+
+`useLivePreview` subscribes to `postMessage` events from the Dyrected Admin UI and keeps your component data in sync in real time.
+
+```tsx
+// src/pages/PostPreview.tsx
+import { useLivePreview } from '@dyrected/react'
+
+interface Props {
+  initialPost: Post
+}
+
+export function PostPreview({ initialPost }: Props) {
+  const { data: post, isLive } = useLivePreview<Post>({
+    initialData: initialPost,
+    serverURL: import.meta.env.VITE_CMS_ADMIN_URL,
+    // ^ Should match the origin of your Admin UI for security
+  })
+
+  return (
+    <article>
+      {isLive && (
+        <div className="preview-banner">Preview Mode — changes appear in real-time</div>
+      )}
+      <h1 data-dy-path="title">{post.title}</h1>
+      <p data-dy-path="excerpt">{post.excerpt}</p>
+    </article>
+  )
+}
+```
+
+**Hook API:**
+
+```ts
+const { data, isLive } = useLivePreview<T>({
+  initialData: T,      // Shown until the first postMessage arrives
+  serverURL?: string,  // Admin origin for origin validation (defaults to '*')
+})
+```
+
+| Return | Type | Description |
+|---|---|---|
+| `data` | `T` | Live draft data — starts as `initialData`, updates on each Admin message |
+| `isLive` | `boolean` | `true` once the first preview message has been received |
+
+### Inline editing
+
+Add `data-dy-path` attributes to elements to enable click-to-field navigation when the editor activates Edit Mode in the preview toolbar:
+
+```tsx
+<h1 data-dy-path="title">{post.title}</h1>
+<p data-dy-path="excerpt">{post.excerpt}</p>
+<img src={post.coverImage?.url} data-dy-path="coverImage" />
+```
+
+Clicking a marked element sends its field path to the Admin, which scrolls to and focuses the corresponding form input. See [Inline Page Editing](/docs/features/live-preview#inline-page-editing) for the full protocol.
