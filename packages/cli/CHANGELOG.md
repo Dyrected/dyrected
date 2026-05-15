@@ -1,5 +1,34 @@
 # @dyrected/cli
 
+## 2.5.5
+
+### Minor Changes
+
+- Refactor source into `commands/` and `utils/` modules for maintainability.
+- Add MySQL adapter as a database option in `init`.
+- Auto-detect framework from `package.json` and pre-select it in the prompt.
+- Detect Bun lockfile in package manager detection.
+- **Next.js**: detect `src/` directory and App Router vs Pages Router; write files to the correct location.
+- **Next.js**: generate `instrumentation.ts` to log admin and API URLs on server start.
+- **Nuxt**: detect `app/` srcDir and write admin page to the correct location.
+- **Nuxt**: auto-patch `nuxt.config.ts` to register `@dyrected/nuxt` with `adminPath`.
+- Auto-generate TypeScript types after a successful `sync:schema` (`--skip-types` to opt out).
+- Add `--help` examples to all commands.
+- Add `__admins` collection to generated config by default so every new project has dashboard auth.
+- Normalize version to 2.5.5 to align with the rest of the monorepo.
+- Updated dependencies
+  - @dyrected/core@2.5.5
+  - @dyrected/sdk@2.5.5
+
+## 2.3.5
+
+### Patch Changes
+
+- Updated the CLI DX
+- Updated dependencies
+  - @dyrected/core@2.5.2
+  - @dyrected/sdk@2.4.6
+
 ## 2.3.4
 
 ### Patch Changes

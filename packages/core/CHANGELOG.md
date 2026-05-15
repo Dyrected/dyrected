@@ -1,5 +1,17 @@
 # @dyrected/core
 
+## 2.5.5
+
+### Patch Changes
+
+- Normalize version to 2.5.5 to align all `@dyrected/*` packages in a fixed release group. All packages now move together on every future release.
+
+## 2.5.2
+
+### Patch Changes
+
+- Updated the CLI DX
+
 ## 2.5.1
 
 ### Patch Changes

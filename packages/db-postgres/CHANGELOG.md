@@ -1,5 +1,21 @@
 # @dyrected/db-postgres
 
+## 2.5.5
+
+### Patch Changes
+
+- Normalize version to 2.5.5 to align all `@dyrected/*` packages in a fixed release group. All packages now move together on every future release.
+- Updated dependencies
+  - @dyrected/core@2.5.5
+
+## 2.3.5
+
+### Patch Changes
+
+- Updated the CLI DX
+- Updated dependencies
+  - @dyrected/core@2.5.2
+
 ## 2.3.4
 
 ### Patch Changes

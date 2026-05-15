@@ -1,5 +1,29 @@
 # @dyrected/nuxt
 
+## 2.5.5
+
+### Minor Changes
+
+- Add `adminPath` module option to specify where the admin page is mounted.
+- Log admin and API URLs to the console when the Nitro dev server starts (via `listen` hook).
+- Normalize version to 2.5.5 to align with the rest of the monorepo.
+- Updated dependencies
+  - @dyrected/admin@2.5.5
+  - @dyrected/core@2.5.5
+  - @dyrected/sdk@2.5.5
+  - @dyrected/vue@2.5.5
+
+## 2.3.9
+
+### Patch Changes
+
+- Updated the CLI DX
+- Updated dependencies
+  - @dyrected/admin@2.5.3
+  - @dyrected/core@2.5.2
+  - @dyrected/sdk@2.4.6
+  - @dyrected/vue@2.5.5
+
 ## 2.3.8
 
 ### Patch Changes

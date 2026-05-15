@@ -1,5 +1,21 @@
 # @dyrected/react
 
+## 2.5.5
+
+### Patch Changes
+
+- Normalize version to 2.5.5 to align all `@dyrected/*` packages in a fixed release group. All packages now move together on every future release.
+- Updated dependencies
+  - @dyrected/sdk@2.5.5
+
+## 2.3.7
+
+### Patch Changes
+
+- Updated the CLI DX
+- Updated dependencies
+  - @dyrected/sdk@2.4.6
+
 ## 2.3.6
 
 ### Patch Changes
