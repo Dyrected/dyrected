@@ -55,3 +55,13 @@ export function buildEnvTemplate(db: string, storage: string, framework: string)
   lines.push(``, `${prefix}DYRECTED_URL=http://localhost:3000`, `${prefix}DYRECTED_API_KEY=local-dev`);
   return lines.join("\n") + "\n";
 }
+
+export function buildViteEnvTemplate(): string {
+  return [
+    `# Dyrected CMS — Environment Variables`,
+    `# Connect to Dyrected Cloud or a self-hosted instance`,
+    `VITE_DYRECTED_URL=https://api.dyrected.cloud`,
+    `VITE_DYRECTED_API_KEY=sk_live_...`,
+    `VITE_DYRECTED_SITE_ID=site_...`,
+  ].join("\n") + "\n";
+}

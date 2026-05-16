@@ -5,9 +5,9 @@ import path from "path";
 import prompts from "prompts";
 import { execSync } from "child_process";
 import { generateAIPrompt } from "@dyrected/sdk";
-import { detectFramework, detectPackageManager } from "../utils/detect.js";
-import { buildDbConfig, buildStorageConfig, buildEnvTemplate } from "../utils/config-templates.js";
-import { writeNextFiles, writeNuxtFiles } from "../utils/writers.js";
+import { detectFramework, detectPackageManager, type SupportedFramework } from "../utils/detect.js";
+import { buildDbConfig, buildStorageConfig, buildEnvTemplate, buildViteEnvTemplate } from "../utils/config-templates.js";
+import { writeNextFiles, writeNuxtFiles, writeReactFiles, writeVueFiles } from "../utils/writers.js";
 
 export function registerInit(program: Command) {
   program
@@ -30,13 +30,23 @@ After running init:
       console.log(chalk.bold("\n🚀 Welcome to Dyrected CMS\n"));
 
       const cwd = process.cwd();
-      const detectedFramework = await detectFramework(cwd);
+      const detection = await detectFramework(cwd);
 
-      let framework: string;
-      if (detectedFramework) {
-        const label = detectedFramework === "next" ? "Next.js" : "Nuxt 3";
-        console.log(chalk.dim(`  Detected framework: ${label} — skipping prompt\n`));
-        framework = detectedFramework;
+      if (detection && !detection.supported) {
+        console.log(chalk.yellow(`  Detected framework: ${detection.name}`));
+        console.log(chalk.red(`\n  Dyrected doesn't have a native ${detection.name} integration yet.`));
+        console.log(chalk.dim(`  Supported frameworks: Next.js, Nuxt 3, React, Vue`));
+        console.log(chalk.dim(`  You can still use the SDK directly: https://docs.dyrected.com/docs/integrations/sdk\n`));
+        process.exit(0);
+      }
+
+      let framework: SupportedFramework;
+      if (detection?.supported) {
+        const labels: Record<SupportedFramework, string> = {
+          next: "Next.js", nuxt: "Nuxt 3", react: "React", vue: "Vue",
+        };
+        console.log(chalk.dim(`  Detected framework: ${labels[detection.framework]} — skipping prompt\n`));
+        framework = detection.framework;
       } else {
         const answer = await prompts({
           type: "select",
@@ -45,6 +55,8 @@ After running init:
           choices: [
             { title: "Next.js", value: "next" },
             { title: "Nuxt 3", value: "nuxt" },
+            { title: "React", value: "react" },
+            { title: "Vue", value: "vue" },
           ],
         });
         if (!answer.framework) {
@@ -54,59 +66,69 @@ After running init:
         framework = answer.framework;
       }
 
-      const { quickSetup } = await prompts({
-        type: "confirm",
-        name: "quickSetup",
-        message: "Use Quick Setup (SQLite + Local Storage)?",
-        initial: true,
-      });
+      const isSpa = framework === "react" || framework === "vue";
 
       const { adminPath } = await prompts({
         type: "text",
         name: "adminPath",
         message: "What path should the admin dashboard use?",
-        initial: "cms",
-        format: (val) => val.replace(/^\//, "").replace(/\/$/, ""),
+        initial: "admin",
+        format: (val: string) => val.replace(/^\//, "").replace(/\/$/, ""),
       });
 
       let db = "sqlite";
       let storage = "local";
 
-      if (!quickSetup) {
-        const dbResponse = await prompts({
-          type: "select",
-          name: "value",
-          message: "Which database adapter?",
-          choices: [
-            { title: "PostgreSQL (recommended)", value: "postgres" },
-            { title: "MySQL", value: "mysql" },
-            { title: "SQLite (local dev)", value: "sqlite" },
-            { title: "MongoDB", value: "mongodb" },
-          ],
+      if (!isSpa) {
+        const { quickSetup } = await prompts({
+          type: "confirm",
+          name: "quickSetup",
+          message: "Use Quick Setup (SQLite + Local Storage)?",
+          initial: true,
         });
-        db = dbResponse.value;
 
-        const storageResponse = await prompts({
-          type: "select",
-          name: "value",
-          message: "Which storage adapter?",
-          choices: [
-            { title: "Local filesystem", value: "local" },
-            { title: "AWS S3", value: "s3" },
-            { title: "Backblaze B2", value: "b2" },
-            { title: "Cloudinary", value: "cloudinary" },
-          ],
-        });
-        storage = storageResponse.value;
+        if (!quickSetup) {
+          const dbResponse = await prompts({
+            type: "select",
+            name: "value",
+            message: "Which database adapter?",
+            choices: [
+              { title: "PostgreSQL (recommended)", value: "postgres" },
+              { title: "MySQL", value: "mysql" },
+              { title: "SQLite (local dev)", value: "sqlite" },
+              { title: "MongoDB", value: "mongodb" },
+            ],
+          });
+          db = dbResponse.value;
+
+          const storageResponse = await prompts({
+            type: "select",
+            name: "value",
+            message: "Which storage adapter?",
+            choices: [
+              { title: "Local filesystem", value: "local" },
+              { title: "AWS S3", value: "s3" },
+              { title: "Backblaze B2", value: "b2" },
+              { title: "Cloudinary", value: "cloudinary" },
+            ],
+          });
+          storage = storageResponse.value;
+        }
       }
 
       const packageManager = detectPackageManager(cwd);
 
       // ── 1. Install dependencies ────────────────────────────────────────────
-      const frameworkPkg = framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
-      const dbPkg = `@dyrected/db-${db}`;
-      const storagePkg = `@dyrected/storage-${storage}`;
-      const deps = [frameworkPkg, dbPkg, storagePkg].join(" ");
+      let deps: string;
+      if (isSpa) {
+        const frameworkPkg = framework === "react" ? "@dyrected/react" : "@dyrected/vue";
+        deps = frameworkPkg;
+      } else {
+        const frameworkPkg = framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
+        const dbPkg = `@dyrected/db-${db}`;
+        const storagePkg = `@dyrected/storage-${storage}`;
+        deps = [frameworkPkg, dbPkg, storagePkg].join(" ");
+      }
 
       console.log(chalk.blue(`\nInstalling ${deps}...`));
       try {
@@ -116,39 +138,47 @@ After running init:
         console.log(chalk.cyan(`  ${packageManager} add ${deps}\n`));
       }
 
-      // ── 2. Write dyrected.config.ts ────────────────────────────────────────
-      const dbImport = `import { ${db}Adapter } from '${dbPkg}'`;
-      const storageImport = `import { ${storage}Adapter } from '${storagePkg}'`;
-      const configContent = buildDyrectedConfig(dbImport, storageImport, buildDbConfig(db), buildStorageConfig(storage));
+      // ── 2. Write dyrected.config.ts (full-stack only) ─────────────────────
+      if (!isSpa) {
+        const dbPkg = `@dyrected/db-${db}`;
+        const storagePkg = `@dyrected/storage-${storage}`;
+        const dbImport = `import { ${db}Adapter } from '${dbPkg}'`;
+        const storageImport = `import { ${storage}Adapter } from '${storagePkg}'`;
+        const configContent = buildDyrectedConfig(dbImport, storageImport, buildDbConfig(db), buildStorageConfig(storage));
 
-      const configPath = path.join(cwd, "dyrected.config.ts");
-      if (await fs.pathExists(configPath)) {
-        const { overwrite } = await prompts({
-          type: "confirm",
-          name: "overwrite",
-          message: "dyrected.config.ts already exists. Overwrite?",
-          initial: false,
-        });
-        if (!overwrite) {
-          console.log(chalk.yellow("Skipping config file."));
+        const configPath = path.join(cwd, "dyrected.config.ts");
+        if (await fs.pathExists(configPath)) {
+          const { overwrite } = await prompts({
+            type: "confirm",
+            name: "overwrite",
+            message: "dyrected.config.ts already exists. Overwrite?",
+            initial: false,
+          });
+          if (!overwrite) {
+            console.log(chalk.yellow("Skipping config file."));
+          } else {
+            await fs.outputFile(configPath, configContent);
+            console.log(chalk.green("✔  dyrected.config.ts written"));
+          }
         } else {
           await fs.outputFile(configPath, configContent);
           console.log(chalk.green("✔  dyrected.config.ts written"));
         }
-      } else {
-        await fs.outputFile(configPath, configContent);
-        console.log(chalk.green("✔  dyrected.config.ts written"));
       }
 
       // ── 3. Framework-specific files ────────────────────────────────────────
       if (framework === "next") {
         await writeNextFiles(cwd, adminPath);
-      } else {
+      } else if (framework === "nuxt") {
         await writeNuxtFiles(cwd, adminPath);
+      } else if (framework === "react") {
+        await writeReactFiles(cwd, adminPath);
+      } else if (framework === "vue") {
+        await writeVueFiles(cwd, adminPath);
       }
 
       // ── 4. .env setup ──────────────────────────────────────────────────────
-      const envContent = buildEnvTemplate(db, storage, framework);
+      const envContent = isSpa ? buildViteEnvTemplate() : buildEnvTemplate(db, storage, framework);
       const envExamplePath = path.join(cwd, ".env.example");
       await fs.outputFile(envExamplePath, envContent);
       console.log(chalk.green("✔  .env.example written"));
@@ -197,22 +227,30 @@ After running init:
 
       // ── Done ───────────────────────────────────────────────────────────────
       console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
-      console.log(chalk.cyan(`  1. Configure your environment variables in .env`));
-      console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
-      console.log(chalk.cyan("  3. Run: npx @dyrected/cli generate:types\n"));
+      if (isSpa) {
+        console.log(chalk.cyan(`  1. Set VITE_DYRECTED_URL and VITE_DYRECTED_API_KEY in .env`));
+        console.log(chalk.cyan(`  2. Add a route for /${adminPath} in your router config`));
+        console.log(chalk.cyan("  3. Start your dev server and open the admin route\n"));
+      } else {
+        console.log(chalk.cyan(`  1. Configure your environment variables in .env`));
+        console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
+        console.log(chalk.cyan("  3. Run: npx @dyrected/cli generate:types\n"));
+      }
 
-      const promptText = generateAIPrompt(framework as any, {
-        baseUrl: "http://localhost:3000",
-        isSelfHosted: true,
-      });
-      const promptPath = path.join(cwd, "dyrected-ai-prompt.md");
-      await fs.outputFile(promptPath, promptText);
+      if (!isSpa) {
+        const promptText = generateAIPrompt(framework as any, {
+          baseUrl: "http://localhost:3000",
+          isSelfHosted: true,
+        });
+        const promptPath = path.join(cwd, "dyrected-ai-prompt.md");
+        await fs.outputFile(promptPath, promptText);
 
-      console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
-      console.log(chalk.cyan(`  Prompt saved to: ${chalk.bold("dyrected-ai-prompt.md")}`));
-      console.log(
-        chalk.dim("  Copy the contents of this file to your AI (Claude, GPT, etc.) to scaffold your CMS logic.\n"),
-      );
+        console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
+        console.log(chalk.cyan(`  Prompt saved to: ${chalk.bold("dyrected-ai-prompt.md")}`));
+        console.log(
+          chalk.dim("  Copy the contents of this file to your AI (Claude, GPT, etc.) to scaffold your CMS logic.\n"),
+        );
+      }
     });
 }
 

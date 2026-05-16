@@ -2,6 +2,68 @@ import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
 
+export async function writeReactFiles(cwd: string, adminPath: string) {
+  const hasSrc = await fs.pathExists(path.join(cwd, "src"));
+  const base = hasSrc ? "src" : ".";
+  const rel = hasSrc ? `src/${adminPath}` : adminPath;
+
+  const adminPagePath = path.join(cwd, base, `${adminPath}.tsx`);
+  if (!(await fs.pathExists(adminPagePath))) {
+    await fs.outputFile(
+      adminPagePath,
+      `import { DyrectedAdmin } from '@dyrected/admin'
+
+export default function AdminPage() {
+  return (
+    <DyrectedAdmin
+      apiPath={import.meta.env.VITE_DYRECTED_URL}
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+    />
+  )
+}
+`,
+    );
+    console.log(chalk.green(`✔  ${rel}.tsx written`));
+  }
+
+  console.log(chalk.yellow(`\n  Add a route for /${adminPath} pointing to AdminPage in your router config.\n`));
+}
+
+export async function writeVueFiles(cwd: string, adminPath: string) {
+  const hasSrc = await fs.pathExists(path.join(cwd, "src"));
+  const viewsDir = hasSrc ? path.join(cwd, "src/views") : path.join(cwd, "views");
+  const rel = hasSrc ? `src/views/AdminView.vue` : `views/AdminView.vue`;
+
+  const adminPagePath = path.join(viewsDir, "AdminView.vue");
+  if (!(await fs.pathExists(adminPagePath))) {
+    await fs.outputFile(
+      adminPagePath,
+      `<template>
+  <DyrectedAdmin
+    :config="{
+      baseUrl: dyrectedUrl,
+      apiKey: dyrectedApiKey,
+      siteId: dyrectedSiteId,
+    }"
+    basename="/${adminPath}"
+  />
+</template>
+
+<script setup lang="ts">
+import { DyrectedAdmin } from '@dyrected/vue'
+
+const dyrectedUrl = import.meta.env.VITE_DYRECTED_URL
+const dyrectedApiKey = import.meta.env.VITE_DYRECTED_API_KEY
+const dyrectedSiteId = import.meta.env.VITE_DYRECTED_SITE_ID
+</script>
+`,
+    );
+    console.log(chalk.green(`✔  ${rel} written`));
+  }
+
+  console.log(chalk.yellow(`\n  Add a route for /${adminPath} pointing to AdminView in your router config.\n`));
+}
+
 export async function writeNextFiles(cwd: string, adminPath: string) {
   const hasSrc = await fs.pathExists(path.join(cwd, "src"));
   const appDir = hasSrc ? path.join(cwd, "src/app") : path.join(cwd, "app");
