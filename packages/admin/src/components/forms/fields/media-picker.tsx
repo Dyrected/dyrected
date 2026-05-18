@@ -11,6 +11,7 @@ import {
 import { Input } from "../../ui/input"
 import { cn, getMediaUrl } from "../../../lib/utils"
 import { MediaLibraryDialog } from "../../media/media-library-dialog"
+import type { Media } from "@dyrected/sdk"
 
 interface MediaPickerProps {
   collection: string
@@ -99,7 +100,7 @@ export function MediaPicker({
     enabled: !!client && selectedIds.length > 0,
   })
 
-  const getPreviewUrl = (item: any) => {
+  const getPreviewUrl = (item: Media) => {
     if (!item) return ""
     if (item.mimeType === 'video/youtube') {
       const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#\&\?]*)/)
