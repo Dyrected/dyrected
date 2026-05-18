@@ -25,14 +25,18 @@ export default defineNitroPlugin(async (nitroApp: any) => {
         userConfig = imported.default || imported;
       }
       if (userConfig) {
-        (globalThis as any).__dyrected_config = userConfig;
+        console.log("[dyrected/nuxt] plugin raw userConfig keys:", Object.keys(userConfig || {}));
+        console.log("[dyrected/nuxt] plugin raw userConfig default keys:", Object.keys(userConfig?.default || {}));
+        const configObj = (userConfig.default && (userConfig.default.collections || userConfig.default.globals || userConfig.default.db)) ? userConfig.default : userConfig;
+        console.log("[dyrected/nuxt] plugin chosen configObj keys:", Object.keys(configObj || {}));
+        (globalThis as any).__dyrected_config = configObj;
         
-        if (userConfig.db) {
-          (globalThis as any).__dyrected_db = userConfig.db;
+        if (configObj.db) {
+          (globalThis as any).__dyrected_db = configObj.db;
           console.log("[dyrected/nuxt] Database re-attached to global context");
         }
-        if (userConfig.storage) {
-          (globalThis as any).__dyrected_storage = userConfig.storage;
+        if (configObj.storage) {
+          (globalThis as any).__dyrected_storage = configObj.storage;
           console.log("[dyrected/nuxt] Storage adapter re-attached to global context");
         }
       }

@@ -136,21 +136,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
   }
 
   if (schema.type === "object") {
-    return (
-      <div className="dy-left-accent dy-space-y-6">
-        <div className="dy-flex dy-items-center dy-gap-2 dy-mb-2">
-          <h4 className="dy-font-bold dy-text-sm dy-text-foreground/80 dy-tracking-tight">{schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}</h4>
-          {schema.admin?.description && (
-            <p className="dy-text-[10px] dy-text-muted-foreground/50 dy-italic">{schema.admin.description}</p>
-          )}
-        </div>
-        <div className="dy-space-y-6">
-          {schema.fields?.map(subField => (
-            <FormFieldRenderer key={subField.name} schema={subField} basePath={fullPath} control={control} collection={collection} />
-          ))}
-        </div>
-      </div>
-    )
+    return <ObjectFieldRenderer schema={schema} basePath={fullPath} control={control} collection={collection} />
   }
 
   if (schema.type === "array") {
@@ -208,6 +194,102 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
   )
 }
 
+function ObjectFieldRenderer({
+  schema,
+  basePath,
+  control,
+  collection
+}: {
+  schema: FieldSchema
+  basePath: string
+  control: any
+  collection: string
+}) {
+  const [isCollapsed, setIsCollapsed] = React.useState(false)
+
+  const objectValues = useWatch({
+    control,
+    name: basePath as any
+  }) || {}
+
+  const getObjectSummary = () => {
+    if (!objectValues || typeof objectValues !== 'object') return ""
+
+    // Look for candidates to preview
+    const candidates = ["title", "label", "name", "filename", "header", "slug", "text"]
+    for (const key of candidates) {
+      if (objectValues[key] && typeof objectValues[key] === "string" && objectValues[key].trim()) {
+        return objectValues[key].trim()
+      }
+    }
+
+    // Fallback: list of non-empty text/number/boolean values in subfields
+    const summaries: string[] = []
+    schema.fields?.forEach(field => {
+      const val = objectValues[field.name]
+      if (val !== undefined && val !== null && val !== "") {
+        if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+          summaries.push(`${field.label || field.name}: ${val}`)
+        }
+      }
+    })
+
+    if (summaries.length > 0) {
+      return summaries.slice(0, 3).join(", ")
+    }
+
+    return "Empty"
+  }
+
+  return (
+    <div className="dy-border dy-border-muted/30 dy-bg-muted/5 dy-rounded-2xl dy-p-4 dy-transition-all">
+      {/* Header with Collapse Controls */}
+      <div className="dy-flex dy-items-center dy-justify-between dy-pb-3 dy-border-b dy-border-muted/20 dy-mb-4">
+        <div className="dy-flex dy-flex-col dy-min-w-0">
+          <div className="dy-flex dy-items-center dy-gap-2">
+            <h4 className="dy-font-bold dy-text-sm dy-text-foreground/80 dy-tracking-tight">
+              {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
+            </h4>
+            {isCollapsed && (
+              <span className="dy-text-xs dy-text-muted-foreground/60 dy-truncate max-w-[250px] dy-font-normal dy-italic">
+                — {getObjectSummary()}
+              </span>
+            )}
+          </div>
+          {schema.admin?.description && (
+            <p className="dy-text-[10px] dy-text-muted-foreground/50 dy-italic dy-mt-0.5">{schema.admin.description}</p>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="dy-h-7 dy-w-7 dy-text-muted-foreground/40 hover:dy-bg-muted"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          title={isCollapsed ? "Expand section" : "Collapse section"}
+        >
+          {isCollapsed ? <ChevronDown className="dy-w-3.5 dy-h-3.5" /> : <ChevronUp className="dy-w-3.5 dy-h-3.5" />}
+        </Button>
+      </div>
+
+      {/* Object Fields */}
+      {!isCollapsed && (
+        <div className="dy-space-y-6">
+          {schema.fields?.map(subField => (
+            <FormFieldRenderer
+              key={subField.name}
+              schema={subField}
+              basePath={basePath}
+              control={control}
+              collection={collection}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ArrayItemHeader({
   basePath,
   index,
@@ -239,15 +321,25 @@ function ArrayItemHeader({
   }
 
   const previewText = getPreviewText()
+  const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
+
   return (
-    <div className="dy-flex dy-items-center dy-gap-2">
-      <span className="dy-font-bold dy-text-xs dy-text-foreground/70 dy-tracking-tight">
-        {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)} {index + 1}
-      </span>
-      {previewText && (
-        <span className="dy-text-xs dy-font-semibold dy-text-primary dy-truncate max-w-[200px]">
-          — {previewText}
+    <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+      <div className="dy-inline-flex dy-items-center dy-gap-1.5 dy-bg-muted/30 dy-px-1.5 dy-py-0.5 dy-rounded-md dy-border dy-border-muted/10">
+        <span className="dy-text-[10px] dy-font-bold dy-text-muted-foreground dy-uppercase dy-tracking-wider">
+          {label}
         </span>
+        <span className="dy-text-[10px] dy-font-bold dy-text-primary">
+          #{index + 1}
+        </span>
+      </div>
+      {previewText && (
+        <>
+          <span className="dy-text-muted-foreground/30 dy-text-xs dy-font-light">·</span>
+          <span className="dy-text-xs dy-font-semibold dy-text-foreground/70 dy-truncate max-w-[180px] sm:max-w-[280px]">
+            {previewText}
+          </span>
+        </>
       )}
     </div>
   )
@@ -297,12 +389,12 @@ function SortableArrayItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "dy-relative dy-group dy-bg-muted/5 dy-border dy-border-muted/30 dy-rounded-2xl dy-p-4 dy-mb-4 dy-transition-all",
+        "dy-relative dy-group dy-bg-muted/5 dy-border dy-border-muted/30 dy-rounded-2xl dy-p-3 dy-mb-3 dy-transition-all",
         isDragging ? "dy-shadow-lg dy-ring-2 dy-ring-primary/20 dy-bg-muted/10" : "hover:dy-bg-muted/10"
       )}
     >
       {/* Header with Drag Handle & Collapse Controls */}
-      <div className="dy-flex dy-items-center dy-justify-between dy-pb-3 dy-border-b dy-border-muted/20 dy-mb-4">
+      <div className="dy-flex dy-items-center dy-justify-between dy-pb-2 dy-border-b dy-border-muted/20 dy-mb-3">
         <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
           <div
             {...attributes}
@@ -444,7 +536,7 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
   }
 
   return (
-    <div className="dy-space-y-6 dy-transition-all dy-py-6">
+    <div className="dy-space-y-4 dy-transition-all dy-py-4">
       <div className="dy-flex dy-justify-between dy-items-end dy-pb-2">
         <div className="dy-space-y-1">
           <div className="dy-flex dy-items-center dy-gap-2">
@@ -480,10 +572,10 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
         </div>
       </div>
 
-      <div className="dy-space-y-4">
+      <div className="dy-space-y-3">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-            <div className="dy-space-y-4">
+            <div className="dy-space-y-3">
               {fields.map((item, index) => (
                 <SortableArrayItem
                   key={item.id}
@@ -503,7 +595,7 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
         </DndContext>
 
         {fields.length === 0 && (
-          <div className="dy-flex dy-flex-col dy-items-center dy-justify-center dy-py-12 dy-border-2 dy-border-dashed dy-border-muted dy-rounded-3xl dy-bg-muted/5 dy-space-y-3">
+          <div className="dy-flex dy-flex-col dy-items-center dy-justify-center dy-py-12 dy-border-2 dy-border-dashed dy-border-muted/30 dy-rounded-3xl dy-bg-muted/5 dy-space-y-3">
             <div className="dy-p-3 dy-bg-muted dy-rounded-full">
               <Layers className="dy-h-6 dy-w-6 dy-text-muted-foreground/40" />
             </div>

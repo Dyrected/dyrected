@@ -49,14 +49,17 @@ const AUDIT_COLLECTION: CollectionConfig = {
  * registering the __audit collection if any collection has audit: true.
  */
 export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
-  const needsAudit = config.collections.some((col) => col.audit);
+  const collections = config?.collections || [];
+  const globals = config?.globals || [];
+  const needsAudit = collections.some((col) => col.audit);
 
-  const normalizedCollections = config.collections.map((col) => {
-    const existingFieldNames = new Set(col.fields.map((f) => f.name));
+  const normalizedCollections = collections.map((col) => {
+    const fields = col.fields || [];
+    const existingFieldNames = new Set(fields.map((f) => f.name));
     const fieldsToInject = SYSTEM_FIELDS.filter((f) => !existingFieldNames.has(f.name));
     return {
       ...col,
-      fields: [...col.fields, ...fieldsToInject],
+      fields: [...fields, ...fieldsToInject],
     };
   });
 
@@ -70,5 +73,6 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
       ...normalizedCollections,
       ...(needsAudit && !hasAuditCollection ? [AUDIT_COLLECTION] : []),
     ],
+    globals,
   };
 }

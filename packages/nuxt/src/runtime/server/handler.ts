@@ -12,7 +12,13 @@ export default defineEventHandler(async (event) => {
     
     // Merge from global config if available
     if ((globalThis as any).__dyrected_config) {
-      dyrectedConfig = { ...dyrectedConfig, ...(globalThis as any).__dyrected_config };
+      const gConfig = (globalThis as any).__dyrected_config;
+      console.log("[dyrected/nuxt] raw __dyrected_config:", gConfig);
+      console.log("[dyrected/nuxt] raw __dyrected_config keys:", Object.keys(gConfig || {}));
+      console.log("[dyrected/nuxt] raw __dyrected_config default keys:", Object.keys(gConfig?.default || {}));
+      const configObj = (gConfig.default && (gConfig.default.collections || gConfig.default.globals || gConfig.default.db)) ? gConfig.default : gConfig;
+      console.log("[dyrected/nuxt] chosen configObj keys:", Object.keys(configObj || {}));
+      dyrectedConfig = { ...dyrectedConfig, ...configObj };
     }
 
     // Re-hydrate DB from global context if missing (populated by the Nitro plugin)
@@ -22,6 +28,7 @@ export default defineEventHandler(async (event) => {
     if (!dyrectedConfig.storage || typeof (dyrectedConfig.storage as any).upload !== "function") {
       dyrectedConfig.storage = (globalThis as any).__dyrected_storage;
     }
+    console.log("[dyrected/nuxt] Final dyrectedConfig keys:", Object.keys(dyrectedConfig));
     console.log("[dyrected/nuxt] Initializing app. DB:", !!dyrectedConfig.db, "Storage:", !!dyrectedConfig.storage);
     app = await createDyrectedApp(dyrectedConfig);
   }

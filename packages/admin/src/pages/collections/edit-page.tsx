@@ -149,13 +149,13 @@ export function EditEntryPage() {
     <div className="dy-flex dy-h-[calc(100vh-0px)] dy-overflow-hidden dy--mt-6 dy--mx-4 lg:dy--mt-10 lg:dy--mx-6">
       {/* Left Column: Header + Form */}
       <div className={cn(
-        "dy-flex-1 dy-overflow-y-auto dy-px-6 dy-py-6 lg:dy-px-10 lg:dy-py-10 dy-transition-all dy-duration-500",
-        showPreview ? "dy-max-w-2xl xl:dy-max-w-3xl" : "dy-max-w-5xl dy-mx-auto dy-w-full"
+        "dy-flex-1 dy-overflow-y-auto dy-px-4 dy-py-6 md:dy-px-6 lg:dy-px-8 lg:dy-py-8 dy-transition-all dy-duration-500",
+        showPreview ? "dy-max-w-2xl xl:dy-max-w-3xl" : "dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full"
       )}>
-        <div className="dy-space-y-8">
+        <div className="dy-space-y-6">
           {/* Header */}
-          <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border/50 dy-pb-6">
-            <div className="dy-flex dy-items-center dy-gap-4">
+          <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-muted/20 dy-pb-4">
+            <div className="dy-flex dy-items-center dy-gap-3">
               <Button
                 variant="ghost"
                 size="icon"
@@ -181,32 +181,34 @@ export function EditEntryPage() {
               </div>
             </div>
 
-            <div className="dy-flex dy-items-center dy-gap-2">
+            <div className="dy-flex dy-items-center dy-gap-1.5 dy-bg-muted/20 dy-p-1 dy-rounded-xl dy-border dy-border-muted/30 dy-shadow-sm">
               {previewUrl && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "dy-h-9 dy-w-9 dy-rounded-lg dy-transition-colors",
-                    showPreview ? "dy-bg-primary/10 dy-text-primary hover:dy-bg-primary/20" : "hover:dy-bg-muted"
+                    "dy-h-8 dy-w-8 dy-rounded-lg dy-transition-all",
+                    showPreview 
+                      ? "dy-bg-white dy-text-primary dy-shadow-sm hover:dy-bg-white" 
+                      : "dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground"
                   )}
                   onClick={() => setShowPreview(!showPreview)}
                   title={showPreview ? "Hide Preview" : "Live Preview"}
                 >
-                  {showPreview ? <EyeOff className="dy-h-4 dy-w-4" /> : <Eye className="dy-h-4 dy-w-4" />}
+                  {showPreview ? <EyeOff className="dy-h-3.5 dy-w-3.5" /> : <Eye className="dy-h-3.5 dy-w-3.5" />}
                 </Button>
               )}
               <Button
                 size="icon"
-                className="dy-h-9 dy-w-9 dy-rounded-lg dy-shadow-sm"
+                className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-transition-all dy-shadow-sm"
                 onClick={() => document.getElementById('dyrected-form-submit')?.click()}
                 disabled={saveMutation.isPending || (isEdit ? !canUpdate : !canCreate)}
                 title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
               >
                 {saveMutation.isPending ? (
-                  <div className="dy-h-4 dy-w-4 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
+                  <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
                 ) : (
-                  <Save className="dy-h-4 dy-w-4" />
+                  <Save className="dy-h-3.5 dy-w-3.5" />
                 )}
               </Button>
             </div>
