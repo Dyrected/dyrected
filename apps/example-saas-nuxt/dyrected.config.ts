@@ -15,6 +15,7 @@ const pages = defineCollection({
     useAsTitle: "title",
     group: "Content",
     previewUrl: "slug == 'home' ? '/' : '/' + slug",
+    defaultColumns: ["title", "slug", "updatedAt", "action"],
   },
   fields: [
     { name: "title", type: "text", required: true },

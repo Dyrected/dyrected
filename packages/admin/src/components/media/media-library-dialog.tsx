@@ -188,9 +188,11 @@ export function MediaLibraryDialog({
     return getMediaUrl(item, client?.getBaseUrl() || "");
   }
 
+  const sVals = React.useMemo(() => selectedValues || [], [selectedValues])
+
   const handleConfirm = () => {
     if (onConfirm) {
-      onConfirm(selectedValues)
+      onConfirm(sVals)
     }
     onOpenChange(false)
   }
@@ -202,9 +204,9 @@ export function MediaLibraryDialog({
           <div className="dy-px-6 dy-py-4 dy-border-b dy-flex dy-items-center dy-justify-between dy-bg-muted/20">
             <div className="dy-flex dy-items-center dy-gap-4">
               <DialogTitle className="dy-text-xl dy-font-serif dy-font-bold dy-tracking-tight">{collectionLabel}</DialogTitle>
-              {multiple && selectedValues.length > 0 && (
+              {multiple && sVals.length > 0 && (
                 <div className="dy-flex dy-items-center dy-gap-2 dy-px-3 dy-py-1 dy-bg-primary/10 dy-rounded-full dy-border dy-border-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-left-2">
-                  <span className="dy-text-xs dy-font-bold dy-text-primary">{selectedValues.length} Selected</span>
+                  <span className="dy-text-xs dy-font-bold dy-text-primary">{sVals.length} Selected</span>
                   <Button variant="ghost" size="icon" className="dy-h-4 dy-w-4 dy-text-primary hover:dy-bg-transparent" onClick={handleConfirm}>
                     <Check className="dy-h-3 dy-w-3" />
                   </Button>
@@ -246,7 +248,9 @@ export function MediaLibraryDialog({
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 hover:dy-bg-background dy-rounded-md"
                           onClick={() => {
                             media?.forEach((item: any) => {
-                              if (!selectedValues.includes(item.id)) onSelect(item.id)
+                              if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
+                                onSelect(item.id)
+                              }
                             })
                           }}
                         >
@@ -258,7 +262,7 @@ export function MediaLibraryDialog({
                           size="sm"
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
                           onClick={() => {
-                            selectedValues.forEach(id => onSelect(id))
+                            sVals.forEach(val => onSelect(val))
                           }}
                         >
                           Clear
@@ -297,7 +301,7 @@ export function MediaLibraryDialog({
                             alt={item.filename}
                             className="dy-object-cover dy-w-full dy-h-full"
                           />
-                          {selectedValues.includes(item.id) && (
+                          {sVals.some(v => v === item.id || v === item.filename || v === item.url) && (
                             <div className="dy-absolute dy-top-2.5 dy-right-2.5 dy-h-7 dy-w-7 dy-bg-primary dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-white dy-shadow-xl dy-animate-in dy-zoom-in dy-border-2 dy-border-white">
                               <Check className="dy-h-4 dy-w-4" />
                             </div>
@@ -360,17 +364,17 @@ export function MediaLibraryDialog({
                           <>
                             <Button
                               className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-sm dy-font-bold dy-tracking-tight dy-transition-all"
-                              variant={selectedValues.includes(selectedItem.id) ? "outline" : "default"}
+                              variant={sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "outline" : "default"}
                               onClick={() => onSelect(selectedItem.id)}
                             >
-                              {selectedValues.includes(selectedItem.id) ? "Deselect Item" : "Add to Selection"}
+                              {sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "Deselect Item" : "Add to Selection"}
                             </Button>
-                            {selectedValues.length > 0 && (
+                            {sVals.length > 0 && (
                               <Button
                                 className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-xl dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-tracking-tight dy-transition-all dy-group"
                                 onClick={handleConfirm}
                               >
-                                <span>Confirm {selectedValues.length} {selectedValues.length === 1 ? 'Asset' : 'Assets'}</span>
+                                <span>Confirm {sVals.length} {sVals.length === 1 ? 'Asset' : 'Assets'}</span>
                                 <Sparkles className="dy-ml-2 dy-h-4 dy-w-4 dy-opacity-50 dy-group-hover:dy-opacity-100 dy-group-hover:dy-scale-110 dy-transition-all" />
                               </Button>
                             )}

@@ -34,7 +34,7 @@ export function MediaPicker({
   multiple,
   placeholder
 }: MediaPickerProps) {
-  const { client } = useDyrected()
+  const { client, schemas } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
 
   const selectedValues = React.useMemo(() => {
@@ -42,7 +42,7 @@ export function MediaPicker({
     return Array.isArray(value) ? value : [value]
   }, [value])
 
-  // Extract IDs from selectedValues (which could be URLs or IDs)
+  // Extract IDs/filenames from selectedValues (which could be URLs or IDs)
   const selectedIds = React.useMemo(() => {
     return selectedValues.map((v: string) => {
       // If it's a URL, try to extract the ID/filename from it
@@ -53,8 +53,14 @@ export function MediaPicker({
     })
   }, [selectedValues])
 
+  const activeMediaCollection = React.useMemo(() => {
+    const targetColl = schemas?.collections?.find((c: any) => c.slug === collection)
+    if (targetColl?.upload) return collection
+    return "media"
+  }, [schemas, collection])
+
   const getFullUrl = (id: string): string => {
-    const item = media?.find((m: any) => m.id === id)
+    const item = media?.find((m: any) => m.id === id || m.filename === id || m.url === id)
     if (item) {
       if (item.mimeType === 'video/youtube') {
         return item.url || ""
@@ -66,22 +72,37 @@ export function MediaPicker({
   }
 
   const toggleValue = (id: string) => {
+    const item = media?.find((m: any) => m.id === id || m.filename === id || m.url === id)
+    const matchId = item?.id || id
+    const matchFilename = item?.filename || id
+    const matchUrl = item?.url || id
+
+    const isSelected = selectedValues.some(v => v === matchId || v === matchFilename || v === matchUrl)
+
     if (multiple) {
-      const next = selectedIds.includes(id)
-        ? selectedIds.filter(v => v !== id)
-        : [...selectedIds, id]
-      const urls = next.map(getFullUrl)
-      onChange(urls)
+      const next = isSelected
+        ? selectedValues.filter(v => v !== matchId && v !== matchFilename && v !== matchUrl)
+        : [...selectedValues, getFullUrl(id)]
+      onChange(next)
     } else {
-      onChange(getFullUrl(id))
+      onChange(isSelected ? "" : getFullUrl(id))
     }
   }
 
   const handleConfirm = (ids: string[]) => {
     if (multiple) {
-      const next = [...new Set([...selectedIds, ...ids])]
-      const urls = next.map(getFullUrl)
-      onChange(urls)
+      const next = [...selectedValues]
+      ids.forEach(id => {
+        const item = media?.find((m: any) => m.id === id || m.filename === id || m.url === id)
+        const matchId = item?.id || id
+        const matchFilename = item?.filename || id
+        const matchUrl = item?.url || id
+        const isSelected = next.some(v => v === matchId || v === matchFilename || v === matchUrl)
+        if (!isSelected) {
+          next.push(getFullUrl(id))
+        }
+      })
+      onChange(next)
     } else if (ids.length > 0) {
       onChange(getFullUrl(ids[0]))
     }
@@ -90,14 +111,20 @@ export function MediaPicker({
 
   // Fetch media for thumbnails in the field view
   const { data: media } = useQuery({
-    queryKey: [collection, "previews", selectedIds],
+    queryKey: [activeMediaCollection, "previews", selectedValues],
     queryFn: () => {
-      if (selectedIds.length === 0) return []
+      if (selectedValues.length === 0) return []
       return client!.listMedia({
-        where: { id: { in: selectedIds } }
-      }, collection).then((r: any) => r.docs)
+        where: {
+          or: [
+            { id: { in: selectedIds } },
+            { filename: { in: selectedIds } },
+            { url: { in: selectedValues } }
+          ]
+        }
+      }, activeMediaCollection).then((r: any) => r.docs)
     },
-    enabled: !!client && selectedIds.length > 0,
+    enabled: !!client && selectedValues.length > 0,
   })
 
   const getPreviewUrl = (item: Media) => {
@@ -147,8 +174,8 @@ export function MediaPicker({
             </div>
           </button>
 
-          {selectedIds.map((val, index) => {
-            const item = media?.find((m: any) => m.id === val)
+          {selectedValues.map((val, index) => {
+            const item = media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
             return (
               <div key={val} className="dy-relative dy-group dy-animate-in dy-zoom-in dy-duration-300">
                 <div className={cn(
@@ -203,10 +230,10 @@ export function MediaPicker({
         </div>
 
         <MediaLibraryDialog
-          collection={collection}
+          collection={activeMediaCollection}
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          selectedValues={selectedIds}
+          selectedValues={selectedValues}
           onSelect={toggleValue}
           multiple={multiple}
           onConfirm={handleConfirm}
@@ -269,20 +296,20 @@ export function MediaPicker({
         )}
 
         <MediaLibraryDialog
-          collection={collection}
+          collection={activeMediaCollection}
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          selectedValues={selectedIds}
+          selectedValues={selectedValues}
           onSelect={toggleValue}
           multiple={multiple}
           onConfirm={handleConfirm}
         />
       </div>
 
-      {!isIcon && selectedIds.length > 0 && !multiple && (
+      {!isIcon && selectedValues.length > 0 && !multiple && (
         <div className="dy-grid dy-grid-cols-2 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 dy-gap-4 dy-pt-2">
-          {selectedIds.map((val) => {
-            const item = media?.find((m: any) => m.id === val)
+          {selectedValues.map((val) => {
+            const item = media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
             const previewUrl = item ? getPreviewUrl(item) : (val ? getMediaUrl(val, client?.getBaseUrl() || "") : "")
             return (
               <div

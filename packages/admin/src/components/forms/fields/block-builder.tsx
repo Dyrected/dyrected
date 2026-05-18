@@ -124,17 +124,17 @@ function SortableBlockItem({
   const previewText = getPreviewText()
 
   return (
-    <div ref={setNodeRef} style={style} className="dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in">
+    <div ref={setNodeRef} style={style} className="dy-bg-card-foreground/5 dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in">
       {/* Header / Drag Handle */}
-      <div 
+      <div
         onClick={onToggleExpand}
-        className="dy-flex dy-items-center dy-justify-between dy-pb-3 dy-cursor-pointer dy-select-none"
+        className="px-4 dy-flex dy-items-center dy-justify-between dy-pb-3 dy-cursor-pointer dy-select-none"
       >
         <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0 dy-flex-1">
-          <div 
-            {...attributes} 
-            {...listeners} 
-            onClick={(e) => e.stopPropagation()} 
+          <div
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
             className="dy-cursor-grab dy-opacity-30 hover:dy-opacity-100 hover:dy-bg-muted dy-p-1 dy-rounded-md dy-transition-all"
           >
             <GripVertical className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground" />
@@ -155,20 +155,20 @@ function SortableBlockItem({
           )}
         </div>
         <div className="dy-flex dy-items-center dy-gap-1 dy-flex-shrink-0">
-          <Button 
-            type="button" 
-            variant="ghost" 
-            size="icon" 
-            className="dy-h-7 dy-w-7 dy-text-muted-foreground/50 hover:dy-text-foreground hover:dy-bg-muted" 
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/50 hover:dy-text-foreground hover:dy-bg-muted"
             onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
           >
             {isExpanded ? <ChevronUp className="dy-w-3.5 dy-h-3.5" /> : <ChevronDown className="dy-w-3.5 dy-h-3.5" />}
           </Button>
-          <Button 
-            type="button" 
-            variant="ghost" 
-            size="icon" 
-            className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10" 
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10"
             onClick={(e) => { e.stopPropagation(); remove(index); }}
           >
             <X className="dy-w-3.5 dy-h-3.5" />
@@ -178,7 +178,7 @@ function SortableBlockItem({
 
       {/* Content */}
       {isExpanded && (
-        <div className="dy-space-y-6">
+        <div className="dy-space-y-6 px-4">
           {blockConfig.fields.map(subField => (
             <FormFieldRenderer
               key={subField.name}

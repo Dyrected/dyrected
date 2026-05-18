@@ -31,6 +31,7 @@ interface FieldRendererProps {
  * they are passed down to the specialized field implementation.
  */
 export function FieldRenderer({ schema, field, collection, context }: FieldRendererProps) {
+  void collection
 
   // Evaluate Update Access
   const updateAccess = (schema.access as any)?.update
@@ -67,9 +68,10 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
         />
       )
     case "image" as any:
+      const imageMediaColl = (schema as any).relationTo || (context?.schemas?.collections?.find((c: any) => c.upload)?.slug) || "media"
       return (
         <MediaPicker
-          collection={collection}
+          collection={imageMediaColl}
           value={field.value}
           onChange={field.onChange}
           disabled={disabled}
@@ -77,7 +79,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
         />
       )
     case "richText":
-      return <RichTextEditor collection={collection} value={field.value} onChange={field.onChange} disabled={disabled} />
+      const richTextMediaColl = (context?.schemas?.collections?.find((c: any) => c.upload)?.slug) || "media"
+      return <RichTextEditor collection={richTextMediaColl} value={field.value} onChange={field.onChange} disabled={disabled} />
     case "json":
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
@@ -87,13 +90,14 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "url":
       return <UrlField schema={schema} field={field} disabled={disabled} context={context} />
     case "relationship":
+      const defaultMediaColl = (context?.schemas?.collections?.find((c: any) => c.upload)?.slug) || "media"
       const isMediaRel = (schema as any).relationTo === "media" ||
         (context?.schemas?.collections?.find((c: any) => c.slug === (schema as any).relationTo)?.upload)
 
       if (isMediaRel) {
         return (
           <MediaPicker
-            collection={collection}
+            collection={(schema as any).relationTo || defaultMediaColl}
             value={field.value}
             onChange={field.onChange}
             multiple={(schema as any).hasMany}
