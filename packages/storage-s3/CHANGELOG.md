@@ -1,5 +1,13 @@
 # @dyrected/storage-s3
 
+## 2.5.8
+
+### Patch Changes
+
+- refactor: type MediaPicker preview function with Media interface
+- Updated dependencies
+  - @dyrected/core@2.5.8
+
 ## 2.5.7
 
 ### Patch Changes

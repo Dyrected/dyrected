@@ -1,5 +1,11 @@
 # @dyrected/docs
 
+## 0.1.8
+
+### Patch Changes
+
+- refactor: type MediaPicker preview function with Media interface
+
 ## 0.1.7
 
 ### Patch Changes
