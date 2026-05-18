@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { Button } from "../../components/ui/button"
@@ -48,11 +48,49 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
   const [selectedItem, setSelectedItem] = React.useState<any>(null)
 
-  const { data: mediaResponse, isLoading } = useQuery({
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading
+  } = useInfiniteQuery({
     queryKey: ["media", collectionSlug, search],
-    queryFn: () => client!.listMedia({ where: search ? { filename: { contains: search } } : undefined }, collectionSlug).then(r => r.docs),
+    queryFn: ({ pageParam = 1 }) =>
+      client!.listMedia(
+        {
+          where: search ? { filename: { contains: search } } : undefined,
+          limit: 12,
+          page: pageParam
+        },
+        collectionSlug
+      ),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasNextPage ? lastPage.page + 1 : undefined
+    },
     enabled: !!client,
   })
+
+  const mediaResponse = React.useMemo(() => {
+    return data?.pages.flatMap((page) => page.docs) || []
+  }, [data])
+
+  const sentinelRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!sentinelRef.current) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: "100px" }
+    )
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => client!.deleteMedia(id, collectionSlug),
@@ -111,7 +149,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
           <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
             <ImageIcon className="dy-h-5 dy-w-5 dy-text-primary" />
             <h1 className="dy-text-3xl dy-font-bold dy-tracking-tight dy-text-foreground">
-              {schema?.labels?.plural ?? schema?.label ?? "Media Library"}
+              {schema?.labels?.plural ?? schema?.label ?? (collectionSlug && collectionSlug !== 'media' ? (collectionSlug.charAt(0).toUpperCase() + collectionSlug.slice(1)) : "Media Library")}
             </h1>
           </div>
           <p className="dy-text-sm dy-text-muted-foreground">
@@ -179,6 +217,12 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
                 isSelected={selectedItem?.id === item.id}
               />
             ))}
+            {/* Sentinel for infinite scroll */}
+            <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
+              {isFetchingNextPage && (
+                <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-6 dy-w-6"></div>
+              )}
+            </div>
           </div>
         )}
       </ScrollArea>

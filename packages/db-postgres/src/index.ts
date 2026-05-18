@@ -63,7 +63,10 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
-    const table = this.getTableIdentifier(args.collection);
+    const tableSlug = args.collection;
+    const tableName = tableSlug.includes('.')
+      ? tableSlug
+      : `"${tableSlug.startsWith('collection_') ? tableSlug : `collection_${tableSlug}`}"`;
     const limit = args.limit || 10;
     const page = args.page || 1;
     const offset = (page - 1) * limit;
@@ -72,14 +75,15 @@ export class PostgresAdapter implements DatabaseAdapter {
     const cols = await this.sql`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = ${`collection_${args.collection}`}
+      WHERE table_name = ${`collection_${tableSlug}`}
     `;
     const existingCols = cols.map(c => c.column_name);
 
     // Build parameterized WHERE using the shared DSL translator (Postgres JSON path)
-    let whereFragment = this.sql``;
+    let whereSql = '';
+    let params: any[] = [];
     if (args.where && Object.keys(args.where).length > 0) {
-      const { sql: whereSql, params } = parseSqlWhere(
+      const parsed = parseSqlWhere(
         args.where,
         (field: string) => {
           if (existingCols.includes(field) && !['id', 'data'].includes(field)) {
@@ -89,23 +93,26 @@ export class PostgresAdapter implements DatabaseAdapter {
         },
         'pg',
       );
-      whereFragment = this.sql`WHERE ${this.sql.unsafe(whereSql, params)}`;
+      whereSql = `WHERE ${parsed.sql}`;
+      params = parsed.params;
     }
 
     // Fetch total count with same filter
-    const countRes = await this.sql`SELECT count(*) as total FROM ${table} ${whereFragment}`;
+    const countQuery = `SELECT count(*) as total FROM ${tableName} ${whereSql}`;
+    const countRes = await this.sql.unsafe(countQuery, params);
     const total = parseInt(countRes[0].total);
 
     // Normalize sort field names from camelCase to snake_case
     let sort = args.sort || 'createdAt DESC';
     sort = sort.replace(/\bcreatedAt\b/g, 'created_at').replace(/\bupdatedAt\b/g, 'updated_at');
 
-    const rows = await this.sql`
-      SELECT * FROM ${table}
-      ${whereFragment}
-      ORDER BY ${this.sql.unsafe(sort)}
+    const rowsQuery = `
+      SELECT * FROM ${tableName}
+      ${whereSql}
+      ORDER BY ${sort}
       LIMIT ${limit} OFFSET ${offset}
     `;
+    const rows = await this.sql.unsafe(rowsQuery, params);
 
     const totalPages = Math.ceil(total / limit);
     return {

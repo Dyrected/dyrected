@@ -9,7 +9,7 @@ import {
   FormMessage,
 } from "../ui/form"
 import { Button } from "../ui/button"
-import { Plus, Trash2, Layers } from "lucide-react"
+import { Plus, Trash2, Layers, ChevronDown, ChevronUp, GripVertical } from "lucide-react"
 import { JoinField } from "./fields/join-field"
 import { MediaLibraryDialog } from "../media/media-library-dialog"
 import { cn } from "../../lib/utils"
@@ -18,6 +18,22 @@ import type { Field as FieldSchema } from "@dyrected/sdk"
 import { FieldRenderer } from "./field-renderer"
 import { BlockBuilder } from "./fields/block-builder"
 import { buildDefaultValues } from "./utils"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core"
+import type { DragEndEvent } from "@dnd-kit/core"
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 interface FormFieldRendererProps {
   schema: FieldSchema
@@ -192,8 +208,185 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
   )
 }
 
+function ArrayItemHeader({
+  basePath,
+  index,
+  control,
+  schema
+}: {
+  basePath: string
+  index: number
+  control: any
+  schema: FieldSchema
+}) {
+  const itemValues = useWatch({
+    control,
+    name: `${basePath}.${index}` as any
+  }) || {}
+
+  // Try to find a reasonable preview title from subfields
+  const getPreviewText = () => {
+    if (typeof itemValues === "string") return itemValues
+    if (itemValues && typeof itemValues === "object") {
+      const candidates = ["title", "label", "name", "filename", "header", "slug"]
+      for (const key of candidates) {
+        if (itemValues[key] && typeof itemValues[key] === "string") {
+          return itemValues[key]
+        }
+      }
+    }
+    return ""
+  }
+
+  const previewText = getPreviewText()
+  return (
+    <div className="dy-flex dy-items-center dy-gap-2">
+      <span className="dy-font-bold dy-text-xs dy-text-foreground/70 dy-tracking-tight">
+        {schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)} {index + 1}
+      </span>
+      {previewText && (
+        <span className="dy-text-xs dy-font-semibold dy-text-primary dy-truncate max-w-[200px]">
+          — {previewText}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function SortableArrayItem({
+  id,
+  index,
+  schema,
+  basePath,
+  control,
+  collection,
+  remove,
+  move,
+  totalCount,
+}: {
+  id: string
+  index: number
+  schema: FieldSchema
+  basePath: string
+  control: any
+  collection: string
+  remove: (index: number) => void
+  move: (from: number, to: number) => void
+  totalCount: number
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const [isExpanded, setIsExpanded] = React.useState(true)
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "dy-relative dy-group dy-bg-muted/5 dy-border dy-border-muted/30 dy-rounded-2xl dy-p-4 dy-mb-4 dy-transition-all",
+        isDragging ? "dy-shadow-lg dy-ring-2 dy-ring-primary/20 dy-bg-muted/10" : "hover:dy-bg-muted/10"
+      )}
+    >
+      {/* Header with Drag Handle & Collapse Controls */}
+      <div className="dy-flex dy-items-center dy-justify-between dy-pb-3 dy-border-b dy-border-muted/20 dy-mb-4">
+        <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+          <div
+            {...attributes}
+            {...listeners}
+            className="dy-cursor-grab dy-opacity-30 group-hover:dy-opacity-100 hover:dy-bg-muted dy-p-1 dy-rounded-md dy-transition-all"
+            title="Drag to reorder"
+          >
+            <GripVertical className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground" />
+          </div>
+          
+          <ArrayItemHeader basePath={basePath} index={index} control={control} schema={schema} />
+        </div>
+
+        <div className="dy-flex dy-items-center dy-gap-1">
+          {/* Move Up/Down Controls for better accessibility */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/40 hover:dy-bg-muted"
+            disabled={index === 0}
+            onClick={() => move(index, index - 1)}
+            title="Move item up"
+          >
+            <ChevronUp className="dy-w-3.5 dy-h-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/40 hover:dy-bg-muted"
+            disabled={index === totalCount - 1}
+            onClick={() => move(index, index + 1)}
+            title="Move item down"
+          >
+            <ChevronDown className="dy-w-3.5 dy-h-3.5" />
+          </Button>
+
+          {/* Expand/Collapse Toggle */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/40 hover:dy-bg-muted"
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? "Collapse item" : "Expand item"}
+          >
+            {isExpanded ? <ChevronUp className="dy-w-3.5 dy-h-3.5 dy-rotate-180" /> : <ChevronDown className="dy-w-3.5 dy-h-3.5" />}
+          </Button>
+
+          {/* Delete Button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
+            onClick={() => remove(index)}
+            title="Delete item"
+          >
+            <Trash2 className="dy-w-3.5 dy-h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Item Fields */}
+      {isExpanded && (
+        <div className="dy-space-y-6">
+          {schema.fields?.map(subField => (
+            <FormFieldRenderer
+              key={subField.name}
+              schema={subField}
+              basePath={`${basePath}.${index}`}
+              control={control}
+              collection={collection}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema: FieldSchema, basePath: string, control: any, collection: string }) {
-  const { fields, append, remove } = useFieldArray({ control, name: basePath })
+  const { fields, append, remove, move } = useFieldArray({ control, name: basePath })
   const { schemas } = useDyrected()
   const [isBulkOpen, setIsBulkOpen] = React.useState(false)
 
@@ -222,6 +415,34 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
     setIsBulkOpen(false)
   }
 
+  const singularize = (str: string) => {
+    if (str.endsWith("ies")) return str.slice(0, -3) + "y";
+    if (str.endsWith("s") && !str.endsWith("ss")) return str.slice(0, -1);
+    return str;
+  };
+
+  const itemLabel = React.useMemo(() => {
+    const base = schema.label || (schema.name ? (schema.name.charAt(0).toUpperCase() + schema.name.slice(1)) : "Item");
+    return singularize(base);
+  }, [schema.label, schema.name]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = fields.findIndex((f) => f.id === active.id)
+      const newIndex = fields.findIndex((f) => f.id === over.id)
+      move(oldIndex, newIndex)
+    }
+  }
+
   return (
     <div className="dy-space-y-6 dy-transition-all dy-py-6">
       <div className="dy-flex dy-justify-between dy-items-end dy-pb-2">
@@ -235,6 +456,17 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
           )}
         </div>
         <div className="dy-flex dy-items-center dy-gap-2">
+          {imageField && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="dy-h-9 dy-text-[11px] dy-font-bold dy-rounded-xl dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
+              onClick={() => setIsBulkOpen(true)}
+            >
+              Bulk Add Images
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -243,38 +475,32 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
             onClick={() => append(buildDefaultValues(schema.fields || [], {}))}
           >
             <Plus className="dy-w-3.5 dy-h-3.5 dy-mr-1.5" />
-            Add Item
+            Add {itemLabel}
           </Button>
         </div>
       </div>
 
-      <div className="dy-space-y-8 dy-pl-0 dy-border-l dy-border-muted/30">
-        {fields.map((item, index) => (
-          <div key={item.id} className="dy-relative dy-group dy-animate-in dy-slide-in-from-left-2 dy-duration-300">
-            <div className="dy-bg-muted/5 dy-left-accent dy-transition-all dy-relative">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="dy-absolute dy-top-4 dy-right-4 dy-h-8 dy-w-8 dy-text-muted-foreground/20 hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-xl dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all"
-                onClick={() => remove(index)}
-              >
-                <Trash2 className="dy-w-4 dy-h-4" />
-              </Button>
-              <div className="dy-space-y-6">
-                {schema.fields?.map(subField => (
-                  <FormFieldRenderer
-                    key={subField.name}
-                    schema={subField}
-                    basePath={`${basePath}.${index}`}
-                    control={control}
-                    collection={collection}
-                  />
-                ))}
-              </div>
+      <div className="dy-space-y-4">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+            <div className="dy-space-y-4">
+              {fields.map((item, index) => (
+                <SortableArrayItem
+                  key={item.id}
+                  id={item.id}
+                  index={index}
+                  schema={schema}
+                  basePath={basePath}
+                  control={control}
+                  collection={collection}
+                  remove={remove}
+                  move={move}
+                  totalCount={fields.length}
+                />
+              ))}
             </div>
-          </div>
-        ))}
+          </SortableContext>
+        </DndContext>
 
         {fields.length === 0 && (
           <div className="dy-flex dy-flex-col dy-items-center dy-justify-center dy-py-12 dy-border-2 dy-border-dashed dy-border-muted dy-rounded-3xl dy-bg-muted/5 dy-space-y-3">
@@ -285,16 +511,18 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
           </div>
         )}
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="dy-w-full dy-h-10 dy-text-xs dy-font-bold dy-rounded-2xl dy-border-dashed dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
-          onClick={() => append(buildDefaultValues(schema.fields || [], {}))}
-        >
-          <Plus className="dy-w-4 dy-h-4 dy-mr-2" />
-          Add Item
-        </Button>
+        {fields.length > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="dy-w-full dy-h-10 dy-text-xs dy-font-bold dy-rounded-2xl dy-border-dashed dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
+            onClick={() => append(buildDefaultValues(schema.fields || [], {}))}
+          >
+            <Plus className="dy-w-4 dy-h-4 dy-mr-2" />
+            Add {itemLabel}
+          </Button>
+        )}
       </div>
 
       {imageField && (

@@ -135,6 +135,12 @@ export function MediaPicker({
                       alt=""
                       className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
                     />
+                  ) : val ? (
+                    <img
+                      src={getMediaUrl(val, client?.getBaseUrl() || "")}
+                      alt=""
+                      className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
+                    />
                   ) : (
                     <div className="dy-w-full dy-h-full dy-animate-pulse dy-bg-muted/50 dy-flex dy-items-center dy-justify-center">
                       <ImageIcon className="dy-h-6 dy-w-6 dy-text-muted-foreground/20" />
@@ -251,19 +257,23 @@ export function MediaPicker({
         <div className="dy-grid dy-grid-cols-2 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 dy-gap-4 dy-pt-2">
           {selectedValues.map((val) => {
             const item = media?.find((m: any) => m.id === val)
-            if (!item) return (
-              <div key={val} className="dy-aspect-square dy-rounded-xl dy-bg-muted/20 dy-animate-pulse dy-border-2 dy-border-dashed dy-border-border/50" />
-            )
+            const previewUrl = item ? getPreviewUrl(item) : (val ? getMediaUrl(val, client?.getBaseUrl() || "") : "")
             return (
               <div
                 key={val}
                 className="dy-relative dy-aspect-square dy-group dy-rounded-2xl dy-overflow-hidden dy-border-2 dy-border-border/50 hover:dy-border-primary/50 dy-transition-all dy-bg-muted/20 dy-shadow-sm"
               >
-                <img
-                  src={getPreviewUrl(item)}
-                  alt=""
-                  className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
-                />
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt=""
+                    className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
+                  />
+                ) : (
+                  <div className="dy-w-full dy-h-full dy-animate-pulse dy-bg-muted/50 dy-flex dy-items-center dy-justify-center">
+                    <ImageIcon className="dy-h-6 dy-w-6 dy-text-muted-foreground/20" />
+                  </div>
+                )}
                 {!disabled && (
                   <button
                     type="button"
@@ -274,7 +284,7 @@ export function MediaPicker({
                   </button>
                 )}
                 <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
-                  <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item.filename}</p>
+                  <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item?.filename || (typeof val === 'string' ? val.split('/').pop() : 'Media')}</p>
                 </div>
               </div>
             )

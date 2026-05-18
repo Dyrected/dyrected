@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { Button } from "../ui/button"
 import {
@@ -48,20 +48,54 @@ export function MediaLibraryDialog({
   multiple,
   onConfirm
 }: MediaLibraryDialogProps) {
-  const { client } = useDyrected()
+  const { client, schemas } = useDyrected()
+  const schema = React.useMemo(() => schemas?.collections?.find((c: any) => c.slug === collection), [schemas, collection])
+  const collectionLabel = React.useMemo(() => schema?.labels?.plural ?? schema?.label ?? (collection && collection !== 'media' ? (collection.charAt(0).toUpperCase() + collection.slice(1)) : "Media Library"), [schema, collection])
   const [searchQuery, setSearchQuery] = React.useState("")
   const [externalUrl, setExternalUrl] = React.useState("")
   const [activeTab, setActiveTab] = React.useState("library")
   const [selectedItem, setSelectedItem] = React.useState<any>(null)
   const [isUploading, setIsUploading] = React.useState(false)
 
-  const { data: media, refetch } = useQuery({
+  const {
+    data,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery({
     queryKey: [collection, searchQuery],
-    queryFn: () => client!.listMedia({
-      where: searchQuery ? { filename: { contains: searchQuery } } : undefined
-    }, collection).then((r: any) => r.docs),
+    queryFn: ({ pageParam = 1 }) => client!.listMedia({
+      where: searchQuery ? { filename: { contains: searchQuery } } : undefined,
+      limit: 12,
+      page: pageParam
+    }, collection),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasNextPage ? lastPage.page + 1 : undefined
+    },
     enabled: isOpen && !!client,
   })
+
+  const media = React.useMemo(() => {
+    return data?.pages.flatMap((page) => page.docs) || []
+  }, [data])
+
+  const sentinelRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!sentinelRef.current) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage()
+        }
+      },
+      { rootMargin: "100px" }
+    )
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -167,7 +201,7 @@ export function MediaLibraryDialog({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-flex-col dy-h-[650px]">
           <div className="dy-px-6 dy-py-4 dy-border-b dy-flex dy-items-center dy-justify-between dy-bg-muted/20">
             <div className="dy-flex dy-items-center dy-gap-4">
-              <DialogTitle className="dy-text-xl dy-font-serif dy-font-bold dy-tracking-tight">Media Library</DialogTitle>
+              <DialogTitle className="dy-text-xl dy-font-serif dy-font-bold dy-tracking-tight">{collectionLabel}</DialogTitle>
               {multiple && selectedValues.length > 0 && (
                 <div className="dy-flex dy-items-center dy-gap-2 dy-px-3 dy-py-1 dy-bg-primary/10 dy-rounded-full dy-border dy-border-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-left-2">
                   <span className="dy-text-xs dy-font-bold dy-text-primary">{selectedValues.length} Selected</span>
@@ -280,6 +314,12 @@ export function MediaLibraryDialog({
                           </div>
                         </button>
                       ))}
+                      {/* Sentinel for infinite scroll */}
+                      <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
+                        {isFetchingNextPage && (
+                          <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-6 dy-w-6"></div>
+                        )}
+                      </div>
                     </div>
                   </ScrollArea>
                 </div>

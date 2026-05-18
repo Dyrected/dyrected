@@ -14,8 +14,82 @@ export interface MysqlAdapterConfig {
 
 export class MysqlAdapter implements DatabaseAdapter {
   private pool: any;
+  private config: MysqlAdapterConfig;
+  private initPromise: Promise<void> | null = null;
 
   constructor(config: MysqlAdapterConfig) {
+    this.config = config;
+    this.ensureInitialized().catch((err) => {
+      if (err.code === "EADDRNOTAVAIL" || err.message?.includes("EADDRNOTAVAIL")) {
+        this.handleConnectionError(err);
+      }
+    });
+  }
+
+  private handleConnectionError(err: any): never {
+    if (err && (err.code === "EADDRNOTAVAIL" || err.message?.includes("EADDRNOTAVAIL"))) {
+      const customMessage = `
+[dyrected/db-mysql] ERROR: MySQL connection failed with EADDRNOTAVAIL.
+--------------------------------------------------------------------------------
+This error often occurs when:
+1. 'localhost' is resolved to an IPv6 address (::1) but MySQL is only listening on IPv4 (127.0.0.1).
+2. The MySQL server is not running or is bound to a different port.
+
+FIX INSTRUCTIONS:
+- Try changing your host configuration in '.env' or config from 'localhost' to '127.0.0.1'.
+- Make sure your local MySQL service is active and running on the configured port.
+--------------------------------------------------------------------------------
+`;
+      console.error(customMessage);
+      throw new Error(`MySQL Connection Failed: EADDRNOTAVAIL. Hint: Try using '127.0.0.1' instead of 'localhost'. Original: ${err.message}`);
+    }
+    throw err;
+  }
+
+  private async ensureInitialized() {
+    if (!this.initPromise) {
+      this.initPromise = this.initialize();
+    }
+    await this.initPromise;
+  }
+
+  private async initialize() {
+    const config = this.config;
+    let dbName = config.database;
+    let serverConfig: any = null;
+
+    if (config.url) {
+      try {
+        const parsed = new URL(config.url);
+        dbName = parsed.pathname.replace(/^\//, "");
+        const serverUrl = `${parsed.protocol}//${parsed.username}:${parsed.password}@${parsed.host}`;
+        serverConfig = serverUrl;
+      } catch (err) {
+        // Ignore parsing errors
+      }
+    } else {
+      serverConfig = {
+        host: config.host ?? "localhost",
+        port: config.port ?? 3306,
+        user: config.user,
+        password: config.password,
+      };
+    }
+
+    if (dbName && serverConfig) {
+      try {
+        const tempConn = (await mysql.createConnection(serverConfig)) as any;
+        await tempConn.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+        await tempConn.end();
+        console.log(`[dyrected/db-mysql] Database "${dbName}" checked/created successfully`);
+      } catch (err: any) {
+        console.warn(`[dyrected/db-mysql] Auto-creation of database "${dbName}" skipped/failed:`, err.message);
+        if (err.code === "EADDRNOTAVAIL" || err.message?.includes("EADDRNOTAVAIL")) {
+          this.handleConnectionError(err);
+        }
+      }
+    }
+
     if (config.url) {
       this.pool = mysql.createPool(config.url);
     } else {
@@ -25,21 +99,39 @@ export class MysqlAdapter implements DatabaseAdapter {
         user: config.user,
         password: config.password,
         database: config.database,
-        // Return dates as strings for consistency with other adapters
         dateStrings: true,
       });
     }
-    // Fire-and-forget: create internal table on startup
-    this.initInternalTables().catch((err) => console.error("[dyrected/db-mysql] Failed to init internal tables:", err));
+
+    // Initialize internal tables
+    try {
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS dyrected_internal (
+          \`key\` VARCHAR(255) PRIMARY KEY,
+          value JSON NOT NULL
+        )
+      `);
+    } catch (err: any) {
+      this.handleConnectionError(err);
+    }
   }
 
-  private async initInternalTables() {
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS dyrected_internal (
-        \`key\` VARCHAR(255) PRIMARY KEY,
-        value JSON NOT NULL
-      )
-    `);
+  private async query(sql: string, params?: any[]): Promise<any> {
+    await this.ensureInitialized();
+    try {
+      return await this.pool.query(sql, params);
+    } catch (err: any) {
+      this.handleConnectionError(err);
+    }
+  }
+
+  async execute(sql: string, params?: any[]): Promise<any> {
+    await this.ensureInitialized();
+    try {
+      return await this.pool.execute(sql, params);
+    } catch (err: any) {
+      this.handleConnectionError(err);
+    }
   }
 
   private getTableName(slug: string): string {
@@ -48,7 +140,7 @@ export class MysqlAdapter implements DatabaseAdapter {
 
   private async ensureTable(slug: string, fields: any[] = []) {
     const tableName = this.getTableName(slug);
-    await this.pool.query(`
+    await this.query(`
       CREATE TABLE IF NOT EXISTS \`${tableName}\` (
         id VARCHAR(36) PRIMARY KEY,
         data JSON NOT NULL,
@@ -58,7 +150,7 @@ export class MysqlAdapter implements DatabaseAdapter {
     `);
 
     // Inspect columns for promoted fields
-    const [cols] = await this.pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
     const existingCols = cols.map((c: any) => c.Field);
 
     for (const field of fields) {
@@ -68,7 +160,7 @@ export class MysqlAdapter implements DatabaseAdapter {
         if (field.type === "number") sqlType = "DECIMAL(19,4)";
         if (field.type === "boolean") sqlType = "TINYINT(1)";
 
-        await this.pool.query(`ALTER TABLE \`${tableName}\` ADD COLUMN \`${field.name}\` ${sqlType}`);
+        await this.query(`ALTER TABLE \`${tableName}\` ADD COLUMN \`${field.name}\` ${sqlType}`);
       }
     }
   }
@@ -88,7 +180,7 @@ export class MysqlAdapter implements DatabaseAdapter {
     const offset = (page - 1) * limit;
 
     // Inspect columns for promoted fields
-    const [cols] = await this.pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
     const existingCols = cols.map((c: any) => c.Field);
 
     // Build WHERE clause via shared DSL translator (MySQL JSON path syntax)
@@ -114,14 +206,14 @@ export class MysqlAdapter implements DatabaseAdapter {
     const sort = rawSort.replace(/\bcreatedAt\b/g, "created_at").replace(/\bupdatedAt\b/g, "updated_at");
 
     // Count with filter applied for accurate pagination
-    const [countRows] = await this.pool.query(
+    const [countRows] = await this.query(
       `SELECT COUNT(*) AS total FROM \`${tableName}\` ${whereSql}`,
       whereParams,
     );
     const total = Number(countRows[0].total);
 
     // Fetch page of data
-    const [rows] = await this.pool.query(
+    const [rows] = await this.query(
       `SELECT * FROM \`${tableName}\` ${whereSql} ORDER BY ${sort} LIMIT ? OFFSET ?`,
       [...whereParams, limit, offset],
     );
@@ -148,7 +240,7 @@ export class MysqlAdapter implements DatabaseAdapter {
   async findOne(params: { collection: string; id: string }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    const [rows] = await this.pool.query(`SELECT * FROM \`${tableName}\` WHERE id = ?`, [params.id]);
+    const [rows] = await this.query(`SELECT * FROM \`${tableName}\` WHERE id = ?`, [params.id]);
     const row = rows[0];
     if (!row) return null;
     return {
@@ -164,7 +256,7 @@ export class MysqlAdapter implements DatabaseAdapter {
     const tableName = this.getTableName(params.collection);
 
     // Inspect columns for promoted fields
-    const [cols] = await this.pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
     const existingCols = cols.map((c: any) => c.Field);
 
     const id = params.data.id ?? Math.random().toString(36).substring(7);
@@ -188,7 +280,7 @@ export class MysqlAdapter implements DatabaseAdapter {
     const placeholders = colNames.map(() => "?").join(", ");
     const values = [id, JSON.stringify(data), now, now, ...Object.values(promotedValues)];
 
-    await this.pool.query(`INSERT INTO \`${tableName}\` (${colNames.join(", ")}) VALUES (${placeholders})`, values);
+    await this.query(`INSERT INTO \`${tableName}\` (${colNames.join(", ")}) VALUES (${placeholders})`, values);
     return { id, ...data, createdAt: now, updatedAt: now };
   }
 
@@ -197,7 +289,7 @@ export class MysqlAdapter implements DatabaseAdapter {
     const tableName = this.getTableName(params.collection);
 
     // Inspect columns for promoted fields
-    const [cols] = await this.pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
     const existingCols = cols.map((c: any) => c.Field);
 
     const existing = await this.findOne({ collection: params.collection, id: params.id });
@@ -219,7 +311,7 @@ export class MysqlAdapter implements DatabaseAdapter {
     const setClauses = ["data = ?", "updated_at = ?", ...Object.keys(promotedValues).map((k) => `\`${k}\` = ?`)];
     const values = [JSON.stringify(merged), now, ...Object.values(promotedValues), params.id];
 
-    await this.pool.query(`UPDATE \`${tableName}\` SET ${setClauses.join(", ")} WHERE id = ?`, values);
+    await this.query(`UPDATE \`${tableName}\` SET ${setClauses.join(", ")} WHERE id = ?`, values);
     return { id: params.id, ...merged, createdAt: existing?.createdAt, updatedAt: now };
   }
 
@@ -232,11 +324,11 @@ export class MysqlAdapter implements DatabaseAdapter {
   async delete(params: { collection: string; id: string }) {
     await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    await this.pool.query(`DELETE FROM \`${tableName}\` WHERE id = ?`, [params.id]);
+    await this.query(`DELETE FROM \`${tableName}\` WHERE id = ?`, [params.id]);
   }
 
   async getGlobal(params: { slug: string }) {
-    const [rows] = await this.pool.query("SELECT value FROM dyrected_internal WHERE `key` = ?", [
+    const [rows] = await this.query("SELECT value FROM dyrected_internal WHERE `key` = ?", [
       `global_${params.slug}`,
     ]);
     const row = rows[0];
@@ -245,7 +337,7 @@ export class MysqlAdapter implements DatabaseAdapter {
   }
 
   async updateGlobal(params: { slug: string; data: any }) {
-    await this.pool.execute(
+    await this.execute(
       "INSERT INTO dyrected_internal (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)",
       [`global_${params.slug}`, JSON.stringify(params.data)],
     );
@@ -254,7 +346,9 @@ export class MysqlAdapter implements DatabaseAdapter {
 
   /** Gracefully close the connection pool. Call on process exit. */
   async close() {
-    await this.pool.end();
+    if (this.pool) {
+      await this.pool.end();
+    }
   }
 }
 

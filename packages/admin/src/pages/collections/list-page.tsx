@@ -317,7 +317,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         <Link to={`/collections/${slug}/new`}>
           <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
             <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
-            Create New
+            Add {schema.labels?.singular || schema.label || schema.slug}
           </Button>
         </Link>
       </PageHeader>

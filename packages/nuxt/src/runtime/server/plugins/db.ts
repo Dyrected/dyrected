@@ -1,5 +1,5 @@
 // @ts-ignore
-import { defineNitroPlugin } from "nitro/runtime";
+import { defineNitroPlugin } from "nitropack/runtime";
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
 
@@ -11,9 +11,19 @@ export default defineNitroPlugin(async (nitroApp: any) => {
   if (runtimeConfig?.configPath) {
     try {
       const configPath = (runtimeConfig as any).configPath;
-      // Use pathToFileURL to ensure Windows absolute paths are valid file:// URLs for import()
-      const { pathToFileURL } = await import("url");
-      const { default: userConfig } = await import(pathToFileURL(configPath).href);
+      let userConfig: any = null;
+      try {
+        // @ts-ignore
+        const { default: jiti } = await import("jiti");
+        // @ts-ignore
+        const loader = jiti(import.meta.url, { esmResolve: true, interopDefault: true });
+        userConfig = loader(configPath);
+      } catch (err) {
+        // Fallback to standard dynamic import
+        const { pathToFileURL } = await import("url");
+        const imported = await import(pathToFileURL(configPath).href);
+        userConfig = imported.default || imported;
+      }
       if (userConfig) {
         (globalThis as any).__dyrected_config = userConfig;
         
