@@ -22,6 +22,9 @@ const pages = defineCollection({
     {
       name: "seo",
       type: "object",
+      admin: {
+        tab: "SEO",
+      },
       fields: [
         { name: "metaTitle", type: "text" },
         { name: "metaDescription", type: "textarea" },
@@ -29,6 +32,9 @@ const pages = defineCollection({
       ],
     },
     {
+      admin: {
+        tab: "Page Layout",
+      },
       name: "layout",
       type: "blocks",
       blocks: [
@@ -40,7 +46,7 @@ const pages = defineCollection({
             { name: "subheading", type: "textarea" },
             { name: "image", type: "relationship", relationTo: "media" },
             { name: "ctaLabel", type: "text" },
-            { name: "ctaLink", type: "text" },
+            { name: "ctaLink", type: "url" },
           ],
         },
         {
@@ -71,7 +77,7 @@ const pages = defineCollection({
             { name: "heading", type: "text", required: true },
             { name: "description", type: "textarea" },
             { name: "buttonLabel", type: "text" },
-            { name: "buttonLink", type: "text" },
+            { name: "buttonLink", type: "url" },
           ],
         },
         {
@@ -87,7 +93,7 @@ const pages = defineCollection({
                 { name: "price", type: "text" },
                 { name: "features", type: "array", fields: [{ name: "text", type: "text" }] },
                 { name: "ctaLabel", type: "text" },
-                { name: "ctaLink", type: "text" },
+                { name: "ctaLink", type: "url" },
               ],
             },
           ],

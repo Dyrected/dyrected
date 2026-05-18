@@ -115,7 +115,7 @@ export function GlobalEditorPage() {
           onChange={(dirty) => setIsDirty(dirty)}
           submitLabel="Save Changes"
         />
-        <button id="dyrected-form-submit" type="submit" className="dy-hidden" />
+        <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
       </div>
     </div>
   )

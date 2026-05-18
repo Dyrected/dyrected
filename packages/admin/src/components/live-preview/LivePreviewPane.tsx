@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
-import { ExternalLink, Smartphone, Monitor, RotateCcw, MousePointer2 } from 'lucide-react';
+import { ExternalLink, Smartphone, Monitor, RotateCcw } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface LivePreviewPaneProps {
@@ -104,8 +104,8 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
             </div>
           )}
 
-          {/* Edit Mode toggle */}
-          <div className="dy-ml-2 dy-pl-2 dy-border-l dy-border-border/40">
+          {/* Edit Mode toggle hidden for now */}
+          {/* <div className="dy-ml-2 dy-pl-2 dy-border-l dy-border-border/40">
             <Button
               variant="ghost"
               size="sm"
@@ -121,7 +121,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
               <MousePointer2 className="dy-h-3.5 dy-w-3.5" />
               {editMode ? 'Editing' : 'Edit'}
             </Button>
-          </div>
+          </div> */}
         </div>
 
         <div className="dy-flex dy-items-center dy-gap-2">

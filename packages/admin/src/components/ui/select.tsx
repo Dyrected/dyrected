@@ -72,29 +72,31 @@ const SelectContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, position = "popper", ...props }, ref) => (
   <SelectPrimitive.Portal>
-    <SelectPrimitive.Content
-      ref={ref}
-      className={cn(
-        "dy-relative dy-z-[100] dy-max-h-[--radix-select-content-available-height] dy-min-w-[8rem] dy-overflow-y-auto dy-overflow-x-hidden dy-rounded-md dy-border dy-bg-white dy-text-popover-foreground dy-shadow-md data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=open]:dy-fade-in-0 data-[state=closed]:dy-zoom-out-95 data-[state=open]:dy-zoom-in-95 data-[side=bottom]:dy-slide-in-from-top-2 data-[side=left]:dy-slide-in-from-right-2 data-[side=right]:dy-translate-x-1 data-[side=top]:dy--translate-y-1 dy-origin-[--radix-select-content-transform-origin]",
-        position === "popper" &&
-          "data-[side=bottom]:dy-translate-y-1 data-[side=left]:dy--translate-x-1 data-[side=right]:dy-translate-x-1 data-[side=top]:dy--translate-y-1",
-        className
-      )}
-      position={position}
-      {...props}
-    >
-      <SelectScrollUpButton />
-      <SelectPrimitive.Viewport
+    <div className="dy-admin-ui">
+      <SelectPrimitive.Content
+        ref={ref}
         className={cn(
-          "dy-p-1",
+          "dy-relative dy-z-[100] dy-max-h-[--radix-select-content-available-height] dy-min-w-[8rem] dy-overflow-y-auto dy-overflow-x-hidden dy-rounded-md dy-border dy-bg-popover dy-text-popover-foreground dy-shadow-md data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=open]:dy-fade-in-0 data-[state=closed]:dy-zoom-out-95 data-[state=open]:dy-zoom-in-95 data-[side=bottom]:dy-slide-in-from-top-2 data-[side=left]:dy-slide-in-from-right-2 data-[side=right]:dy-translate-x-1 data-[side=top]:dy--translate-y-1 dy-origin-[--radix-select-content-transform-origin]",
           position === "popper" &&
-            "dy-h-[var(--radix-select-trigger-height)] dy-w-full dy-min-w-[var(--radix-select-trigger-width)]"
+            "data-[side=bottom]:dy-translate-y-1 data-[side=left]:dy--translate-x-1 data-[side=right]:dy-translate-x-1 data-[side=top]:dy--translate-y-1",
+          className
         )}
+        position={position}
+        {...props}
       >
-        {children}
-      </SelectPrimitive.Viewport>
-      <SelectScrollDownButton />
-    </SelectPrimitive.Content>
+        <SelectScrollUpButton />
+        <SelectPrimitive.Viewport
+          className={cn(
+            "dy-p-1",
+            position === "popper" &&
+              "dy-h-[var(--radix-select-trigger-height)] dy-w-full dy-min-w-[var(--radix-select-trigger-width)]"
+          )}
+        >
+          {children}
+        </SelectPrimitive.Viewport>
+        <SelectScrollDownButton />
+      </SelectPrimitive.Content>
+    </div>
   </SelectPrimitive.Portal>
 ))
 SelectContent.displayName = SelectPrimitive.Content.displayName

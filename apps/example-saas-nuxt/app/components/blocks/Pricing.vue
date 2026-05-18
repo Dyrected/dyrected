@@ -1,14 +1,20 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   heading?: string
   plans: Array<{
     name: string
     price: string
     features: Array<{ text: string }>
     ctaLabel?: string
-    ctaLink?: string
+    ctaLink?: string | { url?: string }
   }>
 }>()
+
+const resolveUrl = (link: any) => {
+  if (!link) return '#'
+  if (typeof link === 'string') return link
+  return link.url || '#'
+}
 </script>
 
 <template>
@@ -38,7 +44,7 @@ defineProps<{
           </ul>
           <NuxtLink
             v-if="plan.ctaLabel"
-            :to="plan.ctaLink || '#'"
+            :to="resolveUrl(plan.ctaLink) || '#'"
             class="block text-center py-3 px-6 rounded bg-gold-400 text-navy-950 font-bold hover:bg-gold-500 transition-colors"
           >
             {{ plan.ctaLabel }}

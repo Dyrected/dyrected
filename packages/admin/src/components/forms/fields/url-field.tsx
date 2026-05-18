@@ -47,7 +47,7 @@ interface UrlFieldProps {
   context?: { user: any, schemas?: any, siblingData: any }
 }
 
-export function UrlField({ schema, field, disabled, context: _context }: UrlFieldProps) {
+export function UrlField({ schema: _schema, field, disabled, context: _context }: UrlFieldProps) {
   const { client, schemas } = useDyrected()
   const [openPopover, setOpenPopover] = React.useState(false)
   const [documents, setDocuments] = React.useState<any[]>([])
@@ -165,8 +165,6 @@ export function UrlField({ schema, field, disabled, context: _context }: UrlFiel
     handleUpdate("internal", { label: value })
   }
 
-  const displayLabel = schema.label || (schema?.name || '').charAt(0)?.toUpperCase() + (schema?.name || '').slice(1)
-
   // Get display field from collection schema
   const getCollectionDisplayField = (collectionSlug: string): string => {
     const col = collections.find((c: any) => c.slug === collectionSlug)
@@ -184,10 +182,6 @@ export function UrlField({ schema, field, disabled, context: _context }: UrlFiel
 
   return (
     <div className="dy-space-y-3">
-      <label className="dy-text-sm dy-font-medium dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
-        {displayLabel}
-      </label>
-
       <Tabs value={mode} onValueChange={(val) => handleModeChange(val as "external" | "internal")}>
         <TabsList className="dy-w-full dy-grid dy-grid-cols-2 dy-bg-muted dy-p-1 dy-rounded-lg dy-h-auto">
           <TabsTrigger value="external" disabled={disabled} className="dy-rounded-md">

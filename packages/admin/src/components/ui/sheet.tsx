@@ -31,7 +31,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName
 
 const sheetVariants = cva(
-  "dy-fixed dy-z-50 dy-gap-4 dy-bg-white dy-p-6 dy-shadow-2xl dy-transition dy-ease-in-out data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-duration-300 data-[state=open]:dy-duration-500",
+  "dy-fixed dy-z-50 dy-gap-4 dy-bg-background dy-p-6 dy-shadow-2xl dy-transition dy-ease-in-out data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-duration-300 data-[state=open]:dy-duration-500",
   {
     variants: {
       side: {
@@ -58,18 +58,20 @@ const SheetContent = React.forwardRef<
   SheetContentProps
 >(({ side = "right", className, children, ...props }, ref) => (
   <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      {children}
-      <SheetPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-secondary">
-        <X className="dy-h-4 dy-w-4" />
-        <span className="dy-sr-only">Close</span>
-      </SheetPrimitive.Close>
-    </SheetPrimitive.Content>
+    <div className="dy-admin-ui">
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side }), className)}
+        {...props}
+      >
+        {children}
+        <SheetPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-secondary">
+          <X className="dy-h-4 dy-w-4" />
+          <span className="dy-sr-only">Close</span>
+        </SheetPrimitive.Close>
+      </SheetPrimitive.Content>
+    </div>
   </SheetPortal>
 ))
 SheetContent.displayName = SheetPrimitive.Content.displayName

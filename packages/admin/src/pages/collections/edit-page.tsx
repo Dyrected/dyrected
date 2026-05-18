@@ -54,10 +54,10 @@ export function EditEntryPage() {
 
   const schema = schemas?.collections.find((c: any) => c.slug === slug)
 
-  // Effect to default preview if available
+  // Effect to default preview off if previewUrl is available
   useEffect(() => {
     if (schema?.admin?.previewUrl) {
-      setShowPreview(true)
+      setShowPreview(false)
     }
   }, [schema])
 
@@ -188,8 +188,8 @@ export function EditEntryPage() {
                   size="icon"
                   className={cn(
                     "dy-h-8 dy-w-8 dy-rounded-lg dy-transition-all",
-                    showPreview 
-                      ? "dy-bg-white dy-text-primary dy-shadow-sm hover:dy-bg-white" 
+                    showPreview
+                      ? "dy-bg-white dy-text-primary dy-shadow-sm hover:dy-bg-white"
                       : "dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground"
                   )}
                   onClick={() => setShowPreview(!showPreview)}
@@ -233,7 +233,7 @@ export function EditEntryPage() {
               submitLabel={isEdit ? "Save Changes" : "Create Entry"}
               readOnly={isEdit ? !canUpdate : !canCreate}
             />
-            <button id="dyrected-form-submit" type="submit" className="dy-hidden" />
+            <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
 
             {/* Document Meta */}
             <div className="dy-pt-8 dy-border-t dy-border-border/40">

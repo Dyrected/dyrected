@@ -9,7 +9,7 @@ import {
   FormMessage,
 } from "../ui/form"
 import { Button } from "../ui/button"
-import { Plus, Trash2, Layers, ChevronDown, ChevronUp, GripVertical } from "lucide-react"
+import { Plus, Trash2, Layers, ChevronDown, ChevronUp, GripVertical, ArrowUp, ArrowDown } from "lucide-react"
 import { JoinField } from "./fields/join-field"
 import { MediaLibraryDialog } from "../media/media-library-dialog"
 import { cn } from "../../lib/utils"
@@ -404,7 +404,7 @@ function SortableArrayItem({
           >
             <GripVertical className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground" />
           </div>
-          
+
           <ArrayItemHeader basePath={basePath} index={index} control={control} schema={schema} />
         </div>
 
@@ -419,7 +419,7 @@ function SortableArrayItem({
             onClick={() => move(index, index - 1)}
             title="Move item up"
           >
-            <ChevronUp className="dy-w-3.5 dy-h-3.5" />
+            <ArrowUp className="dy-w-3.5 dy-h-3.5" />
           </Button>
           <Button
             type="button"
@@ -430,7 +430,7 @@ function SortableArrayItem({
             onClick={() => move(index, index + 1)}
             title="Move item down"
           >
-            <ChevronDown className="dy-w-3.5 dy-h-3.5" />
+            <ArrowDown className="dy-w-3.5 dy-h-3.5" />
           </Button>
 
           {/* Expand/Collapse Toggle */}

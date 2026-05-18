@@ -34,21 +34,23 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "dy-fixed dy-left-[50%] dy-top-[50%] dy-z-50 dy-grid dy-w-full dy-max-w-lg dy-translate-x-[-50%] dy-translate-y-[-50%] dy-gap-4 dy-border dy-bg-white dy-p-6 dy-shadow-2xl dy-duration-200 data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=open]:dy-fade-in-0 data-[state=closed]:dy-zoom-out-95 data-[state=open]:dy-zoom-in-95 data-[state=closed]:dy-slide-out-to-left-1/2 data-[state=closed]:dy-slide-out-to-top-[48%] data-[state=open]:dy-slide-in-from-left-1/2 data-[state=open]:dy-slide-in-from-top-[48%] sm:dy-rounded-xl",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-accent data-[state=open]:dy-text-muted-foreground">
-        <X className="dy-h-4 dy-w-4" />
-        <span className="dy-sr-only">Close</span>
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
+    <div className="dy-admin-ui">
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          "dy-fixed dy-left-[50%] dy-top-[50%] dy-z-50 dy-grid dy-w-full dy-max-w-lg dy-translate-x-[-50%] dy-translate-y-[-50%] dy-gap-4 dy-border dy-bg-background dy-p-6 dy-shadow-2xl dy-duration-200 data-[state=open]:dy-animate-in data-[state=closed]:dy-animate-out data-[state=closed]:dy-fade-out-0 data-[state=open]:dy-fade-in-0 data-[state=closed]:dy-zoom-out-95 data-[state=open]:dy-zoom-in-95 data-[state=closed]:dy-slide-out-to-left-1/2 data-[state=closed]:dy-slide-out-to-top-[48%] data-[state=open]:dy-slide-in-from-left-1/2 data-[state=open]:dy-slide-in-from-top-[48%] sm:dy-rounded-xl",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <DialogPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-accent data-[state=open]:dy-text-muted-foreground">
+          <X className="dy-h-4 dy-w-4" />
+          <span className="dy-sr-only">Close</span>
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </div>
   </DialogPortal>
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName

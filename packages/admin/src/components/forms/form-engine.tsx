@@ -62,16 +62,17 @@ export function FormEngine({
   }, [watchedValues, onDataChange])
 
   const visibleFields = fields.filter(f => !f.admin?.hidden)
-  const hasTabs = visibleFields.some(f => f.admin?.tab)
+  const topFields = visibleFields.filter(f => !f.admin?.tab)
+  const tabbedFields = visibleFields.filter(f => !!f.admin?.tab)
 
   let fieldsContent: React.ReactNode
 
-  if (hasTabs) {
+  if (tabbedFields.length > 0) {
     const tabOrder: string[] = []
     const tabGroups = new Map<string, FieldSchema[]>()
 
-    for (const field of visibleFields) {
-      const tab = field.admin?.tab || "General"
+    for (const field of tabbedFields) {
+      const tab = field.admin!.tab!
       if (!tabGroups.has(tab)) {
         tabGroups.set(tab, [])
         tabOrder.push(tab)
@@ -80,28 +81,44 @@ export function FormEngine({
     }
 
     fieldsContent = (
-      <Tabs defaultValue={tabOrder[0]}>
-        <TabsList className="dy-mb-2">
+      <div className="dy-space-y-6">
+        {topFields.length > 0 && (
+          <div className="dy-grid dy-gap-6">
+            {topFields.map(field => (
+              <FormFieldRenderer
+                key={field.name}
+                schema={field}
+                basePath=""
+                control={form.control}
+                collection={collection}
+              />
+            ))}
+          </div>
+        )}
+
+        <Tabs defaultValue={tabOrder[0]}>
+          <TabsList className="dy-mb-2">
+            {tabOrder.map(tab => (
+              <TabsTrigger key={tab} value={tab}>{tab}</TabsTrigger>
+            ))}
+          </TabsList>
           {tabOrder.map(tab => (
-            <TabsTrigger key={tab} value={tab}>{tab}</TabsTrigger>
+            <TabsContent key={tab} value={tab}>
+              <div className="dy-grid dy-gap-6 dy-pt-4">
+                {tabGroups.get(tab)!.map(field => (
+                  <FormFieldRenderer
+                    key={field.name}
+                    schema={field}
+                    basePath=""
+                    control={form.control}
+                    collection={collection}
+                  />
+                ))}
+              </div>
+            </TabsContent>
           ))}
-        </TabsList>
-        {tabOrder.map(tab => (
-          <TabsContent key={tab} value={tab}>
-            <div className="dy-grid dy-gap-6 dy-pt-4">
-              {tabGroups.get(tab)!.map(field => (
-                <FormFieldRenderer
-                  key={field.name}
-                  schema={field}
-                  basePath=""
-                  control={form.control}
-                  collection={collection}
-                />
-              ))}
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
+        </Tabs>
+      </div>
     )
   } else {
     fieldsContent = (
@@ -121,7 +138,7 @@ export function FormEngine({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="dy-space-y-8">
+      <form id="dyrected-edit-form" onSubmit={form.handleSubmit(onSubmit)} className="dy-space-y-8">
         {fieldsContent}
         <div className="dy-flex dy-justify-end dy-gap-4">
           {!readOnly && (
