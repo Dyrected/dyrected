@@ -241,6 +241,18 @@ Throughout the Admin UI dashboard, generic labels like "Add Item" are rendered i
 2. **Collection Creation Buttons:** Modify the "Create New" button in `list-page.tsx` to read `Add ${singularLabel}` (resolving `schema.labels.singular || schema.label || schema.slug`).
 3. **Friendly Media Page/Dialog Headers:** Resolve matching schema definitions inside `media-page.tsx` and `media-library-dialog.tsx`. If schema is loaded, display `schema.labels.plural ?? schema.label`, falling back to capital-cased `collectionSlug` or default `"Media Library"`.
 
+---
 
+## Bug 11: `radix-select-empty-value` (Uncaught Error in AdminUI regarding `<Select.Item />` empty string value prop)
 
+**Component/File:** [`packages/admin/src/components/forms/fields/select-field.tsx`](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/fields/select-field.tsx)
+**Status:** Resolved ✅
 
+### Issue Outline
+When rendering `select` fields with options that contain empty strings (e.g. `{ label: "All", value: "" }` to allow optional filters or resetting selections), Radix UI SelectPrimitive.Item throws an uncaught runtime exception:
+`Error: A <Select.Item /> must have a value prop that is not an empty string. This is because the Select value can be set to an empty string to clear the selection and show the placeholder.`
+
+### Plan to Fix
+1. **Option Value Mapping:** Update the options parsing in `SelectField` to map empty string values (`""`) to a special internal placeholder string (`"__EMPTY_VALUE__"`).
+2. **Controlled State Synchronization:** Implement a controlled `<Select>` wrapper where empty or undefined values from React Hook Form (`field.value === "" || field.value === undefined || field.value === null`) are passed down as `"__EMPTY_VALUE__"`.
+3. **Event Handler Mapping:** Map selected changes in `onValueChange` so that `"__EMPTY_VALUE__"` maps back to `""` before being dispatched to `field.onChange(value)`.

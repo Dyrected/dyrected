@@ -39,12 +39,31 @@ Every adapter must be validated against the following core functionalities:
 
 ---
 
-## 3. Test Suite Architecture
+## 3. Test Suite Architecture: Analysis & Design
 
-We will implement a unified integration test runner in the workspace root or inside a dedicated `packages/db-test` suite.
+When choosing between keeping tests **fully isolated within each database adapter package** versus running them in a **single shared compliance package**, we weigh the following options:
 
-### Unified Test Interface
-A single, runner-independent test suite parameterized by the adapter instance:
+### Comparison of Testing Approaches
+
+| Criteria | Isolated in Each Adapter Package | Unified Shared Compliance Package | **Hybrid Parameterized Compliance (Recommended) 🌟** |
+| :--- | :--- | :--- | :--- |
+| **Code Duplication** | **High:** All adapters must satisfy identical behaviors (CRUD, pagination, dynamic filtering). Writing tests individually leads to copied test code. | **Zero:** Test cases are defined once and parameterized. | **Zero:** Core compliance tests are defined once in a shared helper module. |
+| **Parity Verification** | **Weak:** A new query test might be written for Postgres, but MySQL/SQLite could easily be missed, leading to silent drift. | **Excellent:** Every test runs against all supported databases automatically. | **Excellent:** Core compliance specs run against all adapters dynamically. |
+| **Adapter-Specific Testing** | **Excellent:** Direct scope for database-specific behaviors (e.g. SQLite in-memory files, MySQL loopback diagnostics). | **Poor:** Clutters generic test files with engine-specific hooks and configurations. | **Excellent:** Adapter-specific tests live in the package, while core tests are imported. |
+| **Developer Ergonomics** | **Good:** Easy to run `pnpm --filter db-postgres test` using local dependencies. | **Mediocre:** Difficult to run tests for one adapter without spinning up containers for all of them. | **Excellent:** Individual package test runners can be triggered independently. |
+
+### The Winning Pattern: Hybrid Parameterized Compliance
+
+We adopt a **Hybrid Parameterized Compliance Pattern** that delivers the benefits of both worlds:
+1. **Shared Core Compliance Suite (`@dyrected/db-test`):** A shared package defines a reusable test runner function (`runAdapterSuite`) that receives an adapter initializer.
+2. **Local Package Invocation:** Each adapter package imports this runner and invokes it within its local environment (e.g. `packages/db-postgres/src/__tests__/postgres.spec.ts`).
+3. **Local Adapter Extensions:** Individual adapter packages remain free to write native tests for engine-specific features (e.g., custom configuration parameters, specific connection error handlers) without cluttering the shared suite.
+
+---
+
+### Implementation Reference
+
+#### 1. The Shared Compliance Suite
 
 ```typescript
 // packages/db-test/src/suite.ts
@@ -77,9 +96,30 @@ export function runAdapterSuite(name: string, createAdapter: () => Promise<Datab
       expect(result.docs[0].title).toBe("Published");
     });
 
-    // ... additional test specs
+    // ... additional test specs covering pagination, bulk delete, unique constraints, and transaction safety
   });
 }
+```
+
+#### 2. Local Invocation Example
+
+```typescript
+// packages/db-postgres/__tests__/postgres.spec.ts
+import { runAdapterSuite } from "@dyrected/db-test";
+import { PostgresAdapter } from "../src";
+
+runAdapterSuite("PostgreSQL", async () => {
+  return new PostgresAdapter({
+    connectionString: "postgres://test_user:test_password@localhost:54322/dyrected_test"
+  });
+});
+
+// local postgres-specific assertions
+describe("PostgreSQL Adapter Specifics", () => {
+  it("should parse custom schema extensions correctly", () => {
+    // PG specific edge cases...
+  });
+});
 ```
 
 ---

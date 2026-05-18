@@ -16,10 +16,22 @@ interface SelectFieldProps {
 
 export function SelectField({ schema, field, disabled }: SelectFieldProps) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
-  const options = normalizeOptions(schema.options)
+  const options = normalizeOptions(schema.options).map((opt) => ({
+    label: opt.label,
+    value: opt.value === "" ? "__EMPTY_VALUE__" : opt.value,
+  }))
+
+  const currentValue =
+    field.value === "" || field.value === undefined || field.value === null
+      ? "__EMPTY_VALUE__"
+      : field.value
 
   return (
-    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={disabled}>
+    <Select
+      value={currentValue}
+      onValueChange={(val) => field.onChange(val === "__EMPTY_VALUE__" ? "" : val)}
+      disabled={disabled}
+    >
       <SelectTrigger className="dy-h-12 dy-rounded-xl dy-border-border/40 dy-bg-white/50 focus:dy-ring-0 focus:dy-ring-offset-0 focus:dy-bg-white dy-shadow-sm dy-transition-all hover:dy-shadow-md">
         <SelectValue placeholder={schema.admin?.placeholder || `Select ${label.toLowerCase()}`} />
       </SelectTrigger>
