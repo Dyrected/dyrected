@@ -54,6 +54,22 @@ export interface Media {
   createdAt: string;
   updatedAt: string;
 }
+
+// URL field types
+export type UrlFieldValue = {
+  type: 'custom';
+  url: string;
+  label?: string;
+} | {
+  type: 'internal';
+  url: string;
+  relationTo: string;
+  value: string;
+  label?: string;
+};
+
+// Backward compatibility for simple string URLs
+export type UrlField = UrlFieldValue | string;
 \n`;
 
   for (const col of schema.collections) {
@@ -121,8 +137,9 @@ function mapFieldType(field: any): string {
     case "richText":
     case "date":
     case "email":
-    case "url":
       return "string";
+    case "url":
+      return "UrlField";
     case "number":
       return "number";
     case "boolean":

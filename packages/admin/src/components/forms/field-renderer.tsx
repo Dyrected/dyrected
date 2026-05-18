@@ -11,6 +11,7 @@ import { JsonEditor } from "./fields/json-editor"
 import { DatePicker } from "./fields/date-picker"
 import { RelationshipPicker } from "./fields/relationship-picker"
 import { IconPicker } from "./fields/icon-picker"
+import { UrlField } from "./fields/url-field"
 import jexl from 'jexl'
 
 interface FieldRendererProps {
@@ -30,7 +31,7 @@ interface FieldRendererProps {
  * they are passed down to the specialized field implementation.
  */
 export function FieldRenderer({ schema, field, collection, context }: FieldRendererProps) {
-  
+
   // Evaluate Update Access
   const updateAccess = (schema.access as any)?.update
   let canUpdate = true
@@ -83,6 +84,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "icon":
       return <IconPicker schema={schema} field={field} disabled={disabled} />
+    case "url":
+      return <UrlField schema={schema} field={field} disabled={disabled} context={context} />
     case "relationship":
       const isMediaRel = (schema as any).relationTo === "media" ||
         (context?.schemas?.collections?.find((c: any) => c.slug === (schema as any).relationTo)?.upload)

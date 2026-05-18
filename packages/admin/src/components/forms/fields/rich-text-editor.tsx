@@ -146,15 +146,15 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
       >
         <LinkIcon className="dy-h-4 dy-w-4" />
       </Toggle>
-      
+
       <div className="dy-ml-auto">
         <MediaPicker
           collection={collection}
           variant="icon"
           onChange={(val) => {
-            const filename = Array.isArray(val) ? val[0] : val
-            if (filename) {
-              const url = `/api/media/${filename}`
+            const url = Array.isArray(val) ? val[0] : val
+            if (url) {
+              const filename = typeof url === 'string' ? url.split('/').pop() || 'image' : 'image'
               editor.chain().focus().setImage({ src: url, alt: filename }).run()
             }
           }}
@@ -190,7 +190,7 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
     },
     editorProps: {
       attributes: {
-        class: "prose prose-sm dark:prose-invert max-w-none min-h-[150px] p-4 focus:outline-none border border-t-0 rounded-b-md border-input bg-transparent",
+        class: "dy-prose dy-prose-sm dark:dy-prose-invert dy-max-w-none dy-min-h-[150px] dy-p-4 focus:dy-outline-none dy-border dy-border-t-0 dy-rounded-b-md dy-border-input dy-bg-transparent",
       },
     },
   })
