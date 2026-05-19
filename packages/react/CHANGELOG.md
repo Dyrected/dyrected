@@ -1,5 +1,11 @@
 # @dyrected/react
 
+## 2.5.9
+
+### Patch Changes
+
+- @dyrected/sdk@2.5.9
+
 ## 2.5.8
 
 ### Patch Changes

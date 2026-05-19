@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.5.9
+
+### Patch Changes
+
+- a8fa0b7: refactor: normalize logical operators to uppercase in parser and media-picker query
+
 ## 2.5.8
 
 ### Patch Changes
