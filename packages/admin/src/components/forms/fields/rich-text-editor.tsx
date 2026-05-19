@@ -217,7 +217,7 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
       {label && <label className="dy-text-sm dy-font-medium dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">{label}</label>}
       <div className="dy-flex dy-flex-col dy-w-full">
         {!disabled && <MenuBar editor={editor} collection={collection} />}
-        <EditorContent editor={editor} className={cn(disabled && "dy-opacity-80")} />
+        <EditorContent editor={editor} className={cn(disabled && "dy-opacity-80 dy-prose prose lg:prose-xl lg:dy-prose-xl")} />
       </div>
     </div>
   )

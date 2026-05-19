@@ -170,7 +170,7 @@ function SidebarInner({
               {branding?.logo || branding?.logoMark ? (
                 <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-shrink-0">
                   <img
-                    src={getMediaUrl(collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark), client?.getBaseUrl() || "")}
+                    src={(collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark), client?.getBaseUrl() || "")}
                     alt="Logo"
                     className="dy-max-h-full dy-max-w-full dy-object-contain"
                   />

@@ -166,10 +166,11 @@ export function parseSqlWhere(
   function buildClause(w: WhereClause): string {
     const parts: string[] = [];
     for (const [field, value] of Object.entries(w)) {
-      if (field === 'OR' && Array.isArray(value)) {
+      const upperField = field.toUpperCase();
+      if (upperField === 'OR' && Array.isArray(value)) {
         const sub = (value as WhereClause[]).map((v) => `(${buildClause(v)})`).join(' OR ');
         parts.push(`(${sub})`);
-      } else if (field === 'AND' && Array.isArray(value)) {
+      } else if (upperField === 'AND' && Array.isArray(value)) {
         const sub = (value as WhereClause[]).map((v) => `(${buildClause(v)})`).join(' AND ');
         parts.push(`(${sub})`);
       } else {
@@ -256,9 +257,10 @@ export function parseMongoWhere(where: WhereClause): Record<string, any> {
     const conditions: Record<string, any>[] = [];
 
     for (const [field, value] of Object.entries(w)) {
-      if (field === 'OR' && Array.isArray(value)) {
+      const upperField = field.toUpperCase();
+      if (upperField === 'OR' && Array.isArray(value)) {
         conditions.push({ $or: (value as WhereClause[]).map(buildClause) });
-      } else if (field === 'AND' && Array.isArray(value)) {
+      } else if (upperField === 'AND' && Array.isArray(value)) {
         conditions.push({ $and: (value as WhereClause[]).map(buildClause) });
       } else {
         conditions.push(buildOperator(field, value));

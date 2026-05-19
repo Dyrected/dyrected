@@ -116,7 +116,7 @@ export function MediaPicker({
       if (selectedValues.length === 0) return []
       return client!.listMedia({
         where: {
-          or: [
+          OR: [
             { id: { in: selectedIds } },
             { filename: { in: selectedIds } },
             { url: { in: selectedValues } }
