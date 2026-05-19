@@ -21,7 +21,7 @@ import {
   Users,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
-import { cn, getMediaUrl } from "../../lib/utils"
+import { cn } from "../../lib/utils"
 import { BrandingProvider } from "./branding-provider"
 import logo from "@/assets/dyrected.svg"
 
