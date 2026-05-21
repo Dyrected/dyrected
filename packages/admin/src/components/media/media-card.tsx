@@ -12,23 +12,22 @@ interface MediaCardProps {
 
 export function MediaCard({ item, baseUrl, onDelete, editPath }: MediaCardProps) {
   const url = getMediaUrl(item, baseUrl)
-  
   return (
-    <div className="dy-group dy-relative dy-aspect-square dy-rounded-2xl dy-overflow-hidden dy-bg-white dy-border dy-border-border/40 dy-shadow-sm hover:dy-shadow-xl hover:dy-border-primary/20 dy-transition-all dy-duration-300">
-      <img 
+    <div className="dy-group dy-relative dy-aspect-square dy-rounded-2xl dy-overflow-hidden dy-bg-background dy-border dy-border-border/40 dy-shadow-sm hover:dy-shadow-xl hover:dy-border-primary/20 dy-transition-all dy-duration-300">
+      <img
         src={url}
         alt={item.filename}
         className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-duration-500 dy-group-hover:dy-scale-110"
       />
       <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all dy-duration-300 dy-flex dy-items-center dy-justify-center dy-gap-3 dy-backdrop-blur-[2px]">
         <Link to={editPath}>
-          <Button size="icon" variant="secondary" className="dy-h-9 dy-w-9 dy-rounded-full dy-bg-white/90 hover:dy-bg-white dy-text-foreground dy-shadow-lg dy-transform dy-translate-y-2 dy-group-hover:dy-translate-y-0 dy-transition-transform dy-duration-300">
+          <Button size="icon" variant="secondary" className="dy-h-9 dy-w-9 dy-rounded-full dy-bg-background/90 hover:dy-bg-background dy-text-foreground dy-shadow-lg dy-transform dy-translate-y-2 dy-group-hover:dy-translate-y-0 dy-transition-transform dy-duration-300">
             <Pencil className="dy-h-4 dy-w-4" />
           </Button>
         </Link>
-        <Button 
-          size="icon" 
-          variant="destructive" 
+        <Button
+          size="icon"
+          variant="destructive"
           className="dy-h-9 dy-w-9 dy-rounded-full dy-bg-destructive/90 hover:dy-bg-destructive dy-shadow-lg dy-transform dy-translate-y-2 dy-group-hover:dy-translate-y-0 dy-transition-transform dy-duration-300 dy-delay-75"
           onClick={() => onDelete(item.id)}
         >

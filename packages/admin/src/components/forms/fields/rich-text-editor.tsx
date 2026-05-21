@@ -151,6 +151,7 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
         <MediaPicker
           collection={collection}
           variant="icon"
+          valueType="url"
           onChange={(val) => {
             const url = Array.isArray(val) ? val[0] : val
             if (url) {

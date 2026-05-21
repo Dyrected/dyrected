@@ -158,7 +158,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
           data-dy-field={schema.name}
           className={cn(
             isBoolean
-              ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-white/50 dy-shadow-sm dy-space-y-0"
+              ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
               : "dy-space-y-3"
           )}
         >
@@ -450,7 +450,7 @@ function SortableArrayItem({
             type="button"
             variant="ghost"
             size="icon"
-            className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
+            className="dy-h-7 dy-w-7 dy-text-destructive/70 hover:dy-text-destructive hover:dy-bg-destructive/15 dy-rounded-md dy-transition-colors"
             onClick={() => remove(index)}
             title="Delete item"
           >
@@ -536,7 +536,7 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
   }
 
   return (
-    <div className="dy-space-y-4 dy-transition-all dy-py-4">
+    <div className="dy-bg-card/85 dy-space-y-4 dy-transition-all dy-py-4">
       <div className="dy-flex dy-justify-between dy-items-end dy-pb-2">
         <div className="dy-space-y-1">
           <div className="dy-flex dy-items-center dy-gap-2">

@@ -32,7 +32,7 @@ export function SelectField({ schema, field, disabled }: SelectFieldProps) {
       onValueChange={(val) => field.onChange(val === "__EMPTY_VALUE__" ? "" : val)}
       disabled={disabled}
     >
-      <SelectTrigger className="dy-h-12 dy-rounded-xl dy-border-border/40 dy-bg-white/50 focus:dy-ring-0 focus:dy-ring-offset-0 focus:dy-bg-white dy-shadow-sm dy-transition-all hover:dy-shadow-md">
+      <SelectTrigger className="dy-h-12 dy-rounded-xl dy-border-border/40 dy-bg-background/50 focus:dy-ring-0 focus:dy-ring-offset-0 focus:dy-bg-background dy-shadow-sm dy-transition-all hover:dy-shadow-md">
         <SelectValue placeholder={schema.admin?.placeholder || `Select ${label.toLowerCase()}`} />
       </SelectTrigger>
       <SelectContent className="dy-rounded-xl dy-border-border/40 dy-shadow-xl dy-animate-in dy-fade-in dy-zoom-in-95">

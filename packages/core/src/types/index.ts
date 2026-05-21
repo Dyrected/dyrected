@@ -80,10 +80,10 @@ export type HookFunction = (args: {
   user?: any;
   req?: any;
   /** The operation that triggered this hook. */
-  operation?: 'create' | 'update' | 'delete';
+  operation?: "create" | "update" | "delete";
 }) => any | Promise<any>;
 
-export type FieldHook = (args: { value: any; originalDoc?: any; data?: any; user?: any }) => any | Promise<any>;
+export type FieldHook<T = any, V = any> = (args: { value: V; originalDoc?: T; data?: T; user?: any }) => T | Promise<T>;
 
 export interface CollectionConfig {
   slug: string;
@@ -126,7 +126,7 @@ export interface CollectionConfig {
      */
     previewUrl?: string | ((doc: any, opts: { locale?: string }) => string | null);
     /** Which mode to use for live preview. Defaults to 'postMessage'. */
-    previewMode?: 'postMessage' | 'token';
+    previewMode?: "postMessage" | "token";
   };
 }
 
@@ -205,14 +205,14 @@ export interface DatabaseAdapter {
   getGlobal(args: { slug: string }): Promise<any>;
   updateGlobal(args: { slug: string; data: any }): Promise<any>;
 
-  /** 
+  /**
    * Sync the database schema with the provided collections and globals.
    * Useful for creating tables on startup.
    */
   sync?(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;
 
-  /** 
-   * Low-level raw query execution. 
+  /**
+   * Low-level raw query execution.
    * Optional as not all adapters may support raw SQL/commands.
    */
   execute?(query: string, params?: any[]): Promise<any>;
@@ -264,10 +264,10 @@ export interface AdminConfig {
 }
 
 export interface ImageService {
-  process(args: { 
-    buffer: Uint8Array; 
-    mimeType: string; 
-    config?: CollectionConfig['upload'];
+  process(args: {
+    buffer: Uint8Array;
+    mimeType: string;
+    config?: CollectionConfig["upload"];
     focalPoint?: { x: number; y: number };
   }): Promise<{
     metadata: {

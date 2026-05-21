@@ -105,7 +105,7 @@ export function GlobalEditorPage() {
         </div>
       </div>
 
-      <div className="dy-animate-in dy-space-y-8 dy-pb-20">
+      <div className="dy-animate-in dy-space-y-8 dy-pb-32">
         <FormEngine
           collection={slug!}
           fields={schema.fields}
@@ -116,6 +116,37 @@ export function GlobalEditorPage() {
           submitLabel="Save Changes"
         />
         <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
+
+        {/* Sticky Save Bar */}
+        {isDirty && (
+          <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
+            <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
+              <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
+                <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
+                  You have unsaved changes
+                </p>
+                <Button
+                  size="sm"
+                  className="dy-h-9 dy-px-5 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
+                  onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                  disabled={saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? (
+                    <div className="dy-flex dy-items-center dy-gap-2">
+                      <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
+                      Saving...
+                    </div>
+                  ) : (
+                    <div className="dy-flex dy-items-center dy-gap-2">
+                      <Save className="dy-h-4 dy-w-4" />
+                      Save Changes
+                    </div>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

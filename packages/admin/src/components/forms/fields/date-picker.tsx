@@ -29,7 +29,7 @@ export function DatePicker({ value, onChange, label, disabled }: DatePickerProps
             variant={"outline"}
             disabled={disabled}
             className={cn(
-              "dy-w-full dy-justify-start dy-text-left dy-font-normal dy-h-11 dy-px-4 dy-bg-white hover:dy-bg-muted/50 dy-border-border/60 dy-shadow-sm dy-transition-all hover:dy-shadow-md",
+              "dy-w-full dy-justify-start dy-text-left dy-font-normal dy-h-11 dy-px-4 dy-bg-background hover:dy-bg-muted/50 dy-border-border/60 dy-shadow-sm dy-transition-all hover:dy-shadow-md",
               !date && "dy-text-muted-foreground"
             )}
           >

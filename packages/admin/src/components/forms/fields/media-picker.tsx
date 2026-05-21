@@ -15,13 +15,14 @@ import type { Media } from "@dyrected/sdk"
 
 interface MediaPickerProps {
   collection: string
-  value?: string | string[]
-  onChange: (value: string | string[]) => void
+  value?: string | string[] | any
+  onChange: (value: any) => void
   label?: string
   variant?: "default" | "icon"
   disabled?: boolean
   multiple?: boolean
   placeholder?: string
+  valueType?: "id" | "url"
 }
 
 export function MediaPicker({
@@ -32,26 +33,51 @@ export function MediaPicker({
   variant = "default",
   disabled,
   multiple,
-  placeholder
+  placeholder,
+  valueType = "id"
 }: MediaPickerProps) {
   const { client, schemas } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
+  const [localMediaCache, setLocalMediaCache] = React.useState<any[]>([])
 
   const selectedValues = React.useMemo(() => {
     if (!value) return []
     return Array.isArray(value) ? value : [value]
   }, [value])
 
-  // Extract IDs/filenames from selectedValues (which could be URLs or IDs)
+  const getIdentifier = React.useCallback((v: any): string => {
+    if (!v) return ""
+    if (typeof v === "object" && v !== null) {
+      return v.id || v._id || v.filename || ""
+    }
+    const strVal = String(v)
+    if (strVal.includes("/")) {
+      return strVal.split("/").pop() || strVal
+    }
+    return strVal
+  }, [])
+
   const selectedIds = React.useMemo(() => {
-    return selectedValues.map((v: string) => {
-      // If it's a URL, try to extract the ID/filename from it
-      if (v?.includes('/')) {
-        return v.split('/').pop() || v
-      }
-      return v
-    })
-  }, [selectedValues])
+    return selectedValues.map(getIdentifier).filter(Boolean)
+  }, [selectedValues, getIdentifier])
+
+  // Seed cache from populated objects in value
+  React.useEffect(() => {
+    if (!value) return
+    const vals = Array.isArray(value) ? value : [value]
+    const objects = vals.filter((v: any) => typeof v === "object" && v !== null)
+    if (objects.length > 0) {
+      setLocalMediaCache((prev) => {
+        const next = [...prev]
+        objects.forEach((obj: any) => {
+          if (obj.id && !next.some((m) => m.id === obj.id)) {
+            next.push(obj)
+          }
+        })
+        return next
+      })
+    }
+  }, [value])
 
   const activeMediaCollection = React.useMemo(() => {
     const targetColl = schemas?.collections?.find((c: any) => c.slug === collection)
@@ -59,92 +85,144 @@ export function MediaPicker({
     return "media"
   }, [schemas, collection])
 
-  const getFullUrl = (id: string): string => {
-    const item = media?.find((m: any) => m.id === id || m.filename === id || m.url === id)
-    if (item) {
-      if (item.mimeType === 'video/youtube') {
-        return item.url || ""
-      }
-      return getMediaUrl(item, client?.getBaseUrl() || "")
-    }
-    // Fallback if media not yet loaded
-    return getMediaUrl(id, client?.getBaseUrl() || "")
-  }
+  const missingIds = React.useMemo(() => {
+    return selectedIds.filter(id => !localMediaCache.some(m => m.id === id || m.filename === id || m.url === id))
+  }, [selectedIds, localMediaCache])
 
-  const toggleValue = (id: string) => {
-    const item = media?.find((m: any) => m.id === id || m.filename === id || m.url === id)
-    const matchId = item?.id || id
-    const matchFilename = item?.filename || id
-    const matchUrl = item?.url || id
-
-    const isSelected = selectedValues.some(v => v === matchId || v === matchFilename || v === matchUrl)
-
-    if (multiple) {
-      const next = isSelected
-        ? selectedValues.filter(v => v !== matchId && v !== matchFilename && v !== matchUrl)
-        : [...selectedValues, getFullUrl(id)]
-      onChange(next)
-    } else {
-      onChange(isSelected ? "" : getFullUrl(id))
-    }
-  }
-
-  const handleConfirm = (ids: string[]) => {
-    if (multiple) {
-      const next = [...selectedValues]
-      ids.forEach(id => {
-        const item = media?.find((m: any) => m.id === id || m.filename === id || m.url === id)
-        const matchId = item?.id || id
-        const matchFilename = item?.filename || id
-        const matchUrl = item?.url || id
-        const isSelected = next.some(v => v === matchId || v === matchFilename || v === matchUrl)
-        if (!isSelected) {
-          next.push(getFullUrl(id))
-        }
-      })
-      onChange(next)
-    } else if (ids.length > 0) {
-      onChange(getFullUrl(ids[0]))
-    }
-    setIsOpen(false)
-  }
-
-  // Fetch media for thumbnails in the field view
-  const { data: media } = useQuery({
-    queryKey: [activeMediaCollection, "previews", selectedValues],
+  // Fetch missing media for previews
+  const { data: fetchedMedia } = useQuery({
+    queryKey: [activeMediaCollection, "previews", missingIds],
     queryFn: () => {
-      if (selectedValues.length === 0) return []
+      if (missingIds.length === 0) return []
       return client!.listMedia({
         where: {
           OR: [
-            { id: { in: selectedIds } },
-            { filename: { in: selectedIds } },
-            { url: { in: selectedValues } }
+            { id: { in: missingIds } },
+            { filename: { in: missingIds } }
           ]
         }
       }, activeMediaCollection).then((r: any) => r.docs)
     },
-    enabled: !!client && selectedValues.length > 0,
+    enabled: !!client && missingIds.length > 0,
   })
+
+  React.useEffect(() => {
+    if (fetchedMedia && fetchedMedia.length > 0) {
+      setLocalMediaCache((prev) => {
+        const next = [...prev]
+        fetchedMedia.forEach((obj: any) => {
+          if (obj.id && !next.some((m) => m.id === obj.id)) {
+            next.push(obj)
+          }
+        })
+        return next
+      })
+    }
+  }, [fetchedMedia])
+
+  const getFullUrl = (item: any): string => {
+    if (!item) return ""
+    if (valueType === "url") {
+      if (item.mimeType === "video/youtube") {
+        return item.url || ""
+      }
+      return getMediaUrl(item, client?.getBaseUrl() || "")
+    }
+    return item.id
+  }
+
+  const toggleValue = (id: string, item?: any) => {
+    if (item && item.id) {
+      setLocalMediaCache(prev => {
+        if (!prev.some(m => m.id === item.id)) {
+          return [...prev, item]
+        }
+        return prev
+      })
+    }
+
+    const resolvedItem = item || localMediaCache.find(m => m.id === id || m.filename === id || m.url === id)
+    const matchId = resolvedItem?.id || id
+    const isSelected = selectedIds.includes(matchId)
+
+    if (multiple) {
+      let nextIds: string[]
+      if (isSelected) {
+        nextIds = selectedIds.filter(v => v !== matchId)
+      } else {
+        nextIds = [...selectedIds, matchId]
+      }
+      const nextValues = nextIds.map(nid => {
+        const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid)
+        return cached ? getFullUrl(cached) : nid
+      })
+      onChange(nextValues)
+    } else {
+      if (isSelected) {
+        onChange("")
+      } else {
+        onChange(resolvedItem ? getFullUrl(resolvedItem) : id)
+      }
+    }
+  }
+
+  const handleConfirm = (ids: string[], items?: any[]) => {
+    if (items && items.length > 0) {
+      setLocalMediaCache(prev => {
+        const next = [...prev]
+        items.forEach(item => {
+          if (item && item.id && !next.some(m => m.id === item.id)) {
+            next.push(item)
+          }
+        })
+        return next
+      })
+    }
+
+    if (multiple) {
+      const nextIds = [...selectedIds]
+      ids.forEach(id => {
+        if (!nextIds.includes(id)) {
+          nextIds.push(id)
+        }
+      })
+      const nextValues = nextIds.map(nid => {
+        const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || items?.find(m => m.id === nid || m.filename === nid || m.url === nid)
+        return cached ? getFullUrl(cached) : nid
+      })
+      onChange(nextValues)
+    } else if (ids.length > 0) {
+      const nid = ids[0]
+      const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || items?.find(m => m.id === nid || m.filename === nid || m.url === nid)
+      onChange(cached ? getFullUrl(cached) : nid)
+    }
+    setIsOpen(false)
+  }
 
   const getPreviewUrl = (item: Media) => {
     if (!item) return ""
-    if (item.mimeType === 'video/youtube') {
+    if (item.mimeType === "video/youtube") {
       const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#\&\?]*)/)
       const videoId = match && match[1]
       return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
     }
-    return getMediaUrl(item, client?.getBaseUrl() || "");
+    return getMediaUrl(item, client?.getBaseUrl() || "")
   }
 
   const isIcon = variant === "icon"
+
   const getDisplayString = (val: any): string => {
     if (!val) return ""
     if (Array.isArray(val)) {
       if (val.length === 0) return ""
       return `${val.length} items selected`
     }
-    if (typeof val === 'object') return val.filename || val.id || val.slug || "Object"
+    if (typeof val === "object") return val.filename || val.id || val.slug || "Object"
+    const cached = localMediaCache.find(m => m.id === val || m.filename === val || m.url === val)
+    if (cached) return cached.filename || cached.id
+    if (val.includes("/")) {
+      return val.split("/").pop() || val
+    }
     return String(val)
   }
   const displayValue = getDisplayString(value)
@@ -175,9 +253,10 @@ export function MediaPicker({
           </button>
 
           {selectedValues.map((val, index) => {
-            const item = media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
+            const valId = getIdentifier(val)
+            const item = localMediaCache.find((m: any) => m.id === valId || m.filename === valId || m.url === valId)
             return (
-              <div key={val} className="dy-relative dy-group dy-animate-in dy-zoom-in dy-duration-300">
+              <div key={valId} className="dy-relative dy-group dy-animate-in dy-zoom-in dy-duration-300">
                 <div className={cn(
                   "dy-relative dy-aspect-square dy-rounded-xl dy-overflow-hidden dy-border-2 dy-bg-muted/20 dy-transition-all dy-shadow-sm",
                   index === 0 ? "dy-border-primary dy-ring-4 dy-ring-primary/10" : "dy-border-border/40 hover:dy-border-border/80"
@@ -212,7 +291,7 @@ export function MediaPicker({
                       variant="outline"
                       size="icon"
                       className="dy-h-8 dy-w-8 dy-rounded-lg dy-text-destructive dy-bg-destructive-foreground dy-shadow-2xl dy-scale-75 dy-group-hover:dy-scale-100 dy-transition-all"
-                      onClick={() => toggleValue(val)}
+                      onClick={() => toggleValue(valId, item)}
                     >
                       <Trash2 className="dy-w-5 dy-h-5" />
                     </Button>
@@ -268,8 +347,8 @@ export function MediaPicker({
                   size="icon"
                   className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-destructive dy-transition-colors dy-rounded-lg"
                   onClick={(e) => {
-                    e.preventDefault();
-                    onChange(multiple ? [] : "");
+                    e.preventDefault()
+                    onChange(multiple ? [] : "")
                   }}
                 >
                   <X className="dy-h-4 dy-w-4" />
@@ -309,11 +388,12 @@ export function MediaPicker({
       {!isIcon && selectedValues.length > 0 && !multiple && (
         <div className="dy-grid dy-grid-cols-2 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 dy-gap-4 dy-pt-2">
           {selectedValues.map((val) => {
-            const item = media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
+            const valId = getIdentifier(val)
+            const item = localMediaCache.find((m: any) => m.id === valId || m.filename === valId || m.url === valId)
             const previewUrl = item ? getPreviewUrl(item) : (val ? getMediaUrl(val, client?.getBaseUrl() || "") : "")
             return (
               <div
-                key={val}
+                key={valId}
                 className="dy-relative dy-aspect-square dy-group dy-rounded-2xl dy-overflow-hidden dy-border-2 dy-border-border/50 hover:dy-border-primary/50 dy-transition-all dy-bg-muted/20 dy-shadow-sm"
               >
                 {previewUrl ? (
@@ -330,14 +410,14 @@ export function MediaPicker({
                 {!disabled && (
                   <button
                     type="button"
-                    onClick={() => toggleValue(val)}
+                    onClick={() => toggleValue(valId, item)}
                     className="dy-absolute dy-top-2 dy-right-2 dy-p-1.5 dy-bg-destructive dy-text-destructive-foreground dy-rounded-full dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all hover:dy-scale-110 dy-shadow-lg dy-border-2 dy-border-white"
                   >
                     <X className="dy-h-3.5 dy-w-3.5" />
                   </button>
                 )}
                 <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
-                  <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item?.filename || (typeof val === 'string' ? val.split('/').pop() : 'Media')}</p>
+                  <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item?.filename || (typeof val === "string" ? val.split("/").pop() : "Media")}</p>
                 </div>
               </div>
             )

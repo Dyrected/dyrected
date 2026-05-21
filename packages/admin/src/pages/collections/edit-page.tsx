@@ -7,8 +7,8 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
-import { cn } from "../../lib/utils"
-import { Archive, Eye, EyeOff, Save } from "lucide-react"
+import { cn, getMediaUrl } from "../../lib/utils"
+import { Archive, Eye, EyeOff, Save, Volume2, FileIcon } from "lucide-react"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
 import jexl from 'jexl'
 
@@ -189,7 +189,7 @@ export function EditEntryPage() {
                   className={cn(
                     "dy-h-8 dy-w-8 dy-rounded-lg dy-transition-all",
                     showPreview
-                      ? "dy-bg-white dy-text-primary dy-shadow-sm hover:dy-bg-white"
+                      ? "dy-bg-background dy-text-primary dy-shadow-sm hover:dy-bg-background"
                       : "dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground"
                   )}
                   onClick={() => setShowPreview(!showPreview)}
@@ -215,25 +215,134 @@ export function EditEntryPage() {
           </div>
 
           {/* Form */}
-          <div className="dy-animate-in dy-space-y-8 dy-pb-20">
+          <div className="dy-animate-in dy-space-y-8 dy-pb-32">
             {!canUpdate && isEdit && (
               <div className="dy-p-4 dy-rounded-lg dy-bg-amber-50 dy-border dy-border-amber-200 dy-text-amber-800 dy-text-sm dy-flex dy-items-center dy-gap-3">
                 <Archive className="dy-h-4 dy-w-4" />
                 You have read-only access to this collection.
               </div>
             )}
-            <FormEngine
-              collection={slug!}
-              fields={schema.fields}
-              defaultValues={entry}
-              onSubmit={(data) => saveMutation.mutate(data)}
-              onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
-              onChange={(dirty) => setIsDirty(dirty)}
-              isLoading={saveMutation.isPending}
-              submitLabel={isEdit ? "Save Changes" : "Create Entry"}
-              readOnly={isEdit ? !canUpdate : !canCreate}
-            />
+            {schema.upload && (previewData || entry) && ((previewData || entry).filename || (previewData || entry).url) && (
+              <div className="dy-p-5 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-muted/10 dy-space-y-4">
+                <div className="dy-flex dy-items-start dy-gap-4">
+                  <div className="dy-flex-1 dy-space-y-1">
+                    <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Uploaded File</p>
+                    <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{(previewData || entry).filename}</h3>
+                    <p className="dy-text-xs dy-text-muted-foreground">
+                      {(previewData || entry).filesize ? `${(((previewData || entry).filesize || 0) / 1024).toFixed(1)} KB` : 'N/A Size'} • {(previewData || entry).mimeType || 'Unknown Type'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-flex dy-items-center dy-justify-center dy-p-4 dy-min-h-[160px] dy-max-h-[320px] dy-relative">
+                  {(previewData || entry).mimeType?.startsWith("image/") ? (
+                    <img
+                      src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                      alt={(previewData || entry).alt || (previewData || entry).filename}
+                      className="dy-object-contain dy-max-h-[280px] dy-rounded-lg dy-shadow-sm"
+                    />
+                  ) : (previewData || entry).mimeType?.startsWith("audio/") ? (
+                    <div className="dy-w-full dy-max-w-md dy-bg-card dy-p-4 dy-rounded-xl dy-border dy-border-border/60 dy-shadow-sm dy-flex dy-flex-col dy-gap-3 dy-items-center">
+                      <div className="dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-text-primary">
+                        <Volume2 className="dy-h-5 dy-w-5" />
+                      </div>
+                      <audio
+                        src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                        controls
+                        className="dy-w-full"
+                      />
+                    </div>
+                  ) : (previewData || entry).mimeType?.startsWith("video/") ? (
+                    <video
+                      src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                      controls
+                      className="dy-max-h-[280px] dy-w-full dy-rounded-lg dy-shadow-sm"
+                    />
+                  ) : (
+                    <div className="dy-flex dy-flex-col dy-items-center dy-gap-2 dy-p-6">
+                      <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
+                        <FileIcon className="dy-h-8 dy-w-8 dy-text-primary" />
+                      </div>
+                      <span className="dy-text-xs dy-font-medium dy-text-muted-foreground">Preview not available</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {(() => {
+              let fields = [...schema.fields];
+              if (schema.upload) {
+                const hasAlt = fields.some((f: any) => f.name === "alt");
+                const hasCaption = fields.some((f: any) => f.name === "caption");
+                const mediaFields = [];
+                if (!hasAlt) {
+                  mediaFields.push({
+                    name: "alt",
+                    type: "text",
+                    label: "Alt Text",
+                    admin: {
+                      description: "Describe the image for accessibility/screen readers."
+                    }
+                  });
+                }
+                if (!hasCaption) {
+                  mediaFields.push({
+                    name: "caption",
+                    type: "textarea",
+                    label: "Caption",
+                    admin: {
+                      description: "Add a caption/description for this media file."
+                    }
+                  });
+                }
+                fields = [...mediaFields, ...fields];
+              }
+              return (
+                <FormEngine
+                  collection={slug!}
+                  fields={fields}
+                  defaultValues={entry}
+                  onSubmit={(data) => saveMutation.mutate(data)}
+                  onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
+                  onChange={(dirty) => setIsDirty(dirty)}
+                  isLoading={saveMutation.isPending}
+                  submitLabel={isEdit ? "Save Changes" : "Create Entry"}
+                  readOnly={isEdit ? !canUpdate : !canCreate}
+                />
+              );
+            })()}
             <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
+
+            {/* Sticky Save Bar */}
+            {(isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
+              <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
+                <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
+                  <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
+                    <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
+                      {isEdit ? "You have unsaved changes" : `Create a new ${schema.label || schema.slug}`}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="dy-h-9 dy-px-5 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
+                      onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                      disabled={saveMutation.isPending}
+                    >
+                      {saveMutation.isPending ? (
+                        <div className="dy-flex dy-items-center dy-gap-2">
+                          <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
+                          Saving...
+                        </div>
+                      ) : (
+                        <div className="dy-flex dy-items-center dy-gap-2">
+                          <Save className="dy-h-3.5 dy-w-3.5" />
+                          {isEdit ? "Save Changes" : "Create Entry"}
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Document Meta */}
             <div className="dy-pt-8 dy-border-t dy-border-border/40">

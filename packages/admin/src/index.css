@@ -109,3 +109,7 @@
     @apply dy-border-primary/50;
   }
 }
+
+.media-preview-dialod-details-form div[style="min-width: 100%;display: table;"] {
+  display: flex !important;
+}

@@ -1,15 +1,33 @@
-import { defineCollection, defineGlobal, defineConfig } from "@dyrected/core";
+import { defineCollection, defineGlobal, defineConfig, FieldHook } from "@dyrected/core";
 import { SqliteAdapter } from "@dyrected/db-sqlite";
 import { LocalStorageAdapter } from "@dyrected/storage-local";
 import path from "node:path";
 
-const media = defineCollection({
+const Media = defineCollection({
   slug: "media",
   upload: true,
   fields: [{ name: "alt", type: "text", label: "Alt Text" }],
 });
 
-const pages = defineCollection({
+const Products = defineCollection({
+  slug: "products",
+  admin: {
+    group: "Content",
+    defaultColumns: ["title", "price", "featured", "publishedAt", "action"],
+    useAsTitle: "title",
+  },
+  fields: [
+    { name: "title", type: "text", required: true },
+    { name: "slug", type: "text", required: true, unique: true },
+    { name: "description", type: "textarea" },
+    { name: "price", type: "number" },
+    { name: "image", type: "relationship", relationTo: Media.slug },
+    { name: "featured", type: "boolean", defaultValue: false },
+    { name: "publishedAt", type: "date" },
+  ],
+});
+
+const Pages = defineCollection({
   slug: "pages",
   admin: {
     useAsTitle: "title",
@@ -29,7 +47,7 @@ const pages = defineCollection({
       fields: [
         { name: "metaTitle", type: "text" },
         { name: "metaDescription", type: "textarea" },
-        { name: "ogImage", type: "relationship", relationTo: "media" },
+        { name: "ogImage", type: "relationship", relationTo: Media.slug },
       ],
     },
     {
@@ -45,7 +63,7 @@ const pages = defineCollection({
           fields: [
             { name: "heading", type: "text", required: true },
             { name: "subheading", type: "textarea" },
-            { name: "image", type: "relationship", relationTo: "media" },
+            { name: "image", type: "relationship", relationTo: Media.slug },
             { name: "ctaLabel", type: "text" },
             { name: "ctaLink", type: "url" },
           ],
@@ -223,7 +241,19 @@ const pages = defineCollection({
   ],
 });
 
-const blog = defineCollection({
+const Authors = defineCollection({
+  slug: "authors",
+  admin: {
+    useAsTitle: "name",
+  },
+  fields: [
+    { name: "name", type: "text", required: true },
+    { name: "bio", type: "textarea" },
+    { name: "avatar", type: "relationship", relationTo: Media.slug },
+  ],
+});
+
+const Blog = defineCollection({
   slug: "blog",
   admin: {
     useAsTitle: "title",
@@ -234,25 +264,43 @@ const blog = defineCollection({
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },
     { name: "content", type: "richText", required: true },
-    { name: "featuredImage", type: "relationship", relationTo: "media" },
+    { name: "featuredImage", type: "relationship", relationTo: Media.slug },
+    { name: "author", type: "relationship", relationTo: Authors.slug },
     { name: "publishedDate", type: "date", defaultValue: () => new Date().toISOString() },
   ],
 });
 
-const settings = defineGlobal({
+const Settings = defineGlobal({
   slug: "settings",
   label: "Site Settings",
   fields: [
     { name: "siteName", type: "text" },
     { name: "tagline", type: "text" },
-    { name: "logo", type: "relationship", relationTo: "media" },
+    { name: "logo", type: "relationship", relationTo: Media.slug },
     { name: "footerText", type: "textarea" },
   ],
 });
 
+const Navigation = defineGlobal({
+  slug: "navigation",
+  label: "Navigation",
+  fields: [
+    {
+      label: "Navigation Links",
+      name: "navLinks",
+      type: "array",
+      fields: [
+        { name: "title", type: "text" },
+        { name: "url", type: "url" },
+      ],
+    },
+    { label: "Call to Action", name: "ctaButton", type: "url" },
+  ],
+});
+
 export default defineConfig({
-  collections: [media, pages, blog],
-  globals: [settings],
+  collections: [Media, Pages, Blog, Products, Authors],
+  globals: [Settings, Navigation],
   db: new SqliteAdapter({
     filename: "dyrected.db",
   }),

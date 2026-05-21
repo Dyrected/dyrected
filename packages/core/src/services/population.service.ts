@@ -1,4 +1,5 @@
 import type { CollectionConfig, DatabaseAdapter, Field, PaginatedResult } from '../types/index.js';
+import { DefaultsService } from './defaults.service.js';
 
 export class PopulationService {
   private db: DatabaseAdapter;
@@ -15,10 +16,10 @@ export class PopulationService {
   async populate(args: {
     data: any;
     fields: Field[];
-    currentDepth: number;
-    maxDepth: number;
+    currentDepth?: number;
+    maxDepth?: number;
   }): Promise<any> {
-    const { data, fields, currentDepth, maxDepth } = args;
+    const { data, fields, currentDepth = 0, maxDepth = 10 } = args;
 
     if (currentDepth >= maxDepth || !data) {
       return data;
@@ -58,8 +59,9 @@ export class PopulationService {
               
               if (!doc || typeof doc !== 'object') return id;
 
+              const docWithDefaults = DefaultsService.apply(relatedCollection.fields, doc);
               return this.populate({
-                data: doc,
+                data: docWithDefaults,
                 fields: relatedCollection.fields,
                 currentDepth: currentDepth + 1,
                 maxDepth,
@@ -74,12 +76,37 @@ export class PopulationService {
           }
 
           if (doc && typeof doc === 'object') {
+            const docWithDefaults = DefaultsService.apply(relatedCollection.fields, doc);
             populatedDoc[field.name] = await this.populate({
-              data: doc,
+              data: docWithDefaults,
               fields: relatedCollection.fields,
               currentDepth: currentDepth + 1,
               maxDepth,
             });
+          }
+        }
+      }
+
+      // Handle URL Fields with internal relationships
+      if (field.type === 'url' && value && typeof value === 'object' && value.type === 'internal' && value.relationTo && value.value) {
+        const relatedCollection = this.collections.find(c => c.slug === value.relationTo);
+        if (relatedCollection) {
+          const doc = await this.db.findOne({ collection: value.relationTo, id: value.value });
+          if (doc && typeof doc === 'object') {
+            const docWithDefaults = DefaultsService.apply(relatedCollection.fields, doc);
+            const populatedDocValue = await this.populate({
+              data: docWithDefaults,
+              fields: relatedCollection.fields,
+              currentDepth: currentDepth + 1,
+              maxDepth,
+            });
+            const identifier = docWithDefaults.slug || docWithDefaults.id;
+            const resolvedUrl = `/collections/${value.relationTo}/${identifier}`;
+            populatedDoc[field.name] = {
+              ...value,
+              url: resolvedUrl,
+              doc: populatedDocValue,
+            };
           }
         }
       }

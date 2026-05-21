@@ -68,7 +68,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
 
   return (
     <div className="dy-flex dy-flex-col dy-h-full dy-bg-muted/20 dy-border-l dy-border-border/60">
-      <div className="dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-2 dy-bg-white dy-border-b dy-border-border/40">
+      <div className="dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-2 dy-bg-background dy-border-b dy-border-border/40">
         <div className="dy-flex dy-items-center dy-gap-2">
           <Button
             variant="ghost"
@@ -138,7 +138,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
 
       <div className="dy-flex-1 dy-flex dy-items-center dy-justify-center dy-p-0 dy-overflow-hidden dy-bg-muted/5">
         <div
-          className={`dy-bg-white dy-shadow-[0_20px_50px_rgba(0,0,0,0.1)] dy-transition-all dy-duration-500 dy-overflow-hidden dy-border dy-border-border/40 ${viewMode === 'mobile' ? 'dy-w-[375px] dy-h-[667px]' : 'dy-w-full dy-h-full'
+          className={`dy-bg-background dy-shadow-[0_20px_50px_rgba(0,0,0,0.1)] dy-transition-all dy-duration-500 dy-overflow-hidden dy-border dy-border-border/40 ${viewMode === 'mobile' ? 'dy-w-[375px] dy-h-[667px]' : 'dy-w-full dy-h-full'
             }`}
         >
           <iframe

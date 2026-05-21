@@ -19,7 +19,7 @@ export class CollectionController {
 
     const limit = Number(c.req.query('limit')) || 10;
     const page = Number(c.req.query('page')) || 1;
-    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
+    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 2;
     const sort = c.req.query('sort') || undefined;
 
     let where: any = undefined;
@@ -72,7 +72,7 @@ export class CollectionController {
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
     const id = c.req.param('id');
-    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
+    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 10;
 
     if (!id) return c.json({ message: 'Missing ID' }, 400);
     const doc = await db!.findOne({ collection: this.collection.slug, id });

@@ -1,76 +1,77 @@
-import { clsx, type ClassValue } from "clsx"
-import { extendTailwindMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { extendTailwindMerge } from "tailwind-merge";
 
 const customTwMerge = extendTailwindMerge({
   prefix: "dy-",
-})
+});
 
 export function cn(...inputs: ClassValue[]) {
-  return customTwMerge(clsx(inputs))
+  return customTwMerge(clsx(inputs));
 }
 
 export function getMediaUrl(val: string | any, baseUrl: string) {
-  if (!val) return "";
+  if (!val) {
+    return "";
+  }
 
-  const mergeBaseAndPath = (base: string, path: string) => {
-    if (path.startsWith('http://') || path.startsWith('https://')) return path;
-
-    const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base;
-    const normalizedPath = path.startsWith('/') ? path : '/' + path;
-
-    let isAbsolute = false;
-    let origin = '';
-    let basePathname = '';
-
-    if (normalizedBase.startsWith('http://') || normalizedBase.startsWith('https://')) {
-      isAbsolute = true;
+  // 1. Get the base origin (e.g., "http://localhost:5000" from "http://localhost:5000/api")
+  let baseOrigin = "";
+  if (baseUrl) {
+    if (baseUrl.startsWith("http://") || baseUrl.startsWith("https://")) {
       try {
-        const urlObj = new URL(normalizedBase);
-        origin = urlObj.origin;
-        basePathname = urlObj.pathname;
-        if (basePathname.endsWith('/')) basePathname = basePathname.slice(0, -1);
-      } catch (e) {
-        const firstSlash = normalizedBase.indexOf('/', 8);
-        if (firstSlash !== -1) {
-          origin = normalizedBase.substring(0, firstSlash);
-          basePathname = normalizedBase.substring(firstSlash);
-        } else {
-          origin = normalizedBase;
-          basePathname = '';
-        }
+        baseOrigin = new URL(baseUrl).origin;
+      } catch {
+        const match = baseUrl.match(/^(https?:\/\/[^\/]+)/);
+        baseOrigin = match ? match[1] : baseUrl;
       }
     } else {
-      basePathname = normalizedBase;
+      baseOrigin = baseUrl;
     }
+  }
 
-    if (basePathname && basePathname !== '/') {
-      const escapedSubpath = basePathname.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      const regex = new RegExp('^' + escapedSubpath + '(\\/|$)');
-      if (regex.test(normalizedPath)) {
-        return isAbsolute ? `${origin}${normalizedPath}` : normalizedPath;
+  // Helper to ensure base and path are joined correctly
+  const prependBase = (urlPath: string) => {
+    if (urlPath.startsWith("http://") || urlPath.startsWith("https://")) {
+      return urlPath;
+    }
+    const cleanPath = urlPath.startsWith("/") ? urlPath : "/" + urlPath;
+    // For "/uploads/..." we use baseOrigin (which is the root host of the backend)
+    if (cleanPath.startsWith("/uploads/")) {
+      return `${baseOrigin.endsWith("/") ? baseOrigin.slice(0, -1) : baseOrigin}${cleanPath}`;
+    }
+    // For other paths, we can use baseUrl as the prefix
+    const basePrefix = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    // If the path already has the basePrefix pathname (e.g., "/api/media/...") then we don't duplicate it.
+    try {
+      const baseObj = new URL(basePrefix);
+      const basePathname = baseObj.pathname === "/" ? "" : baseObj.pathname;
+      if (basePathname && cleanPath.startsWith(basePathname)) {
+        return `${baseObj.origin}${cleanPath}`;
+      }
+    } catch {
+      if (basePrefix && cleanPath.startsWith(basePrefix)) {
+        return cleanPath;
       }
     }
-
-    return `${normalizedBase}${normalizedPath}`;
+    return `${basePrefix}${cleanPath}`;
   };
 
-  // Handle object with direct URL
-  if (typeof val === 'object' && (val.url || val.filename)) {
-    const url = val.url || val.filename;
-    if (url.startsWith('http')) return url;
-    if (url.startsWith('/')) return mergeBaseAndPath(baseUrl, url);
-    return mergeBaseAndPath(baseUrl, `/media/${val.filename || val.url}`);
+  // 2. Resolve object or string
+  let targetUrl = "";
+  if (typeof val === "object" && val !== null) {
+    targetUrl = val.url || val.filename || val.id || "";
+  } else {
+    targetUrl = String(val);
   }
 
-  const valueStr = typeof val === 'string' ? val : val.id || val.filename || val.url;
-  if (!valueStr) return "";
-
-  if (valueStr.startsWith('http')) return valueStr;
-
-  if (valueStr.startsWith('/')) {
-    return mergeBaseAndPath(baseUrl, valueStr);
+  if (!targetUrl) {
+    return "";
   }
 
-  return mergeBaseAndPath(baseUrl, `/media/${valueStr}`);
+  if (targetUrl.startsWith("http://") || targetUrl.startsWith("https://") || targetUrl.startsWith("/")) {
+    return targetUrl;
+  }
+
+  // If it is a filename/id without a leading slash (like "default/Screenshot.jpg"), prepend "/media/"
+  return prependBase(`/media/${targetUrl}`);
 }
-

@@ -16,7 +16,7 @@ export class GlobalController {
     const db = config.db;
     if (!db) return c.json({ message: "Database not configured" }, 500);
 
-    const depth = c.req.query("depth") !== undefined ? Number(c.req.query("depth")) : 1;
+    const depth = c.req.query("depth") !== undefined ? Number(c.req.query("depth")) : 10;
     let data = await db.getGlobal({ slug: this.global.slug });
     const isEmpty = !data || Object.keys(data).length === 0;
 
@@ -33,7 +33,7 @@ export class GlobalController {
       const populatedData = await populationService.populate({
         data: dataWithDefaults,
         fields: this.global.fields,
-        currentDepth: 1,
+        currentDepth: 0,
         maxDepth: depth,
       });
       return c.json(populatedData);
