@@ -1,5 +1,14 @@
 # @dyrected/next
 
+## 2.5.11
+
+### Patch Changes
+
+- Updated dependencies [ff1a756]
+  - @dyrected/admin@2.5.11
+  - @dyrected/core@2.5.11
+  - @dyrected/sdk@2.5.11
+
 ## 2.5.10
 
 ### Patch Changes
