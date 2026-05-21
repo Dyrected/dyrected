@@ -48,8 +48,21 @@ export function buildSchemaShape(fields: FieldSchema[]) {
       validator = z.string().email(`${label} must be a valid email`)
       if (field.required) validator = validator.min(1, `${label} is required`)
     } else if (field.type === "url") {
-      validator = z.string().url(`${label} must be a valid URL`)
-      if (field.required) validator = validator.min(1, `${label} is required`)
+      const urlObjectSchema = z.object({
+        type: z.enum(["custom", "internal"]),
+        url: z.string(),
+        relationTo: z.string().optional(),
+        value: z.string().optional(),
+        label: z.string().optional(),
+      })
+      validator = z.union([z.string(), urlObjectSchema])
+      if (field.required) {
+        validator = validator.refine((val: any) => {
+          if (typeof val === "string") return val.trim().length > 0
+          if (val && typeof val === "object") return typeof val.url === "string" && val.url.trim().length > 0
+          return false
+        }, { message: `${label} is required` })
+      }
     } else if (field.type === "number") {
       validator = z.coerce.number()
     } else if (field.type === "boolean") {

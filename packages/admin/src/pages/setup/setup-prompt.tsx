@@ -22,7 +22,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   const [isFresh, setIsFresh] = useState(false);
   const [activeTab, setActiveTab] = useState<"next" | "nuxt" | "react" | "vue">("next");
 
-  const promptText = isFresh 
+  const promptText = isFresh
     ? generateFreshSetupPrompt(activeTab, config)
     : generateAIPrompt(activeTab, config);
 
@@ -43,7 +43,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           Connect Your Application
         </h1>
         <p className="dy-text-lg dy-text-muted-foreground dy-max-w-2xl dy-mx-auto">
-          {isFresh 
+          {isFresh
             ? "Get a conversational walkthrough to set up Dyrected from scratch."
             : "Use the AI prompt below to set up your frontend automatically, or follow the steps manually."}
         </p>
@@ -91,7 +91,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
         </section>
 
         {/* AI Prompt */}
-        <section className="dy-rounded-2xl dy-border dy-bg-white dy-overflow-hidden dy-shadow-xl dy-ring-1 dy-ring-primary/20">
+        <section className="dy-rounded-2xl dy-border dy-bg-background dy-overflow-hidden dy-shadow-xl dy-ring-1 dy-ring-primary/20">
           <div className="dy-p-6 dy-border-b dy-bg-primary/5 dy-flex dy-items-center dy-justify-between dy-gap-4 dy-flex-wrap">
             <div className="dy-space-y-3">
               <h3 className="dy-text-lg dy-font-semibold dy-flex dy-items-center dy-gap-2">

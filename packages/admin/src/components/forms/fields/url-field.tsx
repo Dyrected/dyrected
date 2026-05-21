@@ -184,11 +184,11 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
     <div className="dy-space-y-3">
       <Tabs value={mode} onValueChange={(val) => handleModeChange(val as "external" | "internal")}>
         <TabsList className="dy-w-full dy-grid dy-grid-cols-2 dy-bg-muted dy-p-1 dy-rounded-lg dy-h-auto">
-          <TabsTrigger value="external" disabled={disabled} className="dy-rounded-md">
-            External Link
-          </TabsTrigger>
           <TabsTrigger value="internal" disabled={disabled} className="dy-rounded-md">
             Internal Link
+          </TabsTrigger>
+          <TabsTrigger value="external" disabled={disabled} className="dy-rounded-md">
+            External Link
           </TabsTrigger>
         </TabsList>
 
@@ -203,7 +203,7 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
               onChange={(e) => handleExternalUrlChange(e.target.value)}
               placeholder="https://example.com"
               disabled={disabled}
-              className="dy-bg-white dy-border-border/50"
+              className="dy-border-border/50"
             />
           </div>
 
@@ -217,7 +217,7 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
               onChange={(e) => handleExternalLabelChange(e.target.value)}
               placeholder="e.g., Learn More"
               disabled={disabled}
-              className="dy-bg-white dy-border-border/50"
+              className="dy-border-border/50"
             />
           </div>
         </TabsContent>
@@ -228,7 +228,7 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
               Collection
             </label>
             <Select value={collectionValue} onValueChange={handleCollectionChange} disabled={disabled}>
-              <SelectTrigger className="dy-bg-white dy-border-border/50">
+              <SelectTrigger className="dy-bg-background dy-border-border/50">
                 <SelectValue placeholder="Select a collection..." />
               </SelectTrigger>
               <SelectContent>
@@ -253,7 +253,7 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
                     role="combobox"
                     aria-expanded={openPopover}
                     disabled={disabled}
-                    className="dy-w-full dy-justify-between dy-font-normal dy-bg-white dy-border-border/50 dy-h-11"
+                    className="dy-w-full dy-justify-between dy-font-normal dy-bg-background dy-border-border/50 dy-h-11"
                   >
                     {docsLoading ? (
                       "Loading..."
@@ -322,7 +322,7 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
               onChange={(e) => handleInternalLabelChange(e.target.value)}
               placeholder="e.g., Read More"
               disabled={disabled}
-              className="dy-bg-white dy-border-border/50"
+              className="dy-bg-background dy-border-border/50"
             />
           </div>
         </TabsContent>

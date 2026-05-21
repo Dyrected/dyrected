@@ -33,10 +33,10 @@ interface MediaLibraryDialogProps {
   collection: string
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  selectedValues: string[]
-  onSelect: (id: string) => void
+  selectedValues: any[]
+  onSelect: (id: string, item?: any) => void
   multiple?: boolean
-  onConfirm?: (selectedIds: string[]) => void
+  onConfirm?: (selectedIds: string[], selectedItems?: any[]) => void
 }
 
 export function MediaLibraryDialog({
@@ -81,21 +81,29 @@ export function MediaLibraryDialog({
     return data?.pages.flatMap((page) => page.docs) || []
   }, [data])
 
-  const sentinelRef = React.useRef<HTMLDivElement>(null)
+  const observerRef = React.useRef<IntersectionObserver | null>(null)
 
-  React.useEffect(() => {
-    if (!sentinelRef.current) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
-        }
-      },
-      { rootMargin: "100px" }
-    )
-    observer.observe(sentinelRef.current)
-    return () => observer.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  const sentinelRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
+
+      if (node && hasNextPage && !isFetchingNextPage) {
+        observerRef.current = new IntersectionObserver(
+          (entries) => {
+            if (entries[0].isIntersecting) {
+              fetchNextPage()
+            }
+          },
+          { rootMargin: "100px" }
+        )
+        observerRef.current.observe(node)
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage]
+  )
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -105,7 +113,7 @@ export function MediaLibraryDialog({
     try {
       const result = await client.collection(collection).upload(file, {})
       await refetch()
-      onSelect(result.id)
+      onSelect(result.id, result)
       if (!multiple) onOpenChange(false)
     } catch (error) {
       console.error("Upload failed:", error)
@@ -158,7 +166,7 @@ export function MediaLibraryDialog({
       })
 
       await refetch()
-      onSelect(result.id)
+      onSelect(result.id, result)
       if (!multiple) onOpenChange(false)
       setExternalUrl("")
     } catch (error) {
@@ -177,9 +185,6 @@ export function MediaLibraryDialog({
       return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
     }
     if (item.mimeType === 'video/vimeo') {
-      // Vimeo thumbnails are harder to get purely client side without API, 
-      // but we can use a placeholder or better, try to fetch if we had a proper utility.
-      // For now, let's use a generic vimeo-style placeholder or icon
       return "https://vimeo.com/assets/images/logo_vimeo_blue.png"
     }
     if (item.mimeType === 'image/external') {
@@ -188,11 +193,28 @@ export function MediaLibraryDialog({
     return getMediaUrl(item, client?.getBaseUrl() || "");
   }
 
-  const sVals = React.useMemo(() => selectedValues || [], [selectedValues])
+  const getIdentifier = React.useCallback((v: any): string => {
+    if (!v) return ""
+    if (typeof v === "object" && v !== null) {
+      return v.id || v._id || v.filename || ""
+    }
+    const strVal = String(v)
+    if (strVal.includes("/")) {
+      return strVal.split("/").pop() || strVal
+    }
+    return strVal
+  }, [])
+
+  const sVals = React.useMemo(() => {
+    return (selectedValues || []).map(getIdentifier).filter(Boolean)
+  }, [selectedValues, getIdentifier])
 
   const handleConfirm = () => {
     if (onConfirm) {
-      onConfirm(sVals)
+      const selectedItems = sVals.map(val => {
+        return media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
+      }).filter(Boolean)
+      onConfirm(sVals, selectedItems)
     }
     onOpenChange(false)
   }
@@ -249,7 +271,7 @@ export function MediaLibraryDialog({
                           onClick={() => {
                             media?.forEach((item: any) => {
                               if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
-                                onSelect(item.id)
+                                onSelect(item.id, item)
                               }
                             })
                           }}
@@ -262,7 +284,10 @@ export function MediaLibraryDialog({
                           size="sm"
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
                           onClick={() => {
-                            sVals.forEach(val => onSelect(val))
+                            sVals.forEach(val => {
+                              const item = media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
+                              onSelect(val, item)
+                            })
                           }}
                         >
                           Clear
@@ -278,11 +303,11 @@ export function MediaLibraryDialog({
                           type="button"
                           onClick={() => {
                             if (multiple) {
-                              onSelect(item.id)
+                              onSelect(item.id, item)
                               setSelectedItem(item)
                             } else {
                               if (selectedItem?.id === item.id) {
-                                onSelect(item.id)
+                                onSelect(item.id, item)
                                 onOpenChange(false)
                               } else {
                                 setSelectedItem(item)
@@ -308,7 +333,7 @@ export function MediaLibraryDialog({
                           )}
                           {(item.mimeType?.startsWith('video/') || item.mimeType === 'video/youtube' || item.mimeType === 'video/vimeo') && (
                             <div className="dy-absolute dy-inset-0 dy-flex dy-items-center dy-justify-center dy-bg-black/20 dy-group-hover:dy-bg-black/40 dy-transition-colors">
-                              <div className="dy-h-10 dy-w-10 dy-bg-white/20 dy-backdrop-blur-md dy-rounded-full dy-flex dy-items-center dy-justify-center dy-border dy-border-white/30 dy-shadow-2xl">
+                              <div className="dy-h-10 dy-w-10 dy-bg-background/20 dy-backdrop-blur-md dy-rounded-full dy-flex dy-items-center dy-justify-center dy-border dy-border-white/30 dy-shadow-2xl">
                                 <Video className="dy-h-5 dy-w-5 dy-text-white" />
                               </div>
                             </div>
@@ -365,7 +390,7 @@ export function MediaLibraryDialog({
                             <Button
                               className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-sm dy-font-bold dy-tracking-tight dy-transition-all"
                               variant={sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "outline" : "default"}
-                              onClick={() => onSelect(selectedItem.id)}
+                              onClick={() => onSelect(selectedItem.id, selectedItem)}
                             >
                               {sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "Deselect Item" : "Add to Selection"}
                             </Button>
@@ -383,7 +408,7 @@ export function MediaLibraryDialog({
                           <Button
                             className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-lg dy-font-bold dy-tracking-tight dy-bg-primary hover:dy-bg-primary/90 dy-transition-all"
                             onClick={() => {
-                              onSelect(selectedItem.id)
+                              onSelect(selectedItem.id, selectedItem)
                               onOpenChange(false)
                             }}
                           >

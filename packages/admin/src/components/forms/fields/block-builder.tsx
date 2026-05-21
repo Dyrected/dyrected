@@ -124,7 +124,7 @@ function SortableBlockItem({
   const previewText = getPreviewText()
 
   return (
-    <div ref={setNodeRef} style={style} className="dy-bg-card-foreground/5 dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in">
+    <div ref={setNodeRef} style={style} className="dy-bg-card/70 dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in">
       {/* Header / Drag Handle */}
       <div
         onClick={onToggleExpand}
@@ -148,8 +148,8 @@ function SortableBlockItem({
           {!isExpanded && previewText && (
             <>
               <span className="dy-text-muted-foreground/30 dy-text-xs dy-font-light dy-flex-shrink-0">·</span>
-              <span className="dy-text-[11px] dy-font-medium dy-text-muted-foreground/60 dy-truncate max-w-[200px] sm:max-w-[320px] dy-italic">
-                {previewText}
+              <span className="dy-hidden md:dy-inline-block dy-text-[11px] dy-font-medium dy-text-muted-foreground/60 dy-italic dy-flex-shrink-0">
+                {previewText.length > 50 ? previewText.slice(0, 50) + "…" : previewText}
               </span>
             </>
           )}

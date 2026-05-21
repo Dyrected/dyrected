@@ -463,7 +463,7 @@ export function AdminShell({
           {/* Mobile Floating Toggle */}
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:dy-hidden dy-fixed dy-bottom-8 dy-right-8 dy-z-50 dy-h-14 dy-w-14 dy-rounded-full dy-bg-gradient-to-br dy-from-primary dy-to-primary/80 dy-text-primary-foreground dy-shadow-[0_8px_30px_rgb(0,0,0,0.3)] dy-flex dy-items-center dy-justify-center dy-transition-all active:dy-scale-90 hover:dy-scale-105 dy-border dy-border-white/20"
+            className="md:dy-hidden dy-fixed dy-bottom-8 dy-right-8 dy-z-50 dy-h-14 dy-w-14 dy-rounded-full dy-bg-primary dy-bg-gradient-to-br dy-from-primary dy-to-primary/80 dy-text-primary-foreground dy-shadow-[0_8px_30px_rgb(0,0,0,0.3)] dy-flex dy-items-center dy-justify-center dy-transition-all active:dy-scale-90 hover:dy-scale-105 dy-border dy-border-white/20"
             aria-label="Open menu"
           >
             <Menu className="dy-h-6 dy-w-6" />

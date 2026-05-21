@@ -19,6 +19,7 @@ import {
 } from "../../components/ui/dialog"
 import { ScrollArea } from "../../components/ui/scroll-area"
 import { AspectRatio } from "../../components/ui/aspect-ratio"
+import { Link } from "react-router-dom"
 import {
   Upload,
   Search,
@@ -27,16 +28,11 @@ import {
   ExternalLink,
   Image as ImageIcon,
   Copy,
-  Info
+  Info,
+  Pencil
 } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "../../components/ui/sheet"
 import { Separator } from "../../components/ui/separator"
 // import { FocalPointPicker } from "../../components/media/focal-point-picker"
 import { Blurhash } from "react-blurhash"
@@ -76,21 +72,29 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
     return data?.pages.flatMap((page) => page.docs) || []
   }, [data])
 
-  const sentinelRef = React.useRef<HTMLDivElement>(null)
+  const observerRef = React.useRef<IntersectionObserver | null>(null)
 
-  React.useEffect(() => {
-    if (!sentinelRef.current) return
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage()
-        }
-      },
-      { rootMargin: "100px" }
-    )
-    observer.observe(sentinelRef.current)
-    return () => observer.disconnect()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+  const sentinelRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
+
+      if (node && hasNextPage && !isFetchingNextPage) {
+        observerRef.current = new IntersectionObserver(
+          (entries) => {
+            if (entries[0].isIntersecting) {
+              fetchNextPage()
+            }
+          },
+          { rootMargin: "100px" }
+        )
+        observerRef.current.observe(node)
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage]
+  )
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => client!.deleteMedia(id, collectionSlug),
@@ -136,7 +140,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
 
       {isDragActive && (
         <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-primary/10 dy-backdrop-blur-[2px] dy-border-4 dy-border-dashed dy-border-primary dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
-          <div className="dy-bg-white dy-p-8 dy-rounded-2xl dy-shadow-2xl dy-flex dy-flex-col dy-items-center dy-gap-4">
+          <div className="dy-bg-card dy-p-8 dy-rounded-2xl dy-shadow-2xl dy-flex dy-flex-col dy-items-center dy-gap-4">
             <div className="dy-h-16 dy-w-16 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
               <Upload className="dy-h-8 dy-w-8 dy-text-primary dy-animate-bounce" />
             </div>
@@ -183,7 +187,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
           <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
           <Input
             placeholder="Search assets by filename..."
-            className="dy-pl-10 dy-h-11 dy-bg-white dy-border-border/60 dy-rounded-xl dy-shadow-sm focus-visible:dy-ring-primary/20"
+            className="dy-pl-10 dy-h-11 dy-bg-card dy-border-border/60 dy-rounded-xl dy-shadow-sm focus-visible:dy-ring-primary/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -227,11 +231,18 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
         )}
       </ScrollArea>
 
-      <MediaSidebar
+      <MediaDetailsDialog
         item={selectedItem}
+        collectionSlug={collectionSlug}
         onClose={() => setSelectedItem(null)}
         baseUrl={client!.getBaseUrl()}
         onUpdate={(data) => updateMutation.mutate({ id: selectedItem.id, data })}
+        onDelete={() => {
+          if (confirm("Are you sure you want to delete this file?")) {
+            deleteMutation.mutate(selectedItem.id)
+            setSelectedItem(null)
+          }
+        }}
       />
     </div>
   )
@@ -250,12 +261,12 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   return (
     <Card
       className={cn(
-        "dy-overflow-hidden dy-group dy-relative dy-border-border/40 dy-bg-white dy-shadow-sm hover:dy-shadow-xl dy-transition-all dy-duration-300 dy-rounded-xl dy-cursor-pointer",
+        "dy-overflow-hidden dy-group dy-relative dy-border-border/40 dy-bg-card dy-shadow-sm hover:dy-shadow-xl dy-transition-all dy-duration-300 dy-rounded-xl dy-cursor-pointer",
         isSelected && "dy-ring-2 dy-ring-primary dy-ring-offset-2 dy-shadow-lg dy-scale-[0.98]"
       )}
       onClick={onClick}
     >
-      <CardHeader className="dy-p-0 dy-border-b dy-border-border/10">
+      <CardHeader className="!dy-p-0 dy-border-b dy-border-border/10">
         <AspectRatio ratio={1 / 1} className="dy-bg-muted/30 dy-overflow-hidden dy-relative">
           {isImage ? (
             <>
@@ -285,7 +296,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
           )}
         </AspectRatio>
       </CardHeader>
-      <CardContent className="dy-p-3 dy-bg-white">
+      <CardContent className="!dy-p-3 dy-bg-card">
         <p className="dy-text-[11px] dy-font-bold dy-truncate dy-text-foreground/90 dy-mb-0.5" title={item.filename}>
           {item.filename}
         </p>
@@ -317,13 +328,18 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   )
 }
 
-function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
+function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, onDelete }: {
   item: any,
+  collectionSlug?: string,
   onClose: () => void,
   baseUrl: string,
-  onUpdate: (data: any) => void
+  onUpdate: (data: any) => void,
+  onDelete?: () => void
 }) {
-  const [formData, setFormData] = React.useState<any>({})
+  const [formData, setFormData] = React.useState<any>(() => ({
+    alt: item?.alt || "",
+    caption: item?.caption || "",
+  }))
   const [isSaving, setIsSaving] = React.useState(false)
 
   React.useEffect(() => {
@@ -331,10 +347,9 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
       setFormData({
         alt: item.alt || "",
         caption: item.caption || "",
-        filename: item.filename || "",
       })
     }
-  }, [item])
+  }, [item?.id, item?.alt, item?.caption])
 
   if (!item) return null
 
@@ -352,127 +367,175 @@ function MediaSidebar({ item, onClose, baseUrl, onUpdate }: {
 
   const hasChanges =
     formData.alt !== (item.alt || "") ||
-    formData.caption !== (item.caption || "") ||
-    formData.filename !== (item.filename || "")
+    formData.caption !== (item.caption || "")
 
   return (
-    <Sheet open={!!item} onOpenChange={onClose}>
-      <SheetContent className="sm:dy-max-w-md dy-p-0 dy-flex dy-flex-col dy-h-full dy-border-l dy-border-border/40 dy-bg-white dy-shadow-2xl">
-        <SheetHeader className="dy-p-6 dy-border-b dy-border-border/40 dy-bg-white">
-          <SheetTitle className="dy-flex dy-items-center dy-gap-2">
+    <Dialog open={!!item} onOpenChange={(open) => { if (!open) onClose() }}>
+      <DialogContent className="dy-w-[95vw] sm:dy-w-full sm:dy-max-w-4xl md:dy-max-w-5xl lg:dy-max-w-6xl xl:dy-max-w-7xl dy-h-[90vh] md:dy-h-[85vh] dy-p-0 dy-flex dy-flex-col dy-overflow-hidden dy-border-border/40 dy-bg-background dy-shadow-2xl">
+        <DialogHeader className="dy-p-6 dy-border-b dy-border-border/40 dy-bg-card dy-flex-shrink-0">
+          <DialogTitle className="dy-flex dy-items-center dy-gap-2">
             <Info className="dy-h-5 dy-w-5 dy-text-primary" />
-            File Details
-          </SheetTitle>
-        </SheetHeader>
+            Attachment Details
+          </DialogTitle>
+        </DialogHeader>
 
-        <ScrollArea className="dy-flex-1 dy-bg-white">
-          <div className="dy-p-6 dy-space-y-8">
-            <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-muted/10 dy-relative dy-shadow-inner">
-              <AspectRatio ratio={16 / 9}>
-                {isImage ? (
-                  <>
-                    {item.blurhash && (
-                      <div className="dy-absolute dy-inset-0 dy-z-0">
-                        <Blurhash
-                          hash={item.blurhash}
-                          width="100%"
-                          height="100%"
-                          resolutionX={32}
-                          resolutionY={32}
-                          punch={1}
-                        />
-                      </div>
-                    )}
-                    <img src={url} alt={item.filename} className="dy-object-contain dy-w-full dy-h-full dy-bg-checkered dy-relative dy-z-10" />
-                  </>
-                ) : (
-                  <div className="dy-flex dy-items-center dy-justify-center dy-h-full">
-                    <FileIcon className="dy-h-16 dy-w-16 dy-text-muted-foreground/30" />
+        <div className="dy-flex-1 dy-flex dy-flex-col md:dy-flex-row dy-overflow-y-auto md:dy-overflow-hidden">
+          {/* Left Side: Large Preview */}
+          <div className="dy-w-full md:dy-w-3/5 lg:dy-w-2/3 dy-bg-muted/15 dy-flex dy-items-center dy-justify-center dy-p-6 dy-border-b md:dy-border-b-0 md:dy-border-r dy-border-border/40 dy-relative dy-h-[300px] md:dy-h-full dy-flex-shrink-0 md:dy-flex-shrink">
+            <div className="dy-relative dy-max-w-full dy-max-h-full dy-w-full dy-h-full dy-flex dy-items-center dy-justify-center dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-shadow-inner">
+              {isImage ? (
+                <>
+                  {item.blurhash && (
+                    <div className="dy-absolute dy-inset-0 dy-z-0">
+                      <Blurhash
+                        hash={item.blurhash}
+                        width="100%"
+                        height="100%"
+                        resolutionX={32}
+                        resolutionY={32}
+                        punch={1}
+                      />
+                    </div>
+                  )}
+                  <img
+                    src={url}
+                    alt={item.filename}
+                    className="dy-object-contain dy-max-w-full dy-max-h-full dy-w-auto dy-h-auto dy-relative dy-z-10"
+                  />
+                </>
+              ) : (
+                <div className="dy-flex dy-flex-col dy-items-center dy-gap-4">
+                  <div className="dy-h-20 dy-w-20 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
+                    <FileIcon className="dy-h-10 dy-w-10 dy-text-primary" />
                   </div>
-                )}
-              </AspectRatio>
+                  <span className="dy-text-xs dy-font-medium dy-text-muted-foreground">{item.mimeType}</span>
+                </div>
+              )}
             </div>
-
-            <div className="dy-space-y-6">
-              <div className="dy-space-y-4">
-                <div className="dy-space-y-2">
-                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Filename</label>
-                  <Input
-                    value={formData.filename}
-                    onChange={(e) => setFormData({ ...formData, filename: e.target.value })}
-                    className="dy-h-10 dy-rounded-lg dy-bg-white dy-border-border/60 focus:dy-ring-1 focus:dy-ring-primary/20"
-                  />
-                </div>
-                <div className="dy-space-y-2">
-                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Alt Text</label>
-                  <Input
-                    value={formData.alt}
-                    onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
-                    placeholder="Describe the image for accessibility..."
-                    className="dy-h-10 dy-rounded-lg dy-bg-white dy-border-border/60 focus:dy-ring-1 focus:dy-ring-primary/20"
-                  />
-                </div>
-                <div className="dy-space-y-2">
-                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Caption</label>
-                  <textarea
-                    value={formData.caption}
-                    onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
-                    placeholder="Add a caption..."
-                    className="dy-flex dy-min-h-[80px] dy-w-full dy-rounded-lg dy-border dy-border-border/60 dy-bg-white dy-px-3 dy-py-2 dy-text-sm dy-ring-offset-background placeholder:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-1 focus-visible:dy-ring-primary/20 disabled:dy-cursor-not-allowed disabled:dy-opacity-50"
-                  />
-                </div>
-              </div>
-
-              <Separator className="dy-bg-border/40" />
-
-              <div className="dy-grid dy-grid-cols-2 dy-gap-6">
-                <DetailItem label="File ID" value={item.id} copyable />
-                <DetailItem label="Size" value={`${((item.filesize || item.size || 0) / 1024).toFixed(1)} KB`} />
-                <DetailItem label="Type" value={item.mimeType || "Unknown"} />
-                <DetailItem label="Dimensions" value={item.width ? `${item.width}x${item.height}` : "N/A"} />
-              </div>
-
-              <DetailItem label="URL" value={url} copyable />
-              <DetailItem label="Created At" value={item?.createdAt ? new Date(item?.createdAt).toLocaleString() : "N/A"} />
-            </div>
-
-            {/* {isImage && (
-              <div className="dy-space-y-4">
-                <Separator className="dy-bg-border/40" />
-                <div className="dy-space-y-4">
-                  <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Focal Point</label>
-                  <FocalPointPicker 
-                    url={url} 
-                    value={item.focalPoint} 
-                    onChange={(fp) => {
-                      onUpdate({ focalPoint: fp })
-                    }} 
-                  />
-                </div>
-              </div>
-            )} */}
           </div>
-        </ScrollArea>
 
-        <div className="dy-p-6 dy-border-t dy-border-border/40 dy-bg-muted/5 dy-space-y-3">
-          {hasChanges && (
-            <Button
-              className="dy-w-full dy-h-12 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-white dy-shadow-lg dy-shadow-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-bottom-2"
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-          )}
-          <Button className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-white" variant="outline" asChild>
-            <a href={url} target="_blank" rel="noreferrer">
-              <ExternalLink className="dy-h-4 dy-w-4" />
-              Open Original
-            </a>
-          </Button>
+          {/* Right Side: Details Form */}
+          <div className="media-preview-dialod-details-form dy-w-full md:dy-w-2/5 lg:dy-w-1/3 dy-flex dy-flex-col dy-h-auto md:dy-h-full dy-bg-card">
+            <ScrollArea style={{ display: 'flex' }} className="dy-flex-1">
+              <div className="dy-p-6 dy-space-y-6">
+                {/* Core Info */}
+                <div className="dy-space-y-4">
+                  <div>
+                    <h4 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{item.filename}</h4>
+                    <p className="dy-text-xs dy-text-muted-foreground">Uploaded on {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</p>
+                  </div>
+
+                  <div className="dy-grid dy-grid-cols-2 dy-gap-x-4 dy-gap-y-3 dy-bg-muted/30 dy-p-3.5 dy-rounded-xl dy-border dy-border-border/40">
+                    <div className="dy-space-y-0.5">
+                      <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">File Size</span>
+                      <p className="dy-text-xs dy-font-semibold">{((item.filesize || item.size || 0) / 1024).toFixed(1)} KB</p>
+                    </div>
+                    <div className="dy-space-y-0.5">
+                      <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">Dimensions</span>
+                      <p className="dy-text-xs dy-font-semibold">{item.width ? `${item.width} x ${item.height}` : 'N/A'}</p>
+                    </div>
+                    <div className="dy-space-y-0.5">
+                      <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">File Type</span>
+                      <p className="dy-text-xs dy-font-semibold dy-truncate" title={item.mimeType}>{item.mimeType || 'Unknown'}</p>
+                    </div>
+                    <div className="dy-space-y-0.5">
+                      <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">File ID</span>
+                      <p className="dy-text-xs dy-font-semibold dy-font-mono dy-truncate" title={item.id}>{item.id}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="dy-bg-border/40" />
+
+                {/* Editable Fields */}
+                <div className="dy-space-y-4">
+                  <div className="dy-space-y-2">
+                    <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Filename</label>
+                    <Input
+                      value={item.filename || ""}
+                      readOnly
+                      className="dy-h-10 dy-rounded-lg dy-bg-muted/10 dy-border-border/40 dy-text-muted-foreground focus-visible:dy-ring-0 focus-visible:dy-ring-offset-0 dy-cursor-not-allowed"
+                    />
+                  </div>
+                  <div className="dy-space-y-2">
+                    <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Alt Text</label>
+                    <Input
+                      value={formData.alt}
+                      onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
+                      placeholder="Describe the image for accessibility..."
+                      className="dy-h-10 dy-rounded-lg dy-bg-card dy-border-border/60 focus:dy-ring-1 focus:dy-ring-primary/20"
+                    />
+                  </div>
+                  <div className="dy-space-y-2">
+                    <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Caption</label>
+                    <textarea
+                      value={formData.caption}
+                      onChange={(e) => setFormData({ ...formData, caption: e.target.value })}
+                      placeholder="Add a caption..."
+                      className="dy-flex dy-min-h-[80px] dy-w-full dy-rounded-lg dy-border dy-border-border/60 dy-bg-card dy-px-3 dy-py-2 dy-text-sm dy-ring-offset-background placeholder:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-1 focus-visible:dy-ring-primary/20"
+                    />
+                  </div>
+                </div>
+
+                <Separator className="dy-bg-border/40" />
+
+                {/* Detail URL */}
+                <div className="dy-space-y-4">
+                  <DetailItem label="File URL" value={url} copyable />
+                </div>
+              </div>
+            </ScrollArea>
+
+            {/* Sticky Actions Footer */}
+            <div className="dy-p-6 dy-border-t dy-border-border/40 dy-bg-muted/5 dy-flex dy-flex-col dy-gap-3 dy-flex-shrink-0">
+              {hasChanges && (
+                <Button
+                  className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-card dy-shadow-lg dy-shadow-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-bottom-2"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              )}
+              <div className="dy-flex dy-gap-2">
+                {collectionSlug && (
+                  <Button className="dy-flex-1 dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card" variant="outline" asChild>
+                    <Link to={`/collections/${collectionSlug}/edit/${item.id}`}>
+                      <Pencil className="dy-h-4 dy-w-4" />
+                      Edit Full Details
+                    </Link>
+                  </Button>
+                )}
+                <Button
+                  className={cn(
+                    "dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card",
+                    collectionSlug ? "dy-px-3" : "dy-flex-1"
+                  )}
+                  variant="outline"
+                  asChild
+                  title="Open Original File"
+                >
+                  <a href={url} target="_blank" rel="noreferrer">
+                    <ExternalLink className="dy-h-4 dy-w-4" />
+                    {!collectionSlug && "Open Original"}
+                  </a>
+                </Button>
+                {onDelete && (
+                  <Button
+                    onClick={onDelete}
+                    className="dy-h-11 dy-px-4 dy-rounded-xl dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive dy-transition-colors"
+                    variant="ghost"
+                    title="Delete Permanently"
+                  >
+                    <Trash2 className="dy-h-4 dy-w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -540,8 +603,8 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
       <div
         {...getRootProps()}
         className={`dy-border-2 dy-border-dashed dy-rounded-2xl dy-p-12 dy-text-center dy-cursor-pointer dy-transition-all dy-duration-300 ${isDragActive
-            ? "dy-border-primary dy-bg-primary/5 dy-scale-[0.98]"
-            : "dy-border-muted-foreground/20 hover:dy-border-primary/40 hover:dy-bg-muted/5"
+          ? "dy-border-primary dy-bg-primary/5 dy-scale-[0.98]"
+          : "dy-border-muted-foreground/20 hover:dy-border-primary/40 hover:dy-bg-muted/5"
           }`}
       >
         <input {...getInputProps()} />
@@ -565,12 +628,12 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
             {files.map((file, idx) => (
               <div key={idx} className="dy-flex dy-items-center dy-justify-between dy-p-3 dy-bg-muted/30 dy-border dy-border-border/40 dy-rounded-xl dy-text-sm dy-group dy-transition-colors hover:dy-bg-muted/50">
                 <div className="dy-flex dy-items-center dy-gap-3 dy-truncate">
-                  <div className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-white dy-border dy-border-border/60 dy-flex dy-items-center dy-justify-center dy-flex-shrink-0">
+                  <div className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-card dy-border dy-border-border/60 dy-flex dy-items-center dy-justify-center dy-flex-shrink-0">
                     <FileIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
                   </div>
                   <span className="dy-truncate dy-font-medium dy-text-foreground/80">{file.name}</span>
                 </div>
-                <span className="dy-text-muted-foreground dy-text-[10px] dy-font-bold dy-bg-white dy-px-2 dy-py-1 dy-rounded dy-border dy-border-border/40 dy-ml-4">
+                <span className="dy-text-muted-foreground dy-text-[10px] dy-font-bold dy-bg-card dy-px-2 dy-py-1 dy-rounded dy-border dy-border-border/40 dy-ml-4">
                   {(file.size / 1024).toFixed(1)} KB
                 </span>
               </div>
@@ -591,11 +654,11 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
             <Button
               onClick={handleUpload}
               disabled={uploading || files.length === 0}
-              className="dy-w-full dy-h-12 dy-rounded-xl dy-bg-primary hover:dy-bg-primary/90 dy-text-white dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98]"
+              className="dy-w-full dy-h-12 dy-rounded-xl dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98]"
             >
               {uploading ? (
                 <span className="dy-flex dy-items-center dy-gap-2">
-                  <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-white/30 dy-border-t-white dy-rounded-full dy-animate-spin" />
+                  <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-card/30 dy-border-t-card dy-rounded-full dy-animate-spin" />
                   Uploading Assets...
                 </span>
               ) : `Upload ${files.length} Assets`}
