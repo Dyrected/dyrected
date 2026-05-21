@@ -8,6 +8,41 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"
 import type { Field as FieldSchema, Block as BlockSchema } from "@dyrected/sdk"
 import { buildSchemaShape, buildDefaultValues } from "./utils"
 import { FormFieldRenderer } from "./form-field-renderer"
+import { AlertCircle } from "lucide-react"
+
+function getFlatErrors(errors: any, path: string = ""): { path: string; message: string }[] {
+  const result: { path: string; message: string }[] = []
+  if (!errors) return result
+
+  if (typeof errors === "object") {
+    if (typeof errors.message === "string") {
+      result.push({ path, message: errors.message })
+      return result
+    }
+    for (const key in errors) {
+      if (Object.prototype.hasOwnProperty.call(errors, key)) {
+        if (key === "ref" || key === "type") continue
+        const nextPath = path ? `${path}.${key}` : key
+        result.push(...getFlatErrors(errors[key], nextPath))
+      }
+    }
+  }
+  return result
+}
+
+function formatPath(path: string): string {
+  return path
+    .split('.')
+    .map(part => {
+      if (/^\d+$/.test(part)) {
+        return `Item ${parseInt(part, 10) + 1}`
+      }
+      return part
+        .charAt(0).toUpperCase() + part.slice(1)
+        .replace(/([A-Z])/g, ' $1')
+    })
+    .join(' > ')
+}
 
 export type { FieldSchema, BlockSchema }
 
@@ -43,6 +78,14 @@ export function FormEngine({
   })
 
   const { isDirty } = form.formState
+
+  const flatErrors = getFlatErrors(form.formState.errors)
+
+  useEffect(() => {
+    if (flatErrors.length > 0 && form.formState.submitCount > 0) {
+      console.warn("[Validation] Submission failed with errors:", form.formState.errors)
+    }
+  }, [form.formState.submitCount, flatErrors, form.formState.errors])
 
   useEffect(() => {
     onChange?.(isDirty)
@@ -139,6 +182,32 @@ export function FormEngine({
   return (
     <Form {...form}>
       <form id="dyrected-edit-form" onSubmit={form.handleSubmit(onSubmit)} className="dy-space-y-8">
+        {flatErrors.length > 0 && (
+          <div className="dy-p-4 dy-rounded-xl dy-bg-destructive/10 dy-border dy-border-destructive/20 dy-text-destructive dy-space-y-2">
+            <div className="dy-flex dy-items-center dy-gap-2 dy-font-semibold">
+              <AlertCircle className="dy-h-4 dy-w-4 dy-shrink-0" />
+              <span>Please resolve the following validation errors:</span>
+            </div>
+            <ul className="dy-list-disc dy-list-inside dy-text-sm dy-space-y-1">
+              {flatErrors.map((err, idx) => (
+                <li
+                  key={idx}
+                  className="dy-cursor-pointer hover:dy-underline"
+                  onClick={() => {
+                    const el = (document.querySelector(`[data-dy-field="${err.path}"]`) || document.querySelector(`[name="${err.path}"]`)) as HTMLElement | null
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      const input = el.querySelector<HTMLElement>('input, textarea, [contenteditable], button[role="combobox"]') || el
+                      input?.focus()
+                    }
+                  }}
+                >
+                  <span className="dy-font-medium">{formatPath(err.path)}:</span> {err.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {fieldsContent}
         <div className="dy-flex dy-justify-end dy-gap-4">
           {!readOnly && (

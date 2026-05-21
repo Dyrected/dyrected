@@ -77,7 +77,7 @@ const Pages = defineCollection({
               name: "items",
               type: "array",
               fields: [
-                { name: "icon", type: "textarea", label: "SVG Icon Path" },
+                { name: "icon", type: "icon", label: "Icon" },
                 { name: "title", type: "text", required: true },
                 { name: "description", type: "textarea" },
               ],

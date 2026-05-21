@@ -41,7 +41,31 @@ export function buildSchemaShape(fields: FieldSchema[]) {
     }
 
     const fieldType = field.type as string
-    if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "image" || fieldType === "richText" || fieldType === "relationship" || fieldType === "date" || fieldType === "icon") {
+    if (fieldType === "relationship" || fieldType === "image") {
+      const singleRelSchema = z.union([
+        z.string(),
+        z.object({ id: z.string() }).passthrough()
+      ])
+      validator = z.union([
+        singleRelSchema,
+        z.array(singleRelSchema)
+      ])
+      if (field.required) {
+        validator = validator.refine((val: any) => {
+          if (typeof val === "string") return val.trim().length > 0
+          if (Array.isArray(val)) {
+            if (val.length === 0) return false
+            return val.every(item => {
+              if (typeof item === "string") return item.trim().length > 0
+              if (item && typeof item === "object") return typeof item.id === "string" && item.id.trim().length > 0
+              return false
+            })
+          }
+          if (val && typeof val === "object") return typeof val.id === "string" && val.id.trim().length > 0
+          return false
+        }, { message: `${label} is required` })
+      }
+    } else if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "richText" || fieldType === "date" || fieldType === "icon") {
       validator = z.string()
       if (field.required) validator = validator.min(1, `${label} is required`)
     } else if (field.type === "email") {
@@ -102,12 +126,38 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
     }
 
     if (field.type === "array") {
-      acc[name] = Array.isArray(defaultVal) ? defaultVal : []
+      const arr = Array.isArray(defaultVal) ? defaultVal : []
+      if (field.fields) {
+        acc[name] = arr.map(item => buildDefaultValues(field.fields!, item || {}))
+      } else {
+        acc[name] = arr
+      }
       return acc
     }
 
     if (field.type === "blocks") {
-      acc[name] = Array.isArray(defaultVal) ? defaultVal : []
+      const arr = Array.isArray(defaultVal) ? defaultVal : []
+      acc[name] = arr.map(item => {
+        const block = field.blocks?.find((b: any) => b.slug === item.blockType)
+        if (block && block.fields) {
+          return {
+            ...item,
+            ...buildDefaultValues(block.fields, item || {})
+          }
+        }
+        return item
+      })
+      return acc
+    }
+
+    if (field.type === "relationship" || field.type === "image") {
+      if (Array.isArray(defaultVal)) {
+        acc[name] = defaultVal.map(val => (val && typeof val === "object" && "id" in val) ? val.id : val)
+      } else if (defaultVal && typeof defaultVal === "object" && "id" in defaultVal) {
+        acc[name] = defaultVal.id
+      } else {
+        acc[name] = defaultVal ?? ""
+      }
       return acc
     }
 
