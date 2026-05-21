@@ -7,7 +7,7 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "node -e \"if (!process.env.CI) { require('child_process').spawnSync('nuxt', ['prepare'], { stdio: 'inherit', shell: true }); }\""
   },
   "dependencies": {
     "@dyrected/core": "workspace:^",
