@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.11
+
+### Patch Changes
+
+- ff1a756: fix: implement interactive form validation summary and enhance field handling logic for relationships and arrays
+  - @dyrected/core@2.5.11
+  - @dyrected/sdk@2.5.11
+
 ## 2.5.10
 
 ### Patch Changes
