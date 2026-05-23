@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useFieldArray, useWatch } from "react-hook-form"
 import { FormFieldRenderer } from "../form-field-renderer"
+import { cn } from "../../../lib/utils"
 import { buildDefaultValues } from "../utils"
 import type { FieldSchema, BlockSchema } from "../form-engine"
 import { Button } from "../../ui/button"
@@ -69,11 +70,12 @@ function SortableBlockItem({
     isDragging,
   } = useSortable({ id })
 
+  const transformString = CSS.Transform.toString(transform)
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: isDragging ? `${transformString} scale(1.02)` : transformString,
     transition,
-    zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.9 : 1,
   }
 
   const blockConfig = schema.blocks?.find(b => b.slug === item.blockType)
@@ -124,7 +126,14 @@ function SortableBlockItem({
   const previewText = getPreviewText()
 
   return (
-    <div ref={setNodeRef} style={style} className="dy-bg-card/70 dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "dy-bg-card/70 dy-border dy-border-border/60 dy-rounded-xl dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in dy-transition-all",
+        isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-card dy-border-primary/50" : ""
+      )}
+    >
       {/* Header / Drag Handle */}
       <div
         onClick={onToggleExpand}

@@ -1,6 +1,6 @@
 # Dyrected CMS - Database Adapters Robustness and Testing Plan
 
-To guarantee that Dyrected CMS remains stable and database adapters (PostgreSQL, MySQL, SQLite) never experience silent regressions, we must establish a comprehensive, automated test suite specifically targeting database adapter behaviors.
+To guarantee that Dyrected CMS remains stable and database adapters (PostgreSQL, MySQL, SQLite, MongoDB) never experience silent regressions, we must establish a comprehensive, automated test suite specifically targeting database adapter behaviors.
 
 This document outlines the testing strategy, testing architecture, and exact automated verification procedures for all Dyrected database adapters.
 
@@ -9,8 +9,8 @@ This document outlines the testing strategy, testing architecture, and exact aut
 ## 1. Goal & Objectives
 
 - **Zero Client Regressions:** Detect and resolve connection, transaction, schema synchronization, and query nesting issues before code hits production.
-- **Unified Adapter Compliance:** Ensure all three supported database engines behave identically for complex queries, relationship resolution, bulk deletions, and raw transactions.
-- **Automated Matrix Testing:** Standardize local and CI test execution against live, containerized instances of all three database types.
+- **Unified Adapter Compliance:** Ensure all supported database engines behave identically for complex queries, relationship resolution, bulk deletions, and raw transactions.
+- **Automated Matrix Testing:** Standardize local and CI test execution against live, containerized instances of all database types.
 
 ---
 
@@ -28,9 +28,7 @@ Every adapter must be validated against the following core functionalities:
    - Create, read, update, delete operations across all field types.
    - Handling of null values, default values, and unique constraints.
 4. **Advanced Querying & Parameter Binding:**
-   - Deep nested SQL where queries (e.g. `where: { status: { equals: 'published' } }`).
-   - Compound logical operators (`OR`, `AND`, `NOT`).
-   - Exact, prefix, suffix, and contains substring search matching.
+   - Deep nested SQL where queries, compound logical operators, and casing.
 5. **Pagination & Limits:**
    - Validate sorting order (`sort: "-createdAt"`, etc.).
    - Verify pagination bounds (`limit`, `page`, `totalPages`, `hasNextPage`, `hasPrevPage`).
@@ -39,27 +37,71 @@ Every adapter must be validated against the following core functionalities:
 
 ---
 
-## 3. Test Suite Architecture: Analysis & Design
+## 3. Query, Filtering, and Depth Specifications to Verify
 
-When choosing between keeping tests **fully isolated within each database adapter package** versus running them in a **single shared compliance package**, we weigh the following options:
+To pass compliance testing, database adapters must behave identically under the following technical specifications.
 
-### Comparison of Testing Approaches
+### 3.1 Field Operators & Filtering
+Every adapter must support these operators across all field types:
+* `equals` / `not_equals`
+* `in` / `not_in` (expects array of values)
+* `contains` / `not_contains` (substring search)
+* `greater_than` / `less_than`
+* `greater_than_equal` / `less_than_equal`
 
-| Criteria | Isolated in Each Adapter Package | Unified Shared Compliance Package | **Hybrid Parameterized Compliance (Recommended) 🌟** |
-| :--- | :--- | :--- | :--- |
-| **Code Duplication** | **High:** All adapters must satisfy identical behaviors (CRUD, pagination, dynamic filtering). Writing tests individually leads to copied test code. | **Zero:** Test cases are defined once and parameterized. | **Zero:** Core compliance tests are defined once in a shared helper module. |
-| **Parity Verification** | **Weak:** A new query test might be written for Postgres, but MySQL/SQLite could easily be missed, leading to silent drift. | **Excellent:** Every test runs against all supported databases automatically. | **Excellent:** Core compliance specs run against all adapters dynamically. |
-| **Adapter-Specific Testing** | **Excellent:** Direct scope for database-specific behaviors (e.g. SQLite in-memory files, MySQL loopback diagnostics). | **Poor:** Clutters generic test files with engine-specific hooks and configurations. | **Excellent:** Adapter-specific tests live in the package, while core tests are imported. |
-| **Developer Ergonomics** | **Good:** Easy to run `pnpm --filter db-postgres test` using local dependencies. | **Mediocre:** Difficult to run tests for one adapter without spinning up containers for all of them. | **Excellent:** Individual package test runners can be triggered independently. |
+For object or JSON fields, filtering must support dot-notation matching:
+```typescript
+where: {
+  'seo.metaTitle': { equals: 'Launch Day' }
+}
+```
+* **PostgreSQL:** Compiled to JSONB path queries (e.g. `seo->>'metaTitle' = 'Launch Day'`).
+* **MySQL:** Compiled to JSON path queries (e.g. `JSON_EXTRACT(seo, '$.metaTitle') = 'Launch Day'`).
+* **MongoDB:** Native nested field matching (`{ 'seo.metaTitle': 'Launch Day' }`).
 
-### The Winning Pattern: Hybrid Parameterized Compliance
+### 3.2 Logical Operators Casing (`AND` / `OR`)
+Logical query grouping operators must be written in capital letters: `AND` and `OR` (not lowercase `and` / `or`).
+* **SQL Adapters:** Compile `AND` arrays to `AND (...)` clauses and `OR` arrays to `OR (...)` clauses recursively, maintaining correct parenthetical grouping.
+* **MongoDB Adapter:** Map `AND` to `$and` arrays and `OR` to `$or` arrays.
 
-We adopt a **Hybrid Parameterized Compliance Pattern** that delivers the benefits of both worlds:
-1. **Shared Core Compliance Suite (`@dyrected/db-test`):** A shared package defines a reusable test runner function (`runAdapterSuite`) that receives an adapter initializer.
-2. **Local Package Invocation:** Each adapter package imports this runner and invokes it within its local environment (e.g. `packages/db-postgres/src/__tests__/postgres.spec.ts`).
-3. **Local Adapter Extensions:** Individual adapter packages remain free to write native tests for engine-specific features (e.g., custom configuration parameters, specific connection error handlers) without cluttering the shared suite.
+Example:
+```typescript
+where: {
+  AND: [
+    { status: { equals: 'published' } },
+    {
+      OR: [
+        { category: { equals: 'news' } },
+        { featured: { equals: true } }
+      ]
+    }
+  ]
+}
+```
+
+### 3.3 Relationship Depth Resolution
+When a query contains a `depth` parameter, the database adapter must resolve relationship ID strings into their corresponding document objects:
+* **`depth: 0`:** Return only the raw relationship key (string ID or array of string IDs).
+* **`depth: 1`:** Resolve the immediate relationship ID to its document object. Sibling/nested relationships inside that resolved object remain string IDs.
+* **`depth: N`:** Recursively resolve child relationships up to `N` levels deep.
+
+#### Circular Reference Safety:
+* Keep a registry of resolved document IDs during the query lifecycle.
+* If a document ID has already been fully resolved in the current resolution path, do not query it again; return the document object or string ID to break the cycle.
+* Enforce a hard ceiling cap for resolution depth (maximum limit of `depth: 5`).
+
+#### Graceful Deletion Handling (Broken Relations):
+* If a related document has been deleted from its collection, the parent field must resolve to `null` (or omit the missing item in relationship arrays) without failing the parent query.
 
 ---
+
+## 4. Test Suite Architecture: Analysis & Design
+
+When choosing between keeping tests **fully isolated within each database adapter package** versus running them in a **single shared compliance package**, we adopt a **Hybrid Parameterized Compliance Pattern**:
+
+1. **Shared Core Compliance Suite (`@dyrected/db-test`):** A shared package defines a reusable test runner function (`runAdapterSuite`) that receives an adapter initializer.
+2. **Local Package Invocation:** Each adapter package imports this runner and invokes it within its local environment (e.g. `packages/db-postgres/__tests__/postgres.spec.ts`).
+3. **Local Adapter Extensions:** Individual adapter packages remain free to write native tests for engine-specific features (e.g., custom configuration parameters, specific connection error handlers) without cluttering the shared suite.
 
 ### Implementation Reference
 
@@ -124,12 +166,9 @@ describe("PostgreSQL Adapter Specifics", () => {
 
 ---
 
-## 4. Local Matrix Environments
+## 5. Local Matrix Environments
 
-To allow developers to run tests locally with zero setup friction:
-
-- **SQLite:** In-memory or temporary local file.
-- **Docker Compose:** Maintain a standard `docker-compose.test.yml` in the repository root to spin up MySQL and PostgreSQL instances instantly:
+To allow developers to run tests locally with zero setup friction, maintain a standard `docker-compose.test.yml` in the repository root:
 
 ```yaml
 version: '3.8'
@@ -151,11 +190,16 @@ services:
       MYSQL_PASSWORD: test_password
     ports:
       - "33062:3306"
+      
+  test-mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
 ```
 
 ---
 
-## 5. Verification Commands
+## 6. Verification Commands
 
 Developers and CI can execute tests across all adapters with:
 
@@ -172,7 +216,7 @@ docker-compose -f docker-compose.test.yml down -v
 
 ---
 
-## 6. Maintenance & Enforcement
+## 7. Maintenance & Enforcement
 
 - **Mandatory Changeset Integration:** Any modification to a database adapter package MUST include a changeset referencing this test plan and confirming that the full matrix compliance suite passes.
 - **Fail-Fast CI Pipeline:** The test suite will execute automatically on every pull request, preventing merge if any database adapter fails basic compatibility tests.

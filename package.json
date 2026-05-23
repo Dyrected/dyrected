@@ -11,7 +11,8 @@
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
     "turbo": "latest",
-    "typescript": "latest"
+    "typescript": "latest",
+    "jiti": "^1.21.0"
   },
   "packageManager": "pnpm@9.0.0",
   "pnpm": {

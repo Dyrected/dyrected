@@ -377,11 +377,12 @@ function SortableArrayItem({
 
   const [isExpanded, setIsExpanded] = React.useState(true)
 
+  const transformString = CSS.Transform.toString(transform)
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: isDragging ? `${transformString} scale(1.02)` : transformString,
     transition,
-    zIndex: isDragging ? 10 : 1,
-    opacity: isDragging ? 0.8 : 1,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.9 : 1,
   }
 
   return (
@@ -389,8 +390,8 @@ function SortableArrayItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "dy-relative dy-group dy-bg-muted/5 dy-border dy-border-muted/30 dy-rounded-2xl dy-p-3 dy-mb-3 dy-transition-all",
-        isDragging ? "dy-shadow-lg dy-ring-2 dy-ring-primary/20 dy-bg-muted/10" : "hover:dy-bg-muted/10"
+        "dy-relative dy-group dy-bg-muted/5 dy-px-5 dy-py-6 dy-transition-all",
+        isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-muted/20 dy-border dy-border-primary/50 dy-rounded-xl" : "hover:dy-bg-muted/10"
       )}
     >
       {/* Header with Drag Handle & Collapse Controls */}
@@ -536,7 +537,7 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
   }
 
   return (
-    <div className="dy-bg-card/85 dy-space-y-4 dy-transition-all dy-py-4">
+    <div className="dy-bg-card/85 dy-border dy-border-border/60 dy-rounded-2xl dy-p-5 dy-space-y-4 dy-transition-all">
       <div className="dy-flex dy-justify-between dy-items-end dy-pb-2">
         <div className="dy-space-y-1">
           <div className="dy-flex dy-items-center dy-gap-2">
@@ -575,7 +576,9 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
       <div className="dy-space-y-3">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={fields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-            <div className="dy-space-y-3">
+            <div className={cn(
+              fields.length > 0 && "dy-border dy-border-border/60 dy-rounded-xl dy-divide-y dy-divide-border/60 dy-bg-background/20 dy-overflow-hidden"
+            )}>
               {fields.map((item, index) => (
                 <SortableArrayItem
                   key={item.id}

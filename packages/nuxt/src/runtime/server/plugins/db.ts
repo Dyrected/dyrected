@@ -2,6 +2,7 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
+import { loadDyrectedConfig, ConfigLoadError } from "./loadConfig";
 
 export default defineNitroPlugin(async (nitroApp: any) => {
   const runtimeConfig = useRuntimeConfig().dyrected;
@@ -12,24 +13,54 @@ export default defineNitroPlugin(async (nitroApp: any) => {
     try {
       const configPath = (runtimeConfig as any).configPath;
       let userConfig: any = null;
+      // Load the Dyrected configuration using the shared utility.
+      // It validates .js files and works with both jiti v1 and v2.
       try {
-        // @ts-ignore
-        const { default: jiti } = await import("jiti");
-        // @ts-ignore
-        const loader = jiti(import.meta.url, { esmResolve: true, interopDefault: true });
-        userConfig = loader(configPath);
+        userConfig = await loadDyrectedConfig(configPath);
       } catch (err) {
-        // Fallback to standard dynamic import
+        if (err instanceof ConfigLoadError) {
+          // Abort startup with a clear message – user must fix the config file.
+          console.error("[dyrected/nuxt] Config load error:", err.message);
+          throw err;
+        }
+        // Fallback for unexpected errors (e.g., missing file). Keep original warning.
+        console.warn("[dyrected/nuxt] Failed to load config via loadDyrectedConfig, falling back to native import.");
         const { pathToFileURL } = await import("url");
         const imported = await import(pathToFileURL(configPath).href);
         userConfig = imported.default || imported;
       }
       if (userConfig) {
-        console.log("[dyrected/nuxt] plugin raw userConfig keys:", Object.keys(userConfig || {}));
-        console.log("[dyrected/nuxt] plugin raw userConfig default keys:", Object.keys(userConfig?.default || {}));
-        const configObj = (userConfig.default && (userConfig.default.collections || userConfig.default.globals || userConfig.default.db)) ? userConfig.default : userConfig;
-        console.log("[dyrected/nuxt] plugin chosen configObj keys:", Object.keys(configObj || {}));
+       const configObj = (userConfig.default && (userConfig.default.collections || userConfig.default.globals || userConfig.default.db)) ? userConfig.default : userConfig;
+        // Attach config and start hot‑reload watcher in dev mode.
         (globalThis as any).__dyrected_config = configObj;
+        // If we are in Nuxt dev mode, watch the config file for changes and reload it on the fly.
+        if (process.env.NODE_ENV !== 'production') {
+          const { watch } = await import('fs');
+          let debounceTimer: NodeJS.Timeout | null = null;
+          const reload = async () => {
+            try {
+              const newConfig = await loadDyrectedConfig(configPath);
+              const newObj = (newConfig.default && (newConfig.default.collections || newConfig.default.globals || newConfig.default.db)) ? newConfig.default : newConfig;
+              (globalThis as any).__dyrected_config = newObj;
+              if (newObj.db) {
+                (globalThis as any).__dyrected_db = newObj.db;
+                console.log('[dyrected/nuxt] Database hot‑reloaded');
+              }
+              if (newObj.storage) {
+                (globalThis as any).__dyrected_storage = newObj.storage;
+                console.log('[dyrected/nuxt] Storage hot‑reloaded');
+              }
+            } catch (e) {
+              console.error('[dyrected/nuxt] Hot‑reload failed:', e);
+            }
+          };
+          watch(configPath, (eventType: string) => {
+            if (eventType === 'change') {
+              if (debounceTimer) clearTimeout(debounceTimer);
+              debounceTimer = setTimeout(reload, 200);
+            }
+          });
+        }
         
         if (configObj.db) {
           (globalThis as any).__dyrected_db = configObj.db;
