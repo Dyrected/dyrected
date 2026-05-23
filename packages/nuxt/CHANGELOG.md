@@ -1,5 +1,23 @@
 # @dyrected/nuxt
 
+## 2.5.12
+
+### Patch Changes
+
+- admin
+  • Introduced character‑count UI for fields with maxLength.
+  • Refactored field components to improve placeholder handling and default values.
+
+  nuxt
+  • Fixed SSR data‑fetching and dynamic‑route rendering bugs.
+  • Added hot‑reloading support for configuration files.
+
+- Updated dependencies
+  - @dyrected/admin@2.5.12
+  - @dyrected/core@2.5.12
+  - @dyrected/vue@2.5.12
+  - @dyrected/sdk@2.5.12
+
 ## 2.5.11
 
 ### Patch Changes

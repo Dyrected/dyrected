@@ -1,5 +1,17 @@
 # @dyrected/core
 
+## 2.5.12
+
+### Patch Changes
+
+- admin
+  • Introduced character‑count UI for fields with maxLength.
+  • Refactored field components to improve placeholder handling and default values.
+
+  nuxt
+  • Fixed SSR data‑fetching and dynamic‑route rendering bugs.
+  • Added hot‑reloading support for configuration files.
+
 ## 2.5.11
 
 ## 2.5.10

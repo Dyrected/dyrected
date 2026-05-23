@@ -1,67 +1,62 @@
 # Implementation Roadmap for All Spec Files
 
-This document consolidates a high‑level implementation roadmap that aligns with every specification (`specs/*.md`) currently present in the Dyrected repository. It maps each spec to the corresponding development milestones, ensuring all documentation stays synchronized with the codebase.
+This document consolidates a high‑level implementation roadmap that aligns with every specification (`specs/*.md`) currently present in the Dyrected repository. It maps each spec to the corresponding development milestones, ordered by **priority for the MVP**.
 
 ---
 
-## Spec Files Overview
-| Spec File | Primary Focus | Key Implementation Areas |
-|-----------|---------------|--------------------------|
-| `plugin-form-builder-architecture.md` | Plugin system & visual form builder | Plugin registry, UI component registration, form schema extensions |
-| `language-translation-architecture.md` | Multilingual UI & content translation | I18n provider, locale bundles, translation hooks |
-| `ai-first-architecture-spec.md` | AI‑agent discoverability via MCP | MCP `translations` resource, plugin manifest exposure |
-| `client-side-reactivity-spec.md` | Sandbox & iframe communication | Ensure translation bundles load inside hidden‑iframe sandbox |
-| `db-adapters-testing-plan.md` | Database adapter testing strategy | Extend test suite to cover i18n‑related DB interactions |
-| `lifecycle-hooks-testing-spec.md` | Hook testing methodology | Add tests for new `onLocaleChange` hook and plugin‑provided hooks |
-| `proposed-advanced-hooks-spec.md` | Advanced lifecycle hooks | Register custom hooks via plugin context |
-| `translation-migration-guide.md` *(to be created)* | Migration from static strings to i18n | Extraction script, component refactor, plugin updates |
-| `protected-translation-keys.md` *(to be created)* | Security for core translation keys | Validation in plugin loader, MCP exposure |
+## Spec Files Overview (Priority Order)
+| Priority | Spec File | Primary Focus | Key Implementation Areas |
+|----------|-----------|---------------|--------------------------|
+| 1️⃣ | `plugin-form-builder-architecture.md` | Plugin system & visual form builder | Plugin registry, UI component registration, form schema extensions |
+| 2️⃣ | `proposed-advanced-hooks-spec.md` | Advanced lifecycle hooks | Register custom hooks via plugin context |
+| 3️⃣ | `client-side-reactivity-spec.md` | Sandbox & iframe communication | Ensure translation bundles load inside hidden‑iframe sandbox (already required) |
+| 4️⃣ | `db-adapters-testing-plan.md` | Database adapter testing strategy | Extend test suite to cover i18n‑related DB interactions |
+| 5️⃣ | `lifecycle-hooks-testing-spec.md` | Hook testing methodology | Add tests for new `onLocaleChange` hook and plugin‑provided hooks |
+| 6️⃣ | `ai-first-architecture-spec.md` | AI‑agent discoverability via MCP | MCP `translations` resource, plugin manifest exposure |
+| 7️⃣ | `plugin-registry` (implicit in `plugin-form-builder-architecture.md`) | Plugin loading & manifest | Implement `plugin-registry.ts`, manifest `locales` array, load plugins before routes |
+| 8️⃣ | `language-translation-architecture.md` *(Future)* | Multilingual UI & content translation | I18n provider, locale bundles, translation hooks |
+| 9️⃣ | `translation-migration-guide.md` *(Future)* | Migration from static strings to i18n | Extraction script, component refactor, plugin updates |
+| 🔟 | `protected-translation-keys.md` *(Future)* | Security for core translation keys | Validation in plugin loader, MCP exposure |
 
 ---
 
-## Consolidated Milestones
-### 1. Foundations (Weeks 1‑2)
-- **I18nProvider** (`packages/core/src/i18n/`) and **client hook** `useI18n`.
-- Add default `en.json` and scaffold other locale files.
-- Update `tsconfig.json` to allow JSON imports.
-- Create migration script `scripts/extract-strings.ts` referenced in the migration guide.
+## Prioritized Milestones
+### 1. Core Plugin System & Advanced Hooks (Weeks 1‑2)
+- Implement **plugin‑registry.ts** with `loadPlugins` and `PluginContext`.
+- Add **advanced hook registration** (`onPluginInit`, custom hooks) as defined in `proposed-advanced-hooks-spec.md`.
+- Extend `dyrected-plugin.json` schema to include optional `locales` array.
+- Ensure plugins are loaded **before** route initialization in `app.ts`.
 
-### 2. Plugin Registry & Manifest (Weeks 3‑4)
-- Implement `plugin-registry.ts` (loadPlugins, PluginContext).
-- Extend `dyrected-plugin.json` with optional `locales` array.
-- Merge plugin locale bundles into the I18n provider.
-- Call `loadPlugins` from `app.ts` before route initialization.
+### 2. Sandbox Reinforcement (Week 3)
+- Verify that all plugin UI components run inside the existing hidden‑iframe sandbox.
+- Add tests ensuring sandbox communication does not break when plugins register UI.
 
-### 3. Translation Hook & Permissions (Week 5)
-- Add `onLocaleChange` to `LifecycleHooks`.
-- Enforce manifest locale validation.
-- Define protected keys list (`protected-translation-keys.md`).
+### 3. Testing Foundations (Weeks 4‑5)
+- **DB adapters**: Extend existing tests (`db-adapters-testing-plan.md`) to cover any i18n‑related DB interactions.
+- **Lifecycle hooks**: Add test cases for `onLocaleChange` and plugin‑provided hooks (`lifecycle-hooks-testing-spec.md`).
 
-### 4. MCP Exposure (Week 6)
-- Add `@dyrected/mcp/translations` endpoints (list locales, bundles, keys).
-- Update `ai-first-architecture-spec.md` with new resource description.
+### 4. AI‑First MCP Exposure (Week 6)
+- Add MCP endpoints under `@dyrected/mcp/translations`:
+  - `GET /locales`
+  - `GET /bundles/:locale`
+  - `GET /keys/:locale`
+- Update `ai-first-architecture-spec.md` with the new resource description.
 
-### 5. UI Integration & Sandbox (Weeks 7‑8)
-- Refactor admin UI components to use `t('key')` via `useI18n`.
-- Add language selector component that triggers `onLocaleChange`.
-- Ensure hidden‑iframe sandbox loads merged translation bundles.
+### 5. UI Integration (Weeks 7‑8)
+- Refactor admin UI components to use `t('key')` via a new **i18n hook** (`useI18n`).
+- Add a language selector that triggers the `onLocaleChange` hook.
+- Ensure the selector works inside the sandboxed iframe.
 
-### 6. Form Builder Enhancements (Week 9)
-- Extend `FormField` to include `labelKey`.
-- Update form renderer to resolve keys with `useI18n`.
-- Provide UI for choosing translation keys in the drag‑and‑drop form builder.
+### 6. Form Builder Enhancements (Week 9) – **MVP**
+- Extend `FormField` to support `labelKey` (translation key).
+- Update the form renderer to resolve keys with `useI18n`.
+- Provide UI for selecting translation keys in the drag‑and‑drop form builder.
 
-### 7. Testing Expansion (Week 10)
-- **Unit**: `I18nProvider.t()` placeholder substitution and fallback.
-- **Integration**: Load a sample plugin with a `de.json` bundle and verify merged output.
-- **E2E**: Playwright tests for language switching, UI updates, and sandbox isolation.
-- **Security**: Tests that protected keys cannot be overridden by plugins.
-- Extend existing testing specs (`db-adapters-testing-plan.md`, `lifecycle-hooks-testing-spec.md`) with i18n cases.
-
-### 8. Documentation & Migration (Week 11)
-- Finalize `translation-migration-guide.md` and link from other specs.
-- Publish `language-translation-architecture.md` and `plugin-form-builder-architecture.md` updates.
-- Add CI lint rule for translation key ordering and completeness.
+### 7. Future: Full Translation Stack (Weeks 10‑12) – **Future**
+- **Foundations**: Build `I18nProvider` and default `en.json` (deferred until after MVP). 
+- **Hook & Permissions**: Add `onLocaleChange` hook and protected‑key validation.
+- **Documentation**: Complete `translation-migration-guide.md` and `protected-translation-keys.md`.
+- **Testing**: Add unit/integration/E2E tests for language switching.
 
 ---
 
@@ -73,10 +68,10 @@ This document consolidates a high‑level implementation roadmap that aligns wit
 ---
 
 ## Verification Plan
-- Execute the full test suite after each milestone.
-- Deploy a sample project, install a demo plugin, switch locales, and verify UI changes.
+- Run the full test suite after each milestone.
+- Deploy a demo project, install a sample plugin, switch locales, and verify UI updates.
 - Use the MCP `translations` endpoints to fetch bundles and confirm they contain both core and plugin keys.
 
 ---
 
-*This roadmap lives in `specs/implementation-roadmap-for-specs.md` to keep all specification‑related planning in one place.*
+*This roadmap lives in `specs/implementation-roadmap-for-specs.md` and is ordered by MVP priority.*
