@@ -9,14 +9,17 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig().dyrected;
   if (!app) {
     let dyrectedConfig = { ...config };
-    
+
     // Merge from global config if available
     if ((globalThis as any).__dyrected_config) {
       const gConfig = (globalThis as any).__dyrected_config;
-      console.log("[dyrected/nuxt] raw __dyrected_config:", gConfig);
-      console.log("[dyrected/nuxt] raw __dyrected_config keys:", Object.keys(gConfig || {}));
-      console.log("[dyrected/nuxt] raw __dyrected_config default keys:", Object.keys(gConfig?.default || {}));
-      const configObj = (gConfig.default && (gConfig.default.collections || gConfig.default.globals || gConfig.default.db)) ? gConfig.default : gConfig;
+      // console.log("[dyrected/nuxt] raw __dyrected_config:", gConfig);
+      // console.log("[dyrected/nuxt] raw __dyrected_config keys:", Object.keys(gConfig || {}));
+      // console.log("[dyrected/nuxt] raw __dyrected_config default keys:", Object.keys(gConfig?.default || {}));
+      const configObj =
+        gConfig.default && (gConfig.default.collections || gConfig.default.globals || gConfig.default.db)
+          ? gConfig.default
+          : gConfig;
       console.log("[dyrected/nuxt] chosen configObj keys:", Object.keys(configObj || {}));
       dyrectedConfig = { ...dyrectedConfig, ...configObj };
     }
@@ -84,8 +87,11 @@ export default defineEventHandler(async (event) => {
   });
 
   const response = await app.fetch(request);
-  const responseData = await response.clone().json().catch(() => null);
-  
+  const responseData = await response
+    .clone()
+    .json()
+    .catch(() => null);
+
   if (process.env.DEBUG_DYRECTED) {
     console.log(`[dyrected/api] ${method} ${path} ${response.status}`);
     if (responseData) {
