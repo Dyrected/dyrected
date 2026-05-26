@@ -35,6 +35,8 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 
+import { Input } from "../ui/input"
+
 interface FormFieldRendererProps {
   schema: FieldSchema
   basePath: string
@@ -79,6 +81,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
 
   if (!isVisible) return null
 
+  // Evaluate Read Access
   const readAccess = (schema.access as any)?.read
   let canRead = true
   if (readAccess === false) {
@@ -93,7 +96,86 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
 
   if (!canRead) return null
 
+  // Evaluate Update/Write Access
+  const updateAccess = (schema.access as any)?.update
+  let canUpdate = true
+  if (updateAccess === false) {
+    canUpdate = false
+  } else if (typeof updateAccess === 'string') {
+    try {
+      canUpdate = jexl.evalSync(updateAccess, { user, ...conditionData })
+    } catch (e) {
+      console.warn("Update access eval failed:", e)
+    }
+  }
+
+  // Password fields should be hidden completely if the user does not have update access
+  if (schema.name === "password" && !canUpdate) {
+    return null
+  }
+
   const fullPath = basePath ? `${basePath}.${schema.name!}` : schema.name!
+
+  if (schema.name === "password" || (schema.type as string) === "password") {
+    const isEdit = !!formValues?.id
+    const isSelf = user && formValues?.id === user.id
+    return (
+      <div className="dy-space-y-4 dy-border dy-border-border/40 dy-p-5 dy-rounded-2xl dy-bg-background/40">
+        <div className="dy-text-xs dy-font-semibold dy-text-foreground/70 dy-mb-2">
+          {isEdit ? "Change Password" : "Password Configuration"}
+        </div>
+        {isEdit && isSelf && (
+          <FormField
+            control={control}
+            name="oldPassword"
+            render={({ field: formField }: { field: any }) => (
+              <FormItem className="dy-space-y-1.5">
+                <FormLabel className="dy-text-xs dy-font-medium dy-text-foreground/70">Current Password</FormLabel>
+                <FormControl>
+                  <Input type="password" {...formField} value={formField.value ?? ""} placeholder="Enter current password..." autoComplete="current-password" />
+                </FormControl>
+                <FormMessage className="dy-text-xs dy-font-medium" />
+              </FormItem>
+            )}
+          />
+        )}
+        <div className="dy-grid dy-grid-cols-1 md:dy-grid-cols-2 dy-gap-4">
+          <FormField
+            control={control}
+            name={fullPath}
+            render={({ field: formField }: { field: any }) => (
+              <FormItem className="dy-space-y-1.5">
+                <FormLabel className="dy-text-xs dy-font-medium dy-text-foreground/70">
+                  {isEdit ? "New Password" : "Password"}
+                  {schema.required && !isEdit && <span className="dy-text-destructive dy-ml-1">*</span>}
+                </FormLabel>
+                <FormControl>
+                  <Input type="password" {...formField} value={formField.value ?? ""} placeholder={isEdit ? "Enter new password..." : "Enter password..."} autoComplete="new-password" />
+                </FormControl>
+                <FormMessage className="dy-text-xs dy-font-medium" />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="confirmPassword"
+            render={({ field: formField }: { field: any }) => (
+              <FormItem className="dy-space-y-1.5">
+                <FormLabel className="dy-text-xs dy-font-medium dy-text-foreground/70">
+                  {isEdit ? "Confirm New Password" : "Confirm Password"}
+                  {schema.required && !isEdit && <span className="dy-text-destructive dy-ml-1">*</span>}
+                </FormLabel>
+                <FormControl>
+                  <Input type="password" {...formField} value={formField.value ?? ""} placeholder="Confirm password..." autoComplete="new-password" />
+                </FormControl>
+                <FormMessage className="dy-text-xs dy-font-medium" />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+    )
+  }
 
   if ((schema.type as string) === "row") {
     return (

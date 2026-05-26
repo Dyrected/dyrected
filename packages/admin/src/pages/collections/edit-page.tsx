@@ -8,13 +8,13 @@ import { ChevronLeft } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl } from "../../lib/utils"
-import { Archive, Eye, EyeOff, Save, Volume2, FileIcon } from "lucide-react"
+import { Archive, Eye, EyeOff, Save, Volume2, FileIcon, Mail } from "lucide-react"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
 import jexl from 'jexl'
 
 export function EditEntryPage() {
   const { slug, id } = useParams()
-  const { client } = useDyrected()
+  const { client, user } = useDyrected()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showPreview, setShowPreview] = useState(false)
@@ -54,12 +54,13 @@ export function EditEntryPage() {
 
   const schema = schemas?.collections.find((c: any) => c.slug === slug)
 
-  // Effect to default preview off if previewUrl is available
-  useEffect(() => {
-    if (schema?.admin?.previewUrl) {
+  const [prevSchemaSlug, setPrevSchemaSlug] = useState<string | null>(null)
+  if (schema && schema.slug !== prevSchemaSlug) {
+    setPrevSchemaSlug(schema.slug)
+    if (schema.admin?.previewUrl) {
       setShowPreview(false)
     }
-  }, [schema])
+  }
 
   // Fetch entry data if in edit mode
   const { data: entry, isLoading: isEntryLoading } = useQuery({
@@ -68,21 +69,60 @@ export function EditEntryPage() {
     enabled: !!client && isEdit,
   })
 
-  useEffect(() => {
-    if (entry) {
-      setPreviewData(entry)
-    }
-  }, [entry])
+  const [prevEntry, setPrevEntry] = useState<any>(null)
+  if (entry && entry !== prevEntry) {
+    setPrevEntry(entry)
+    setPreviewData(entry)
+  }
+
+  // Password-change permissions
+  // isSelf: the logged-in user is editing their own account
+  // isAdminUser: the logged-in user has the admin role
+  const isAdminUser = Array.isArray(user?.roles) && user.roles.includes('admin')
+  const isSelf = !!user && !!id && (user.id === id || user.sub === id)
+  // 'self'  → show oldPassword + newPassword + confirmPassword
+  // 'admin' → show newPassword + confirmPassword only (admin bypass)
+  // null    → hide the section entirely
+  const passwordChangeMode: 'self' | 'admin' | null =
+    schema?.auth
+      ? isSelf
+        ? 'self'
+        : isAdminUser
+          ? 'admin'
+          : null
+      : null
 
   const saveMutation = useMutation({
-    mutationFn: (data: any) => {
-      if (isEdit) {
-        return client!.collection(slug!).update(id!, data)
-      } else {
-        return client!.collection(slug!).create(data)
+    mutationFn: async (data: Record<string, unknown>) => {
+      const { oldPassword, newPassword, confirmPassword, ...rest } = data as {
+        oldPassword?: string
+        newPassword?: string
+        confirmPassword?: string
+        [key: string]: unknown
       }
+
+      const results: { doc?: unknown; passwordChanged?: boolean } = {}
+
+      if (isEdit) {
+        // 1. Normal field update (password fields stripped out)
+        results.doc = await client!.collection(slug!).update(id!, rest)
+
+        // 2. Dedicated password change — only if newPassword was supplied
+        if (newPassword) {
+          await client!.collection(slug!).changePassword(id!, {
+            oldPassword,
+            newPassword,
+            confirmPassword: confirmPassword ?? "",
+          })
+          results.passwordChanged = true
+        }
+      } else {
+        results.doc = await client!.collection(slug!).create(rest)
+      }
+
+      return results
     },
-    onSuccess: (data: any) => {
+    onSuccess: (results) => {
       setIsDirty(false)
       queryClient.invalidateQueries({ queryKey: ["collection", slug] })
       if (isEdit) {
@@ -90,19 +130,43 @@ export function EditEntryPage() {
       }
 
       toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
-        description: `${schema.label || schema.slug} has been saved.`
+        description: `${schema.label || schema.slug} has been saved.`,
       })
 
-      if (!isEdit && data?.id) {
-        navigate(`/collections/${slug}/edit/${data.id}`, { replace: true })
+      if (results.passwordChanged) {
+        toast.success("Password changed successfully")
+      }
+
+      const doc = results.doc as { id?: string } | undefined
+      if (!isEdit && doc?.id) {
+        navigate(`/collections/${slug}/edit/${doc.id}`, { replace: true })
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Failed to save entry", {
-        description: error.message || "An unexpected error occurred."
+        description: error.message || "An unexpected error occurred.",
       })
-    }
+    },
   })
+
+  // Admin-initiated password reset — sends an email to the target user
+  const [sendingReset, setSendingReset] = useState(false)
+  const handleSendResetLink = async () => {
+    if (!entry?.email) return
+    setSendingReset(true)
+    try {
+      await client!.collection(slug!).sendResetLink(entry.email as string)
+      toast.success("Reset link sent", {
+        description: `A password reset email has been sent to ${entry.email}.`,
+      })
+    } catch (err: unknown) {
+      toast.error("Failed to send reset link", {
+        description: err instanceof Error ? err.message : "An unexpected error occurred.",
+      })
+    } finally {
+      setSendingReset(false)
+    }
+  }
 
   if (!schema) return <div>Collection not found</div>
   if (isEdit && isEntryLoading) return <div>Loading entry...</div>
@@ -134,8 +198,56 @@ export function EditEntryPage() {
     previewUrl = `${window.location.origin}${previewUrl}`
   }
 
-  const canCreate = (schema.access as any)?.create !== false
-  const canUpdate = (schema.access as any)?.update !== false
+  // Evaluate collection-level read access
+  const readAccess = (schema.access as any)?.read
+  let canRead = true
+  if (readAccess === false) {
+    canRead = false
+  } else if (typeof readAccess === 'string') {
+    try {
+      canRead = jexl.evalSync(readAccess, { user, ...(previewData || entry || {}) })
+    } catch (e) {
+      console.warn("Read access eval failed:", e)
+    }
+  }
+
+  if (!canRead) {
+    return (
+      <div className="dy-flex dy-items-center dy-justify-center dy-h-[calc(100vh-200px)]">
+        <div className="dy-text-center dy-space-y-3">
+          <div className="dy-p-3 dy-bg-destructive/10 dy-text-destructive dy-rounded-full dy-w-12 dy-h-12 dy-mx-auto dy-flex dy-items-center dy-justify-center">
+            <Archive className="dy-h-6 dy-w-6" />
+          </div>
+          <h3 className="dy-text-lg dy-font-bold">Access Denied</h3>
+          <p className="dy-text-sm dy-text-muted-foreground">You do not have permission to view this entry.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const createAccess = (schema.access as any)?.create
+  let canCreate = true
+  if (createAccess === false) {
+    canCreate = false
+  } else if (typeof createAccess === 'string') {
+    try {
+      canCreate = jexl.evalSync(createAccess, { user })
+    } catch (e) {
+      console.warn("Create access eval failed:", e)
+    }
+  }
+
+  const updateAccess = (schema.access as any)?.update
+  let canUpdate = true
+  if (updateAccess === false) {
+    canUpdate = false
+  } else if (typeof updateAccess === 'string') {
+    try {
+      canUpdate = jexl.evalSync(updateAccess, { user, ...(previewData || entry || {}) })
+    } catch (e) {
+      console.warn("Update access eval failed:", e)
+    }
+  }
 
   const handleFieldFocus = (path: string) => {
     const el = document.querySelector(`[data-dy-field="${path}"]`)
@@ -182,6 +294,23 @@ export function EditEntryPage() {
             </div>
 
             <div className="dy-flex dy-items-center dy-gap-1.5 dy-bg-muted/20 dy-p-1 dy-rounded-xl dy-border dy-border-muted/30 dy-shadow-sm">
+              {/* Send Reset Link — admin only, not when editing self */}
+              {schema?.auth && isEdit && isAdminUser && !isSelf && entry?.email && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="dy-h-8 dy-w-8 dy-rounded-lg dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground dy-transition-all"
+                  onClick={handleSendResetLink}
+                  disabled={sendingReset}
+                  title={`Send password reset link to ${entry.email}`}
+                >
+                  {sendingReset ? (
+                    <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
+                  ) : (
+                    <Mail className="dy-h-3.5 dy-w-3.5" />
+                  )}
+                </Button>
+              )}
               {previewUrl && (
                 <Button
                   variant="ghost"
@@ -308,6 +437,7 @@ export function EditEntryPage() {
                   isLoading={saveMutation.isPending}
                   submitLabel={isEdit ? "Save Changes" : "Create Entry"}
                   readOnly={isEdit ? !canUpdate : !canCreate}
+                  passwordChangeMode={isEdit ? passwordChangeMode : null}
                 />
               );
             })()}

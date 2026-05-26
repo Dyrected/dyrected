@@ -22,8 +22,10 @@ export function TextField({ schema, field, disabled }: TextFieldProps) {
         return <Input type="email" {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} maxLength={maxLength} />
       case "url":
         return <Input type="url" {...field} value={field.value ?? ""} placeholder={schema.admin?.placeholder || "https://"} disabled={disabled} maxLength={maxLength} />
-      default:
-        return <Input {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} maxLength={maxLength} />
+      default: {
+        const isPassword = schema.name === "password" || (schema.type as string) === "password";
+        return <Input type={isPassword ? "password" : "text"} {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} maxLength={maxLength} />
+      }
     }
   })()
 

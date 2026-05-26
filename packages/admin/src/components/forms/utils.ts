@@ -6,21 +6,22 @@ export function normalizeOptions(options: string[] | { label: string; value: str
   return options.map(opt => typeof opt === "string" ? { label: opt, value: opt } : opt)
 }
 
-export function buildSchemaShape(fields: FieldSchema[]) {
+export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false) {
   const shape: Record<string, z.ZodTypeAny> = {}
   fields.forEach((field) => {
     if ((field.type as string) === "join") return
     if ((field.type as string) === "row" && field.fields) {
-      Object.assign(shape, buildSchemaShape(field.fields))
+      Object.assign(shape, buildSchemaShape(field.fields, isEdit))
       return
     }
 
     const name = field.name!
     let validator: any = z.any()
     const label = field.label || name.charAt(0).toUpperCase() + name.slice(1)
+    const isPassword = name === "password" || (field.type as string) === "password"
 
     if (field.type === "object" && field.fields) {
-      validator = z.object(buildSchemaShape(field.fields))
+      validator = z.object(buildSchemaShape(field.fields, isEdit))
       if (!field.required) validator = validator.optional()
       shape[name] = validator
       return
@@ -34,7 +35,7 @@ export function buildSchemaShape(fields: FieldSchema[]) {
     }
 
     if (field.type === "array" && field.fields) {
-      validator = z.array(z.object(buildSchemaShape(field.fields)))
+      validator = z.array(z.object(buildSchemaShape(field.fields, isEdit)))
       if (!field.required) validator = validator.optional()
       shape[name] = validator
       return
@@ -65,9 +66,19 @@ export function buildSchemaShape(fields: FieldSchema[]) {
           return false
         }, { message: `${label} is required` })
       }
-    } else if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "richText" || fieldType === "date" || fieldType === "icon") {
+    } else if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "richText" || fieldType === "date" || fieldType === "icon" || fieldType === "password") {
       validator = z.string()
-      if (field.required) validator = validator.min(1, `${label} is required`)
+      if (isPassword) {
+        if (!isEdit) {
+          validator = validator.min(8, "Password must be at least 8 characters")
+        } else {
+          validator = z.string().refine((val) => val === "" || val.length >= 8, {
+            message: "Password must be at least 8 characters",
+          })
+        }
+      } else if (field.required) {
+        validator = validator.min(1, `${label} is required`)
+      }
     } else if (field.type === "email") {
       validator = z.string().email(`${label} must be a valid email`)
       if (field.required) validator = validator.min(1, `${label} is required`)
@@ -119,6 +130,10 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
 
     const name = field.name!
     let defaultVal = defaults[name] ?? field.defaultValue
+
+    if (name === "password" || (field.type as string) === "password") {
+      defaultVal = ""
+    }
 
     if (field.type === "object" && field.fields) {
       acc[name] = buildDefaultValues(field.fields, defaultVal || {})

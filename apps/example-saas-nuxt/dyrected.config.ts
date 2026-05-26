@@ -9,6 +9,34 @@ const Media = defineCollection({
   fields: [{ name: "alt", type: "text", label: "Alt Text" }],
 });
 
+const Admin = defineCollection({
+  slug: "admin",
+  auth: true,
+  fields: [
+    {
+      label: "First name",
+      name: "firstName",
+      type: "text",
+    },
+    {
+      label: "Last name",
+      name: "lastName",
+      type: "text",
+    },
+    {
+      name: "roles",
+      type: "select",
+      label: "Roles",
+      options: [
+        { label: "Admin", value: "admin" },
+        { label: "Editor", value: "editor" },
+        { label: "Viewer", value: "viewer" },
+      ],
+      admin: { direction: "horizontal", layout: "radio" },
+    },
+  ],
+});
+
 const Products = defineCollection({
   slug: "products",
   labels: { plural: "Products", singular: "Product" },
@@ -300,7 +328,7 @@ const Navigation = defineGlobal({
 });
 
 export default defineConfig({
-  collections: [Media, Pages, Blog, Products, Authors],
+  collections: [Admin, Media, Pages, Blog, Products, Authors],
   globals: [Settings, Navigation],
   db: new SqliteAdapter({
     filename: "dyrected.db",

@@ -83,16 +83,22 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       return true;
     };
 
+    const serializeAccess = async (access: any): Promise<any> => {
+      if (typeof access === 'string') return access;
+      if (typeof access === 'boolean') return access;
+      return resolveAccess(access);
+    };
+
     const filteredCollections = await Promise.all(collections
       .filter((col) => !siteId || col.shared || !col.siteId || col.siteId === siteId)
       .map(async (col) => ({
         slug: col.slug,
         labels: col.labels,
         access: {
-          read: await resolveAccess(col.access?.read),
-          create: await resolveAccess(col.access?.create),
-          update: await resolveAccess(col.access?.update),
-          delete: await resolveAccess(col.access?.delete),
+          read: await serializeAccess(col.access?.read),
+          create: await serializeAccess(col.access?.create),
+          update: await serializeAccess(col.access?.update),
+          delete: await serializeAccess(col.access?.delete),
         },
         fields: await Promise.all(col.fields.map(async (f) => ({
           name: f.name,
@@ -107,8 +113,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           blocks: f.blocks,
           admin: f.admin,
           access: {
-            read: await resolveAccess(f.access?.read),
-            update: await resolveAccess(f.access?.update),
+            read: await serializeAccess(f.access?.read),
+            update: await serializeAccess(f.access?.update),
           },
         }))),
         upload: !!col.upload,
@@ -122,8 +128,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         slug: glb.slug,
         label: glb.label,
         access: {
-          read: await resolveAccess(glb.access?.read),
-          update: await resolveAccess(glb.access?.update),
+          read: await serializeAccess(glb.access?.read),
+          update: await serializeAccess(glb.access?.update),
         },
         fields: await Promise.all(glb.fields.map(async (f) => ({
           name: f.name,
@@ -138,8 +144,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           blocks: f.blocks,
           admin: f.admin,
           access: {
-            read: await resolveAccess(f.access?.read),
-            update: await resolveAccess(f.access?.update),
+            read: await serializeAccess(f.access?.read),
+            update: await serializeAccess(f.access?.update),
           },
         }))),
         admin: glb.admin,
@@ -221,6 +227,10 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.patch(`${path}/:id`, accessGate(collection, 'update'), (c) => controller.update(c));
     app.delete(`${path}/:id`, accessGate(collection, 'delete'), (c) => controller.delete(c));
     app.post(`${path}/seed`, (c) => controller.seed(c));
+    // Dedicated password-change endpoint (auth collections only)
+    if (collection.auth) {
+      app.post(`${path}/:id/change-password`, requireAuth(), (c) => controller.changePassword(c));
+    }
   }
 
   // 5. Global Routes (Static)

@@ -200,6 +200,27 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
           method: "POST",
           body: JSON.stringify({ token, password, ...extraFields }),
         }),
+      /**
+       * Change the password for a specific user document.
+       * Non-admins must supply oldPassword. newPassword and confirmPassword must match.
+       */
+      changePassword: (
+        id: string,
+        payload: { oldPassword?: string; newPassword: string; confirmPassword: string },
+      ): Promise<{ success: boolean; message: string }> =>
+        this.request(`/api/collections/${slug}/${id}/change-password`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        }),
+      /**
+       * Admin-initiated password reset. Sends a reset link to the given email address.
+       * Wraps the existing POST /forgot-password endpoint.
+       */
+      sendResetLink: (email: string): Promise<{ success: boolean; message: string }> =>
+        this.request(`/api/collections/${slug}/forgot-password`, {
+          method: "POST",
+          body: JSON.stringify({ email }),
+        }),
     };
   }
 

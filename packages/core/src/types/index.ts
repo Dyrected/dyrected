@@ -43,8 +43,8 @@ export interface Field {
   collection?: string; // For join fields - the target collection slug
   on?: string; // For join fields - the field in the target collection that references this one
   access?: {
-    read?: AccessFunction;
-    update?: AccessFunction;
+    read?: AccessFunction | string;
+    update?: AccessFunction | string;
   };
   hooks?: {
     beforeChange?: FieldHook[];
@@ -102,10 +102,10 @@ export interface CollectionConfig {
   /** Enable full activity logging to the __audit collection for this collection. */
   audit?: boolean;
   access?: {
-    read?: AccessFunction;
-    create?: AccessFunction;
-    update?: AccessFunction;
-    delete?: AccessFunction;
+    read?: AccessFunction | string;
+    create?: AccessFunction | string;
+    update?: AccessFunction | string;
+    delete?: AccessFunction | string;
   };
   hooks?: {
     beforeRead?: HookFunction[];

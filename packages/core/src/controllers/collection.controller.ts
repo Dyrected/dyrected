@@ -4,6 +4,7 @@ import type { DyrectedContext } from '../app.js';
 import { PopulationService } from '../services/population.service.js';
 import { DefaultsService } from '../services/defaults.service.js';
 import { AuditService } from '../services/audit.service.js';
+import { hashPassword, verifyPassword } from '../auth/password.js';
 
 export class CollectionController {
   private collection: CollectionConfig;
@@ -117,6 +118,10 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     };
 
+    if (this.collection.auth && data.password) {
+      data.password = await hashPassword(data.password);
+    }
+
     const doc = await db!.create({ collection: this.collection.slug, data });
 
     if (this.collection.audit && db) {
@@ -190,11 +195,18 @@ export class CollectionController {
     const body = await c.req.json();
     const user = c.get('user');
 
-    const data = {
-      ...body,
+    // Strip auth-only fields from general updates — use /change-password for that
+    const data = { ...body };
+    if (this.collection.auth) {
+      delete data.password;
+      delete data.oldPassword;
+      delete data.confirmPassword;
+    }
+
+    Object.assign(data, {
       updatedAt: new Date().toISOString(),
       updatedBy: user?.sub ?? null,
-    };
+    });
 
     let before: any = null;
     if (this.collection.audit) {
@@ -215,6 +227,92 @@ export class CollectionController {
     }
 
     return c.json(doc);
+  }
+
+  /**
+   * POST /api/collections/:slug/:id/change-password
+   *
+   * Dedicated endpoint for password changes. Requires the caller to supply:
+   *   { oldPassword, newPassword, confirmPassword }
+   *
+   * Rules:
+   *  - Only the account owner or an admin may change the password.
+   *  - Non-admin callers MUST provide a valid oldPassword.
+   *  - newPassword and confirmPassword must match.
+   */
+  async changePassword(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    if (!this.collection.auth) {
+      return c.json({ message: 'This collection does not support authentication' }, 400);
+    }
+
+    const id = c.req.param('id');
+    if (!id) return c.json({ message: 'Missing ID' }, 400);
+
+    const user = c.get('user');
+    if (!user) return c.json({ message: 'Authentication required' }, 401);
+
+    const body = await c.req.json().catch(() => null);
+    const { oldPassword, newPassword, confirmPassword } = body ?? {};
+
+    if (!newPassword) {
+      return c.json({ message: 'newPassword is required' }, 400);
+    }
+    if (newPassword !== confirmPassword) {
+      return c.json({ message: 'Passwords do not match' }, 400);
+    }
+    if (newPassword.length < 8) {
+      return c.json({ message: 'Password must be at least 8 characters' }, 400);
+    }
+
+    const isAdmin = Array.isArray(user.roles) && user.roles.includes('admin');
+    const isSelf = user.sub === id;
+
+    if (!isAdmin && !isSelf) {
+      return c.json({ message: 'You are not authorised to change this password' }, 403);
+    }
+
+    // Non-admins must verify their current password
+    if (!isAdmin) {
+      if (!oldPassword) {
+        return c.json({ message: 'Current password is required' }, 400);
+      }
+      const existing = await db!.findOne({ collection: this.collection.slug, id });
+      if (!existing) return c.json({ message: 'User not found' }, 404);
+
+      const valid = await verifyPassword(oldPassword, existing.password);
+      if (!valid) {
+        return c.json({ message: 'Invalid current password' }, 400);
+      }
+    }
+
+    const hashed = await hashPassword(newPassword);
+
+    const doc = await db!.update({
+      collection: this.collection.slug,
+      id,
+      data: {
+        password: hashed,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user.sub,
+      },
+    });
+
+    if (this.collection.audit) {
+      AuditService.log(db, {
+        operation: 'update',
+        collection: this.collection.slug,
+        documentId: id,
+        user: { id: user.sub, collection: user.collection, email: user.email },
+        before: null,
+        after: { id },
+      });
+    }
+
+    return c.json({ success: true, message: 'Password updated successfully' });
   }
 
   async delete(c: Context<DyrectedContext>) {

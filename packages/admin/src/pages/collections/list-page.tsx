@@ -17,24 +17,29 @@ import {
   Calendar,
   Database,
   Image as ImageIcon,
+  Lock,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu"
 import { RenderCell } from "../../components/ui/render-cell"
 import { PageHeader } from "../../components/ui/page-header"
 import { Pagination } from "../../components/ui/pagination"
 import { MediaGrid } from "../../components/media/media-grid"
+import jexl from 'jexl'
 
 interface CollectionListPageProps {
   slug: string
 }
 
 export function CollectionListPage({ slug }: CollectionListPageProps) {
-  const { client } = useDyrected()
+  const { client, user } = useDyrected()
   const queryClient = useQueryClient()
   const [page, setPage] = React.useState(1)
+  const [prevSlug, setPrevSlug] = React.useState(slug)
 
-  // Reset to page 1 when collection slug changes
-  React.useEffect(() => { setPage(1) }, [slug])
+  if (slug !== prevSlug) {
+    setPrevSlug(slug)
+    setPage(1)
+  }
 
   // Fetch schema to know fields
   const { data: schemas } = useQuery({
@@ -88,15 +93,28 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
   })
 
-  function handleDelete(id: string) {
+  const handleDelete = React.useCallback((id: string) => {
+    if (schema?.auth && id === user?.id) {
+      toast.error("Action not allowed", {
+        description: "You cannot delete your own account."
+      })
+      return
+    }
     if (window.confirm("Delete this entry? This cannot be undone.")) {
       deleteMutation.mutate(id)
     }
-  }
+  }, [schema, user, deleteMutation])
 
   function handleBulkDelete(ids: string[]) {
-    if (window.confirm(`Delete ${ids.length} entries? This cannot be undone.`)) {
-      bulkDeleteMutation.mutate(ids)
+    const cleanIds = schema?.auth ? ids.filter(id => id !== user?.id) : ids
+    if (cleanIds.length === 0) {
+      toast.error("Action not allowed", {
+        description: "You cannot delete your own account."
+      })
+      return
+    }
+    if (window.confirm(`Delete ${cleanIds.length} entries? This cannot be undone.`)) {
+      bulkDeleteMutation.mutate(cleanIds)
     }
   }
 
@@ -151,7 +169,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
     // Include all non-hidden, non-layout fields as columns
     const allDisplayFields = schema.fields.filter((f: any) =>
-      f.name !== "status" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+      f.name !== "status" && f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
     )
     const titleFieldName = schema.admin?.useAsTitle || allDisplayFields[0]?.name
 
@@ -202,6 +220,18 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       id: "actions",
       cell: ({ row }) => {
         const item = row.original
+        const deleteAccess = (schema.access as any)?.delete
+        let canDelete = true
+        if (deleteAccess === false) {
+          canDelete = false
+        } else if (typeof deleteAccess === 'string') {
+          try {
+            canDelete = jexl.evalSync(deleteAccess, { user, ...item })
+          } catch (e) {
+            console.warn("Delete access eval failed:", e)
+          }
+        }
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -225,7 +255,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
               <DropdownMenuItem
                 className="dy-flex dy-gap-2 dy-text-destructive focus:dy-text-destructive"
                 onClick={() => handleDelete(item.id)}
-                disabled={deleteMutation.isPending}
+                disabled={deleteMutation.isPending || !canDelete || (schema.auth && item.id === user?.id)}
+                title={!canDelete ? "You do not have permission to delete this entry" : (schema.auth && item.id === user?.id ? "You cannot delete your own account" : undefined)}
               >
                 <Trash2 className="dy-h-4 dy-w-4" />
                 {deleteMutation.isPending ? "Deleting..." : "Delete"}
@@ -237,7 +268,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     })
 
     return cols
-  }, [schema, client, deleteMutation.isPending])
+  }, [schema, client, deleteMutation.isPending, user, handleDelete, slug, schemas])
 
   const initialColumnVisibility = React.useMemo(() => {
     if (!schema) return {}
@@ -272,6 +303,46 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     return <div>Collection not found: {slug}</div>
   }
 
+  // Evaluate collection-level read access
+  const readAccess = (schema.access as any)?.read
+  let canRead = true
+  if (readAccess === false) {
+    canRead = false
+  } else if (typeof readAccess === 'string') {
+    try {
+      canRead = jexl.evalSync(readAccess, { user })
+    } catch (e) {
+      console.warn("Read access eval failed:", e)
+    }
+  }
+
+  if (!canRead) {
+    return (
+      <div className="dy-flex dy-items-center dy-justify-center dy-h-[calc(100vh-200px)]">
+        <div className="dy-text-center dy-space-y-3">
+          <div className="dy-p-3 dy-bg-destructive/10 dy-text-destructive dy-rounded-full dy-w-12 dy-h-12 dy-mx-auto dy-flex dy-items-center dy-justify-center">
+            <Lock className="dy-h-6 dy-w-6" />
+          </div>
+          <h3 className="dy-text-lg dy-font-bold">Access Denied</h3>
+          <p className="dy-text-sm dy-text-muted-foreground">You do not have permission to view this collection.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Evaluate collection-level create access
+  const createAccess = (schema.access as any)?.create
+  let canCreate = true
+  if (createAccess === false) {
+    canCreate = false
+  } else if (typeof createAccess === 'string') {
+    try {
+      canCreate = jexl.evalSync(createAccess, { user })
+    } catch (e) {
+      console.warn("Create access eval failed:", e)
+    }
+  }
+
   if (slug === "media") {
     return (
       <div className="dy-space-y-8 dy-animate-in">
@@ -280,12 +351,14 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           description="Manage your media assets and uploads."
           icon={ImageIcon}
         >
-          <Link to={`/collections/${slug}/new`}>
-            <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
-              <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
-              Upload New
-            </Button>
-          </Link>
+          {canCreate && (
+            <Link to={`/collections/${slug}/new`}>
+              <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
+                <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
+                Upload New
+              </Button>
+            </Link>
+          )}
         </PageHeader>
 
         <MediaGrid
@@ -314,12 +387,14 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         description={`Manage your ${schema.slug} entries and update content.`}
         icon={Database}
       >
-        <Link to={`/collections/${slug}/new`}>
-          <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
-            <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
-            Add {schema.labels?.singular || schema.label || schema.slug}
-          </Button>
-        </Link>
+        {canCreate && (
+          <Link to={`/collections/${slug}/new`}>
+            <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
+              <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
+              Add {schema.labels?.singular || schema.label || schema.slug}
+            </Button>
+          </Link>
+        )}
       </PageHeader>
 
       <div className="dy-overflow-hidden">
@@ -332,18 +407,39 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           rowSelection={rowSelection}
           persistenceKey={slug}
           initialColumnVisibility={initialColumnVisibility}
-          bulkActions={(selectedIds) => (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="dy-h-8"
-              onClick={() => handleBulkDelete(selectedIds)}
-              disabled={bulkDeleteMutation.isPending}
-            >
-              <Trash2 className="dy-h-4 dy-w-4 dy-mr-2" />
-              Delete Selected ({selectedIds.length})
-            </Button>
-          )}
+          bulkActions={(selectedIds) => {
+            const deletableIds = selectedIds.filter(id => {
+              const item = response?.docs?.find((d: any) => d.id === id)
+              if (!item) return false
+              if (schema.auth && id === user?.id) return false
+              
+              const deleteAccess = (schema.access as any)?.delete
+              let canDelete = true
+              if (deleteAccess === false) {
+                canDelete = false
+              } else if (typeof deleteAccess === 'string') {
+                try {
+                  canDelete = jexl.evalSync(deleteAccess, { user, ...item })
+                } catch (e) {
+                  console.warn("Delete access eval failed:", e)
+                }
+              }
+              return canDelete
+            })
+
+            return (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="dy-h-8"
+                onClick={() => handleBulkDelete(deletableIds)}
+                disabled={bulkDeleteMutation.isPending || deletableIds.length === 0}
+              >
+                <Trash2 className="dy-h-4 dy-w-4 dy-mr-2" />
+                Delete Selected ({deletableIds.length})
+              </Button>
+            )
+          }}
         />
         <Pagination
           page={page}

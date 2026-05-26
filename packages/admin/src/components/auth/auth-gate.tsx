@@ -1,6 +1,6 @@
 import React from "react";
 import { useDyrected } from "../../providers/dyrected-provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoginPage } from "../../pages/auth/login-page";
 import { FirstUserPage } from "../../pages/auth/first-user-page";
 
@@ -15,6 +15,7 @@ import { FirstUserPage } from "../../pages/auth/first-user-page";
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { client, user, setToken, schemas } = useDyrected();
+  const queryClient = useQueryClient();
 
   // 1. Prefer __admins as the sole dashboard auth collection; fall back to the first auth collection.
   const authCollection =
@@ -50,6 +51,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (initData && !initData.initialized) {
     return <FirstUserPage collectionSlug={authCollection.slug} onComplete={(data: any) => {
       setToken(data.token);
+      queryClient.invalidateQueries({ queryKey: ["auth-init", authCollection.slug] });
     }} />;
   }
 
