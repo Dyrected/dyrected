@@ -4,10 +4,14 @@ import { createDyrectedApp } from "@dyrected/core/server";
 import { useRuntimeConfig } from "#imports";
 
 let app: any;
+let lastVersion = 0;
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig().dyrected;
-  if (!app) {
+  const currentVersion = (globalThis as any).__dyrected_config_version || 0;
+
+  if (!app || currentVersion !== lastVersion) {
+    lastVersion = currentVersion;
     let dyrectedConfig = { ...config };
 
     // Merge from global config if available

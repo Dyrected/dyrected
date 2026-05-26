@@ -2,6 +2,7 @@
 import { defineNitroPlugin } from "nitropack/runtime";
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
+// @ts-ignore
 import { loadDyrectedConfig, ConfigLoadError } from "./loadConfig";
 
 export default defineNitroPlugin(async (nitroApp: any) => {
@@ -20,7 +21,7 @@ export default defineNitroPlugin(async (nitroApp: any) => {
       } catch (err) {
         if (err instanceof ConfigLoadError) {
           // Abort startup with a clear message – user must fix the config file.
-          console.error("[dyrected/nuxt] Config load error:", err.message);
+          console.error("[dyrected/nuxt] Config load error:", (err as any).message);
           throw err;
         }
         // Fallback for unexpected errors (e.g., missing file). Keep original warning.
@@ -42,6 +43,7 @@ export default defineNitroPlugin(async (nitroApp: any) => {
               const newConfig = await loadDyrectedConfig(configPath);
               const newObj = (newConfig.default && (newConfig.default.collections || newConfig.default.globals || newConfig.default.db)) ? newConfig.default : newConfig;
               (globalThis as any).__dyrected_config = newObj;
+              (globalThis as any).__dyrected_config_version = ((globalThis as any).__dyrected_config_version || 0) + 1;
               if (newObj.db) {
                 (globalThis as any).__dyrected_db = newObj.db;
                 console.log('[dyrected/nuxt] Database hot‑reloaded');
@@ -50,6 +52,7 @@ export default defineNitroPlugin(async (nitroApp: any) => {
                 (globalThis as any).__dyrected_storage = newObj.storage;
                 console.log('[dyrected/nuxt] Storage hot‑reloaded');
               }
+              console.log('[dyrected/nuxt] Configuration hot-reloaded (version ' + (globalThis as any).__dyrected_config_version + ')');
             } catch (e) {
               console.error('[dyrected/nuxt] Hot‑reload failed:', e);
             }

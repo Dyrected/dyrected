@@ -11,19 +11,20 @@ const Media = defineCollection({
 
 const Products = defineCollection({
   slug: "products",
+  labels: { plural: "Products", singular: "Product" },
   admin: {
     group: "Content",
     defaultColumns: ["title", "price", "featured", "publishedAt", "action"],
     useAsTitle: "title",
   },
   fields: [
-    { name: "title", type: "text", required: true },
-    { name: "slug", type: "text", required: true, unique: true },
-    { name: "description", type: "textarea" },
-    { name: "price", type: "number" },
-    { name: "image", type: "relationship", relationTo: Media.slug },
-    { name: "featured", type: "boolean", defaultValue: false },
-    { name: "publishedAt", type: "date" },
+    { label: "Title", name: "title", type: "text", required: true },
+    { label: "Slug", name: "slug", type: "text", required: true, unique: true },
+    { label: "Description", name: "description", type: "textarea" },
+    { label: "Price", name: "price", type: "number" },
+    { label: "Image", name: "image", type: "relationship", relationTo: Media.slug },
+    { label: "Featured", name: "featured", type: "boolean", defaultValue: false },
+    { label: "Published At", name: "publishedAt", type: "date" },
   ],
 });
 
