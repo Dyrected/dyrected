@@ -1,5 +1,18 @@
 # @dyrected/nuxt
 
+## 2.5.13
+
+### Patch Changes
+
+- 2961a9d: - Implement secure password field support (hashing, validation, and UI input form handling) and a password update endpoint.
+  - Implement configuration cache invalidation for hot-reloading.
+  - Add collection schema support for labels, simplify server handler config resolution, and add a Nuxt dynamic pages setup guide.
+- Updated dependencies [2961a9d]
+  - @dyrected/admin@2.5.13
+  - @dyrected/core@2.5.13
+  - @dyrected/vue@2.5.13
+  - @dyrected/sdk@2.5.13
+
 ## 2.5.12
 
 ### Patch Changes
