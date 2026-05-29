@@ -1,71 +1,90 @@
-import type { CollectionConfig, DyrectedConfig, GlobalConfig } from './types/index.js';
+import type { CollectionConfig, DyrectedConfig, Field, GlobalConfig, InferDocShape, Prettify, SystemDocFields, AuthDocFields, UploadDocFields } from './types/index.js';
 
 /**
- * Define a collection with an optional document type for fully-typed hooks.
- *
- * Pass your document's TypeScript interface as `TDoc` to get type-checked
- * `data`, `doc`, and `previousDoc` inside every hook:
+ * Define a collection. When called without an explicit type argument, TypeScript
+ * automatically infers the document shape from the `fields` array you provide —
+ * no manual interface required:
  *
  * ```ts
- * interface Post {
- *   id: string
- *   title: string
- *   slug: string
- *   status: 'draft' | 'published'
- * }
- *
- * export const Posts = defineCollection<Post>({
+ * export const Posts = defineCollection({
  *   slug: 'posts',
+ *   fields: [
+ *     { name: 'title', type: 'text', required: true },
+ *     { name: 'status', type: 'select', options: ['draft', 'published'], required: true },
+ *   ],
  *   hooks: {
- *     beforeChange: [({ data, operation }) => {
- *       // data is Partial<Post> — full autocomplete and type checking
- *       if (operation === 'create') return { ...data, status: 'draft' }
- *       return data
- *     }],
- *     afterChange: [({ doc, previousDoc }) => {
- *       // doc and previousDoc are Post
- *       if (doc.status !== previousDoc?.status) notifySubscribers(doc)
+ *     beforeChange: [({ data }) => {
+ *       // data is { title: string; status: 'draft' | 'published' } — fully inferred
  *     }],
  *   },
- *   fields: [...],
  * })
  * ```
  *
- * Omit `TDoc` to use the untyped default (`Record<string, unknown>`), which
- * is backwards-compatible with all existing code.
+ * When you need a richer interface (e.g. with methods, JSDoc, or types that
+ * can't be derived from fields), pass it explicitly:
+ *
+ * ```ts
+ * interface Post { id: string; title: string; status: 'draft' | 'published' }
+ *
+ * export const Posts = defineCollection<Post>({ ... })
+ * ```
  */
-export function defineCollection<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
->(config: CollectionConfig<TDoc>): CollectionConfig<TDoc> {
+// Overload 1: auth collection — infer fields + add system + auth fields
+export function defineCollection<const TFields extends Field[]>(
+  config: Omit<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>, 'fields' | 'auth'> & { fields: TFields; auth: true },
+): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>;
+// Overload 2: upload/media collection — infer fields + add system + upload fields
+export function defineCollection<const TFields extends Field[]>(
+  config: Omit<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>, 'fields' | 'upload'> & { fields: TFields; upload: true },
+): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>;
+// Overload 3: base collection — infer fields + add system fields
+export function defineCollection<const TFields extends Field[]>(
+  config: Omit<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>, 'fields'> & { fields: TFields },
+): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>;
+// Overload 4: explicit TDoc
+export function defineCollection<TDoc extends object>(
+  config: CollectionConfig<TDoc>,
+): CollectionConfig<TDoc>;
+// Implementation
+export function defineCollection(config: unknown): unknown {
   return config;
 }
 
 /**
- * Define a global (singleton document) with an optional document type for
- * fully-typed hooks.
+ * Define a global (singleton document). TypeScript automatically infers the
+ * document shape from the `fields` array, or you can pass an explicit type:
  *
  * ```ts
- * interface SiteSettings {
- *   siteName: string
- *   tagline: string
- *   maintenanceMode: boolean
- * }
- *
- * export const Settings = defineGlobal<SiteSettings>({
+ * // Inferred — no interface needed
+ * export const Settings = defineGlobal({
  *   slug: 'site-settings',
+ *   fields: [
+ *     { name: 'siteName', type: 'text', required: true },
+ *     { name: 'maintenanceMode', type: 'boolean' },
+ *   ],
  *   hooks: {
  *     afterChange: [({ doc }) => {
- *       // doc is SiteSettings
+ *       // doc.siteName is string, doc.maintenanceMode is boolean | undefined
  *       if (doc.maintenanceMode) alertOnCall()
  *     }],
  *   },
- *   fields: [...],
  * })
+ *
+ * // Explicit type
+ * interface SiteSettings { siteName: string; maintenanceMode?: boolean }
+ * export const Settings = defineGlobal<SiteSettings>({ ... })
  * ```
  */
-export function defineGlobal<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
->(config: GlobalConfig<TDoc>): GlobalConfig<TDoc> {
+// Overload 1: no explicit TDoc — infer from fields
+export function defineGlobal<const TFields extends Field[]>(
+  config: Omit<GlobalConfig<Prettify<InferDocShape<TFields>>>, 'fields'> & { fields: TFields },
+): GlobalConfig<Prettify<InferDocShape<TFields>>>;
+// Overload 2: explicit TDoc
+export function defineGlobal<TDoc extends object>(
+  config: GlobalConfig<TDoc>,
+): GlobalConfig<TDoc>;
+// Implementation
+export function defineGlobal(config: unknown): unknown {
   return config;
 }
 

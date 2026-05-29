@@ -12,6 +12,46 @@ import { QueryBuilder, QueryArgs } from "./query-builder.js";
 
 export type { PaginatedResult, Media, Field, Block, CollectionConfig, GlobalConfig, FieldType };
 
+type ExtractDoc<T> =
+  T extends CollectionConfig<infer TDoc> ? TDoc :
+  T extends GlobalConfig<infer TDoc>     ? TDoc :
+  never;
+
+/**
+ * Derives a typed `TSchema` from your exported collection and global config constants.
+ *
+ * Pass it to `createClient<Schema>()` so every `find`, `findOne`, `create`,
+ * `update`, `global().get()` call returns the inferred document shape — no
+ * manual interfaces required.
+ *
+ * @example
+ * ```ts
+ * // dyrected.config.ts — export the typed constants alongside the default export
+ * export const Products = defineCollection({ slug: 'products', fields: [...] })
+ * export const Settings = defineGlobal({ slug: 'settings', fields: [...] })
+ * export default defineConfig({ collections: [Products], globals: [Settings], ... })
+ *
+ * // client.ts
+ * import type { Products, Settings } from './dyrected.config'
+ * import { createClient, type InferSchema } from '@dyrected/sdk'
+ *
+ * type Schema = InferSchema<
+ *   { products: typeof Products },
+ *   { settings: typeof Settings }
+ * >
+ * const client = createClient<Schema>({ baseUrl: '...' })
+ * // client.find('products')          → PaginatedResult<{ id: string; title: string; ... }>
+ * // client.global('settings').get()  → { siteName?: string; ... }
+ * ```
+ */
+export type InferSchema<
+  TCollections extends Record<string, CollectionConfig<any>>,
+  TGlobals extends Record<string, GlobalConfig<any>> = Record<never, never>,
+> = {
+  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };
+  globals:     { [K in keyof TGlobals]:     ExtractDoc<TGlobals[K]>     };
+};
+
 /**
  * Structured error thrown by the SDK when the server returns a non-2xx response.
  */

@@ -215,7 +215,7 @@ export interface Block {
  */
 export type FieldBeforeChangeHook<
   TValue = unknown,
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   /** The current value of this field (after any previous hooks in the chain). */
   value: TValue;
@@ -244,7 +244,7 @@ export type FieldBeforeChangeHook<
  */
 export type FieldAfterReadHook<
   TValue = unknown,
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   /** The raw field value as stored in the database. */
   value: TValue;
@@ -259,7 +259,7 @@ export type FieldAfterReadHook<
  * This alias remains for backwards compatibility.
  */
 export type FieldHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
   TValue = unknown,
 > = FieldBeforeChangeHook<TValue, TDoc>;
 
@@ -304,7 +304,7 @@ export type CollectionBeforeReadHook = (args: {
  * })
  */
 export type CollectionAfterReadHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   /** The document as fetched from the database (with defaults applied). */
   doc: TDoc;
@@ -340,7 +340,7 @@ export type CollectionAfterReadHook<
  * }
  */
 export type CollectionBeforeChangeHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   /** The incoming data payload being written. */
   data: Partial<TDoc>;
@@ -384,7 +384,7 @@ export type CollectionBeforeChangeHook<
  * }
  */
 export type CollectionAfterChangeHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   /** The document as it was written to the database. */
   doc: TDoc;
@@ -417,7 +417,7 @@ export type CollectionAfterChangeHook<
  * }
  */
 export type CollectionBeforeDeleteHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   /** The ID of the document about to be deleted. */
   id: string;
@@ -437,7 +437,7 @@ export type CollectionBeforeDeleteHook<
  * @template TDoc  The shape of the collection's document.
  */
 export type CollectionAfterDeleteHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   /** The ID of the deleted document. */
   id: string;
@@ -459,7 +459,7 @@ export type GlobalBeforeReadHook = CollectionBeforeReadHook;
  * @see {@link CollectionAfterReadHook}
  */
 export type GlobalAfterReadHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   doc: TDoc;
   req: HookRequestContext;
@@ -472,7 +472,7 @@ export type GlobalAfterReadHook<
  * @see {@link CollectionBeforeChangeHook}
  */
 export type GlobalBeforeChangeHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   data: Partial<TDoc>;
   doc?: TDoc;
@@ -486,7 +486,7 @@ export type GlobalBeforeChangeHook<
  * @see {@link CollectionAfterChangeHook}
  */
 export type GlobalAfterChangeHook<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   doc: TDoc;
   previousDoc?: TDoc;
@@ -502,7 +502,7 @@ export type GlobalAfterChangeHook<
  * This broad type remains for backwards compatibility with the internal hook runner.
  */
 export type HookFunction<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   data?: Partial<TDoc>;
   doc?: TDoc;
@@ -545,7 +545,7 @@ export type HookFunction<
  * }
  */
 export type AccessFunction<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > = (args: {
   user: AuthenticatedUser | undefined;
   doc?: TDoc;
@@ -556,32 +556,15 @@ export type AccessFunction<
 // ─── Field definition ─────────────────────────────────────────────────────────
 
 /**
- * Defines a single field on a collection or global.
- *
- * Every field shares a common set of base properties; individual types add
- * their own (e.g. `options` for `select`, `fields` for `array`/`object`,
- * `relationTo` for `relationship`).
- *
- * @example
- * const titleField: Field = {
- *   name: 'title',
- *   type: 'text',
- *   required: true,
- *   admin: {
- *     placeholder: 'Enter a title…',
- *     description: 'Used as the page heading.',
- *   },
- * }
+ * Shared base properties present on every field type.
+ * The exported `Field` union type extends this with a typed `hooks` block.
  */
-export interface Field {
+interface FieldBase {
   /**
    * The database column / JSON key for this field.
    * Use camelCase. Omit for layout-only fields (`row`, `join`).
    */
   name?: string;
-
-  /** The field type. Determines the input widget and stored format. */
-  type: FieldType;
 
   /**
    * Human-readable label shown next to the field in the Admin UI.
@@ -681,25 +664,6 @@ export interface Field {
   };
 
   /**
-   * Field-level lifecycle hooks.
-   *
-   * - `beforeChange` — transform or validate the field value before it is saved.
-   * - `afterRead` — transform the field value after it is read, before the response is sent.
-   *
-   * Both hook types run **recursively** inside `array`, `object`, and `blocks` fields.
-   *
-   * @example
-   * hooks: {
-   *   beforeChange: [({ value }) => value?.trim()],
-   *   afterRead: [({ value, user }) => user?.role === 'admin' ? value : '****'],
-   * }
-   */
-  hooks?: {
-    beforeChange?: FieldBeforeChangeHook[];
-    afterRead?: FieldAfterReadHook[];
-  };
-
-  /**
    * Admin UI options for this field. None of these properties affect the API
    * or the database — they are purely presentational.
    */
@@ -765,42 +729,11 @@ export interface Field {
      *
      * These run **in the browser** every time any sibling field value changes.
      * They are completely separate from the server-side `hooks` property.
+     *
+     * `onChange` is typed per-field via the discriminated `Field` union —
+     * see `FieldAdminHooks<TValue>` below.
      */
     hooks?: {
-      /**
-       * Derives or computes this field's **value** from other field values in
-       * real time — without any network request.
-       *
-       * Return a new value to update this field. Return `undefined` to leave
-       * it unchanged.
-       *
-       * Use `setValue` for imperative updates inside async callbacks.
-       *
-       * ⚠️ Never return an options array here — use `admin.hooks.options` for that.
-       *
-       * @example
-       * // Auto-generate a URL slug from the title
-       * onChange: ({ siblingData }) =>
-       *   (siblingData.title ?? '')
-       *     .toLowerCase()
-       *     .replace(/[^a-z0-9]+/g, '-')
-       *
-       * @example
-       * // Compute a derived total price
-       * onChange: ({ siblingData }) =>
-       *   (Number(siblingData.quantity) || 0) * (Number(siblingData.unitPrice) || 0)
-       */
-      onChange?: (args: {
-        /** The current value of this field. */
-        value: unknown;
-        /** Current values of all fields at the same nesting level. */
-        siblingData: Record<string, unknown>;
-        /** Current values of the entire form. */
-        data: Record<string, unknown>;
-        /** Imperative setter — use inside async callbacks when you can't just return a value. */
-        setValue: (value: unknown) => void;
-      }) => unknown;
-
       /**
        * For `select`, `multiSelect`, and `radio` fields only.
        *
@@ -849,6 +782,111 @@ export interface Field {
   promoted?: boolean;
 }
 
+/**
+ * Typed hooks block for a field whose stored value is `TValue`.
+ *
+ * The return type of the callbacks is kept as `unknown` here so that TypeScript
+ * can narrow the contextual type from the discriminated `Field` union without
+ * bidirectional inference conflicts. Use the explicit `FieldBeforeChangeHook<T>`
+ * and `FieldAfterReadHook<T>` types when you need checked return types.
+ */
+type FieldHooks<TValue> = {
+  /**
+   * Field-level lifecycle hooks.
+   *
+   * - `beforeChange` — transform or validate the value before it is saved.
+   *   `value` is typed to the field's own value type (e.g. `string` for
+   *   `text`, `number` for `number`, `boolean` for `boolean`).
+   * - `afterRead` — transform the value after it is read, before the API response.
+   *
+   * Both hook types run **recursively** inside `array`, `object`, and `blocks` fields.
+   *
+   * @example
+   * hooks: {
+   *   beforeChange: [({ value }) => value.trim()],          // value: string ✓
+   *   afterRead:    [({ value, user }) => user?.role === 'admin' ? value : '****'],
+   * }
+   */
+  hooks?: {
+    beforeChange?: Array<(args: { value: TValue; originalDoc?: Record<string, unknown>; data: Record<string, unknown>; user?: AuthenticatedUser }) => unknown>;
+    afterRead?: Array<(args: { value: TValue; doc: Record<string, unknown>; user?: AuthenticatedUser }) => unknown>;
+  };
+};
+
+/**
+ * Typed client-side admin hook block for a field whose value type is `TValue`.
+ *
+ * Intersected into each discriminated `Field` union member so that
+ * `admin.hooks.onChange` receives a `value` typed to the field's own type.
+ * The return type is `unknown` for the same reason as `FieldHooks` — to
+ * prevent bidirectional inference from conflicting with union discrimination.
+ */
+type FieldAdminHooks<TValue> = {
+  admin?: {
+    hooks?: {
+      /**
+       * Derives or computes this field's **value** from other field values in
+       * real time — without any network request.
+       *
+       * Return a new value to update this field. Return `undefined` to leave
+       * it unchanged.
+       *
+       * Use `setValue` for imperative updates inside async callbacks.
+       *
+       * ⚠️ Never return an options array here — use `admin.hooks.options` for that.
+       *
+       * @example
+       * // Auto-generate a URL slug from the title field
+       * onChange: ({ value, siblingData }) => {
+       *   const base = (siblingData.title ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+       *   return base.includes(value) ? base : value;
+       * }
+       */
+      onChange?: (args: {
+        /** The current value of this field — typed to match the field's `type`. */
+        value: TValue;
+        /** Current values of all fields at the same nesting level. */
+        siblingData: Record<string, unknown>;
+        /** Current values of the entire form. */
+        data: Record<string, unknown>;
+        /** Imperative setter — use inside async callbacks when you can't return a value. */
+        setValue: (value: unknown) => void;
+      }) => unknown;
+    };
+  };
+};
+
+/**
+ * Defines a single field on a collection or global.
+ *
+ * The `hooks.beforeChange` and `hooks.afterRead` callbacks receive a `value`
+ * typed to match the field's `type` property — `string` for text fields,
+ * `number` for number fields, `boolean` for boolean, `string[]` for
+ * `multiSelect`, etc. No manual annotations needed.
+ *
+ * **Important**: write field `type` values as plain string literals — do **not**
+ * use `as const`. TypeScript's `const` generic inference already preserves
+ * literal types, and adding `as const` to a discriminant property prevents
+ * the contextual type from flowing into the hook callbacks.
+ *
+ * ```ts
+ * // ✓ correct — type inferred as literal 'text', value is string
+ * { name: 'slug', type: 'text', hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
+ *
+ * // ✗ avoid — `as const` on the discriminant breaks contextual typing
+ * { name: 'slug', type: 'text' as const, hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
+ * ```
+ */
+export type Field = FieldBase & (
+  | ({ type: 'text' | 'textarea' | 'email' | 'url' | 'icon' | 'date' | 'select' | 'radio' } & FieldHooks<string> & FieldAdminHooks<string>)
+  | ({ type: 'number' } & FieldHooks<number> & FieldAdminHooks<number>)
+  | ({ type: 'boolean' } & FieldHooks<boolean> & FieldAdminHooks<boolean>)
+  | ({ type: 'multiSelect' } & FieldHooks<string[]> & FieldAdminHooks<string[]>)
+  | ({ type: 'relationship' | 'image' } & FieldHooks<string | string[]> & FieldAdminHooks<string | string[]>)
+  | ({ type: 'richText' | 'json' } & FieldHooks<Record<string, unknown>> & FieldAdminHooks<Record<string, unknown>>)
+  | ({ type: 'object' | 'array' | 'blocks' | 'join' | 'row' } & FieldHooks<unknown> & FieldAdminHooks<unknown>)
+);
+
 // ─── Collection config ────────────────────────────────────────────────────────
 
 /**
@@ -887,7 +925,7 @@ export interface Field {
  *                 Defaults to `Record<string, unknown>` for untyped usage.
  */
 export interface CollectionConfig<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > {
   /**
    * Unique identifier for this collection.
@@ -1174,7 +1212,7 @@ export interface UploadConfig {
  * @template TDoc  The TypeScript shape of this global's document.
  */
 export interface GlobalConfig<
-  TDoc extends Record<string, unknown> = Record<string, unknown>,
+  TDoc extends object = Record<string, unknown>,
 > {
   /**
    * Unique identifier for this global.
@@ -1470,6 +1508,137 @@ export interface AdminConfig {
   };
 }
 
+// ─── Field inference helpers ──────────────────────────────────────────────────
+
+/**
+ * Collapses intersection types into a flat object type for readable IDE tooltips.
+ *
+ * @example
+ * type T = Prettify<{ a: string } & { b: number }>
+ * // → { a: string; b: number }
+ */
+export type Prettify<T> = { [K in keyof T]: T[K] };
+
+/** Maps a field's runtime type tag to its TypeScript value type. @internal */
+type FieldValueType<F extends Field> =
+  F['type'] extends 'text' | 'textarea' | 'email' | 'url' | 'icon' | 'date' | 'select' | 'radio'
+    ? string
+    : F['type'] extends 'number'
+    ? number
+    : F['type'] extends 'boolean'
+    ? boolean
+    : F['type'] extends 'multiSelect'
+    ? string[]
+    : F['type'] extends 'relationship'
+    ? F extends { hasMany: true } ? string[] : string
+    : F['type'] extends 'image'
+    ? string
+    : F['type'] extends 'richText' | 'json'
+    ? Record<string, unknown>
+    : F['type'] extends 'object'
+    ? F extends { fields: infer SF extends readonly Field[] }
+      ? Prettify<InferDocShape<SF>>
+      : Record<string, unknown>
+    : F['type'] extends 'array'
+    ? F extends { fields: infer SF extends readonly Field[] }
+      ? Array<Prettify<InferDocShape<SF>>>
+      : unknown[]
+    : F['type'] extends 'blocks'
+    ? F extends { blocks: infer B extends readonly Block[] }
+      ? Array<InferBlocksUnion<B>>
+      : Array<{ blockType: string } & Record<string, unknown>>
+    : unknown;
+
+/** Build a discriminated-union type covering all possible block shapes. @internal */
+type InferBlocksUnion<Blocks extends readonly Block[]> =
+  Blocks extends readonly [infer B extends Block, ...infer Rest extends readonly Block[]]
+    ? B['fields'] extends readonly Field[]
+      ? ({ blockType: B['slug'] } & Prettify<InferDocShape<B['fields']>>) | InferBlocksUnion<Rest>
+      : ({ blockType: B['slug'] } & Record<string, unknown>) | InferBlocksUnion<Rest>
+    : never;
+
+/** Converts one field definition to its corresponding document key/value pair. @internal */
+type InferFieldEntry<F extends Field> =
+  F extends { type: 'row'; fields: infer SF extends readonly Field[] }
+    ? InferDocShape<SF>
+    : F extends { type: 'join' }
+    ? Record<never, never>
+    : F extends { name: infer N extends string; required: true }
+    ? { [K in N]: FieldValueType<F> }
+    : F extends { name: infer N extends string }
+    ? { [K in N]?: FieldValueType<F> }
+    : Record<never, never>;
+
+/**
+ * Infer a document shape from a literal fields tuple.
+ *
+ * This is used automatically by {@link defineCollection} and {@link defineGlobal}
+ * when no explicit `TDoc` type argument is provided — TypeScript derives the
+ * document type straight from the `fields` array you write inline.
+ *
+ * For collections, the inferred type is wrapped with `{ id: string }` (the
+ * database adapter always stamps an `id` on created documents). Globals don't
+ * get an `id`.
+ *
+ * @example
+ * const fields = [
+ *   { name: 'title', type: 'text', required: true },
+ *   { name: 'published', type: 'boolean' },
+ * ] as const satisfies Field[];
+ *
+ * type Doc = InferDocShape<typeof fields>;
+ * // → { title: string; published?: boolean }
+ */
+export type InferDocShape<Fields extends readonly Field[]> =
+  Fields extends readonly []
+    ? Record<never, never>
+    : Fields extends readonly [infer Head extends Field, ...infer Tail extends readonly Field[]]
+    ? InferFieldEntry<Head> & InferDocShape<Tail>
+    : Record<string, unknown>;
+
+// ─── Automatic system / collection-kind doc fields ───────────────────────────
+
+/**
+ * Audit fields automatically injected into every collection document at runtime.
+ * They are always present in API responses but hidden in the Admin UI by default.
+ */
+export type SystemDocFields = {
+  createdAt?: string;
+  updatedAt?: string;
+  /** ID of the user who created the document. */
+  createdBy?: string;
+  /** ID of the user who last updated the document. */
+  updatedBy?: string;
+};
+
+/**
+ * Fields automatically injected into collections with `auth: true`.
+ * `password` is part of the schema but is stripped from API read responses.
+ */
+export type AuthDocFields = {
+  email: string;
+  password?: string;
+  roles?: string;
+};
+
+/**
+ * Fields automatically added to upload/media collection documents.
+ * These mirror the `FileData` interface returned by storage adapters.
+ */
+export type UploadDocFields = {
+  filename: string;
+  filesize?: number;
+  mimeType: string;
+  /** Public URL of the stored file. */
+  url: string;
+  width?: number;
+  height?: number;
+  focalPoint?: { x: number; y: number };
+  /** Base64 BlurHash for progressive image loading. */
+  blurhash?: string;
+  sizes?: Record<string, { filename?: string; url?: string; width?: number; height?: number }>;
+};
+
 // ─── Root config ──────────────────────────────────────────────────────────────
 
 /**
@@ -1490,10 +1659,12 @@ export interface AdminConfig {
  */
 export interface DyrectedConfig {
   /** Collection definitions. Each collection maps to a database table/collection. */
-  collections: CollectionConfig[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  collections: CollectionConfig<any>[];
 
   /** Global (singleton) definitions. Each global maps to a single document. */
-  globals: GlobalConfig[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  globals: GlobalConfig<any>[];
 
   /**
    * The database adapter. Required for all data operations.
@@ -1582,5 +1753,6 @@ export interface DyrectedConfig {
    */
   onSchemaFetch?: (
     siteId: string,
-  ) => Promise<{ collections?: CollectionConfig[]; globals?: GlobalConfig[] }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<{ collections?: CollectionConfig<any>[]; globals?: GlobalConfig<any>[] }>;
 }

@@ -1,4 +1,4 @@
-import { defineCollection, defineGlobal, defineConfig, FieldHook } from "@dyrected/core";
+import { defineCollection, defineGlobal, defineConfig } from "@dyrected/core";
 import { SqliteAdapter } from "@dyrected/db-sqlite";
 import { LocalStorageAdapter } from "@dyrected/storage-local";
 import path from "node:path";
@@ -59,7 +59,7 @@ const Products = defineCollection({
       admin: {
         hooks: {
           onChange: ({ value, siblingData }) => {
-            const titleSlug = (siblingData?.title || "").toLowerCase().replace(/\s/g, "-");
+            const titleSlug = ((siblingData?.title as string) || "").toLowerCase().replace(/\s/g, "-");
             if (titleSlug.includes(value)) return titleSlug;
             return value;
           },
