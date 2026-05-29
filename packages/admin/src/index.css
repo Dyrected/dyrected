@@ -113,3 +113,37 @@
 .media-preview-dialod-details-form div[style="min-width: 100%;display: table;"] {
   display: flex !important;
 }
+
+/* TipTap Editor Tables */
+.dy-prose table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1.5rem 0;
+  overflow: hidden;
+}
+
+.dy-prose table td,
+.dy-prose table th {
+  min-width: 1em;
+  border: 1px solid hsl(var(--border));
+  padding: 8px 12px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.dy-prose table th {
+  font-weight: bold;
+  text-align: left;
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+.dy-prose table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(175, 190, 253, 0.4);
+  pointer-events: none;
+}

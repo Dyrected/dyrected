@@ -5,7 +5,8 @@ import { cn } from "../../../lib/utils"
 import { buildDefaultValues } from "../utils"
 import type { FieldSchema, BlockSchema } from "../form-engine"
 import { Button } from "../../ui/button"
-import { X, GripVertical, ChevronDown, ChevronUp, Layers, Plus } from "lucide-react"
+import { Input } from "../../ui/input"
+import { X, GripVertical, ChevronDown, ChevronUp, Layers, Plus, Copy, Search } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -48,7 +49,8 @@ function SortableBlockItem({
   collection,
   remove,
   isExpanded,
-  onToggleExpand
+  onToggleExpand,
+  onDuplicate
 }: {
   id: string;
   index: number;
@@ -60,6 +62,7 @@ function SortableBlockItem({
   remove: (index: number) => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  onDuplicate: () => void;
 }) {
   const {
     attributes,
@@ -177,6 +180,16 @@ function SortableBlockItem({
             type="button"
             variant="ghost"
             size="icon"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-primary hover:dy-bg-primary/10"
+            onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+            title="Duplicate Block"
+          >
+            <Copy className="dy-w-3.5 dy-h-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10"
             onClick={(e) => { e.stopPropagation(); remove(index); }}
           >
@@ -204,9 +217,18 @@ function SortableBlockItem({
 }
 
 export function BlockBuilder({ schema, basePath, control, collection }: BlockBuilderProps) {
-  const { fields, append, remove, move } = useFieldArray({ control, name: basePath })
+  const { fields, append, remove, move, insert } = useFieldArray({ control, name: basePath })
+  const watchedBlocks = useWatch({ control, name: basePath }) || []
 
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({})
+
+  const duplicate = (index: number) => {
+    const blockToCopy = watchedBlocks[index]
+    if (!blockToCopy) return
+    const copy = JSON.parse(JSON.stringify(blockToCopy))
+    delete copy.id
+    insert(index + 1, copy)
+  }
 
   // Auto-expand newly appended blocks
   const prevFieldsRef = useRef(fields)
@@ -270,6 +292,14 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
   }
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const filteredBlocks = schema.blocks?.filter((block) => {
+    const search = searchQuery.toLowerCase()
+    const name = (block.labels?.singular || block.slug).toLowerCase()
+    const desc = (block.labels?.plural || "").toLowerCase()
+    return name.includes(search) || desc.includes(search)
+  }) || []
 
   const handleAddBlock = (block: BlockSchema) => {
     const defaultVals = buildDefaultValues(block.fields, {})
@@ -304,7 +334,10 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
           )}
 
           {schema.blocks && schema.blocks.length > 0 && (
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <Dialog open={isModalOpen} onOpenChange={(open) => {
+              setIsModalOpen(open)
+              if (!open) setSearchQuery("")
+            }}>
               <DialogTrigger asChild>
                 <Button type="button" variant="outline" size="sm" className="dy-h-7 dy-text-[11px] dy-rounded-md dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary">
                   Add Block
@@ -318,26 +351,43 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
                     Select a block template to insert into your page layout.
                   </DialogDescription>
                 </DialogHeader>
+
+                <div className="dy-relative dy-my-3">
+                  <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
+                  <Input
+                    placeholder="Search blocks by name..."
+                    className="dy-pl-10 dy-h-9 dy-bg-card dy-border-border/60 dy-rounded-lg dy-shadow-sm focus-visible:dy-ring-primary/20"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
                 <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 dy-gap-4 dy-max-h-[60vh] dy-overflow-y-auto dy-pr-1 dy-pt-2">
-                  {schema.blocks.map((block) => (
-                    <div
-                      key={block.slug}
-                      onClick={() => handleAddBlock(block)}
-                      className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
-                    >
-                      <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
-                        <Layers className="dy-w-4 dy-h-4" />
-                      </div>
-                      <div className="dy-min-w-0 dy-flex-1">
-                        <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
-                          {block.labels?.singular || block.slug}
-                        </h5>
-                        <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
-                          {block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page."}
-                        </p>
-                      </div>
+                  {filteredBlocks.length === 0 ? (
+                    <div className="dy-col-span-full dy-text-center dy-py-8 dy-text-xs dy-text-muted-foreground/50">
+                      No blocks match your search query.
                     </div>
-                  ))}
+                  ) : (
+                    filteredBlocks.map((block) => (
+                      <div
+                        key={block.slug}
+                        onClick={() => handleAddBlock(block)}
+                        className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
+                      >
+                        <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
+                          <Layers className="dy-w-4 dy-h-4" />
+                        </div>
+                        <div className="dy-min-w-0 dy-flex-1">
+                          <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
+                            {block.labels?.singular || block.slug}
+                          </h5>
+                          <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
+                            {block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page."}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
@@ -386,6 +436,7 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
                     remove={remove}
                     isExpanded={expandedIds[item.id] ?? false}
                     onToggleExpand={() => toggleExpand(item.id)}
+                    onDuplicate={() => duplicate(index)}
                   />
                 ))}
               </div>

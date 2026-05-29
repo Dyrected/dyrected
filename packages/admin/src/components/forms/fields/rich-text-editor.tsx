@@ -19,6 +19,14 @@ import {
   PopoverTrigger,
 } from "../../ui/popover"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "../../ui/dialog"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -284,6 +292,9 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
 }
 
 export function RichTextEditor({ value, onChange, label, disabled, collection = "media" }: RichTextEditorProps) {
+  const [editingImage, setEditingImage] = React.useState<{ pos: number; alt: string; src: string } | null>(null)
+  const [tempAlt, setTempAlt] = React.useState("")
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -293,7 +304,7 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
       Underline,
       Image.configure({
         HTMLAttributes: {
-          class: "rounded-md max-w-full h-auto my-4",
+          class: "rounded-md max-w-full h-auto my-4 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all",
         },
       }),
       LinkExtension.configure({
@@ -318,8 +329,37 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
       attributes: {
         class: "dy-prose dy-prose-sm dark:dy-prose-invert dy-max-w-none dy-min-h-[150px] dy-p-4 focus:dy-outline-none dy-border dy-border-t-0 dy-rounded-b-md dy-border-input dy-bg-transparent",
       },
+      handleClickOn(_view, _pos, node, nodePos) {
+        if (node.type.name === "image") {
+          setEditingImage({
+            pos: nodePos,
+            alt: node.attrs.alt || "",
+            src: node.attrs.src || "",
+          })
+          setTempAlt(node.attrs.alt || "")
+          return true
+        }
+        return false
+      },
     },
   })
+
+  const handleSaveAlt = () => {
+    if (editor && editingImage) {
+      const { pos } = editingImage
+      const node = editor.state.doc.nodeAt(pos)
+      if (node && node.type.name === "image") {
+        editor.view.dispatch(
+          editor.state.tr.setNodeMarkup(pos, undefined, {
+            ...node.attrs,
+            alt: tempAlt,
+          })
+        )
+        onChange(editor.getHTML())
+      }
+    }
+    setEditingImage(null)
+  }
 
   React.useEffect(() => {
     if (editor) {
@@ -343,6 +383,52 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
         {!disabled && <MenuBar editor={editor} collection={collection} />}
         <EditorContent editor={editor} className={cn(disabled && "dy-opacity-80 dy-prose prose lg:prose-xl lg:dy-prose-xl")} />
       </div>
+
+      <Dialog open={editingImage !== null} onOpenChange={(open) => { if (!open) setEditingImage(null) }}>
+        <DialogContent className="sm:dy-max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Image Alt Text</DialogTitle>
+            <DialogDescription>
+              Provide alternative text for accessibility (alt text) for this image.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="dy-flex dy-flex-col dy-space-y-4 dy-py-4">
+            {editingImage && (
+              <div className="dy-max-h-40 dy-overflow-hidden dy-rounded-md dy-border dy-bg-muted dy-flex dy-items-center dy-justify-center">
+                <img
+                  src={editingImage.src}
+                  alt="Preview"
+                  className="dy-max-h-full dy-object-contain"
+                />
+              </div>
+            )}
+            <div className="dy-space-y-2">
+              <Label htmlFor="image-alt-text">Alternative Text</Label>
+              <Input
+                id="image-alt-text"
+                value={tempAlt}
+                onChange={(e) => setTempAlt(e.target.value)}
+                placeholder="Describe the image..."
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault()
+                    handleSaveAlt()
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+            <Button variant="outline" onClick={() => setEditingImage(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveAlt}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

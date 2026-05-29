@@ -7,11 +7,15 @@ import {
   X,
   Plus,
   Trash2,
+  UploadCloud,
+  Loader2,
 } from "lucide-react"
 import { Input } from "../../ui/input"
 import { cn, getMediaUrl } from "../../../lib/utils"
 import { MediaLibraryDialog } from "../../media/media-library-dialog"
 import type { Media } from "@dyrected/sdk"
+import { useDropzone } from "react-dropzone"
+import { toast } from "sonner"
 
 interface MediaPickerProps {
   collection: string
@@ -23,6 +27,13 @@ interface MediaPickerProps {
   multiple?: boolean
   placeholder?: string
   valueType?: "id" | "url"
+}
+
+interface CachedMedia extends Media {
+  id: string
+  filename: string
+  url: string
+  mimeType: string
 }
 
 export function MediaPicker({
@@ -38,7 +49,8 @@ export function MediaPicker({
 }: MediaPickerProps) {
   const { client, schemas } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
-  const [localMediaCache, setLocalMediaCache] = React.useState<any[]>([])
+  const [localMediaCache, setLocalMediaCache] = React.useState<CachedMedia[]>([])
+  const [uploading, setUploading] = React.useState(false)
 
   const selectedValues = React.useMemo(() => {
     if (!value) return []
@@ -67,14 +79,16 @@ export function MediaPicker({
     const vals = Array.isArray(value) ? value : [value]
     const objects = vals.filter((v: any) => typeof v === "object" && v !== null)
     if (objects.length > 0) {
-      setLocalMediaCache((prev) => {
-        const next = [...prev]
-        objects.forEach((obj: any) => {
-          if (obj.id && !next.some((m) => m.id === obj.id)) {
-            next.push(obj)
-          }
+      Promise.resolve().then(() => {
+        setLocalMediaCache((prev) => {
+          const next = [...prev]
+          objects.forEach((obj: any) => {
+            if (obj.id && !next.some((m) => m.id === obj.id)) {
+              next.push(obj)
+            }
+          })
+          return next
         })
-        return next
       })
     }
   }, [value])
@@ -108,19 +122,21 @@ export function MediaPicker({
 
   React.useEffect(() => {
     if (fetchedMedia && fetchedMedia.length > 0) {
-      setLocalMediaCache((prev) => {
-        const next = [...prev]
-        fetchedMedia.forEach((obj: any) => {
-          if (obj.id && !next.some((m) => m.id === obj.id)) {
-            next.push(obj)
-          }
+      Promise.resolve().then(() => {
+        setLocalMediaCache((prev) => {
+          const next = [...prev]
+          fetchedMedia.forEach((obj: any) => {
+            if (obj.id && !next.some((m) => m.id === obj.id)) {
+              next.push(obj)
+            }
+          })
+          return next
         })
-        return next
       })
     }
   }, [fetchedMedia])
 
-  const getFullUrl = (item: any): string => {
+  const getFullUrl = React.useCallback((item: any): string => {
     if (!item) return ""
     if (valueType === "url") {
       if (item.mimeType === "video/youtube") {
@@ -129,7 +145,7 @@ export function MediaPicker({
       return getMediaUrl(item, client?.getBaseUrl() || "")
     }
     return item.id
-  }
+  }, [valueType, client])
 
   const toggleValue = (id: string, item?: any) => {
     if (item && item.id) {
@@ -166,7 +182,7 @@ export function MediaPicker({
     }
   }
 
-  const handleConfirm = (ids: string[], items?: any[]) => {
+  const handleConfirm = React.useCallback((ids: string[], items?: any[]) => {
     if (items && items.length > 0) {
       setLocalMediaCache(prev => {
         const next = [...prev]
@@ -197,12 +213,86 @@ export function MediaPicker({
       onChange(cached ? getFullUrl(cached) : nid)
     }
     setIsOpen(false)
-  }
+  }, [multiple, selectedIds, localMediaCache, getFullUrl, onChange])
+
+  const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0 || !client) return
+    setUploading(true)
+    const toastId = toast.loading(`Uploading ${acceptedFiles.length} file(s)...`)
+    try {
+      const uploadedItems: any[] = []
+      for (const file of acceptedFiles) {
+        const res = await client.collection(activeMediaCollection).upload(file)
+        uploadedItems.push(res)
+      }
+
+      setLocalMediaCache(prev => {
+        const next = [...prev]
+        uploadedItems.forEach(item => {
+          if (item && item.id && !next.some(m => m.id === item.id)) {
+            next.push(item)
+          }
+        })
+        return next
+      })
+
+      const newIds = uploadedItems.map(item => item.id)
+
+      if (multiple) {
+        const nextIds = [...selectedIds]
+        newIds.forEach(id => {
+          if (!nextIds.includes(id)) {
+            nextIds.push(id)
+          }
+        })
+        const nextValues = nextIds.map(nid => {
+          const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || uploadedItems.find(m => m.id === nid || m.filename === nid || m.url === nid)
+          return cached ? getFullUrl(cached) : nid
+        })
+        onChange(nextValues)
+      } else if (newIds.length > 0) {
+        const nid = newIds[0]
+        const cached = uploadedItems.find(m => m.id === nid || m.filename === nid || m.url === nid)
+        onChange(cached ? getFullUrl(cached) : nid)
+      }
+
+      toast.success(`Successfully uploaded and selected ${acceptedFiles.length} asset(s)`, { id: toastId })
+    } catch (err: any) {
+      toast.error("Upload failed", { description: err.message, id: toastId })
+    } finally {
+      setUploading(false)
+    }
+  }, [client, activeMediaCollection, multiple, selectedIds, localMediaCache, getFullUrl, onChange])
+
+  const handlePaste = React.useCallback(async (e: React.ClipboardEvent) => {
+    if (disabled || uploading || !client) return
+    const items = e.clipboardData?.items
+    if (!items) return
+    const filesToUpload: File[] = []
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file') {
+        const file = items[i].getAsFile()
+        if (file) {
+          filesToUpload.push(file)
+        }
+      }
+    }
+    if (filesToUpload.length > 0) {
+      e.preventDefault()
+      await onDrop(filesToUpload)
+    }
+  }, [disabled, uploading, client, onDrop])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    disabled: disabled || uploading,
+    noClick: true,
+  })
 
   const getPreviewUrl = (item: Media) => {
     if (!item) return ""
     if (item.mimeType === "video/youtube") {
-      const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#\&\?]*)/)
+      const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#&?]*)/)
       const videoId = match && match[1]
       return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
     }
@@ -229,7 +319,29 @@ export function MediaPicker({
 
   if (multiple && !isIcon) {
     return (
-      <div className="dy-space-y-4">
+      <div 
+        {...getRootProps()} 
+        onPaste={handlePaste}
+        className="dy-space-y-4 dy-relative"
+      >
+        <input {...getInputProps()} />
+        {isDragActive && (
+          <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-primary/10 dy-backdrop-blur-[2px] dy-border-2 dy-border-dashed dy-border-primary dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
+            <div className="dy-bg-card dy-p-4 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
+              <UploadCloud className="dy-h-5 dy-w-5 dy-text-primary dy-animate-bounce" />
+              <p className="dy-text-xs dy-font-bold">Drop to upload & select</p>
+            </div>
+          </div>
+        )}
+        {uploading && (
+          <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-background/60 dy-backdrop-blur-[1px] dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
+            <div className="dy-bg-card dy-p-4 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
+              <Loader2 className="dy-h-5 dy-w-5 dy-text-primary dy-animate-spin" />
+              <p className="dy-text-xs dy-font-bold">Uploading files...</p>
+            </div>
+          </div>
+        )}
+
         {label && (
           <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none">
             {label}
@@ -322,7 +434,29 @@ export function MediaPicker({
   }
 
   return (
-    <div className={isIcon ? "" : "dy-space-y-3"}>
+    <div 
+      {...getRootProps()} 
+      onPaste={handlePaste}
+      className={cn("dy-relative", isIcon ? "" : "dy-space-y-3")}
+    >
+      <input {...getInputProps()} />
+      {isDragActive && (
+        <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-primary/10 dy-backdrop-blur-[2px] dy-border-2 dy-border-dashed dy-border-primary dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
+          <div className="dy-bg-card dy-p-3 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
+            <UploadCloud className="dy-h-4 dy-w-4 dy-text-primary dy-animate-bounce" />
+            <p className="dy-text-[11px] dy-font-bold">Drop file here</p>
+          </div>
+        </div>
+      )}
+      {uploading && (
+        <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-background/60 dy-backdrop-blur-[1px] dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
+          <div className="dy-bg-card dy-p-3 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
+            <Loader2 className="dy-h-4 dy-w-4 dy-text-primary dy-animate-spin" />
+            <p className="dy-text-[11px] dy-font-bold">Uploading...</p>
+          </div>
+        </div>
+      )}
+
       {label && !isIcon && (
         <label className="dy-text-sm dy-font-semibold dy-text-foreground/70 dy-tracking-tight dy-leading-none dy-peer-disabled:dy-cursor-not-allowed dy-peer-disabled:dy-opacity-70">
           {label}
