@@ -393,12 +393,14 @@ function ArrayItemHeader({
   basePath,
   index,
   control,
-  schema
+  schema,
+  onClick,
 }: {
   basePath: string
   index: number
   control: any
   schema: FieldSchema
+  onClick: () => void
 }) {
   const itemValues = useWatch({
     control,
@@ -423,7 +425,7 @@ function ArrayItemHeader({
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
 
   return (
-    <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+    <div onClick={onClick} className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
       <div className="dy-inline-flex dy-items-center dy-gap-1.5 dy-bg-muted/30 dy-px-1.5 dy-py-0.5 dy-rounded-md dy-border dy-border-muted/10">
         <span className="dy-text-[10px] dy-font-bold dy-text-muted-foreground dy-uppercase dy-tracking-wider">
           {label}
@@ -474,7 +476,7 @@ function SortableArrayItem({
     isDragging,
   } = useSortable({ id })
 
-  const [isExpanded, setIsExpanded] = React.useState(true)
+  const [isExpanded, setIsExpanded] = React.useState(false)
 
   const transformString = CSS.Transform.toString(transform)
   const style = {
@@ -505,7 +507,7 @@ function SortableArrayItem({
             <GripVertical className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground" />
           </div>
 
-          <ArrayItemHeader basePath={basePath} index={index} control={control} schema={schema} />
+          <ArrayItemHeader onClick={() => setIsExpanded(!isExpanded)} basePath={basePath} index={index} control={control} schema={schema} />
         </div>
 
         <div className="dy-flex dy-items-center dy-gap-1">
