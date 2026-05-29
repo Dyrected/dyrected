@@ -76,6 +76,20 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     delete this.headers["Authorization"];
   }
 
+  /**
+   * Returns the headers needed to authenticate raw `fetch()` calls made outside
+   * the SDK client (e.g. streaming endpoints, dynamic options).  Includes the
+   * Authorization bearer token (if set), x-api-key, and x-site-id.
+   */
+  getAuthHeaders(): Record<string, string> {
+    const safe: Record<string, string> = {};
+    const fwd = ["Authorization", "x-api-key", "x-site-id"];
+    for (const key of fwd) {
+      if (this.headers[key]) safe[key] = this.headers[key];
+    }
+    return safe;
+  }
+
   getBaseUrl() {
     return this.baseUrl;
   }

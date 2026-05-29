@@ -17,6 +17,9 @@ import {
   PopoverTrigger,
 } from "../../ui/popover"
 import { Badge } from "../../ui/badge"
+import { useQuery } from "@tanstack/react-query"
+import { useDyrected } from "../../../providers/dyrected-provider"
+import type { Field as FieldSchema } from "@dyrected/sdk"
 
 interface Option {
   label: string
@@ -30,6 +33,9 @@ interface MultiSelectProps {
   label?: string
   placeholder?: string
   disabled?: boolean
+  collection?: string
+  siblingValues?: Record<string, string | number | boolean>
+  schema?: FieldSchema
 }
 
 /**
@@ -44,8 +50,45 @@ export function MultiSelect({
   label,
   placeholder = "Select options...",
   disabled,
+  collection,
+  siblingValues,
+  schema,
 }: MultiSelectProps) {
+  const { client } = useDyrected()
   const [open, setOpen] = React.useState(false)
+
+  const isDynamic = !!(schema?.options && typeof schema.options === "object" && "_dynamic" in schema.options)
+
+  const { data: dynamicOptions, isLoading } = useQuery({
+    queryKey: ["options", collection, schema?.name, siblingValues],
+    queryFn: async () => {
+      const q = new URLSearchParams()
+      if (siblingValues) {
+        Object.entries(siblingValues).forEach(([k, v]) => {
+          if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+            q.append(k, String(v))
+          }
+        })
+      }
+      const baseUrl = client?.getBaseUrl() || ""
+      const url = `${baseUrl}/api/dyrected/options/${collection}/${schema?.name}?${q.toString()}`
+      const authHeaders: Record<string, string> = {}
+      const token = typeof window !== "undefined" ? localStorage.getItem("dyrected_token") : null
+      if (token) authHeaders["Authorization"] = `Bearer ${token}`
+      const res = await fetch(url, {
+        headers: { "Content-Type": "application/json", ...authHeaders },
+      })
+      if (!res.ok) throw new Error("Failed to fetch options")
+      return res.json()
+    },
+    enabled: !!client && isDynamic && !!collection && !!schema?.name,
+  })
+
+  const rawOptions = isDynamic ? (dynamicOptions || []) : options
+  const normalizedOpts = (Array.isArray(rawOptions) ? rawOptions : []).map((opt: string | Option) => {
+    if (typeof opt === "string") return { label: opt, value: opt }
+    return { label: opt?.label || "", value: opt?.value || "" }
+  })
 
   const handleSelect = (currentValue: string) => {
     const isSelected = value.includes(currentValue)
@@ -69,15 +112,17 @@ export function MultiSelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            disabled={disabled}
+            disabled={disabled || (isDynamic && isLoading)}
             className="dy-w-full dy-justify-between dy-h-auto dy-min-h-10 dy-font-normal"
           >
             <div className="dy-flex dy-flex-wrap dy-gap-1 dy-items-center">
               {value.length === 0 && (
-                <span className="dy-text-muted-foreground">{placeholder}</span>
+                <span className="dy-text-muted-foreground">
+                  {isDynamic && isLoading ? "Loading options..." : placeholder}
+                </span>
               )}
               {value.map((val) => {
-                const option = options.find((opt) => opt.value === val)
+                const option = normalizedOpts.find((opt) => opt.value === val)
                 return (
                   <Badge
                     key={val}
@@ -117,12 +162,12 @@ export function MultiSelect({
             <CommandList>
               <CommandEmpty>No option found.</CommandEmpty>
               <CommandGroup>
-                {options.map((option) => {
+                {normalizedOpts.map((option) => {
                   const isSelected = value.includes(option.value)
                   return (
                     <CommandItem
                       key={option.value}
-                      value={option.label as any}
+                      value={option.label}
                       onSelect={() => handleSelect(option.value)}
                     >
                       <Check

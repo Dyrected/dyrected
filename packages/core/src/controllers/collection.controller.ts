@@ -5,6 +5,7 @@ import { PopulationService } from '../services/population.service.js';
 import { DefaultsService } from '../services/defaults.service.js';
 import { AuditService } from '../services/audit.service.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
+import { runCollectionHooks, executeFieldBeforeChange, executeFieldAfterRead } from '../utils/hooks.js';
 
 export class CollectionController {
   private collection: CollectionConfig;
@@ -22,6 +23,7 @@ export class CollectionController {
     const page = Number(c.req.query('page')) || 1;
     const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 2;
     const sort = c.req.query('sort') || undefined;
+    const user = c.get('user');
 
     let where: any = undefined;
     const whereRaw = c.req.query('where');
@@ -31,6 +33,16 @@ export class CollectionController {
       } catch {
         // Not valid JSON — fall through without a where clause
       }
+    }
+
+    // Run beforeRead collection hook
+    const beforeReadResult = await runCollectionHooks(this.collection.hooks?.beforeRead, {
+      req: c.req,
+      query: where,
+      user,
+    });
+    if (beforeReadResult !== undefined) {
+      where = beforeReadResult;
     }
 
     let result = await db!.find({
@@ -59,6 +71,19 @@ export class CollectionController {
 
     result.docs = result.docs.map(doc => DefaultsService.apply(this.collection.fields, doc));
 
+    // Run afterRead hooks (both collection and field levels)
+    const processedDocs = [];
+    for (const doc of result.docs) {
+      const docWithCollectionHooks = await runCollectionHooks(this.collection.hooks?.afterRead, {
+        doc,
+        req: c.req,
+        user,
+      });
+      const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user);
+      processedDocs.push(docWithFieldHooks);
+    }
+    result.docs = processedDocs;
+
     if (depth > 0) {
       const populationService = new PopulationService(db!, config.collections);
       result = await populationService.populateResult(result, this.collection.fields, depth);
@@ -74,6 +99,7 @@ export class CollectionController {
 
     const id = c.req.param('id');
     const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 10;
+    const user = c.get('user');
 
     if (!id) return c.json({ message: 'Missing ID' }, 400);
     const doc = await db!.findOne({ collection: this.collection.slug, id });
@@ -81,10 +107,18 @@ export class CollectionController {
 
     const docWithDefaults = DefaultsService.apply(this.collection.fields, doc);
 
-    if (depth > 0 && docWithDefaults) {
+    // Run afterRead hooks
+    const docWithCollectionHooks = await runCollectionHooks(this.collection.hooks?.afterRead, {
+      doc: docWithDefaults,
+      req: c.req,
+      user,
+    });
+    const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user);
+
+    if (depth > 0 && docWithFieldHooks) {
       const populationService = new PopulationService(db!, config.collections);
       const populatedDoc = await populationService.populate({
-        data: docWithDefaults,
+        data: docWithFieldHooks,
         fields: this.collection.fields,
         currentDepth: 0,
         maxDepth: depth,
@@ -92,7 +126,7 @@ export class CollectionController {
       return c.json(populatedDoc);
     }
 
-    return c.json(docWithDefaults);
+    return c.json(docWithFieldHooks);
   }
 
   async create(c: Context<DyrectedContext>) {
@@ -110,7 +144,7 @@ export class CollectionController {
     const user = c.get('user');
     const now = new Date().toISOString();
 
-    const data = {
+    let data = {
       ...body,
       createdAt: now,
       updatedAt: now,
@@ -121,6 +155,15 @@ export class CollectionController {
     if (this.collection.auth && data.password) {
       data.password = await hashPassword(data.password);
     }
+
+    // Run beforeChange hooks (field-level then collection-level)
+    data = await executeFieldBeforeChange(this.collection.fields, data, null, user);
+    data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
+      data,
+      req: c.req,
+      user,
+      operation: 'create',
+    });
 
     const doc = await db!.create({ collection: this.collection.slug, data });
 
@@ -135,7 +178,23 @@ export class CollectionController {
       });
     }
 
-    return c.json(doc, 201);
+    // Run afterChange collection hooks
+    await runCollectionHooks(this.collection.hooks?.afterChange, {
+      doc,
+      user,
+      req: c.req,
+      operation: 'create',
+    });
+
+    // Run afterRead hooks on the returned doc
+    const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
+      doc,
+      req: c.req,
+      user,
+    });
+    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user);
+
+    return c.json(finalDoc, 201);
   }
 
   async upload(c: Context<DyrectedContext>) {
@@ -169,19 +228,46 @@ export class CollectionController {
     const user = c.get('user');
     const now = new Date().toISOString();
 
-    const doc = await config.db!.create({
-      collection: this.collection.slug,
-      data: {
-        ...otherData,
-        ...fileData,
-        createdAt: now,
-        updatedAt: now,
-        createdBy: user?.sub ?? null,
-        updatedBy: user?.sub ?? null,
-      },
+    let data = {
+      ...otherData,
+      ...fileData,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: user?.sub ?? null,
+      updatedBy: user?.sub ?? null,
+    };
+
+    // Run beforeChange hooks for upload too
+    data = await executeFieldBeforeChange(this.collection.fields, data, null, user);
+    data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
+      data,
+      req: c.req,
+      user,
+      operation: 'create',
     });
 
-    return c.json(doc, 201);
+    const doc = await config.db!.create({
+      collection: this.collection.slug,
+      data,
+    });
+
+    // Run afterChange hooks for uploads
+    await runCollectionHooks(this.collection.hooks?.afterChange, {
+      doc,
+      user,
+      req: c.req,
+      operation: 'create',
+    });
+
+    // Run afterRead hooks
+    const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
+      doc,
+      req: c.req,
+      user,
+    });
+    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user);
+
+    return c.json(finalDoc, 201);
   }
 
   async update(c: Context<DyrectedContext>) {
@@ -196,7 +282,7 @@ export class CollectionController {
     const user = c.get('user');
 
     // Strip auth-only fields from general updates — use /change-password for that
-    const data = { ...body };
+    let data = { ...body };
     if (this.collection.auth) {
       delete data.password;
       delete data.oldPassword;
@@ -208,10 +294,23 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     });
 
+    const originalDoc = await db!.findOne({ collection: this.collection.slug, id });
+    if (!originalDoc) return c.json({ message: 'Not Found' }, 404);
+
     let before: any = null;
     if (this.collection.audit) {
-      before = await db!.findOne({ collection: this.collection.slug, id });
+      before = originalDoc;
     }
+
+    // Run beforeChange hooks (field-level then collection-level)
+    data = await executeFieldBeforeChange(this.collection.fields, data, originalDoc, user);
+    data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
+      data,
+      doc: originalDoc,
+      req: c.req,
+      user,
+      operation: 'update',
+    });
 
     const doc = await db!.update({ collection: this.collection.slug, id, data });
 
@@ -226,7 +325,24 @@ export class CollectionController {
       });
     }
 
-    return c.json(doc);
+    // Run afterChange collection hooks
+    await runCollectionHooks(this.collection.hooks?.afterChange, {
+      doc,
+      previousDoc: originalDoc,
+      user,
+      req: c.req,
+      operation: 'update',
+    });
+
+    // Run afterRead hooks
+    const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
+      doc,
+      req: c.req,
+      user,
+    });
+    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user);
+
+    return c.json(finalDoc);
   }
 
   /**
@@ -325,10 +441,21 @@ export class CollectionController {
 
     const user = c.get('user');
 
+    const doc = await db!.findOne({ collection: this.collection.slug, id });
+    if (!doc) return c.json({ message: 'Not Found' }, 404);
+
     let before: any = null;
     if (this.collection.audit) {
-      before = await db!.findOne({ collection: this.collection.slug, id });
+      before = doc;
     }
+
+    // Run beforeDelete collection hook
+    await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+      id,
+      doc,
+      user,
+      req: c.req,
+    });
 
     await db!.delete({ collection: this.collection.slug, id });
 
@@ -342,6 +469,14 @@ export class CollectionController {
         after: null,
       });
     }
+
+    // Run afterDelete collection hook
+    await runCollectionHooks(this.collection.hooks?.afterDelete, {
+      id,
+      doc,
+      user,
+      req: c.req,
+    });
 
     return c.json({ message: 'Deleted' });
   }
@@ -376,10 +511,24 @@ export class CollectionController {
 
     for (const id of ids) {
       try {
+        const doc = await db.findOne({ collection: this.collection.slug, id });
+        if (!doc) {
+          failed.push({ id, error: 'Not Found' });
+          continue;
+        }
+
         let before: any = null;
         if (this.collection.audit) {
-          before = await db.findOne({ collection: this.collection.slug, id });
+          before = doc;
         }
+
+        // Run beforeDelete hooks
+        await runCollectionHooks(this.collection.hooks?.beforeDelete, {
+          id,
+          doc,
+          user,
+          req: c.req,
+        });
 
         await db.delete({ collection: this.collection.slug, id });
         deleted.push(id);
@@ -394,6 +543,14 @@ export class CollectionController {
             after: null,
           });
         }
+
+        // Run afterDelete hooks
+        await runCollectionHooks(this.collection.hooks?.afterDelete, {
+          id,
+          doc,
+          user,
+          req: c.req,
+        });
       } catch (err: any) {
         failed.push({ id, error: err?.message ?? 'Unknown error' });
       }

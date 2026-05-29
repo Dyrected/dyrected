@@ -36,6 +36,51 @@ function accessGate(target: { slug: string; access?: any }, action: 'read' | 'cr
   };
 }
 
+async function checkAccess(access: any, accessArgs: { user: any; req: any; doc: any }): Promise<boolean> {
+  if (access === undefined || access === null) return true;
+  if (typeof access === 'function') {
+    try {
+      const result = await access(accessArgs);
+      return typeof result === 'boolean' ? result : !!result;
+    } catch (err) {
+      console.error('[dyrected/core] Functional access check failed:', err);
+      return false;
+    }
+  }
+  if (typeof access === 'string' || typeof access === 'boolean') {
+    return evaluateAccess(access, accessArgs);
+  }
+  return true;
+}
+
+function serializeFieldForApi(f: any): any {
+  if (!f) return f;
+  const serialized = { ...f };
+  if (serialized.admin?.hooks) {
+    const hooks: Record<string, unknown> = { ...serialized.admin.hooks };
+    if (typeof hooks.onChange === "function") {
+      hooks.onChange = hooks.onChange.toString();
+    }
+    if (typeof hooks.options === "function") {
+      hooks.options = hooks.options.toString();
+    }
+    serialized.admin = { ...serialized.admin, hooks };
+  }
+  if (typeof serialized.options === "function" || (serialized.options && typeof serialized.options === "object" && "resolve" in serialized.options)) {
+    serialized.options = { _dynamic: true };
+  }
+  if (serialized.fields) {
+    serialized.fields = serialized.fields.map(serializeFieldForApi);
+  }
+  if (serialized.blocks) {
+    serialized.blocks = serialized.blocks.map((b: any) => ({
+      ...b,
+      fields: b.fields?.map(serializeFieldForApi),
+    }));
+  }
+  return serialized;
+}
+
 /**
  * Register dynamic routes based on the provided configuration.
  */
@@ -61,32 +106,10 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const user = c.get('user');
     const accessArgs = { user, req: c.req, doc: null };
 
-    const resolveAccess = async (access: any): Promise<boolean> => {
-      if (access === undefined || access === null) return true; // Default to public if not defined? 
-      // Actually, standardizing on false for security might be better, but existing logic used true if !fn.
-      // Let's stick to the current "undefined means open" for schemas, but apply Jexl if it's a string.
-      
-      if (typeof access === 'function') {
-        try {
-          const result = await access(accessArgs);
-          return typeof result === 'boolean' ? result : !!result;
-        } catch (err) {
-          console.error('[dyrected/core] Functional access check failed:', err);
-          return false;
-        }
-      }
-
-      if (typeof access === 'string' || typeof access === 'boolean') {
-        return evaluateAccess(access, accessArgs);
-      }
-
-      return true;
-    };
-
     const serializeAccess = async (access: any): Promise<any> => {
       if (typeof access === 'string') return access;
       if (typeof access === 'boolean') return access;
-      return resolveAccess(access);
+      return checkAccess(access, accessArgs);
     };
 
     const filteredCollections = await Promise.all(collections
@@ -100,7 +123,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           update: await serializeAccess(col.access?.update),
           delete: await serializeAccess(col.access?.delete),
         },
-        fields: await Promise.all(col.fields.map(async (f) => ({
+        fields: await Promise.all(col.fields.map(serializeFieldForApi).map(async (f: any) => ({
           name: f.name,
           type: f.type,
           label: f.label,
@@ -131,7 +154,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           read: await serializeAccess(glb.access?.read),
           update: await serializeAccess(glb.access?.update),
         },
-        fields: await Promise.all(glb.fields.map(async (f) => ({
+        fields: await Promise.all(glb.fields.map(serializeFieldForApi).map(async (f: any) => ({
           name: f.name,
           type: f.type,
           label: f.label,
@@ -156,6 +179,93 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       globals: filteredGlobals,
       admin: config.admin || {},
     });
+  });
+
+  app.get("/api/dyrected/options/:collection/:field", optionalAuth(), async (c) => {
+    const { collection: colSlug, field: fieldName } = c.req.param();
+    const siteId = c.req.header("X-Site-Id");
+
+    // Resolve collections
+    let collections = [...config.collections];
+    if (siteId && config.onSchemaFetch) {
+      const dynamic = await config.onSchemaFetch(siteId);
+      if (dynamic.collections) collections = [...collections, ...dynamic.collections];
+    }
+
+    const user = c.get('user');
+    let collection = collections.find((col) => col.slug === colSlug);
+    let field: any;
+
+    if (collection) {
+      // Check read access on collection
+      const accessExpr = collection.access?.read;
+      if (accessExpr !== undefined && accessExpr !== null) {
+        const accessArgs = { user, req: c.req, doc: null };
+        const allowed = await checkAccess(accessExpr, accessArgs);
+        if (!allowed) {
+          return c.json({ error: true, message: `Access denied: read on ${colSlug}` }, 403);
+        }
+      }
+      field = collection.fields.find((f) => f.name === fieldName);
+    } else {
+      let globals = [...config.globals];
+      if (siteId && config.onSchemaFetch) {
+        const dynamic = await config.onSchemaFetch(siteId);
+        if (dynamic.globals) globals = [...globals, ...dynamic.globals];
+      }
+      const glb = globals.find((g) => g.slug === colSlug);
+      if (!glb) {
+        return c.json({ error: true, message: `${colSlug} not found as collection or global` }, 404);
+      }
+      // Check read access on global
+      const accessExpr = glb.access?.read;
+      if (accessExpr !== undefined && accessExpr !== null) {
+        const accessArgs = { user, req: c.req, doc: null };
+        const allowed = await checkAccess(accessExpr, accessArgs);
+        if (!allowed) {
+          return c.json({ error: true, message: `Access denied: read on global ${colSlug}` }, 403);
+        }
+      }
+      field = glb.fields.find((f) => f.name === fieldName);
+    }
+
+    if (!field) {
+      return c.json({ error: true, message: `Field ${fieldName} not found in ${colSlug}` }, 404);
+    }
+
+    // Get the resolver
+    let resolver: any;
+    if (typeof field.options === "function") {
+      resolver = field.options;
+    } else if (field.options && typeof field.options === "object" && "resolve" in field.options) {
+      resolver = field.options.resolve;
+    }
+
+    if (!resolver) {
+      return c.json({ error: true, message: `Field ${fieldName} in ${colSlug} is not dynamic` }, 400);
+    }
+
+    try {
+      const db = (c as any).get("db") || (config.db as any);
+      // Construct a request query helper
+      const queryParams = c.req.query();
+      const reqContext = {
+        query: queryParams,
+        headers: c.req.header(),
+        raw: c.req.raw,
+      };
+
+      const result = await resolver({
+        db,
+        user,
+        req: reqContext,
+      });
+
+      return c.json(result);
+    } catch (err: any) {
+      console.error(`[dyrected/core] Failed to resolve dynamic options for field ${fieldName}:`, err);
+      return c.json({ error: true, message: err.message || "Failed to resolve dynamic options" }, 500);
+    }
   });
 
   app.get("/api/openapi.json", (c) => {

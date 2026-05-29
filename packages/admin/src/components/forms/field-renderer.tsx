@@ -54,17 +54,19 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "boolean":
       return <SwitchField field={field} disabled={disabled} />
     case "select":
-      if (schema.admin?.layout === "radio") {
-        return <RadioField schema={schema} field={field} disabled={disabled} />
-      }
-      return <SelectField schema={schema} field={field} disabled={disabled} />
+      return <SelectField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData} />
+    case "radio":
+      return <RadioField schema={schema} field={field} disabled={disabled} />
     case "multiSelect":
       return (
         <MultiSelect
-          options={schema.options as any}
+          options={(Array.isArray(schema.options) ? schema.options : []) as Array<{ label: string; value: string }>}
           value={field.value || []}
           onChange={field.onChange}
           disabled={disabled}
+          collection={collection}
+          siblingValues={context?.siblingData as Record<string, string | number | boolean>}
+          schema={schema}
         />
       )
     case "image" as any:

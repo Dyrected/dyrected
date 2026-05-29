@@ -11,7 +11,9 @@ interface RadioFieldProps {
 }
 
 export function RadioField({ schema, field, disabled }: RadioFieldProps) {
-  const options = normalizeOptions(schema.options)
+  // Radio fields only support static options — dynamic/function options are not supported here
+  const rawOptions = Array.isArray(schema.options) ? schema.options : []
+  const options = normalizeOptions(rawOptions)
   const isHorizontal = schema.admin?.direction === "horizontal"
 
   return (

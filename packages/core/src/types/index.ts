@@ -7,6 +7,7 @@ export type FieldType =
   | "date"
   | "select"
   | "multiSelect"
+  | "radio"
   | "relationship"
   | "array"
   | "object"
@@ -18,6 +19,45 @@ export type FieldType =
   | "icon"
   | "join"
   | "row";
+
+export type DynamicOptionItem = string | { label: string; value: any };
+
+/**
+ * Context passed to a dynamic options resolver at request time.
+ * All properties are optional so external-API resolvers that need none of
+ * them (`async () => fetch(...)`) still compile without errors.
+ */
+export interface DynamicOptionsResolverArgs {
+  /** The configured database adapter — available for resolvers that query internal collections. */
+  db?: DatabaseAdapter;
+  /** The currently authenticated user (or undefined for unauthenticated requests). */
+  user?: any;
+  /**
+   * The HTTP request context.  Sibling field values selected in the Admin UI
+   * are forwarded as query parameters and are accessible via `req.query`.
+   *
+   * @example
+   * // Cascading dropdown: ?country=ca forwarded by the Admin UI
+   * options: async ({ req }) => {
+   *   const country = req.query.country ?? 'us';
+   *   ...
+   * }
+   */
+  req?: {
+    query: Record<string, string>;
+    headers: Record<string, string>;
+    raw?: Request;
+  };
+}
+
+export type DynamicOptionsResolver = (
+  args: DynamicOptionsResolverArgs,
+) => Promise<DynamicOptionItem[]> | DynamicOptionItem[];
+
+export interface DynamicOptionsConfig {
+  resolve: DynamicOptionsResolver;
+  cacheTTL?: number;
+}
 
 export interface Block {
   slug: string;
@@ -35,7 +75,75 @@ export interface Field {
   required?: boolean;
   unique?: boolean;
   defaultValue?: any;
-  options?: string[] | { label: string; value: string }[]; // For select/multiSelect
+  /**
+   * Defines the available choices for `select` and `multiSelect` fields.
+   *
+   * **Three ways to provide options — pick the one that fits your data source:**
+   *
+   * ---
+   *
+   * ### 1. Static array (simplest)
+   * Use when the list is fixed and known at build time.
+   * ```ts
+   * options: [
+   *   { label: 'Draft', value: 'draft' },
+   *   { label: 'Published', value: 'published' },
+   * ]
+   * ```
+   *
+   * ---
+   *
+   * ### 2. Async server-side resolver (for DB queries or secret API keys)
+   * The function runs **on the server** inside your Node.js process — never in the browser.
+   * Use this when your options require:
+   * - Querying your own database
+   * - Calling a third-party API that needs a secret key
+   * - Filtering options based on the authenticated user
+   *
+   * The Admin UI fetches results from `GET /api/dyrected/options/:collection/:field`.
+   * Sibling field values are forwarded as query parameters (e.g. `?country=us`)
+   * and are accessible via `req.query`.
+   *
+   * ```ts
+   * // ✅ Fetching records from your own database
+   * options: async ({ db, user }) => {
+   *   const categories = await db.find({ collection: 'categories' })
+   *   return categories.docs.map(c => ({ label: c.name, value: c.id }))
+   * }
+   *
+   * // ✅ Calling a third-party API with a secret key (never exposed to the browser)
+   * options: async () => {
+   *   const res = await fetch('https://api.stripe.com/v1/products', {
+   *     headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }
+   *   })
+   *   const { data } = await res.json()
+   *   return data.map((p: any) => ({ label: p.name, value: p.id }))
+   * }
+   *
+   * // ✅ Cascading dropdown driven by a sibling field — server-side version
+   * // The Admin UI appends sibling values as query params: ?country=us
+   * options: async ({ req }) => {
+   *   const country = req?.query.country
+   *   if (!country) return []
+   *   const regions = await db.find({ collection: 'regions', where: { country: { equals: country } } })
+   *   return regions.docs.map(r => ({ label: r.name, value: r.code }))
+   * }
+   *
+   * // ✅ With caching — avoid hammering an external API on every Admin UI open
+   * options: {
+   *   resolve: async () => { ... },
+   *   cacheTTL: 300, // cache for 5 minutes
+   * }
+   * ```
+   *
+   * ---
+   *
+   * ### 3. Client-side cascading via `admin.hooks.options`
+   * For **instant, zero-latency** dependent dropdowns where the option list is
+   * already known and just needs to be filtered by a sibling field.
+   * See `admin.hooks.options` below.
+   */
+  options?: string[] | { label: string; value: any }[] | DynamicOptionsResolver | DynamicOptionsConfig;
   relationTo?: string; // For relationship
   hasMany?: boolean; // For relationship/multiSelect/image
   fields?: Field[]; // For array/object
@@ -60,6 +168,77 @@ export interface Field {
     direction?: "horizontal" | "vertical";
     tab?: string;
     width?: string;
+    hooks?: {
+      /**
+       * Runs **client-side** in the browser whenever any sibling field value changes.
+       * Use this to **derive a field's value** from other fields in real time.
+       *
+       * Return a new value to update this field. Return `undefined` to leave it unchanged.
+       *
+       * ⚠️ Do NOT return an options array here — use `admin.hooks.options` for that.
+       *
+       * @example
+       * // Auto-generate a URL slug from the title field
+       * onChange: ({ siblingData }) =>
+       *   (siblingData.title ?? '')
+       *     .toLowerCase()
+       *     .replace(/[^a-z0-9]+/g, '-')
+       *     .replace(/(^-|-$)/g, '')
+       *
+       * @example
+       * // Calculate a derived numeric value
+       * onChange: ({ siblingData }) => {
+       *   const price = Number(siblingData.price) || 0
+       *   const tax   = Number(siblingData.taxRate) || 0
+       *   return price + price * (tax / 100)
+       * }
+       */
+      onChange?: (args: { value: any; siblingData: any; data: any; setValue: (value: any) => void }) => any;
+      /**
+       * For `select` and `multiSelect` fields only.
+       *
+       * Runs **client-side** in the browser whenever any sibling field value changes.
+       * Use this to **compute the available choices** for this field based on what
+       * the user has selected in another field (cascading / dependent dropdowns).
+       *
+       * This hook runs entirely in the browser — **no network request, instant reactivity**.
+       * When the returned list changes, the field's current value is automatically cleared
+       * if it is no longer a valid choice.
+       *
+       * Use `options: async ({ db, req })` (the top-level field property) instead when:
+       * - Your option list comes from a database query or a secret third-party API key
+       * - You need server-side caching (`cacheTTL`)
+       *
+       * @example
+       * // Country → State/Province cascading dropdown
+       * options: ({ siblingData }) => {
+       *   if (siblingData.country === 'us') {
+       *     return [
+       *       { label: 'California', value: 'CA' },
+       *       { label: 'New York',   value: 'NY' },
+       *     ]
+       *   }
+       *   if (siblingData.country === 'ca') {
+       *     return [
+       *       { label: 'Ontario',          value: 'ON' },
+       *       { label: 'British Columbia', value: 'BC' },
+       *     ]
+       *   }
+       *   return []
+       * }
+       *
+       * @example
+       * // Show different sub-types depending on a parent category field
+       * options: ({ siblingData }) =>
+       *   siblingData.category === 'vehicle'
+       *     ? [{ label: 'Car', value: 'car' }, { label: 'Truck', value: 'truck' }]
+       *     : [{ label: 'Shirt', value: 'shirt' }, { label: 'Shoes', value: 'shoes' }]
+       */
+      options?: (args: {
+        siblingData: Record<string, unknown>;
+        data: Record<string, unknown>;
+      }) => Array<string | { label: string; value: any }> | Promise<Array<string | { label: string; value: any }>>;
+    };
   };
   /** For database migrations: if set, data from this key will be migrated to the current field name. */
   renameTo?: string;
@@ -83,7 +262,13 @@ export type HookFunction = (args: {
   operation?: "create" | "update" | "delete";
 }) => any | Promise<any>;
 
-export type FieldHook<T = any, V = any> = (args: { value: V; originalDoc?: T; data?: T; user?: any }) => T | Promise<T>;
+export type FieldHook<T = any, V = any> = (args: {
+  value: V;
+  originalDoc?: T;
+  data?: T;
+  doc?: T;
+  user?: any;
+}) => T | Promise<T>;
 
 export interface CollectionConfig {
   slug: string;

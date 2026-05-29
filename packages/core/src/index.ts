@@ -25,4 +25,5 @@ export * from './types/index.js';
 export * from './utils/setup-prompt.js';
 export * from './utils/config.js';
 export * from './utils/parse-where.js';
+export * from './utils/hooks.js';
 export * from './app.js';

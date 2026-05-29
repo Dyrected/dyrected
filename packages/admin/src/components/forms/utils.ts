@@ -66,7 +66,7 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
           return false
         }, { message: `${label} is required` })
       }
-    } else if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "richText" || fieldType === "date" || fieldType === "icon" || fieldType === "password") {
+    } else if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "radio" || fieldType === "richText" || fieldType === "date" || fieldType === "icon" || fieldType === "password") {
       validator = z.string()
       if (isPassword) {
         if (!isEdit) {
@@ -186,4 +186,40 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
     acc[name] = defaultVal
     return acc
   }, {} as any)
+}
+
+export function getFlatErrors(
+  errors: Record<string, unknown>,
+  path: string = "",
+): { path: string; message: string }[] {
+  const result: { path: string; message: string }[] = []
+  if (!errors) return result
+
+  if (typeof errors === "object") {
+    const asMsg = errors as { message?: string }
+    if (typeof asMsg.message === "string") {
+      result.push({ path, message: asMsg.message })
+      return result
+    }
+    for (const key in errors) {
+      if (Object.prototype.hasOwnProperty.call(errors, key)) {
+        if (key === "ref" || key === "type") continue
+        const nextPath = path ? `${path}.${key}` : key
+        result.push(...getFlatErrors(errors[key] as Record<string, unknown>, nextPath))
+      }
+    }
+  }
+  return result
+}
+
+export function formatPath(path: string): string {
+  return path
+    .split(".")
+    .map((part) => {
+      if (/^\d+$/.test(part)) {
+        return `Item ${parseInt(part, 10) + 1}`
+      }
+      return part.charAt(0).toUpperCase() + part.slice(1).replace(/([A-Z])/g, " $1")
+    })
+    .join(" > ")
 }

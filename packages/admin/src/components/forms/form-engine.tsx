@@ -1,4 +1,4 @@
-import React, { useEffect } from "react"
+import React, { useEffect, useState, useMemo, useCallback } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -7,46 +7,11 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"
 import type { Field as FieldSchema, Block as BlockSchema } from "@dyrected/sdk"
-import { buildSchemaShape, buildDefaultValues } from "./utils"
+import { buildSchemaShape, buildDefaultValues, getFlatErrors, formatPath } from "./utils"
+import { runHookSandboxed } from "./hooks-sandbox"
 import { FormFieldRenderer } from "./form-field-renderer"
 import { AlertCircle, Lock } from "lucide-react"
 import { toast } from "sonner"
-
-function getFlatErrors(
-  errors: Record<string, unknown>,
-  path: string = "",
-): { path: string; message: string }[] {
-  const result: { path: string; message: string }[] = []
-  if (!errors) return result
-
-  if (typeof errors === "object") {
-    const asMsg = errors as { message?: string }
-    if (typeof asMsg.message === "string") {
-      result.push({ path, message: asMsg.message })
-      return result
-    }
-    for (const key in errors) {
-      if (Object.prototype.hasOwnProperty.call(errors, key)) {
-        if (key === "ref" || key === "type") continue
-        const nextPath = path ? `${path}.${key}` : key
-        result.push(...getFlatErrors(errors[key] as Record<string, unknown>, nextPath))
-      }
-    }
-  }
-  return result
-}
-
-function formatPath(path: string): string {
-  return path
-    .split(".")
-    .map((part) => {
-      if (/^\d+$/.test(part)) {
-        return `Item ${parseInt(part, 10) + 1}`
-      }
-      return part.charAt(0).toUpperCase() + part.slice(1).replace(/([A-Z])/g, " $1")
-    })
-    .join(" > ")
-}
 
 export type { FieldSchema, BlockSchema }
 
@@ -82,6 +47,20 @@ export function FormEngine({
   passwordChangeMode = null,
 }: FormEngineProps) {
   const isEdit = !!defaultValues?.id
+  const [dynamicOptions, setDynamicOptions] = useState<Record<string, Array<{ label: string, value: any }>>>({})
+
+  const resolvedFields = useMemo(() => {
+    return fields.map((field) => {
+      if (field.name && dynamicOptions[field.name]) {
+        return {
+          ...field,
+          options: dynamicOptions[field.name],
+        }
+      }
+      return field
+    })
+  }, [fields, dynamicOptions])
+
   const schemaShape = buildSchemaShape(fields, isEdit)
 
   const hasPassword = fields.some(
@@ -145,11 +124,11 @@ export function FormEngine({
 
   const watchedValues = useWatch({ control: form.control })
 
-  const handleFormSubmit = async (data: Record<string, unknown>) => {
+  const handleFormSubmit = useCallback(async (data: Record<string, unknown>) => {
     const draftKey = `dyrected_draft:${collection}:${defaultValues?.id || "global"}`
     localStorage.removeItem(draftKey)
     await onSubmit(data)
-  }
+  }, [collection, defaultValues, onSubmit])
 
   // Cmd+S / Ctrl+S shortcut
   useEffect(() => {
@@ -162,7 +141,7 @@ export function FormEngine({
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [form, onSubmit, readOnly, isLoading, collection, defaultValues])
+  }, [form, onSubmit, readOnly, isLoading, collection, defaultValues, handleFormSubmit])
 
   const hasCheckedRef = React.useRef<string | null>(null)
 
@@ -223,11 +202,122 @@ export function FormEngine({
     }
   }, [watchedValues, onDataChange])
 
+  // ── Hook 1: onChange — computes derived field VALUES from sibling data ────────
+  // e.g. auto-generate slug from title. Never touches options lists.
+  useEffect(() => {
+    let active = true
+    async function runOnChangeHooks() {
+      const updatedValues: Record<string, unknown> = {}
+      let hasChanged = false
+
+      for (const field of fields) {
+        if (!field.name) continue
+        const hook = field.admin?.hooks?.onChange
+        if (!hook) continue
+
+        const currentValue = watchedValues[field.name]
+        let calculatedValue: unknown
+
+        if (typeof hook === "function") {
+          try {
+            calculatedValue = hook({
+              value: currentValue,
+              siblingData: watchedValues,
+              data: watchedValues,
+              setValue: (val: unknown) => form.setValue(field.name as never, val as never, { shouldDirty: true }),
+            })
+          } catch (err) {
+            console.error(`[dyrected/admin] Error running onChange hook for field "${field.name}":`, err)
+          }
+        } else if (typeof hook === "string") {
+          calculatedValue = await runHookSandboxed(hook, currentValue, watchedValues, watchedValues)
+        }
+
+        if (active && calculatedValue !== undefined && calculatedValue !== currentValue) {
+          updatedValues[field.name] = calculatedValue
+          hasChanged = true
+        }
+      }
+
+      if (active && hasChanged) {
+        Object.entries(updatedValues).forEach(([name, val]) => {
+          form.setValue(name as never, val as never, { shouldDirty: true })
+        })
+      }
+    }
+
+    runOnChangeHooks()
+    return () => { active = false }
+  }, [watchedValues, fields, form])
+
+  // ── Hook 2: admin.hooks.options — computes dynamic OPTIONS for select fields ─
+  // e.g. country → state cascading dropdown.
+  // Completely separate from onChange: options never set a value, onChange never
+  // sets available choices.
+  useEffect(() => {
+    let active = true
+
+    async function runOptionsHooks() {
+      for (const field of fields) {
+        if (!field.name) continue
+        if (field.type !== "select" && field.type !== "multiSelect" && field.type !== "radio") continue
+        const hook = field.admin?.hooks?.options
+        if (!hook) continue
+
+        let newOptions: Array<string | { label: string; value: unknown }> = []
+        try {
+          if (typeof hook === "function") {
+            newOptions = await hook({ siblingData: watchedValues, data: watchedValues })
+          } else if (typeof hook === "string") {
+            // Serialized hook received from /api/schemas — run inside the sandbox
+            newOptions = await runHookSandboxed(hook, undefined, watchedValues, watchedValues) ?? []
+          }
+        } catch (err) {
+          console.error(`[dyrected/admin] Error running options hook for field "${field.name}":`, err)
+          continue
+        }
+
+        // Only update state when the options have actually changed (avoid re-render loops)
+        const nextStr = JSON.stringify(newOptions)
+        const prevStr = JSON.stringify(dynamicOptions[field.name])
+        if (nextStr === prevStr) continue
+
+        if (active) {
+          // Normalize to { label, value } before storing to satisfy the state type
+          const normalizedForState: Array<{ label: string; value: any }> = newOptions.map((o) =>
+            typeof o === "string" ? { label: o, value: o } : { label: o.label, value: o.value }
+          )
+          setDynamicOptions((prev) => ({ ...prev, [field.name!]: normalizedForState }))
+        }
+
+        // Reset the field value if it is no longer a valid option in the new list
+        const currentValue = watchedValues[field.name]
+        const normalizedOpts = newOptions.map((o) => (typeof o === "string" ? o : o.value))
+        const isValid = Array.isArray(currentValue)
+          ? (currentValue as unknown[]).every((v) => normalizedOpts.includes(v))
+          : normalizedOpts.includes(currentValue)
+
+        if (!isValid && currentValue !== "" && currentValue !== undefined && currentValue !== null) {
+          if (active) {
+            form.setValue(
+              field.name as never,
+              (field.type === "multiSelect" ? [] : "") as never,
+              { shouldDirty: true },
+            )
+          }
+        }
+      }
+    }
+
+    runOptionsHooks()
+    return () => { active = false }
+  }, [watchedValues, fields, form, dynamicOptions])
+
   // ── Field layout ─────────────────────────────────────────────────────────────
   // In edit mode the password field is handled by the dedicated Change Password
   // section below, so we exclude it from the normal field list to avoid
   // rendering the old "Password Configuration" card inside a tab.
-  const visibleFields = fields
+  const visibleFields = resolvedFields
     .filter((f) => !f.admin?.hidden)
     .filter((f) => {
       if (isEdit && (f.name === "password" || (f.type as string) === "password")) return false
@@ -336,7 +426,7 @@ export function FormEngine({
         className="dy-space-y-8"
       >
         {/* Hidden fields */}
-        {fields
+        {resolvedFields
           .filter((f) => f.admin?.hidden)
           .map((field) => (
             <input

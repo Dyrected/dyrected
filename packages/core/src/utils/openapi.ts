@@ -294,6 +294,7 @@ function fieldToSchema(field: Field): any {
       schema = { type: "string", format: "date-time" };
       break;
     case "select":
+    case "radio":
       schema = { type: "string", enum: field.options?.map((o) => (typeof o === "string" ? o : o.value)) };
       break;
     case "multiSelect":

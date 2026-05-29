@@ -105,9 +105,11 @@ graph TD
   {
     name: 'state',
     type: 'select',
+    // Use admin.hooks.options — NOT admin.hooks.onChange.
+    // onChange sets a field's VALUE; options sets a field's available CHOICES.
     admin: {
       hooks: {
-        onChange: ({ siblingData }) => {
+        options: ({ siblingData }) => {
           if (siblingData.country === 'us') {
             return [{ label: 'California', value: 'CA' }, { label: 'New York', value: 'NY' }]
           }
@@ -120,6 +122,14 @@ graph TD
     }
   }
   ```
+
+> **Hook Disambiguation**
+> | Hook | Purpose | Return type |
+> |------|---------|------------|
+> | `admin.hooks.onChange` | Compute a derived **value** from siblings (e.g. auto-slug) | scalar |
+> | `admin.hooks.options` | Compute **available choices** for a select/multiSelect | `{ label, value }[]` |
+>
+> Returning an options array from `onChange` is **not supported** and has no effect.
 
 ---
 
@@ -148,3 +158,12 @@ graph LR
   - The parent window sends structured payloads containing the compiled function body and current form inputs.
   - The sandboxed script evaluates the function within a local context and messages back only the final computed value.
   - The parent window implements a strict origin verification listener, rejecting any payloads that do not match expected message schemas.
+
+---
+
+## Status
+- **Status:** **Fully Implemented & Verified**
+- **Client-Side Reactivity Engine:** Implemented dynamically in the `FormEngine` component using `useWatch` and asynchronous state updates.
+- **Security Sandboxing:** Isolated code execution implemented via a hidden, sandboxed iframe using `postMessage` with `sandbox="allow-scripts"` (null origin) to completely protect session storage, cookies, and parent DOM access.
+- **Serialization & API Delivery:** Backend supports stringified function serialization for transfer via `/api/schemas`.
+- **Validation:** Both unit tests and manual integration verified.
