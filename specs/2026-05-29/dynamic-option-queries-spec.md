@@ -116,3 +116,13 @@ Dynamic queries to third-party APIs can introduce latency in the Admin UI. To en
   }
   ```
 * **Search / Pagination:** For collections or datasets containing thousands of items, the resolver should support search parameters passed from the Admin UI select filter (e.g. `?search=App`).
+
+---
+
+## Status
+- **Status:** **Implemented (cacheTTL pending)**
+- **Async resolver functions:** Implemented for `select`, `multiSelect`, and `radio` fields.
+- **Server endpoint:** `GET /api/dyrected/options/:collection/:field` live; sibling values passed as query parameters.
+- **`cacheTTL`:** Typed and documented in the schema API; server-side cache enforcement not yet implemented — the endpoint re-executes the resolver on every request.
+- **Search parameters:** Passed through `req.query` to the resolver; no built-in UI-side debounced search on the options endpoint yet (relationship picker has its own search separate from this).
+- **Verification:** Integrated and manually tested in the example Nuxt app (`dyrected.config.ts` country/state cascading dropdowns).
