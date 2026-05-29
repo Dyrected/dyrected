@@ -158,22 +158,85 @@ export function DynamicIcon({ name }: { name: string }) {
 
 ### `url`
 
-A text input that validates the value is a correctly formatted absolute URL.
+A link picker that supports both external URLs and internal links to any collection document. The Admin UI renders a two-tab interface — **Internal Link** and **External Link**.
 
 ```ts
 {
-  name: 'websiteUrl',
+  name: 'ctaLink',
   type: 'url',
-  admin: {
-    placeholder: 'https://',
-  }
 }
 ```
 
-- **Validation:** Must start with `http://` or `https://`
-- **Stored as:** `VARCHAR` / `string`
-- **API returns:** `string`
-- **Admin UI:** `<input type="url" />` with an "Open" icon button
+#### Stored shape
+
+The field always stores an object, never a bare string:
+
+```ts
+// External link
+{
+  type: 'custom',
+  url: 'https://example.com',
+  label: 'Learn More',        // optional
+}
+
+// Internal link (collection document)
+{
+  type: 'internal',
+  url: '/blog/my-post',       // resolved frontend URL (requires urlPattern on the collection)
+  relationTo: 'blog',         // collection slug
+  value: 'doc-id-abc123',     // document ID
+  label: 'Read the post',     // optional
+}
+```
+
+- **Stored as:** `JSONB` / `object`
+- **API returns:** object as above
+- **Admin UI:** Two-tab picker — External (URL input) or Internal (collection + document search)
+
+#### Using the value on the frontend
+
+For external links, use `url` directly. For internal links, use the pre-resolved `url` when a `urlPattern` is configured on the target collection, or fall back to fetching the document by `relationTo` + `value` if it isn't:
+
+```ts
+function resolveLink(link: { type: string; url?: string; relationTo?: string; value?: string }) {
+  if (!link) return null
+  if (link.type === 'custom') return link.url
+  // type === 'internal': url is pre-resolved if urlPattern was set on the collection
+  return link.url ?? null
+}
+```
+
+#### Resolving internal link URLs with `urlPattern`
+
+By default, internal links store `url: undefined` unless the target collection defines a `urlPattern`. Add `urlPattern` to the collection's `admin` config using `{fieldName}` placeholders — the Admin UI will interpolate the selected document's fields into the pattern at save time:
+
+```ts
+defineCollection({
+  slug: 'blog',
+  admin: {
+    urlPattern: '/blog/{slug}',   // e.g. /blog/my-post
+  },
+  fields: [
+    { name: 'title', type: 'text' },
+    { name: 'slug',  type: 'text' },
+  ],
+})
+```
+
+```ts
+defineCollection({
+  slug: 'pages',
+  admin: {
+    urlPattern: '/{slug}',        // e.g. /about
+  },
+  fields: [...],
+})
+```
+
+With `urlPattern` set, any URL field pointing to that collection will store a usable `url` string — no extra API call needed on the frontend.
+
+> [!NOTE]
+> `urlPattern` is purely a frontend convenience. It does not affect how documents are stored or served by the API.
 
 ---
 
@@ -259,6 +322,8 @@ A single-value dropdown. Options must be defined in the field config.
 
 Options can also be a plain string array — Dyrected will convert `'draft'` to `{ label: 'Draft', value: 'draft' }` automatically.
 
+Options can also be **dynamically resolved** at request time — from a database query, an external API, or a client-side hook that reacts to other field values. See [Dynamic Options](/docs/concepts/dynamic-options) for all three approaches.
+
 - **Stored as:** `VARCHAR` / `string`
 - **API returns:** The selected `value` string
 - **Admin UI:** Dropdown `<Select />`
@@ -300,6 +365,8 @@ Like `select` but allows the user to pick multiple values. Stored as an array.
   options: ['technology', 'design', 'business', 'lifestyle'],
 }
 ```
+
+Like `select`, `multiSelect` also supports dynamic server-side resolvers and client-side hooks. See [Dynamic Options](/docs/concepts/dynamic-options).
 
 - **Stored as:** `JSON` array / `TEXT[]` (PostgreSQL)
 - **API returns:** `string[]`

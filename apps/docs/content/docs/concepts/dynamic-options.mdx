@@ -1,0 +1,222 @@
+---
+title: Dynamic Options
+description: Populate select, multiSelect, and radio fields from a database, an external API, or reactive sibling field values.
+---
+
+`select`, `multiSelect`, and `radio` fields can source their available choices in three ways. Picking the right one depends on where your data lives and how fast you need the options to appear.
+
+| Approach | Runs | Best for |
+|---|---|---|
+| [Static array](#static-array) | — | Fixed list known at build time |
+| [Server-side resolver](#server-side-resolver) | Server (Node.js) | DB queries, secret API keys, user-filtered lists, caching |
+| [Client-side UI hook](#client-side-ui-hook) | Browser | Instant cascading/dependent dropdowns |
+
+---
+
+## Static array
+
+The simplest form. Pass an array of strings or `{ label, value }` objects directly.
+
+```ts
+{
+  name: 'status',
+  type: 'select',
+  options: [
+    { label: 'Draft',     value: 'draft' },
+    { label: 'Published', value: 'published' },
+    { label: 'Archived',  value: 'archived' },
+  ],
+}
+```
+
+Plain strings are accepted too — `'draft'` becomes `{ label: 'Draft', value: 'draft' }` automatically.
+
+Use static options when the list is fixed and you don't need to query anything at runtime.
+
+---
+
+## Server-side resolver
+
+Pass an `async` function as `options`. It runs on the server inside your Node.js process and is never sent to the browser.
+
+```ts
+{
+  name: 'category',
+  type: 'select',
+  options: async ({ db, user, req }) => {
+    const result = await db.find({ collection: 'categories' })
+    return result.docs.map(c => ({ label: c.name, value: c.id }))
+  },
+}
+```
+
+### Resolver arguments
+
+| Argument | Type | Description |
+|---|---|---|
+| `db` | `DatabaseAdapter` | The configured database adapter. Use it to query any collection. |
+| `user` | `any` | The authenticated user making the request, or `undefined` if unauthenticated. |
+| `req.query` | `Record<string, string>` | Query parameters from the request. The Admin UI forwards sibling field values here automatically. |
+| `req.headers` | `Record<string, string>` | Request headers. |
+| `req.raw` | `Request` | The raw Hono/Web Standard `Request` object. |
+
+### How the Admin UI fetches server-side options
+
+When the Admin UI opens a form containing a field with a server-side resolver, it calls:
+
+```
+GET /api/dyrected/options/:collectionSlug/:fieldName
+```
+
+All query parameters on that request are forwarded to your resolver as `req.query`. This is how cascading dropdowns work on the server side — the Admin UI appends sibling field values as query params.
+
+```ts
+// State field that depends on a sibling country field
+// The Admin UI calls: /api/dyrected/options/locations/state?country=us
+{
+  name: 'state',
+  type: 'select',
+  options: async ({ req }) => {
+    const country = req.query.country
+    if (!country) return []
+    const regions = await fetch(`https://api.example.com/regions?country=${country}`)
+    return regions.json()
+  },
+}
+```
+
+You can call this endpoint directly from your frontend too, passing any parameters you need:
+
+```
+GET /api/dyrected/options/posts/category?search=tech
+```
+
+### Calling a third-party API with a secret key
+
+Because the resolver runs on the server, secret keys stay out of the browser:
+
+```ts
+{
+  name: 'product',
+  type: 'select',
+  options: async () => {
+    const res = await fetch('https://api.stripe.com/v1/products', {
+      headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
+    })
+    const { data } = await res.json()
+    return data.map((p: any) => ({ label: p.name, value: p.id }))
+  },
+}
+```
+
+### Filtering options by the authenticated user
+
+```ts
+{
+  name: 'team',
+  type: 'select',
+  options: async ({ db, user }) => {
+    if (!user) return []
+    const teams = await db.find({
+      collection: 'teams',
+      where: { members: { contains: user.sub } },
+    })
+    return teams.docs.map(t => ({ label: t.name, value: t.id }))
+  },
+}
+```
+
+### Caching with `cacheTTL`
+
+If your resolver hits a slow or rate-limited API, wrap it in a config object and set `cacheTTL` (seconds). The server caches the result for that duration and skips the resolver on repeat requests.
+
+```ts
+{
+  name: 'currency',
+  type: 'select',
+  options: {
+    resolve: async () => {
+      const res = await fetch('https://api.example.com/currencies')
+      return res.json()
+    },
+    cacheTTL: 300, // cache for 5 minutes
+  },
+}
+```
+
+`cacheTTL` is ignored when the resolver has query parameters (because parameterised results are request-specific and should not be shared across cache entries).
+
+---
+
+## Client-side UI hook
+
+For **instant, zero-latency** dependent dropdowns where the option list is already known in the browser and just needs to be filtered by another field's value.
+
+Defined under `field.admin.hooks.options`:
+
+```ts
+{
+  name: 'region',
+  type: 'select',
+  options: [],  // start empty; the hook populates this reactively
+  admin: {
+    hooks: {
+      options: ({ siblingData }) => {
+        if (siblingData.country === 'us') {
+          return [
+            { label: 'California', value: 'CA' },
+            { label: 'New York',   value: 'NY' },
+          ]
+        }
+        if (siblingData.country === 'ca') {
+          return [
+            { label: 'Ontario',   value: 'ON' },
+            { label: 'Quebec',    value: 'QC' },
+          ]
+        }
+        return []
+      },
+    },
+  },
+}
+```
+
+The hook fires whenever any sibling field changes. When the returned list changes, the field's current value is **automatically cleared** if it is no longer a valid choice.
+
+Async functions are supported:
+
+```ts
+options: async ({ siblingData }) => {
+  if (!siblingData.continent) return []
+  const res = await fetch(`/api/countries?continent=${siblingData.continent}`)
+  return res.json()
+}
+```
+
+> For a detailed guide with more cascading dropdown patterns, see [Using Hooks → Cascading dropdowns](/docs/guides/using-hooks#cascading-dropdowns-in-the-admin-ui).
+
+---
+
+## Choosing the right approach
+
+```
+Do the options change at runtime?
+  No  → Static array
+  Yes → Does building the list require a secret key or a DB query?
+          Yes → Server-side resolver (+ cacheTTL if the source is slow)
+          No  → Is the full list already available in the browser?
+                  Yes → Client-side UI hook  (instant, no network)
+                  No  → Server-side resolver
+```
+
+A common pattern is to combine both: a server-side resolver loads the base list (e.g. all countries), while a client-side UI hook filters a second field instantly as the first changes (country → state).
+
+---
+
+## Works on globals too
+
+Dynamic options resolve correctly on global fields. The options endpoint accepts either a collection slug or a global slug as the first path segment:
+
+```
+GET /api/dyrected/options/site-settings/defaultCurrency
+```

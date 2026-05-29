@@ -81,6 +81,7 @@ const Pages = defineCollection({
     group: "Content",
     previewUrl: "slug == 'home' ? '/' : '/' + slug",
     defaultColumns: ["title", "slug", "updatedAt", "action"],
+    urlPattern: "/{slug}",
   },
   fields: [
     { name: "title", type: "text", required: true },
@@ -362,6 +363,7 @@ const Blog = defineCollection({
     useAsTitle: "title",
     group: "Content",
     previewUrl: "'/blog/' + slug",
+    urlPattern: "/blog/{slug}",
   },
   fields: [
     { name: "title", type: "text", required: true },

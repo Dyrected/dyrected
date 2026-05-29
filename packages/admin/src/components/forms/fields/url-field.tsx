@@ -31,6 +31,7 @@ import {
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "../../../lib/utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
+import { interpolateUrlPattern } from "../../../lib/url-pattern"
 
 interface UrlValue {
   type: "custom" | "internal"
@@ -76,6 +77,9 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
   const [labelValue, setLabelValue] = React.useState(currentData.label || "")
   const [collectionValue, setCollectionValue] = React.useState(currentData.relationTo || "")
   const [docValue, setDocValue] = React.useState(currentData.value || "")
+  const [resolvedUrlValue, setResolvedUrlValue] = React.useState(
+    currentMode === "internal" ? (currentData.url || "") : ""
+  )
   const [docSearch, setDocSearch] = React.useState("")
 
   // Get all available collections from schemas
@@ -111,13 +115,14 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
     if (newMode === "external") {
       newValue = {
         type: "custom",
-        url: updates.url || urlValue,
+        url: updates.url !== undefined ? updates.url : urlValue,
         label: updates.label !== undefined ? updates.label : labelValue,
       }
     } else {
+      const url = updates.url !== undefined ? updates.url : resolvedUrlValue
       newValue = {
         type: "internal",
-        url: updates.url || `/collections/${collectionValue}/${docValue}`,
+        url: url || undefined,
         relationTo: updates.relationTo || collectionValue,
         value: updates.value || docValue,
         label: updates.label !== undefined ? updates.label : labelValue,
@@ -132,9 +137,11 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
     if (newMode === "external") {
       setUrlValue(currentData.url || "")
       setLabelValue(currentData.label || "")
+      setResolvedUrlValue("")
     } else {
       setCollectionValue(currentData.relationTo || "")
       setDocValue(currentData.value || "")
+      setResolvedUrlValue(currentData.type === "internal" ? (currentData.url || "") : "")
       setLabelValue(currentData.label || "")
     }
   }
@@ -152,12 +159,18 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
   const handleCollectionChange = (value: string) => {
     setCollectionValue(value)
     setDocValue("")
+    setResolvedUrlValue("")
   }
 
   const handleDocumentSelect = (docId: string) => {
     setDocValue(docId)
     setOpenPopover(false)
-    handleUpdate("internal", { value: docId })
+    const colSchema = collections.find((c: any) => c.slug === collectionValue)
+    const urlPattern = colSchema?.admin?.urlPattern
+    const doc = documents.find((d: any) => d.id === docId)
+    const resolvedUrl = urlPattern && doc ? interpolateUrlPattern(urlPattern, doc) : undefined
+    setResolvedUrlValue(resolvedUrl || "")
+    handleUpdate("internal", { value: docId, url: resolvedUrl })
   }
 
   const handleInternalLabelChange = (value: string) => {

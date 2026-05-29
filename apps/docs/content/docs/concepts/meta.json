@@ -1,4 +1,4 @@
 {
   "title": "Core Concepts",
-  "pages": ["schema", "fields", "hooks", "access-control"]
+  "pages": ["schema", "fields", "hooks", "dynamic-options", "access-control"]
 }

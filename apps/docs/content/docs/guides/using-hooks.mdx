@@ -1,0 +1,509 @@
+---
+title: Using Hooks
+description: Practical patterns for server-side and Admin UI hooks — from auto-slugs to cascading dropdowns.
+---
+
+This guide covers the most common real-world uses for hooks. Each pattern is self-contained so you can jump directly to what you need.
+
+For the full API reference see [Core Concepts → Hooks](/docs/concepts/hooks).
+
+---
+
+## Auto-generate a slug from a title
+
+A `beforeChange` collection hook lets you derive the slug from the title on every create, and only update it on edits when the title actually changed.
+
+```ts
+import slugify from 'slugify'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  hooks: {
+    beforeChange: [
+      ({ data, operation }) => {
+        // Always set on create; only update when title is included in the patch
+        if (operation === 'create' || data.title !== undefined) {
+          return {
+            ...data,
+            slug: slugify(data.title, { lower: true, strict: true }),
+          }
+        }
+        return data
+      },
+    ],
+  },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'slug',  type: 'text' },
+  ],
+})
+```
+
+To do the same **live in the Admin UI** (so editors see the slug update as they type), add an `onChange` hook to the `slug` field:
+
+```ts
+{
+  name: 'slug',
+  type: 'text',
+  admin: {
+    hooks: {
+      onChange: ({ siblingData }) =>
+        (siblingData.title ?? '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, ''),
+    },
+  },
+}
+```
+
+The server hook guarantees the correct value is stored even when documents are created via the API; the UI hook gives instant feedback in the form.
+
+---
+
+## Normalise data before saving
+
+Use field `beforeChange` hooks to clean up values before they hit the database.
+
+```ts
+// Lowercase and trim an email
+{
+  name: 'email',
+  type: 'email',
+  hooks: {
+    beforeChange: [({ value }) => value?.toLowerCase().trim()],
+  },
+}
+
+// Remove leading/trailing whitespace from any text field
+{
+  name: 'title',
+  type: 'text',
+  hooks: {
+    beforeChange: [({ value }) => value?.trim()],
+  },
+}
+
+// Clamp a number to a valid range
+{
+  name: 'discount',
+  type: 'number',
+  hooks: {
+    beforeChange: [({ value }) => Math.min(100, Math.max(0, Number(value) || 0))],
+  },
+}
+```
+
+---
+
+## Hash a password field
+
+Never store passwords in plain text. A field `beforeChange` hook intercepts the value before it is written and returns the hash instead.
+
+```ts
+import bcrypt from 'bcrypt'
+
+{
+  name: 'password',
+  type: 'text',
+  hooks: {
+    beforeChange: [
+      async ({ value }) => {
+        if (!value) return value
+        return bcrypt.hash(value, 10)
+      },
+    ],
+  },
+}
+```
+
+---
+
+## Validate data and abort the save
+
+Throw an error from any `beforeChange` hook to cancel the operation. The database write never happens and the API returns the error message.
+
+```ts
+export const Orders = defineCollection({
+  slug: 'orders',
+  hooks: {
+    beforeChange: [
+      ({ data }) => {
+        if (data.quantity < 1) {
+          throw new Error('Quantity must be at least 1.')
+        }
+        if (data.total < 0) {
+          throw new Error('Order total cannot be negative.')
+        }
+        return data
+      },
+    ],
+  },
+  fields: [
+    { name: 'quantity', type: 'number' },
+    { name: 'total',    type: 'number' },
+  ],
+})
+```
+
+---
+
+## Compute a derived field (total price)
+
+Chain a collection `beforeChange` hook after individual field hooks to derive a value from the full data payload.
+
+```ts
+export const LineItems = defineCollection({
+  slug: 'line-items',
+  hooks: {
+    beforeChange: [
+      ({ data }) => ({
+        ...data,
+        total: (Number(data.quantity) || 0) * (Number(data.unitPrice) || 0),
+      }),
+    ],
+  },
+  fields: [
+    { name: 'quantity',  type: 'number' },
+    { name: 'unitPrice', type: 'number' },
+    { name: 'total',     type: 'number', admin: { readOnly: true } },
+  ],
+})
+```
+
+Show the computed value live in the Admin UI with an `onChange` hook:
+
+```ts
+{
+  name: 'total',
+  type: 'number',
+  admin: {
+    readOnly: true,
+    hooks: {
+      onChange: ({ siblingData }) =>
+        (Number(siblingData.quantity) || 0) * (Number(siblingData.unitPrice) || 0),
+    },
+  },
+}
+```
+
+---
+
+## Send a webhook after a document is saved
+
+`afterChange` is the right place for side-effects that should not block the save itself.
+
+```ts
+export const Posts = defineCollection({
+  slug: 'posts',
+  hooks: {
+    afterChange: [
+      async ({ doc, operation }) => {
+        await fetch('https://hooks.example.com/content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: operation, doc }),
+        })
+      },
+    ],
+  },
+  fields: [...],
+})
+```
+
+---
+
+## Revalidate a Next.js page after a save
+
+```ts
+hooks: {
+  afterChange: [
+    async ({ doc }) => {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/revalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-revalidate-secret': process.env.REVALIDATE_SECRET!,
+        },
+        body: JSON.stringify({ path: `/blog/${doc.slug}` }),
+      })
+    },
+  ],
+}
+```
+
+---
+
+## React to create vs update separately
+
+`operation` tells you whether this is a new document or an update to an existing one.
+
+```ts
+hooks: {
+  beforeChange: [
+    ({ data, operation }) => {
+      if (operation === 'create') {
+        // Set immutable fields only on create
+        return { ...data, createdBy: data.user?.sub ?? null, status: 'draft' }
+      }
+      // Prevent editors from overwriting the original author on update
+      const { createdBy, ...rest } = data
+      return rest
+    },
+  ],
+}
+```
+
+---
+
+## Track what changed on an update
+
+`afterChange` receives `previousDoc` — the snapshot before the write. Use it to detect specific field changes and act on them.
+
+```ts
+hooks: {
+  afterChange: [
+    async ({ doc, previousDoc, operation }) => {
+      if (operation === 'update' && doc.status !== previousDoc?.status) {
+        // Status changed — notify downstream systems
+        await notifyStatusChange({ id: doc.id, from: previousDoc.status, to: doc.status })
+      }
+    },
+  ],
+}
+```
+
+---
+
+## Prevent a deletion when references exist
+
+Throw inside `beforeDelete` to cancel the delete. The document is not removed.
+
+```ts
+export const Categories = defineCollection({
+  slug: 'categories',
+  hooks: {
+    beforeDelete: [
+      async ({ id }) => {
+        const posts = await db.find({
+          collection: 'posts',
+          where: { category: { equals: id } },
+        })
+        if (posts.total > 0) {
+          throw new Error(
+            `Cannot delete: ${posts.total} post(s) still reference this category.`
+          )
+        }
+      },
+    ],
+  },
+  fields: [...],
+})
+```
+
+---
+
+## Mask sensitive data based on role
+
+Use a field `afterRead` hook to redact values that should not be visible to non-admin users.
+
+```ts
+{
+  name: 'apiKey',
+  type: 'text',
+  hooks: {
+    afterRead: [
+      ({ value, user }) => {
+        if (user?.role !== 'admin') return '••••••••'
+        return value
+      },
+    ],
+  },
+}
+```
+
+The same pattern works for hiding a field entirely:
+
+```ts
+{
+  name: 'internalNotes',
+  type: 'textarea',
+  hooks: {
+    afterRead: [
+      ({ value, user }) => (user?.role === 'admin' ? value : undefined),
+    ],
+  },
+}
+```
+
+---
+
+## Add computed fields on read
+
+`afterRead` on a collection hook lets you attach virtual fields to every document before it is sent to the client.
+
+```ts
+hooks: {
+  afterRead: [
+    ({ doc }) => ({
+      ...doc,
+      fullName: `${doc.firstName ?? ''} ${doc.lastName ?? ''}`.trim(),
+      isPublished: doc.status === 'published' && !!doc.publishedAt,
+    }),
+  ],
+}
+```
+
+---
+
+## Filter the query in beforeRead
+
+Return a modified `query` from `beforeRead` to scope all reads for a collection — useful for multi-tenant setups.
+
+```ts
+hooks: {
+  beforeRead: [
+    ({ query, user }) => {
+      // Each user can only read their own documents
+      return { ...query, owner: { equals: user?.sub } }
+    },
+  ],
+}
+```
+
+---
+
+## Cascading dropdowns in the Admin UI
+
+Use `admin.hooks.options` on a `select` field to derive its choices from another field's value. No network request is needed — it runs instantly in the browser.
+
+When the parent field changes, any value that is no longer in the new option list is cleared automatically.
+
+```ts
+export const Locations = defineCollection({
+  slug: 'locations',
+  fields: [
+    {
+      name: 'country',
+      type: 'select',
+      options: [
+        { label: 'United States', value: 'us' },
+        { label: 'Canada',        value: 'ca' },
+      ],
+    },
+    {
+      name: 'region',
+      type: 'select',
+      options: [],
+      admin: {
+        hooks: {
+          options: ({ siblingData }) => {
+            if (siblingData.country === 'us') {
+              return [
+                { label: 'California',    value: 'CA' },
+                { label: 'New York',      value: 'NY' },
+                { label: 'Texas',         value: 'TX' },
+              ]
+            }
+            if (siblingData.country === 'ca') {
+              return [
+                { label: 'Ontario',          value: 'ON' },
+                { label: 'Quebec',           value: 'QC' },
+                { label: 'British Columbia', value: 'BC' },
+              ]
+            }
+            return []
+          },
+        },
+      },
+    },
+  ],
+})
+```
+
+Three levels deep works the same way — each dependent field reads from `siblingData` and returns its own list.
+
+---
+
+## Category → sub-type dependent radio
+
+`options` works on `radio` fields too:
+
+```ts
+{
+  name: 'subType',
+  type: 'radio',
+  options: [],
+  admin: {
+    hooks: {
+      options: ({ siblingData }) =>
+        siblingData.category === 'vehicle'
+          ? [{ label: 'Car', value: 'car' }, { label: 'Truck', value: 'truck' }]
+          : [{ label: 'Shirt', value: 'shirt' }, { label: 'Shoes', value: 'shoes' }],
+    },
+  },
+}
+```
+
+---
+
+## Chaining multiple hooks
+
+Hooks in an array run sequentially. Each one receives the output of the previous hook.
+
+```ts
+hooks: {
+  beforeChange: [
+    // 1st — normalize
+    ({ data }) => ({ ...data, email: data.email?.toLowerCase().trim() }),
+    // 2nd — validate (receives normalized data from step 1)
+    ({ data }) => {
+      if (!data.email.includes('@')) throw new Error('Invalid email address.')
+      return data
+    },
+    // 3rd — stamp the updated timestamp (receives validated data from step 2)
+    ({ data }) => ({ ...data, updatedAt: new Date().toISOString() }),
+  ],
+}
+```
+
+For field hooks the same applies at the value level:
+
+```ts
+{
+  name: 'bio',
+  type: 'textarea',
+  hooks: {
+    beforeChange: [
+      ({ value }) => value?.trim(),
+      ({ value }) => value?.slice(0, 500),   // enforce max length after trim
+    ],
+  },
+}
+```
+
+---
+
+## Sync a global setting after it changes
+
+```ts
+export const SiteSettings = defineGlobal({
+  slug: 'site-settings',
+  hooks: {
+    afterChange: [
+      async ({ doc }) => {
+        // Bust the edge cache when site settings are updated
+        await fetch(`${process.env.CDN_PURGE_URL}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${process.env.CDN_TOKEN}` },
+          body: JSON.stringify({ paths: ['/'] }),
+        })
+      },
+    ],
+  },
+  fields: [
+    { name: 'siteName', type: 'text' },
+    { name: 'tagline',  type: 'text' },
+  ],
+})
+```

@@ -312,6 +312,11 @@ export interface CollectionConfig {
     previewUrl?: string | ((doc: any, opts: { locale?: string }) => string | null);
     /** Which mode to use for live preview. Defaults to 'postMessage'. */
     previewMode?: "postMessage" | "token";
+    /**
+     * Frontend URL pattern for this collection, used by URL fields to resolve internal links.
+     * Use {fieldName} placeholders, e.g. "/{slug}" or "/blog/{slug}".
+     */
+    urlPattern?: string;
   };
 }
 
