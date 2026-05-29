@@ -1,5 +1,18 @@
 # @dyrected/admin
 
+## 2.5.16
+
+### Patch Changes
+
+- 414b005: - feat: add generic typing to defineCollection and defineGlobal, introduce HookRequestContext, and enhance DynamicOptions interfaces.
+  - feat: implement automatic document shape inference for collection and global definitions via field array analysis
+  - feat: enhance rich text editor link management, add time support to date picker, and update radio field props
+  - feat: add table support to rich text editor, introduce datetime field type, and improve form engine type safety.
+
+- Updated dependencies [414b005]
+  - @dyrected/core@2.5.16
+  - @dyrected/sdk@2.5.16
+
 ## 2.5.15
 
 ### Patch Changes
