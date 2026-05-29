@@ -1,4 +1,4 @@
-import * as qs from "qs";
+import { stringify, stringifyQuery } from "./utils/stringify.js";
 import {
   PaginatedResult,
   FileData as Media,
@@ -104,7 +104,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
       normalizedArgs.where = JSON.stringify(normalizedArgs.where);
     }
 
-    const query = qs.stringify(normalizedArgs, { addQueryPrefix: true });
+    const query = stringifyQuery(normalizedArgs, { addQueryPrefix: true });
     const res = (await this.request(`/api/collections/${collection}${query}`)) as PaginatedResult<
       TSchema["collections"][K]
     >;
@@ -239,7 +239,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
   async findOne<T = any>(collection: string, id: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
     const { initialData, ...queryArgs } = args;
-    const query = qs.stringify(queryArgs, { addQueryPrefix: true });
+    const query = stringifyQuery(queryArgs, { addQueryPrefix: true });
 
     try {
       return await this.request(`/api/collections/${collection}/${id}${query}`);
@@ -282,13 +282,13 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
   async deleteMany(collection: string, ids: string[]): Promise<{ message: string }> {
     return this.request(`/api/collections/${collection}/delete-many`, {
       method: "DELETE",
-      body: qs.stringify({ ids }),
+      body: stringify({ ids }),
     });
   }
 
   async getGlobal<T = any>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
     const { initialData, ...queryArgs } = args;
-    const query = qs.stringify(queryArgs, { addQueryPrefix: true });
+    const query = stringifyQuery(queryArgs, { addQueryPrefix: true });
 
     try {
       const res = await this.request(`/api/globals/${slug}${query}`);

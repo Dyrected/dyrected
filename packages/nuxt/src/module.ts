@@ -6,6 +6,7 @@ import {
   addComponent,
   addImports,
   addServerPlugin,
+  addTemplate,
 } from "@nuxt/kit";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -122,7 +123,22 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     if (configPath) {
       console.log("[dyrected/nuxt] Auto-detected config at:", configPath);
       (runtimeConfig as any).configPath = configPath;
-      addServerPlugin(resolver.resolve("./runtime/server/plugins/db"));
+      let loadConfigPath = resolver.resolve("./runtime/server/plugins/loadConfig.ts");
+      if (!existsSync(loadConfigPath)) {
+        loadConfigPath = resolver.resolve("./runtime/server/plugins/loadConfig.mjs");
+      }
+      (runtimeConfig as any).loadConfigPath = loadConfigPath;
+
+      let dbPluginSrc = resolver.resolve("./runtime/server/plugins/db.ts");
+      if (!existsSync(dbPluginSrc)) {
+        dbPluginSrc = resolver.resolve("./runtime/server/plugins/db.mjs");
+      }
+      const dbPluginTemplate = addTemplate({
+        src: dbPluginSrc,
+        filename: "dyrected-db-plugin.ts",
+        write: true,
+      });
+      addServerPlugin(dbPluginTemplate.dst);
     } else {
       console.warn("[dyrected/nuxt] Could not find dyrected.config.ts. Self-hosted database re-hydration might fail.");
     }
@@ -173,10 +189,15 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     if (nuxt.options.vite) {
       nuxt.options.vite.optimizeDeps = nuxt.options.vite.optimizeDeps || {};
       nuxt.options.vite.optimizeDeps.include = nuxt.options.vite.optimizeDeps.include || [];
-      const toInclude = ["react", "react-dom", "react-router-dom", "@tanstack/react-query", "qs"];
+      const toInclude = ["react", "react-dom", "react-router-dom", "@tanstack/react-query"];
       for (const dep of toInclude) {
-        if (!nuxt.options.vite.optimizeDeps.include.includes(dep)) {
-          nuxt.options.vite.optimizeDeps.include.push(dep);
+        try {
+          _require.resolve(dep);
+          if (!nuxt.options.vite.optimizeDeps.include.includes(dep)) {
+            nuxt.options.vite.optimizeDeps.include.push(dep);
+          }
+        } catch {
+          // Skip if the dependency cannot be resolved in the target environment
         }
       }
 
@@ -191,6 +212,15 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
 
     // 8. Transpile Dyrected packages
     nuxt.options.build.transpile.push("@dyrected/sdk", "@dyrected/vue", "@dyrected/admin");
+
+    // Inline `@dyrected/nuxt` in Nitro so its server plugin resolves `#imports` correctly
+    const optionsAny = nuxt.options as any;
+    optionsAny.nitro = optionsAny.nitro || {};
+    optionsAny.nitro.externals = optionsAny.nitro.externals || {};
+    optionsAny.nitro.externals.inline = optionsAny.nitro.externals.inline || [];
+    if (!optionsAny.nitro.externals.inline.includes("@dyrected/nuxt")) {
+      optionsAny.nitro.externals.inline.push("@dyrected/nuxt");
+    }
 
     // 9. Patch the unctx:transform plugin to skip @dyrected/admin's dist bundle.
     // unctx injects Vue composable identifiers (toValue, h, ref, …) at the top of

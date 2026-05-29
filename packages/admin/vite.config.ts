@@ -15,6 +15,9 @@ export default defineConfig({
     nodePolyfills({
       // Whether to polyfill `node:` protocol imports.
       protocolImports: true,
+      globals: {
+        global: false,
+      },
     }),
   ],
   build: {

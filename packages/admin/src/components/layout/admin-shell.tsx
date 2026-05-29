@@ -21,7 +21,7 @@ import {
   Users,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
-import { cn } from "../../lib/utils"
+import { cn, getMediaUrl } from "../../lib/utils"
 import { BrandingProvider } from "./branding-provider"
 import logo from "@/assets/dyrected.svg"
 
@@ -170,7 +170,12 @@ function SidebarInner({
               {branding?.logo || branding?.logoMark ? (
                 <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-shrink-0">
                   <img
-                    src={(collapsed ? (branding.logoMark || branding.logo) : (branding.logo || branding.logoMark), client?.getBaseUrl() || "")}
+                    src={getMediaUrl(
+                      collapsed
+                        ? (branding.logoMark || branding.logo)
+                        : (branding.logo || branding.logoMark),
+                      client?.getBaseUrl() || ""
+                    )}
                     alt="Logo"
                     className="dy-max-h-full dy-max-w-full dy-object-contain"
                   />

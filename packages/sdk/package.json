@@ -16,17 +16,24 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --watch --dts",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "lint": "eslint src",
     "test": "vitest run"
   },
-  "dependencies": {
-    "qs": "^6.12.1"
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true
   },
+  "dependencies": {},
   "devDependencies": {
     "@dyrected/core": "workspace:*",
-    "@types/qs": "^6.15.1",
     "tsup": "^8.5.1",
     "typescript": "^5.4.5",
     "vitest": "^1.0.0"
