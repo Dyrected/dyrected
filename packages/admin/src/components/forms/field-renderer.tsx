@@ -56,7 +56,7 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "select":
       return <SelectField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData} />
     case "radio":
-      return <RadioField schema={schema} field={field} disabled={disabled} />
+      return <RadioField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData} />
     case "multiSelect":
       return (
         <MultiSelect
@@ -86,7 +86,7 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "json":
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
-      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime={(schema.admin as any)?.withTime} />
     case "icon":
       return <IconPicker schema={schema} field={field} disabled={disabled} />
     case "url":

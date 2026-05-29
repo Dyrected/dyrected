@@ -3,9 +3,20 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import TextAlign from "@tiptap/extension-text-align"
 import Image from "@tiptap/extension-image"
+import LinkExtension from "@tiptap/extension-link"
+import Underline from "@tiptap/extension-underline"
 import { Toggle } from "../../ui/toggle"
 import { cn } from "../../../lib/utils"
 import { MediaPicker } from "./media-picker"
+import { Input } from "../../ui/input"
+import { Button } from "../../ui/button"
+import { Switch } from "../../ui/switch"
+import { Label } from "../../ui/label"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../ui/popover"
 import {
   Bold,
   Italic,
@@ -31,17 +42,34 @@ interface RichTextEditorProps {
 }
 
 const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, collection?: string }) => {
-  if (!editor) {
-    return null
+  const [linkOpen, setLinkOpen] = React.useState(false)
+  const [linkUrl, setLinkUrl] = React.useState("")
+  const [linkNewTab, setLinkNewTab] = React.useState(false)
+
+  if (!editor) return null
+
+  const openLinkDialog = () => {
+    const attrs = editor.getAttributes("link")
+    setLinkUrl(attrs.href || "")
+    setLinkNewTab(attrs.target === "_blank")
+    setLinkOpen(true)
   }
 
-  const addLink = () => {
-    const url = window.prompt("URL")
-    if (url) {
-      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
-    } else if (url === "") {
+  const applyLink = () => {
+    if (!linkUrl.trim()) {
       editor.chain().focus().extendMarkRange("link").unsetLink().run()
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({
+        href: linkUrl.trim(),
+        target: linkNewTab ? "_blank" : undefined,
+      }).run()
     }
+    setLinkOpen(false)
+  }
+
+  const removeLink = () => {
+    editor.chain().focus().extendMarkRange("link").unsetLink().run()
+    setLinkOpen(false)
   }
 
   return (
@@ -139,13 +167,56 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
 
       <div className="dy-w-[1px] dy-h-6 dy-bg-border dy-mx-1" />
 
-      <Toggle
-        size="sm"
-        pressed={editor.isActive("link")}
-        onPressedChange={addLink}
-      >
-        <LinkIcon className="dy-h-4 dy-w-4" />
-      </Toggle>
+      <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+        <PopoverTrigger asChild>
+          <Toggle
+            size="sm"
+            pressed={editor.isActive("link")}
+            onPressedChange={openLinkDialog}
+          >
+            <LinkIcon className="dy-h-4 dy-w-4" />
+          </Toggle>
+        </PopoverTrigger>
+        <PopoverContent className="dy-w-72 dy-p-3" align="start" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="dy-space-y-3">
+            <div>
+              <label className="dy-text-xs dy-font-medium dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-1.5">
+                URL
+              </label>
+              <Input
+                type="url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="dy-h-8 dy-text-sm"
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyLink() } }}
+                autoFocus
+              />
+            </div>
+            <div className="dy-flex dy-items-center dy-gap-2">
+              <Switch
+                id="link-new-tab"
+                checked={linkNewTab}
+                onCheckedChange={setLinkNewTab}
+                className="dy-scale-90"
+              />
+              <Label htmlFor="link-new-tab" className="dy-text-xs dy-font-normal dy-cursor-pointer">
+                Open in new tab
+              </Label>
+            </div>
+            <div className="dy-flex dy-gap-2">
+              <Button size="sm" onClick={applyLink} className="dy-flex-1 dy-h-8 dy-text-xs">
+                Apply
+              </Button>
+              {editor.isActive("link") && (
+                <Button size="sm" variant="outline" onClick={removeLink} className="dy-h-8 dy-text-xs">
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <div className="dy-ml-auto">
         <MediaPicker
@@ -168,17 +239,20 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
 export function RichTextEditor({ value, onChange, label, disabled, collection = "media" }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        link: {
-          openOnClick: false,
-        },
-      }),
+      StarterKit,
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
+      Underline,
       Image.configure({
         HTMLAttributes: {
           class: "rounded-md max-w-full h-auto my-4",
+        },
+      }),
+      LinkExtension.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          rel: "noopener noreferrer",
         },
       }),
     ],
@@ -186,7 +260,6 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
     editable: !disabled,
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
-      // Extract HTML for standard rich text storage
       onChange(editor.getHTML())
     },
     editorProps: {
@@ -202,10 +275,8 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
     }
   }, [disabled, editor])
 
-  // Update editor content if value changes externally (e.g. initial load)
   React.useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      // Prevent cursor jump by checking if the content is actually different text-wise
       const currentHtml = editor.getHTML()
       if (currentHtml !== value && value) {
         editor.commands.setContent(value)

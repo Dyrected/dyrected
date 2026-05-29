@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../../providers/dyrected-provider"
 import { Button } from "../../ui/button"
 import { Badge } from "../../ui/badge"
@@ -16,14 +16,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../ui/popover"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
 import { cn, getMediaUrl } from "../../../lib/utils"
+
+const PAGE_SIZE = 50
 
 interface RelationshipPickerProps {
   value?: string | string[]
   onChange: (value: string | string[]) => void
   label?: string
-  relationTo: string // The collection slug this field relates to
+  relationTo: string
   multiple?: boolean
   disabled?: boolean
 }
@@ -38,27 +40,32 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
   const isUpload = !!relatedCollection?.upload
   const displayField = relatedCollection?.admin?.useAsTitle || "title"
 
-  // Fetch the related collection documents
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isFetchingNextPage, fetchNextPage, hasNextPage } = useInfiniteQuery({
     queryKey: ["collection", relationTo, "picker", search],
-    queryFn: () => {
-      let qb = client!.collection(relationTo).find({ limit: 20 })
+    queryFn: async ({ pageParam = 1 }) => {
+      let qb = client!.collection(relationTo).find({ limit: PAGE_SIZE, page: pageParam })
       if (search) {
         qb = qb.where({ [displayField]: { like: `%${search}%` } })
       }
-      return qb.exec().then((res: any) => res.docs)
+      return qb.exec()
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage: any) => {
+      if (lastPage.hasNextPage) return lastPage.page + 1
+      if (lastPage.docs?.length === PAGE_SIZE) return (lastPage.page ?? 1) + 1
+      return undefined
     },
     enabled: !!client && !!relationTo,
   })
 
-  // Determine a display label for an item. 
-  // We'll fallback to ID if no title or name exists.
+  const allDocs: any[] = data?.pages.flatMap((page: any) => page.docs) ?? []
+
   const getDisplayLabel = (item: any) => {
     return item[displayField] || item.name || item.slug || item.id
   }
 
   const values = Array.isArray(value) ? value : value ? [value] : []
-  const selectedItems = values.map(v => data?.find((item: any) => item.id === v)).filter(Boolean)
+  const selectedItems = values.map(v => allDocs.find((item: any) => item.id === v)).filter(Boolean)
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
@@ -90,14 +97,14 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
         </PopoverTrigger>
         <PopoverContent className="dy-w-[400px] dy-p-0" align="start">
           <Command>
-            <CommandInput 
-              placeholder={`Search ${relationTo}...`} 
+            <CommandInput
+              placeholder={`Search ${relationTo}...`}
               onValueChange={setSearch}
             />
             <CommandList>
               <CommandEmpty>{isLoading ? "Searching..." : "No item found."}</CommandEmpty>
               <CommandGroup>
-                {data?.map((item: any) => (
+                {allDocs.map((item: any) => (
                   <CommandItem
                     key={item.id}
                     value={item.id}
@@ -116,10 +123,10 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
                     <div className="dy-flex dy-items-center dy-gap-3 dy-flex-1">
                       {isUpload && (
                         <div className="dy-h-6 dy-w-6 dy-rounded dy-border dy-bg-muted dy-overflow-hidden dy-flex-shrink-0">
-                          <img 
-                            src={getMediaUrl(item, client?.getBaseUrl() || "")} 
-                            className="dy-h-full dy-w-full dy-object-cover" 
-                            alt="" 
+                          <img
+                            src={getMediaUrl(item, client?.getBaseUrl() || "")}
+                            className="dy-h-full dy-w-full dy-object-cover"
+                            alt=""
                           />
                         </div>
                       )}
@@ -134,6 +141,23 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
                   </CommandItem>
                 ))}
               </CommandGroup>
+              {hasNextPage && (
+                <div className="dy-p-1 dy-border-t dy-border-border/50">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="dy-w-full dy-text-xs dy-text-muted-foreground"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                  >
+                    {isFetchingNextPage ? (
+                      <><Loader2 className="dy-h-3 dy-w-3 dy-animate-spin dy-mr-1" /> Loading more...</>
+                    ) : (
+                      "Load more"
+                    )}
+                  </Button>
+                </div>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>

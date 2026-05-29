@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query"
+import { useDyrected } from "../../../providers/dyrected-provider"
 import { RadioGroup, RadioGroupItem } from "../../ui/radio-group"
 import { Label } from "../../ui/label"
 import { cn } from "../../../lib/utils"
@@ -8,13 +10,50 @@ interface RadioFieldProps {
   schema: FieldSchema
   field: any
   disabled?: boolean
+  collection?: string
+  siblingValues?: Record<string, any>
 }
 
-export function RadioField({ schema, field, disabled }: RadioFieldProps) {
-  // Radio fields only support static options — dynamic/function options are not supported here
-  const rawOptions = Array.isArray(schema.options) ? schema.options : []
+export function RadioField({ schema, field, disabled, collection, siblingValues }: RadioFieldProps) {
+  const { client } = useDyrected()
+  const isDynamic = !!(schema.options && typeof schema.options === "object" && "_dynamic" in schema.options)
+
+  const { data: dynamicOptions, isLoading } = useQuery({
+    queryKey: ["options", collection, schema.name, siblingValues],
+    queryFn: async () => {
+      const q = new URLSearchParams()
+      if (siblingValues) {
+        Object.entries(siblingValues).forEach(([k, v]) => {
+          if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
+            q.append(k, String(v))
+          }
+        })
+      }
+      const baseUrl = client?.getBaseUrl() || ""
+      const url = `${baseUrl}/api/dyrected/options/${collection}/${schema.name}?${q.toString()}`
+      const authHeaders: Record<string, string> = {}
+      const token = typeof window !== "undefined" ? localStorage.getItem("dyrected_token") : null
+      if (token) authHeaders["Authorization"] = `Bearer ${token}`
+      const res = await fetch(url, { headers: { "Content-Type": "application/json", ...authHeaders } })
+      if (!res.ok) throw new Error("Failed to fetch options")
+      return res.json()
+    },
+    enabled: !!client && isDynamic && !!collection && !!schema.name,
+  })
+
+  const rawOptions = isDynamic ? (dynamicOptions || []) : (Array.isArray(schema.options) ? schema.options : [])
   const options = normalizeOptions(rawOptions)
   const isHorizontal = schema.admin?.direction === "horizontal"
+
+  if (isDynamic && isLoading) {
+    return (
+      <div className="dy-flex dy-gap-3">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="dy-h-12 dy-w-32 dy-rounded-xl dy-bg-muted dy-animate-pulse" />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <RadioGroup
