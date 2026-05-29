@@ -1,5 +1,14 @@
 # @dyrected/admin
 
+## 2.5.14
+
+### Patch Changes
+
+- 959b5c5: Fix branding logo rendering by replacing the buggy comma operator with `getMediaUrl`. Resolve Nuxt module template and config-load path issues, and bundle the `qs` dependency inside the SDK to eliminate browser compatibility errors.
+- Updated dependencies [959b5c5]
+  - @dyrected/sdk@2.5.14
+  - @dyrected/core@2.5.14
+
 ## 2.5.13
 
 ### Patch Changes
