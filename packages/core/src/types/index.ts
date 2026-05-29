@@ -64,6 +64,7 @@ export type FieldType =
   | "number"
   | "boolean"
   | "date"
+  | "datetime"
   | "select"
   | "multiSelect"
   | "radio"
@@ -878,7 +879,7 @@ type FieldAdminHooks<TValue> = {
  * ```
  */
 export type Field = FieldBase & (
-  | ({ type: 'text' | 'textarea' | 'email' | 'url' | 'icon' | 'date' | 'select' | 'radio' } & FieldHooks<string> & FieldAdminHooks<string>)
+  | ({ type: 'text' | 'textarea' | 'email' | 'url' | 'icon' | 'date' | 'datetime' | 'select' | 'radio' } & FieldHooks<string> & FieldAdminHooks<string>)
   | ({ type: 'number' } & FieldHooks<number> & FieldAdminHooks<number>)
   | ({ type: 'boolean' } & FieldHooks<boolean> & FieldAdminHooks<boolean>)
   | ({ type: 'multiSelect' } & FieldHooks<string[]> & FieldAdminHooks<string[]>)

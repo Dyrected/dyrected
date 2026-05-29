@@ -86,7 +86,9 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "json":
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
-      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime={(schema.admin as any)?.withTime} />
+      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+    case "datetime":
+      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime />
     case "icon":
       return <IconPicker schema={schema} field={field} disabled={disabled} />
     case "url":

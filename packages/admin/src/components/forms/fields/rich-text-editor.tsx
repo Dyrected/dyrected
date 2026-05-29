@@ -5,6 +5,7 @@ import TextAlign from "@tiptap/extension-text-align"
 import Image from "@tiptap/extension-image"
 import LinkExtension from "@tiptap/extension-link"
 import Underline from "@tiptap/extension-underline"
+import { TableKit } from "@tiptap/extension-table"
 import { Toggle } from "../../ui/toggle"
 import { cn } from "../../../lib/utils"
 import { MediaPicker } from "./media-picker"
@@ -18,6 +19,13 @@ import {
   PopoverTrigger,
 } from "../../ui/popover"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../ui/dropdown-menu"
+import {
   Bold,
   Italic,
   Underline as UnderlineIcon,
@@ -30,7 +38,8 @@ import {
   Link as LinkIcon,
   Heading1,
   Heading2,
-  Quote
+  Quote,
+  Table as TableIcon,
 } from "lucide-react"
 
 interface RichTextEditorProps {
@@ -218,6 +227,44 @@ const MenuBar = ({ editor, collection = "media" }: { editor: Editor | null, coll
         </PopoverContent>
       </Popover>
 
+      <div className="dy-w-[1px] dy-h-6 dy-bg-border dy-mx-1" />
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Toggle size="sm" pressed={editor.isActive("table")}>
+            <TableIcon className="dy-h-4 dy-w-4" />
+          </Toggle>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="dy-min-w-[180px]">
+          <DropdownMenuItem onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>
+            Insert Table (3×3)
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => editor.chain().focus().addRowAfter().run()} disabled={!editor.isActive("table")}>
+            Add Row Below
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addRowBefore().run()} disabled={!editor.isActive("table")}>
+            Add Row Above
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnAfter().run()} disabled={!editor.isActive("table")}>
+            Add Column Right
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().addColumnBefore().run()} disabled={!editor.isActive("table")}>
+            Add Column Left
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteRow().run()} disabled={!editor.isActive("table")} className="dy-text-destructive focus:dy-text-destructive">
+            Delete Row
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteColumn().run()} disabled={!editor.isActive("table")} className="dy-text-destructive focus:dy-text-destructive">
+            Delete Column
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.isActive("table")} className="dy-text-destructive focus:dy-text-destructive">
+            Delete Table
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <div className="dy-ml-auto">
         <MediaPicker
           collection={collection}
@@ -254,6 +301,11 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
         HTMLAttributes: {
           rel: "noopener noreferrer",
         },
+      }),
+      TableKit.configure({
+        table: { HTMLAttributes: { class: "dy-border-collapse dy-w-full dy-my-4" } },
+        tableCell: { HTMLAttributes: { class: "dy-border dy-border-border dy-p-2 dy-align-top dy-min-w-[100px]" } },
+        tableHeader: { HTMLAttributes: { class: "dy-border dy-border-border dy-p-2 dy-bg-muted dy-font-semibold dy-text-left" } },
       }),
     ],
     content: value,

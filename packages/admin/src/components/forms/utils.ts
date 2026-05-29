@@ -66,7 +66,7 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
           return false
         }, { message: `${label} is required` })
       }
-    } else if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "radio" || fieldType === "richText" || fieldType === "date" || fieldType === "icon" || fieldType === "password") {
+    } else if (fieldType === "text" || fieldType === "textarea" || fieldType === "select" || fieldType === "radio" || fieldType === "richText" || fieldType === "date" || fieldType === "datetime" || fieldType === "icon" || fieldType === "password") {
       validator = z.string()
       if (isPassword) {
         if (!isEdit) {

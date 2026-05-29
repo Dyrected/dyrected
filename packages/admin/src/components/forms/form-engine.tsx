@@ -47,7 +47,7 @@ export function FormEngine({
   passwordChangeMode = null,
 }: FormEngineProps) {
   const isEdit = !!defaultValues?.id
-  const [dynamicOptions, setDynamicOptions] = useState<Record<string, Array<{ label: string, value: any }>>>({})
+  const [dynamicOptions, setDynamicOptions] = useState<Record<string, Array<{ label: string, value: unknown }>>>({})
 
   const resolvedFields = useMemo(() => {
     return fields.map((field) => {
@@ -181,7 +181,7 @@ export function FormEngine({
         console.error("Failed to parse draft", e)
       }
     }
-  }, [collection, defaultValues, fields])
+  }, [collection, defaultValues, fields, form])
 
   // Autosave on dirty
   useEffect(() => {
@@ -220,11 +220,19 @@ export function FormEngine({
 
         if (typeof hook === "function") {
           try {
-            calculatedValue = hook({
+            calculatedValue = (hook as (args: {
+              value: unknown
+              siblingData: Record<string, unknown>
+              data: Record<string, unknown>
+              setValue: (value: unknown) => void
+            }) => unknown)({
               value: currentValue,
               siblingData: watchedValues,
               data: watchedValues,
-              setValue: (val: unknown) => form.setValue(field.name as never, val as never, { shouldDirty: true }),
+              setValue: (val: unknown) => {
+                const setValueFn = form.setValue as unknown as (name: string, value: unknown, options?: { shouldDirty?: boolean }) => void
+                setValueFn(field.name, val, { shouldDirty: true })
+              },
             })
           } catch (err) {
             console.error(`[dyrected/admin] Error running onChange hook for field "${field.name}":`, err)
@@ -284,7 +292,7 @@ export function FormEngine({
 
         if (active) {
           // Normalize to { label, value } before storing to satisfy the state type
-          const normalizedForState: Array<{ label: string; value: any }> = newOptions.map((o) =>
+          const normalizedForState: Array<{ label: string; value: unknown }> = newOptions.map((o) =>
             typeof o === "string" ? { label: o, value: o } : { label: o.label, value: o.value }
           )
           setDynamicOptions((prev) => ({ ...prev, [field.name!]: normalizedForState }))

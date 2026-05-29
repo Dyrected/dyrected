@@ -36,13 +36,14 @@ import { Progress } from "../../components/ui/progress"
 import { Separator } from "../../components/ui/separator"
 // import { FocalPointPicker } from "../../components/media/focal-point-picker"
 import { Blurhash } from "react-blurhash"
+import type { Media } from "@dyrected/sdk"
 
-export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string, schema?: any }) {
+export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string, schema?: { labels?: { plural?: string }; label?: string } }) {
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
-  const [selectedItem, setSelectedItem] = React.useState<any>(null)
+  const [selectedItem, setSelectedItem] = React.useState<Media | null>(null)
 
   const {
     data,
@@ -102,7 +103,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
       queryClient.invalidateQueries({ queryKey: ["media"] })
       toast.success("Asset deleted successfully")
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Failed to delete asset", {
         description: error.message
       })
@@ -110,13 +111,13 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   })
 
   const updateMutation = useMutation({
-    mutationFn: (args: { id: string, data: any }) => client!.update(collectionSlug || "media", args.id, args.data),
+    mutationFn: (args: { id: string, data: Record<string, unknown> }) => client!.update(collectionSlug || "media", args.id, args.data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["media"] })
       setSelectedItem(data)
       toast.success("Asset details updated")
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Failed to update asset", {
         description: error.message
       })
@@ -213,10 +214,10 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
           <div className="dy-grid dy-grid-cols-2 md:dy-grid-cols-3 lg:dy-grid-cols-4 xl:dy-grid-cols-5 2xl:dy-grid-cols-6 dy-gap-6 dy-pb-8">
             {mediaResponse?.map((item) => (
               <MediaCard
-                key={item.id}
+                key={item.id as string}
                 item={item}
                 baseUrl={client!.getBaseUrl()}
-                onDelete={() => deleteMutation.mutate(item.id)}
+                onDelete={() => deleteMutation.mutate(item.id as string)}
                 onClick={() => setSelectedItem(item)}
                 isSelected={selectedItem?.id === item.id}
               />
@@ -232,15 +233,18 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
       </ScrollArea>
 
       <MediaDetailsDialog
+        key={selectedItem?.id as string}
         item={selectedItem}
         collectionSlug={collectionSlug}
         onClose={() => setSelectedItem(null)}
         baseUrl={client!.getBaseUrl()}
-        onUpdate={(data) => updateMutation.mutate({ id: selectedItem.id, data })}
+        onUpdate={(data) => selectedItem && updateMutation.mutate({ id: selectedItem.id as string, data })}
         onDelete={() => {
           if (confirm("Are you sure you want to delete this file?")) {
-            deleteMutation.mutate(selectedItem.id)
-            setSelectedItem(null)
+            if (selectedItem) {
+              deleteMutation.mutate(selectedItem.id as string)
+              setSelectedItem(null)
+            }
           }
         }}
       />
@@ -249,7 +253,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
 }
 
 function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
-  item: any,
+  item: Media,
   baseUrl: string,
   onDelete: () => void,
   onClick: () => void,
@@ -305,7 +309,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
             {item.mimeType?.split("/")[1] || "file"}
           </p>
           <p className="dy-text-[9px] dy-text-muted-foreground dy-font-medium">
-            {((item.filesize || item.size || 0) / 1024).toFixed(1)} KB
+            {((item.filesize || (item.size as number) || 0) / 1024).toFixed(1)} KB
           </p>
         </div>
       </CardContent>
@@ -329,27 +333,18 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
 }
 
 function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, onDelete }: {
-  item: any,
+  item: Media | null,
   collectionSlug?: string,
   onClose: () => void,
   baseUrl: string,
-  onUpdate: (data: any) => void,
+  onUpdate: (data: { alt: string; caption: string }) => void,
   onDelete?: () => void
 }) {
-  const [formData, setFormData] = React.useState<any>(() => ({
-    alt: item?.alt || "",
-    caption: item?.caption || "",
+  const [formData, setFormData] = React.useState<{ alt: string; caption: string }>(() => ({
+    alt: (item?.alt as string) || "",
+    caption: (item?.caption as string) || "",
   }))
   const [isSaving, setIsSaving] = React.useState(false)
-
-  React.useEffect(() => {
-    if (item) {
-      setFormData({
-        alt: item.alt || "",
-        caption: item.caption || "",
-      })
-    }
-  }, [item?.id, item?.alt, item?.caption])
 
   if (!item) return null
 
@@ -422,13 +417,13 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                 <div className="dy-space-y-4">
                   <div>
                     <h4 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{item.filename}</h4>
-                    <p className="dy-text-xs dy-text-muted-foreground">Uploaded on {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : 'N/A'}</p>
+                    <p className="dy-text-xs dy-text-muted-foreground">Uploaded on {item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A'}</p>
                   </div>
 
                   <div className="dy-grid dy-grid-cols-2 dy-gap-x-4 dy-gap-y-3 dy-bg-muted/30 dy-p-3.5 dy-rounded-xl dy-border dy-border-border/40">
                     <div className="dy-space-y-0.5">
                       <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">File Size</span>
-                      <p className="dy-text-xs dy-font-semibold">{((item.filesize || item.size || 0) / 1024).toFixed(1)} KB</p>
+                      <p className="dy-text-xs dy-font-semibold">{((item.filesize || (item.size as number) || 0) / 1024).toFixed(1)} KB</p>
                     </div>
                     <div className="dy-space-y-0.5">
                       <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">Dimensions</span>
@@ -440,7 +435,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                     </div>
                     <div className="dy-space-y-0.5">
                       <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">File ID</span>
-                      <p className="dy-text-xs dy-font-semibold dy-font-mono dy-truncate" title={item.id}>{item.id}</p>
+                      <p className="dy-text-xs dy-font-semibold dy-font-mono dy-truncate" title={item.id as string}>{item.id as string}</p>
                     </div>
                   </div>
                 </div>
@@ -588,10 +583,10 @@ function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string,
       }
       onComplete()
       toast.success(`${files.length} assets uploaded successfully`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Upload failed", error)
       toast.error("Failed to upload assets", {
-        description: error.message
+        description: (error as Error).message
       })
     } finally {
       setUploading(false)
