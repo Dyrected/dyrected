@@ -1,5 +1,12 @@
 # @dyrected/core
 
+## 2.5.15
+
+### Patch Changes
+
+- 356a7a5: feat: implement recursive lifecycle hooks system with collection/field level execution and admin sandbox support
+  refactor: implement flexible grid-based form layout with radio field support and make selecet and multiselect filed searchable
+
 ## 2.5.14
 
 ## 2.5.13
