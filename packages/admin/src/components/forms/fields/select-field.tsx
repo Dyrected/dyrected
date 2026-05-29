@@ -30,6 +30,16 @@ interface SelectFieldProps {
   siblingValues?: Record<string, string | number | boolean>
 }
 
+/**
+ * SelectField Component
+ * 
+ * Renders a single-select combobox dropdown utilizing shadcn UI Command.
+ * Includes support for:
+ * - **Static Options**: Resolved from collection field schemas.
+ * - **Dynamic Options**: Async loaded from an endpoint based on collection, field name, and parent/sibling form values.
+ * - **Clear Selection**: An inline clear button ("X" icon) is displayed next to the chevron when a value is selected,
+ *   safely clearing the selection using `field.onChange("")` without opening the dropdown overlay.
+ */
 export function SelectField({ schema, field, disabled, collection, siblingValues }: SelectFieldProps) {
   const { client } = useDyrected()
   const [open, setOpen] = React.useState(false)

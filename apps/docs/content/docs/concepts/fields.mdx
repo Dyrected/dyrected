@@ -47,7 +47,27 @@ A single-line text input.
 
 - **Stored as:** `VARCHAR` (SQL) / `string` (MongoDB)
 - **API returns:** `string`
-- **Admin UI:** `<input type="text" />`
+- **Admin UI:** `<input type="text" />` with optional live character/word limit counters and warnings
+
+#### Size & Word Limits
+
+You can restrict the length of `text` and `textarea` fields using character or word constraints. The Admin UI renders an interactive limit indicator at the bottom-right of the input:
+- **Amber Warning**: Renders when the length reaches 80% or more of the configured limit.
+- **Red/Destructive Warning**: Renders bold when the length reaches or exceeds 100% of the limit.
+
+| Property | Type | Scope | Description |
+|---|---|---|---|
+| `maxLength` | `number` | Field / `admin` / `validate` | Maximum number of characters allowed. |
+| `maxWords` | `number` | Field / `admin` | Maximum number of words allowed. |
+
+```ts
+{
+  name: 'excerpt',
+  type: 'textarea',
+  maxLength: 160, // Shows character count: Amber at >= 128, Red at >= 160
+  maxWords: 30,   // Shows word count: Amber at >= 24, Red at >= 30
+}
+```
 
 ---
 
@@ -127,7 +147,7 @@ A searchable icon picker backed by the [Lucide](https://lucide.dev) icon library
 
 - **Stored as:** `VARCHAR` / `string` — the Lucide component name, e.g. `"Rocket"`, `"ShieldCheck"`
 - **API returns:** `string`
-- **Admin UI:** Button that opens a searchable grid of all Lucide icons; selected icon is previewed beside the picker
+- **Admin UI:** A popover button opening a categorized and searchable grid of all Lucide icons. Includes category-based filtering tabs and paginated "Load more" behavior for lag-free scrolling. The selected icon is previewed beside the button.
 
 #### Rendering on the frontend (Vue / Nuxt)
 
@@ -326,7 +346,7 @@ Options can also be **dynamically resolved** at request time — from a database
 
 - **Stored as:** `VARCHAR` / `string`
 - **API returns:** The selected `value` string
-- **Admin UI:** Dropdown `<Select />`
+- **Admin UI:** Dropdown `<Select />` with an inline click-to-clear button (X) when a value is selected
 
 #### Radio layout
 
@@ -370,7 +390,7 @@ Like `select`, `multiSelect` also supports dynamic server-side resolvers and cli
 
 - **Stored as:** `JSON` array / `TEXT[]` (PostgreSQL)
 - **API returns:** `string[]`
-- **Admin UI:** Tag-based multi-select with search
+- **Admin UI:** Tag-based multi-select with search and an inline click-to-clear button (X) when one or more values are selected
 
 ---
 
@@ -479,7 +499,7 @@ A list of repeating field groups. Each item in the array has the same sub-field 
 
 - **Stored as:** `JSON` / `JSONB`
 - **API returns:** `Array<{ question: string, answer: string }>`
-- **Admin UI:** Repeatable card list with Add/Remove buttons and drag-to-reorder
+- **Admin UI:** Repeatable card list with Add/Remove buttons and drag-to-reorder. Prompts the editor with a safety confirmation dialog before deletion to prevent accidental data loss.
 
 ---
 
@@ -523,7 +543,7 @@ A flexible layout builder. Each block in the list can be a different type, chose
 
 - **Stored as:** `JSON` / `JSONB`
 - **API returns:** `Array<{ blockType: string, ...blockFields }>`. Each item includes a `blockType` property matching the block's `slug`.
-- **Admin UI:** Block-picker modal + per-block inline editor
+- **Admin UI:** Block-picker modal + per-block inline editor. Prompts the editor with a safety confirmation dialog before deletion to prevent accidental data loss.
 
 ---
 

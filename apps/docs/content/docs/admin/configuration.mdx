@@ -165,10 +165,15 @@ export const SiteSettings = defineGlobal({
 | `readOnly` | `boolean` | `false` | Renders the field disabled. The value is included in the form submission but cannot be edited. |
 | `hidden` | `boolean` | `false` | Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI. |
 | `condition` | `string \| (data: any) => boolean` | always shown | A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
+| `maxLength` | `number` | none | Maximum character limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
+| `maxWords` | `number` | none | Maximum word limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
 
 ### `condition` — Conditional Fields
 
 Use `condition` to show or hide a field based on the values of *other* fields in the same document. For maximum compatibility and security, Dyrected uses [Jexl](https://github.com/TechnologyAdvice/Jexl) for conditions.
+
+> [!NOTE]
+> JEXL conditions are compiled and memoized in the Admin UI to ensure optimal typing performance. If a condition string contains syntax errors or throws evaluation errors, the Admin UI renders an inline red error boundary showing the field name and error traceback, while disabling the field.
 
 #### String Expressions (Recommended)
 String-based conditions are serializable and work across all environments (local, cloud, and production).

@@ -39,9 +39,13 @@ interface MultiSelectProps {
 }
 
 /**
- * MultiSelect Field component
+ * MultiSelect Component
  * 
- * Provides a tag-based multi-selection UI using a searchable dropdown.
+ * Renders a tag-based multi-selection UI using a searchable dropdown.
+ * Includes support for:
+ * - **Tag Removal**: Individual tags can be removed using their inline close buttons.
+ * - **Clear All Selections**: A clear button ("X" icon) is rendered next to the chevron when values are selected,
+ *   safely clearing the entire selection list at once (`onChange([])`) without opening the dropdown list.
  */
 export function MultiSelect({
   options,
