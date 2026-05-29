@@ -19,7 +19,7 @@ export function RadioField({ schema, field, disabled }: RadioFieldProps) {
   return (
     <RadioGroup
       onValueChange={field.onChange}
-      defaultValue={field.value}
+      value={field.value ?? ""}
       disabled={disabled}
       className={cn(
         "dy-gap-4",

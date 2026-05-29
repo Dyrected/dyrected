@@ -113,11 +113,11 @@ export function MultiSelect({
             role="combobox"
             aria-expanded={open}
             disabled={disabled || (isDynamic && isLoading)}
-            className="dy-w-full dy-justify-between dy-h-auto dy-min-h-10 dy-font-normal"
+            className="dy-min-h-12 dy-w-full dy-justify-between dy-rounded-xl dy-border-border/40 dy-bg-background/50 dy-px-4 dy-font-normal dy-shadow-sm dy-transition-all hover:dy-shadow-md"
           >
-            <div className="dy-flex dy-flex-wrap dy-gap-1 dy-items-center">
+            <div className="dy-flex dy-min-w-0 dy-flex-1 dy-flex-wrap dy-items-center dy-gap-1">
               {value.length === 0 && (
-                <span className="dy-text-muted-foreground">
+                <span className="dy-truncate dy-text-muted-foreground">
                   {isDynamic && isLoading ? "Loading options..." : placeholder}
                 </span>
               )}
@@ -127,7 +127,7 @@ export function MultiSelect({
                   <Badge
                     key={val}
                     variant="secondary"
-                    className="dy-mr-1 dy-mb-1 dy-items-center dy-gap-1"
+                    className="dy-mr-1 dy-items-center dy-gap-1 dy-rounded-md"
                   >
                     {option?.label || val}
                     {!disabled && (
@@ -156,7 +156,7 @@ export function MultiSelect({
             <ChevronsUpDown className="dy-ml-2 dy-h-4 dy-w-4 dy-shrink-0 dy-opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="dy-w-[400px] dy-p-0" align="start">
+        <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">
           <Command>
             <CommandInput placeholder="Search options..." />
             <CommandList>
@@ -167,8 +167,9 @@ export function MultiSelect({
                   return (
                     <CommandItem
                       key={option.value}
-                      value={option.label}
+                      value={`${option.label} ${option.value}`}
                       onSelect={() => handleSelect(option.value)}
+                      className="dy-rounded-lg dy-py-2.5"
                     >
                       <Check
                         className={cn(

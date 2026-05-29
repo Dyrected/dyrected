@@ -1,10 +1,21 @@
+import * as React from "react"
+import { Check, ChevronsUpDown } from "lucide-react"
+
+import { cn } from "../../../lib/utils"
+import { Button } from "../../ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../ui/select"
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "../../ui/command"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "../../ui/popover"
 import { normalizeOptions } from "../utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 import { useQuery } from "@tanstack/react-query"
@@ -21,6 +32,7 @@ interface SelectFieldProps {
 
 export function SelectField({ schema, field, disabled, collection, siblingValues }: SelectFieldProps) {
   const { client } = useDyrected()
+  const [open, setOpen] = React.useState(false)
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
 
   const isDynamic = !!(schema.options && typeof schema.options === "object" && "_dynamic" in schema.options)
@@ -53,30 +65,64 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
   const rawOptions = isDynamic ? (dynamicOptions || []) : schema.options
   const options = normalizeOptions(rawOptions).map((opt) => ({
     label: opt.label,
-    value: opt.value === "" ? "__EMPTY_VALUE__" : opt.value,
+    value: String(opt.value ?? ""),
   }))
 
   const currentValue =
     field.value === "" || field.value === undefined || field.value === null
-      ? "__EMPTY_VALUE__"
+      ? ""
       : String(field.value)
+  const selectedOption = options.find((opt) => opt.value === currentValue)
+  const placeholder = isDynamic && isLoading ? "Loading options..." : schema.admin?.placeholder || `Select ${label.toLowerCase()}`
 
   return (
-    <Select
-      value={currentValue}
-      onValueChange={(val) => field.onChange(val === "__EMPTY_VALUE__" ? "" : val)}
-      disabled={disabled || (isDynamic && isLoading)}
-    >
-      <SelectTrigger className="dy-h-12 dy-rounded-xl dy-border-border/40 dy-bg-background/50 focus:dy-ring-0 focus:dy-ring-offset-0 focus:dy-bg-background dy-shadow-sm dy-transition-all hover:dy-shadow-md">
-        <SelectValue placeholder={isDynamic && isLoading ? "Loading options..." : schema.admin?.placeholder || `Select ${label.toLowerCase()}`} />
-      </SelectTrigger>
-      <SelectContent className="dy-rounded-xl dy-border-border/40 dy-shadow-xl dy-animate-in dy-fade-in dy-zoom-in-95">
-        {options.map((opt) => (
-          <SelectItem key={opt.value} value={opt.value} className="dy-rounded-lg focus:dy-bg-primary/5 focus:dy-text-primary dy-transition-colors">
-            {opt.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Popover open={disabled ? false : open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled || (isDynamic && isLoading)}
+          className={cn(
+            "dy-h-12 dy-w-full dy-justify-between dy-rounded-xl dy-border-border/40 dy-bg-background/50 dy-px-4 dy-font-normal dy-shadow-sm dy-transition-all hover:dy-shadow-md",
+            !selectedOption && "dy-text-muted-foreground"
+          )}
+        >
+          <span className="dy-truncate">
+            {selectedOption?.label || placeholder}
+          </span>
+          <ChevronsUpDown className="dy-ml-2 dy-h-4 dy-w-4 dy-shrink-0 dy-opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">
+        <Command>
+          <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
+          <CommandList>
+            <CommandEmpty>No option found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((opt) => (
+                <CommandItem
+                  key={opt.value || "__empty"}
+                  value={`${opt.label} ${opt.value}`}
+                  onSelect={() => {
+                    field.onChange(opt.value)
+                    setOpen(false)
+                  }}
+                  className="dy-rounded-lg dy-py-2.5"
+                >
+                  <Check
+                    className={cn(
+                      "dy-mr-2 dy-h-4 dy-w-4",
+                      currentValue === opt.value ? "dy-opacity-100" : "dy-opacity-0"
+                    )}
+                  />
+                  <span className="dy-truncate">{opt.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }

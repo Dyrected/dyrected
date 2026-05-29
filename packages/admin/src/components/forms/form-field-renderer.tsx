@@ -44,6 +44,23 @@ interface FormFieldRendererProps {
   collection: string
 }
 
+function FieldColumn({
+  field,
+  children,
+}: {
+  field: FieldSchema
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className="dy-min-w-0 dy-px-3"
+      style={{ width: field.admin?.width || "100%" }}
+    >
+      {children}
+    </div>
+  )
+}
+
 /**
  * FormFieldRenderer (Field Orchestrator)
  * 
@@ -179,14 +196,13 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
 
   if ((schema.type as string) === "row") {
     return (
-      <div className="dy-flex dy-flex-wrap dy-gap-6 dy-items-start">
+      <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6 dy-items-start">
         {schema.fields?.map((subField, i) => (
           <div
             key={subField.name ?? i}
+            className="dy-min-w-0 dy-px-3"
             style={{
-              width: subField.admin?.width,
-              flexGrow: subField.admin?.width ? 0 : 1,
-              minWidth: '180px',
+              width: subField.admin?.width || "100%",
             }}
           >
             <FormFieldRenderer
@@ -356,15 +372,16 @@ function ObjectFieldRenderer({
 
       {/* Object Fields */}
       {!isCollapsed && (
-        <div className="dy-space-y-6">
+        <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
           {schema.fields?.map(subField => (
-            <FormFieldRenderer
-              key={subField.name}
-              schema={subField}
-              basePath={basePath}
-              control={control}
-              collection={collection}
-            />
+            <FieldColumn key={subField.name} field={subField}>
+              <FormFieldRenderer
+                schema={subField}
+                basePath={basePath}
+                control={control}
+                collection={collection}
+              />
+            </FieldColumn>
           ))}
         </div>
       )}
@@ -544,15 +561,16 @@ function SortableArrayItem({
 
       {/* Item Fields */}
       {isExpanded && (
-        <div className="dy-space-y-6">
+        <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
           {schema.fields?.map(subField => (
-            <FormFieldRenderer
-              key={subField.name}
-              schema={subField}
-              basePath={`${basePath}.${index}`}
-              control={control}
-              collection={collection}
-            />
+            <FieldColumn key={subField.name} field={subField}>
+              <FormFieldRenderer
+                schema={subField}
+                basePath={`${basePath}.${index}`}
+                control={control}
+                collection={collection}
+              />
+            </FieldColumn>
           ))}
         </div>
       )}

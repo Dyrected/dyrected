@@ -11,6 +11,11 @@ import { afterEach } from "vitest"
 if (typeof window !== "undefined") {
   window.HTMLElement.prototype.hasPointerCapture = () => false
   window.HTMLElement.prototype.scrollIntoView = () => {}
+  window.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
 }
 
 // Mock useDyrected

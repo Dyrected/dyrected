@@ -25,14 +25,14 @@ const Admin = defineCollection({
     },
     {
       name: "roles",
-      type: "select",
+      type: "radio",
       label: "Roles",
       options: [
         { label: "Admin", value: "admin" },
         { label: "Editor", value: "editor" },
         { label: "Viewer", value: "viewer" },
       ],
-      admin: { direction: "horizontal", layout: "radio" },
+      admin: { direction: "horizontal" },
     },
   ],
 });
@@ -47,10 +47,28 @@ const Products = defineCollection({
   },
   fields: [
     { label: "Title", name: "title", type: "text", required: true },
-    { label: "Slug", name: "slug", type: "text", required: true, unique: true },
+    {
+      label: "Slug",
+      name: "slug",
+      type: "text",
+      required: true,
+      unique: true,
+      hooks: {
+        beforeChange: [({ value }) => value?.toLowerCase()],
+      },
+      admin: {
+        hooks: {
+          onChange: ({ value, siblingData }) => {
+            const titleSlug = (siblingData?.title || "").toLowerCase().replace(/\s/g, "-");
+            if (titleSlug.includes(value)) return titleSlug;
+            return value;
+          },
+        },
+      },
+    },
     { label: "Description", name: "description", type: "textarea" },
     { label: "Price", name: "price", type: "number" },
-    { label: "Image", name: "image", type: "relationship", relationTo: Media.slug },
+    { label: "Image", name: "image", type: "relationship", relationTo: Media.slug, hasMany: true },
     { label: "Featured", name: "featured", type: "boolean", defaultValue: false },
     { label: "Published At", name: "publishedAt", type: "date" },
   ],
@@ -279,6 +297,62 @@ const Authors = defineCollection({
     { name: "name", type: "text", required: true },
     { name: "bio", type: "textarea" },
     { name: "avatar", type: "relationship", relationTo: Media.slug },
+    {
+      name: "country",
+      type: "select",
+      options: async () => {
+        const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2");
+        const data = (await response.json()) as Array<{ name: { common: string }; cca2: string }>;
+        return data
+          .map((country) => ({ label: country.name.common, value: country.cca2 }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      },
+      admin: { width: "50%" },
+    },
+    {
+      name: "state",
+      type: "select",
+      options: [],
+      admin: {
+        width: "50%",
+        hooks: {
+          options: async ({ siblingData }) => {
+            const country = Array.isArray(siblingData?.country) ? siblingData.country[0] : siblingData?.country;
+            if (!country) return [];
+
+            const iso2 = String(country).toUpperCase();
+            const cache = ((globalThis as any).__dyrectedRegionOptionsByCountry ??= {});
+            if (cache[iso2]) return cache[iso2];
+
+            cache[iso2] = fetch("https://countriesnow.space/api/v0.1/countries/states", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ iso2 }),
+            })
+              .then(async (response) => {
+                if (!response.ok) return [];
+
+                const data = (await response.json()) as {
+                  error: boolean;
+                  data?: { states?: Array<{ name: string; state_code?: string }> };
+                };
+
+                if (data.error || !data.data?.states) return [];
+
+                return data.data.states
+                  .map((state) => ({ label: state.name, value: state.state_code || state.name }))
+                  .sort((a, b) => a.label.localeCompare(b.label));
+              })
+              .catch(() => {
+                delete cache[iso2];
+                return [];
+              });
+
+            return cache[iso2];
+          },
+        },
+      },
+    },
   ],
 });
 
@@ -337,4 +411,7 @@ export default defineConfig({
     uploadDir: path.resolve(process.cwd(), "public/uploads"),
     staticUrlPrefix: "/uploads",
   }),
+  admin: {
+    branding: { logoMark: "/uploads/default/logo_transparent.png", logo: "/uploads/default/logo_transparent.png" },
+  },
 });

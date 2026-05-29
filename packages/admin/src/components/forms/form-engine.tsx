@@ -328,6 +328,21 @@ export function FormEngine({
 
   let fieldsContent: React.ReactNode
 
+  const renderFieldColumn = (field: FieldSchema) => (
+    <div
+      key={field.name}
+      className="dy-min-w-0 dy-px-3"
+      style={{ width: field.admin?.width || "100%" }}
+    >
+      <FormFieldRenderer
+        schema={field}
+        basePath=""
+        control={form.control}
+        collection={collection}
+      />
+    </div>
+  )
+
   if (tabbedFields.length > 0) {
     const tabOrder: string[] = []
     const tabGroups = new Map<string, FieldSchema[]>()
@@ -356,16 +371,8 @@ export function FormEngine({
     fieldsContent = (
       <div className="dy-space-y-6">
         {topFields.length > 0 && (
-          <div className="dy-grid dy-gap-6">
-            {topFields.map((field) => (
-              <FormFieldRenderer
-                key={field.name}
-                schema={field}
-                basePath=""
-                control={form.control}
-                collection={collection}
-              />
-            ))}
+          <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
+            {topFields.map(renderFieldColumn)}
           </div>
         )}
         <Tabs defaultValue={tabOrder[0]}>
@@ -386,16 +393,8 @@ export function FormEngine({
           </TabsList>
           {tabOrder.map((tab) => (
             <TabsContent key={tab} value={tab}>
-              <div className="dy-grid dy-gap-6 dy-pt-4">
-                {tabGroups.get(tab)!.map((field) => (
-                  <FormFieldRenderer
-                    key={field.name}
-                    schema={field}
-                    basePath=""
-                    control={form.control}
-                    collection={collection}
-                  />
-                ))}
+              <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6 dy-pt-4">
+                {tabGroups.get(tab)!.map(renderFieldColumn)}
               </div>
             </TabsContent>
           ))}
@@ -404,16 +403,8 @@ export function FormEngine({
     )
   } else {
     fieldsContent = (
-      <div className="dy-grid dy-gap-6">
-        {visibleFields.map((field) => (
-          <FormFieldRenderer
-            key={field.name}
-            schema={field}
-            basePath=""
-            control={form.control}
-            collection={collection}
-          />
-        ))}
+      <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
+        {visibleFields.map(renderFieldColumn)}
       </div>
     )
   }
