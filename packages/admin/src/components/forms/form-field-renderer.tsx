@@ -36,6 +36,14 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 
 import { Input } from "../ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "../ui/dialog"
 
 interface FormFieldRendererProps {
   schema: FieldSchema
@@ -73,58 +81,139 @@ function FieldColumn({
  * It delegates the actual rendering of the input UI to the FieldRenderer.
  */
 export function FormFieldRenderer({ schema, basePath, control, collection }: FormFieldRendererProps) {
-  const { user, schemas } = useDyrected()
+  const { user } = useDyrected()
+
+  const formValues = useWatch({ control })
+  const siblingData = useWatch({ control, name: (basePath || undefined) as string }) || {}
+  const conditionData = basePath ? { ...formValues, ...siblingData } : formValues
+
+  const condition = schema.admin?.condition
+  const readAccess = (schema.access as Record<string, unknown> | undefined)?.read
+  const updateAccess = (schema.access as Record<string, unknown> | undefined)?.update
+
+  // Memoize compilation of JEXL conditions to avoid parsing overhead on every keystroke
+  const compiledCondition = React.useMemo(() => {
+    if (typeof condition !== "string") return null
+    try {
+      const sanitized = condition.replace(/===/g, "==").replace(/!==/g, "!=")
+      return { expr: jexl.compile(sanitized), error: null }
+    } catch (e: unknown) {
+      return { expr: null, error: `Condition compile error: ${(e as Error).message || String(e)}` }
+    }
+  }, [condition])
+
+  const compiledReadAccess = React.useMemo(() => {
+    if (typeof readAccess !== "string") return null
+    try {
+      return { expr: jexl.compile(readAccess), error: null }
+    } catch (e: unknown) {
+      return { expr: null, error: `Read access compile error: ${(e as Error).message || String(e)}` }
+    }
+  }, [readAccess])
+
+  const compiledUpdateAccess = React.useMemo(() => {
+    if (typeof updateAccess !== "string") return null
+    try {
+      return { expr: jexl.compile(updateAccess), error: null }
+    } catch (e: unknown) {
+      return { expr: null, error: `Update access compile error: ${(e as Error).message || String(e)}` }
+    }
+  }, [updateAccess])
 
   if (schema.admin?.hidden) return null
 
-  const formValues = useWatch({ control })
-  const siblingData = useWatch({ control, name: (basePath || undefined) as any }) || {}
-  const conditionData = basePath ? { ...formValues, ...siblingData } : formValues
-
   let isVisible = true
-  const condition = schema.admin?.condition
+  let jexlError: string | null = null
 
-  if (typeof condition === 'function') {
-    isVisible = condition(conditionData, siblingData)
-  } else if (typeof condition === 'string') {
-    try {
-      const sanitizedCondition = condition.replace(/===/g, '==').replace(/!==/g, '!=')
-      isVisible = jexl.evalSync(sanitizedCondition, conditionData)
-    } catch (e) {
-      console.warn("Jexl eval failed:", e)
-      isVisible = true
+  if (compiledCondition) {
+    if (compiledCondition.error) {
+      jexlError = compiledCondition.error
+    } else if (compiledCondition.expr) {
+      try {
+        isVisible = compiledCondition.expr.evalSync(conditionData)
+      } catch (e: unknown) {
+        jexlError = `Condition eval error: ${(e as Error).message || String(e)}`
+      }
     }
+  } else if (typeof condition === "function") {
+    isVisible = condition(conditionData, siblingData)
   }
 
-  if (!isVisible) return null
+  if (!isVisible && !jexlError) return null
 
   // Evaluate Read Access
-  const readAccess = (schema.access as any)?.read
   let canRead = true
   if (readAccess === false) {
     canRead = false
-  } else if (typeof readAccess === 'string') {
-    try {
-      canRead = jexl.evalSync(readAccess, { user, ...conditionData })
-    } catch (e) {
-      console.warn("Read access eval failed:", e)
+  } else if (compiledReadAccess) {
+    if (compiledReadAccess.error) {
+      jexlError = jexlError ? `${jexlError} | ${compiledReadAccess.error}` : compiledReadAccess.error
+    } else if (compiledReadAccess.expr) {
+      try {
+        canRead = compiledReadAccess.expr.evalSync({ user, ...conditionData })
+      } catch (e: unknown) {
+        jexlError = jexlError ? `${jexlError} | Read eval error: ${(e as Error).message || String(e)}` : `Read eval error: ${(e as Error).message || String(e)}`
+      }
     }
   }
 
-  if (!canRead) return null
+  if (!canRead && !jexlError) return null
 
   // Evaluate Update/Write Access
-  const updateAccess = (schema.access as any)?.update
   let canUpdate = true
   if (updateAccess === false) {
     canUpdate = false
-  } else if (typeof updateAccess === 'string') {
-    try {
-      canUpdate = jexl.evalSync(updateAccess, { user, ...conditionData })
-    } catch (e) {
-      console.warn("Update access eval failed:", e)
+  } else if (compiledUpdateAccess) {
+    if (compiledUpdateAccess.error) {
+      jexlError = jexlError ? `${jexlError} | ${compiledUpdateAccess.error}` : compiledUpdateAccess.error
+    } else if (compiledUpdateAccess.expr) {
+      try {
+        canUpdate = compiledUpdateAccess.expr.evalSync({ user, ...conditionData })
+      } catch (e: unknown) {
+        jexlError = jexlError ? `${jexlError} | Update eval error: ${(e as Error).message || String(e)}` : `Update eval error: ${(e as Error).message || String(e)}`
+      }
     }
   }
+
+  const innerContent = (
+    <FormFieldRendererInner
+      schema={schema}
+      basePath={basePath}
+      control={control}
+      collection={collection}
+      canUpdate={canUpdate}
+    />
+  )
+
+  if (jexlError) {
+    return (
+      <div className="dy-space-y-2 dy-border dy-border-destructive/30 dy-bg-destructive/5 dy-p-3 dy-rounded-xl dy-my-2">
+        <div className="dy-text-xs dy-font-semibold dy-text-destructive dy-flex dy-items-center dy-gap-2">
+          <span>⚠️ JEXL Rule Evaluation Error on field "{schema.label || schema.name}":</span>
+          <span className="dy-font-mono dy-text-[11px] dy-bg-destructive/10 dy-px-1.5 dy-py-0.5 dy-rounded">{jexlError}</span>
+        </div>
+        <div className="dy-opacity-50 dy-pointer-events-none">
+          {innerContent}
+        </div>
+      </div>
+    )
+  }
+
+  return innerContent
+}
+
+function FormFieldRendererInner({
+  schema,
+  basePath,
+  control,
+  collection,
+  canUpdate,
+}: FormFieldRendererProps & { canUpdate: boolean }) {
+  const { user, schemas } = useDyrected()
+
+  const formValues = useWatch({ control })
+  const siblingData = useWatch({ control, name: (basePath || undefined) as string }) || {}
+  const conditionData = basePath ? { ...formValues, ...siblingData } : formValues
 
   // Password fields should be hidden completely if the user does not have update access
   if (schema.name === "password" && !canUpdate) {
@@ -477,6 +566,7 @@ function SortableArrayItem({
   } = useSortable({ id })
 
   const [isExpanded, setIsExpanded] = React.useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
 
   const transformString = CSS.Transform.toString(transform)
   const style = {
@@ -553,7 +643,7 @@ function SortableArrayItem({
             variant="ghost"
             size="icon"
             className="dy-h-7 dy-w-7 dy-text-destructive/70 hover:dy-text-destructive hover:dy-bg-destructive/15 dy-rounded-md dy-transition-colors"
-            onClick={() => remove(index)}
+            onClick={() => setShowDeleteConfirm(true)}
             title="Delete item"
           >
             <Trash2 className="dy-w-3.5 dy-h-3.5" />
@@ -576,6 +666,25 @@ function SortableArrayItem({
           ))}
         </div>
       )}
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:dy-max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this item? This action cannot be undone and you will lose any unsaved content in this block.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => { remove(index); setShowDeleteConfirm(false); }}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

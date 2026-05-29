@@ -361,9 +361,30 @@ export type CollectionBeforeChangeHook<
 /**
  * Runs **after** a document is created or updated in the database.
  *
- * The return value is ignored — this hook is for side-effects only (webhooks,
- * cache revalidation, notifications, etc.). Throwing here does NOT roll back
- * the already-committed write.
+ * **Isolation**: errors thrown inside this hook are caught by the framework,
+ * logged to the console, and then discarded. The HTTP response returns the
+ * saved document as if nothing went wrong — because from the database's
+ * perspective, nothing did. This means a transient email failure or webhook
+ * timeout will never turn a successful write into a 500 for the caller.
+ *
+ * The return value is ignored — this hook is for side-effects only (emails,
+ * webhooks, cache revalidation, search index updates, etc.).
+ *
+ * **Awaiting vs fire-and-forget**: `await`ing inside this hook is fine for
+ * fast, reliable calls. For slow or unreliable external services prefer
+ * fire-and-forget with your own `.catch()` so the response doesn't block:
+ *
+ * ```ts
+ * // ✓ fast & reliable — safe to await
+ * afterChange: [async ({ doc }) => {
+ *   await revalidatePath(`/posts/${doc.slug}`)
+ * }]
+ *
+ * // ✓ slow or unreliable — fire-and-forget
+ * afterChange: [({ doc }) => {
+ *   sendEmail({ to: doc.email, ... }).catch(console.error)
+ * }]
+ * ```
  *
  * @template TDoc  The shape of the collection's document.
  *
@@ -433,7 +454,13 @@ export type CollectionBeforeDeleteHook<
 /**
  * Runs **after** a document has been deleted from the database.
  *
- * Use for cleanup side-effects — removing related media, invalidating caches, etc.
+ * **Isolation**: same as {@link CollectionAfterChangeHook} — errors are caught,
+ * logged, and discarded. The deletion is already committed; a hook failure will
+ * never cause the deleted ID to appear in the `failed` list of a bulk delete or
+ * turn a successful single delete into a 500.
+ *
+ * Use for cleanup side-effects — removing related media, invalidating caches,
+ * notifying downstream services, etc.
  *
  * @template TDoc  The shape of the collection's document.
  */
@@ -484,6 +511,10 @@ export type GlobalBeforeChangeHook<
 
 /**
  * Runs after the global document is updated. Side-effects only.
+ *
+ * **Isolation**: errors are caught, logged, and discarded — same behaviour as
+ * {@link CollectionAfterChangeHook}. The update is already committed.
+ *
  * @see {@link CollectionAfterChangeHook}
  */
 export type GlobalAfterChangeHook<
@@ -860,21 +891,52 @@ type FieldAdminHooks<TValue> = {
 /**
  * Defines a single field on a collection or global.
  *
- * The `hooks.beforeChange` and `hooks.afterRead` callbacks receive a `value`
- * typed to match the field's `type` property — `string` for text fields,
- * `number` for number fields, `boolean` for boolean, `string[]` for
- * `multiSelect`, etc. No manual annotations needed.
+ * ## Typed `value` in hook callbacks
  *
- * **Important**: write field `type` values as plain string literals — do **not**
- * use `as const`. TypeScript's `const` generic inference already preserves
- * literal types, and adding `as const` to a discriminant property prevents
- * the contextual type from flowing into the hook callbacks.
+ * Three hook callbacks automatically receive a `value` typed to the field's
+ * own value type — no manual annotations needed:
+ *
+ * | Hook | When it runs |
+ * |------|-------------|
+ * | `hooks.beforeChange` | Server — before the value is written to the DB |
+ * | `hooks.afterRead`    | Server — after the value is read, before the API response |
+ * | `admin.hooks.onChange` | Browser — whenever a sibling field changes in the Admin UI |
+ *
+ * Type mapping by `type` property:
+ * - `text / textarea / email / url / icon / date / select / radio` → `string`
+ * - `number` → `number`
+ * - `boolean` → `boolean`
+ * - `multiSelect` → `string[]`
+ * - `relationship / image` → `string | string[]`
+ * - `richText / json` → `Record<string, unknown>`
+ * - `object / array / blocks` → `unknown`
  *
  * ```ts
- * // ✓ correct — type inferred as literal 'text', value is string
+ * {
+ *   name: 'slug', type: 'text',
+ *   hooks: {
+ *     beforeChange: [({ value }) => value.toLowerCase()],  // value: string ✓
+ *     afterRead:    [({ value }) => value.trim()],         // value: string ✓
+ *   },
+ *   admin: {
+ *     hooks: {
+ *       onChange: ({ value, siblingData }) =>              // value: string ✓
+ *         (siblingData.title as string ?? '').toLowerCase().replace(/\s+/g, '-'),
+ *     },
+ *   },
+ * }
+ * ```
+ *
+ * **Important**: write `type` as a plain string literal — do **not** use `as const`.
+ * TypeScript's `const` generic inference already preserves literal types, and
+ * adding `as const` to the discriminant property prevents the contextual type
+ * from flowing into the hook callbacks.
+ *
+ * ```ts
+ * // ✓ correct
  * { name: 'slug', type: 'text', hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
  *
- * // ✗ avoid — `as const` on the discriminant breaks contextual typing
+ * // ✗ breaks value typing
  * { name: 'slug', type: 'text' as const, hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
  * ```
  */
@@ -1042,6 +1104,10 @@ export interface CollectionConfig<
     /**
      * Runs after create or update is committed. For side-effects only —
      * webhooks, cache busting, notifications. Return value is ignored.
+     *
+     * Errors are **isolated**: caught, logged, and discarded so a failing
+     * side-effect never turns a successful write into an HTTP 500.
+     * See {@link CollectionAfterChangeHook} for the await-vs-fire-and-forget guidance.
      */
     afterChange?: CollectionAfterChangeHook<TDoc>[];
 
@@ -1052,6 +1118,9 @@ export interface CollectionConfig<
 
     /**
      * Runs after a document has been deleted. For cleanup side-effects only.
+     *
+     * Errors are **isolated**: caught, logged, and discarded — the deletion is
+     * already committed and will not be undone.
      */
     afterDelete?: CollectionAfterDeleteHook<TDoc>[];
   };

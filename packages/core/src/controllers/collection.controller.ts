@@ -184,7 +184,7 @@ export class CollectionController {
       user,
       req: c.req,
       operation: 'create',
-    });
+    }, { isolated: true });
 
     // Run afterRead hooks on the returned doc
     const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
@@ -257,7 +257,7 @@ export class CollectionController {
       user,
       req: c.req,
       operation: 'create',
-    });
+    }, { isolated: true });
 
     // Run afterRead hooks
     const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
@@ -332,7 +332,7 @@ export class CollectionController {
       user,
       req: c.req,
       operation: 'update',
-    });
+    }, { isolated: true });
 
     // Run afterRead hooks
     const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
@@ -476,7 +476,7 @@ export class CollectionController {
       doc,
       user,
       req: c.req,
-    });
+    }, { isolated: true });
 
     return c.json({ message: 'Deleted' });
   }
@@ -550,7 +550,7 @@ export class CollectionController {
           doc,
           user,
           req: c.req,
-        });
+        }, { isolated: true });
       } catch (err: any) {
         failed.push({ id, error: err?.message ?? 'Unknown error' });
       }

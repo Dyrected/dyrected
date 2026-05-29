@@ -153,7 +153,27 @@ export function MultiSelect({
                 )
               })}
             </div>
-            <ChevronsUpDown className="dy-ml-2 dy-h-4 dy-w-4 dy-shrink-0 dy-opacity-50" />
+            <div className="dy-flex dy-items-center dy-gap-1.5 dy-shrink-0 dy-ml-2">
+              {value.length > 0 && !disabled && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="dy-text-muted-foreground hover:dy-text-foreground dy-p-1 dy-rounded-md hover:dy-bg-muted dy-transition-colors"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onChange([])
+                  }}
+                >
+                  <X className="dy-h-3.5 dy-w-3.5" />
+                </span>
+              )}
+              <ChevronsUpDown className="dy-h-4 dy-w-4 dy-opacity-50" />
+            </div>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">

@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "../../ui/dialog"
 import {
   DndContext,
@@ -81,6 +82,8 @@ function SortableBlockItem({
     opacity: isDragging ? 0.9 : 1,
   }
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
   const blockConfig = schema.blocks?.find(b => b.slug === item.blockType)
 
   const itemValues = useWatch({
@@ -108,21 +111,6 @@ function SortableBlockItem({
       }
     }
 
-    // Fallback: build a list of key-value pairs of non-empty fields
-    const summaries: string[] = []
-    blockConfig.fields.forEach(field => {
-      const val = itemValues[field.name]
-      if (val !== undefined && val !== null && val !== "") {
-        if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
-          summaries.push(`${field.label || field.name}: ${val}`)
-        }
-      }
-    })
-
-    if (summaries.length > 0) {
-      return summaries.slice(0, 3).join(", ")
-    }
-
     return ""
   }
 
@@ -133,29 +121,29 @@ function SortableBlockItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "dy-bg-card/70 dy-border dy-border-border/60 dy-rounded-xl dy-relative dy-group dy-left-accent dy-mb-4 dy-py-4 dy-animate-in dy-transition-all",
-        isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-card dy-border-primary/50" : ""
+        "dy-bg-card dy-border dy-border-border/30 dy-rounded-xl dy-shadow-sm dy-overflow-hidden dy-transition-all",
+        isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-muted/10 dy-border-primary/50" : "hover:dy-shadow-md"
       )}
     >
-      {/* Header / Drag Handle */}
+      {/* Header */}
       <div
+        className="dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-3 dy-bg-muted/30 dy-border-b dy-border-border/10 dy-cursor-pointer select-none"
         onClick={onToggleExpand}
-        className="px-4 dy-flex dy-items-center dy-justify-between dy-pb-3 dy-cursor-pointer dy-select-none"
       >
-        <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0 dy-flex-1">
+        <div className="dy-flex dy-items-center dy-gap-2.5 dy-min-w-0">
           <div
             {...attributes}
             {...listeners}
+            className="dy-cursor-grab dy-opacity-35 hover:dy-opacity-100 hover:dy-bg-muted dy-p-1 dy-rounded-md dy-transition-all"
             onClick={(e) => e.stopPropagation()}
-            className="dy-cursor-grab dy-opacity-30 hover:dy-opacity-100 hover:dy-bg-muted dy-p-1 dy-rounded-md dy-transition-all"
           >
             <GripVertical className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground" />
           </div>
-          <span className="dy-font-semibold dy-text-[13px] dy-text-foreground/80 dy-tracking-tight dy-truncate">
+          <div className="dy-flex dy-items-center dy-justify-center dy-h-7 dy-w-7 dy-rounded-lg dy-bg-primary/5 dy-border dy-border-primary/10 dy-text-primary dy-flex-shrink-0">
+            <Layers className="dy-h-3.5 dy-w-3.5" />
+          </div>
+          <span className="dy-text-xs dy-font-bold dy-text-foreground dy-tracking-tight dy-flex-shrink-0">
             {blockConfig.labels?.singular || blockConfig.slug}
-          </span>
-          <span className="dy-text-[10px] dy-text-muted-foreground/40 dy-uppercase dy-tracking-widest dy-font-semibold dy-flex-shrink-0">
-            Item {index + 1}
           </span>
           {!isExpanded && previewText && (
             <>
@@ -191,7 +179,7 @@ function SortableBlockItem({
             variant="ghost"
             size="icon"
             className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10"
-            onClick={(e) => { e.stopPropagation(); remove(index); }}
+            onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
           >
             <X className="dy-w-3.5 dy-h-3.5" />
           </Button>
@@ -200,7 +188,7 @@ function SortableBlockItem({
 
       {/* Content */}
       {isExpanded && (
-        <div className="dy-space-y-6 px-4">
+        <div className="dy-space-y-6 px-4 py-4">
           {blockConfig.fields.map(subField => (
             <FormFieldRenderer
               key={subField.name}
@@ -212,6 +200,25 @@ function SortableBlockItem({
           ))}
         </div>
       )}
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:dy-max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this block? This action cannot be undone and you will lose any content within it.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => { remove(index); setShowDeleteConfirm(false); }}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

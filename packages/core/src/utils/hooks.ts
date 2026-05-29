@@ -13,6 +13,11 @@ type AnyHookFn = (args: any) => any;
  * Each hook receives the output of the previous hook merged back into the
  * original `args`. When a hook returns a non-undefined value it becomes the
  * `data` / `doc` for the next hook in the chain.
+ *
+ * Pass `{ isolated: true }` for hooks that run **after** a DB write has already
+ * been committed (`afterChange`, `afterDelete`). In isolated mode each hook is
+ * wrapped in a try/catch so a failing side-effect (email, webhook, etc.) never
+ * surfaces as an HTTP 500 to the caller — the write already succeeded.
  */
 export async function runCollectionHooks(
   hooks: AnyHookFn[] | undefined,
@@ -24,6 +29,7 @@ export async function runCollectionHooks(
     operation?: "create" | "update" | "delete";
     [key: string]: unknown;
   },
+  options: { isolated?: boolean } = {},
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   if (!hooks || hooks.length === 0) {
@@ -33,14 +39,22 @@ export async function runCollectionHooks(
   let currentPayload = args.data ?? args.doc ?? undefined;
 
   for (const hook of hooks) {
-    const result = await hook({
-      ...args,
-      data: args.data !== undefined ? currentPayload : undefined,
-      doc: args.doc !== undefined ? currentPayload : undefined,
-    });
+    try {
+      const result = await hook({
+        ...args,
+        data: args.data !== undefined ? currentPayload : undefined,
+        doc: args.doc !== undefined ? currentPayload : undefined,
+      });
 
-    if (result !== undefined) {
-      currentPayload = result;
+      if (result !== undefined) {
+        currentPayload = result;
+      }
+    } catch (err) {
+      if (options.isolated) {
+        console.error("[dyrected/core] Side-effect hook failed (error isolated — DB write was successful):", err);
+      } else {
+        throw err;
+      }
     }
   }
 

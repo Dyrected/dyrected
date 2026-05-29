@@ -92,7 +92,7 @@ export class GlobalController {
       user,
       req: c.req,
       operation: "update",
-    });
+    }, { isolated: true });
 
     // Run afterRead hooks
     const readDoc = await runCollectionHooks(this.global.hooks?.afterRead, {

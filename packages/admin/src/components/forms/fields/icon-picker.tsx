@@ -7,28 +7,60 @@ import { ScrollArea } from "../../ui/scroll-area"
 import { cn } from "../../../lib/utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 
+const CATEGORIES = [
+  { id: "all", label: "All" },
+  { id: "actions", label: "Actions", keywords: ["save", "edit", "trash", "delete", "check", "close", "x", "plus", "minus", "ban", "play", "pause", "stop", "power", "add", "remove", "clear"] },
+  { id: "navigation", label: "Navigation", keywords: ["chevron", "arrow", "align", "move", "scroll", "map", "pin", "compass", "globe", "search", "home", "menu"] },
+  { id: "communication", label: "Communication", keywords: ["mail", "message", "chat", "send", "phone", "share", "user", "users", "heart", "star", "bell", "gift", "hash"] },
+  { id: "files", label: "Files & Folders", keywords: ["file", "folder", "doc", "archive", "book", "copy", "clip", "database", "sheet", "table"] },
+  { id: "devices", label: "Devices & Media", keywords: ["monitor", "phone", "tablet", "laptop", "watch", "server", "drive", "wifi", "bluetooth", "battery", "camera", "image", "video", "music", "play"] },
+  { id: "editors", label: "Editors", keywords: ["bold", "italic", "underline", "link", "code", "quote", "type", "text", "scissors", "pen", "brush", "crop"] },
+  { id: "finance", label: "Finance & Shop", keywords: ["credit", "card", "dollar", "bank", "shop", "cart", "tag", "coin", "wallet"] },
+  { id: "utilities", label: "Utilities", keywords: ["settings", "cog", "slider", "eye", "lock", "key", "info", "help", "shield", "sun", "moon", "cloud", "bell", "clock", "calendar"] },
+  { id: "others", label: "Others", keywords: [] }
+]
+
+const getIconCategory = (name: string): string => {
+  const lowercaseName = name.toLowerCase()
+  for (const cat of CATEGORIES) {
+    if (cat.id === "all" || cat.id === "others") continue
+    if (cat.keywords.some(keyword => lowercaseName.includes(keyword))) {
+      return cat.id
+    }
+  }
+  return "others"
+}
+
 const allIconNames = Object.keys(Icons).filter(
-  key => typeof (Icons as any)[key] === "function" && /^[A-Z]/.test(key)
+  key => typeof (Icons as Record<string, unknown>)[key] === "function" && /^[A-Z]/.test(key)
 )
 
 interface IconPickerProps {
   schema: FieldSchema
-  field: any
+  field: { value: string; onChange: (v: string) => void }
   disabled?: boolean
 }
 
 export function IconPicker({ schema, field, disabled }: IconPickerProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
+  const [selectedCategory, setSelectedCategory] = React.useState("all")
+  const [visibleCount, setVisibleCount] = React.useState(100)
 
   const selectedIconName: string = field.value || ""
-  const SelectedIcon = selectedIconName ? (Icons as any)[selectedIconName] : null
+  const SelectedIcon = selectedIconName ? (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[selectedIconName] : null
 
   const filteredIcons = React.useMemo(() => {
-    if (!search) return allIconNames
-    const q = search.toLowerCase()
-    return allIconNames.filter(name => name.toLowerCase().includes(q))
-  }, [search])
+    let list = allIconNames
+    if (selectedCategory !== "all") {
+      list = allIconNames.filter(name => getIconCategory(name) === selectedCategory)
+    }
+    if (search) {
+      const q = search.toLowerCase()
+      list = list.filter(name => name.toLowerCase().includes(q))
+    }
+    return list
+  }, [search, selectedCategory])
 
   return (
     <div className="dy-flex dy-items-center dy-gap-3">
@@ -56,14 +88,37 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
           <Input
             placeholder="Search icons..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => {
+              setSearch(e.target.value)
+              setVisibleCount(100)
+            }}
             className="dy-mb-3"
             autoFocus
           />
+          <div className="dy-flex dy-gap-1.5 dy-overflow-x-auto dy-pb-2 dy-mb-2 dy-scrollbar-none">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => {
+                  setSelectedCategory(cat.id)
+                  setVisibleCount(100)
+                }}
+                className={cn(
+                  "dy-px-2.5 dy-py-1 dy-text-[10px] dy-rounded-full dy-whitespace-nowrap dy-transition-all",
+                  selectedCategory === cat.id
+                    ? "dy-bg-primary dy-text-primary-foreground dy-font-medium"
+                    : "dy-bg-muted dy-text-muted-foreground hover:dy-bg-muted/80"
+                )}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
           <ScrollArea className="dy-h-[240px]">
             <div className="dy-grid dy-grid-cols-7 dy-gap-1 dy-pr-3">
-              {filteredIcons.slice(0, 280).map(name => {
-                const IconComp = (Icons as any)[name]
+              {filteredIcons.slice(0, visibleCount).map(name => {
+                const IconComp = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name]
                 return (
                   <button
                     key={name}
@@ -89,6 +144,19 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
                 </p>
               )}
             </div>
+            {filteredIcons.length > visibleCount && (
+              <div className="dy-py-2 dy-text-center dy-pr-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="dy-text-xs dy-text-muted-foreground hover:dy-text-primary"
+                  onClick={() => setVisibleCount(prev => prev + 100)}
+                >
+                  Load more... ({filteredIcons.length - visibleCount} left)
+                </Button>
+              </div>
+            )}
           </ScrollArea>
           {selectedIconName && (
             <Button
