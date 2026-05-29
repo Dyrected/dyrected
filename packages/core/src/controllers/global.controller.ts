@@ -37,7 +37,7 @@ export class GlobalController {
     if (isEmpty && this.global.initialData) {
       console.log(`[dyrected/core] Auto-seeding global "${this.global.slug}" from config.initialData`);
       await db.updateGlobal({ slug: this.global.slug, data: this.global.initialData });
-      data = this.global.initialData;
+      data = this.global.initialData as Record<string, unknown>;
     }
 
     const dataWithDefaults = DefaultsService.apply(this.global.fields, data);

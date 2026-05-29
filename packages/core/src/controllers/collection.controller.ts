@@ -399,7 +399,7 @@ export class CollectionController {
       const existing = await db!.findOne({ collection: this.collection.slug, id });
       if (!existing) return c.json({ message: 'User not found' }, 404);
 
-      const valid = await verifyPassword(oldPassword, existing.password);
+      const valid = await verifyPassword(oldPassword, existing.password as string);
       if (!valid) {
         return c.json({ message: 'Invalid current password' }, 400);
       }

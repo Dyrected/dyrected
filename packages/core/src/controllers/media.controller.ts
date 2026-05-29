@@ -139,7 +139,7 @@ export class MediaController {
 
     if (storage) {
       // Delete main file
-      await storage.delete({ filename: doc.filename });
+      await storage.delete({ filename: doc.filename as string });
       
       // Delete all sizes
       if (doc.sizes) {

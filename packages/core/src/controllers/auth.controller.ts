@@ -125,7 +125,7 @@ export class AuthController {
       return c.json({ error: true, message: "Invalid email or password." }, 401);
     }
 
-    const valid = await verifyPassword(body.password, user.password);
+    const valid = await verifyPassword(body.password, user.password as string);
     if (!valid) {
       return c.json({ error: true, message: "Invalid email or password." }, 401);
     }
@@ -221,7 +221,7 @@ export class AuthController {
 
       try {
         const { subject, html } = buildResetPasswordEmail(config, { token: resetToken });
-        await sendEmail(config, { to: user.email, subject, html });
+        await sendEmail(config, { to: user.email as string, subject, html });
       } catch (err) {
         console.error("[dyrected/core] Failed to send password reset email:", err);
       }

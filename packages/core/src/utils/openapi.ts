@@ -295,12 +295,12 @@ function fieldToSchema(field: Field): any {
       break;
     case "select":
     case "radio":
-      schema = { type: "string", enum: field.options?.map((o) => (typeof o === "string" ? o : o.value)) };
+      schema = { type: "string", enum: Array.isArray(field.options) ? field.options.map((o) => (typeof o === "string" ? o : o.value)) : undefined };
       break;
     case "multiSelect":
       schema = {
         type: "array",
-        items: { type: "string", enum: field.options?.map((o) => (typeof o === "string" ? o : o.value)) },
+        items: { type: "string", enum: Array.isArray(field.options) ? field.options.map((o) => (typeof o === "string" ? o : o.value)) : undefined },
       };
       break;
     case "relationship":

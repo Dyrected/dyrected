@@ -1,19 +1,30 @@
-import type { Field, HookFunction, FieldHook } from "../types/index.js";
+import type { Field } from "../types/index.js";
+
+// Internal loose type used by the hook runner.
+// Using `any` for the parameter type is intentional — TypeScript's function
+// parameter contravariance would otherwise prevent specific hook types
+// (CollectionBeforeChangeHook, etc.) from being assigned here.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyHookFn = (args: any) => any;
 
 /**
  * Run a list of hook functions sequentially.
- * Each hook function receives the output of the previous hook function (if any).
+ *
+ * Each hook receives the output of the previous hook merged back into the
+ * original `args`. When a hook returns a non-undefined value it becomes the
+ * `data` / `doc` for the next hook in the chain.
  */
 export async function runCollectionHooks(
-  hooks: HookFunction[] | undefined,
+  hooks: AnyHookFn[] | undefined,
   args: {
-    data?: any;
-    doc?: any;
-    user?: any;
-    req?: any;
+    data?: unknown;
+    doc?: unknown;
+    user?: unknown;
+    req?: unknown;
     operation?: "create" | "update" | "delete";
-    [key: string]: any;
-  }
+    [key: string]: unknown;
+  },
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   if (!hooks || hooks.length === 0) {
     return args.data ?? args.doc ?? undefined;
@@ -37,14 +48,17 @@ export async function runCollectionHooks(
 }
 
 /**
- * Execute field-level beforeChange hooks recursively on the data payload.
+ * Execute field-level `beforeChange` hooks recursively on a data payload.
+ *
+ * Traverses `array`, `object`, and `blocks` fields depth-first so that nested
+ * field hooks fire on every item automatically.
  */
 export async function executeFieldBeforeChange(
   fields: Field[],
-  data: any,
-  originalDoc: any,
-  user: any
-): Promise<any> {
+  data: Record<string, unknown>,
+  originalDoc: Record<string, unknown> | null,
+  user: unknown,
+): Promise<Record<string, unknown>> {
   if (!data || typeof data !== "object") return data;
 
   const result = { ...data };
@@ -55,13 +69,12 @@ export async function executeFieldBeforeChange(
     const value = result[field.name];
     const origValue = originalDoc?.[field.name];
 
-    // Run beforeChange on the current field value
     let updatedValue = value;
     if (field.hooks?.beforeChange) {
       for (const hook of field.hooks.beforeChange) {
-        updatedValue = await hook({
+        updatedValue = await (hook as (args: Record<string, unknown>) => unknown)({
           value: updatedValue,
-          originalDoc,
+          originalDoc: originalDoc ?? undefined,
           data: result,
           user,
         });
@@ -69,44 +82,54 @@ export async function executeFieldBeforeChange(
       result[field.name] = updatedValue;
     }
 
-    // Recursively process nested structures
+    // Recurse into nested structures
     if (updatedValue !== undefined && updatedValue !== null) {
       if (field.type === "object" && field.fields) {
         result[field.name] = await executeFieldBeforeChange(
           field.fields,
-          updatedValue,
-          origValue,
-          user
+          updatedValue as Record<string, unknown>,
+          origValue as Record<string, unknown> | null,
+          user,
         );
-      } else if (field.type === "array" && field.fields && Array.isArray(updatedValue)) {
-        const arrayResult = [];
+      } else if (
+        field.type === "array" &&
+        field.fields &&
+        Array.isArray(updatedValue)
+      ) {
+        const arrayResult: unknown[] = [];
         for (let i = 0; i < updatedValue.length; i++) {
-          const item = updatedValue[i];
-          const origItem = Array.isArray(origValue) ? origValue[i] : undefined;
-          const processedItem = await executeFieldBeforeChange(
-            field.fields,
-            item,
-            origItem,
-            user
+          const item = updatedValue[i] as Record<string, unknown>;
+          const origItem = Array.isArray(origValue)
+            ? (origValue[i] as Record<string, unknown> | null)
+            : null;
+          arrayResult.push(
+            await executeFieldBeforeChange(field.fields, item, origItem, user),
           );
-          arrayResult.push(processedItem);
         }
         result[field.name] = arrayResult;
-      } else if (field.type === "blocks" && field.blocks && Array.isArray(updatedValue)) {
-        const blocksResult = [];
+      } else if (
+        field.type === "blocks" &&
+        field.blocks &&
+        Array.isArray(updatedValue)
+      ) {
+        const blocksResult: unknown[] = [];
         for (let i = 0; i < updatedValue.length; i++) {
-          const blockData = updatedValue[i];
-          const origBlock = Array.isArray(origValue) ? origValue[i] : undefined;
-          const blockConfig = field.blocks.find((b) => b.slug === blockData.blockType);
-
+          const blockData = updatedValue[i] as Record<string, unknown>;
+          const origBlock = Array.isArray(origValue)
+            ? (origValue[i] as Record<string, unknown> | null)
+            : null;
+          const blockConfig = field.blocks.find(
+            (b) => b.slug === blockData.blockType,
+          );
           if (blockConfig) {
-            const processedBlock = await executeFieldBeforeChange(
-              blockConfig.fields,
-              blockData,
-              origBlock,
-              user
+            blocksResult.push(
+              await executeFieldBeforeChange(
+                blockConfig.fields,
+                blockData,
+                origBlock,
+                user,
+              ),
             );
-            blocksResult.push(processedBlock);
           } else {
             blocksResult.push(blockData);
           }
@@ -120,13 +143,16 @@ export async function executeFieldBeforeChange(
 }
 
 /**
- * Execute field-level afterRead hooks recursively on the document.
+ * Execute field-level `afterRead` hooks recursively on a document.
+ *
+ * Traverses `array`, `object`, and `blocks` fields depth-first so that nested
+ * field hooks fire on every item automatically.
  */
 export async function executeFieldAfterRead(
   fields: Field[],
-  doc: any,
-  user: any
-): Promise<any> {
+  doc: Record<string, unknown>,
+  user: unknown,
+): Promise<Record<string, unknown>> {
   if (!doc || typeof doc !== "object") return doc;
 
   const result = { ...doc };
@@ -136,11 +162,10 @@ export async function executeFieldAfterRead(
 
     const value = result[field.name];
 
-    // Run afterRead on the current field value
     let updatedValue = value;
     if (field.hooks?.afterRead) {
       for (const hook of field.hooks.afterRead) {
-        updatedValue = await hook({
+        updatedValue = await (hook as (args: Record<string, unknown>) => unknown)({
           value: updatedValue,
           doc: result,
           user,
@@ -149,36 +174,49 @@ export async function executeFieldAfterRead(
       result[field.name] = updatedValue;
     }
 
-    // Recursively process nested structures
+    // Recurse into nested structures
     if (updatedValue !== undefined && updatedValue !== null) {
       if (field.type === "object" && field.fields) {
         result[field.name] = await executeFieldAfterRead(
           field.fields,
-          updatedValue,
-          user
+          updatedValue as Record<string, unknown>,
+          user,
         );
-      } else if (field.type === "array" && field.fields && Array.isArray(updatedValue)) {
-        const arrayResult = [];
+      } else if (
+        field.type === "array" &&
+        field.fields &&
+        Array.isArray(updatedValue)
+      ) {
+        const arrayResult: unknown[] = [];
         for (const item of updatedValue) {
-          const processedItem = await executeFieldAfterRead(
-            field.fields,
-            item,
-            user
+          arrayResult.push(
+            await executeFieldAfterRead(
+              field.fields,
+              item as Record<string, unknown>,
+              user,
+            ),
           );
-          arrayResult.push(processedItem);
         }
         result[field.name] = arrayResult;
-      } else if (field.type === "blocks" && field.blocks && Array.isArray(updatedValue)) {
-        const blocksResult = [];
+      } else if (
+        field.type === "blocks" &&
+        field.blocks &&
+        Array.isArray(updatedValue)
+      ) {
+        const blocksResult: unknown[] = [];
         for (const blockData of updatedValue) {
-          const blockConfig = field.blocks.find((b) => b.slug === blockData.blockType);
+          const typedBlock = blockData as Record<string, unknown>;
+          const blockConfig = field.blocks.find(
+            (b) => b.slug === typedBlock.blockType,
+          );
           if (blockConfig) {
-            const processedBlock = await executeFieldAfterRead(
-              blockConfig.fields,
-              blockData,
-              user
+            blocksResult.push(
+              await executeFieldAfterRead(
+                blockConfig.fields,
+                typedBlock,
+                user,
+              ),
             );
-            blocksResult.push(processedBlock);
           } else {
             blocksResult.push(blockData);
           }
