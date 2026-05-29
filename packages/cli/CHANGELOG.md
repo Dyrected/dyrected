@@ -1,5 +1,13 @@
 # @dyrected/cli
 
+## 2.5.17
+
+### Patch Changes
+
+- Updated dependencies [bd0d9a3]
+  - @dyrected/core@2.5.17
+  - @dyrected/sdk@2.5.17
+
 ## 2.5.16
 
 ### Patch Changes
