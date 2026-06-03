@@ -16,11 +16,31 @@ Dyrected integrates natively with Next.js via a catch-all API route. Supports bo
 ## Installation
 
 ```bash
-pnpm add @dyrected/core @dyrected/sdk @dyrected/next @dyrected/db-postgres
+pnpm add @dyrected/core @dyrected/sdk @dyrected/next @dyrected/react @dyrected/db-postgres
 ```
 
 > [!NOTE]
-> The `@dyrected/next` package provides the `<DyrectedAdmin />` component and utilities for Next.js App Router and Pages Router integration.
+> `@dyrected/next` provides the API route handler, `getDyrectedClient`, and Next.js-optimised `<DyrectedImage />` / `<DyrectedMedia />` components. `@dyrected/react` is the React integration layer — it provides `<DyrectedAdmin />`, `DyrectedProvider`, `useDyrected`, and `useLivePreview`. `@dyrected/next` re-exports all of these so you can import from a single package.
+
+---
+
+## Step 0 — Wrap your Next.js config
+
+Wrap your `next.config.ts` with `withDyrected` to ensure a single React instance is shared between your app and the Dyrected Admin UI bundle. Without this you may see an _"Invalid hook call"_ error when rendering `<DyrectedAdmin />`.
+
+```ts
+// next.config.ts
+import type { NextConfig } from 'next'
+import { withDyrected } from '@dyrected/next/config'
+
+const nextConfig: NextConfig = {
+  // your config here
+}
+
+export default withDyrected(nextConfig)
+```
+
+This applies the correct `react` and `react-dom` resolve aliases for both Webpack and Turbopack.
 
 
 ---

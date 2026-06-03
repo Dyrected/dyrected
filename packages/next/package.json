@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc -p tsconfig.cjs.json && cp dist-cjs/config.js dist/config.cjs && rm -rf dist-cjs",
     "dev": "tsc --watch"
   },
   "peerDependencies": {
@@ -24,11 +24,17 @@
     "./admin": {
       "types": "./dist/admin.d.ts",
       "import": "./dist/admin.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js",
+      "require": "./dist/config.cjs",
+      "default": "./dist/config.cjs"
     }
   },
   "dependencies": {
-    "@dyrected/admin": "workspace:*",
     "@dyrected/core": "workspace:*",
+    "@dyrected/react": "workspace:*",
     "@dyrected/sdk": "workspace:*",
     "hono": "^4.0.0"
   },

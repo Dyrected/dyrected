@@ -3,7 +3,7 @@ title: React Integration
 description: Use Dyrected in a Vite, CRA, or any non-Next.js React application.
 ---
 
-The `@dyrected/react` package provides hooks and a context provider for using Dyrected in any React app. If you are using **Next.js**, use [`@dyrected/next`](/docs/integrations/nextjs) instead — it wraps this package and adds SSR data fetching helpers.
+The `@dyrected/react` package is the React integration layer for Dyrected. It provides hooks, a context provider, the Admin UI component, and media components for use in any React app. If you are using **Next.js**, [`@dyrected/next`](/docs/integrations/nextjs) builds on top of this package and re-exports everything from it — you do not need to install `@dyrected/react` separately in a Next.js project.
 
 ---
 
@@ -12,6 +12,9 @@ The `@dyrected/react` package provides hooks and a context provider for using Dy
 ```bash
 pnpm add @dyrected/react @dyrected/sdk
 ```
+
+> [!NOTE]
+> To use `<DyrectedAdmin />`, your app must also have `react-router-dom` and `@tanstack/react-query` installed — these are peer dependencies of the admin UI bundle.
 
 ---
 
@@ -120,3 +123,59 @@ Add `data-dy-path` attributes to elements to enable click-to-field navigation wh
 ```
 
 Clicking a marked element sends its field path to the Admin, which scrolls to and focuses the corresponding form input. See [Inline Page Editing](/docs/features/live-preview#inline-page-editing) for the full protocol.
+
+---
+
+## Embed the Admin UI — `DyrectedAdmin`
+
+`DyrectedAdmin` renders the full Dyrected Admin UI into your React app. It lazy-loads the admin bundle so it does not affect your page bundle size.
+
+```tsx
+import { DyrectedAdmin } from '@dyrected/react'
+import '@dyrected/admin/styles'
+
+export function AdminPage() {
+  return (
+    <DyrectedAdmin
+      baseUrl="/dyrected"
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      basename="/admin"
+    />
+  )
+}
+```
+
+| Prop | Type | Description |
+|---|---|---|
+| `baseUrl` | `string` | URL of the Dyrected API (e.g. `/dyrected`) |
+| `apiKey` | `string` | API key for authenticating requests |
+| `basename` | `string` | Base path where the admin is mounted in your router |
+| `siteId` | `string` | Optional site ID for multi-tenant setups |
+| `onNavigate` | `(path: string) => void` | Called on internal route changes — use to sync your host router |
+
+---
+
+## Media components
+
+### `DyrectedImage`
+
+A plain-`<img>` wrapper that accepts a Dyrected `Media` object or a URL string and handles `width`, `height`, and `alt` automatically.
+
+```tsx
+import { DyrectedImage } from '@dyrected/react'
+
+<DyrectedImage media={post.coverImage} width={800} height={400} />
+```
+
+### `DyrectedMedia`
+
+Renders the right element based on media type — YouTube embed, image, video, or a download link fallback.
+
+```tsx
+import { DyrectedMedia } from '@dyrected/react'
+
+<DyrectedMedia media={post.featuredMedia} width={800} height={450} />
+```
+
+> [!TIP]
+> If you are using **Next.js**, prefer `DyrectedImage` and `DyrectedMedia` from `@dyrected/next` — they use `next/image` for automatic optimisation.

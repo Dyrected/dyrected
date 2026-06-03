@@ -38,4 +38,10 @@ export function getDyrectedClient(): DyrectedClient {
 
 export * from "./components/DyrectedMedia";
 export * from "./components/DyrectedImage";
+
+// Re-export React integration layer so Next.js users have one package to import from
+export { DyrectedProvider, useDyrected, useLivePreview } from "@dyrected/react";
+export type { DyrectedImageProps, DyrectedMediaProps } from "@dyrected/react";
+export type { DyrectedAdminProps } from "@dyrected/react/admin";
+
 export * from "@dyrected/sdk";

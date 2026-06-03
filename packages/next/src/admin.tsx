@@ -1,10 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { AdminUIProps } from "@dyrected/admin";
+import type { DyrectedAdminProps } from "@dyrected/react/admin";
 
-const LazyAdminUI = dynamic(
-  () => import("@dyrected/admin").then((mod) => mod.AdminUI),
+const LazyDyrectedAdmin = dynamic(
+  () => import("@dyrected/react/admin").then((mod) => mod.DyrectedAdmin),
   {
     ssr: false,
     loading: () => (
@@ -15,9 +15,9 @@ const LazyAdminUI = dynamic(
   }
 );
 
-export function DyrectedAdmin(props: AdminUIProps) {
+export function DyrectedAdmin(props: DyrectedAdminProps) {
   const baseUrl = props.baseUrl || process.env.NEXT_PUBLIC_DYRECTED_URL || "/dyrected";
   const apiKey = props.apiKey || process.env.NEXT_PUBLIC_DYRECTED_API_KEY;
 
-  return <LazyAdminUI {...props} baseUrl={baseUrl} apiKey={apiKey} />;
+  return <LazyDyrectedAdmin {...props} baseUrl={baseUrl} apiKey={apiKey} />;
 }

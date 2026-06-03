@@ -1357,7 +1357,7 @@ export interface GlobalConfig<
 export interface BaseDocument {
   /** The document's unique identifier, assigned by the database adapter. */
   id: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 // ─── Paginated result ─────────────────────────────────────────────────────────
@@ -1367,7 +1367,7 @@ export interface BaseDocument {
  *
  * @template T  The document type.
  */
-export interface PaginatedResult<T = Record<string, unknown>> {
+export interface PaginatedResult<T = Record<string, any>> {
   /** The documents on the current page. */
   docs: T[];
   /** Total number of documents matching the query (across all pages). */
