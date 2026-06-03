@@ -219,8 +219,12 @@ export class AuthController {
         "1h",
       );
 
+      // Append token to resetUrl if provided
+      const resetUrl = body?.resetUrl;
+      const url = resetUrl ? `${resetUrl}${resetUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(resetToken)}` : undefined;
+
       try {
-        const { subject, html } = buildResetPasswordEmail(config, { token: resetToken });
+        const { subject, html } = buildResetPasswordEmail(config, { token: resetToken, url });
         await sendEmail(config, { to: user.email as string, subject, html });
       } catch (err) {
         console.error("[dyrected/core] Failed to send password reset email:", err);

@@ -270,10 +270,19 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
        * Admin-initiated password reset. Sends a reset link to the given email address.
        * Wraps the existing POST /forgot-password endpoint.
        */
-      sendResetLink: (email: string): Promise<{ success: boolean; message: string }> =>
+      sendResetLink: (email: string, resetUrl?: string): Promise<{ success: boolean; message: string }> =>
         this.request(`/api/collections/${slug}/forgot-password`, {
           method: "POST",
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email, resetUrl }),
+        }),
+      /**
+       * Reset password using a reset token.
+       * Wraps the POST /reset-password endpoint.
+       */
+      resetPassword: (token: string, password: string): Promise<{ success: boolean; message: string }> =>
+        this.request(`/api/collections/${slug}/reset-password`, {
+          method: "POST",
+          body: JSON.stringify({ token, password }),
         }),
     };
   }

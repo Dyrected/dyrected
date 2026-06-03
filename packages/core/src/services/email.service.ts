@@ -63,11 +63,37 @@ export function buildWelcomeEmail(
   return {
     subject: custom?.subject ?? 'Welcome — your account is ready',
     html: custom?.html ?? `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-        <h2>Welcome!</h2>
-        <p>Your account has been created. You can now log in with:</p>
-        <p><strong>${args.email}</strong></p>
-      </div>`,
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f9fafb;table-layout:fixed">
+        <tr>
+          <td align="center" style="padding:40px 16px">
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:12px;border:1px solid #e5e7eb;table-layout:fixed">
+              <tr>
+                <td style="padding:32px 32px 0">
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#6b7280;font-family:sans-serif;text-transform:uppercase;letter-spacing:0.05em">Dyrected</p>
+                  <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#111827;font-family:sans-serif">Welcome!</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 32px">
+                  <p style="margin:0 0 12px;font-size:14px;color:#4b5563;line-height:1.6;font-family:sans-serif">Your account has been created. You can now log in with:</p>
+                  <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f3f4f6;border-radius:6px;table-layout:fixed">
+                    <tr>
+                      <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#111827;font-family:sans-serif;word-break:break-all">
+                        ${args.email}
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:32px">
+                  <p style="margin:0;font-size:12px;color:#9ca3af;font-family:sans-serif">If you didn't create this account, you can safely ignore this email.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>`,
   };
 }
 
@@ -79,28 +105,93 @@ export function buildInviteEmail(
   return {
     subject: custom?.subject ?? "You've been invited",
     html: custom?.html ?? `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-        <h2>You've been invited</h2>
-        ${args.invitedByEmail ? `<p>Invited by <strong>${args.invitedByEmail}</strong>.</p>` : ''}
-        <p>Use the token below to accept your invitation. It expires in 7 days.</p>
-        <pre style="background:#f4f4f4;padding:12px;border-radius:4px;word-break:break-all">${args.token}</pre>
-      </div>`,
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f9fafb;table-layout:fixed">
+        <tr>
+          <td align="center" style="padding:40px 16px">
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:12px;border:1px solid #e5e7eb;table-layout:fixed">
+              <tr>
+                <td style="padding:32px 32px 0">
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#6b7280;font-family:sans-serif;text-transform:uppercase;letter-spacing:0.05em">Dyrected</p>
+                  <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#111827;font-family:sans-serif">You've been invited</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 32px">
+                  ${args.invitedByEmail ? `<p style="margin:0 0 12px;font-size:14px;color:#4b5563;line-height:1.6;font-family:sans-serif">You were invited by <strong style="color:#111827">${args.invitedByEmail}</strong>.</p>` : ''}
+                  <p style="margin:0 0 16px;font-size:14px;color:#4b5563;line-height:1.6;font-family:sans-serif">Use the token below to accept your invitation. It expires in 7 days.</p>
+                  <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f3f4f6;border-radius:6px;table-layout:fixed">
+                    <tr>
+                      <td style="padding:12px 16px;font-family:monospace;font-size:12px;color:#374151;word-break:break-all;white-space:normal;line-height:1.4">
+                        ${args.token}
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:32px">
+                  <p style="margin:0;font-size:12px;color:#9ca3af;font-family:sans-serif">If you weren't expecting this invitation, you can safely ignore this email.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>`,
   };
 }
 
 export function buildResetPasswordEmail(
   config: DyrectedConfig,
-  args: { token: string },
+  args: { token: string; url?: string },
 ): { subject: string; html: string } {
   const custom = config.email?.templates?.resetPassword?.(args);
+  const resetLink = args.url;
   return {
     subject: custom?.subject ?? 'Reset your password',
     html: custom?.html ?? `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-        <h2>Reset your password</h2>
-        <p>Use the token below to reset your password. It expires in 1 hour.</p>
-        <pre style="background:#f4f4f4;padding:12px;border-radius:4px;word-break:break-all">${args.token}</pre>
-      </div>`,
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f9fafb;table-layout:fixed">
+        <tr>
+          <td align="center" style="padding:40px 16px">
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:12px;border:1px solid #e5e7eb;table-layout:fixed">
+              <tr>
+                <td style="padding:32px 32px 0">
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#6b7280;font-family:sans-serif;text-transform:uppercase;letter-spacing:0.05em">Dyrected</p>
+                  <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#111827;font-family:sans-serif">Reset your password</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 32px">
+                  <p style="margin:0 0 24px;font-size:14px;color:#4b5563;line-height:1.6;font-family:sans-serif">We received a request to reset your password. Use the button below to set a new password. It will expire in 1 hour.</p>
+                  ${resetLink ? `
+                  <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px">
+                    <tr>
+                      <td style="border-radius:6px;background-color:#111827">
+                        <a href="${resetLink}" style="display:inline-block;padding:12px 28px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;font-family:sans-serif;border-radius:6px">
+                          Reset Password
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  ` : ''}
+                  <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;font-family:sans-serif">Or copy and paste this token manually in the admin dashboard:</p>
+                  <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f3f4f6;border-radius:6px;table-layout:fixed">
+                    <tr>
+                      <td style="padding:12px 16px;font-family:monospace;font-size:12px;color:#374151;word-break:break-all;white-space:normal;line-height:1.4">
+                        ${args.token}
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:32px">
+                  <p style="margin:0;font-size:12px;color:#9ca3af;font-family:sans-serif">If you didn't request a password reset, you can safely ignore this email.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>`,
   };
 }
 
@@ -112,10 +203,43 @@ export function buildPasswordChangedEmail(
   return {
     subject: custom?.subject ?? 'Your password has been changed',
     html: custom?.html ?? `
-      <div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-        <h2>Password changed</h2>
-        <p>The password for <strong>${args.email}</strong> was just changed.</p>
-        <p>If you did not make this change, please contact support immediately.</p>
-      </div>`,
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f9fafb;table-layout:fixed">
+        <tr>
+          <td align="center" style="padding:40px 16px">
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:12px;border:1px solid #e5e7eb;table-layout:fixed">
+              <tr>
+                <td style="padding:32px 32px 0">
+                  <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#6b7280;font-family:sans-serif;text-transform:uppercase;letter-spacing:0.05em">Dyrected</p>
+                  <h1 style="margin:0 0 24px;font-size:22px;font-weight:700;color:#111827;font-family:sans-serif">Password changed</h1>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 32px">
+                  <p style="margin:0 0 12px;font-size:14px;color:#4b5563;line-height:1.6;font-family:sans-serif">The password for your account was just changed:</p>
+                  <table cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f3f4f6;border-radius:6px;table-layout:fixed">
+                    <tr>
+                      <td style="padding:12px 16px;font-size:14px;font-weight:600;color:#111827;font-family:sans-serif;word-break:break-all">
+                        ${args.email}
+                      </td>
+                    </tr>
+                  </table>
+                  <table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin-top:16px;background-color:#fef2f2;border-radius:6px;border:1px solid #fecaca;table-layout:fixed">
+                    <tr>
+                      <td style="padding:12px 16px;font-size:13px;color:#b91c1c;line-height:1.5;font-family:sans-serif">
+                        If you did not make this change, please contact support immediately.
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:32px">
+                  <p style="margin:0;font-size:12px;color:#9ca3af;font-family:sans-serif">This is an automated security notification.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>`,
   };
 }
