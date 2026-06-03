@@ -261,7 +261,7 @@ export function EditEntryPage() {
     <div className="dy-flex dy-h-[calc(100vh-0px)] dy-overflow-hidden dy--mt-6 dy--mx-4 lg:dy--mt-10 lg:dy--mx-6">
       {/* Left Column: Header + Form */}
       <div className={cn(
-        "dy-flex-1 dy-overflow-y-auto dy-px-4 dy-py-6 md:dy-px-6 lg:dy-px-8 lg:dy-py-8 dy-transition-all dy-duration-500",
+        "dy-flex-1 dy-px-4 dy-py-6 md:dy-px-6 lg:dy-px-8 lg:dy-py-8 dy-transition-all dy-duration-500",
         showPreview ? "dy-max-w-2xl xl:dy-max-w-3xl" : "dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full"
       )}>
         <div className="dy-space-y-6">

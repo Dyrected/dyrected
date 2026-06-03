@@ -369,7 +369,7 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
                   />
                 </div>
 
-                <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 dy-gap-4 dy-max-h-[60vh] dy-overflow-y-auto dy-pr-1 dy-pt-2">
+                <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 dy-gap-4 dy-pr-1 dy-pt-2">
                   {filteredBlocks.length === 0 ? (
                     <div className="dy-col-span-full dy-text-center dy-py-8 dy-text-xs dy-text-muted-foreground/50">
                       No blocks match your search query.

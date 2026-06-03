@@ -374,7 +374,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
           </DialogTitle>
         </DialogHeader>
 
-        <div className="dy-flex-1 dy-flex dy-flex-col md:dy-flex-row dy-overflow-y-auto md:dy-overflow-hidden">
+        <div className="dy-flex-1 dy-flex dy-flex-col md:dy-flex-row md:dy-overflow-hidden">
           {/* Left Side: Large Preview */}
           <div className="dy-w-full md:dy-w-3/5 lg:dy-w-2/3 dy-bg-muted/15 dy-flex dy-items-center dy-justify-center dy-p-6 dy-border-b md:dy-border-b-0 md:dy-border-r dy-border-border/40 dy-relative dy-h-[300px] md:dy-h-full dy-flex-shrink-0 md:dy-flex-shrink">
             <div className="dy-relative dy-max-w-full dy-max-h-full dy-w-full dy-h-full dy-flex dy-items-center dy-justify-center dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-shadow-inner">
