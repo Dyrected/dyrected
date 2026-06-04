@@ -8,7 +8,7 @@ import { MultiSelect } from "./fields/multi-select"
 import { MediaPicker } from "./fields/media-picker"
 import { RichTextEditor } from "./fields/rich-text-editor"
 import { JsonEditor } from "./fields/json-editor"
-import { DatePicker } from "./fields/date-picker"
+import { DatePicker, DateRangePicker } from "./fields/date-picker"
 import { TimePicker } from "./fields/time-picker"
 import { RelationshipPicker } from "./fields/relationship-picker"
 import { IconPicker } from "./fields/icon-picker"
@@ -90,6 +90,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "datetime":
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime />
+    case "daterange":
+      return <DateRangePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "time":
       return <TimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "icon":

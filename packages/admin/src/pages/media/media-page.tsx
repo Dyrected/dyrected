@@ -29,7 +29,8 @@ import {
   Image as ImageIcon,
   Copy,
   Info,
-  Pencil
+  Pencil,
+  Scissors
 } from "lucide-react"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
@@ -37,12 +38,14 @@ import { Separator } from "../../components/ui/separator"
 // import { FocalPointPicker } from "../../components/media/focal-point-picker"
 import { Blurhash } from "react-blurhash"
 import type { Media } from "@dyrected/sdk"
+import { ImageCropDialog } from "../../components/forms/fields/image-crop-dialog"
 
 export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string, schema?: { labels?: { plural?: string }; label?: string } }) {
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
+  const [uploadFiles, setUploadFiles] = React.useState<File[]>([])
   const [selectedItem, setSelectedItem] = React.useState<Media | null>(null)
 
   const {
@@ -126,6 +129,26 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
 
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
+      setUploadFiles(acceptedFiles)
+      setIsUploadOpen(true)
+    }
+  }, [])
+
+  const handlePaste = React.useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    const filesToUpload: File[] = []
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file') {
+        const file = items[i].getAsFile()
+        if (file) {
+          filesToUpload.push(file)
+        }
+      }
+    }
+    if (filesToUpload.length > 0) {
+      e.preventDefault()
+      setUploadFiles(prev => [...prev, ...filesToUpload])
       setIsUploadOpen(true)
     }
   }, [])
@@ -135,8 +158,15 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
     noClick: true, // Only trigger on drop, not on background click
   })
 
+  const handleUploadOpenChange = (open: boolean) => {
+    setIsUploadOpen(open)
+    if (!open) {
+      setUploadFiles([])
+    }
+  }
+
   return (
-    <div {...getRootProps()} className="dy-min-h-full dy-space-y-8 dy-animate-in dy-relative">
+    <div {...getRootProps()} onPaste={handlePaste} className="dy-min-h-full dy-space-y-8 dy-animate-in dy-relative">
       <input {...getInputProps()} />
 
       {isDragActive && (
@@ -161,7 +191,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
             Manage your images, documents, and other assets for this site.
           </p>
         </div>
-        <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+        <Dialog open={isUploadOpen} onOpenChange={handleUploadOpenChange}>
           <DialogTrigger asChild>
             <Button className="dy-h-10 dy-px-4 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-shadow-md dy-transition-all active:dy-scale-95">
               <Upload className="dy-mr-2 dy-h-4 dy-w-4" />
@@ -174,8 +204,10 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
             </DialogHeader>
             <FileUploader
               collectionSlug={collectionSlug}
+              files={uploadFiles}
+              setFiles={setUploadFiles}
               onComplete={() => {
-                setIsUploadOpen(false)
+                handleUploadOpenChange(false)
                 queryClient.invalidateQueries({ queryKey: ["media", collectionSlug] })
               }}
             />
@@ -332,19 +364,41 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   )
 }
 
-function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, onDelete }: {
+function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, onDelete, onCropUploaded }: {
   item: Media | null,
   collectionSlug?: string,
   onClose: () => void,
   baseUrl: string,
   onUpdate: (data: { alt: string; caption: string }) => void,
-  onDelete?: () => void
+  onDelete?: () => void,
+  onCropUploaded?: (newItem: Media) => void
 }) {
+  const { client } = useDyrected()
+  const queryClient = useQueryClient()
+  const [isCropOpen, setIsCropOpen] = React.useState(false)
   const [formData, setFormData] = React.useState<{ alt: string; caption: string }>(() => ({
     alt: (item?.alt as string) || "",
     caption: (item?.caption as string) || "",
   }))
   const [isSaving, setIsSaving] = React.useState(false)
+
+  const handleCropConfirm = async (blob: Blob, cropFilename: string) => {
+    if (!client || !item) return
+    const file = new File([blob], cropFilename, { type: blob.type })
+    const toastId = toast.loading("Uploading cropped image…")
+    try {
+      const uploaded = await client.uploadMedia(file, collectionSlug)
+      queryClient.invalidateQueries({ queryKey: ["media"] })
+      toast.success("Crop applied & uploaded", { id: toastId })
+      if (onCropUploaded) {
+        onCropUploaded(uploaded)
+      }
+      setIsCropOpen(false)
+    } catch (err) {
+      toast.error("Crop upload failed", { description: (err as Error).message, id: toastId })
+      throw err
+    }
+  }
 
   if (!item) return null
 
@@ -515,6 +569,20 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                     {!collectionSlug && "Open Original"}
                   </a>
                 </Button>
+                {isImage && item.mimeType !== "image/svg+xml" && (
+                  <Button
+                    onClick={() => setIsCropOpen(true)}
+                    className={cn(
+                      "dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card",
+                      collectionSlug ? "dy-px-3" : "dy-flex-1"
+                    )}
+                    variant="outline"
+                    title="Crop Image"
+                  >
+                    <Scissors className="dy-h-4 dy-w-4" />
+                    {!collectionSlug && "Crop"}
+                  </Button>
+                )}
                 {onDelete && (
                   <Button
                     onClick={onDelete}
@@ -529,6 +597,15 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
             </div>
           </div>
         </div>
+        {isImage && (
+          <ImageCropDialog
+            open={isCropOpen}
+            onOpenChange={setIsCropOpen}
+            imageUrl={url}
+            filename={item.filename || "image.jpg"}
+            onConfirm={handleCropConfirm}
+          />
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -559,15 +636,19 @@ function DetailItem({ label, value, copyable }: {
   )
 }
 
-function FileUploader({ collectionSlug, onComplete }: { collectionSlug?: string, onComplete: () => void }) {
+function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
+  collectionSlug?: string,
+  files: File[],
+  setFiles: React.Dispatch<React.SetStateAction<File[]>>,
+  onComplete: () => void
+}) {
   const { client } = useDyrected()
-  const [files, setFiles] = React.useState<File[]>([])
   const [uploading, setUploading] = React.useState(false)
   const [progress, setProgress] = React.useState(0)
 
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles])
-  }, [])
+  }, [setFiles])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 

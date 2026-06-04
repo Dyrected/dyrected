@@ -106,8 +106,9 @@ export function ImageCropDialog({
         canvas.toBlob(
           async (blob) => {
             if (!blob) { reject(new Error("Canvas produced no blob")); return }
-            const ext = filename.split(".").pop() || "jpg"
-            const baseName = filename.replace(/\.[^.]+$/, "")
+            const cleanFilename = filename.split("/").pop() || filename
+            const ext = cleanFilename.split(".").pop() || "jpg"
+            const baseName = cleanFilename.replace(/\.[^.]+$/, "")
             const cropFilename = `${baseName}-crop.${ext}`
             try {
               await onConfirm(blob, cropFilename)

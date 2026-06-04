@@ -46,7 +46,7 @@ function Calendar({
         ),
         month: cn("dy-flex dy-w-full dy-flex-col dy-gap-4", defaultClassNames.month),
         nav: cn(
-          "dy-absolute dy-inset-x-0 dy-top-0 dy-flex dy-w-full dy-items-center dy-justify-between dy-gap-1",
+          "dy-absolute dy-inset-x-0 dy-top-0 dy-z-10 dy-flex dy-w-full dy-items-center dy-justify-between dy-gap-1",
           defaultClassNames.nav
         ),
         button_previous: cn(
@@ -178,7 +178,10 @@ function CalendarDayButton({
 }: React.ComponentProps<typeof DayButton>) {
   const ref = React.useRef<HTMLButtonElement>(null)
   React.useEffect(() => {
-    if (modifiers.focused) ref.current?.focus()
+    if (!modifiers.focused) return
+    // Defer focus so it doesn't race with click event processing
+    const frame = requestAnimationFrame(() => ref.current?.focus())
+    return () => cancelAnimationFrame(frame)
   }, [modifiers.focused])
 
   return (

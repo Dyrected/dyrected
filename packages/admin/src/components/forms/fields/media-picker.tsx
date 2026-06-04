@@ -267,13 +267,27 @@ export function MediaPicker({
     }
   }, [client, activeMediaCollection, multiple, selectedIds, localMediaCache, getFullUrl, onChange])
 
+  const checkIsCropable = React.useCallback((id: string, item?: any) => {
+    if (item) {
+      return item.mimeType?.startsWith("image/") && item.mimeType !== "image/svg+xml"
+    }
+    if (!id) return false
+    const lower = id.toLowerCase()
+    return lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".webp") || lower.endsWith(".gif") || lower.startsWith("data:image/") || lower.includes("/uploads/")
+  }, [])
+
   const openCrop = React.useCallback((id: string, item?: any) => {
     const resolvedItem = item || localMediaCache.find(m => m.id === id || m.filename === id || m.url === id)
-    if (!resolvedItem) return
-    const mimeType: string = resolvedItem.mimeType || ""
-    if (!mimeType.startsWith("image/") || mimeType === "image/svg+xml") return
-    const url = getMediaUrl(resolvedItem, client?.getBaseUrl() || "")
-    setCropState({ targetId: resolvedItem.id, imageUrl: url, filename: resolvedItem.filename || "image.jpg" })
+    if (resolvedItem) {
+      const mimeType: string = resolvedItem.mimeType || ""
+      if (!mimeType.startsWith("image/") || mimeType === "image/svg+xml") return
+      const url = getMediaUrl(resolvedItem, client?.getBaseUrl() || "")
+      setCropState({ targetId: resolvedItem.id, imageUrl: url, filename: resolvedItem.filename || "image.jpg" })
+    } else {
+      const url = id.includes("/") ? id : getMediaUrl({ filename: id }, client?.getBaseUrl() || "")
+      const filename = url.split("/").pop() || "image.jpg"
+      setCropState({ targetId: id, imageUrl: url, filename })
+    }
   }, [localMediaCache, client])
 
   const handleCropConfirm = React.useCallback(async (blob: Blob, cropFilename: string) => {
@@ -439,7 +453,7 @@ export function MediaPicker({
                   )}
 
                   <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all dy-flex dy-items-start dy-justify-end dy-gap-1 dy-p-1.5 dy-backdrop-blur-[2px]">
-                    {item && item.mimeType?.startsWith("image/") && item.mimeType !== "image/svg+xml" && (
+                    {checkIsCropable(valId, item) && (
                       <Button
                         type="button"
                         variant="outline"
@@ -612,7 +626,7 @@ export function MediaPicker({
                 )}
                 {!disabled && (
                   <div className="dy-absolute dy-top-2 dy-right-2 dy-flex dy-flex-col dy-gap-1 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all">
-                    {item && item.mimeType?.startsWith("image/") && item.mimeType !== "image/svg+xml" && (
+                    {checkIsCropable(valId, item) && (
                       <button
                         type="button"
                         onClick={() => openCrop(valId, item)}
