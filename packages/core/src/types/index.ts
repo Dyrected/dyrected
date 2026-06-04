@@ -50,7 +50,7 @@ export interface AuthenticatedUser {
  *
  * - Text group:    `text`, `textarea`, `richText`, `email`, `url`, `icon`
  * - Number/Bool:   `number`, `boolean`
- * - Date:          `date`
+ * - Date:          `date`, `datetime`, `time`
  * - Selection:     `select`, `multiSelect`, `radio`
  * - Relationship:  `relationship`, `join`
  * - Structural:    `array`, `object`, `blocks`, `json`
@@ -65,6 +65,7 @@ export type FieldType =
   | "boolean"
   | "date"
   | "datetime"
+  | "time"
   | "select"
   | "multiSelect"
   | "radio"

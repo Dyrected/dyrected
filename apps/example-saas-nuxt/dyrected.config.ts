@@ -414,6 +414,8 @@ export default defineConfig({
     staticUrlPrefix: "/uploads",
   }),
   admin: {
-    branding: { logoMark: "/uploads/default/logo_transparent.png", logo: "/uploads/default/logo_transparent.png" },
+    branding: {
+      logoText: "Acme CMS", // replaces the Dyrected logo
+    },
   },
 });

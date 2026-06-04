@@ -9,6 +9,7 @@ import { MediaPicker } from "./fields/media-picker"
 import { RichTextEditor } from "./fields/rich-text-editor"
 import { JsonEditor } from "./fields/json-editor"
 import { DatePicker } from "./fields/date-picker"
+import { TimePicker } from "./fields/time-picker"
 import { RelationshipPicker } from "./fields/relationship-picker"
 import { IconPicker } from "./fields/icon-picker"
 import { UrlField } from "./fields/url-field"
@@ -48,7 +49,7 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
 
   const disabled = schema.admin?.readOnly || !canUpdate
 
-  switch (schema.type) {
+  switch (schema.type as string) {
     case "textarea":
       return <TextAreaField schema={schema} field={field} disabled={disabled} />
     case "boolean":
@@ -89,6 +90,8 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "datetime":
       return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime />
+    case "time":
+      return <TimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "icon":
       return <IconPicker schema={schema} field={field} disabled={disabled} />
     case "url":

@@ -167,7 +167,25 @@ function SidebarInner({
         <div>
           {!isEmbedded && (
             <>
-              {branding?.logo || branding?.logoMark ? (
+              {branding?.logoText ? (
+                collapsed ? (
+                  // Collapsed: show initials in a styled pill
+                  <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-rounded-md dy-bg-primary/10 dy-shrink-0">
+                    <span className="dy-text-[11px] dy-font-bold dy-text-primary dy-uppercase dy-tracking-tight dy-leading-none">
+                      {branding.logoText
+                        .split(" ")
+                        .slice(0, 2)
+                        .map((w: string) => w[0])
+                        .join("")}
+                    </span>
+                  </div>
+                ) : (
+                  // Expanded: full text wordmark
+                  <span className="dy-font-serif dy-text-lg dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate dy-leading-none">
+                    {branding.logoText}
+                  </span>
+                )
+              ) : branding?.logo || branding?.logoMark ? (
                 <div className="dy-h-7 dy-w-7 dy-flex dy-items-center dy-justify-center dy-shrink-0">
                   <img
                     src={getMediaUrl(
@@ -185,7 +203,7 @@ function SidebarInner({
                   <img src={logo} alt="Dyrected" className="dy-h-8 dy-w-auto" />
                 </div>
               )}
-              {!collapsed && (
+              {!collapsed && !branding?.logoText && (
                 <span className="dy-font-serif dy-text-lg dy-tracking-tight dy-text-foreground dy-flex-1 dy-truncate">
                   {branding?.titleSuffix?.replace(/^- /, '') || ''}
                 </span>

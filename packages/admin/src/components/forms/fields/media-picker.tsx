@@ -9,10 +9,12 @@ import {
   Trash2,
   UploadCloud,
   Loader2,
+  Scissors,
 } from "lucide-react"
 import { Input } from "../../ui/input"
 import { cn, getMediaUrl } from "../../../lib/utils"
 import { MediaLibraryDialog } from "../../media/media-library-dialog"
+import { ImageCropDialog } from "./image-crop-dialog"
 import type { Media } from "@dyrected/sdk"
 import { useDropzone } from "react-dropzone"
 import { toast } from "sonner"
@@ -51,6 +53,7 @@ export function MediaPicker({
   const [isOpen, setIsOpen] = React.useState(false)
   const [localMediaCache, setLocalMediaCache] = React.useState<CachedMedia[]>([])
   const [uploading, setUploading] = React.useState(false)
+  const [cropState, setCropState] = React.useState<{ targetId: string; imageUrl: string; filename: string } | null>(null)
 
   const selectedValues = React.useMemo(() => {
     if (!value) return []
@@ -264,6 +267,44 @@ export function MediaPicker({
     }
   }, [client, activeMediaCollection, multiple, selectedIds, localMediaCache, getFullUrl, onChange])
 
+  const openCrop = React.useCallback((id: string, item?: any) => {
+    const resolvedItem = item || localMediaCache.find(m => m.id === id || m.filename === id || m.url === id)
+    if (!resolvedItem) return
+    const mimeType: string = resolvedItem.mimeType || ""
+    if (!mimeType.startsWith("image/") || mimeType === "image/svg+xml") return
+    const url = getMediaUrl(resolvedItem, client?.getBaseUrl() || "")
+    setCropState({ targetId: resolvedItem.id, imageUrl: url, filename: resolvedItem.filename || "image.jpg" })
+  }, [localMediaCache, client])
+
+  const handleCropConfirm = React.useCallback(async (blob: Blob, cropFilename: string) => {
+    if (!client || !cropState) return
+    const file = new File([blob], cropFilename, { type: blob.type })
+    const toastId = toast.loading("Uploading cropped image…")
+    try {
+      const uploaded = await client.collection(activeMediaCollection).upload(file)
+      setLocalMediaCache(prev => {
+        if (prev.some(m => m.id === uploaded.id)) return prev
+        return [...prev, uploaded]
+      })
+      const newValue = getFullUrl(uploaded)
+      if (multiple) {
+        const nextIds = selectedIds.map(sid => sid === cropState.targetId ? uploaded.id : sid)
+        const nextValues = nextIds.map(nid => {
+          const cached = localMediaCache.find(m => m.id === nid) || (nid === uploaded.id ? uploaded : undefined)
+          return cached ? getFullUrl(cached) : nid
+        })
+        onChange(nextValues)
+      } else {
+        onChange(newValue)
+      }
+      toast.success("Crop applied", { id: toastId })
+    } catch (err: any) {
+      toast.error("Crop upload failed", { description: err.message, id: toastId })
+      throw err
+    }
+  }, [client, cropState, activeMediaCollection, multiple, selectedIds, localMediaCache, getFullUrl, onChange])
+
+
   const handlePaste = React.useCallback(async (e: React.ClipboardEvent) => {
     if (disabled || uploading || !client) return
     const items = e.clipboardData?.items
@@ -397,7 +438,19 @@ export function MediaPicker({
                     </div>
                   )}
 
-                  <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all dy-flex dy-items-start dy-justify-end dy-backdrop-blur-[2px]">
+                  <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all dy-flex dy-items-start dy-justify-end dy-gap-1 dy-p-1.5 dy-backdrop-blur-[2px]">
+                    {item && item.mimeType?.startsWith("image/") && item.mimeType !== "image/svg+xml" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="dy-h-8 dy-w-8 dy-rounded-lg dy-text-foreground dy-bg-background/90 dy-shadow-2xl dy-scale-75 dy-group-hover:dy-scale-100 dy-transition-all"
+                        onClick={() => openCrop(valId, item)}
+                        title="Crop image"
+                      >
+                        <Scissors className="dy-w-4 dy-h-4" />
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
@@ -428,6 +481,14 @@ export function MediaPicker({
           onSelect={toggleValue}
           multiple={multiple}
           onConfirm={handleConfirm}
+        />
+
+        <ImageCropDialog
+          open={!!cropState}
+          onOpenChange={(o) => { if (!o) setCropState(null) }}
+          imageUrl={cropState?.imageUrl || ""}
+          filename={cropState?.filename}
+          onConfirm={handleCropConfirm}
         />
       </div>
     )
@@ -517,6 +578,14 @@ export function MediaPicker({
           multiple={multiple}
           onConfirm={handleConfirm}
         />
+
+        <ImageCropDialog
+          open={!!cropState}
+          onOpenChange={(o) => { if (!o) setCropState(null) }}
+          imageUrl={cropState?.imageUrl || ""}
+          filename={cropState?.filename}
+          onConfirm={handleCropConfirm}
+        />
       </div>
 
       {!isIcon && selectedValues.length > 0 && !multiple && (
@@ -542,13 +611,25 @@ export function MediaPicker({
                   </div>
                 )}
                 {!disabled && (
-                  <button
-                    type="button"
-                    onClick={() => toggleValue(valId, item)}
-                    className="dy-absolute dy-top-2 dy-right-2 dy-p-1.5 dy-bg-destructive dy-text-destructive-foreground dy-rounded-full dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all hover:dy-scale-110 dy-shadow-lg dy-border-2 dy-border-white"
-                  >
-                    <X className="dy-h-3.5 dy-w-3.5" />
-                  </button>
+                  <div className="dy-absolute dy-top-2 dy-right-2 dy-flex dy-flex-col dy-gap-1 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all">
+                    {item && item.mimeType?.startsWith("image/") && item.mimeType !== "image/svg+xml" && (
+                      <button
+                        type="button"
+                        onClick={() => openCrop(valId, item)}
+                        title="Crop image"
+                        className="dy-p-1.5 dy-bg-background/90 dy-text-foreground dy-rounded-full hover:dy-scale-110 dy-transition-all dy-shadow-lg dy-border-2 dy-border-white"
+                      >
+                        <Scissors className="dy-h-3.5 dy-w-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => toggleValue(valId, item)}
+                      className="dy-p-1.5 dy-bg-destructive dy-text-destructive-foreground dy-rounded-full hover:dy-scale-110 dy-transition-all dy-shadow-lg dy-border-2 dy-border-white"
+                    >
+                      <X className="dy-h-3.5 dy-w-3.5" />
+                    </button>
+                  </div>
                 )}
                 <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
                   <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item?.filename || (typeof val === "string" ? val.split("/").pop() : "Media")}</p>

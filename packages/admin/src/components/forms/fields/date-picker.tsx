@@ -61,6 +61,7 @@ export function DatePicker({ value, onChange, label, disabled, withTime }: DateP
       <Popover open={disabled ? false : open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            type="button"
             variant="outline"
             disabled={disabled}
             className={cn(
