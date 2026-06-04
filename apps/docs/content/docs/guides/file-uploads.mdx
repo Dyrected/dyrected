@@ -46,7 +46,18 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
 
 ## 3. Upload via the Admin UI
 
-The Admin UI renders a drag-and-drop media browser for upload collections. Drop a file or click to select. Image sizes are generated server-side after upload.
+The Admin UI renders a full-featured media manager and file picker for upload collections. It supports three convenient upload methods:
+1. **Browse**: Click the upload container to pick files via the standard browser selector.
+2. **Drag & Drop**: Drag files from your computer and drop them anywhere on the Media page or Media Picker field preview to open the uploader.
+3. **Clipboard Paste**: Copy any file or screenshot to your clipboard and press `Cmd+V` / `Ctrl+V` on the page to instantly load it into the uploader.
+
+### Client-side Image Cropping
+
+Both the Media Library dashboard and form-level `MediaPicker` fields support client-side image cropping:
+- Hover over any image thumbnail in the forms to reveal a ✂️ **Scissors/Crop** button (shown for raster images like PNG, JPG, and WebP, but not SVGs or videos).
+- Click the crop button on an image (or in the attachment details pane on the main media page) to open the crop dialog.
+- Pick an aspect ratio preset (Free-form, 1:1, 4:3, 3:2, 16:9) and adjust the cropping handles.
+- Click **Save** to apply the crop. The cropped version is uploaded as a new media document and the selection automatically updates to point to the cropped version. All image sizes are generated server-side automatically after upload.
 
 ---
 

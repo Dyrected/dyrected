@@ -306,18 +306,69 @@ A true/false toggle.
 
 ### `date`
 
-A date (and optionally time) picker. Values are always stored as ISO-8601 strings.
+A calendar date picker.
+
+```ts
+{
+  name: 'publishDate',
+  type: 'date',
+}
+```
+
+- **Stored as:** `DATE` (SQL) / `string` (MongoDB)
+- **API returns:** ISO date string (YYYY-MM-DD), e.g. `"2024-06-01"`
+- **Admin UI:** Popover calendar date picker
+
+---
+
+### `datetime`
+
+A date and time picker. Values are stored as ISO-8601 strings.
 
 ```ts
 {
   name: 'publishedAt',
-  type: 'date',
+  type: 'datetime',
 }
 ```
 
 - **Stored as:** `TIMESTAMPTZ` (PostgreSQL) / `DATETIME` (MySQL) / `string` (MongoDB)
 - **API returns:** ISO-8601 string, e.g. `"2024-06-01T10:00:00.000Z"`
-- **Admin UI:** Calendar date picker with optional time input
+- **Admin UI:** Calendar date picker with hours and minutes time selectors
+
+---
+
+### `daterange`
+
+A date range picker for picking start and end dates.
+
+```ts
+{
+  name: 'eventRange',
+  type: 'daterange',
+}
+```
+
+- **Stored as:** `JSON` (SQL) / `object` (MongoDB)
+- **API returns:** An object with optional `from` and `to` properties: `{ from?: string, to?: string }`
+- **Admin UI:** Popover interactive range calendar
+
+---
+
+### `time`
+
+A time-only picker.
+
+```ts
+{
+  name: 'openingTime',
+  type: 'time',
+}
+```
+
+- **Stored as:** `TIME` / `VARCHAR` (SQL) / `string` (MongoDB)
+- **API returns:** Time string (HH:MM), e.g. `"14:30"`
+- **Admin UI:** Clock-based time dropdowns for hour and minute select
 
 ---
 

@@ -256,3 +256,56 @@ When rendering `select` fields with options that contain empty strings (e.g. `{ 
 1. **Option Value Mapping:** Update the options parsing in `SelectField` to map empty string values (`""`) to a special internal placeholder string (`"__EMPTY_VALUE__"`).
 2. **Controlled State Synchronization:** Implement a controlled `<Select>` wrapper where empty or undefined values from React Hook Form (`field.value === "" || field.value === undefined || field.value === null`) are passed down as `"__EMPTY_VALUE__"`.
 3. **Event Handler Mapping:** Map selected changes in `onValueChange` so that `"__EMPTY_VALUE__"` maps back to `""` before being dispatched to `field.onChange(value)`.
+
+---
+
+## Bug 12: `edit-page-double-scroll` (Edit Page Showing Double Scrollbar / Clipping Content)
+
+**Component/File:** [`packages/admin/src/pages/collections/edit-page.tsx`](file:///Users/busola/Work/dyrected/packages/admin/src/pages/collections/edit-page.tsx)
+**Status:** Resolved ✅
+
+### Issue Outline
+The edit page used negative top and side margins (`-mt-6 -mx-4 lg:-mt-10 lg:-mx-6`) to break out of the admin shell's inner padding `div`. However the matching negative bottom margin was missing. The shell's `<main>` with `overflow-auto` detected the 48 px bottom overflow and rendered a second scrollbar behind the edit page. The previous workaround was to remove `overflow-y-auto` from the edit page's left column, which eliminated the outer scroll but clipped form content and made it unreachable.
+
+### Plan to Fix
+Add the matching `dy--mb-6 lg:dy--mb-10` to the outermost `div` of the edit page layout so the element fully cancels the shell's bottom padding offset, and restore `dy-overflow-y-auto` on the left column so its own content scrolls independently.
+
+---
+
+## Bug 13: `calendar-nav-stacking` (Calendar Month Navigation Buttons Requiring Multiple Clicks)
+
+**Component/File:** [`packages/admin/src/components/ui/calendar.tsx`](file:///Users/busola/Work/dyrected/packages/admin/src/components/ui/calendar.tsx)
+**Status:** Resolved ✅
+
+### Issue Outline
+The `nav` element in react-day-picker v9's rendered output is positioned `absolute` inside the `months` wrapper (`position: relative`). Day cells in the same stacking context were rendered on top of the nav, intercepting pointer events. Clicking the previous/next month button frequently required two clicks — the first click would hit a day cell that was stacked above the nav button, and only the second registered on the actual button.
+
+### Plan to Fix
+Add `dy-z-10` to the `nav` classname override in `Calendar` so the navigation bar is always above day cells in the stacking context.
+
+---
+
+## Bug 14: `calendar-day-button-focus-race` (Date Picker Selecting Dates Requires Multiple Clicks)
+
+**Component/File:** [`packages/admin/src/components/ui/calendar.tsx`](file:///Users/busola/Work/dyrected/packages/admin/src/components/ui/calendar.tsx)
+**Status:** Resolved ✅
+
+### Issue Outline
+The custom `CalendarDayButton` component used a `useEffect` that called `ref.current?.focus()` synchronously after render when `modifiers.focused` was truthy. This ran during the same React flush as the click event processing, racing with both Radix UI's focus management (when used inside a Popover) and react-day-picker's own focus tracking. The result was that clicking a day or nav button often moved focus away mid-click, causing the element to lose the active state and requiring a second click to complete the selection.
+
+### Plan to Fix
+Wrap the `focus()` call in `requestAnimationFrame` so it defers until after the browser has processed the click event and React has finished its commit phase. Return `cancelAnimationFrame` from the effect cleanup to prevent stale calls.
+
+---
+
+## Bug 15: `calendar-month-reset-on-reopen` (Date Picker Resets to Current Month Every Time It Is Opened)
+
+**Component/File:** [`packages/admin/src/components/forms/fields/date-picker.tsx`](file:///Users/busola/Work/dyrected/packages/admin/src/components/forms/fields/date-picker.tsx)
+**Status:** Resolved ✅
+
+### Issue Outline
+The `InlinePicker` wrapper around the calendar returned `null` when closed. Every close unmounted the `Calendar` component, destroying react-day-picker v9's internal `firstMonth` state (managed via `useControlledValue` inside `useCalendar`). On reopen (remount), `getInitialMonth` defaulted to `today` because no `month` or `defaultMonth` prop was supplied. Consequently, navigating to a future month, selecting a date, and reopening the picker always started back at the current month rather than the selected date's month.
+
+### Plan to Fix
+1. **Keep Calendar mounted:** Change `InlinePicker` from `return null` when closed to CSS-only hiding using `dy-invisible dy-pointer-events-none dy-opacity-0`, preserving the component tree and its internal state across open/close cycles.
+2. **Seed `defaultMonth`:** Pass `defaultMonth={date}` (or `defaultMonth={range?.from}` for the range variant) so fresh mounts on first render always open at the selected date's month rather than today.

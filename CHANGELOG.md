@@ -5,6 +5,29 @@ All notable changes to the Dyrected project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Admin UI: Date Range Picker**:
+    - Added `DateRangePicker` component supporting `mode="range"` selection via react-day-picker v9, rendering two side-by-side months.
+    - Registered `daterange` as a new field type in `FieldRenderer` mapping to `DateRangePicker`.
+    - Range value shape is `{ from?: string; to?: string }` (ISO strings), compatible with the existing field value contract.
+
+### Changed
+- **Admin UI: Date Picker replaced Popover with Inline Calendar**:
+    - Removed Radix UI Popover from `DatePicker` and `DateRangePicker`; replaced with a lightweight `InlinePicker` component that stays mounted using CSS visibility/opacity toggling instead of unmounting on close.
+    - Keeping the calendar DOM alive preserves react-day-picker v9's internal `firstMonth` navigation state across open/close cycles, so reopening the picker always shows the last navigated month rather than resetting to today.
+    - `defaultMonth` is seeded from the selected date on fresh mounts so the calendar always opens at the relevant month.
+- **Admin UI: Popover cleanup**:
+    - Removed the extra `<div className="dy-admin-ui">` wrapper that was wrapping `PopoverPrimitive.Content` inside the Portal; `dy-admin-ui` is now applied directly on the content element.
+
+### Fixed
+- **Admin UI: Edit page double scrollbar / content clipping**:
+    - The edit page layout used `dy-h-[calc(100vh)]` with negative top/side margins to escape the shell's inner padding wrapper but was missing the matching negative bottom margin. The shell's `overflow-auto` on `<main>` detected the 48px bottom overflow and showed a second scrollbar. Removing `overflow-y-auto` from the left column suppressed the outer scroll but clipped content. Fixed by adding `dy--mb-6 lg:dy--mb-10` to cancel the bottom padding offset and restoring `dy-overflow-y-auto` on the left column.
+- **Admin UI: Calendar navigation buttons requiring multiple clicks**:
+    - The nav element is positioned `absolute` inside the `months` container (which is `relative`). Day cells in the same stacking context were painted on top of the nav buttons, intercepting clicks. Fixed by adding `dy-z-10` to the nav classname.
+- **Admin UI: `CalendarDayButton` focus racing with click events**:
+    - The `useEffect` in `CalendarDayButton` called `ref.current?.focus()` synchronously after render, which conflicted with click-event processing and caused single clicks to register as needing a second click to act. Fixed by wrapping the `focus()` call in `requestAnimationFrame` so it defers until after the browser has processed the click.
+- **Admin UI: Calendar always resetting to current month on reopen**:
+    - `InlinePicker` previously returned `null` when closed, unmounting the `Calendar`. react-day-picker v9's `useControlledValue` internal `firstMonth` state was lost on unmount; `getInitialMonth` then defaulted to `today` on the next mount. Fixed by switching to CSS visibility/opacity toggling so the Calendar stays mounted and retains navigation state.
+
 - **Core Engine: Type Standardization**:
     - Unified `FieldSchema` and `BlockSchema` definitions in `@dyrected/core` as the single source of truth.
     - Standardized field configuration by renaming `collection` to `relationTo` and adding `hasMany` support.
