@@ -1,5 +1,15 @@
 # @dyrected/nuxt
 
+## 2.5.19
+
+### Patch Changes
+
+- 3ae7315: feat: implement lazy database initialization with auto-creation support and update config loading template strategy
+  - @dyrected/admin@2.5.19
+  - @dyrected/core@2.5.19
+  - @dyrected/sdk@2.5.19
+  - @dyrected/vue@2.5.19
+
 ## 2.5.18
 
 ### Patch Changes

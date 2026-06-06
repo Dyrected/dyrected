@@ -1,5 +1,12 @@
 # @dyrected/db-postgres
 
+## 2.5.19
+
+### Patch Changes
+
+- 3ae7315: feat: implement lazy database initialization with auto-creation support and update config loading template strategy
+  - @dyrected/core@2.5.19
+
 ## 2.5.18
 
 ### Patch Changes

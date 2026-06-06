@@ -1,5 +1,12 @@
 # @dyrected/vue
 
+## 2.5.19
+
+### Patch Changes
+
+- @dyrected/admin@2.5.19
+- @dyrected/sdk@2.5.19
+
 ## 2.5.18
 
 ### Patch Changes
