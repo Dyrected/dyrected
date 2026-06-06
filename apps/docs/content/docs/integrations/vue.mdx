@@ -45,28 +45,161 @@ import { DyrectedAdmin } from '@dyrected/vue'
 
 ### Passing Vue components as custom field inputs
 
-You can inject Vue components as custom admin field inputs. The bridge wraps them automatically:
+You can inject Vue components as custom admin field inputs. The bridge wraps them automatically so they render inside the React-based Admin UI.
+
+#### Step 1 — Register the key in your collection schema
+
+In your `dyrected.config.ts`, add `admin.component` to any field. The value is a **string key** that maps to the component you provide to `<DyrectedAdmin>`:
+
+```ts
+// dyrected.config.ts
+import { defineConfig, defineCollection } from '@dyrected/core'
+
+export default defineConfig({
+  collections: [
+    defineCollection({
+      slug: 'products',
+      fields: [
+        { name: 'title', type: 'text' },
+        {
+          name: 'brandColor',
+          type: 'text',
+          admin: {
+            component: 'products.brandColor',  // unique key — matches the prop below
+            description: 'Brand hex color, e.g. #6366f1',
+          },
+        },
+      ],
+    }),
+  ],
+})
+```
+
+#### Step 2 — Write your Vue component
+
+The bridge passes the following **props** to your component:
+
+| Prop | Type | Description |
+|---|---|---|
+| `value` | `any` | The current field value from the form state |
+| `onChange` | `(value: any) => void` | Call this to update the field value |
+| `field` | `FieldSchema` | The full field config object from your collection schema |
+| `path` | `string` | The dot-notation path of the field in the form (e.g. `brandColor`) |
+| `disabled` | `boolean` | `true` when the field is read-only or the user lacks update access |
+| `collection` | `string` | The slug of the current collection |
 
 ```vue
+<!-- components/BrandColorPicker.vue -->
 <script setup lang="ts">
-import { DyrectedAdmin } from '@dyrected/vue'
-import MyColorPicker from './components/MyColorPicker.vue'
+const props = defineProps<{
+  value: string | null
+  onChange: (v: string) => void
+  disabled: boolean
+}>()
 </script>
 
 <template>
-  <DyrectedAdmin
-    base-url="..."
-    api-key="..."
-    :components="{
-      fields: {
-        'products.brandColor': MyColorPicker,
-      }
-    }"
-  />
+  <div class="color-picker-wrapper">
+    <input
+      type="color"
+      :value="value ?? '#000000'"
+      :disabled="disabled"
+      @input="(e) => onChange((e.target as HTMLInputElement).value)"
+    />
+    <span>{{ value ?? 'None selected' }}</span>
+  </div>
 </template>
 ```
 
-The Vue component receives the same props as a React custom input: `value`, `onChange`, `field`, and `readOnly`.
+#### Step 3 — Pass the component to `<DyrectedAdmin>`
+
+```vue
+<!-- pages/admin.vue -->
+<script setup lang="ts">
+import { DyrectedAdmin } from '@dyrected/vue'
+import BrandColorPicker from '~/components/BrandColorPicker.vue'
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin
+      basename="/admin"
+      :components="{
+        fields: {
+          'products.brandColor': BrandColorPicker,
+        }
+      }"
+    />
+  </ClientOnly>
+</template>
+```
+
+The key (`'products.brandColor'`) must exactly match the `admin.component` value in your schema.
+
+#### Virtual fields (computed/read-only display)
+
+You can combine a custom component with an `afterRead` hook to display a **virtual/computed field** that is never stored in the database:
+
+```ts
+// dyrected.config.ts
+{
+  name: 'fullName',
+  type: 'text',
+  admin: {
+    component: 'users.fullName',
+    readOnly: true,
+    description: 'Automatically computed from first and last name.',
+  },
+  access: { update: false },   // prevent API writes
+  hooks: {
+    afterRead: [
+      ({ value, doc }) => `${doc.firstName ?? ''} ${doc.lastName ?? ''}`.trim() || value,
+    ],
+  },
+}
+```
+
+#### `copyable` — Copy-to-clipboard fields
+
+Add a copy button to any read-only field by wrapping `value` in your component:
+
+```vue
+<!-- components/CopyableField.vue -->
+<script setup lang="ts">
+const props = defineProps<{ value: string | null }>()
+const copied = ref(false)
+
+async function copy() {
+  if (!props.value) return
+  await navigator.clipboard.writeText(props.value)
+  copied.value = true
+  setTimeout(() => (copied.value = false), 2000)
+}
+</script>
+
+<template>
+  <div class="copyable-field">
+    <span>{{ value ?? '—' }}</span>
+    <button type="button" @click="copy">
+      {{ copied ? '✓ Copied' : 'Copy' }}
+    </button>
+  </div>
+</template>
+```
+
+Then in your schema:
+
+```ts
+{
+  name: 'apiKey',
+  type: 'text',
+  admin: {
+    component: 'users.apiKey',
+    readOnly: true,
+  },
+  access: { update: false },
+}
+```
 
 ---
 

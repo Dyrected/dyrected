@@ -26,7 +26,7 @@ export class SqliteAdapter implements DatabaseAdapter {
   }
 
   private getTableName(slug: string) {
-    return `collection_${slug}`;
+    return `collection_${slug.replace(/-/g, '_')}`;
   }
 
   private async ensureTable(slug: string, fields: any[] = []) {

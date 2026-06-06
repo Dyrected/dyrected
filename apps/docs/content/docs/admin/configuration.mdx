@@ -167,6 +167,37 @@ export const SiteSettings = defineGlobal({
 | `condition` | `string \| (data: any) => boolean` | always shown | A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
 | `maxLength` | `number` | none | Maximum character limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
 | `maxWords` | `number` | none | Maximum word limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
+| `component` | `string` | none | Key of a custom UI component to render in place of the default field input. The component must be registered under the same key in the `components.fields` prop of `<DyrectedAdmin>`. See [Custom Field Components](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs). |
+
+### `component` — Custom Field UI
+
+Replace the default input for any field with your own component by setting `admin.component` to a unique string key:
+
+```ts
+{
+  name: 'brandColor',
+  type: 'text',
+  admin: {
+    component: 'products.brandColor',
+    description: 'Brand hex color, e.g. #6366f1',
+  },
+}
+```
+
+Then pass your component to `<DyrectedAdmin>` under the matching key:
+
+```vue
+<DyrectedAdmin
+  basename="/admin"
+  :components="{
+    fields: {
+      'products.brandColor': BrandColorPicker,
+    }
+  }"
+/>
+```
+
+Your component receives `value`, `onChange`, `field`, `path`, `disabled`, and `collection` as props. See the [Vue integration guide](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs) for a full walkthrough including virtual fields and copyable inputs.
 
 ### `condition` — Conditional Fields
 

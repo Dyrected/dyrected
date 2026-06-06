@@ -406,6 +406,14 @@ const Navigation = defineGlobal({
 const RsvpGroups = defineCollection({
   slug: "rsvp-groups",
   labels: { plural: "RSVP Groups", singular: "RSVP Group" },
+  hooks: {
+    afterRead: [
+      ({ doc }) => ({
+        ...doc,
+        rsvpLink: `/rsvp?group=${doc.slug}`,
+      }),
+    ],
+  },
   admin: {
     useAsTitle: "name",
     group: "Events",

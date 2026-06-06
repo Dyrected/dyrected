@@ -272,6 +272,25 @@ export default defineNitroPlugin(async (nitroApp) => {
       if (!nuxt.options.vite.optimizeDeps.exclude.includes("@dyrected/vue")) {
         nuxt.options.vite.optimizeDeps.exclude.push("@dyrected/vue");
       }
+
+      // Deduplicate React & React-DOM to avoid multiple instances causing hook failures
+      nuxt.options.vite.resolve = nuxt.options.vite.resolve || {};
+      nuxt.options.vite.resolve.dedupe = nuxt.options.vite.resolve.dedupe || [];
+      for (const dep of ["react", "react-dom"]) {
+        if (!nuxt.options.vite.resolve.dedupe.includes(dep)) {
+          nuxt.options.vite.resolve.dedupe.push(dep);
+        }
+      }
+
+      nuxt.options.vite.resolve.alias = nuxt.options.vite.resolve.alias || {};
+      try {
+        const reactMain = _require.resolve("react");
+        const reactDomMain = _require.resolve("react-dom");
+        (nuxt.options.vite.resolve.alias as any).react = join(reactMain, "..");
+        (nuxt.options.vite.resolve.alias as any)["react-dom"] = join(reactDomMain, "..");
+      } catch {
+        // Ignore
+      }
     }
 
     // 8. Transpile Dyrected packages

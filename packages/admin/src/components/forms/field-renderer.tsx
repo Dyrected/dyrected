@@ -15,6 +15,7 @@ import { IconPicker } from "./fields/icon-picker"
 import { UrlField } from "./fields/url-field"
 import jexl from 'jexl'
 import { useDyrected } from "../../providers/dyrected-provider"
+import { ErrorBoundary } from "../error-boundary"
 
 interface CollectionSchema {
   slug: string
@@ -82,15 +83,17 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
   if (customComponentKey && components?.fields?.[customComponentKey]) {
     const CustomComponent = components.fields[customComponentKey]
     return (
-      <CustomComponent
-        value={field.value}
-        onChange={field.onChange}
-        field={schema}
-        path={field.name}
-        disabled={disabled}
-        collection={collection}
-        context={context}
-      />
+      <ErrorBoundary fieldName={schema.name ?? customComponentKey}>
+        <CustomComponent
+          value={field.value}
+          onChange={field.onChange}
+          field={schema}
+          path={field.name}
+          disabled={disabled}
+          collection={collection}
+          context={context}
+        />
+      </ErrorBoundary>
     )
   }
 

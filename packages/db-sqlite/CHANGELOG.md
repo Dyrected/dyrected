@@ -1,5 +1,13 @@
 # @dyrected/db-sqlite
 
+## 2.5.23
+
+### Patch Changes
+
+- feat: add custom field component support, field-level error boundaries, and fix React instance mismatch in Vue bridge
+- Updated dependencies
+  - @dyrected/core@2.5.23
+
 ## 2.5.22
 
 ### Patch Changes

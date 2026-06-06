@@ -1,22 +1,30 @@
 import { h, createApp, ref, type Component, type App } from 'vue';
-import * as React from 'react';
+import * as ReactModule from 'react';
 
 /**
  * wrapVueComponent — Higher-order component that wraps a Vue 3 component 
  * so it can be rendered within a React component tree.
+ *
+ * React is resolved lazily inside the wrapper (not at module init time) so that
+ * `window.React` — set by the Admin UI before any render occurs — is always used.
+ * This prevents the "Invalid hook call / useRef null" error that arises when the
+ * Vue package and the Admin package each resolve to a different React instance.
  */
 export function wrapVueComponent(VueComp: Component) {
   const ReactWrapper = (props: any) => {
-    const containerRef = React.useRef<HTMLDivElement>(null);
-    const appRef = React.useRef<App | null>(null);
-    const propsRef = React.useRef(ref(props));
+    // Lazy lookup: by render time window.React is guaranteed to be set by the Admin bundle.
+    const R: typeof ReactModule = (typeof window !== 'undefined' && (window as any).React) || ReactModule;
+
+    const containerRef = R.useRef<HTMLDivElement>(null);
+    const appRef = R.useRef<App | null>(null);
+    const propsRef = R.useRef(ref(props));
 
     // Update the reactive propsRef when React props change
-    React.useEffect(() => {
+    R.useEffect(() => {
       propsRef.current.value = props;
     }, [props]);
 
-    React.useEffect(() => {
+    R.useEffect(() => {
       if (containerRef.current) {
         const app = createApp({
           setup() {
@@ -35,7 +43,7 @@ export function wrapVueComponent(VueComp: Component) {
       };
     }, []);
 
-    return React.createElement('div', { 
+    return R.createElement('div', { 
       ref: containerRef,
       className: 'dyrected-vue-bridge-container',
       style: { display: 'contents' }

@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.5.23
+
+### Patch Changes
+
+- feat: add custom field component support, field-level error boundaries, and fix React instance mismatch in Vue bridge
+
 ## 2.5.22
 
 ## 2.5.21

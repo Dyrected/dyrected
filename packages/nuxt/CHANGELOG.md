@@ -1,5 +1,16 @@
 # @dyrected/nuxt
 
+## 2.5.23
+
+### Patch Changes
+
+- feat: add custom field component support, field-level error boundaries, and fix React instance mismatch in Vue bridge
+- Updated dependencies
+  - @dyrected/admin@2.5.23
+  - @dyrected/core@2.5.23
+  - @dyrected/vue@2.5.23
+  - @dyrected/sdk@2.5.23
+
 ## 2.5.22
 
 ### Patch Changes

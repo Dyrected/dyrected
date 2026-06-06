@@ -1,6 +1,11 @@
 /** @jsxImportSource react */
 import "./index.css";
 import React, { useEffect, useState, StrictMode } from "react";
+
+if (typeof window !== "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).React = React;
+}
 import { createRoot } from "react-dom/client";
 import {
   HashRouter,
@@ -79,14 +84,16 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
     <AuthGate>
       <AdminShell isEmbedded={isEmbedded}>
         <NavigationSync onNavigate={onNavigate} />
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/collections/:slug" element={<CollectionRoute />} />
-          <Route path="/collections/:slug/new" element={<EditEntryPage />} />
-          <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
-          <Route path="/globals/:slug" element={<GlobalEditorPage />} />
-          <Route path="/setup" element={<SetupPage />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/collections/:slug" element={<CollectionRoute />} />
+            <Route path="/collections/:slug/new" element={<EditEntryPage />} />
+            <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
+            <Route path="/globals/:slug" element={<GlobalEditorPage />} />
+            <Route path="/setup" element={<SetupPage />} />
+          </Routes>
+        </ErrorBoundary>
       </AdminShell>
     </AuthGate>
   );
