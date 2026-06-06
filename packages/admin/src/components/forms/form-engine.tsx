@@ -5,15 +5,157 @@ import * as z from "zod"
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "../ui/form"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"
+import { Tabs, TabsTrigger, TabsContent } from "../ui/tabs"
 import type { Field as FieldSchema, Block as BlockSchema } from "@dyrected/sdk"
 import { buildSchemaShape, buildDefaultValues, getFlatErrors, formatPath } from "./utils"
 import { runHookSandboxed } from "./hooks-sandbox"
 import { FormFieldRenderer } from "./form-field-renderer"
-import { AlertCircle, Lock } from "lucide-react"
+import { AlertCircle, Lock, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "../../lib/utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu"
 
 export type { FieldSchema, BlockSchema }
+
+interface ResponsiveTabsListProps {
+  tabs: string[]
+  tabErrorsCount: Map<string, number>
+  activeTab: string
+  setActiveTab: (tab: string) => void
+}
+
+function ResponsiveTabsList({ tabs, tabErrorsCount, activeTab, setActiveTab }: ResponsiveTabsListProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const itemRefs = React.useRef<Record<string, HTMLButtonElement | null>>({})
+  const [visibleCount, setVisibleCount] = React.useState(tabs.length)
+
+  React.useLayoutEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const handleResize = () => {
+      const containerWidth = container.clientWidth
+      let totalWidth = 0
+      let newVisibleCount = tabs.length
+      const moreButtonWidth = 85
+
+      for (let i = 0; i < tabs.length; i++) {
+        const tab = tabs[i]
+        const ref = itemRefs.current[tab]
+        if (ref) {
+          totalWidth += ref.offsetWidth + 8
+        }
+        if (totalWidth > containerWidth) {
+          let tempWidth = 0
+          let count = 0
+          for (let j = 0; j < tabs.length; j++) {
+            const t = tabs[j]
+            const r = itemRefs.current[t]
+            const itemW = r ? r.offsetWidth + 8 : 0
+            if (tempWidth + itemW + moreButtonWidth > containerWidth) {
+              break
+            }
+            tempWidth += itemW
+            count++
+          }
+          newVisibleCount = Math.max(1, count)
+          break
+        }
+      }
+      setVisibleCount(newVisibleCount)
+    }
+
+    const observer = new ResizeObserver(() => {
+      handleResize()
+    })
+    observer.observe(container)
+    handleResize()
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [tabs])
+
+  const overflowTabs = tabs.slice(visibleCount)
+  const isOverflowActive = overflowTabs.includes(activeTab)
+
+  return (
+    <div ref={containerRef} className="dy-flex dy-w-full dy-items-center dy-justify-between dy-rounded-xl dy-bg-muted dy-p-1 dy-text-muted-foreground dy-mb-2">
+      <div className="dy-flex dy-items-center dy-flex-1 dy-min-w-0 dy-gap-1">
+        {tabs.map((tab, idx) => {
+          const isVisible = idx < visibleCount
+          const errCount = tabErrorsCount.get(tab) || 0
+          return (
+            <TabsTrigger
+              key={tab}
+              value={tab}
+              ref={(el) => {
+                itemRefs.current[tab] = el
+              }}
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "dy-relative dy-flex dy-items-center dy-transition-all",
+                !isVisible && "dy-absolute dy-invisible dy-pointer-events-none"
+              )}
+            >
+              <span className="dy-truncate">{tab}</span>
+              {errCount > 0 && (
+                <span className="dy-ml-2 dy-flex dy-h-5 dy-w-5 dy-items-center dy-justify-center dy-rounded-full dy-bg-destructive dy-text-[10px] dy-font-semibold dy-text-destructive-foreground">
+                  {errCount}
+                </span>
+              )}
+            </TabsTrigger>
+          )
+        })}
+
+        {overflowTabs.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "dy-h-8 dy-rounded-lg dy-px-3 dy-text-xs dy-font-medium dy-flex dy-items-center dy-gap-1 dy-transition-all hover:dy-bg-background/40",
+                  isOverflowActive && "dy-bg-background dy-text-foreground dy-shadow-sm hover:dy-bg-background"
+                )}
+              >
+                <span>{isOverflowActive ? activeTab : "More"}</span>
+                <ChevronDown className="dy-h-3 dy-w-3 dy-opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="dy-min-w-[150px] dy-rounded-xl dy-border-border/40 dy-shadow-lg">
+              {overflowTabs.map((tab) => {
+                const errCount = tabErrorsCount.get(tab) || 0
+                return (
+                  <DropdownMenuItem
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={cn(
+                      "dy-flex dy-items-center dy-justify-between dy-py-2.5 dy-rounded-lg",
+                      activeTab === tab && "dy-bg-accent dy-text-foreground"
+                    )}
+                  >
+                    <span className="dy-truncate">{tab}</span>
+                    {errCount > 0 && (
+                      <span className="dy-flex dy-h-5 dy-w-5 dy-items-center dy-justify-center dy-rounded-full dy-bg-destructive dy-text-[10px] dy-font-semibold dy-text-destructive-foreground">
+                        {errCount}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    </div>
+  )
+}
 
 interface FormEngineProps {
   collection: string
@@ -351,19 +493,51 @@ export function FormEngine({
     </div>
   )
 
-  if (tabbedFields.length > 0) {
-    const tabOrder: string[] = []
-    const tabGroups = new Map<string, FieldSchema[]>()
+  const tabOrder: string[] = []
+  const tabGroups = new Map<string, FieldSchema[]>()
 
-    for (const field of tabbedFields) {
-      const tab = field.admin!.tab!
-      if (!tabGroups.has(tab)) {
-        tabGroups.set(tab, [])
-        tabOrder.push(tab)
-      }
-      tabGroups.get(tab)!.push(field)
+  for (const field of tabbedFields) {
+    const tab = field.admin!.tab!
+    if (!tabGroups.has(tab)) {
+      tabGroups.set(tab, [])
+      tabOrder.push(tab)
     }
+    tabGroups.get(tab)!.push(field)
+  }
 
+  const [prevCollection, setPrevCollection] = useState(collection)
+  const [activeTab, setActiveTab] = useState(tabOrder[0] || "")
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(max-width: 768px)").matches
+    }
+    return false
+  })
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    return tabOrder[0] ? { [tabOrder[0]]: true } : {}
+  })
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 768px)")
+    const listener = () => setIsMobile(media.matches)
+    media.addEventListener("change", listener)
+    return () => media.removeEventListener("change", listener)
+  }, [])
+
+  if (collection !== prevCollection) {
+    setPrevCollection(collection)
+    setActiveTab(tabOrder[0] || "")
+    setExpandedSections(tabOrder[0] ? { [tabOrder[0]]: true } : {})
+  }
+
+  const toggleSection = (tab: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [tab]: !prev[tab]
+    }))
+  }
+
+  if (tabbedFields.length > 0) {
     const tabErrorsCount = new Map<string, number>()
     for (const tab of tabOrder) {
       const tabFields = tabGroups.get(tab) || []
@@ -383,30 +557,56 @@ export function FormEngine({
             {topFields.map(renderFieldColumn)}
           </div>
         )}
-        <Tabs defaultValue={tabOrder[0]}>
-          <TabsList className="dy-mb-2">
+        {isMobile ? (
+          <div className="dy-flex dy-flex-col dy-gap-4">
             {tabOrder.map((tab) => {
               const errCount = tabErrorsCount.get(tab) || 0
+              const isExpanded = !!expandedSections[tab]
               return (
-                <TabsTrigger key={tab} value={tab} className="dy-relative dy-flex dy-items-center">
-                  {tab}
-                  {errCount > 0 && (
-                    <span className="dy-ml-2 dy-flex dy-h-5 dy-w-5 dy-items-center dy-justify-center dy-rounded-full dy-bg-destructive dy-text-[10px] dy-font-semibold dy-text-destructive-foreground">
-                      {errCount}
-                    </span>
+                <div key={tab} className="dy-border dy-border-border/40 dy-rounded-2xl dy-overflow-hidden dy-bg-background/50 dy-shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(tab)}
+                    className="dy-w-full dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-3.5 dy-bg-muted/10 dy-font-semibold dy-text-sm hover:dy-bg-muted/20 dy-transition-colors"
+                  >
+                    <div className="dy-flex dy-items-center dy-gap-2">
+                      <span>{tab}</span>
+                      {errCount > 0 && (
+                        <span className="dy-flex dy-h-5 dy-w-5 dy-items-center dy-justify-center dy-rounded-full dy-bg-destructive dy-text-[10px] dy-font-semibold dy-text-destructive-foreground">
+                          {errCount}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronDown className={cn("dy-h-4 dy-w-4 dy-opacity-50 dy-transition-transform dy-duration-200", isExpanded && "dy-rotate-180")} />
+                  </button>
+                  {isExpanded && (
+                    <div className="dy-p-4 dy-border-t dy-border-border/40 dy-bg-background/20">
+                      <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
+                        {tabGroups.get(tab)!.map(renderFieldColumn)}
+                      </div>
+                    </div>
                   )}
-                </TabsTrigger>
+                </div>
               )
             })}
-          </TabsList>
-          {tabOrder.map((tab) => (
-            <TabsContent key={tab} value={tab}>
-              <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6 dy-pt-4">
-                {tabGroups.get(tab)!.map(renderFieldColumn)}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+          </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <ResponsiveTabsList
+              tabs={tabOrder}
+              tabErrorsCount={tabErrorsCount}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+            {tabOrder.map((tab) => (
+              <TabsContent key={tab} value={tab}>
+                <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6 dy-pt-4">
+                  {tabGroups.get(tab)!.map(renderFieldColumn)}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
       </div>
     )
   } else {

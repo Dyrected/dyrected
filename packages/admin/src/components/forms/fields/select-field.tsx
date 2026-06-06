@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronsUpDown, X } from "lucide-react"
+import { Check, ChevronsUpDown, X, Plus } from "lucide-react"
 
 import { cn } from "../../../lib/utils"
 import { Button } from "../../ui/button"
@@ -39,10 +39,12 @@ interface SelectFieldProps {
  * - **Dynamic Options**: Async loaded from an endpoint based on collection, field name, and parent/sibling form values.
  * - **Clear Selection**: An inline clear button ("X" icon) is displayed next to the chevron when a value is selected,
  *   safely clearing the selection using `field.onChange("")` without opening the dropdown overlay.
+ * - **Custom Option Creation**: Users can type custom values and select them as the field value.
  */
 export function SelectField({ schema, field, disabled, collection, siblingValues }: SelectFieldProps) {
   const { client } = useDyrected()
   const [open, setOpen] = React.useState(false)
+  const [searchVal, setSearchVal] = React.useState("")
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
 
   const isDynamic = !!(schema.options && typeof schema.options === "object" && "_dynamic" in schema.options)
@@ -85,8 +87,21 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
   const selectedOption = options.find((opt) => opt.value === currentValue)
   const placeholder = isDynamic && isLoading ? "Loading options..." : schema.admin?.placeholder || `Select ${label.toLowerCase()}`
 
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen)
+    if (!newOpen) {
+      setSearchVal("")
+    }
+  }
+
+  const trimmedSearch = searchVal.trim()
+  const hasExactMatch = options.some(
+    (opt) => opt.label.toLowerCase() === trimmedSearch.toLowerCase() || opt.value.toLowerCase() === trimmedSearch.toLowerCase()
+  )
+  const showCustomOption = trimmedSearch !== "" && !hasExactMatch
+
   return (
-    <Popover open={disabled ? false : open} onOpenChange={setOpen}>
+    <Popover open={disabled ? false : open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -99,7 +114,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
           )}
         >
           <span className="dy-truncate">
-            {selectedOption?.label || placeholder}
+            {selectedOption?.label || (currentValue && !selectedOption ? currentValue : placeholder)}
           </span>
           <div className="dy-flex dy-items-center dy-gap-1.5 dy-shrink-0">
             {selectedOption && !disabled && (
@@ -126,8 +141,27 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
       </PopoverTrigger>
       <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">
         <Command>
-          <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
+          <CommandInput
+            placeholder={`Search ${label.toLowerCase()}...`}
+            value={searchVal}
+            onValueChange={setSearchVal}
+          />
           <CommandList>
+            {showCustomOption && (
+              <CommandGroup heading="Custom Value">
+                <CommandItem
+                  value={searchVal}
+                  onSelect={() => {
+                    field.onChange(trimmedSearch)
+                    handleOpenChange(false)
+                  }}
+                  className="dy-rounded-lg dy-py-2.5 dy-text-primary dy-font-medium"
+                >
+                  <Plus className="dy-mr-2 dy-h-4 dy-w-4" />
+                  <span>Use "{trimmedSearch}"</span>
+                </CommandItem>
+              </CommandGroup>
+            )}
             <CommandEmpty>No option found.</CommandEmpty>
             <CommandGroup>
               {options.map((opt) => (
@@ -136,7 +170,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
                   value={`${opt.label} ${opt.value}`}
                   onSelect={() => {
                     field.onChange(opt.value)
-                    setOpen(false)
+                    handleOpenChange(false)
                   }}
                   className="dy-rounded-lg dy-py-2.5"
                 >
