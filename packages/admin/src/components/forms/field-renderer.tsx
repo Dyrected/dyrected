@@ -14,12 +14,40 @@ import { RelationshipPicker } from "./fields/relationship-picker"
 import { IconPicker } from "./fields/icon-picker"
 import { UrlField } from "./fields/url-field"
 import jexl from 'jexl'
+import { useDyrected } from "../../providers/dyrected-provider"
+
+interface CollectionSchema {
+  slug: string
+  upload?: boolean
+}
+
+type RelationFieldSchema = FieldSchema & {
+  relationTo?: string
+  collection?: string
+  hasMany?: boolean
+}
 
 interface FieldRendererProps {
   schema: FieldSchema
-  field: any
+  field: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onChange: (...event: any[]) => void
+    name: string
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ref: any
+  }
   collection: string
-  context?: { user: any, schemas?: any, siblingData: any }
+  context?: {
+    user: Record<string, unknown> | null
+    schemas?: {
+      collections: CollectionSchema[]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      globals: any[]
+    }
+    siblingData: Record<string, unknown>
+  }
 }
 
 /**
@@ -35,9 +63,9 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
   void collection
 
   // Evaluate Update Access
-  const updateAccess = (schema.access as any)?.update
+  const updateAccess = schema.access?.update
   let canUpdate = true
-  if (updateAccess === false) {
+  if ((updateAccess as unknown) === false) {
     canUpdate = false
   } else if (typeof updateAccess === 'string' && context) {
     try {
@@ -49,15 +77,34 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
 
   const disabled = schema.admin?.readOnly || !canUpdate
 
+  const { components } = useDyrected()
+  const customComponentKey = schema.admin?.component
+  if (customComponentKey && components?.fields?.[customComponentKey]) {
+    const CustomComponent = components.fields[customComponentKey]
+    return (
+      <CustomComponent
+        value={field.value}
+        onChange={field.onChange}
+        field={schema}
+        path={field.name}
+        disabled={disabled}
+        collection={collection}
+        context={context}
+      />
+    )
+  }
+
+  const relSchema = schema as RelationFieldSchema
+
   switch (schema.type as string) {
     case "textarea":
       return <TextAreaField schema={schema} field={field} disabled={disabled} />
     case "boolean":
       return <SwitchField field={field} disabled={disabled} />
     case "select":
-      return <SelectField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData} />
+      return <SelectField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData as Record<string, string | number | boolean>} />
     case "radio":
-      return <RadioField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData} />
+      return <RadioField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData as Record<string, string | number | boolean>} />
     case "multiSelect":
       return (
         <MultiSelect
@@ -70,20 +117,22 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
           schema={schema}
         />
       )
-    case "image" as any:
-      const imageMediaColl = (schema as any).relationTo || (context?.schemas?.collections?.find((c: any) => c.upload)?.slug) || "media"
+    case "image": {
+      const imageMediaColl = relSchema.relationTo || (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
       return (
         <MediaPicker
           collection={imageMediaColl}
           value={field.value}
           onChange={field.onChange}
           disabled={disabled}
-          multiple={(schema as any).hasMany}
+          multiple={relSchema.hasMany}
         />
       )
-    case "richText":
-      const richTextMediaColl = (context?.schemas?.collections?.find((c: any) => c.upload)?.slug) || "media"
+    }
+    case "richText": {
+      const richTextMediaColl = (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
       return <RichTextEditor collection={richTextMediaColl} value={field.value} onChange={field.onChange} disabled={disabled} />
+    }
     case "json":
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
@@ -98,18 +147,18 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       return <IconPicker schema={schema} field={field} disabled={disabled} />
     case "url":
       return <UrlField schema={schema} field={field} disabled={disabled} context={context} />
-    case "relationship":
-      const defaultMediaColl = (context?.schemas?.collections?.find((c: any) => c.upload)?.slug) || "media"
-      const isMediaRel = (schema as any).relationTo === "media" ||
-        (context?.schemas?.collections?.find((c: any) => c.slug === (schema as any).relationTo)?.upload)
+    case "relationship": {
+      const defaultMediaColl = (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
+      const isMediaRel = relSchema.relationTo === "media" ||
+        !!(context?.schemas?.collections?.find((c) => c.slug === relSchema.relationTo)?.upload)
 
       if (isMediaRel) {
         return (
           <MediaPicker
-            collection={(schema as any).relationTo || defaultMediaColl}
+            collection={relSchema.relationTo || defaultMediaColl}
             value={field.value}
             onChange={field.onChange}
-            multiple={(schema as any).hasMany}
+            multiple={relSchema.hasMany}
             disabled={disabled}
           />
         )
@@ -119,11 +168,12 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
         <RelationshipPicker
           value={field.value}
           onChange={field.onChange}
-          relationTo={(schema as any).relationTo || (schema as any).collection}
-          multiple={(schema as any).hasMany}
+          relationTo={relSchema.relationTo || relSchema.collection}
+          multiple={relSchema.hasMany}
           disabled={disabled}
         />
       )
+    }
     default:
       return <TextField schema={schema} field={field} disabled={disabled} />
   }

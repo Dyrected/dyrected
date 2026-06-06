@@ -704,6 +704,9 @@ interface FieldBase {
     /** Placeholder text shown when the input is empty. */
     placeholder?: string;
 
+    /** String key referencing a custom React component to render this input field. */
+    component?: string;
+
     /** Help text rendered below the field in the Admin UI. */
     description?: string;
 
@@ -1557,6 +1560,8 @@ export interface AdminConfig {
     logo?: string;
     /** Compact logo mark used in the collapsed sidebar state. */
     logoMark?: string;
+    /** Text alternative or addition to the logo image. */
+    logoText?: string;
     /**
      * Primary accent colour as any CSS colour value.
      * @example '#6366f1'

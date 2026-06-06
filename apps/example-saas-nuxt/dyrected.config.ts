@@ -403,8 +403,30 @@ const Navigation = defineGlobal({
   ],
 });
 
+const RsvpGroups = defineCollection({
+  slug: "rsvp-groups",
+  labels: { plural: "RSVP Groups", singular: "RSVP Group" },
+  admin: {
+    useAsTitle: "name",
+    group: "Events",
+  },
+  fields: [
+    { name: "name", type: "text", required: true },
+    { name: "slug", type: "text", required: true, unique: true },
+    {
+      name: "rsvpLink",
+      type: "text",
+      label: "RSVP Link",
+      admin: {
+        component: "rsvpLink",
+        readOnly: true,
+      },
+    },
+  ],
+});
+
 export default defineConfig({
-  collections: [Admin, Media, Pages, Blog, Products, Authors],
+  collections: [Admin, Media, Pages, Blog, Products, Authors, RsvpGroups],
   globals: [Settings, Navigation],
   db: new SqliteAdapter({
     filename: "dyrected.db",

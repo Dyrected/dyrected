@@ -2,6 +2,7 @@
   <DyrectedAdmin 
     :config="config" 
     :basename="basename || '/cms-admin'" 
+    :components="components"
   />
 </template>
 
@@ -16,6 +17,10 @@ defineProps<{
    * @default "/cms-admin"
    */
   basename?: string;
+  /**
+   * Custom components to inject into the Admin UI.
+   */
+  components?: any;
 }>();
 
 const runtimeConfig = useRuntimeConfig();
