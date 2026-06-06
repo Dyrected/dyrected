@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.24
+
+### Patch Changes
+
+- 71348fb: feat: implement client-side image compression and update admin-shell mobile layout with branding and user identity
+  - @dyrected/core@2.5.24
+  - @dyrected/sdk@2.5.24
+
 ## 2.5.23
 
 ### Patch Changes
