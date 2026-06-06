@@ -123,11 +123,16 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     if (configPath) {
       console.log("[dyrected/nuxt] Auto-detected config at:", configPath);
       (runtimeConfig as any).configPath = configPath;
-      let loadConfigPath = resolver.resolve("./runtime/server/plugins/loadConfig.ts");
-      if (!existsSync(loadConfigPath)) {
-        loadConfigPath = resolver.resolve("./runtime/server/plugins/loadConfig.mjs");
+
+      let loadConfigSrc = resolver.resolve("./runtime/server/plugins/loadConfig.ts");
+      if (!existsSync(loadConfigSrc)) {
+        loadConfigSrc = resolver.resolve("./runtime/server/plugins/loadConfig.mjs");
       }
-      (runtimeConfig as any).loadConfigPath = loadConfigPath;
+      addTemplate({
+        src: loadConfigSrc,
+        filename: "dyrected-load-config.ts",
+        write: true,
+      });
 
       let dbPluginSrc = resolver.resolve("./runtime/server/plugins/db.ts");
       if (!existsSync(dbPluginSrc)) {

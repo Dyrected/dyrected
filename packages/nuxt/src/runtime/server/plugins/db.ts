@@ -11,8 +11,8 @@ export default defineNitroPlugin(async (nitroApp: any) => {
   if (runtimeConfig?.configPath) {
     try {
       const configPath = (runtimeConfig as any).configPath;
-      const loadConfigPath = (runtimeConfig as any).loadConfigPath;
-      const { loadDyrectedConfig, ConfigLoadError } = await import(loadConfigPath);
+      // @ts-ignore
+      const { loadDyrectedConfig, ConfigLoadError } = await import("./dyrected-load-config.ts");
       let userConfig: any = null;
       // Load the Dyrected configuration using the shared utility.
       // It validates .js files and works with both jiti v1 and v2.

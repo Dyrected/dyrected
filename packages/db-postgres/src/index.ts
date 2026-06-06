@@ -6,11 +6,58 @@ export interface PostgresAdapterConfig {
 }
 
 export class PostgresAdapter implements DatabaseAdapter {
-  private sql: postgres.Sql;
+  private sql!: postgres.Sql;
+  private config: PostgresAdapterConfig;
+  private initPromise: Promise<void> | null = null;
 
   constructor(config: PostgresAdapterConfig) {
-    this.sql = postgres(config.url);
-    this.initInternalTables();
+    this.config = config;
+    this.ensureInitialized().catch((err) => {
+      console.error('[dyrected/db-postgres] Initialization promise failed:', err);
+    });
+  }
+
+  private async ensureInitialized() {
+    if (!this.initPromise) {
+      this.initPromise = this.initialize();
+    }
+    await this.initPromise;
+  }
+
+  private async initialize() {
+    let dbName = '';
+    let defaultUrl = '';
+    try {
+      const parsed = new URL(this.config.url);
+      dbName = parsed.pathname.replace(/^\//, '');
+      parsed.pathname = '/postgres';
+      defaultUrl = parsed.toString();
+    } catch (err) {
+      // url might not be a valid URL string or parsed pathname is empty
+    }
+
+    if (dbName && defaultUrl) {
+      try {
+        const tempSql = postgres(defaultUrl, { max: 1 });
+        const exists = await tempSql`
+          SELECT 1 FROM pg_database WHERE datname = ${dbName}
+        `;
+        if (exists.length === 0) {
+          await tempSql.unsafe(`CREATE DATABASE "${dbName.replace(/"/g, '""')}"`);
+          console.log(`[dyrected/db-postgres] Database "${dbName}" checked/created successfully`);
+        }
+        await tempSql.end();
+      } catch (err: any) {
+        console.warn(
+          `[dyrected/db-postgres] Auto-creation of database "${dbName}" skipped/failed:\n` +
+          `  Error: ${err.message}\n` +
+          `  Please ensure the database exists or your credentials have CREATEDB privileges.`
+        );
+      }
+    }
+
+    this.sql = postgres(this.config.url);
+    await this.initInternalTables();
   }
 
   private async initInternalTables() {
@@ -32,6 +79,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   private async ensureTable(slug: string, fields: any[] = []) {
+    await this.ensureInitialized();
     const table = this.getTableIdentifier(slug);
     await this.sql`
       CREATE TABLE IF NOT EXISTS ${table} (
@@ -63,6 +111,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
+    await this.ensureInitialized();
     const tableSlug = args.collection;
     const tableName = tableSlug.includes('.')
       ? tableSlug
@@ -127,6 +176,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async findOne(params: { collection: string; id: string }) {
+    await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
     const rows = await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
     const row = rows[0];
@@ -135,6 +185,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async create(params: { collection: string; data: any }) {
+    await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
     
     // Inspect columns for promoted fields
@@ -169,6 +220,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async update(params: { collection: string; id: string; data: any }) {
+    await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
     
     // Inspect columns for promoted fields
@@ -210,11 +262,13 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async delete(params: { collection: string; id: string }) {
+    await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
     await this.sql`DELETE FROM ${table} WHERE id = ${params.id}`;
   }
 
   async getGlobal(params: { slug: string }) {
+    await this.ensureInitialized();
     const rows = await this.sql`SELECT value FROM dyrected_internal WHERE key = ${`global_${params.slug}`}`;
     const row = rows[0];
     if (!row) return {};
@@ -222,6 +276,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async updateGlobal(params: { slug: string; data: any }) {
+    await this.ensureInitialized();
     await this.sql`
       INSERT INTO dyrected_internal (key, value) 
       VALUES (${`global_${params.slug}`}, ${params.data})
@@ -231,6 +286,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async execute(query: string, params?: any[]) {
+    await this.ensureInitialized();
     if (params && params.length > 0) {
       return this.sql.unsafe(query, params);
     }
@@ -238,6 +294,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async ping() {
+    await this.ensureInitialized();
     try {
       await this.sql`SELECT 1`;
       return true;
