@@ -5,7 +5,7 @@ import * as z from "zod"
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "../ui/form"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
-import { Tabs, TabsTrigger, TabsContent } from "../ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"
 import type { Field as FieldSchema, Block as BlockSchema } from "@dyrected/sdk"
 import { buildSchemaShape, buildDefaultValues, getFlatErrors, formatPath } from "./utils"
 import { runHookSandboxed } from "./hooks-sandbox"
@@ -86,7 +86,7 @@ function ResponsiveTabsList({ tabs, tabErrorsCount, activeTab, setActiveTab }: R
 
   return (
     <div ref={containerRef} className="dy-flex dy-w-full dy-items-center dy-justify-between dy-rounded-xl dy-bg-muted dy-p-1 dy-text-muted-foreground dy-mb-2">
-      <div className="dy-flex dy-items-center dy-flex-1 dy-min-w-0 dy-gap-1">
+      <TabsList className="dy-flex dy-items-center dy-flex-1 dy-min-w-0 dy-gap-1 dy-bg-transparent dy-h-auto dy-p-0 dy-justify-start">
         {tabs.map((tab, idx) => {
           const isVisible = idx < visibleCount
           const errCount = tabErrorsCount.get(tab) || 0
@@ -112,47 +112,47 @@ function ResponsiveTabsList({ tabs, tabErrorsCount, activeTab, setActiveTab }: R
             </TabsTrigger>
           )
         })}
+      </TabsList>
 
-        {overflowTabs.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "dy-h-8 dy-rounded-lg dy-px-3 dy-text-xs dy-font-medium dy-flex dy-items-center dy-gap-1 dy-transition-all hover:dy-bg-background/40",
-                  isOverflowActive && "dy-bg-background dy-text-foreground dy-shadow-sm hover:dy-bg-background"
-                )}
-              >
-                <span>{isOverflowActive ? activeTab : "More"}</span>
-                <ChevronDown className="dy-h-3 dy-w-3 dy-opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="dy-min-w-[150px] dy-rounded-xl dy-border-border/40 dy-shadow-lg">
-              {overflowTabs.map((tab) => {
-                const errCount = tabErrorsCount.get(tab) || 0
-                return (
-                  <DropdownMenuItem
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={cn(
-                      "dy-flex dy-items-center dy-justify-between dy-py-2.5 dy-rounded-lg",
-                      activeTab === tab && "dy-bg-accent dy-text-foreground"
-                    )}
-                  >
-                    <span className="dy-truncate">{tab}</span>
-                    {errCount > 0 && (
-                      <span className="dy-flex dy-h-5 dy-w-5 dy-items-center dy-justify-center dy-rounded-full dy-bg-destructive dy-text-[10px] dy-font-semibold dy-text-destructive-foreground">
-                        {errCount}
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                )
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+      {overflowTabs.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "dy-h-8 dy-rounded-lg dy-px-3 dy-text-xs dy-font-medium dy-flex dy-items-center dy-gap-1 dy-transition-all hover:dy-bg-background/40",
+                isOverflowActive && "dy-bg-background dy-text-foreground dy-shadow-sm hover:dy-bg-background"
+              )}
+            >
+              <span>{isOverflowActive ? activeTab : "More"}</span>
+              <ChevronDown className="dy-h-3 dy-w-3 dy-opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="dy-min-w-[150px] dy-rounded-xl dy-border-border/40 dy-shadow-lg">
+            {overflowTabs.map((tab) => {
+              const errCount = tabErrorsCount.get(tab) || 0
+              return (
+                <DropdownMenuItem
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "dy-flex dy-items-center dy-justify-between dy-py-2.5 dy-rounded-lg",
+                    activeTab === tab && "dy-bg-accent dy-text-foreground"
+                  )}
+                >
+                  <span className="dy-truncate">{tab}</span>
+                  {errCount > 0 && (
+                    <span className="dy-flex dy-h-5 dy-w-5 dy-items-center dy-justify-center dy-rounded-full dy-bg-destructive dy-text-[10px] dy-font-semibold dy-text-destructive-foreground">
+                      {errCount}
+                    </span>
+                  )}
+                </DropdownMenuItem>
+              )
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   )
 }

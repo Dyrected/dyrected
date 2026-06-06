@@ -134,14 +134,73 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
         write: true,
       });
 
-      let dbPluginSrc = resolver.resolve("./runtime/server/plugins/db.ts");
-      if (!existsSync(dbPluginSrc)) {
-        dbPluginSrc = resolver.resolve("./runtime/server/plugins/db.mjs");
-      }
       const dbPluginTemplate = addTemplate({
-        src: dbPluginSrc,
         filename: "dyrected-db-plugin.ts",
         write: true,
+        getContents: () => {
+          const escapedConfigPath = configPath.replace(/\\/g, "/");
+          return `// @ts-ignore
+import { useRuntimeConfig } from "#imports";
+// @ts-ignore
+import userConfigRaw from "${escapedConfigPath}";
+
+const defineNitroPlugin = (def) => def;
+
+export default defineNitroPlugin(async (nitroApp) => {
+  const runtimeConfig = useRuntimeConfig().dyrected;
+
+  try {
+    const userConfig = userConfigRaw.default || userConfigRaw;
+    const configObj = (userConfig.default && (userConfig.default.collections || userConfig.default.globals || userConfig.default.db)) ? userConfig.default : userConfig;
+
+    if (configObj) {
+      globalThis.__dyrected_config = configObj;
+      if (configObj.db) {
+        globalThis.__dyrected_db = configObj.db;
+        console.log("[dyrected/nuxt] Database re-attached to global context");
+      }
+      if (configObj.storage) {
+        globalThis.__dyrected_storage = configObj.storage;
+        console.log("[dyrected/nuxt] Storage adapter re-attached to global context");
+      }
+    }
+
+    if (process.env.NODE_ENV !== 'production' && runtimeConfig?.configPath) {
+      const { watch } = await import('fs');
+      // @ts-ignore
+      const { loadDyrectedConfig } = await import("./dyrected-load-config.ts");
+      let debounceTimer = null;
+      const reload = async () => {
+        try {
+          const newConfig = await loadDyrectedConfig(runtimeConfig.configPath);
+          const newObj = (newConfig.default && (newConfig.default.collections || newConfig.default.globals || newConfig.default.db)) ? newConfig.default : newConfig;
+          globalThis.__dyrected_config = newObj;
+          globalThis.__dyrected_config_version = (globalThis.__dyrected_config_version || 0) + 1;
+          if (newObj.db) {
+            globalThis.__dyrected_db = newObj.db;
+            console.log('[dyrected/nuxt] Database hot-reloaded');
+          }
+          if (newObj.storage) {
+            globalThis.__dyrected_storage = newObj.storage;
+            console.log('[dyrected/nuxt] Storage hot-reloaded');
+          }
+        } catch (e) {
+          console.error('[dyrected/nuxt] Hot-reload failed:', e);
+        }
+      };
+      watch(runtimeConfig.configPath, (eventType) => {
+        if (eventType === 'change') {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(reload, 200);
+        }
+      });
+    }
+  } catch (err) {
+    console.error("[dyrected/nuxt] Failed to re-attach database:", err);
+  }
+});
+`;
+        }
       });
       addServerPlugin(dbPluginTemplate.dst);
     } else {

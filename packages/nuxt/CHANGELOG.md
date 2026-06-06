@@ -1,5 +1,16 @@
 # @dyrected/nuxt
 
+## 2.5.21
+
+### Patch Changes
+
+- refactor: update form-engine to use TabsList and implement dynamic hot-reloading for database configuration in Nuxt module
+- Updated dependencies
+  - @dyrected/admin@2.5.21
+  - @dyrected/vue@2.5.21
+  - @dyrected/core@2.5.21
+  - @dyrected/sdk@2.5.21
+
 ## 2.5.20
 
 ### Patch Changes
