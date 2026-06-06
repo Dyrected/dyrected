@@ -19,6 +19,70 @@ import type { Media } from "@dyrected/sdk"
 import { useDropzone } from "react-dropzone"
 import { toast } from "sonner"
 
+/**
+ * Compress a raster image file client-side using the Canvas API before upload.
+ * - Skips SVGs, GIFs, and non-images (returned unchanged).
+ * - Skips if the result would be larger than the original.
+ * - maxDimension: longest edge cap in pixels (default 2048).
+ * - quality: JPEG/WebP quality 0–1 (default 0.85).
+ */
+async function compressImage(file: File, maxDimension = 2048, quality = 0.85): Promise<File> {
+  if (
+    !file.type.startsWith('image/') ||
+    file.type === 'image/svg+xml' ||
+    file.type === 'image/gif'
+  ) {
+    return file
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image()
+    const objectUrl = URL.createObjectURL(file)
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(file)
+    }
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+
+      let { width, height } = img
+      if (width > maxDimension || height > maxDimension) {
+        const ratio = Math.min(maxDimension / width, maxDimension / height)
+        width = Math.round(width * ratio)
+        height = Math.round(height * ratio)
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { resolve(file); return }
+
+      ctx.drawImage(img, 0, 0, width, height)
+
+      // PNG → keep as PNG (lossless). Everything else → JPEG.
+      const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob || blob.size >= file.size) {
+            // Never make the file bigger
+            resolve(file)
+            return
+          }
+          resolve(new File([blob], file.name, { type: outputType, lastModified: Date.now() }))
+        },
+        outputType,
+        quality
+      )
+    }
+
+    img.src = objectUrl
+  })
+}
+
 interface MediaPickerProps {
   collection: string
   value?: string | string[] | any
@@ -225,7 +289,8 @@ export function MediaPicker({
     try {
       const uploadedItems: any[] = []
       for (const file of acceptedFiles) {
-        const res = await client.collection(activeMediaCollection).upload(file)
+        const processedFile = await compressImage(file)
+        const res = await client.collection(activeMediaCollection).upload(processedFile)
         uploadedItems.push(res)
       }
 

@@ -427,7 +427,7 @@ export function AdminShell({
   children: React.ReactNode
   isEmbedded?: boolean
 }) {
-  const { client, logout } = useDyrected()
+  const { client, logout, user } = useDyrected()
   const location = useLocation()
 
   // Desktop: collapsed state (sidebar still sits in the layout)
@@ -454,6 +454,14 @@ export function AdminShell({
     },
     enabled: !!client,
   })
+
+  // Extract branding from schemas — schemas type doesn't include admin in its TS signature
+  // but it is present at runtime, so we cast once here.
+  const mobileBranding = (schemas as Record<string, any>)?.admin?.branding as {
+    logoText?: string
+    logo?: string
+    logoMark?: string
+  } | undefined
 
   return (
     <BrandingProvider>
@@ -506,14 +514,41 @@ export function AdminShell({
         </aside>
 
         <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/50">
-          {/* Mobile Floating Toggle */}
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="md:dy-hidden dy-fixed dy-bottom-8 dy-right-8 dy-z-50 dy-h-14 dy-w-14 dy-rounded-full dy-bg-primary dy-bg-gradient-to-br dy-from-primary dy-to-primary/80 dy-text-primary-foreground dy-shadow-[0_8px_30px_rgb(0,0,0,0.3)] dy-flex dy-items-center dy-justify-center dy-transition-all active:dy-scale-90 hover:dy-scale-105 dy-border dy-border-white/20"
-            aria-label="Open menu"
-          >
-            <Menu className="dy-h-6 dy-w-6" />
-          </button>
+          {/* Mobile top header — hidden on desktop */}
+          <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
+            {/* Hamburger */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu className="dy-h-5 dy-w-5" />
+            </button>
+
+            {/* Brand — centered */}
+            <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
+              {mobileBranding?.logoText ? (
+                <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
+                  {mobileBranding.logoText}
+                </span>
+              ) : mobileBranding?.logo ? (
+                <img
+                  src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
+                  alt="Logo"
+                  className="dy-h-7 dy-w-auto dy-object-contain"
+                />
+              ) : (
+                <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
+              )}
+            </div>
+
+            {/* User avatar — right side */}
+            {user && (
+              <div className="dy-ml-auto dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
+                {(user.name || user.email || "?")[0].toUpperCase()}
+              </div>
+            )}
+          </header>
 
           <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
             {children}
