@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.20
+
+### Patch Changes
+
+- 298a35b: feat: enable inline document creation within RelationshipPicker and add support for custom search values in SelectField
+  - @dyrected/core@2.5.20
+  - @dyrected/sdk@2.5.20
+
 ## 2.5.19
 
 ### Patch Changes
