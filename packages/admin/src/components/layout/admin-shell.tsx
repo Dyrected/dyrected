@@ -139,7 +139,7 @@ function SidebarInner({
   onToggleCollapse?: () => void
   onNavigate?: () => void
 }) {
-  const { client } = useDyrected()
+  const { client, user } = useDyrected()
   const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
   const globals = schemas?.globals?.filter((g: any) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
   const uploadCollections = collections.filter((c: any) => c.upload)
@@ -352,6 +352,29 @@ function SidebarInner({
           collapsed={collapsed}
           onClick={onNavigate}
         />
+
+        {!isEmbedded && user && (
+          <div className={cn(
+            "dy-flex dy-items-center dy-gap-2 dy-px-3 dy-py-2 dy-rounded-md dy-bg-accent/40 dy-mb-1",
+            collapsed ? "dy-justify-center dy-px-2" : ""
+          )}>
+            <div className="dy-flex dy-h-6 dy-w-6 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
+              {(user.name || user.email || "?")[0].toUpperCase()}
+            </div>
+            {!collapsed && (
+              <div className="dy-flex dy-flex-col dy-min-w-0 dy-flex-1">
+                <span className="dy-text-[12px] dy-font-medium dy-text-foreground dy-truncate">
+                  {user.name || user.email}
+                </span>
+                {user.name && user.email && (
+                  <span className="dy-text-[10px] dy-text-muted-foreground dy-truncate">
+                    {user.email}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {!isEmbedded && (
           <button

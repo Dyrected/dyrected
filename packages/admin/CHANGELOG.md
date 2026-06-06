@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.22
+
+### Patch Changes
+
+- Fix tabs roving focus error, resolve Nuxt module production build config loading, and add user profile display in admin sidebar footer.
+  - @dyrected/core@2.5.22
+  - @dyrected/sdk@2.5.22
+
 ## 2.5.21
 
 ### Patch Changes
