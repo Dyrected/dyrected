@@ -10,20 +10,20 @@ import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
 import { Checkbox } from "../../components/ui/checkbox"
 import {
-  MoreHorizontal,
   Plus,
-  Pencil,
   Trash2,
   Calendar,
   Database,
   Image as ImageIcon,
   Lock,
+  FileDown,
 } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu"
+
 import { RenderCell } from "../../components/ui/render-cell"
 import { PageHeader } from "../../components/ui/page-header"
 import { Pagination } from "../../components/ui/pagination"
 import { MediaGrid } from "../../components/media/media-grid"
+import { getMediaUrl } from "../../lib/utils"
 import jexl from 'jexl'
 
 interface CollectionListPageProps {
@@ -92,6 +92,78 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       })
     }
   })
+
+  const [exporting, setExporting] = React.useState(false)
+
+  const handleExportCsv = React.useCallback(async () => {
+    if (!schema || !client) return
+    setExporting(true)
+    try {
+      const displayFields = schema.fields.filter((f: any) =>
+        f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+      )
+      const csvColumns = [
+        { key: "id", label: "ID" },
+        ...displayFields.map((f: any) => ({ key: f.name, label: f.label || f.name })),
+        { key: "updatedAt", label: "Last Updated" },
+      ]
+
+      const allDocs: any[] = []
+      let pg = 1
+      let totalPages = 1
+      while (pg <= totalPages) {
+        const res = await client.collection(slug).find({ page: pg, limit: 20, depth: 1 }).exec()
+        allDocs.push(...(res.docs || []))
+        totalPages = res.totalPages ?? 1
+        pg++
+      }
+
+      const flattenForCsv = (val: any): string => {
+        if (val === null || val === undefined) return ""
+        if (typeof val === "boolean") return val ? "true" : "false"
+        if (typeof val === "number" || typeof val === "string") return String(val)
+
+        // Array — join with "; " (industry standard for multi-value CSV cells)
+        if (Array.isArray(val)) {
+          return val.map((item) => flattenForCsv(item)).filter(Boolean).join("; ")
+        }
+
+        // Object — extract meaningful value
+        if (typeof val === "object") {
+          // Image/media — return URL only
+          if (val.url || val.filename) {
+            return getMediaUrl(val, client?.getBaseUrl() || "")
+          }
+          // Relationship — return title/name/label or id
+          if (val.id) {
+            return String(val.title || val.name || val.label || val.id)
+          }
+          // Generic object — stringify
+          return JSON.stringify(val)
+        }
+
+        return String(val)
+      }
+
+      const header = csvColumns.map((c) => flattenForCsv(c.label)).join(",")
+      const rows = allDocs.map((doc) =>
+        csvColumns.map((c) => flattenForCsv(doc[c.key])).join(",")
+      )
+      const csv = [header, ...rows].join("\n")
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `${slug}-export.csv`
+      link.click()
+      URL.revokeObjectURL(url)
+      toast.success(`Exported ${allDocs.length} entries`)
+    } catch (err: any) {
+      toast.error("Export failed", { description: err.message })
+    } finally {
+      setExporting(false)
+    }
+  }, [schema, client, slug])
 
   const handleDelete = React.useCallback((id: string) => {
     if (schema?.auth && id === user?.id) {
@@ -188,13 +260,46 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             />
           )
           if (!isTitleField) return cell
+
+          const item = row.original
+          const deleteAccess = (schema.access as any)?.delete
+          let canDelete = true
+          if (deleteAccess === false) {
+            canDelete = false
+          } else if (typeof deleteAccess === 'string') {
+            try {
+              canDelete = jexl.evalSync(deleteAccess, { user, ...item })
+            } catch (e) {
+              console.warn("Delete access eval failed:", e)
+            }
+          }
+
           return (
-            <Link
-              to={`/collections/${slug}/edit/${(row.original as any).id}`}
-              className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
-            >
-              {cell}
-            </Link>
+            <div className="dy-flex dy-flex-col dy-gap-1">
+              <Link
+                to={`/collections/${slug}/edit/${item.id}`}
+                className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
+              >
+                {cell}
+              </Link>
+              <div className="dy-flex dy-items-center dy-gap-2">
+                <Link
+                  to={`/collections/${slug}/edit/${item.id}`}
+                  className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
+                >
+                  Edit
+                </Link>
+                <span className="dy-text-muted-foreground/40 dy-text-[11px]">|</span>
+                <button
+                  className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-destructive dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150 disabled:dy-opacity-40 disabled:dy-pointer-events-none"
+                  onClick={() => handleDelete(item.id)}
+                  disabled={deleteMutation.isPending || !canDelete || (schema.auth && item.id === user?.id)}
+                  title={!canDelete ? "You do not have permission to delete this entry" : (schema.auth && item.id === user?.id ? "You cannot delete your own account" : undefined)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
           )
         },
       })
@@ -213,58 +318,6 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           </div>
         )
       }
-    })
-
-    // Actions
-    cols.push({
-      id: "actions",
-      cell: ({ row }) => {
-        const item = row.original
-        const deleteAccess = (schema.access as any)?.delete
-        let canDelete = true
-        if (deleteAccess === false) {
-          canDelete = false
-        } else if (typeof deleteAccess === 'string') {
-          try {
-            canDelete = jexl.evalSync(deleteAccess, { user, ...item })
-          } catch (e) {
-            console.warn("Delete access eval failed:", e)
-          }
-        }
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="dy-h-8 dy-w-8 dy-p-0">
-                <span className="dy-sr-only">Open menu</span>
-                <MoreHorizontal className="dy-h-4 dy-w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigator.clipboard.writeText(item.id)}>
-                Copy ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <Link to={`/collections/${slug}/edit/${item.id}`}>
-                <DropdownMenuItem className="dy-flex dy-gap-2">
-                  <Pencil className="dy-h-4 dy-w-4" />
-                  Edit
-                </DropdownMenuItem>
-              </Link>
-              <DropdownMenuItem
-                className="dy-flex dy-gap-2 dy-text-destructive focus:dy-text-destructive"
-                onClick={() => handleDelete(item.id)}
-                disabled={deleteMutation.isPending || !canDelete || (schema.auth && item.id === user?.id)}
-                title={!canDelete ? "You do not have permission to delete this entry" : (schema.auth && item.id === user?.id ? "You cannot delete your own account" : undefined)}
-              >
-                <Trash2 className="dy-h-4 dy-w-4" />
-                {deleteMutation.isPending ? "Deleting..." : "Delete"}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
     })
 
     return cols
@@ -387,6 +440,20 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         description={`Manage your ${schema.slug} entries and update content.`}
         icon={Database}
       >
+        <Button
+          variant="outline"
+          size="sm"
+          className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-shadow-sm dy-transition-all active:dy-scale-95"
+          onClick={handleExportCsv}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent dy-h-3 dy-w-3 dy-mr-1.5" />
+          ) : (
+            <FileDown className="dy-mr-1.5 dy-h-3 dy-w-3" />
+          )}
+          {exporting ? "Exporting..." : "Export CSV"}
+        </Button>
         {canCreate && (
           <Link to={`/collections/${slug}/new`}>
             <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">

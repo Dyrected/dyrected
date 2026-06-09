@@ -293,11 +293,22 @@ const Authors = defineCollection({
   slug: "authors",
   admin: {
     useAsTitle: "name",
+    group: "Content",
   },
   fields: [
     { name: "name", type: "text", required: true },
     { name: "bio", type: "textarea" },
     { name: "avatar", type: "relationship", relationTo: Media.slug },
+    {
+      name: "blogPosts",
+      type: "join",
+      collection: "blog",
+      on: "author",
+      label: "Blog Posts",
+      admin: {
+        description: "Blog posts written by this author",
+      },
+    },
     {
       name: "country",
       type: "select",

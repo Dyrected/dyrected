@@ -6,6 +6,7 @@ import { DefaultsService } from '../services/defaults.service.js';
 import { AuditService } from '../services/audit.service.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { runCollectionHooks, executeFieldBeforeChange, executeFieldAfterRead } from '../utils/hooks.js';
+import { createReadonlyDb } from '../utils/readonly-db.js';
 
 export class CollectionController {
   private collection: CollectionConfig;
@@ -19,6 +20,7 @@ export class CollectionController {
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
+    const readonlyDb = createReadonlyDb(db);
     const limit = Number(c.req.query('limit')) || 10;
     const page = Number(c.req.query('page')) || 1;
     const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 2;
@@ -40,6 +42,7 @@ export class CollectionController {
       req: c.req,
       query: where,
       user,
+      db: readonlyDb,
     });
     if (beforeReadResult !== undefined) {
       where = beforeReadResult;
@@ -78,8 +81,9 @@ export class CollectionController {
         doc,
         req: c.req,
         user,
+        db: readonlyDb,
       });
-      const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user);
+      const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user, readonlyDb);
       processedDocs.push(docWithFieldHooks);
     }
     result.docs = processedDocs;
@@ -97,6 +101,7 @@ export class CollectionController {
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
+    const readonlyDb = createReadonlyDb(db);
     const id = c.req.param('id');
     const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 10;
     const user = c.get('user');
@@ -112,8 +117,9 @@ export class CollectionController {
       doc: docWithDefaults,
       req: c.req,
       user,
+      db: readonlyDb,
     });
-    const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user);
+    const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user, readonlyDb);
 
     if (depth > 0 && docWithFieldHooks) {
       const populationService = new PopulationService(db!, config.collections);
@@ -134,6 +140,7 @@ export class CollectionController {
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
+    const readonlyDb = createReadonlyDb(db);
     const contentType = c.req.header('Content-Type') || '';
 
     if (contentType.toLowerCase().includes('multipart/form-data')) {
@@ -157,12 +164,13 @@ export class CollectionController {
     }
 
     // Run beforeChange hooks (field-level then collection-level)
-    data = await executeFieldBeforeChange(this.collection.fields, data, null, user);
+    data = await executeFieldBeforeChange(this.collection.fields, data, null, user, readonlyDb);
     data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
       data,
       req: c.req,
       user,
       operation: 'create',
+      db: readonlyDb,
     });
 
     const doc = await db!.create({ collection: this.collection.slug, data });
@@ -178,12 +186,13 @@ export class CollectionController {
       });
     }
 
-    // Run afterChange collection hooks
+    // Run afterChange collection hooks (full db access)
     await runCollectionHooks(this.collection.hooks?.afterChange, {
       doc,
       user,
       req: c.req,
       operation: 'create',
+      db,
     }, { isolated: true });
 
     // Run afterRead hooks on the returned doc
@@ -191,8 +200,9 @@ export class CollectionController {
       doc,
       req: c.req,
       user,
+      db: readonlyDb,
     });
-    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user);
+    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user, readonlyDb);
 
     return c.json(finalDoc, 201);
   }
@@ -202,6 +212,10 @@ export class CollectionController {
     const storage = config.storage;
     if (!storage) return c.json({ message: 'Storage not configured' }, 500);
 
+    const db = config.db;
+    if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const readonlyDb = createReadonlyDb(db);
     const formData = await c.req.formData();
     const file = formData.get('file') as any;
     if (!file) return c.json({ message: 'No file uploaded' }, 400);
@@ -238,25 +252,27 @@ export class CollectionController {
     };
 
     // Run beforeChange hooks for upload too
-    data = await executeFieldBeforeChange(this.collection.fields, data, null, user);
+    data = await executeFieldBeforeChange(this.collection.fields, data, null, user, readonlyDb);
     data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
       data,
       req: c.req,
       user,
       operation: 'create',
+      db: readonlyDb,
     });
 
-    const doc = await config.db!.create({
+    const doc = await db.create({
       collection: this.collection.slug,
       data,
     });
 
-    // Run afterChange hooks for uploads
+    // Run afterChange hooks for uploads (full db access)
     await runCollectionHooks(this.collection.hooks?.afterChange, {
       doc,
       user,
       req: c.req,
       operation: 'create',
+      db,
     }, { isolated: true });
 
     // Run afterRead hooks
@@ -264,8 +280,9 @@ export class CollectionController {
       doc,
       req: c.req,
       user,
+      db: readonlyDb,
     });
-    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user);
+    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user, readonlyDb);
 
     return c.json(finalDoc, 201);
   }
@@ -275,6 +292,7 @@ export class CollectionController {
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
+    const readonlyDb = createReadonlyDb(db);
     const id = c.req.param('id');
     if (!id) return c.json({ message: 'Missing ID' }, 400);
 
@@ -303,13 +321,14 @@ export class CollectionController {
     }
 
     // Run beforeChange hooks (field-level then collection-level)
-    data = await executeFieldBeforeChange(this.collection.fields, data, originalDoc, user);
+    data = await executeFieldBeforeChange(this.collection.fields, data, originalDoc, user, readonlyDb);
     data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
       data,
       doc: originalDoc,
       req: c.req,
       user,
       operation: 'update',
+      db: readonlyDb,
     });
 
     const doc = await db!.update({ collection: this.collection.slug, id, data });
@@ -325,13 +344,14 @@ export class CollectionController {
       });
     }
 
-    // Run afterChange collection hooks
+    // Run afterChange collection hooks (full db access)
     await runCollectionHooks(this.collection.hooks?.afterChange, {
       doc,
       previousDoc: originalDoc,
       user,
       req: c.req,
       operation: 'update',
+      db,
     }, { isolated: true });
 
     // Run afterRead hooks
@@ -339,8 +359,9 @@ export class CollectionController {
       doc,
       req: c.req,
       user,
+      db: readonlyDb,
     });
-    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user);
+    const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user, readonlyDb);
 
     return c.json(finalDoc);
   }
@@ -436,6 +457,7 @@ export class CollectionController {
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
+    const readonlyDb = createReadonlyDb(db);
     const id = c.req.param('id');
     if (!id) return c.json({ message: 'Missing ID' }, 400);
 
@@ -455,6 +477,7 @@ export class CollectionController {
       doc,
       user,
       req: c.req,
+      db: readonlyDb,
     });
 
     await db!.delete({ collection: this.collection.slug, id });
@@ -470,12 +493,13 @@ export class CollectionController {
       });
     }
 
-    // Run afterDelete collection hook
+    // Run afterDelete collection hook (full db access)
     await runCollectionHooks(this.collection.hooks?.afterDelete, {
       id,
       doc,
       user,
       req: c.req,
+      db,
     }, { isolated: true });
 
     return c.json({ message: 'Deleted' });
@@ -486,6 +510,7 @@ export class CollectionController {
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
 
+    const readonlyDb = createReadonlyDb(db);
     const user = c.get('user');
 
     // ids may arrive as a query-string array (?ids[]=a&ids[]=b) or JSON body
@@ -528,6 +553,7 @@ export class CollectionController {
           doc,
           user,
           req: c.req,
+          db: readonlyDb,
         });
 
         await db.delete({ collection: this.collection.slug, id });
@@ -544,12 +570,13 @@ export class CollectionController {
           });
         }
 
-        // Run afterDelete hooks
+        // Run afterDelete hooks (full db access)
         await runCollectionHooks(this.collection.hooks?.afterDelete, {
           id,
           doc,
           user,
           req: c.req,
+          db,
         }, { isolated: true });
       } catch (err: any) {
         failed.push({ id, error: err?.message ?? 'Unknown error' });

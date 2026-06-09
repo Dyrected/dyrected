@@ -227,6 +227,11 @@ export type FieldBeforeChangeHook<
   data: Partial<TDoc>;
   /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => TValue | undefined | Promise<TValue | undefined>;
 
 /**
@@ -254,6 +259,11 @@ export type FieldAfterReadHook<
   doc: TDoc;
   /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => TValue | undefined | Promise<TValue | undefined>;
 
 /**
@@ -287,6 +297,11 @@ export type CollectionBeforeReadHook = (args: {
   query?: Record<string, unknown>;
   /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => Record<string, unknown> | void | Promise<Record<string, unknown> | void>;
 
 /**
@@ -314,6 +329,11 @@ export type CollectionAfterReadHook<
   req: HookRequestContext;
   /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => TDoc | Promise<TDoc>;
 
 /**
@@ -357,6 +377,11 @@ export type CollectionBeforeChangeHook<
   user?: AuthenticatedUser;
   /** Whether this is a new document or an update to an existing one. */
   operation: "create" | "update";
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
 
 /**
@@ -422,6 +447,11 @@ export type CollectionAfterChangeHook<
   user?: AuthenticatedUser;
   /** Whether this was a new document or an update. */
   operation: "create" | "update";
+  /**
+   * Database adapter with full read/write access. The DB write for this
+   * operation has already committed — safe for side-effect writes.
+   */
+  db: DatabaseAdapter;
 }) => void | Promise<void>;
 
 /**
@@ -450,6 +480,11 @@ export type CollectionBeforeDeleteHook<
   req: HookRequestContext;
   /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterDelete` for post-deletion writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => void | Promise<void>;
 
 /**
@@ -476,6 +511,11 @@ export type CollectionAfterDeleteHook<
   req: HookRequestContext;
   /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
+  /**
+   * Database adapter with full read/write access. The deletion has already
+   * committed — safe for cascade deletes or cleanup writes.
+   */
+  db: DatabaseAdapter;
 }) => void | Promise<void>;
 
 // ─── Global-level hook types (mirrors collection, minus delete) ───────────────
@@ -493,6 +533,11 @@ export type GlobalAfterReadHook<
   doc: TDoc;
   req: HookRequestContext;
   user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => TDoc | Promise<TDoc>;
 
 /**
@@ -508,6 +553,11 @@ export type GlobalBeforeChangeHook<
   req: HookRequestContext;
   user?: AuthenticatedUser;
   operation: "update";
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
 }) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
 
 /**
@@ -526,6 +576,11 @@ export type GlobalAfterChangeHook<
   req: HookRequestContext;
   user?: AuthenticatedUser;
   operation: "update";
+  /**
+   * Database adapter with full read/write access. The DB write for this
+   * operation has already committed — safe for side-effect writes.
+   */
+  db: DatabaseAdapter;
 }) => void | Promise<void>;
 
 /**
@@ -542,6 +597,7 @@ export type HookFunction<
   user?: AuthenticatedUser;
   req?: HookRequestContext;
   operation?: "create" | "update" | "delete";
+  db?: DatabaseAdapter;
   [key: string]: unknown;
 }) => unknown | Promise<unknown>;
 
@@ -684,6 +740,12 @@ interface FieldBase {
    * collection that points back to this collection.
    */
   on?: string;
+
+  /**
+   * For `join` fields — maximum number of related documents to return.
+   * Defaults to 10. Set to 0 to return all.
+   */
+  limit?: number;
 
   /**
    * Field-level read/update access control.
@@ -1447,6 +1509,16 @@ export interface DatabaseAdapter {
    */
   execute?(query: string, params?: unknown[]): Promise<unknown>;
 }
+
+/**
+ * Read-only view of the database adapter. Exposes only `find`, `findOne`,
+ * and `getGlobal` — no write operations.
+ *
+ * Passed to `beforeChange`, `beforeDelete`, `beforeRead`, `afterRead`,
+ * and field-level hooks. Write operations are available in `afterChange`
+ * and `afterDelete` hooks where the full {@link DatabaseAdapter} is provided.
+ */
+export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, 'find' | 'findOne' | 'getGlobal'>;
 
 // ─── File / storage ───────────────────────────────────────────────────────────
 

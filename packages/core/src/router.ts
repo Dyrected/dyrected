@@ -134,6 +134,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           hasMany: f.hasMany,
           fields: f.fields,
           blocks: f.blocks,
+          collection: f.collection,
+          on: f.on,
+          limit: f.limit,
           admin: f.admin,
           access: {
             read: await serializeAccess(f.access?.read),
@@ -165,6 +168,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           hasMany: f.hasMany,
           fields: f.fields,
           blocks: f.blocks,
+          collection: f.collection,
+          on: f.on,
+          limit: f.limit,
           admin: f.admin,
           access: {
             read: await serializeAccess(f.access?.read),

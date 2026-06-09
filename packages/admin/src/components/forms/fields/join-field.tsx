@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useWatch } from "react-hook-form"
 import { useDyrected } from "../../../providers/dyrected-provider"
 import { useNavigate, useParams } from "react-router-dom"
 import { ExternalLink, FileText, Plus } from "lucide-react"
@@ -6,10 +6,11 @@ import { Button } from "../../ui/button"
 
 interface JoinFieldProps {
   schema: any
+  control: any
 }
 
-export function JoinField({ schema }: JoinFieldProps) {
-  const { client, schemas } = useDyrected()
+export function JoinField({ schema, control }: JoinFieldProps) {
+  const { schemas } = useDyrected()
   const { id: docId } = useParams()
   const navigate = useNavigate()
 
@@ -19,17 +20,9 @@ export function JoinField({ schema }: JoinFieldProps) {
   const targetSchema = schemas?.collections?.find((c: any) => c.slug === targetCollection)
   const displayField: string = targetSchema?.admin?.useAsTitle || "title"
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["join", targetCollection, onField, docId],
-    queryFn: () =>
-      client!
-        .collection(targetCollection)
-        .find()
-        .where({ [onField]: { equals: docId } })
-        .exec()
-        .then((res: any) => res.docs),
-    enabled: !!client && !!docId && !!targetCollection && !!onField,
-  })
+  // Use the data already populated by the backend
+  const joinData = useWatch({ control, name: schema.name })
+  const data = joinData?.docs
 
   const getLabel = (item: any) =>
     item[displayField] || item.name || item.slug || item.id
@@ -44,11 +37,7 @@ export function JoinField({ schema }: JoinFieldProps) {
 
   return (
     <div className="dy-space-y-3">
-      {isLoading ? (
-        <div className="dy-rounded-xl dy-border dy-border-border/40 dy-bg-muted/5 dy-px-4 dy-py-3">
-          <p className="dy-text-xs dy-text-muted-foreground/60">Loading...</p>
-        </div>
-      ) : data && data.length > 0 ? (
+      {data && data.length > 0 ? (
         <div className="dy-divide-y dy-divide-border/30 dy-rounded-xl dy-border dy-border-border/40 dy-overflow-hidden">
           {data.map((item: any) => (
             <button
@@ -78,7 +67,7 @@ export function JoinField({ schema }: JoinFieldProps) {
         variant="outline"
         size="sm"
         className="dy-h-8 dy-text-[11px] dy-font-bold dy-rounded-xl dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
-        onClick={() => navigate(`/collections/${targetCollection}/create?${onField}=${docId}`)}
+        onClick={() => navigate(`/collections/${targetCollection}/new?${onField}=${docId}`)}
       >
         <Plus className="dy-w-3 dy-h-3 dy-mr-1.5" />
         Create new {targetSchema?.labels?.singular || targetCollection}

@@ -122,7 +122,13 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
 
 export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
   return fields.reduce((acc, field) => {
-    if ((field.type as string) === "join") return acc
+    if ((field.type as string) === "join") {
+      // Include backend-populated join data for display (read-only, not submitted)
+      if (field.name && defaults[field.name] !== undefined) {
+        acc[field.name] = defaults[field.name]
+      }
+      return acc
+    }
     if ((field.type as string) === "row" && field.fields) {
       Object.assign(acc, buildDefaultValues(field.fields, defaults))
       return acc

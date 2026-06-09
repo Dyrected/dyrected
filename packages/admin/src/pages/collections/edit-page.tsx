@@ -3,7 +3,7 @@ import { toast } from "sonner"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { FormEngine } from "../../components/forms/form-engine"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
@@ -14,6 +14,7 @@ import jexl from 'jexl'
 
 export function EditEntryPage() {
   const { slug, id } = useParams()
+  const [searchParams] = useSearchParams()
   const { client, user } = useDyrected()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -426,11 +427,19 @@ export function EditEntryPage() {
                 }
                 fields = [...mediaFields, ...fields];
               }
+              // Merge query params as default values for new entries (e.g., from join field "Create new" button)
+              const queryParamsDefaults: Record<string, unknown> = {}
+              if (!isEdit) {
+                searchParams.forEach((value, key) => {
+                  queryParamsDefaults[key] = value
+                })
+              }
+
               return (
                 <FormEngine
                   collection={slug!}
                   fields={fields}
-                  defaultValues={entry}
+                  defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
                   onSubmit={(data) => saveMutation.mutate(data)}
                   onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
                   onChange={(dirty) => setIsDirty(dirty)}

@@ -26,6 +26,7 @@ export async function runCollectionHooks(
     doc?: unknown;
     user?: unknown;
     req?: unknown;
+    db?: unknown;
     operation?: "create" | "update" | "delete";
     [key: string]: unknown;
   },
@@ -72,6 +73,7 @@ export async function executeFieldBeforeChange(
   data: Record<string, unknown>,
   originalDoc: Record<string, unknown> | null,
   user: unknown,
+  db?: unknown,
 ): Promise<Record<string, unknown>> {
   if (!data || typeof data !== "object") return data;
 
@@ -91,6 +93,7 @@ export async function executeFieldBeforeChange(
           originalDoc: originalDoc ?? undefined,
           data: result,
           user,
+          db,
         });
       }
       result[field.name] = updatedValue;
@@ -104,6 +107,7 @@ export async function executeFieldBeforeChange(
           updatedValue as Record<string, unknown>,
           origValue as Record<string, unknown> | null,
           user,
+          db,
         );
       } else if (
         field.type === "array" &&
@@ -117,7 +121,7 @@ export async function executeFieldBeforeChange(
             ? (origValue[i] as Record<string, unknown> | null)
             : null;
           arrayResult.push(
-            await executeFieldBeforeChange(field.fields, item, origItem, user),
+            await executeFieldBeforeChange(field.fields, item, origItem, user, db),
           );
         }
         result[field.name] = arrayResult;
@@ -142,6 +146,7 @@ export async function executeFieldBeforeChange(
                 blockData,
                 origBlock,
                 user,
+                db,
               ),
             );
           } else {
@@ -166,6 +171,7 @@ export async function executeFieldAfterRead(
   fields: Field[],
   doc: Record<string, unknown>,
   user: unknown,
+  db?: unknown,
 ): Promise<Record<string, unknown>> {
   if (!doc || typeof doc !== "object") return doc;
 
@@ -183,6 +189,7 @@ export async function executeFieldAfterRead(
           value: updatedValue,
           doc: result,
           user,
+          db,
         });
       }
       result[field.name] = updatedValue;
@@ -195,6 +202,7 @@ export async function executeFieldAfterRead(
           field.fields,
           updatedValue as Record<string, unknown>,
           user,
+          db,
         );
       } else if (
         field.type === "array" &&
@@ -208,6 +216,7 @@ export async function executeFieldAfterRead(
               field.fields,
               item as Record<string, unknown>,
               user,
+              db,
             ),
           );
         }
@@ -229,6 +238,7 @@ export async function executeFieldAfterRead(
                 blockConfig.fields,
                 typedBlock,
                 user,
+                db,
               ),
             );
           } else {

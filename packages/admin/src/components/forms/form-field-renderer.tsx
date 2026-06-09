@@ -317,7 +317,7 @@ function FormFieldRendererInner({
             <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-italic">{schema.admin.description}</p>
           )}
         </div>
-        <JoinField schema={schema} />
+        <JoinField schema={schema} control={control} />
       </div>
     )
   }

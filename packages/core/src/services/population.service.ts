@@ -32,7 +32,38 @@ export class PopulationService {
     const populatedDoc = { ...data };
 
     for (const field of fields) {
-      if ((field.type as string) === 'join') continue;
+      // Handle Join Fields - only populate at top level (depth 0) to prevent infinite recursion
+      if ((field.type as string) === 'join' && field.collection && field.on && currentDepth === 0) {
+        const targetCollection = this.collections.find(c => c.slug === field.collection);
+        if (targetCollection) {
+          const docId = populatedDoc.id;
+          if (docId) {
+            const where = { [field.on]: { equals: docId } };
+            const joinLimit = field.limit ?? 10;
+            const result = await this.db.find({
+              collection: field.collection,
+              where,
+              limit: joinLimit,
+            });
+            
+            // Apply defaults and populate the joined documents (depth 1, so joins inside are skipped)
+            const populatedDocs = await this.populate({
+              data: result.docs.map(doc => DefaultsService.apply(targetCollection.fields, doc)),
+              fields: targetCollection.fields,
+              currentDepth: 1,
+              maxDepth,
+            });
+
+            populatedDoc[field.name!] = {
+              docs: populatedDocs,
+              hasNextPage: result.page * result.limit < result.total,
+              totalDocs: result.total,
+            };
+          }
+        }
+        continue;
+      }
+
       if ((field.type as string) === 'row' && field.fields) {
         const rowPopulated = await this.populate({ data, fields: field.fields, currentDepth, maxDepth });
         Object.assign(populatedDoc, rowPopulated);
