@@ -6,7 +6,7 @@
 
 @layer base {
   /* Dyrected defaults: Lime Paper, Signal Lime, and Violet. */
-  :root {
+  .dy-admin-ui {
     /* Fonts */
     --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
     --font-serif: "Fraunces", ui-serif, Georgia, serif;
