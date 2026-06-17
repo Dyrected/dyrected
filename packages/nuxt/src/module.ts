@@ -89,14 +89,14 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
     addImports([
       { name: "useDyrected", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedClient", from: resolver.resolve("./runtime/composables/useDyrected") },
-      { name: "useDyrectedData", from: resolver.resolve("./runtime/composables/useDyrected") },
-      { name: "useDyrectedCollectionData", from: resolver.resolve("./runtime/composables/useDyrected") },
-      { name: "useDyrectedGlobalData", from: resolver.resolve("./runtime/composables/useDyrected") },
+      { name: "useDyrected", from: "@dyrected/vue", as: "useDyrectedData" },
+      { name: "useDyrectedCollection", from: "@dyrected/vue", as: "useDyrectedCollectionData" },
+      { name: "useDyrectedGlobal", from: "@dyrected/vue", as: "useDyrectedGlobalData" },
       { name: "useDyrectedDoc", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedCollection", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedGlobal", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedAuth", from: resolver.resolve("./runtime/composables/useDyrectedAuth") },
-      { name: "useLivePreview", from: resolver.resolve("./runtime/composables/useLivePreview") },
+      { name: "useLivePreview", from: "@dyrected/vue" },
     ]);
 
     // 4. Pass options to runtime
@@ -249,14 +249,14 @@ export default defineNitroPlugin(async (nitroApp) => {
     // (Removed build.transpile to prevent unctx and auto-import conflicts on the large React bundle)
 
     // 7. Vite-specific optimization — exclude @dyrected/admin from dep optimization.
-    // It's a pre-built ESM library; Vite should serve it as-is without re-bundling.
     if (nuxt.options.vite) {
+      const adminRequire = createRequire(_require.resolve("@dyrected/admin"));
       nuxt.options.vite.optimizeDeps = nuxt.options.vite.optimizeDeps || {};
       nuxt.options.vite.optimizeDeps.include = nuxt.options.vite.optimizeDeps.include || [];
       const toInclude = ["react", "react-dom", "react-router-dom", "@tanstack/react-query"];
       for (const dep of toInclude) {
         try {
-          _require.resolve(dep);
+          const resolved = dep === "react" || dep === "react-dom" ? _require.resolve(dep) : adminRequire.resolve(dep);
           if (!nuxt.options.vite.optimizeDeps.include.includes(dep)) {
             nuxt.options.vite.optimizeDeps.include.push(dep);
           }
@@ -288,6 +288,11 @@ export default defineNitroPlugin(async (nitroApp) => {
         const reactDomMain = _require.resolve("react-dom");
         (nuxt.options.vite.resolve.alias as any).react = join(reactMain, "..");
         (nuxt.options.vite.resolve.alias as any)["react-dom"] = join(reactDomMain, "..");
+
+        const reactRouterDomMain = adminRequire.resolve("react-router-dom");
+        const reactQueryMain = adminRequire.resolve("@tanstack/react-query");
+        (nuxt.options.vite.resolve.alias as any)["react-router-dom"] = join(reactRouterDomMain, "..");
+        (nuxt.options.vite.resolve.alias as any)["@tanstack/react-query"] = join(reactQueryMain, "..");
       } catch {
         // Ignore
       }

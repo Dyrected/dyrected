@@ -14,9 +14,13 @@ export function withDyrected(nextConfig: NextConfig = {}): NextConfig {
   const appRoot = process.cwd();
   const reactAbsolute = path.resolve(appRoot, 'node_modules/react');
   const reactDomAbsolute = path.resolve(appRoot, 'node_modules/react-dom');
+  const dyrectedPackages = ['@dyrected/admin', '@dyrected/react', '@dyrected/sdk'];
 
   return {
     ...nextConfig,
+    transpilePackages: Array.from(
+      new Set([...(nextConfig.transpilePackages ?? []), ...dyrectedPackages])
+    ),
     webpack(config, options) {
       config.resolve.alias = {
         ...config.resolve.alias,

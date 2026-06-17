@@ -12,6 +12,9 @@ const Media = defineCollection({
 const Admin = defineCollection({
   slug: "admin",
   auth: true,
+  admin: {
+    useAsTitle: "firstName",
+  },
   fields: [
     {
       label: "First name",

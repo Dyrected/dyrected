@@ -1,8 +1,20 @@
 import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
 import dts from "vite-plugin-dts";
+import pkg from "./package.json" with { type: "json" };
+
+const externalPackages = [
+  ...Object.keys(pkg.dependencies ?? {}),
+  ...Object.keys(pkg.peerDependencies ?? {}),
+  "react/jsx-runtime",
+  "react/jsx-dev-runtime",
+  "react-dom/client",
+];
+
+const external = (id: string) => {
+  return externalPackages.some((dep) => id === dep || id.startsWith(`${dep}/`));
+};
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,13 +23,6 @@ export default defineConfig({
     dts({
       tsconfigPath: "./tsconfig.app.json",
       insertTypesEntry: true,
-    }),
-    nodePolyfills({
-      // Whether to polyfill `node:` protocol imports.
-      protocolImports: true,
-      globals: {
-        global: false,
-      },
     }),
   ],
   build: {
@@ -29,6 +34,7 @@ export default defineConfig({
       formats: ["es"],
     },
     rollupOptions: {
+      external,
       output: {
         format: "es",
         manualChunks: undefined,

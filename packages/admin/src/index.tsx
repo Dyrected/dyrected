@@ -1,11 +1,6 @@
 /** @jsxImportSource react */
 import "./index.css";
 import React, { useEffect, useState, StrictMode } from "react";
-
-if (typeof window !== "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (window as any).React = React;
-}
 import { createRoot } from "react-dom/client";
 import {
   HashRouter,

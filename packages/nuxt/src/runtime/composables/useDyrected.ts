@@ -1,11 +1,6 @@
 // @ts-ignore
 import { useRuntimeConfig, useAsyncData, useState, useCookie, useRequestFetch } from '#app'
 import { createClient, type DyrectedClient, type BaseSchema } from '@dyrected/sdk'
-import { 
-  useDyrected as useGenericDyrected,
-  useDyrectedCollection as useGenericCollection,
-  useDyrectedGlobal as useGenericGlobal
-} from '@dyrected/vue'
 
 function getClient<TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> {
   const config = useRuntimeConfig().public.dyrected
@@ -24,9 +19,6 @@ export const useDyrectedClient = <TSchema extends BaseSchema = any>(): DyrectedC
 }
 
 export const useDyrected = useDyrectedClient
-export const useDyrectedData = useGenericDyrected
-export const useDyrectedCollectionData = useGenericCollection
-export const useDyrectedGlobalData = useGenericGlobal
 
 // ---------------------------------------------------------------------------
 // useDyrectedDoc — convenience shorthand for a single document

@@ -1,4 +1,5 @@
 import { AdminUI, type AdminUIProps } from '@dyrected/admin';
+import '@dyrected/admin/styles';
 
 export type DyrectedAdminProps = AdminUIProps;
 
