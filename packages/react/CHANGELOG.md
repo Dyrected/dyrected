@@ -1,5 +1,14 @@
 # @dyrected/react
 
+## 2.5.27
+
+### Patch Changes
+
+- 8c27ba9: refactor: unify React dependency resolution across packages and optimize Vite/Next configuration for dependency sharing
+- Updated dependencies [8c27ba9]
+  - @dyrected/admin@2.5.27
+  - @dyrected/sdk@2.5.27
+
 ## 2.5.26
 
 ### Patch Changes
