@@ -34,6 +34,8 @@ import {
 import { ChevronLeft, ChevronRight, Settings2 } from "lucide-react"
 import { usePreferences } from "../../hooks/use-preferences"
 
+const EMPTY_VISIBILITY: VisibilityState = {}
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -55,7 +57,7 @@ export function DataTable<TData, TValue>({
   bulkActions,
   toolbarActions,
   persistenceKey,
-  initialColumnVisibility = {},
+  initialColumnVisibility,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -63,7 +65,7 @@ export function DataTable<TData, TValue>({
   )
   const [columnVisibility, setColumnVisibility] = usePreferences<VisibilityState>(
     persistenceKey ? `visibility_${persistenceKey}` : "temp_visibility",
-    initialColumnVisibility
+    initialColumnVisibility ?? EMPTY_VISIBILITY
   )
   const [internalRowSelection, setInternalRowSelection] = React.useState({})
 

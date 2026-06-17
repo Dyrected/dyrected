@@ -282,6 +282,52 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.html(getSwaggerHtml());
   });
 
+  app.get("/api/preferences/:key", requireAuth(), async (c) => {
+    const db = config.db;
+    const user = c.get("user");
+    const key = c.req.param("key");
+
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+    if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
+    if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
+
+    const doc = await db.findOne({ collection: user.collection, id: user.sub });
+    if (!doc) return c.json({ error: true, message: "User not found." }, 404);
+
+    const preferences = typeof doc.__preferences === "object" && doc.__preferences !== null
+      ? doc.__preferences as Record<string, unknown>
+      : {};
+
+    return c.json({ key, value: preferences[key] ?? null });
+  });
+
+  app.put("/api/preferences/:key", requireAuth(), async (c) => {
+    const db = config.db;
+    const user = c.get("user");
+    const key = c.req.param("key");
+
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+    if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
+    if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
+
+    const body = await c.req.json().catch(() => ({}));
+    const doc = await db.findOne({ collection: user.collection, id: user.sub });
+    if (!doc) return c.json({ error: true, message: "User not found." }, 404);
+
+    const preferences = typeof doc.__preferences === "object" && doc.__preferences !== null
+      ? doc.__preferences as Record<string, unknown>
+      : {};
+    const nextPreferences = { ...preferences, [key]: body.value };
+
+    await db.update({
+      collection: user.collection,
+      id: user.sub,
+      data: { __preferences: nextPreferences },
+    });
+
+    return c.json({ key, value: body.value });
+  });
+
   // Global Media Fallback (Proxies to the 'media' collection)
   app.get("/api/media/:filename{.+$}", async (c) => {
     const mediaController = new MediaController("media");

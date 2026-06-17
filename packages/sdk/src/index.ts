@@ -138,6 +138,17 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     return this.request("/api/schemas");
   }
 
+  async getPreference<T = unknown>(key: string): Promise<{ key: string; value: T | null }> {
+    return this.request(`/api/preferences/${encodeURIComponent(key)}`);
+  }
+
+  async setPreference<T = unknown>(key: string, value: T): Promise<{ key: string; value: T }> {
+    return this.request(`/api/preferences/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      body: JSON.stringify({ value }),
+    });
+  }
+
   /**
    * Fetch draft data for a specific preview token.
    * Used in "token" preview mode.
