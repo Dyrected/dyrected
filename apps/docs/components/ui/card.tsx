@@ -19,13 +19,13 @@ export function Card({ title, description, href, icon, className }: CardProps) {
           </div>
         )}
         <h3
-          className="font-semibold tracking-tight text-lg"
-          style={{ color: '#111110', fontFamily: 'var(--font-display, serif)' }}
+          className="doc-card-title font-medium tracking-normal text-lg"
+          style={{ fontFamily: 'var(--font-display, serif)' }}
         >
           {title}
         </h3>
       </div>
-      <p className="text-sm leading-relaxed" style={{ color: '#625F6C' }}>
+      <p className="doc-card-copy text-sm leading-relaxed">
         {description}
       </p>
       <div className="doc-card-learn mt-auto flex items-center text-xs font-medium">

@@ -65,29 +65,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* White break section — community/open source */}
+      {/* Proof section: white in light mode, Violet Black in dark mode. */}
       <section className="container mx-auto px-4 max-w-4xl text-center">
-        <div
-          className="rounded-3xl p-12"
-          style={{
-            background: '#FFFFFF',
-            border: '1px solid #DED7F2',
-            boxShadow: '0 2px 40px rgba(124,61,255,0.06)',
-          }}
-        >
+        <div className="proof-section rounded-lg p-12">
           <h2
-            className="text-2xl font-bold mb-4"
-            style={{ fontFamily: 'var(--font-display, serif)', color: '#111110' }}
+            className="text-2xl font-medium tracking-normal mb-4 text-foreground"
+            style={{ fontFamily: 'var(--font-display, serif)' }}
           >
             Source Available &amp; Transparent
           </h2>
-          <p className="mb-8 max-w-lg mx-auto leading-relaxed text-sm" style={{ color: '#625F6C' }}>
+          <p className="mb-8 max-w-lg mx-auto leading-relaxed text-sm text-muted-foreground">
             Dyrected is source-available and built for the community. Join our Discord to contribute
             or get help with your project.
           </p>
           <div className="flex justify-center gap-6 text-sm font-medium">
             <a href="#" className="link-violet">Discord</a>
-            <span style={{ color: '#DED7F2' }}>•</span>
+            <span className="proof-divider">•</span>
             <a href="#" className="link-violet">GitHub Discussions</a>
           </div>
         </div>
@@ -95,14 +88,14 @@ export default function HomePage() {
 
       {/* Final CTA — strongest color moment: full Signal Lime section */}
       <section className="container mx-auto px-4 max-w-4xl text-center">
-        <div className="rounded-3xl py-16 px-8" style={{ background: '#B6FF2E' }}>
+        <div className="cta-lime rounded-lg py-16 px-8">
           <h2
-            className="text-3xl font-bold mb-4"
-            style={{ fontFamily: 'var(--font-display, serif)', color: '#111110' }}
+            className="text-3xl font-medium tracking-normal mb-4"
+            style={{ fontFamily: 'var(--font-display, serif)' }}
           >
             Ready to build?
           </h2>
-          <p className="mb-8 max-w-sm mx-auto text-sm leading-relaxed" style={{ color: 'rgba(17,17,16,0.65)' }}>
+          <p className="cta-lime-copy mb-8 max-w-sm mx-auto text-sm leading-relaxed">
             Drop Dyrected into your Next.js or Nuxt app and have your first collection live in minutes.
           </p>
           <a href="/docs/getting-started/introduction" className="btn-dark-on-lime inline-flex items-center rounded-full px-8 py-3 text-sm font-semibold">
