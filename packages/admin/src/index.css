@@ -1,62 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Geist:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Design Tokens — Light Foundation, Amber Accent */
+  /* Dyrected defaults: Lime Paper, Signal Lime, and Violet. */
   :root {
     /* Fonts */
-    --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-    --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
+    --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+    --font-serif: "Fraunces", ui-serif, Georgia, serif;
 
     /* Backgrounds */
-    --background: 60 17% 97%;          /* #FAFAF8 warm white */
-    --foreground: 60 3% 6%;            /* #111110 near-black, warm undertone */
+    --background: 77 100% 97%;         /* #FBFFF1 Lime Paper */
+    --foreground: 60 3% 6%;            /* #111110 near-black */
 
-    --card: 60 10% 95%;                /* #F2F2EF soft grey surface */
+    --card: 0 0% 100%;                 /* #FFFFFF Plain White */
     --card-foreground: 60 3% 6%;
 
-    --popover: 60 17% 97%;
+    --popover: 0 0% 100%;
     --popover-foreground: 60 3% 6%;
 
-    /* Primary — Amber (overridable via branding.primaryColor) */
-    --primary: 38 92% 50%;             /* #F59E0B amber */
-    --primary-foreground: 60 3% 6%;   /* dark text on amber */
+    /* Signal Lime is action; Violet is navigation and intelligence. */
+    --primary: 81 100% 59%;            /* #B6FF2E Signal Lime */
+    --primary-foreground: 60 3% 6%;
+    --intelligence: 259 100% 62%;      /* #7C3DFF Violet */
+    --intelligence-foreground: 0 0% 100%;
 
-    /* Secondary — surface tones */
-    --secondary: 60 10% 95%;           /* #F2F2EF */
+    /* Secondary and muted surfaces */
+    --secondary: 259 100% 96%;         /* #F0E9FF Violet Tint */
     --secondary-foreground: 60 3% 6%;
 
-    /* Muted — for placeholders, subtle labels */
-    --muted: 60 10% 95%;
-    --muted-foreground: 60 4% 40%;    /* #6B6B63 brown-grey */
+    --muted: 81 100% 93%;              /* #F2FFD9 Lime Tint */
+    --muted-foreground: 254 6% 40%;    /* #625F6C violet-grey */
 
-    /* Accent — very subtle hover tint */
-    --accent: 60 10% 95%;
-    --accent-foreground: 60 3% 6%;
+    --accent: 259 100% 96%;            /* #F0E9FF Violet Tint */
+    --accent-foreground: 259 100% 62%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
-    --destructive-foreground: 60 17% 97%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Borders & inputs */
-    --border: 60 7% 89%;               /* #E4E4E0 */
-    --input: 60 7% 89%;
-    --ring: 38 92% 50% / 0.15;        /* amber ring */
+    --border: 256 51% 90%;             /* #DED7F2 Chromatic Mist */
+    --input: 256 51% 90%;
+    --ring: 259 100% 62% / 0.24;       /* Violet focus */
 
     --radius: 0.5rem;
 
     /* Sidebar */
-    --sidebar-background: 60 17% 97%;
+    --sidebar-background: 77 100% 97%;
     --sidebar-foreground: 60 3% 6%;
-    --sidebar-primary: 38 92% 50%;
+    --sidebar-primary: 81 100% 59%;
     --sidebar-primary-foreground: 60 3% 6%;
-    --sidebar-accent: 60 10% 95%;
-    --sidebar-accent-foreground: 38 92% 50%;  /* amber for active items */
-    --sidebar-border: 60 7% 89%;
-    --sidebar-ring: 38 92% 50%;
+    --sidebar-accent: 259 100% 96%;
+    --sidebar-accent-foreground: 259 100% 62%;
+    --sidebar-border: 256 51% 90%;
+    --sidebar-ring: 259 100% 62%;
   }
 
   .dy-admin-ui {
@@ -71,6 +71,25 @@
   .dy-admin-ui h5,
   .dy-admin-ui h6 {
     @apply dy-font-serif;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .dy-admin-ui .dy-font-bold,
+  .dy-admin-ui .dy-font-extrabold,
+  .dy-admin-ui .dy-font-black {
+    font-weight: 600;
+  }
+
+  .dy-admin-ui button,
+  .dy-admin-ui label {
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  /* Keep text accents legible: lime fills actions, violet carries links. */
+  .dy-admin-ui .dy-text-primary {
+    color: hsl(var(--intelligence));
   }
 }
 
@@ -106,7 +125,7 @@
   .dy-admin-ui input:focus,
   .dy-admin-ui select:focus,
   .dy-admin-ui textarea:focus {
-    @apply dy-border-primary/50;
+    border-color: hsl(var(--intelligence) / 0.5);
   }
 }
 
@@ -134,7 +153,7 @@
 }
 
 .dy-prose table th {
-  font-weight: bold;
+  font-weight: 500;
   text-align: left;
   background-color: hsl(var(--muted) / 0.5);
 }

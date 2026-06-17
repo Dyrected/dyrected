@@ -6,7 +6,7 @@ import { useDyrected } from "../../providers/dyrected-provider";
  * triplet expected by our CSS variables, e.g. "38 92% 50%".
  */
 function toRawHsl(color: string): string {
-  if (!color) return "38 92% 50%"; // Default amber
+  if (!color) return "81 100% 59%"; // Signal Lime
 
   if (color.startsWith("#")) {
     let r = 0, g = 0, b = 0;
@@ -41,6 +41,8 @@ function toRawHsl(color: string): string {
 
   const named: Record<string, string> = {
     amber:  "38 92% 50%",
+    lime:   "81 100% 59%",
+    violet: "259 100% 62%",
     green:  "142 76% 36%",
     blue:   "217 91% 60%",
     red:    "0 84% 60%",
@@ -83,19 +85,23 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const branding = schemas?.admin?.branding;
 
   const styleTag = useMemo(() => {
-    const hsl = toRawHsl(branding?.primaryColor || "38 92% 50%");
-    const fg = primaryForeground(hsl);
+    const hasCustomPrimary = Boolean(branding?.primaryColor);
+    const primaryHsl = toRawHsl(branding?.primaryColor || "#B6FF2E");
+    const intelligenceHsl = hasCustomPrimary ? primaryHsl : "259 100% 62%";
+    const fg = primaryForeground(primaryHsl);
 
     return (
       <style dangerouslySetInnerHTML={{ __html: `
-        .admin-ui {
-          --primary: ${hsl};
+        .dy-admin-ui {
+          --primary: ${primaryHsl};
           --primary-foreground: ${fg};
-          --sidebar-primary: ${hsl};
+          --intelligence: ${intelligenceHsl};
+          --accent-foreground: ${intelligenceHsl};
+          --sidebar-primary: ${primaryHsl};
           --sidebar-primary-foreground: ${fg};
-          --sidebar-accent-foreground: ${hsl};
-          --sidebar-ring: ${hsl};
-          --ring: ${hsl} / 0.15;
+          --sidebar-accent-foreground: ${intelligenceHsl};
+          --sidebar-ring: ${intelligenceHsl};
+          --ring: ${intelligenceHsl} / 0.24;
           ${branding?.fontSans ? `--font-sans: ${branding.fontSans};` : ""}
           ${branding?.fontSerif ? `--font-serif: ${branding.fontSerif};` : ""}
         }
