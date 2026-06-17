@@ -308,6 +308,7 @@ function FormFieldRendererInner({
   }
 
   const isBoolean = schema.type === "boolean"
+  const isSwitchBoolean = isBoolean && schema.admin?.layout === "switch"
 
   return (
     <FormField
@@ -317,8 +318,10 @@ function FormFieldRendererInner({
         <FormItem
           data-dy-field={schema.name}
           className={cn(
-            isBoolean
+            isSwitchBoolean
               ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
+              : isBoolean
+                ? "dy-flex dy-flex-row-reverse dy-items-start dy-justify-end dy-gap-3 dy-space-y-0"
               : "dy-space-y-3"
           )}
         >

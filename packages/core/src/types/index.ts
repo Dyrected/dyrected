@@ -804,10 +804,11 @@ interface FieldBase {
     condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;
 
     /**
-     * For `select` fields — render as radio buttons instead of a dropdown.
-     * Recommended for 2–5 options.
+     * Presentation style for fields with multiple built-in admin renderers.
+     * - `select`: use `radio` for 2–5 options, otherwise defaults to `select`
+     * - `boolean`: use `checkbox` (default) or `switch`
      */
-    layout?: "radio" | "select" | string;
+    layout?: "checkbox" | "switch" | "radio" | "select" | string;
 
     /**
      * For `select` fields with `layout: 'radio'` — orientation of the radio buttons.

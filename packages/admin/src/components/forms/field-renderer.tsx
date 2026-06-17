@@ -2,6 +2,7 @@ import type { Field as FieldSchema } from "@dyrected/sdk"
 import { TextField } from "./fields/text-field"
 import { TextAreaField } from "./fields/text-area-field"
 import { SwitchField } from "./fields/switch-field"
+import { CheckboxField } from "./fields/checkbox-field"
 import { SelectField } from "./fields/select-field"
 import { RadioField } from "./fields/radio-field"
 import { MultiSelect } from "./fields/multi-select"
@@ -103,7 +104,9 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "textarea":
       return <TextAreaField schema={schema} field={field} disabled={disabled} />
     case "boolean":
-      return <SwitchField field={field} disabled={disabled} />
+      return schema.admin?.layout === "switch"
+        ? <SwitchField field={field} disabled={disabled} />
+        : <CheckboxField field={field} disabled={disabled} />
     case "select":
       return <SelectField schema={schema} field={field} disabled={disabled} collection={collection} siblingValues={context?.siblingData as Record<string, string | number | boolean>} />
     case "radio":
