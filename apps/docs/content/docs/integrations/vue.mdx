@@ -203,6 +203,33 @@ Then in your schema:
 
 ---
 
+### Advanced: Custom Admin Components in Vue
+
+When building rich custom field components in Vue 3 that run inside the React-based Admin UI:
+
+1. **How the Bridge Works:** The React-in-Vue bridge mounts your Vue component dynamically inside the React render tree. Properties (`value`, `onChange`, `field`, etc.) are converted to reactive Vue props automatically.
+2. **Accessing the Document ID:** Since the document `id` is read-only metadata (not a registered form field), it is not present in standard form watch values. You can read the current document ID in two ways:
+   - Access the prop `context.siblingData.id` (which Dyrected injects automatically on Edit forms).
+   - If the component runs on an older version or outside form context, you can parse it from `window.location.hash` as a fallback.
+3. **Reacting to Router Navigation:** Because the Admin UI runs on React Router, Vue's `computed()` properties or route watchers (like Nuxt/Vue Router) will not trigger when the URL changes. If your custom component needs to react to URL changes, listen to the browser hashchange event directly:
+   ```ts
+   import { onMounted, onUnmounted } from 'vue'
+
+   onMounted(() => {
+     window.addEventListener('hashchange', handleHashChange)
+   })
+   onUnmounted(() => {
+     window.removeEventListener('hashchange', handleHashChange)
+   })
+   ```
+4. **Bridge Context Properties:**
+   The `context` prop passed to your custom Vue component contains useful metadata:
+   - `context.user`: The currently authenticated administrator user.
+   - `context.schemas`: The loaded Dyrected collection configuration schemas.
+   - `context.siblingData`: Object containing current sibling field values in the form, including the document `id`.
+
+---
+
 ## Fetching Content — `useDyrected`
 
 ```vue

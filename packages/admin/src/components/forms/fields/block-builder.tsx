@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useFieldArray, useWatch } from "react-hook-form"
+import type { Control, FieldValues } from "react-hook-form"
 import { FormFieldRenderer } from "../form-field-renderer"
 import { cn } from "../../../lib/utils"
 import { buildDefaultValues } from "../utils"
@@ -36,8 +37,9 @@ import { CSS } from "@dnd-kit/utilities"
 interface BlockBuilderProps {
   schema: FieldSchema
   basePath: string
-  control: any
+  control: Control<FieldValues>
   collection: string
+  documentId?: string
 }
 
 function SortableBlockItem({
@@ -51,19 +53,21 @@ function SortableBlockItem({
   remove,
   isExpanded,
   onToggleExpand,
-  onDuplicate
+  onDuplicate,
+  documentId
 }: {
   id: string;
   index: number;
-  item: any;
+  item: Record<string, unknown>;
   schema: FieldSchema;
   basePath: string;
-  control: any;
+  control: Control<FieldValues>;
   collection: string;
   remove: (index: number) => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onDuplicate: () => void;
+  documentId?: string;
 }) {
   const {
     attributes,
@@ -88,7 +92,7 @@ function SortableBlockItem({
 
   const itemValues = useWatch({
     control,
-    name: `${basePath}.${index}` as any
+    name: `${basePath}.${index}` as never
   }) || {}
 
   if (!blockConfig) return null
@@ -196,6 +200,7 @@ function SortableBlockItem({
               basePath={`${basePath}.${index}`}
               control={control}
               collection={collection}
+              documentId={documentId}
             />
           ))}
         </div>
@@ -223,7 +228,7 @@ function SortableBlockItem({
   )
 }
 
-export function BlockBuilder({ schema, basePath, control, collection }: BlockBuilderProps) {
+export function BlockBuilder({ schema, basePath, control, collection, documentId }: BlockBuilderProps) {
   const { fields, append, remove, move, insert } = useFieldArray({ control, name: basePath })
   const watchedBlocks = useWatch({ control, name: basePath }) || []
 
@@ -444,6 +449,7 @@ export function BlockBuilder({ schema, basePath, control, collection }: BlockBui
                     isExpanded={expandedIds[item.id] ?? false}
                     onToggleExpand={() => toggleExpand(item.id)}
                     onDuplicate={() => duplicate(index)}
+                    documentId={documentId}
                   />
                 ))}
               </div>

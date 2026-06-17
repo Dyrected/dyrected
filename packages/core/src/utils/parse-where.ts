@@ -109,11 +109,11 @@ export function parseSqlWhere(
   function buildSingleOp(c: string, op: WhereOperatorName, operand: any): string {
     switch (op) {
       case 'equals':
-        params.push(operand);
+        params.push(typeof operand === 'boolean' ? String(operand) : operand);
         return `${c} = ${next()}`;
 
       case 'not_equals':
-        params.push(operand);
+        params.push(typeof operand === 'boolean' ? String(operand) : operand);
         return `${c} != ${next()}`;
 
       case 'in': {

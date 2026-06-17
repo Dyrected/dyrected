@@ -437,7 +437,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     <div className="dy-space-y-8 dy-animate-in">
       <PageHeader
         title={schema.labels?.plural || schema.label || schema.slug}
-        description={`Manage your ${schema.slug} entries and update content.`}
+        description={`Manage your ${schema.labels?.plural || schema.label || schema.slug} entries and update content.`}
         icon={Database}
       >
         <Button

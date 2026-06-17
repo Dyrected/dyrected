@@ -1,0 +1,50 @@
+---
+title: Production Checklist
+description: Best practices and checklist items for preparing your Dyrected app for production deployment.
+---
+
+Before deploying your Dyrected application to a production environment, review this checklist to ensure stability, performance, and reliability.
+
+---
+
+## 1. Rate Limit Your Custom API Routes
+
+Dyrected provides high-performance catch-all route handlers, but it does **not** include built-in rate-limiting logic. You are responsible for protecting your application against denial-of-service (DoS) attacks.
+
+- **Checklist:** Wrap or configure your API routes with standard middleware (e.g., using Upstash, Redis, or Vercel/Next.js middleware rate limiters).
+
+---
+
+## 2. Robust Hook Exception Handling
+
+Collection hooks (like `afterChange` and `afterDelete`) run as part of the transaction/request execution block. If a hook fails with an unhandled exception, it can cause database operations or API responses to fail.
+
+- **Checklist:** Wrap all side-effect executions (such as sending emails via `email.send`, invoking external webhooks, or fetching third-party resources) in a `try/catch` block and log the failures without crashing the request.
+- **Example:**
+  ```ts
+  afterChange: [
+    async ({ doc }) => {
+      try {
+        await sendEmail(doc.email, "Welcome!");
+      } catch (error) {
+        console.error("Failed to send welcome email:", error);
+      }
+    }
+  ]
+  ```
+
+---
+
+## 3. Specify Query Limits
+
+When querying using the SDK client or fetching lists from custom endpoints, the default behavior of `find()` is paginated but should be controlled explicitly to prevent overloading the database.
+
+- **Checklist:** Always set the `limit` parameter explicitly on all `find()` calls. The default limit is safe, but it may not match your UX requirements.
+
+---
+
+## 4. Boolean Filter Tip
+
+For SQL databases (PostgreSQL/MySQL), Boolean fields are extracted from JSON storage structures as text data types. 
+
+- **Recommendation:** Although the latest versions of the framework parse booleans seamlessly, as a general best practice for SQL backends, ensure you are testing query filters involving booleans (`attending: { equals: true }`) in staging before promoting to production.

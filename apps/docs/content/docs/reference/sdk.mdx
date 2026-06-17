@@ -5,6 +5,9 @@ description: Using the @dyrected/sdk client in any JavaScript or TypeScript proj
 
 `@dyrected/sdk` is a framework-agnostic TypeScript client for the Dyrected REST API. It works in Next.js, Nuxt.js, SvelteKit, plain Node.js, and browser environments.
 
+> [!NOTE]
+> **Scope Statement:** The SDK covers document CRUD and relationship traversal via `depth`. It does not expose count, aggregate, or complex join queries. For those, write an API route and query the database directly using your database adapter.
+
 ---
 
 ## Installation
@@ -46,6 +49,10 @@ const client = createClient({
 All collection methods are accessed via `client.collection(slug)`.
 
 ### `.find(options?)`
+
+> [!TIP]
+> **Looking for a single document by ID?**  
+> Use `client.collection('posts').findOne(id)` instead of `find({ where: { id: { equals: id } }, limit: 1 })`. It returns the document directly, rather than a paginated result.
 
 Returns a paginated list of documents.
 

@@ -1,5 +1,6 @@
 import * as React from "react"
 import { useWatch, useFieldArray } from "react-hook-form"
+import type { Control, FieldValues, ControllerRenderProps } from "react-hook-form"
 import { useDyrected } from "../../providers/dyrected-provider"
 import {
   FormControl,
@@ -48,8 +49,9 @@ import {
 interface FormFieldRendererProps {
   schema: FieldSchema
   basePath: string
-  control: any
+  control: Control<FieldValues>
   collection: string
+  documentId?: string
 }
 
 function FieldColumn({
@@ -80,12 +82,14 @@ function FieldColumn({
  * 
  * It delegates the actual rendering of the input UI to the FieldRenderer.
  */
-export function FormFieldRenderer({ schema, basePath, control, collection }: FormFieldRendererProps) {
+export function FormFieldRenderer({ schema, basePath, control, collection, documentId }: FormFieldRendererProps) {
   const { user } = useDyrected()
 
   const formValues = useWatch({ control })
   const siblingData = useWatch({ control, name: (basePath || undefined) as string }) || {}
-  const conditionData = basePath ? { ...formValues, ...siblingData } : formValues
+  const conditionData = basePath
+    ? { ...formValues, ...siblingData, ...(documentId ? { id: documentId } : {}) }
+    : { ...formValues, ...(documentId ? { id: documentId } : {}) }
 
   const condition = schema.admin?.condition
   const readAccess = (schema.access as Record<string, unknown> | undefined)?.read
@@ -182,6 +186,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection }: For
       control={control}
       collection={collection}
       canUpdate={canUpdate}
+      documentId={documentId}
     />
   )
 
@@ -208,6 +213,7 @@ function FormFieldRendererInner({
   control,
   collection,
   canUpdate,
+  documentId,
 }: FormFieldRendererProps & { canUpdate: boolean }) {
   const { user, schemas } = useDyrected()
 
@@ -234,7 +240,7 @@ function FormFieldRendererInner({
           <FormField
             control={control}
             name="oldPassword"
-            render={({ field: formField }: { field: any }) => (
+            render={({ field: formField }: { field: ControllerRenderProps<FieldValues, string> }) => (
               <FormItem className="dy-space-y-1.5">
                 <FormLabel className="dy-text-xs dy-font-medium dy-text-foreground/70">Current Password</FormLabel>
                 <FormControl>
@@ -249,7 +255,7 @@ function FormFieldRendererInner({
           <FormField
             control={control}
             name={fullPath}
-            render={({ field: formField }: { field: any }) => (
+            render={({ field: formField }: { field: ControllerRenderProps<FieldValues, string> }) => (
               <FormItem className="dy-space-y-1.5">
                 <FormLabel className="dy-text-xs dy-font-medium dy-text-foreground/70">
                   {isEdit ? "New Password" : "Password"}
@@ -265,7 +271,7 @@ function FormFieldRendererInner({
           <FormField
             control={control}
             name="confirmPassword"
-            render={({ field: formField }: { field: any }) => (
+            render={({ field: formField }: { field: ControllerRenderProps<FieldValues, string> }) => (
               <FormItem className="dy-space-y-1.5">
                 <FormLabel className="dy-text-xs dy-font-medium dy-text-foreground/70">
                   {isEdit ? "Confirm New Password" : "Confirm Password"}
@@ -299,6 +305,7 @@ function FormFieldRendererInner({
               basePath={basePath}
               control={control}
               collection={collection}
+              documentId={documentId}
             />
           </div>
         ))}
@@ -309,7 +316,7 @@ function FormFieldRendererInner({
   if ((schema.type as string) === "join") {
     return (
       <div className="dy-space-y-3">
-        <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
+        <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2 dy-mb-1">
           <label className="dy-text-sm dy-font-semibold dy-text-foreground/80">
             {schema.label || schema.name?.charAt(0).toUpperCase() + (schema.name?.slice(1) ?? '')}
           </label>
@@ -323,15 +330,15 @@ function FormFieldRendererInner({
   }
 
   if (schema.type === "object") {
-    return <ObjectFieldRenderer schema={schema} basePath={fullPath} control={control} collection={collection} />
+    return <ObjectFieldRenderer schema={schema} basePath={fullPath} control={control} collection={collection} documentId={documentId} />
   }
 
   if (schema.type === "array") {
-    return <ArrayFieldRenderer schema={schema} basePath={fullPath} control={control} collection={collection} />
+    return <ArrayFieldRenderer schema={schema} basePath={fullPath} control={control} collection={collection} documentId={documentId} />
   }
 
   if (schema.type === "blocks" && schema.blocks) {
-    return <BlockBuilder schema={schema} basePath={fullPath} control={control} collection={collection} />
+    return <BlockBuilder schema={schema} basePath={fullPath} control={control} collection={collection} documentId={documentId} />
   }
 
   const isBoolean = schema.type === "boolean"
@@ -340,7 +347,7 @@ function FormFieldRendererInner({
     <FormField
       control={control}
       name={fullPath}
-      render={({ field: formField }: { field: any }) => (
+      render={({ field: formField }: { field: ControllerRenderProps<FieldValues, string> }) => (
         <FormItem
           data-dy-field={schema.name}
           className={cn(
@@ -349,7 +356,7 @@ function FormFieldRendererInner({
               : "dy-space-y-3"
           )}
         >
-          <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-gap-2 dy-mb-1")}>
+          <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-flex-wrap dy-gap-2 dy-mb-1")}>
             <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
               {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
               {schema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
@@ -385,18 +392,20 @@ function ObjectFieldRenderer({
   schema,
   basePath,
   control,
-  collection
+  collection,
+  documentId,
 }: {
   schema: FieldSchema
   basePath: string
-  control: any
+  control: Control<FieldValues>
   collection: string
+  documentId?: string
 }) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
 
   const objectValues = useWatch({
     control,
-    name: basePath as any
+    name: basePath as never
   }) || {}
 
   const getObjectSummary = () => {
@@ -469,6 +478,7 @@ function ObjectFieldRenderer({
                 basePath={basePath}
                 control={control}
                 collection={collection}
+                documentId={documentId}
               />
             </FieldColumn>
           ))}
@@ -487,13 +497,13 @@ function ArrayItemHeader({
 }: {
   basePath: string
   index: number
-  control: any
+  control: Control<FieldValues>
   schema: FieldSchema
   onClick: () => void
 }) {
   const itemValues = useWatch({
     control,
-    name: `${basePath}.${index}` as any
+    name: `${basePath}.${index}` as never
   }) || {}
 
   // Try to find a reasonable preview title from subfields
@@ -545,16 +555,18 @@ function SortableArrayItem({
   remove,
   move,
   totalCount,
+  documentId,
 }: {
   id: string
   index: number
   schema: FieldSchema
   basePath: string
-  control: any
+  control: Control<FieldValues>
   collection: string
   remove: (index: number) => void
   move: (from: number, to: number) => void
   totalCount: number
+  documentId?: string
 }) {
   const {
     attributes,
@@ -661,6 +673,7 @@ function SortableArrayItem({
                 basePath={`${basePath}.${index}`}
                 control={control}
                 collection={collection}
+                documentId={documentId}
               />
             </FieldColumn>
           ))}
@@ -689,7 +702,7 @@ function SortableArrayItem({
   )
 }
 
-function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema: FieldSchema, basePath: string, control: any, collection: string }) {
+function ArrayFieldRenderer({ schema, basePath, control, collection, documentId }: { schema: FieldSchema, basePath: string, control: Control<FieldValues>, collection: string, documentId?: string }) {
   const { fields, append, remove, move } = useFieldArray({ control, name: basePath })
   const { schemas } = useDyrected()
   const [isBulkOpen, setIsBulkOpen] = React.useState(false)
@@ -802,6 +815,7 @@ function ArrayFieldRenderer({ schema, basePath, control, collection }: { schema:
                   remove={remove}
                   move={move}
                   totalCount={fields.length}
+                  documentId={documentId}
                 />
               ))}
             </div>

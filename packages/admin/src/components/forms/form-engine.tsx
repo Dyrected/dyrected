@@ -174,6 +174,7 @@ interface FormEngineProps {
    * - null    → hide the section (non-admin editing someone else)
    */
   passwordChangeMode?: 'self' | 'admin' | null
+  documentId?: string
 }
 
 export function FormEngine({
@@ -187,6 +188,7 @@ export function FormEngine({
   readOnly,
   onDataChange,
   passwordChangeMode = null,
+  documentId,
 }: FormEngineProps) {
   const isEdit = !!defaultValues?.id
   const [dynamicOptions, setDynamicOptions] = useState<Record<string, Array<{ label: string, value: unknown }>>>({})
@@ -489,6 +491,7 @@ export function FormEngine({
         basePath=""
         control={form.control}
         collection={collection}
+        documentId={documentId}
       />
     </div>
   )

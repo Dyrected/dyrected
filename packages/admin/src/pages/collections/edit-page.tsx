@@ -20,7 +20,7 @@ export function EditEntryPage() {
   const queryClient = useQueryClient()
   const [showPreview, setShowPreview] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
-  const [previewData, setPreviewData] = useState<any>(null)
+  const [previewData, setPreviewData] = useState<Record<string, unknown> | null>(null)
   const isEdit = !!id
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function EditEntryPage() {
     enabled: !!client,
   })
 
-  const schema = schemas?.collections.find((c: any) => c.slug === slug)
+  const schema = schemas?.collections.find((c: { slug: string }) => c.slug === slug)
 
   const [prevSchemaSlug, setPrevSchemaSlug] = useState<string | null>(null)
   if (schema && schema.slug !== prevSchemaSlug) {
@@ -70,7 +70,7 @@ export function EditEntryPage() {
     enabled: !!client && isEdit,
   })
 
-  const [prevEntry, setPrevEntry] = useState<any>(null)
+  const [prevEntry, setPrevEntry] = useState<Record<string, unknown> | null>(null)
   if (entry && entry !== prevEntry) {
     setPrevEntry(entry)
     setPreviewData(entry)
@@ -172,7 +172,7 @@ export function EditEntryPage() {
   if (!schema) return <div>Collection not found</div>
   if (isEdit && isEntryLoading) return <div>Loading entry...</div>
 
-  const hasStatus = schema?.fields.some((f: any) => f.name === "status")
+  const hasStatus = schema?.fields.some((f: { name: string }) => f.name === "status")
   const currentStatus = entry?.status || "draft"
 
   let previewUrl = typeof schema.admin?.previewUrl === 'function'
@@ -200,7 +200,7 @@ export function EditEntryPage() {
   }
 
   // Evaluate collection-level read access
-  const readAccess = (schema.access as any)?.read
+  const readAccess = (schema.access as Record<string, unknown> | undefined)?.read
   let canRead = true
   if (readAccess === false) {
     canRead = false
@@ -226,7 +226,7 @@ export function EditEntryPage() {
     )
   }
 
-  const createAccess = (schema.access as any)?.create
+  const createAccess = (schema.access as Record<string, unknown> | undefined)?.create
   let canCreate = true
   if (createAccess === false) {
     canCreate = false
@@ -238,7 +238,7 @@ export function EditEntryPage() {
     }
   }
 
-  const updateAccess = (schema.access as any)?.update
+  const updateAccess = (schema.access as Record<string, unknown> | undefined)?.update
   let canUpdate = true
   if (updateAccess === false) {
     canUpdate = false
@@ -402,8 +402,8 @@ export function EditEntryPage() {
             {(() => {
               let fields = [...schema.fields];
               if (schema.upload) {
-                const hasAlt = fields.some((f: any) => f.name === "alt");
-                const hasCaption = fields.some((f: any) => f.name === "caption");
+                const hasAlt = fields.some((f: { name: string }) => f.name === "alt");
+                const hasCaption = fields.some((f: { name: string }) => f.name === "caption");
                 const mediaFields = [];
                 if (!hasAlt) {
                   mediaFields.push({
@@ -447,6 +447,7 @@ export function EditEntryPage() {
                   submitLabel={isEdit ? "Save Changes" : "Create Entry"}
                   readOnly={isEdit ? !canUpdate : !canCreate}
                   passwordChangeMode={isEdit ? passwordChangeMode : null}
+                  documentId={id}
                 />
               );
             })()}

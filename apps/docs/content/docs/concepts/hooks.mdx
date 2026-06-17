@@ -49,6 +49,53 @@ export const Posts = defineCollection({
 
 ---
 
+## Hook Lifecycle & Capabilities
+
+The following table summarizes the runtime capabilities of each collection hook, showing which hooks support asynchronous execution, database reads, database writes, and external side effects (like sending emails or invoking webhooks).
+
+| Hook | Async | DB reads | DB writes | Side effects (email, fetch) |
+|---|---|---|---|---|
+| `beforeRead` | ✓ | ✓ (read-only) | ✗ | ✗ |
+| `afterRead` | ✓ | ✓ (read-only) | ✗ | ✗ |
+| `beforeChange` | ✓ | ✓ (read-only) | ✗ | ✓ (external only) |
+| `afterChange` | ✓ | ✓ | ✓ | ✓ (email, webhooks, capacity updates) |
+| `afterDelete` | ✓ | ✓ | ✓ | ✓ |
+
+> [!IMPORTANT]
+> **If you find yourself building an API route just to trigger a side effect after a save, check if `afterChange` covers it first.**  
+> `afterChange` receives the full writable database adapter context. It is the correct place for emails, webhook pings, capacity checks, and any write that should happen after a document is successfully saved.
+
+### Example: Asynchronous `afterChange` Side Effect
+
+```ts
+import { defineCollection } from '@dyrected/core'
+import { sendEmail } from '../utils/email'
+
+export const Registrations = defineCollection({
+  slug: 'registrations',
+  hooks: {
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation === 'create') {
+          // Trigger email asynchronously
+          await sendEmail({
+            to: doc.email,
+            subject: 'Registration Confirmed',
+            body: `Hi ${doc.name}, thank you for registering!`,
+          })
+        }
+      }
+    ]
+  },
+  fields: [
+    { name: 'name', type: 'text', required: true },
+    { name: 'email', type: 'email', required: true },
+  ]
+})
+```
+
+---
+
 ### Global hooks
 
 Globals support the same hooks as collections, except `beforeDelete` and `afterDelete` (globals cannot be deleted):

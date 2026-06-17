@@ -5,6 +5,9 @@ description: What Dyrected is and how the pieces fit together.
 
 Dyrected is a code-first headless CMS. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates a REST API, an Admin UI, and a type-safe SDK from it automatically. No clicking through UI builders to create fields.
 
+> **Philosophy**  
+> Dyrected handles the boring parts: storage, admin UI, access control, and relationship management. You own everything interesting: validation, business rules, emails, and concurrency. Collections define your data shape. API routes define your logic. The boundary is intentional and worth respecting from day one.
+
 The engine runs **inside your existing Next.js or Nuxt.js app** as a route handler. There is no separate CMS server to run.
 
 ---

@@ -1,104 +1,71 @@
 # Implementation Roadmap for All Spec Files
 
-This document consolidates a high‑level implementation roadmap that aligns with every specification (`specs/*.md`) currently present in the Dyrected repository. It maps each spec to the corresponding development milestones, ordered by **priority for the MVP**.
+This document consolidates a high‑level implementation roadmap that aligns with every active specification (`specs/*.md`) currently present in the Dyrected repository. It maps each spec to the corresponding development milestones, ordered by **priority for the MVP**.
 
 ---
 
 ## Spec Files Overview (Priority Order)
 
-| Priority | Spec File                                                             | Primary Focus                         | Key Implementation Areas                                                             |
-| -------- | --------------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ |
-| 1️⃣       | `plugin-form-builder-architecture.md`                                 | Plugin system & visual form builder   | Plugin registry, UI component registration, form schema extensions                   |
-| 2️⃣       | `proposed-advanced-hooks-spec.md`                                     | Advanced lifecycle hooks              | Register custom hooks via plugin context                                             |
-| 3️⃣       | `client-side-reactivity-spec.md`                                      | Sandbox & iframe communication        | Ensure translation bundles load inside hidden‑iframe sandbox (already required)      |
-| 4️⃣       | `db-adapters-testing-plan.md`                                         | Database adapter testing strategy     | Extend test suite to cover i18n‑related DB interactions                              |
-| 5️⃣       | `lifecycle-hooks-testing-spec.md`                                     | Hook testing methodology              | Add tests for new `onLocaleChange` hook and plugin‑provided hooks                    |
-| 6️⃣       | `ai-first-architecture-spec.md`                                       | AI‑agent discoverability via MCP      | MCP `translations` resource, plugin manifest exposure                                |
-| 7️⃣       | `plugin-registry` (implicit in `plugin-form-builder-architecture.md`) | Plugin loading & manifest             | Implement `plugin-registry.ts`, manifest `locales` array, load plugins before routes |
-| 8️⃣       | `language-translation-architecture.md` _(Future)_                     | Multilingual UI & content translation | I18n provider, locale bundles, translation hooks                                     |
-| 9️⃣       | `translation-migration-guide.md` _(Future)_                           | Migration from static strings to i18n | Extraction script, component refactor, plugin updates                                |
-| 🔟       | `protected-translation-keys.md` _(Future)_                            | Security for core translation keys    | Validation in plugin loader, MCP exposure                                            |
+| Priority | Spec File | Primary Focus | Key Implementation Areas |
+| :--- | :--- | :--- | :--- |
+| 1️⃣ | [list-filters-spec.md](file:///Users/busola/Work/dyrected/specs/list-filters-spec.md) | Advanced collection list filtering | Backend JSON `where` validation, field filterable permissions, clean schema stripping, and frontend filter builder UI. |
+| 2️⃣ | [custom-actions-spec.md](file:///Users/busola/Work/dyrected/specs/custom-actions-spec.md) | Custom API routes & list actions | Allow developers to register custom endpoints and add action buttons to collection list views. |
+| 3️⃣ | [gaps-in-field-implementation.md](file:///Users/busola/Work/dyrected/specs/gaps-in-field-implementation.md) | UI field inputs gap checklist | Track and complete remaining small edge cases in core fields (JSON tree view, rich text tables, confirm array deletes). |
+| 4️⃣ | [database-testing-plan.md](file:///Users/busola/Work/dyrected/specs/database-testing-plan.md) | Core DB Transaction & CRUD tests | Comprehensive unit tests for transactional stability, validation errors, and cross-collection relations. |
+| 5️⃣ | [db-adapters-testing-plan.md](file:///Users/busola/Work/dyrected/specs/db-adapters-testing-plan.md) | Adapter compatibility testing | Run identical test suites across SQLite, Postgres, and MongoDB adapter layers to guarantee feature parity. |
+| 6️⃣ | [proposed-advanced-hooks-spec.md](file:///Users/busola/Work/dyrected/specs/proposed-advanced-hooks-spec.md) | Advanced execution hooks | Add custom pre/post hooks, context sharing between middleware, and hook cancellation abort flows. |
+| 7️⃣ | [ai-first-architecture-spec.md](file:///Users/busola/Work/dyrected/specs/ai-first-architecture-spec.md) | MCP & AI integrations | Expose collections, schemas, and media resources dynamically via Model Context Protocol (MCP) endpoints for agents. |
+| 💤 | [media-library-features.md](file:///Users/busola/Work/dyrected/specs/future/media-library-features.md) _(Future)_ | Media management & external links | Vimeo iframe embedding, list view toggle, SVG upload settings/sanitization, replace/optimize images, and usage tracking. |
+| 💤 | [plugin-form-builder-architecture.md](file:///Users/busola/Work/dyrected/specs/future/plugin-form-builder-architecture.md) _(Future)_ | Runtime form visual creator | Enable custom plugin UI components and a drag-and-drop schema layout editor (Postponed / Future backlog). |
 
 ---
 
 ## Prioritized Milestones
 
-### 1. Core Plugin System & Advanced Hooks (Weeks 1‑2)
+### 1. List Filtering (Milestone 1)
+* **Goal**: Enable powerful list querying.
+* **Tasks**:
+  * Implement backend validation and schema-aware filter stripping in `where` clauses ([list-filters-spec.md](file:///Users/busola/Work/dyrected/specs/list-filters-spec.md)).
+  * Build the frontend list filters modal and badge controls.
 
-- Implement **plugin‑registry.ts** with `loadPlugins` and `PluginContext`.
-- Add **advanced hook registration** (`onPluginInit`, custom hooks) as defined in `proposed-advanced-hooks-spec.md`.
-- Extend `dyrected-plugin.json` schema to include optional `locales` array.
-- Ensure plugins are loaded **before** route initialization in `app.ts`.
+### 2. Custom Actions & Field Polish (Milestone 2)
+* **Goal**: Provide custom endpoints and polish interactive field UX.
+* **Tasks**:
+  * Create registering middleware for custom actions in collections ([custom-actions-spec.md](file:///Users/busola/Work/dyrected/specs/custom-actions-spec.md)).
+  * Resolve remaining field gaps (JSON tree error mapping, array deletions, clean fields).
 
-### 2. Sandbox Reinforcement (Week 3)
+### 3. DB Adapter & Transactional Testing (Milestone 3)
+* **Goal**: Robust stability guarantees.
+* **Tasks**:
+  * Execute validation/transaction integration test suites ([database-testing-plan.md](file:///Users/busola/Work/dyrected/specs/database-testing-plan.md)).
+  * Run multi-adapter compatibility checks ([db-adapters-testing-plan.md](file:///Users/busola/Work/dyrected/specs/db-adapters-testing-plan.md)).
 
-- Verify that all plugin UI components run inside the existing hidden‑iframe sandbox.
-- Add tests ensuring sandbox communication does not break when plugins register UI.
-
-### 3. Testing Foundations (Weeks 4‑5)
-
-- **DB adapters**: Extend existing tests (`db-adapters-testing-plan.md`) to cover any i18n‑related DB interactions.
-- **Lifecycle hooks**: Add test cases for `onLocaleChange` and plugin‑provided hooks (`lifecycle-hooks-testing-spec.md`).
-
-### 4. AI‑First MCP Exposure (Week 6)
-
-- Add MCP endpoints under `@dyrected/mcp/translations`:
-  - `GET /locales`
-  - `GET /bundles/:locale`
-  - `GET /keys/:locale`
-- Update `ai-first-architecture-spec.md` with the new resource description.
-
-### 5. UI Integration (Weeks 7‑8)
-
-- Refactor admin UI components to use `t('key')` via a new **i18n hook** (`useI18n`).
-- Add a language selector that triggers the `onLocaleChange` hook.
-- Ensure the selector works inside the sandboxed iframe.
-
-### 6. Form Builder Enhancements (Week 9) – **MVP**
-
-- Extend `FormField` to support `labelKey` (translation key).
-- Update the form renderer to resolve keys with `useI18n`.
-- Provide UI for selecting translation keys in the drag‑and‑drop form builder.
-
-### 7. Future: Full Translation Stack (Weeks 10‑12) – **Future**
-
-- **Foundations**: Build `I18nProvider` and default `en.json` (deferred until after MVP).
-- **Hook & Permissions**: Add `onLocaleChange` hook and protected‑key validation.
-- **Documentation**: Complete `translation-migration-guide.md` and `protected-translation-keys.md`.
-- **Testing**: Add unit/integration/E2E tests for language switching.
-
----
-
-## Open Questions (for team review)
-
-- **Bundle versioning** – Should translation bundles be versioned per release?
-- **Protected keys** – Confirm the complete list of core keys that must remain immutable.
-- **Locale fallback strategy** – Decide whether to fallback to `en` or the nearest parent locale (e.g., `en‑GB` → `en`).
+### 4. Advanced Architecture & DX (Milestone 4)
+* **Goal**: Advanced features and MCP integrations.
+* **Tasks**:
+  * Implement hooks context pipeline ([proposed-advanced-hooks-spec.md](file:///Users/busola/Work/dyrected/specs/proposed-advanced-hooks-spec.md)).
+  * Expose schemas/collections via MCP endpoints for AI agent interactions ([ai-first-architecture-spec.md](file:///Users/busola/Work/dyrected/specs/ai-first-architecture-spec.md)).
+  * Ergonomics improvements to TypeScript SDK interfaces.
 
 ---
 
 ## Verification Plan
 
-- Run the full test suite after each milestone.
-- Deploy a demo project, install a sample plugin, switch locales, and verify UI updates.
-- Use the MCP `translations` endpoints to fetch bundles and confirm they contain both core and plugin keys.
+- Run the full multi-adapter test suite (`npm run test:adapters`) after each milestone.
+- Manually check list view layout, sorting, and filter builder UI inside the admin dashboard.
+- Verify video playbacks (YouTube & Vimeo) render dynamically via core react rendering components.
+- Run validation checks to ensure unsafe SVGs are blocked or sanitized.
 
 ---
 
-_This roadmap lives in `specs/implementation-roadmap-for-specs.md` and is ordered by MVP priority._
+## ✅ Completed Core Specs & Fixes
 
----
+These specs are fully implemented and moved to archival date folders.
 
-## ✅ Completed Core Specs (Dyrected OSS)
-
-These specs live in `dyrected/specs/` and are fully implemented as of 2026-05-29.
-
-| Spec                              | Summary                                                                                                                                                                                           | Completed                        |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `client-side-reactivity-spec.md`  | `admin.hooks.onChange` and `admin.hooks.options` — client-side value derivation and cascading dropdowns. Runs in a sandboxed iframe.                                                              | ✅ 2026-05-29                    |
-| `dynamic-option-queries-spec.md`  | Async server-side option resolvers for `select`, `multiSelect`, and `radio` fields. Served via `GET /api/dyrected/options/:collection/:field`. `cacheTTL` typed; server-side enforcement pending. | ✅ 2026-05-29 (cacheTTL partial) |
-| `lifecycle-hooks-testing-spec.md` | Backend CRUD hook sequence, chaining, abort-on-error, and isolation of `afterChange`/`afterDelete` side-effects. Frontend `admin.hooks.onChange` reactivity tested via React Testing Library.     | ✅ 2026-05-29                    |
-
-Additionally, the following field-level gaps tracked in `dyrected/specs/gaps-in-field-implementation.md` are now resolved:
-
-- Relationship picker pagination + search, date/time support, radio dynamic options, rich text link dialog, block duplication + type-picker search, JSON tree view + error location, media inline drag-and-drop, rich text tables + image alt-text, icon categories, character/word count warnings, array item deletion confirmation, select/multiSelect clear button, JEXL memoization.
+| Spec | Summary | Completed |
+| :--- | :--- | :--- |
+| [bug-fixes-boolean-filter-and-sibling-id.md](file:///Users/busola/Work/dyrected/specs/2026-06-16/bug-fixes-boolean-filter-and-sibling-id.md) | Fixed Postgres boolean parameter query errors and resolved sibling data document ID missing contexts. | ✅ 2026-06-16 |
+| [dx-feedback-and-docs-improvements.md](file:///Users/busola/Work/dyrected/specs/2026-06-16/dx-feedback-and-docs-improvements.md) | Standardized depth guides, hooks capability lifecycle documentation, `findOne` calls, and Vue custom component guides. | ✅ 2026-06-16 |
+| `client-side-reactivity-spec.md` | `admin.hooks.onChange` and `admin.hooks.options` — client-side value derivation and cascading dropdowns in sandbox hidden-iframe. | ✅ 2026-05-29 |
+| `dynamic-option-queries-spec.md` | Async server-side option resolvers for `select`, `multiSelect`, and `radio` fields. | ✅ 2026-05-29 |
+| `lifecycle-hooks-testing-spec.md` | Backend CRUD hook sequence, chaining, abort-on-error, and isolation of `afterChange`/`afterDelete` side-effects. | ✅ 2026-05-29 |
