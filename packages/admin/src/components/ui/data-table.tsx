@@ -41,6 +41,7 @@ interface DataTableProps<TData, TValue> {
   rowSelection?: any
   onRowSelectionChange?: any
   bulkActions?: (selectedIds: string[]) => React.ReactNode
+  toolbarActions?: React.ReactNode
   persistenceKey?: string
   initialColumnVisibility?: VisibilityState
 }
@@ -52,6 +53,7 @@ export function DataTable<TData, TValue>({
   rowSelection: externalRowSelection,
   onRowSelectionChange,
   bulkActions,
+  toolbarActions,
   persistenceKey,
   initialColumnVisibility = {},
 }: DataTableProps<TData, TValue>) {
@@ -89,7 +91,36 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="dy-w-full dy-space-y-4">
-      <div className="dy-flex dy-items-center dy-gap-4">
+      <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row sm:dy-items-center sm:dy-gap-4">
+        <div className={`dy-order-1 dy-grid dy-w-full dy-gap-2 sm:dy-order-3 sm:dy-ml-auto sm:dy-flex sm:dy-w-auto sm:dy-items-center ${toolbarActions ? "dy-grid-cols-3" : "dy-grid-cols-1"}`}>
+          {toolbarActions}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="dy-flex dy-h-9 dy-w-full dy-gap-2 sm:dy-h-8 sm:dy-w-auto">
+                <Settings2 className="dy-h-4 dy-w-4" />
+                View
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="dy-capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {searchKey && (
           <Input
             placeholder={`Search ${searchKey}...`}
@@ -97,11 +128,11 @@ export function DataTable<TData, TValue>({
             onChange={(event) =>
               table.getColumn(searchKey)?.setFilterValue(event.target.value)
             }
-            className="dy-max-w-sm"
+            className="dy-order-2 dy-h-9 dy-w-full sm:dy-order-1 sm:dy-max-w-sm"
           />
         )}
         {bulkActions && table.getFilteredSelectedRowModel().rows.length > 0 && (
-          <div className="dy-flex dy-items-center dy-gap-2 dy-animate-in dy-slide-in-from-left-2">
+          <div className="dy-order-3 dy-flex dy-w-full dy-items-center dy-gap-2 dy-animate-in dy-slide-in-from-left-2 sm:dy-order-2 sm:dy-w-auto">
             {bulkActions(
               table
                 .getFilteredSelectedRowModel()
@@ -109,34 +140,9 @@ export function DataTable<TData, TValue>({
             )}
           </div>
         )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="dy-ml-auto dy-flex dy-h-8 dy-gap-2">
-              <Settings2 className="dy-h-4 dy-w-4" />
-              View
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="dy-capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
-      <div className="dy-overflow-hidden">
-        <Table>
+      <div className="dy-overflow-x-auto dy-rounded-md dy-border dy-border-border/40">
+        <Table className="dy-min-w-[720px]">
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -186,27 +192,29 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="dy-flex dy-items-center dy-justify-between dy-px-2">
-        <div className="dy-flex-1 dy-text-sm dy-text-muted-foreground">
+      <div className="dy-flex dy-flex-col dy-gap-3 dy-px-2 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between">
+        <div className="dy-flex-1 dy-text-xs dy-text-muted-foreground sm:dy-text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="dy-flex dy-items-center dy-space-x-2">
+        <div className="dy-flex dy-items-center dy-justify-between dy-gap-2 sm:dy-justify-end">
           <Button
             variant="outline"
             size="sm"
+            className="dy-h-9 dy-w-9 dy-p-0"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
             <ChevronLeft className="dy-h-4 dy-w-4" />
           </Button>
-          <span className="dy-text-sm dy-font-medium">
+          <span className="dy-min-w-0 dy-text-center dy-text-xs dy-font-medium sm:dy-text-sm">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </span>
           <Button
             variant="outline"
             size="sm"
+            className="dy-h-9 dy-w-9 dy-p-0"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >

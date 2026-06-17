@@ -10,19 +10,19 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, icon: Icon, children }: PageHeaderProps) {
   return (
-    <div className="dy-flex dy-items-end dy-justify-between dy-mb-8">
-      <div>
-        <div className="dy-flex dy-items-center dy-gap-3 dy-mb-1">
-          {Icon && <Icon className="dy-h-4 dy-w-4 dy-text-primary/60" />}
-          <h1 className="dy-text-2xl dy-font-bold dy-tracking-tight dy-text-foreground">{title}</h1>
+    <div className="dy-mb-6 dy-flex dy-flex-col dy-gap-4 sm:dy-mb-8 sm:dy-flex-row sm:dy-items-end sm:dy-justify-between">
+      <div className="dy-min-w-0">
+        <div className="dy-mb-1 dy-flex dy-items-start dy-gap-3">
+          {Icon && <Icon className="dy-mt-1 dy-h-4 dy-w-4 dy-flex-shrink-0 dy-text-primary/60" />}
+          <h1 className="dy-min-w-0 dy-break-words dy-text-xl dy-font-bold dy-tracking-tight dy-text-foreground sm:dy-text-2xl">{title}</h1>
         </div>
         {description && (
-          <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-font-medium">
+          <p className="dy-max-w-2xl dy-text-[11px] dy-font-medium dy-leading-5 dy-text-muted-foreground/60">
             {description}
           </p>
         )}
       </div>
-      <div className="dy-flex dy-items-center dy-gap-3">
+      <div className="dy-flex dy-w-full dy-flex-col dy-gap-2 sm:dy-w-auto sm:dy-flex-row sm:dy-items-center sm:dy-gap-3">
         {children}
       </div>
     </div>

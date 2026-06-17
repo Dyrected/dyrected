@@ -436,15 +436,15 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   if (slug === "media") {
     return (
-      <div className="dy-space-y-8 dy-animate-in">
+      <div className="dy-space-y-6 dy-animate-in lg:dy-space-y-8">
         <PageHeader
           title="Media Library"
           description="Manage your media assets and uploads."
           icon={ImageIcon}
         >
           {canCreate && (
-            <Link to={`/collections/${slug}/new`}>
-              <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
+            <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
+              <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
                 <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
                 Upload New
               </Button>
@@ -472,41 +472,24 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   }
 
   return (
-    <div className="dy-space-y-8 dy-animate-in">
+    <div className="dy-space-y-6 dy-animate-in lg:dy-space-y-8">
       <PageHeader
         title={schema.labels?.plural || schema.label || schema.slug}
         description={`Manage your ${schema.labels?.plural || schema.label || schema.slug} entries and update content.`}
         icon={Database}
       >
-        <Button
-          variant="outline"
-          size="sm"
-          className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-shadow-sm dy-transition-all active:dy-scale-95"
-          onClick={handleExportCsv}
-          disabled={exporting}
-        >
-          {exporting ? (
-            <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent dy-h-3 dy-w-3 dy-mr-1.5" />
-          ) : (
-            <FileDown className="dy-mr-1.5 dy-h-3 dy-w-3" />
-          )}
-          {exporting ? "Exporting..." : "Export CSV"}
-        </Button>
         {canCreate && (
-          <Link to={`/collections/${slug}/new`}>
-            <Button className="dy-h-8 dy-px-4 dy-text-[11px] dy-rounded-md dy-bg-primary hover:dy-bg-primary/90 dy-shadow-sm dy-transition-all active:dy-scale-95">
+          <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
+            <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
               <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
-              Add {schema.labels?.singular || schema.label || schema.slug}
+              <span className="sm:dy-hidden">Add</span>
+              <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.label || schema.slug}</span>
             </Button>
           </Link>
         )}
       </PageHeader>
 
-      <div className="dy-flex dy-items-center dy-mb-4">
-        <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />
-      </div>
-
-      <div className="dy-overflow-hidden">
+      <div className="dy-min-w-0">
         <DataTable
           key={slug}
           columns={columns}
@@ -516,6 +499,26 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           rowSelection={rowSelection}
           persistenceKey={slug}
           initialColumnVisibility={initialColumnVisibility}
+          toolbarActions={(
+            <>
+              <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />
+              <Button
+                variant="outline"
+                size="sm"
+                className="dy-h-9 dy-w-full dy-justify-center dy-gap-2 dy-rounded-md dy-px-3 dy-text-[11px] dy-shadow-sm dy-transition-all active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto"
+                onClick={handleExportCsv}
+                disabled={exporting}
+              >
+                {exporting ? (
+                  <div className="dy-h-3 dy-w-3 dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent" />
+                ) : (
+                  <FileDown className="dy-h-3.5 dy-w-3.5" />
+                )}
+                <span className="dy-hidden sm:dy-inline">{exporting ? "Exporting..." : "Export CSV"}</span>
+                <span className="sm:dy-hidden">{exporting ? "Exporting" : "Export"}</span>
+              </Button>
+            </>
+          )}
           bulkActions={(selectedIds) => {
             const deletableIds = selectedIds.filter(id => {
               const item = response?.docs?.find((d: Record<string, unknown>) => d.id === id)

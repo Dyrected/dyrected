@@ -62,16 +62,17 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
     });
   }, [schema]);
 
-  React.useEffect(() => {
-    if (!isOpen) {
-      setDraftRules(rules);
-    }
-  }, [isOpen, rules]);
-
   const getDefaultValue = (field: Field | undefined, operator: FilterRule['operator']): unknown => {
     if (operator === 'exists') return true;
     if (field?.type === 'boolean') return true;
     return '';
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setDraftRules(rules);
+    }
+    setIsOpen(open);
   };
 
   const handleAddRule = () => {
@@ -132,9 +133,9 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="dy-h-8 dy-gap-2">
+        <Button variant="outline" size="sm" className="dy-h-9 dy-w-full dy-gap-2 sm:dy-h-8 sm:dy-w-auto">
           <Filter className="dy-h-4 dy-w-4" />
           Filter
           {rules.length > 0 && (
@@ -169,7 +170,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                 const operators = fieldDef ? (OPERATORS_BY_TYPE[fieldDef.type] || OPERATORS_BY_TYPE.text) : OPERATORS_BY_TYPE.text;
 
                 return (
-                  <div key={i} className="dy-grid dy-grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_2rem] dy-items-start dy-gap-3">
+                  <div key={i} className="dy-grid dy-grid-cols-1 dy-items-start dy-gap-3 sm:dy-grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_2rem]">
                     <Select value={rule.field} onValueChange={(val) => handleUpdateRule(i, 'field', val)}>
                       <SelectTrigger className="dy-h-9 dy-text-xs">
                         <SelectValue placeholder="Field" />
@@ -228,7 +229,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                       )}
                     </div>
 
-                    <Button variant="ghost" size="icon" className="dy-h-9 dy-w-8 dy-text-muted-foreground hover:dy-text-destructive" onClick={() => handleRemoveRule(i)}>
+                    <Button variant="ghost" size="icon" className="dy-h-9 dy-w-full dy-justify-center dy-text-muted-foreground hover:dy-text-destructive sm:dy-w-8" onClick={() => handleRemoveRule(i)}>
                       <Trash2 className="dy-h-4 dy-w-4" />
                     </Button>
                   </div>

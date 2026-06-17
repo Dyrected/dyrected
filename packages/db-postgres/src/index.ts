@@ -135,6 +135,8 @@ export class PostgresAdapter implements DatabaseAdapter {
       const parsed = parseSqlWhere(
         args.where,
         (field: string) => {
+          if (field === 'createdAt') return '"created_at"';
+          if (field === 'updatedAt') return '"updated_at"';
           if (existingCols.includes(field) && !['id', 'data'].includes(field)) {
             return `"${field}"`;
           }

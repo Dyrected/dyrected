@@ -59,7 +59,7 @@ export function getMediaUrl(val: string | any, baseUrl: string) {
   // 2. Resolve object or string
   let targetUrl = "";
   if (typeof val === "object" && val !== null) {
-    targetUrl = val.url || val.filename || val.id || "";
+    targetUrl = val.url || val.filename || "";
   } else {
     targetUrl = String(val);
   }
@@ -72,6 +72,12 @@ export function getMediaUrl(val: string | any, baseUrl: string) {
     return targetUrl;
   }
 
-  // If it is a filename/id without a leading slash (like "default/Screenshot.jpg"), prepend "/media/"
-  return prependBase(`/media/${targetUrl}`);
+  // Bare relationship ids are not media URLs. Only treat strings that look like
+  // filenames or storage paths as media assets.
+  if (!targetUrl.includes("/") && !/\.[a-z0-9]+($|\?)/i.test(targetUrl)) {
+    return "";
+  }
+
+  // If it is a filename without a leading slash (like "default/Screenshot.jpg"), prepend "/media/"
+  return prependBase(`/api/media/${targetUrl}`);
 }

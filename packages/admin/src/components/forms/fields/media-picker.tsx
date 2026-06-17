@@ -349,7 +349,8 @@ export function MediaPicker({
       const url = getMediaUrl(resolvedItem, client?.getBaseUrl() || "")
       setCropState({ targetId: resolvedItem.id, imageUrl: url, filename: resolvedItem.filename || "image.jpg" })
     } else {
-      const url = id.includes("/") ? id : getMediaUrl({ filename: id }, client?.getBaseUrl() || "")
+      const url = getMediaUrl(id, client?.getBaseUrl() || "")
+      if (!url) return
       const filename = url.split("/").pop() || "image.jpg"
       setCropState({ targetId: id, imageUrl: url, filename })
     }
