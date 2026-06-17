@@ -36,7 +36,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const { client, user } = useDyrected()
   const queryClient = useQueryClient()
   const [page, setPage] = React.useState(1)
-  const [prevSlug, setPrevSlug] = React.useState(slug)
+  const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
   const [searchParams, setSearchParams] = useSearchParams()
   const whereParam = searchParams.get('where')
 
@@ -62,10 +62,10 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     setPage(1)
   }, [setSearchParams]);
 
-  if (slug !== prevSlug) {
-    setPrevSlug(slug)
-    setPage(1)
-  }
+  React.useEffect(() => {
+    setPage((prev) => prev === 1 ? prev : 1)
+    setRowSelection((prev) => Object.keys(prev).length === 0 ? prev : {})
+  }, [slug])
 
   // Fetch schema to know fields
   const { data: schemas } = useQuery({
@@ -227,8 +227,6 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
   }
 
-  const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
-
   const columns: ColumnDef<Record<string, unknown>>[] = React.useMemo(() => {
     if (!schema) return []
 
@@ -242,6 +240,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     const visibleColumnNames = configuredColumns.length > 0
       ? configuredColumns
       : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
+    const systemColumnNames = ["id", "createdAt", "updatedAt"]
+    const allColumnNames = [
+      ...visibleColumnNames,
+      ...allDisplayFields.map((field: Field) => field.name),
+      ...systemColumnNames,
+    ].filter((name, index, names) => names.indexOf(name) === index)
     const firstVisibleFieldName = visibleColumnNames.find((name) => fieldByName.has(name))
     const titleFieldName = visibleColumnNames.includes(schema.admin?.useAsTitle || "")
       ? schema.admin?.useAsTitle
@@ -364,7 +368,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       },
     ]
 
-    visibleColumnNames.forEach((name) => {
+    allColumnNames.forEach((name) => {
       const field = fieldByName.get(name)
       if (field) {
         cols.push(makeFieldColumn(field))
@@ -376,6 +380,35 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
     return cols
   }, [schema, client, deleteMutation.isPending, user, handleDelete, slug, schemas])
+
+  const initialColumnVisibility = React.useMemo(() => {
+    if (!schema) return {}
+
+    const allDisplayFields = schema.fields.filter((f: Field) =>
+      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+    )
+    const validColumnNames = new Set([
+      ...allDisplayFields.map((field: Field) => field.name),
+      "id",
+      "createdAt",
+      "updatedAt",
+    ])
+    const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
+      ? schema.admin.defaultColumns
+      : []
+    const visibleColumnNames = new Set(
+      (configuredColumns.length > 0
+        ? configuredColumns
+        : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
+      ).filter((name) => validColumnNames.has(name))
+    )
+
+    const visibility: Record<string, boolean> = {}
+    validColumnNames.forEach((name) => {
+      visibility[name] = visibleColumnNames.has(name)
+    })
+    return visibility
+  }, [schema])
 
   const columnPreferenceKey = React.useMemo(() => {
     if (!schema) return slug
@@ -501,6 +534,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           onRowSelectionChange={setRowSelection}
           rowSelection={rowSelection}
           persistenceKey={columnPreferenceKey}
+          initialColumnVisibility={initialColumnVisibility}
           toolbarActions={(
             <>
               <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />

@@ -3,14 +3,26 @@ import { useDyrected } from "../providers/dyrected-provider"
 
 export type Updater<T> = T | ((old: T) => T);
 
+function arePreferenceValuesEqual<T>(a: T, b: T) {
+  if (Object.is(a, b)) return true
+  try {
+    return JSON.stringify(a) === JSON.stringify(b)
+  } catch {
+    return false
+  }
+}
+
 /**
  * A hook to manage and persist user preferences in the Admin UI.
- * Currently uses localStorage for persistence.
+ * Uses localStorage for immediate persistence and syncs to the user profile
+ * when an authenticated Dyrected client is available.
  */
 export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: Updater<T>) => void] {
   const { client, user } = useDyrected()
   const localStorageKey = `dyrected_pref_${key}`
   const localWriteVersionRef = React.useRef(0)
+  const defaultValueRef = React.useRef(defaultValue)
+  defaultValueRef.current = defaultValue
 
   const [value, setValue] = React.useState<T>(() => {
     if (typeof window === "undefined") return defaultValue
@@ -30,12 +42,12 @@ export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: U
 
     try {
       const stored = window.localStorage.getItem(localStorageKey)
-      const nextValue = stored ? JSON.parse(stored) : defaultValue
-      Promise.resolve().then(() => setValue(nextValue))
+      const nextValue = stored ? JSON.parse(stored) : defaultValueRef.current
+      setValue((prev) => arePreferenceValuesEqual(prev, nextValue) ? prev : nextValue)
     } catch (e) {
       console.warn(`[usePreferences] Error syncing key "${key}":`, e)
     }
-  }, [key, localStorageKey, defaultValue])
+  }, [key, localStorageKey])
 
   // Prefer authenticated, server-backed preferences when available.
   React.useEffect(() => {
@@ -47,7 +59,7 @@ export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: U
     client.getPreference<T>(key)
       .then((result) => {
         if (cancelled || result.value === null || localWriteVersionRef.current !== writeVersion) return
-        setValue(result.value)
+        setValue((prev) => arePreferenceValuesEqual(prev, result.value as T) ? prev : result.value as T)
         if (typeof window !== "undefined") {
           window.localStorage.setItem(localStorageKey, JSON.stringify(result.value))
         }
@@ -67,6 +79,8 @@ export function usePreferences<T>(key: string, defaultValue: T): [T, (updater: U
       const newValue = typeof updater === 'function' 
         ? (updater as (old: T) => T)(prev) 
         : updater;
+
+      if (arePreferenceValuesEqual(prev, newValue)) return prev
       
       if (typeof window !== "undefined") {
         try {
