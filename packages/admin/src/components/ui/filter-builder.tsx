@@ -50,6 +50,7 @@ const OPERATOR_LABELS: Record<string, string> = {
 
 export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [draftRules, setDraftRules] = React.useState<FilterRule[]>(rules);
 
   // Determine which fields are filterable
   const filterableFields = React.useMemo(() => {
@@ -61,24 +62,41 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
     });
   }, [schema]);
 
+  React.useEffect(() => {
+    if (!isOpen) {
+      setDraftRules(rules);
+    }
+  }, [isOpen, rules]);
+
+  const getDefaultValue = (field: Field | undefined, operator: FilterRule['operator']): unknown => {
+    if (operator === 'exists') return true;
+    if (field?.type === 'boolean') return true;
+    return '';
+  };
+
   const handleAddRule = () => {
     if (filterableFields.length === 0) return;
     const firstField = filterableFields[0];
+    if (!firstField?.name) return;
+
     const operators = OPERATORS_BY_TYPE[firstField.type] || OPERATORS_BY_TYPE.text;
-    onChange([
-      ...rules,
-      { field: firstField.name, operator: operators[0] as FilterRule['operator'], value: '' }
+    const operator = operators[0] as FilterRule['operator'];
+    setDraftRules([
+      ...draftRules,
+      { field: firstField.name, operator, value: getDefaultValue(firstField, operator) }
     ]);
   };
 
   const handleRemoveRule = (index: number) => {
-    const newRules = [...rules];
+    const newRules = [...draftRules];
     newRules.splice(index, 1);
-    onChange(newRules);
+    setDraftRules(newRules);
   };
 
   const handleUpdateRule = (index: number, key: keyof FilterRule, val: string | boolean) => {
-    const newRules = [...rules];
+    const newRules = [...draftRules];
+    if (!newRules[index]) return;
+
     const rule = { ...newRules[index], [key]: val };
 
     // Reset operator and value if field changes
@@ -87,7 +105,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
       if (fieldDef) {
         const operators = OPERATORS_BY_TYPE[fieldDef.type] || OPERATORS_BY_TYPE.text;
         rule.operator = operators[0] as FilterRule['operator'];
-        rule.value = '';
+        rule.value = getDefaultValue(fieldDef, rule.operator);
       }
     }
 
@@ -97,7 +115,16 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
     }
 
     newRules[index] = rule;
-    onChange(newRules);
+    setDraftRules(newRules);
+  };
+
+  const handleClearDraft = () => {
+    setDraftRules([]);
+  };
+
+  const handleApply = () => {
+    onChange(draftRules);
+    setIsOpen(false);
   };
 
   if (schema?.admin?.filterable === false) {
@@ -117,29 +144,34 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="dy-w-[500px] dy-p-4">
-        <div className="dy-space-y-4">
-          <div className="dy-flex dy-items-center dy-justify-between">
-            <h4 className="dy-font-medium dy-text-sm">Filters</h4>
-            {rules.length > 0 && (
-              <Button variant="ghost" size="sm" className="dy-h-6 dy-text-xs dy-text-muted-foreground" onClick={() => onChange([])}>
+      <PopoverContent align="end" className="dy-w-[min(640px,calc(100vw-2rem))] dy-p-0">
+        <div className="dy-flex dy-max-h-[min(620px,calc(100vh-6rem))] dy-flex-col">
+          <div className="dy-flex dy-items-center dy-justify-between dy-border-b dy-px-5 dy-py-4">
+            <div>
+              <h4 className="dy-text-sm dy-font-medium">Filters</h4>
+              <p className="dy-mt-1 dy-text-xs dy-text-muted-foreground">Build rules, then apply them to the list.</p>
+            </div>
+            {draftRules.length > 0 && (
+              <Button variant="ghost" size="sm" className="dy-h-8 dy-text-xs dy-text-muted-foreground" onClick={handleClearDraft}>
                 Clear all
               </Button>
             )}
           </div>
 
-          <div className="dy-space-y-3">
-            {rules.length === 0 ? (
-              <p className="dy-text-sm dy-text-muted-foreground dy-py-2">No active filters.</p>
+          <div className="dy-flex-1 dy-space-y-4 dy-overflow-y-auto dy-p-5">
+            {draftRules.length === 0 ? (
+              <div className="dy-rounded-md dy-border dy-border-dashed dy-bg-muted/20 dy-px-4 dy-py-6">
+                <p className="dy-text-sm dy-text-muted-foreground">No active filters.</p>
+              </div>
             ) : (
-              rules.map((rule, i) => {
+              draftRules.map((rule, i) => {
                 const fieldDef = filterableFields.find((f: Field) => f.name === rule.field);
                 const operators = fieldDef ? (OPERATORS_BY_TYPE[fieldDef.type] || OPERATORS_BY_TYPE.text) : OPERATORS_BY_TYPE.text;
 
                 return (
-                  <div key={i} className="dy-flex dy-items-start dy-gap-2">
+                  <div key={i} className="dy-grid dy-grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_2rem] dy-items-start dy-gap-3">
                     <Select value={rule.field} onValueChange={(val) => handleUpdateRule(i, 'field', val)}>
-                      <SelectTrigger className="dy-w-[140px] dy-h-8 dy-text-xs">
+                      <SelectTrigger className="dy-h-9 dy-text-xs">
                         <SelectValue placeholder="Field" />
                       </SelectTrigger>
                       <SelectContent>
@@ -152,7 +184,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                     </Select>
 
                     <Select value={rule.operator} onValueChange={(val) => handleUpdateRule(i, 'operator', val)}>
-                      <SelectTrigger className="dy-w-[130px] dy-h-8 dy-text-xs">
+                      <SelectTrigger className="dy-h-9 dy-text-xs">
                         <SelectValue placeholder="Operator" />
                       </SelectTrigger>
                       <SelectContent>
@@ -167,7 +199,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                     <div className="dy-flex-1">
                       {rule.operator === 'exists' ? (
                         <Select value={String(rule.value)} onValueChange={(val) => handleUpdateRule(i, 'value', val === 'true')}>
-                          <SelectTrigger className="dy-h-8 dy-text-xs">
+                          <SelectTrigger className="dy-h-9 dy-text-xs">
                             <SelectValue placeholder="Value" />
                           </SelectTrigger>
                           <SelectContent>
@@ -177,7 +209,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                         </Select>
                       ) : fieldDef?.type === 'boolean' ? (
                         <Select value={String(rule.value)} onValueChange={(val) => handleUpdateRule(i, 'value', val === 'true')}>
-                          <SelectTrigger className="dy-h-8 dy-text-xs">
+                          <SelectTrigger className="dy-h-9 dy-text-xs">
                             <SelectValue placeholder="Value" />
                           </SelectTrigger>
                           <SelectContent>
@@ -187,7 +219,7 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                         </Select>
                       ) : (
                         <Input
-                          className="dy-h-8 dy-text-xs"
+                          className="dy-h-9 dy-text-xs"
                           placeholder="Value..."
                           value={(rule.value as string | number) || ''}
                           onChange={(e) => handleUpdateRule(i, 'value', e.target.value)}
@@ -196,19 +228,28 @@ export function FilterBuilder({ schema, rules, onChange }: FilterBuilderProps) {
                       )}
                     </div>
 
-                    <Button variant="ghost" size="icon" className="dy-h-8 dy-w-8 dy-text-muted-foreground hover:dy-text-destructive" onClick={() => handleRemoveRule(i)}>
+                    <Button variant="ghost" size="icon" className="dy-h-9 dy-w-8 dy-text-muted-foreground hover:dy-text-destructive" onClick={() => handleRemoveRule(i)}>
                       <Trash2 className="dy-h-4 dy-w-4" />
                     </Button>
                   </div>
                 )
               })
             )}
+
+            <Button variant="outline" size="sm" className="dy-h-9 dy-w-full dy-border-dashed dy-text-xs" onClick={handleAddRule} disabled={filterableFields.length === 0}>
+              <Plus className="dy-mr-2 dy-h-3 dy-w-3" />
+              Add Filter
+            </Button>
           </div>
 
-          <Button variant="outline" size="sm" className="dy-w-full dy-h-8 dy-text-xs dy-border-dashed" onClick={handleAddRule} disabled={filterableFields.length === 0}>
-            <Plus className="dy-mr-2 dy-h-3 dy-w-3" />
-            Add Filter
-          </Button>
+          <div className="dy-flex dy-items-center dy-justify-end dy-gap-2 dy-border-t dy-bg-muted/20 dy-px-5 dy-py-4">
+            <Button variant="ghost" size="sm" className="dy-h-8 dy-text-xs" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" className="dy-h-8 dy-px-4 dy-text-xs" onClick={handleApply}>
+              Apply
+            </Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
