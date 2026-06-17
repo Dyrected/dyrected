@@ -1,10 +1,18 @@
 import type { ReactNode } from 'react'
 import { RootProvider } from 'fumadocs-ui/provider/next'
-import { Inter } from 'next/font/google'
+import { Fraunces, DM_Sans } from 'next/font/google'
 import type { Metadata } from 'next'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+})
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-display',
+})
 
 export const metadata: Metadata = {
   title: {
@@ -16,7 +24,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${dmSans.variable} ${fraunces.variable}`}
+      style={{ fontFamily: 'var(--font-sans, sans-serif)' }}
+      suppressHydrationWarning
+    >
       <body className="flex min-h-screen flex-col" suppressHydrationWarning>
         <RootProvider>{children}</RootProvider>
       </body>

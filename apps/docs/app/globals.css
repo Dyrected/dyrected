@@ -2,3 +2,48 @@
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 @source '../node_modules/fumadocs-ui/dist/**/*.js';
+
+/* ── Dyrected brand tokens ──────────────────────────────────────────────── */
+
+/* Standard Tailwind color utilities used in custom components */
+@theme {
+  --color-background: #FBFFF1;
+  --color-foreground: #111110;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #111110;
+  --color-border: #DED7F2;
+  --color-input: #DED7F2;
+  --color-ring: #7C3DFF;
+  --color-primary: #7C3DFF;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F0E9FF;
+  --color-secondary-foreground: #7C3DFF;
+  --color-muted: #F0E9FF;
+  --color-muted-foreground: #625F6C;
+  --color-accent: #B6FF2E;
+  --color-accent-foreground: #111110;
+  --color-lime: #B6FF2E;
+  --color-lime-hover: #9BE600;
+  --color-violet: #7C3DFF;
+  --color-violet-hover: #6427E8;
+}
+
+/* Fumadocs-specific fd-* tokens */
+:root {
+  --color-fd-background: #FBFFF1;
+  --color-fd-foreground: #111110;
+  --color-fd-card: #FFFFFF;
+  --color-fd-card-foreground: #111110;
+  --color-fd-border: #DED7F2;
+  --color-fd-primary: #7C3DFF;
+  --color-fd-primary-foreground: #FFFFFF;
+  --color-fd-muted: #F0E9FF;
+  --color-fd-muted-foreground: #625F6C;
+  --color-fd-secondary: #F0E9FF;
+  --color-fd-secondary-foreground: #7C3DFF;
+  --color-fd-accent: #F0E9FF;
+  --color-fd-accent-foreground: #7C3DFF;
+  --color-fd-popover: #FFFFFF;
+  --color-fd-popover-foreground: #111110;
+  --color-fd-ring: #7C3DFF;
+}
