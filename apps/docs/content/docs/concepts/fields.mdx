@@ -283,7 +283,7 @@ An integer or floating-point number input.
 
 ### `boolean`
 
-A true/false toggle.
+A true/false value.
 
 ```ts
 {
@@ -298,7 +298,17 @@ A true/false toggle.
 
 - **Stored as:** `BOOLEAN` / `boolean`
 - **API returns:** `boolean`
-- **Admin UI:** Toggle switch
+- **Admin UI:** Checkbox by default. Set `admin.layout: 'switch'` to render a switch.
+
+```ts
+{
+  name: 'published',
+  type: 'boolean',
+  admin: {
+    layout: 'switch',
+  },
+}
+```
 
 ---
 
@@ -529,7 +539,7 @@ Groups related fields into a nested object. Does **not** create a new database t
 ```
 
 - **API returns:** `{ metaTitle: string, metaDescription: string, ogImage: string | object }`
-- **Admin UI:** Collapsible group panel with a distinct border
+- **Admin UI:** Grouped panel with responsive spacing for nested fields
 
 ---
 
@@ -550,7 +560,7 @@ A list of repeating field groups. Each item in the array has the same sub-field 
 
 - **Stored as:** `JSON` / `JSONB`
 - **API returns:** `Array<{ question: string, answer: string }>`
-- **Admin UI:** Repeatable card list with Add/Remove buttons and drag-to-reorder. Prompts the editor with a safety confirmation dialog before deletion to prevent accidental data loss.
+- **Admin UI:** Expandable card list with drag-to-reorder, duplicate, move, and delete actions. Newly added and duplicated items open automatically. Deletion prompts the editor with a safety confirmation dialog to prevent accidental data loss.
 
 ---
 
@@ -666,7 +676,8 @@ The `admin` object on a field controls how it behaves in the Admin UI. None of t
 | `hidden` | `boolean` | All | Hides the field from the form entirely. The value is preserved in the database. |
 | `condition` | `(data: any) => boolean` | All | A function that receives the current document values and returns `true` to show the field, `false` to hide it. Evaluated reactively as the editor types. |
 | `tab` | `string` | All | Assigns the field to a named tab. When any field in a collection has a `tab`, the form renders a tab bar. Fields without a `tab` are placed in a "General" tab. |
-| `layout` | `'radio'` | `select` | Renders the select as radio buttons instead of a dropdown. Recommended for 2–5 options. |
+| `filterable` | `boolean` | Supported scalar fields | Set to `false` to exclude this field from Admin list filters and server-side `where` sanitization. |
+| `layout` | `'checkbox' \| 'switch' \| 'radio' \| 'select'` | `boolean`, `select` | Chooses between built-in renderers. Boolean defaults to checkbox; select defaults to dropdown. |
 | `direction` | `'horizontal' \| 'vertical'` | `select` (radio layout) | Controls the orientation of radio buttons. Defaults to `'vertical'`. |
 | `width` | `string` | Fields inside a `row` | CSS width of the field within its row container (e.g. `'50%'`, `'200px'`). Fields without a `width` grow equally. |
 

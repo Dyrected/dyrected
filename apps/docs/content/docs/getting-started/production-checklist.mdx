@@ -43,8 +43,8 @@ When querying using the SDK client or fetching lists from custom endpoints, the 
 
 ---
 
-## 4. Boolean Filter Tip
+## 4. Filter Smoke Tests
 
-For SQL databases (PostgreSQL/MySQL), Boolean fields are extracted from JSON storage structures as text data types. 
+Dyrected parses common filter values, including booleans, across supported database adapters.
 
-- **Recommendation:** Although the latest versions of the framework parse booleans seamlessly, as a general best practice for SQL backends, ensure you are testing query filters involving booleans (`attending: { equals: true }`) in staging before promoting to production.
+- **Recommendation:** Before launch, smoke-test the filters your site depends on most, such as publication status, dates, relationships, and boolean fields like `featured: { equals: true }`.

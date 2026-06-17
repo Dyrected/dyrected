@@ -73,6 +73,8 @@ const result = await client.collection('posts').find({
 // result.hasNextPage: boolean
 ```
 
+When `where` is passed as an object, the SDK serializes it for the REST API automatically. Boolean values such as `{ featured: { equals: true } }` are preserved and parsed correctly by the server.
+
 #### Where Operators
 
 Dyrected supports a rich set of operators for filtering your data. These work seamlessly across all database adapters.
@@ -84,24 +86,14 @@ Dyrected supports a rich set of operators for filtering your data. These work se
 | `in` | Value exists in array | `{ category: { in: ['news', 'events'] } }` |
 | `not_in` | Value does not exist in array | `{ category: { not_in: ['spam'] } }` |
 | `exists` | Field is present (or not) | `{ publishedAt: { exists: true } }` |
-| `greater_than` | Numeric/Date comparison | `{ price: { greater_than: 100 } }` |
-| `less_than` | Numeric/Date comparison | `{ price: { less_than: 500 } }` |
-| `like` | Case-insensitive contains | `{ title: { like: 'typescript' } }` |
+| `gt` | Numeric/date greater than | `{ price: { gt: 100 } }` |
+| `gte` | Numeric/date greater than or equal | `{ age: { gte: 18 } }` |
+| `lt` | Numeric/date less than | `{ price: { lt: 500 } }` |
+| `lte` | Numeric/date less than or equal | `{ age: { lte: 65 } }` |
+| `contains` | Case-insensitive contains | `{ title: { contains: 'typescript' } }` |
+| `starts_with` | Starts with value | `{ slug: { starts_with: 'post-' } }` |
 
-**Combining Filters:**
-You can use `and` and `or` to group filters:
-
-```ts
-where: {
-  or: [
-    { status: { equals: 'published' } },
-    { featured: { equals: true } },
-  ],
-  and: [
-    { price: { greater_than: 0 } }
-  ]
-}
-```
+Multiple fields in the same `where` object are combined with `AND`.
 
 ### Relationship Depth
 
@@ -279,6 +271,27 @@ const schemas = await client.getSchemas()
 // schemas.collections: CollectionSchema[]
 // schemas.globals: GlobalSchema[]
 ```
+
+---
+
+## Preference Methods
+
+Preferences store small user-specific Admin UI choices, such as visible table columns. They are keyed strings and return JSON-compatible values.
+
+### `.getPreference(key)`
+
+```ts
+const pref = await client.getPreference<string[]>('columns:pages')
+// pref.value: string[] | null
+```
+
+### `.setPreference(key, value)`
+
+```ts
+await client.setPreference('columns:pages', ['title', 'slug', 'updatedAt'])
+```
+
+The Admin UI falls back to local storage when server preferences are unavailable.
 
 ---
 

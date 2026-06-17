@@ -46,10 +46,20 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
 
 ## 3. Upload via the Admin UI
 
-The Admin UI renders a full-featured media manager and file picker for upload collections. It supports three convenient upload methods:
+The Admin UI renders a full-featured media manager and file picker for upload collections. Upload collections can use any slug and label — for example, a collection named `sermons` with `upload: true` will be presented using that collection's configured labels rather than always being called "media".
+
+It supports three convenient upload methods:
 1. **Browse**: Click the upload container to pick files via the standard browser selector.
 2. **Drag & Drop**: Drag files from your computer and drop them anywhere on the Media page or Media Picker field preview to open the uploader.
 3. **Clipboard Paste**: Copy any file or screenshot to your clipboard and press `Cmd+V` / `Ctrl+V` on the page to instantly load it into the uploader.
+
+### Media Library and Picker UI
+
+The Media Library page and form-level Media Picker use a consistent grid-based selection interface:
+
+- Single and multiple pickers share the same thumbnail/card treatment.
+- The attachment detail dialog is responsive, scrollable, and keeps large previews inside the viewport.
+- Upload collection metadata fields, such as `alt` or `caption`, can be edited from the media detail flow.
 
 ### Client-side Image Cropping
 

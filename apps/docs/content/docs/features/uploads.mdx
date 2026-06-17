@@ -3,7 +3,7 @@ title: Upload Collections
 description: How to configure file and image uploads in Dyrected collections.
 ---
 
-Setting `upload: true` on a collection enables file uploads. Dyrected adds storage integration, image resizing, MIME-type validation, and a dedicated Media browser in the Admin UI automatically.
+Setting `upload: true` on a collection enables file uploads. Dyrected adds storage integration, image resizing, MIME-type validation, and a dedicated upload browser in the Admin UI automatically. The collection does not need to be named `media`; labels from your upload collection are used throughout the Admin UI.
 
 ---
 
@@ -124,6 +124,8 @@ curl -X POST https://mysite.com/api/collections/media \
 ```
 
 Additional fields defined in your `fields` array (like `alt`, `caption`) can be included as form fields alongside `file`.
+
+In the Admin UI, upload collections appear in a responsive grid. The Media Library and form-level Media Picker share the same selection language, and the attachment detail dialog is scrollable on small screens so large previews and metadata stay inside the viewport.
 
 ### `GET /api/collections/media`
 

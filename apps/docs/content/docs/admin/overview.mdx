@@ -11,10 +11,10 @@ The `@dyrected/admin` package is a React-based Admin UI that is **automatically 
 
 The Admin UI is a React application exported from `@dyrected/admin`. Every framework integration is a thin wrapper around one of two primitives:
 
-| Primitive | When to use |
-|---|---|
-| `<AdminUI />` | You are already in a React tree (Next.js, Vite + React, CRA) |
-| `renderAdminUI(el, props)` | You are outside React (Vue, Nuxt, Svelte, vanilla JS) |
+| Primitive                  | When to use                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `<AdminUI />`              | You are already in a React tree (Next.js, Vite + React, CRA) |
+| `renderAdminUI(el, props)` | You are outside React (Vue, Nuxt, Svelte, vanilla JS)        |
 
 ---
 
@@ -24,10 +24,10 @@ The Admin UI is a React application exported from `@dyrected/admin`. Every frame
 
 ```tsx
 // app/admin/[[...path]]/page.tsx
-import { DyrectedAdmin } from '@dyrected/next/admin'
+import { DyrectedAdmin } from "@dyrected/next/admin";
 
 export default function AdminPage() {
-  return <DyrectedAdmin basename="/admin" />
+  return <DyrectedAdmin basename="/admin" />;
 }
 ```
 
@@ -39,18 +39,18 @@ Use `<AdminUI />` directly from `@dyrected/admin`:
 
 ```tsx
 // src/pages/Admin.tsx
-import { AdminUI } from '@dyrected/admin'
+import { AdminUI } from "@dyrected/admin";
 
 export function AdminPage() {
   return (
-    <div style={{ height: '100vh' }}>
+    <div style={{ height: "100vh" }}>
       <AdminUI
         baseUrl={import.meta.env.VITE_DYRECTED_URL}
         apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
         basename="/admin"
       />
     </div>
-  )
+  );
 }
 ```
 
@@ -63,15 +63,11 @@ export function AdminPage() {
 ```vue
 <!-- src/pages/Admin.vue -->
 <script setup lang="ts">
-import { DyrectedAdmin } from '@dyrected/vue'
+import { DyrectedAdmin } from "@dyrected/vue";
 </script>
 
 <template>
-  <DyrectedAdmin
-    base-url="https://api.dyrected.cloud"
-    api-key="sk_live_..."
-    basename="/admin"
-  />
+  <DyrectedAdmin base-url="https://api.dyrected.cloud" api-key="sk_live_..." basename="/admin" />
 </template>
 ```
 
@@ -84,7 +80,7 @@ import { DyrectedAdmin } from '@dyrected/vue'
 ```vue
 <!-- pages/admin.vue -->
 <script setup lang="ts">
-definePageMeta({ layout: false })
+definePageMeta({ layout: false });
 </script>
 
 <template>
@@ -101,15 +97,15 @@ definePageMeta({ layout: false })
 `renderAdminUI(container, props)` mounts the Admin UI into any DOM element and returns an unmount function. Use it in any non-React environment:
 
 ```ts
-import { renderAdminUI } from '@dyrected/admin'
+import { renderAdminUI } from "@dyrected/admin";
 
-const container = document.getElementById('admin-root')!
+const container = document.getElementById("admin-root")!;
 
 const unmount = renderAdminUI(container, {
-  baseUrl: 'https://api.dyrected.cloud',
-  apiKey: 'sk_live_...',
-  basename: '/admin',
-})
+  baseUrl: "https://api.dyrected.cloud",
+  apiKey: "sk_live_...",
+  basename: "/admin",
+});
 
 // To tear down (e.g. on SPA route leave):
 // unmount()
@@ -145,14 +141,14 @@ const unmount = renderAdminUI(container, {
 
 Both accept the same props:
 
-| Prop | Type | Required | Description |
-|---|---|---|---|
-| `baseUrl` | `string` | ✅ | The base URL of your Dyrected API (e.g. `https://cms.mysite.com`). |
-| `apiKey` | `string` | ✅ | The Site API key used to authenticate all Admin requests. |
-| `siteId` | `string` | | The Site ID sent as `X-Site-Id` on every request (required in Cloud mode). |
-| `basename` | `string` | | The URL path prefix where the admin is mounted (default: `/admin`). |
-| `onNavigate` | `(path: string) => void` | | Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded. |
-| `components` | `object` | | Custom field components. See [Custom Field Components](#custom-field-components). |
+| Prop         | Type                     | Required | Description                                                                                                               |
+| ------------ | ------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `baseUrl`    | `string`                 | ✅       | The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).                                                        |
+| `apiKey`     | `string`                 | ✅       | The Site API key used to authenticate all Admin requests.                                                                 |
+| `siteId`     | `string`                 |          | The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).                                                |
+| `basename`   | `string`                 |          | The URL path prefix where the admin is mounted (default: `/admin`).                                                       |
+| `onNavigate` | `(path: string) => void` |          | Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded. |
+| `components` | `object`                 |          | Custom field components. See [Custom Field Components](#custom-field-components).                                         |
 
 ---
 
@@ -165,9 +161,9 @@ The admin library also exports specialized components for targeted use cases.
 The AI integration prompt can be embedded standalone in your own application if you want to guide users through schema setup without mounting the full dashboard.
 
 ```tsx
-import { SetupPromptUI } from '@dyrected/admin'
+import { SetupPromptUI } from "@dyrected/admin";
 
-<SetupPromptUI config={{ baseUrl, apiKey }} />
+<SetupPromptUI config={{ baseUrl, apiKey }} />;
 ```
 
 ---
@@ -176,7 +172,12 @@ import { SetupPromptUI } from '@dyrected/admin'
 
 ### Dashboard
 
-The landing page. Shows a count of all collections and globals, quick links to recent collections, and a setup prompt if no schema has been synced yet.
+The landing page. It is designed as a lightweight editorial workspace rather than an analytics screen.
+
+- **Quick actions:** A compact `New` dropdown for creating documents in editable collections, plus direct actions for upload collections and the first visible global.
+- **Recent edits:** Shows recently updated documents from editable collections, using `admin.useAsTitle` when available.
+- **Needs attention:** Highlights simple setup and content-model issues, such as missing `admin.useAsTitle` or missing media alt text fields.
+- **Setup state:** Shows a setup prompt if no collections or globals have been configured yet.
 
 ### Collection List
 
@@ -184,9 +185,11 @@ A sortable, searchable data table for any collection.
 
 - **Search:** The search input queries the field specified by `admin.useAsTitle` (or the first visible field).
 - **Title column:** The column for the `admin.useAsTitle` field (or the first visible field) is rendered as a clickable link that navigates directly to the edit page.
-- **Columns:** Controlled by `admin.defaultColumns`. Falls back to the first three non-hidden fields. `row` and `join` virtual fields are excluded from columns automatically.
+- **Columns:** Initial columns are controlled by `admin.defaultColumns`. Falls back to a sensible set of visible fields and system timestamps. `row`, `join`, and unknown column names are ignored automatically.
+- **View preferences:** Editors can change visible columns from the View dropdown. Preferences are saved per user when server preferences are available, with local storage as a fallback.
+- **Filters:** The filter builder uses a draft/apply flow, so editors can add and edit filter rules before applying them to the list query.
 - **Status column:** Automatically added if the collection has a `status` field.
-- **Actions:** Edit (navigates to edit page), Copy ID, Delete.
+- **Actions:** Edit (navigates to edit page), Delete.
 
 ### Collection Edit / Create
 
@@ -203,6 +206,8 @@ Shown automatically for any collection with `upload: true`.
 - Grid of uploaded files with thumbnails (images) or file-type icons (documents, videos, etc.)
 - Click to view file details: URL, dimensions, file size, alt text
 - Drag-and-drop upload zone
+- Responsive detail dialog with scrollable metadata and image preview
+- Form-level media pickers use the same grid selection language as the Media Library
 - Delete with confirmation
 
 ### Global Editor
@@ -253,9 +258,9 @@ See [Admin Config Reference](/docs/admin/configuration) for the full property li
 You can replace the default Admin UI widget for any field type or specific field with your own React component:
 
 ```tsx
-import { AdminUI } from '@dyrected/admin'
-import { MyMapPicker } from './components/MyMapPicker'
-import { MyColorPicker } from './components/MyColorPicker'
+import { AdminUI } from "@dyrected/admin";
+import { MyMapPicker } from "./components/MyMapPicker";
+import { MyColorPicker } from "./components/MyColorPicker";
 
 <AdminUI
   baseUrl="..."
@@ -265,45 +270,45 @@ import { MyColorPicker } from './components/MyColorPicker'
       // Replace ALL fields of type 'json' with your component
       json: MyCodeEditor,
       // Or target a specific field by name (takes precedence over type)
-      'products.locationCoords': MyMapPicker,
-      'settings.brandColor': MyColorPicker,
-    }
+      "products.locationCoords": MyMapPicker,
+      "settings.brandColor": MyColorPicker,
+    },
   }}
-/>
+/>;
 ```
 
 ### Custom Component Props
 
 Your component receives:
 
-| Prop | Type | Description |
-|---|---|---|
-| `value` | `any` | The current field value. |
-| `onChange` | `(value: any) => void` | Callback to update the value. |
-| `field` | `FieldSchema` | The full field definition from your config. |
-| `readOnly` | `boolean` | Whether the field should be non-editable. |
+| Prop       | Type                   | Description                                 |
+| ---------- | ---------------------- | ------------------------------------------- |
+| `value`    | `any`                  | The current field value.                    |
+| `onChange` | `(value: any) => void` | Callback to update the value.               |
+| `field`    | `FieldSchema`          | The full field definition from your config. |
+| `readOnly` | `boolean`              | Whether the field should be non-editable.   |
 
 ---
 
 ## Field Type → Admin Component Mapping
 
-| Field Type | Admin Component | Notes |
-|---|---|---|
-| `text` | Text input | |
-| `textarea` | Textarea | Auto-expanding |
-| `richText` | Tiptap editor | Block-based, floating toolbar |
-| `number` | Number input | |
-| `boolean` | Toggle switch | |
-| `date` | Calendar picker | |
-| `select` | Dropdown | Supports `admin.layout: 'radio'` for radio button rendering |
-| `multiSelect` | Tag-based multi-select | |
-| `email` | Email input | Client-side format validation |
-| `url` | URL input | With "Open in new tab" button |
-| `icon` | Icon picker popover | Searchable grid of all Lucide icons; stores icon name as string |
-| `relationship` | Searchable combobox | Thumbnail grid for upload collections |
-| `join` | Read-only related-docs list | Virtual field — no data stored; shows docs from another collection that reference this one |
-| `array` | Repeatable card list | Drag-to-reorder |
-| `object` | Grouped field panel | Collapsible |
-| `json` | Code editor | JSON syntax highlighting |
-| `blocks` | Block picker + inline editor | One editor per block type |
-| `row` | Flex row container | Virtual layout field — arranges children side-by-side; no data stored |
+| Field Type     | Admin Component              | Notes                                                                                      |
+| -------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `text`         | Text input                   |                                                                                            |
+| `textarea`     | Textarea                     | Auto-expanding                                                                             |
+| `richText`     | Tiptap editor                | Block-based, floating toolbar                                                              |
+| `number`       | Number input                 |                                                                                            |
+| `boolean`      | Checkbox                     | Use `admin.layout: 'switch'` for switch rendering                                          |
+| `date`         | Calendar picker              |                                                                                            |
+| `select`       | Dropdown                     | Supports `admin.layout: 'radio'` for radio button rendering                                |
+| `multiSelect`  | Tag-based multi-select       |                                                                                            |
+| `email`        | Email input                  | Client-side format validation                                                              |
+| `url`          | URL input                    | With "Open in new tab" button                                                              |
+| `icon`         | Icon picker popover          | Searchable grid of all Lucide icons; stores icon name as string                            |
+| `relationship` | Searchable combobox          | Thumbnail grid for upload collections                                                      |
+| `join`         | Read-only related-docs list  | Virtual field — no data stored; shows docs from another collection that reference this one |
+| `array`        | Expandable card list         | Drag-to-reorder, duplicate, move, and delete                                               |
+| `object`       | Grouped field panel          | Collapsible                                                                                |
+| `json`         | Code editor                  | JSON syntax highlighting                                                                   |
+| `blocks`       | Block picker + inline editor | One editor per block type                                                                  |
+| `row`          | Flex row container           | Virtual layout field — arranges children side-by-side; no data stored                      |

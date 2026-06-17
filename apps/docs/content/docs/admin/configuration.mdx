@@ -57,6 +57,7 @@ export const Posts = defineCollection({
 | `defaultColumns` | `string[]` | First 3 non-hidden fields | The ordered list of field names to display as columns in the list table. If omitted, the first three visible fields are shown. |
 | `group` | `string` | none | Groups this collection under a labelled section in the sidebar. Collections with the same `group` string are collapsed together. |
 | `hidden` | `boolean` | `false` | Hides the collection from the sidebar entirely. The API routes still exist; only the Admin UI navigation link is removed. |
+| `filterable` | `boolean` | `true` | Enables or disables the list filter builder for this collection. |
 | `previewUrl` | `string \| (doc, { locale }) => string` | none | Enables the Live Preview panel on the edit page. Provide a static URL string or a function that receives the current document and returns a URL. |
 | `previewMode` | `'postMessage' \| 'token'` | `'postMessage'` | How the Admin UI communicates draft data to the preview iframe. `postMessage` requires no server round-trip and works for same-origin or CORS-enabled frontends. `token` issues a signed preview token stored in Redis, suitable for statically generated sites. |
 
@@ -67,6 +68,7 @@ The field referenced by `useAsTitle` is used in:
 - The **list table** first column (document title link)
 - The **breadcrumb** in the edit page header
 - The **relationship picker** label when this collection is related to another
+- The **Dashboard** recent edits list
 
 ```ts
 // Collection: products
@@ -85,7 +87,21 @@ admin: {
 }
 ```
 
-Fields not in this list are still accessible in the Edit form — they simply don't appear as list columns. If a field name in `defaultColumns` does not exist in `fields`, it is silently ignored.
+Fields not in this list are still accessible in the Edit form — they simply don't appear as initial list columns. If a field name in `defaultColumns` does not exist in `fields`, it is silently ignored.
+
+Editors can still use the View dropdown to show or hide columns. Those choices are saved as user preferences when the preferences API is available, with local storage as a fallback.
+
+### `filterable`
+
+Controls whether the list page exposes the filter builder for a collection.
+
+```ts
+admin: {
+  filterable: false,
+}
+```
+
+Set this to `false` for collections where filtering is not useful for editors, or where you want to keep the list toolbar simpler.
 
 ### `group`
 
@@ -164,7 +180,9 @@ export const SiteSettings = defineGlobal({
 | `description` | `string` | none | Help text rendered directly below the field. Use for formatting hints or data requirements. |
 | `readOnly` | `boolean` | `false` | Renders the field disabled. The value is included in the form submission but cannot be edited. |
 | `hidden` | `boolean` | `false` | Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI. |
+| `filterable` | `boolean` | `true` for supported field types | If `false`, the field is excluded from the list filter builder and stripped from incoming `where` queries. |
 | `condition` | `string \| (data: any) => boolean` | always shown | A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
+| `layout` | `'checkbox' \| 'switch' \| 'radio' \| 'select'` | field default | Presentation style for supported field types. Boolean fields default to `checkbox`; use `switch` for a toggle. Select fields default to `select`; use `radio` for 2–5 visible choices. |
 | `maxLength` | `number` | none | Maximum character limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
 | `maxWords` | `number` | none | Maximum word limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
 | `component` | `string` | none | Key of a custom UI component to render in place of the default field input. The component must be registered under the same key in the `components.fields` prop of `<DyrectedAdmin>`. See [Custom Field Components](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs). |
@@ -198,6 +216,36 @@ Then pass your component to `<DyrectedAdmin>` under the matching key:
 ```
 
 Your component receives `value`, `onChange`, `field`, `path`, `disabled`, and `collection` as props. See the [Vue integration guide](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs) for a full walkthrough including virtual fields and copyable inputs.
+
+### `layout` — Built-in Field Presentation
+
+Use `admin.layout` when a field has more than one built-in Admin renderer.
+
+```ts
+{
+  name: 'featured',
+  type: 'boolean',
+  admin: {
+    layout: 'switch',
+  },
+}
+```
+
+Boolean fields render as a checkbox by default. Set `layout: 'switch'` when a switch better communicates an on/off setting.
+
+```ts
+{
+  name: 'status',
+  type: 'select',
+  options: ['draft', 'published'],
+  admin: {
+    layout: 'radio',
+    direction: 'horizontal',
+  },
+}
+```
+
+Select fields render as dropdowns by default. Set `layout: 'radio'` for short option lists where all choices should be visible at once.
 
 ### `condition` — Conditional Fields
 

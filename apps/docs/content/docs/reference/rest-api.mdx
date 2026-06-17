@@ -43,7 +43,7 @@ All list endpoints (`GET /api/collections/:slug`) accept these parameters:
 | `page` | `number` | `?page=2` | Page number (1-indexed) |
 | `sort` | `string` | `?sort=-createdAt` | Field to sort by. Prefix `-` for descending. |
 | `depth` | `number` | `?depth=1` | How deeply to populate relationship fields (default: 0) |
-| `where` | `object` | `?where[status][equals]=published` | Filter conditions (see [Filtering](#filtering)) |
+| `where` | JSON string | `?where=%7B...%7D` | Encoded JSON filter object (see [Filtering](#filtering)) |
 
 ### Standard List Response
 
@@ -75,7 +75,7 @@ Returns a paginated list of documents.
 
 **Example:**
 ```bash
-GET /api/collections/posts?limit=5&sort=-publishedAt&where[status][equals]=published&depth=1
+GET /api/collections/posts?limit=5&sort=-publishedAt&where=%7B%22status%22%3A%7B%22equals%22%3A%22published%22%7D%7D&depth=1
 ```
 
 ---
@@ -283,40 +283,59 @@ Retrieves draft data using a valid preview token. This endpoint is public (no `x
 
 ## Filtering
 
-The `where` parameter supports nested operators:
+The `where` parameter accepts an encoded JSON object:
 
 ```
-?where[field][operator]=value
+?where=%7B%22status%22%3A%7B%22equals%22%3A%22published%22%7D%7D
 ```
+
+Equivalent unencoded object:
+
+```json
+{
+  "status": {
+    "equals": "published"
+  }
+}
+```
+
+When building URLs manually, stringify and encode the object:
+
+```ts
+const where = { status: { equals: 'published' } }
+const query = new URLSearchParams({
+  where: JSON.stringify(where),
+  limit: '10',
+})
+```
+
+Incoming `where` clauses are sanitized against the collection schema. Fields marked with `admin.filterable: false` are removed from filters, and boolean values are parsed consistently across database adapters.
 
 ### Operators
 
 | Operator | Example | Description |
 |---|---|---|
-| `equals` | `where[status][equals]=published` | Exact match |
-| `not_equals` | `where[status][not_equals]=archived` | Not equal |
-| `like` | `where[title][like]=typescript` | Case-insensitive contains |
-| `contains` | `where[tags][contains]=react` | Array contains value |
-| `in` | `where[status][in]=draft,published` | Value is in list |
-| `not_in` | `where[role][not_in]=guest` | Value is not in list |
-| `greater_than` | `where[price][greater_than]=100` | Numeric greater than |
-| `less_than` | `where[price][less_than]=500` | Numeric less than |
-| `greater_than_equal` | `where[age][greater_than_equal]=18` | Numeric ≥ |
-| `less_than_equal` | `where[age][less_than_equal]=65` | Numeric ≤ |
-| `exists` | `where[publishedAt][exists]=true` | Field is not null |
+| `equals` | `{ "status": { "equals": "published" } }` | Exact match |
+| `not_equals` | `{ "status": { "not_equals": "archived" } }` | Not equal |
+| `contains` | `{ "title": { "contains": "typescript" } }` | Case-insensitive contains |
+| `starts_with` | `{ "slug": { "starts_with": "post-" } }` | Starts with value |
+| `in` | `{ "status": { "in": ["draft", "published"] } }` | Value is in list |
+| `not_in` | `{ "role": { "not_in": ["guest"] } }` | Value is not in list |
+| `gt` | `{ "price": { "gt": 100 } }` | Numeric/date greater than |
+| `gte` | `{ "age": { "gte": 18 } }` | Numeric/date greater than or equal |
+| `lt` | `{ "price": { "lt": 500 } }` | Numeric/date less than |
+| `lte` | `{ "age": { "lte": 65 } }` | Numeric/date less than or equal |
+| `exists` | `{ "publishedAt": { "exists": true } }` | Field is not null |
 
-### AND / OR conditions
+### Combining conditions
 
-Multiple `where` conditions at the same level are combined with **AND**:
+Multiple field conditions at the same level are combined with **AND**:
 
-```
-?where[status][equals]=published&where[featured][equals]=true
-```
-
-For **OR**, use the `or` operator:
-
-```
-?where[or][0][status][equals]=published&where[or][1][status][equals]=scheduled
+```json
+{
+  "status": { "equals": "published" },
+  "featured": { "equals": true }
+}
 ```
 
 ---

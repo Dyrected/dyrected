@@ -152,8 +152,12 @@ For environments where the SDK isn't available, use raw HTTP:
 ```tsx
 // app/blog/page.tsx
 export default async function BlogPage() {
+  const query = new URLSearchParams({
+    where: JSON.stringify({ status: { equals: 'published' } }),
+  })
+
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?where[status][equals]=published`,
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?${query}`,
     { 
       headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
       next: { revalidate: 3600 } 
