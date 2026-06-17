@@ -37,6 +37,19 @@ export class CollectionController {
       }
     }
 
+    if (where) {
+      if (this.collection.admin?.filterable === false) {
+        where = undefined;
+      } else {
+        const { sanitizeWhereClause } = await import('../utils/where-sanitizer.js');
+        where = sanitizeWhereClause(where, this.collection.fields);
+        // If where ends up being an empty object after sanitization, drop it
+        if (Object.keys(where).length === 0) {
+          where = undefined;
+        }
+      }
+    }
+
     // Run beforeRead collection hook
     const beforeReadResult = await runCollectionHooks(this.collection.hooks?.beforeRead, {
       req: c.req,

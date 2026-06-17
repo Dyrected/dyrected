@@ -11,6 +11,11 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+  imports: {
+    transform: {
+      exclude: [/[\\/]packages[\\/](admin|core|react)[\\/]/],
+    },
+  },
   devServer: {
     port: 3009,
   },

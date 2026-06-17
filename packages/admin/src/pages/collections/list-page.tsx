@@ -2,8 +2,11 @@
 import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { useDyrected } from "../../providers/dyrected-provider"
+import { FilterBuilder } from "../../components/ui/filter-builder"
+import type { CollectionConfig, Field } from "@dyrected/core"
+import { type FilterRule, rulesToWhere, whereToRules } from "../../lib/filter-rules"
 import { DataTable } from "../../components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
 import { Badge } from "../../components/ui/badge"
@@ -35,6 +38,30 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const queryClient = useQueryClient()
   const [page, setPage] = React.useState(1)
   const [prevSlug, setPrevSlug] = React.useState(slug)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const whereParam = searchParams.get('where')
+
+  const rules = React.useMemo(() => {
+    if (!whereParam) return [];
+    try {
+      const parsed = JSON.parse(whereParam);
+      return whereToRules(parsed);
+    } catch {
+      return [];
+    }
+  }, [whereParam]);
+
+  const handleRulesChange = React.useCallback((newRules: FilterRule[]) => {
+    setSearchParams(prev => {
+      if (newRules.length === 0) {
+        prev.delete('where');
+      } else {
+        prev.set('where', JSON.stringify(rulesToWhere(newRules)));
+      }
+      return prev;
+    }, { replace: true })
+    setPage(1)
+  }, [setSearchParams]);
 
   if (slug !== prevSlug) {
     setPrevSlug(slug)
@@ -48,12 +75,22 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     enabled: !!client,
   })
 
-  const schema = schemas?.collections.find((c: any) => c.slug === slug)
+  const schema = schemas?.collections.find((c: CollectionConfig) => c.slug === slug)
 
   // Fetch collection data
   const { data: response, isLoading } = useQuery({
-    queryKey: ["collection", slug, page],
-    queryFn: () => client!.collection(slug).find({ page, limit: 20, depth: 1 }).exec(),
+    queryKey: ["collection", slug, page, whereParam],
+    queryFn: () => {
+      const queryParams: Record<string, unknown> = { page, limit: 20, depth: 1 };
+      if (whereParam) {
+        try {
+          queryParams.where = JSON.parse(whereParam);
+        } catch {
+          // invalid json
+        }
+      }
+      return client!.collection(slug).find(queryParams).exec()
+    },
     enabled: !!client,
   })
 
@@ -68,7 +105,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       setRowSelection({})
       toast.success("Entry deleted successfully")
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Failed to delete entry", {
         description: error.message
       })
@@ -86,7 +123,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       setRowSelection({})
       toast.success("Selected entries deleted")
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error("Failed to delete entries", {
         description: error.message
       })
@@ -99,16 +136,16 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     if (!schema || !client) return
     setExporting(true)
     try {
-      const displayFields = schema.fields.filter((f: any) =>
+      const displayFields = schema.fields.filter((f: Field) =>
         f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
       )
       const csvColumns = [
         { key: "id", label: "ID" },
-        ...displayFields.map((f: any) => ({ key: f.name, label: f.label || f.name })),
+        ...displayFields.map((f: Field) => ({ key: f.name, label: (f as {label?: string}).label || f.name })),
         { key: "updatedAt", label: "Last Updated" },
       ]
 
-      const allDocs: any[] = []
+      const allDocs: Record<string, unknown>[] = []
       let pg = 1
       let totalPages = 1
       while (pg <= totalPages) {
@@ -118,7 +155,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         pg++
       }
 
-      const flattenForCsv = (val: any): string => {
+      const flattenForCsv = (val: unknown): string => {
         if (val === null || val === undefined) return ""
         if (typeof val === "boolean") return val ? "true" : "false"
         if (typeof val === "number" || typeof val === "string") return String(val)
@@ -129,14 +166,15 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         }
 
         // Object — extract meaningful value
-        if (typeof val === "object") {
+        if (typeof val === "object" && val !== null) {
+          const obj = val as Record<string, unknown>;
           // Image/media — return URL only
-          if (val.url || val.filename) {
-            return getMediaUrl(val, client?.getBaseUrl() || "")
+          if (obj.url || obj.filename) {
+            return getMediaUrl(obj as Record<string, unknown>, client?.getBaseUrl() || "")
           }
           // Relationship — return title/name/label or id
-          if (val.id) {
-            return String(val.title || val.name || val.label || val.id)
+          if (obj.id) {
+            return String(obj.title || obj.name || obj.label || obj.id)
           }
           // Generic object — stringify
           return JSON.stringify(val)
@@ -158,8 +196,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       link.click()
       URL.revokeObjectURL(url)
       toast.success(`Exported ${allDocs.length} entries`)
-    } catch (err: any) {
-      toast.error("Export failed", { description: err.message })
+    } catch (err: unknown) {
+      toast.error("Export failed", { description: err instanceof Error ? err.message : String(err) })
     } finally {
       setExporting(false)
     }
@@ -192,10 +230,10 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
 
-  const columns: ColumnDef<any>[] = React.useMemo(() => {
+  const columns: ColumnDef<Record<string, unknown>>[] = React.useMemo(() => {
     if (!schema) return []
 
-    const cols: ColumnDef<any>[] = [
+    const cols: ColumnDef<Record<string, unknown>>[] = [
       {
         id: "select",
         header: ({ table }) => (
@@ -222,7 +260,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       },
     ]
 
-    const hasStatus = schema.fields.some((f: any) => f.name === "status")
+    const hasStatus = schema.fields.some((f: Field) => f.name === "status")
 
     if (hasStatus) {
       cols.push({
@@ -240,12 +278,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
 
     // Include all non-hidden, non-layout fields as columns
-    const allDisplayFields = schema.fields.filter((f: any) =>
+    const allDisplayFields = schema.fields.filter((f: Field) =>
       f.name !== "status" && f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
     )
     const titleFieldName = schema.admin?.useAsTitle || allDisplayFields[0]?.name
 
-    allDisplayFields.forEach((field: any) => {
+    allDisplayFields.forEach((field: Field) => {
       const isTitleField = field.name === titleFieldName
       cols.push({
         accessorKey: field.name,
@@ -262,7 +300,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           if (!isTitleField) return cell
 
           const item = row.original
-          const deleteAccess = (schema.access as any)?.delete
+          const deleteAccess = (schema.access as { delete?: unknown })?.delete
           let canDelete = true
           if (deleteAccess === false) {
             canDelete = false
@@ -277,14 +315,14 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           return (
             <div className="dy-flex dy-flex-col dy-gap-1">
               <Link
-                to={`/collections/${slug}/edit/${item.id}`}
+                to={`/collections/${slug}/edit/${String(item.id)}`}
                 className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
               >
                 {cell}
               </Link>
               <div className="dy-flex dy-items-center dy-gap-2">
                 <Link
-                  to={`/collections/${slug}/edit/${item.id}`}
+                  to={`/collections/${slug}/edit/${String(item.id)}`}
                   className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
                 >
                   Edit
@@ -292,7 +330,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
                 <span className="dy-text-muted-foreground/40 dy-text-[11px]">|</span>
                 <button
                   className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-destructive dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150 disabled:dy-opacity-40 disabled:dy-pointer-events-none"
-                  onClick={() => handleDelete(item.id)}
+                  onClick={() => handleDelete(String(item.id))}
                   disabled={deleteMutation.isPending || !canDelete || (schema.auth && item.id === user?.id)}
                   title={!canDelete ? "You do not have permission to delete this entry" : (schema.auth && item.id === user?.id ? "You cannot delete your own account" : undefined)}
                 >
@@ -327,17 +365,17 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     if (!schema) return {}
 
     const visibility: Record<string, boolean> = {}
-    const displayFields = schema.fields.filter((f: any) => f.name !== "status" && !f.admin?.hidden)
+    const displayFields = schema.fields.filter((f: Field) => f.name !== "status" && !f.admin?.hidden)
 
     let visibleFieldNames: string[] = []
     if (schema.admin?.defaultColumns && Array.isArray(schema.admin.defaultColumns)) {
       visibleFieldNames = schema.admin.defaultColumns
     } else {
-      visibleFieldNames = displayFields.slice(0, 3).map((f: any) => f.name)
+      visibleFieldNames = displayFields.slice(0, 3).map((f: Field) => f.name)
     }
 
     // Set visibility for all fields
-    displayFields.forEach((f: any) => {
+    displayFields.forEach((f: Field) => {
       visibility[f.name] = visibleFieldNames.includes(f.name)
     })
 
@@ -357,7 +395,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   }
 
   // Evaluate collection-level read access
-  const readAccess = (schema.access as any)?.read
+  const readAccess = (schema.access as { read?: unknown })?.read
   let canRead = true
   if (readAccess === false) {
     canRead = false
@@ -384,7 +422,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   }
 
   // Evaluate collection-level create access
-  const createAccess = (schema.access as any)?.create
+  const createAccess = (schema.access as { create?: unknown })?.create
   let canCreate = true
   if (createAccess === false) {
     canCreate = false
@@ -464,23 +502,27 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         )}
       </PageHeader>
 
+      <div className="dy-flex dy-items-center dy-mb-4">
+        <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />
+      </div>
+
       <div className="dy-overflow-hidden">
         <DataTable
           key={slug}
           columns={columns}
           data={response?.docs || []}
-          searchKey={schema.admin?.useAsTitle || schema.fields.find((f: any) => !f.admin?.hidden)?.name || "id"}
+          searchKey={schema.admin?.useAsTitle || schema.fields.find((f: Field) => !f.admin?.hidden)?.name || "id"}
           onRowSelectionChange={setRowSelection}
           rowSelection={rowSelection}
           persistenceKey={slug}
           initialColumnVisibility={initialColumnVisibility}
           bulkActions={(selectedIds) => {
             const deletableIds = selectedIds.filter(id => {
-              const item = response?.docs?.find((d: any) => d.id === id)
+              const item = response?.docs?.find((d: Record<string, unknown>) => d.id === id)
               if (!item) return false
               if (schema.auth && id === user?.id) return false
               
-              const deleteAccess = (schema.access as any)?.delete
+              const deleteAccess = (schema.access as { delete?: unknown })?.delete
               let canDelete = true
               if (deleteAccess === false) {
                 canDelete = false

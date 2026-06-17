@@ -11,7 +11,7 @@ import {
 import { join } from "path";
 import { existsSync } from "fs";
 import { createRequire } from "module";
-import { DyrectedConfig } from "@dyrected/core";
+import type { DyrectedConfig } from "@dyrected/core";
 
 export interface ModuleOptions extends DyrectedConfig {
   /**

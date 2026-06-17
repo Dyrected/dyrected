@@ -21,6 +21,7 @@ export default defineConfig({
     }),
   ],
   build: {
+    minify: false,
     lib: {
       entry: path.resolve(__dirname, "src/index.tsx"),
       name: "DyrectedAdmin",

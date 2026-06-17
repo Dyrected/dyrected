@@ -1,5 +1,5 @@
 import { stringify, stringifyQuery } from "./utils/stringify.js";
-import {
+import type {
   PaginatedResult,
   FileData as Media,
   Field,
@@ -8,7 +8,7 @@ import {
   GlobalConfig,
   FieldType,
 } from "@dyrected/core";
-import { QueryBuilder, QueryArgs } from "./query-builder.js";
+import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
 export type { PaginatedResult, Media, Field, Block, CollectionConfig, GlobalConfig, FieldType };
 

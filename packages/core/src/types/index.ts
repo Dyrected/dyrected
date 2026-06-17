@@ -779,6 +779,12 @@ interface FieldBase {
     hidden?: boolean;
 
     /**
+     * If `false`, this field cannot be used in list filters and will be stripped from incoming `where` queries.
+     * Defaults to `true` for supported field types.
+     */
+    filterable?: boolean;
+
+    /**
      * If `true`, the field is rendered as non-editable in the Admin UI.
      * The value is still included in form submissions.
      */
@@ -1213,6 +1219,9 @@ export interface CollectionConfig<
 
     /** If `true`, this collection is not shown in the Admin UI sidebar. */
     hidden?: boolean;
+
+    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */
+    filterable?: boolean;
 
     /**
      * URL to open in the Live Preview pane when editing a document.

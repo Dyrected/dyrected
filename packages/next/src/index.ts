@@ -1,4 +1,4 @@
-import { type DyrectedConfig } from "@dyrected/core";
+import type { DyrectedConfig } from "@dyrected/core";
 import { createDyrectedApp } from "@dyrected/core/server";
 import { createClient, DyrectedClient } from "@dyrected/sdk";
 import { handle } from "hono/vercel";

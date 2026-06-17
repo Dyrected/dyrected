@@ -7,6 +7,13 @@
   "files": [
     "dist"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.ts",
+      "import": "./dist/module.mjs",
+      "require": "./dist/module.cjs"
+    }
+  },
   "scripts": {
     "build": "nuxt-module-build build",
     "dev": "nuxt-module-build build --watch"

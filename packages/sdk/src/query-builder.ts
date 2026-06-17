@@ -1,4 +1,4 @@
-import { PaginatedResult } from '@dyrected/core';
+import type { PaginatedResult } from '@dyrected/core';
 
 export interface QueryArgs {
   limit?: number;
