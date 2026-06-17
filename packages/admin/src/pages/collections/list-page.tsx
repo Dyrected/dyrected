@@ -9,7 +9,6 @@ import type { CollectionConfig, Field } from "@dyrected/core"
 import { type FilterRule, rulesToWhere, whereToRules } from "../../lib/filter-rules"
 import { DataTable } from "../../components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
-import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
 import { Checkbox } from "../../components/ui/checkbox"
 import {
@@ -233,6 +232,116 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const columns: ColumnDef<Record<string, unknown>>[] = React.useMemo(() => {
     if (!schema) return []
 
+    const allDisplayFields = schema.fields.filter((f: Field) =>
+      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+    )
+    const fieldByName = new Map<string, Field>(allDisplayFields.map((field: Field) => [field.name, field]))
+    const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
+      ? schema.admin.defaultColumns
+      : []
+    const visibleColumnNames = configuredColumns.length > 0
+      ? configuredColumns
+      : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
+    const firstVisibleFieldName = visibleColumnNames.find((name) => fieldByName.has(name))
+    const titleFieldName = visibleColumnNames.includes(schema.admin?.useAsTitle || "")
+      ? schema.admin?.useAsTitle
+      : firstVisibleFieldName
+
+    const deleteAccess = (schema.access as { delete?: unknown })?.delete
+
+    const canDeleteRow = (item: Record<string, unknown>) => {
+      if (deleteAccess === false) return false
+      if (typeof deleteAccess === 'string') {
+        try {
+          return jexl.evalSync(deleteAccess, { user, ...item })
+        } catch (e) {
+          console.warn("Delete access eval failed:", e)
+          return true
+        }
+      }
+      return true
+    }
+
+    const renderLinkedCell = (item: Record<string, unknown>, cell: React.ReactNode) => {
+      const canDelete = canDeleteRow(item)
+
+      return (
+        <div className="dy-flex dy-flex-col dy-gap-1">
+          <Link
+            to={`/collections/${slug}/edit/${String(item.id)}`}
+            className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
+          >
+            {cell}
+          </Link>
+          <div className="dy-flex dy-items-center dy-gap-2">
+            <Link
+              to={`/collections/${slug}/edit/${String(item.id)}`}
+              className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
+            >
+              Edit
+            </Link>
+            <span className="dy-text-muted-foreground/40 dy-text-[11px]">|</span>
+            <button
+              className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-destructive dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150 disabled:dy-opacity-40 disabled:dy-pointer-events-none"
+              onClick={() => handleDelete(String(item.id))}
+              disabled={deleteMutation.isPending || !canDelete || (schema.auth && item.id === user?.id)}
+              title={!canDelete ? "You do not have permission to delete this entry" : (schema.auth && item.id === user?.id ? "You cannot delete your own account" : undefined)}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    const makeFieldColumn = (field: Field): ColumnDef<Record<string, unknown>> => ({
+      accessorKey: field.name,
+      header: field.label || field.name,
+      cell: ({ row }) => {
+        const cell = (
+          <RenderCell
+            value={row.getValue(field.name)}
+            field={field}
+            client={client}
+            schemas={schemas}
+          />
+        )
+        return field.name === titleFieldName ? renderLinkedCell(row.original, cell) : cell
+      },
+    })
+
+    const makeSystemColumn = (name: string): ColumnDef<Record<string, unknown>> | null => {
+      if (name === "id") {
+        return {
+          accessorKey: "id",
+          header: "ID",
+          cell: ({ row }) => {
+            const cell = <span className="dy-font-mono dy-text-xs">{row.getValue("id")}</span>
+            return titleFieldName ? cell : renderLinkedCell(row.original, cell)
+          },
+        }
+      }
+
+      if (name === "createdAt" || name === "updatedAt") {
+        return {
+          accessorKey: name,
+          header: name === "createdAt" ? "Created" : "Last Updated",
+          cell: ({ row }) => {
+            const value = row.getValue(name)
+            const date = value ? new Date(value as string) : null
+            return (
+              <div className="dy-flex dy-items-center dy-gap-2 dy-text-muted-foreground">
+                <Calendar className="dy-h-3 dy-w-3" />
+                <span className="dy-text-xs">{date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString() : "N/A"}</span>
+              </div>
+            )
+          }
+        }
+      }
+
+      return null
+    }
+
     const cols: ColumnDef<Record<string, unknown>>[] = [
       {
         id: "select",
@@ -253,134 +362,28 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         enableSorting: false,
         enableHiding: false,
       },
-      {
-        accessorKey: "id",
-        header: "ID",
-        cell: ({ row }) => <span className="dy-font-mono dy-text-xs">{row.getValue("id")}</span>,
-      },
     ]
 
-    const hasStatus = schema.fields.some((f: Field) => f.name === "status")
-
-    if (hasStatus) {
-      cols.push({
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => {
-          const status = row.getValue("status")
-          return (
-            <Badge variant={status === "published" ? "default" : "secondary"}>
-              {status === "published" ? "Published" : "Draft"}
-            </Badge>
-          )
-        }
-      })
-    }
-
-    // Include all non-hidden, non-layout fields as columns
-    const allDisplayFields = schema.fields.filter((f: Field) =>
-      f.name !== "status" && f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
-    )
-    const titleFieldName = schema.admin?.useAsTitle || allDisplayFields[0]?.name
-
-    allDisplayFields.forEach((field: Field) => {
-      const isTitleField = field.name === titleFieldName
-      cols.push({
-        accessorKey: field.name,
-        header: field.label || field.name,
-        cell: ({ row }) => {
-          const cell = (
-            <RenderCell
-              value={row.getValue(field.name)}
-              field={field}
-              client={client}
-              schemas={schemas}
-            />
-          )
-          if (!isTitleField) return cell
-
-          const item = row.original
-          const deleteAccess = (schema.access as { delete?: unknown })?.delete
-          let canDelete = true
-          if (deleteAccess === false) {
-            canDelete = false
-          } else if (typeof deleteAccess === 'string') {
-            try {
-              canDelete = jexl.evalSync(deleteAccess, { user, ...item })
-            } catch (e) {
-              console.warn("Delete access eval failed:", e)
-            }
-          }
-
-          return (
-            <div className="dy-flex dy-flex-col dy-gap-1">
-              <Link
-                to={`/collections/${slug}/edit/${String(item.id)}`}
-                className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
-              >
-                {cell}
-              </Link>
-              <div className="dy-flex dy-items-center dy-gap-2">
-                <Link
-                  to={`/collections/${slug}/edit/${String(item.id)}`}
-                  className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
-                >
-                  Edit
-                </Link>
-                <span className="dy-text-muted-foreground/40 dy-text-[11px]">|</span>
-                <button
-                  className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-destructive dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150 disabled:dy-opacity-40 disabled:dy-pointer-events-none"
-                  onClick={() => handleDelete(String(item.id))}
-                  disabled={deleteMutation.isPending || !canDelete || (schema.auth && item.id === user?.id)}
-                  title={!canDelete ? "You do not have permission to delete this entry" : (schema.auth && item.id === user?.id ? "You cannot delete your own account" : undefined)}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          )
-        },
-      })
-    })
-
-    // Add metadata columns
-    cols.push({
-      accessorKey: "updatedAt",
-      header: "Last Updated",
-      cell: ({ row }) => {
-        const date = new Date(row.getValue("updatedAt"))
-        return (
-          <div className="dy-flex dy-items-center dy-gap-2 dy-text-muted-foreground">
-            <Calendar className="dy-h-3 dy-w-3" />
-            <span className="dy-text-xs">{date.toLocaleDateString()}</span>
-          </div>
-        )
+    visibleColumnNames.forEach((name) => {
+      const field = fieldByName.get(name)
+      if (field) {
+        cols.push(makeFieldColumn(field))
+        return
       }
+      const systemColumn = makeSystemColumn(name)
+      if (systemColumn) cols.push(systemColumn)
     })
 
     return cols
   }, [schema, client, deleteMutation.isPending, user, handleDelete, slug, schemas])
 
-  const initialColumnVisibility = React.useMemo(() => {
-    if (!schema) return {}
-
-    const visibility: Record<string, boolean> = {}
-    const displayFields = schema.fields.filter((f: Field) => f.name !== "status" && !f.admin?.hidden)
-
-    let visibleFieldNames: string[] = []
-    if (schema.admin?.defaultColumns && Array.isArray(schema.admin.defaultColumns)) {
-      visibleFieldNames = schema.admin.defaultColumns
-    } else {
-      visibleFieldNames = displayFields.slice(0, 3).map((f: Field) => f.name)
-    }
-
-    // Set visibility for all fields
-    displayFields.forEach((f: Field) => {
-      visibility[f.name] = visibleFieldNames.includes(f.name)
-    })
-
-    return visibility
-  }, [schema])
+  const columnPreferenceKey = React.useMemo(() => {
+    if (!schema) return slug
+    const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
+      ? schema.admin.defaultColumns
+      : []
+    return `${slug}:${configuredColumns.join(",") || "default"}`
+  }, [schema, slug])
 
   if (isLoading) {
     return (
@@ -497,8 +500,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           searchKey={schema.admin?.useAsTitle || schema.fields.find((f: Field) => !f.admin?.hidden)?.name || "id"}
           onRowSelectionChange={setRowSelection}
           rowSelection={rowSelection}
-          persistenceKey={slug}
-          initialColumnVisibility={initialColumnVisibility}
+          persistenceKey={columnPreferenceKey}
           toolbarActions={(
             <>
               <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />

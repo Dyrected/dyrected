@@ -42,7 +42,7 @@ const Products = defineCollection({
   labels: { plural: "Products", singular: "Product" },
   admin: {
     group: "Content",
-    defaultColumns: ["title", "price", "featured", "publishedAt", "action"],
+    defaultColumns: ["title", "price", "featured", "publishedAt"],
     useAsTitle: "title",
   },
   fields: [
@@ -80,7 +80,7 @@ const Pages = defineCollection({
     useAsTitle: "title",
     group: "Content",
     previewUrl: "slug == 'home' ? '/' : '/' + slug",
-    defaultColumns: ["title", "slug", "updatedAt", "action"],
+    defaultColumns: ["title", "slug", "updatedAt"],
     urlPattern: "/{slug}",
   },
   fields: [

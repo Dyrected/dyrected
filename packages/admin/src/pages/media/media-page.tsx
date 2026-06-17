@@ -166,7 +166,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   }
 
   return (
-    <div {...getRootProps()} onPaste={handlePaste} className="dy-min-h-full dy-space-y-8 dy-animate-in dy-relative">
+    <div {...getRootProps()} onPaste={handlePaste} className="dy-min-h-full dy-space-y-6 dy-animate-in dy-relative lg:dy-space-y-8">
       <input {...getInputProps()} />
 
       {isDragActive && (
@@ -179,26 +179,26 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
           </div>
         </div>
       )}
-      <div className="dy-flex dy-items-end dy-justify-between dy-border-b dy-border-border/50 dy-pb-6">
-        <div>
+      <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-border-border/50 dy-pb-5 sm:dy-flex-row sm:dy-items-end sm:dy-justify-between sm:dy-pb-6">
+        <div className="dy-min-w-0">
           <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
-            <ImageIcon className="dy-h-5 dy-w-5 dy-text-primary" />
-            <h1 className="dy-text-3xl dy-font-bold dy-tracking-tight dy-text-foreground">
+            <ImageIcon className="dy-h-5 dy-w-5 dy-flex-shrink-0 dy-text-primary" />
+            <h1 className="dy-min-w-0 dy-break-words dy-text-2xl dy-font-bold dy-tracking-tight dy-text-foreground sm:dy-text-3xl">
               {schema?.labels?.plural ?? schema?.label ?? (collectionSlug && collectionSlug !== 'media' ? (collectionSlug.charAt(0).toUpperCase() + collectionSlug.slice(1)) : "Media Library")}
             </h1>
           </div>
-          <p className="dy-text-sm dy-text-muted-foreground">
+          <p className="dy-text-sm dy-leading-5 dy-text-muted-foreground">
             Manage your images, documents, and other assets for this site.
           </p>
         </div>
         <Dialog open={isUploadOpen} onOpenChange={handleUploadOpenChange}>
           <DialogTrigger asChild>
-            <Button className="dy-h-10 dy-px-4 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-shadow-md dy-transition-all active:dy-scale-95">
+            <Button className="dy-h-10 dy-w-full dy-justify-center dy-px-4 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-shadow-md dy-transition-all active:dy-scale-95 sm:dy-w-auto">
               <Upload className="dy-mr-2 dy-h-4 dy-w-4" />
               Upload Assets
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:dy-max-w-[600px] dy-rounded-2xl dy-overflow-hidden dy-border-none dy-shadow-2xl">
+          <DialogContent className="dy-max-h-[90dvh] dy-w-[calc(100vw-1rem)] dy-overflow-y-auto dy-rounded-2xl dy-border-none dy-shadow-2xl sm:dy-max-w-[600px]">
             <DialogHeader className="dy-pb-4 dy-border-b dy-border-border/40">
               <DialogTitle className="dy-text-xl dy-font-bold">Upload Media Assets</DialogTitle>
             </DialogHeader>
@@ -216,7 +216,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
       </div>
 
       <div className="dy-flex dy-items-center dy-gap-4">
-        <div className="dy-relative dy-flex-1 dy-max-w-sm">
+        <div className="dy-relative dy-w-full sm:dy-max-w-sm">
           <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
           <Input
             placeholder="Search assets by filename..."
@@ -227,13 +227,13 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
         </div>
       </div>
 
-      <ScrollArea className="dy-h-[calc(100vh-320px)] dy-pr-4">
+      <ScrollArea className="dy-h-auto dy-pr-0 md:dy-h-[calc(100vh-320px)] md:dy-pr-4">
         {isLoading ? (
-          <div className="dy-flex dy-h-60 dy-items-center dy-justify-center">
+          <div className="dy-flex dy-h-44 dy-items-center dy-justify-center sm:dy-h-60">
             <div className="dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary/20 dy-border-t-primary dy-h-10 dy-w-10"></div>
           </div>
         ) : mediaResponse?.length === 0 ? (
-          <div className="dy-flex dy-h-80 dy-flex-col dy-items-center dy-justify-center dy-rounded-2xl dy-border-2 dy-border-dashed dy-border-border/60 dy-bg-muted/5 dy-text-center dy-animate-in">
+          <div className="dy-flex dy-min-h-56 dy-flex-col dy-items-center dy-justify-center dy-rounded-2xl dy-border-2 dy-border-dashed dy-border-border/60 dy-bg-muted/5 dy-p-6 dy-text-center dy-animate-in sm:dy-h-80">
             <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-muted/40 dy-flex dy-items-center dy-justify-center dy-mb-4">
               <FileIcon className="dy-h-8 dy-w-8 dy-text-muted-foreground/50" />
             </div>
@@ -243,7 +243,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
             </p>
           </div>
         ) : (
-          <div className="dy-grid dy-grid-cols-2 md:dy-grid-cols-3 lg:dy-grid-cols-4 xl:dy-grid-cols-5 2xl:dy-grid-cols-6 dy-gap-6 dy-pb-8">
+          <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-8 sm:dy-grid-cols-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 lg:dy-gap-5 xl:dy-grid-cols-5 2xl:dy-grid-cols-6">
             {mediaResponse?.map((item) => (
               <MediaCard
                 key={item.id as string}
@@ -345,11 +345,11 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
           </p>
         </div>
       </CardContent>
-      <div className="dy-absolute dy-top-2 dy-right-2 dy-flex dy-gap-2 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
+      <div className="dy-absolute dy-top-2 dy-right-2 dy-flex dy-gap-2 dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
         <Button
           size="icon"
           variant="destructive"
-          className="dy-h-7 dy-w-7 dy-rounded-lg dy-shadow-lg"
+          className="dy-h-8 dy-w-8 dy-rounded-lg dy-shadow-lg sm:dy-h-7 sm:dy-w-7"
           onClick={(e) => {
             e.stopPropagation()
             if (confirm("Are you sure you want to delete this file?")) {
@@ -420,18 +420,18 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
 
   return (
     <Dialog open={!!item} onOpenChange={(open) => { if (!open) onClose() }}>
-      <DialogContent className="dy-w-[95vw] sm:dy-w-full sm:dy-max-w-4xl md:dy-max-w-5xl lg:dy-max-w-6xl xl:dy-max-w-7xl dy-h-[90vh] md:dy-h-[85vh] dy-p-0 dy-flex dy-flex-col dy-overflow-hidden dy-border-border/40 dy-bg-background dy-shadow-2xl">
-        <DialogHeader className="dy-p-6 dy-border-b dy-border-border/40 dy-bg-card dy-flex-shrink-0">
+      <DialogContent className="dy-flex dy-h-[92dvh] dy-max-h-[92dvh] dy-w-[calc(100vw-1rem)] dy-flex-col dy-overflow-hidden dy-border-border/40 dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-full sm:dy-max-w-4xl md:dy-h-[85dvh] md:dy-max-h-[85dvh] md:dy-max-w-5xl lg:dy-max-w-6xl xl:dy-max-w-7xl">
+        <DialogHeader className="dy-p-4 sm:dy-p-6 dy-border-b dy-border-border/40 dy-bg-card dy-flex-shrink-0">
           <DialogTitle className="dy-flex dy-items-center dy-gap-2">
             <Info className="dy-h-5 dy-w-5 dy-text-primary" />
             Attachment Details
           </DialogTitle>
         </DialogHeader>
 
-        <div className="dy-flex-1 dy-flex dy-flex-col md:dy-flex-row md:dy-overflow-hidden">
+        <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-overflow-y-auto md:dy-flex-row md:dy-overflow-hidden">
           {/* Left Side: Large Preview */}
-          <div className="dy-w-full md:dy-w-3/5 lg:dy-w-2/3 dy-bg-muted/15 dy-flex dy-items-center dy-justify-center dy-p-6 dy-border-b md:dy-border-b-0 md:dy-border-r dy-border-border/40 dy-relative dy-h-[300px] md:dy-h-full dy-flex-shrink-0 md:dy-flex-shrink">
-            <div className="dy-relative dy-max-w-full dy-max-h-full dy-w-full dy-h-full dy-flex dy-items-center dy-justify-center dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-shadow-inner">
+          <div className="dy-relative dy-flex dy-w-full dy-flex-none dy-items-center dy-justify-center dy-border-b dy-border-border/40 dy-bg-muted/15 dy-p-3 sm:dy-p-5 md:dy-h-full md:dy-min-h-0 md:dy-w-3/5 md:dy-flex-shrink md:dy-border-b-0 md:dy-border-r lg:dy-w-2/3">
+            <div className="dy-relative dy-flex dy-h-[40dvh] dy-min-h-[220px] dy-max-h-80 dy-w-full dy-max-w-full dy-items-center dy-justify-center dy-overflow-hidden dy-rounded-xl dy-border dy-border-border/40 dy-bg-checkered dy-shadow-inner md:dy-h-full md:dy-max-h-full">
               {isImage ? (
                 <>
                   {item.blurhash && (
@@ -449,7 +449,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                   <img
                     src={url}
                     alt={item.filename}
-                    className="dy-object-contain dy-max-w-full dy-max-h-full dy-w-auto dy-h-auto dy-relative dy-z-10"
+                    className="dy-relative dy-z-10 dy-h-auto dy-max-h-full dy-w-auto dy-max-w-full dy-object-contain"
                   />
                 </>
               ) : (
@@ -464,9 +464,9 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
           </div>
 
           {/* Right Side: Details Form */}
-          <div className="media-preview-dialod-details-form dy-w-full md:dy-w-2/5 lg:dy-w-1/3 dy-flex dy-flex-col dy-h-auto md:dy-h-full dy-bg-card">
-            <ScrollArea style={{ display: 'flex' }} className="dy-flex-1">
-              <div className="dy-p-6 dy-space-y-6">
+          <div className="media-preview-dialod-details-form dy-flex dy-w-full dy-flex-none dy-flex-col dy-bg-card md:dy-h-full md:dy-min-h-0 md:dy-w-2/5 lg:dy-w-1/3">
+            <div className="dy-flex-none md:dy-min-h-0 md:dy-flex-1 md:dy-overflow-y-auto">
+              <div className="dy-p-4 dy-space-y-5 sm:dy-p-6 sm:dy-space-y-6">
                 {/* Core Info */}
                 <div className="dy-space-y-4">
                   <div>
@@ -533,10 +533,10 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                   <DetailItem label="File URL" value={url} copyable />
                 </div>
               </div>
-            </ScrollArea>
+            </div>
 
             {/* Sticky Actions Footer */}
-            <div className="dy-p-6 dy-border-t dy-border-border/40 dy-bg-muted/5 dy-flex dy-flex-col dy-gap-3 dy-flex-shrink-0">
+            <div className="dy-flex dy-flex-shrink-0 dy-flex-col dy-gap-3 dy-border-t dy-border-border/40 dy-bg-muted/5 dy-p-4 sm:dy-p-6">
               {hasChanges && (
                 <Button
                   className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-card dy-shadow-lg dy-shadow-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-bottom-2"
@@ -546,9 +546,9 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                   {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
               )}
-              <div className="dy-flex dy-gap-2">
+              <div className="dy-grid dy-grid-cols-2 dy-gap-2 sm:dy-flex">
                 {collectionSlug && (
-                  <Button className="dy-flex-1 dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card" variant="outline" asChild>
+                  <Button className="dy-col-span-2 dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card sm:dy-flex-1" variant="outline" asChild>
                     <Link to={`/collections/${collectionSlug}/edit/${item.id}`}>
                       <Pencil className="dy-h-4 dy-w-4" />
                       Edit Full Details

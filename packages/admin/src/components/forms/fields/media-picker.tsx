@@ -4,14 +4,12 @@ import { useDyrected } from "../../../providers/dyrected-provider"
 import { Button } from "../../ui/button"
 import {
   Image as ImageIcon,
-  X,
   Plus,
   Trash2,
   UploadCloud,
   Loader2,
   Scissors,
 } from "lucide-react"
-import { Input } from "../../ui/input"
 import { cn, getMediaUrl } from "../../../lib/utils"
 import { MediaLibraryDialog } from "../../media/media-library-dialog"
 import { ImageCropDialog } from "./image-crop-dialog"
@@ -469,7 +467,7 @@ export function MediaPicker({
           </label>
         )}
 
-        <div className="dy-grid dy-grid-cols-2 md:dy-grid-cols-3 lg:dy-grid-cols-4 dy-gap-4">
+        <div className="dy-grid dy-grid-cols-2 dy-gap-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 lg:dy-gap-4">
           <button
             type="button"
             onClick={() => setIsOpen(true)}
@@ -518,13 +516,13 @@ export function MediaPicker({
                     </div>
                   )}
 
-                  <div className="dy-absolute dy-inset-0 dy-bg-black/40 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all dy-flex dy-items-start dy-justify-end dy-gap-1 dy-p-1.5 dy-backdrop-blur-[2px]">
+                  <div className="dy-absolute dy-inset-0 dy-flex dy-items-start dy-justify-end dy-gap-1 dy-bg-black/25 dy-p-1.5 dy-opacity-100 dy-transition-all sm:dy-bg-black/40 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 sm:dy-backdrop-blur-[2px]">
                     {checkIsCropable(valId, item) && (
                       <Button
                         type="button"
                         variant="outline"
                         size="icon"
-                        className="dy-h-8 dy-w-8 dy-rounded-lg dy-text-foreground dy-bg-background/90 dy-shadow-2xl dy-scale-75 dy-group-hover:dy-scale-100 dy-transition-all"
+                        className="dy-h-9 dy-w-9 dy-rounded-lg dy-text-foreground dy-bg-background/90 dy-shadow-2xl sm:dy-h-8 sm:dy-w-8 sm:dy-scale-75 sm:dy-group-hover:dy-scale-100 sm:dy-transition-all"
                         onClick={() => openCrop(valId, item)}
                         title="Crop image"
                       >
@@ -535,7 +533,7 @@ export function MediaPicker({
                       type="button"
                       variant="outline"
                       size="icon"
-                      className="dy-h-8 dy-w-8 dy-rounded-lg dy-text-destructive dy-bg-destructive-foreground dy-shadow-2xl dy-scale-75 dy-group-hover:dy-scale-100 dy-transition-all"
+                      className="dy-h-9 dy-w-9 dy-rounded-lg dy-text-destructive dy-bg-destructive-foreground dy-shadow-2xl sm:dy-h-8 sm:dy-w-8 sm:dy-scale-75 sm:dy-group-hover:dy-scale-100 sm:dy-transition-all"
                       onClick={() => toggleValue(valId, item)}
                     >
                       <Trash2 className="dy-w-5 dy-h-5" />
@@ -543,7 +541,7 @@ export function MediaPicker({
                   </div>
 
                   {item && (
-                    <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
+                    <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
                       <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item.filename}</p>
                     </div>
                   )}
@@ -604,42 +602,89 @@ export function MediaPicker({
         </label>
       )}
 
-      <div className={isIcon ? "" : "dy-relative dy-flex dy-items-center dy-gap-2"}>
+      <div className={isIcon ? "" : "dy-relative"}>
         {!isIcon && (
-          <div className="dy-relative dy-flex-1 dy-group">
-            <Input
-              value={displayValue}
-              readOnly
-              disabled={disabled}
-              placeholder={placeholder || "No media selected"}
-              className="dy-pr-24 dy-bg-muted/30 dy-border-dashed focus-visible:dy-ring-offset-0 focus-visible:dy-ring-1 dy-h-10 dy-rounded-xl"
-            />
-            <div className="dy-absolute dy-right-1 dy-top-1/2 dy--translate-y-1/2 dy-flex dy-items-center dy-gap-1 dy-pr-1">
-              {value && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="dy-h-7 dy-w-7 dy-text-muted-foreground hover:dy-text-destructive dy-transition-colors dy-rounded-lg"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    onChange(multiple ? [] : "")
-                  }}
-                >
-                  <X className="dy-h-4 dy-w-4" />
-                </Button>
-              )}
-              <Button
+          <div className="dy-grid dy-grid-cols-2 dy-gap-3 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 lg:dy-gap-4">
+            {selectedValues.length === 0 ? (
+              <button
                 type="button"
-                variant="secondary"
-                size="sm"
-                className="dy-h-8 dy-text-xs dy-font-bold dy-px-3 dy-rounded-lg dy-shadow-sm dy-border dy-border-border/50"
-                disabled={disabled}
                 onClick={() => setIsOpen(true)}
+                disabled={disabled}
+                className="dy-group dy-relative dy-aspect-square dy-rounded-xl dy-border-2 dy-border-dashed dy-border-muted hover:dy-border-primary/40 hover:dy-bg-primary/5 disabled:dy-cursor-not-allowed disabled:dy-opacity-60 dy-transition-all dy-flex dy-flex-col dy-items-center dy-justify-center dy-gap-3 dy-overflow-hidden"
               >
-                {value ? "Change" : "Select"}
-              </Button>
-            </div>
+                <div className="dy-absolute dy-inset-0 dy-bg-primary/5 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity" />
+                <div className="dy-h-12 dy-w-12 dy-bg-muted dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-muted-foreground dy-group-hover:dy-bg-primary/10 dy-group-hover:dy-text-primary dy-transition-all dy-shadow-inner">
+                  <Plus className="dy-h-6 dy-w-6" />
+                </div>
+                <div className="dy-text-center dy-px-4">
+                  <p className="dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground dy-group-hover:dy-text-primary dy-transition-colors">Add Media</p>
+                  <p className="dy-text-[10px] dy-text-muted-foreground/40 dy-mt-1 dy-font-medium dy-group-hover:dy-text-primary/60">{placeholder || "Select or upload"}</p>
+                </div>
+              </button>
+            ) : (
+              selectedValues.slice(0, 1).map((val) => {
+                const valId = getIdentifier(val)
+                const item = localMediaCache.find((m: any) => m.id === valId || m.filename === valId || m.url === valId)
+                const previewUrl = item ? getPreviewUrl(item) : (val ? getMediaUrl(val, client?.getBaseUrl() || "") : "")
+                return (
+                  <div
+                    key={valId}
+                    className="dy-relative dy-aspect-square dy-group dy-rounded-xl dy-overflow-hidden dy-border-2 dy-border-primary dy-ring-4 dy-ring-primary/10 dy-transition-all dy-bg-muted/20 dy-shadow-sm"
+                  >
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setIsOpen(true)}
+                      className="dy-h-full dy-w-full disabled:dy-cursor-not-allowed"
+                      title={`Change ${displayValue}`}
+                    >
+                      {previewUrl ? (
+                        <img
+                          src={previewUrl}
+                          alt=""
+                          className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
+                        />
+                      ) : (
+                        <div className="dy-w-full dy-h-full dy-animate-pulse dy-bg-muted/50 dy-flex dy-items-center dy-justify-center">
+                          <ImageIcon className="dy-h-6 dy-w-6 dy-text-muted-foreground/20" />
+                        </div>
+                      )}
+                    </button>
+
+                    {!disabled && (
+                      <div className="dy-pointer-events-none dy-absolute dy-inset-0 dy-flex dy-items-start dy-justify-end dy-gap-1 dy-bg-black/25 dy-p-1.5 dy-opacity-100 dy-transition-all sm:dy-bg-black/40 sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100 sm:dy-backdrop-blur-[2px]">
+                        {checkIsCropable(valId, item) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="dy-pointer-events-auto dy-h-9 dy-w-9 dy-rounded-lg dy-text-foreground dy-bg-background/90 dy-shadow-2xl sm:dy-h-8 sm:dy-w-8 sm:dy-scale-75 sm:dy-group-hover:dy-scale-100 sm:dy-transition-all"
+                            onClick={() => openCrop(valId, item)}
+                            title="Crop image"
+                          >
+                            <Scissors className="dy-w-4 dy-h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="dy-pointer-events-auto dy-h-9 dy-w-9 dy-rounded-lg dy-text-destructive dy-bg-destructive-foreground dy-shadow-2xl sm:dy-h-8 sm:dy-w-8 sm:dy-scale-75 sm:dy-group-hover:dy-scale-100 sm:dy-transition-all"
+                          onClick={() => onChange("")}
+                          title="Remove media"
+                        >
+                          <Trash2 className="dy-w-5 dy-h-5" />
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
+                      <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item?.filename || displayValue || "Media"}</p>
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         )}
 
@@ -668,57 +713,6 @@ export function MediaPicker({
         />
       </div>
 
-      {!isIcon && selectedValues.length > 0 && !multiple && (
-        <div className="dy-grid dy-grid-cols-2 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 dy-gap-4 dy-pt-2">
-          {selectedValues.map((val) => {
-            const valId = getIdentifier(val)
-            const item = localMediaCache.find((m: any) => m.id === valId || m.filename === valId || m.url === valId)
-            const previewUrl = item ? getPreviewUrl(item) : (val ? getMediaUrl(val, client?.getBaseUrl() || "") : "")
-            return (
-              <div
-                key={valId}
-                className="dy-relative dy-aspect-square dy-group dy-rounded-2xl dy-overflow-hidden dy-border-2 dy-border-border/50 hover:dy-border-primary/50 dy-transition-all dy-bg-muted/20 dy-shadow-sm"
-              >
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt=""
-                    className="dy-w-full dy-h-full dy-object-cover dy-transition-transform dy-group-hover:dy-scale-110"
-                  />
-                ) : (
-                  <div className="dy-w-full dy-h-full dy-animate-pulse dy-bg-muted/50 dy-flex dy-items-center dy-justify-center">
-                    <ImageIcon className="dy-h-6 dy-w-6 dy-text-muted-foreground/20" />
-                  </div>
-                )}
-                {!disabled && (
-                  <div className="dy-absolute dy-top-2 dy-right-2 dy-flex dy-flex-col dy-gap-1 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-all">
-                    {checkIsCropable(valId, item) && (
-                      <button
-                        type="button"
-                        onClick={() => openCrop(valId, item)}
-                        title="Crop image"
-                        className="dy-p-1.5 dy-bg-background/90 dy-text-foreground dy-rounded-full hover:dy-scale-110 dy-transition-all dy-shadow-lg dy-border-2 dy-border-white"
-                      >
-                        <Scissors className="dy-h-3.5 dy-w-3.5" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => toggleValue(valId, item)}
-                      className="dy-p-1.5 dy-bg-destructive dy-text-destructive-foreground dy-rounded-full hover:dy-scale-110 dy-transition-all dy-shadow-lg dy-border-2 dy-border-white"
-                    >
-                      <X className="dy-h-3.5 dy-w-3.5" />
-                    </button>
-                  </div>
-                )}
-                <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
-                  <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item?.filename || (typeof val === "string" ? val.split("/").pop() : "Media")}</p>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }

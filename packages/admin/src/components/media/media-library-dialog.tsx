@@ -221,11 +221,11 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:dy-max-w-[900px] dy-p-0 dy-overflow-hidden dy-gap-0 dy-bg-background dy-border-none dy-shadow-2xl">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-flex-col dy-h-[650px]">
-          <div className="dy-px-6 dy-py-4 dy-border-b dy-flex dy-items-center dy-justify-between dy-bg-muted/20">
-            <div className="dy-flex dy-items-center dy-gap-4">
-              <DialogTitle className="dy-text-xl dy-font-serif dy-font-bold dy-tracking-tight">{collectionLabel}</DialogTitle>
+      <DialogContent className="dy-h-[92dvh] dy-w-[calc(100vw-1rem)] dy-max-w-none dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-[95vw] sm:dy-max-w-[900px]">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-h-full dy-flex-col">
+          <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
+            <div className="dy-flex dy-min-w-0 dy-items-center dy-gap-3 sm:dy-gap-4">
+              <DialogTitle className="dy-min-w-0 dy-truncate dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight sm:dy-text-xl">{collectionLabel}</DialogTitle>
               {multiple && sVals.length > 0 && (
                 <div className="dy-flex dy-items-center dy-gap-2 dy-px-3 dy-py-1 dy-bg-primary/10 dy-rounded-full dy-border dy-border-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-left-2">
                   <span className="dy-text-xs dy-font-bold dy-text-primary">{sVals.length} Selected</span>
@@ -235,24 +235,24 @@ export function MediaLibraryDialog({
                 </div>
               )}
             </div>
-            <TabsList className="dy-bg-muted/50 dy-p-1 dy-rounded-xl">
-              <TabsTrigger value="library" className="dy-gap-2 dy-rounded-lg dy-px-4 dy-font-bold dy-text-xs dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm">
+            <TabsList className="dy-grid dy-h-auto dy-grid-cols-3 dy-bg-muted/50 dy-p-1 dy-rounded-xl sm:dy-flex">
+              <TabsTrigger value="library" className="dy-gap-1.5 dy-rounded-lg dy-px-2 dy-font-bold dy-text-[10px] dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm sm:dy-gap-2 sm:dy-px-4 sm:dy-text-xs">
                 <Library className="dy-h-3.5 dy-w-3.5" /> Library
               </TabsTrigger>
-              <TabsTrigger value="upload" className="dy-gap-2 dy-rounded-lg dy-px-4 dy-font-bold dy-text-xs dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm">
+              <TabsTrigger value="upload" className="dy-gap-1.5 dy-rounded-lg dy-px-2 dy-font-bold dy-text-[10px] dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm sm:dy-gap-2 sm:dy-px-4 sm:dy-text-xs">
                 <Upload className="dy-h-3.5 dy-w-3.5" /> Upload
               </TabsTrigger>
-              <TabsTrigger value="external" className="dy-gap-2 dy-rounded-lg dy-px-4 dy-font-bold dy-text-xs dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm">
-                <Globe className="dy-h-3.5 dy-w-3.5" /> External URL
+              <TabsTrigger value="external" className="dy-gap-1.5 dy-rounded-lg dy-px-2 dy-font-bold dy-text-[10px] dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm sm:dy-gap-2 sm:dy-px-4 sm:dy-text-xs">
+                <Globe className="dy-h-3.5 dy-w-3.5" /> External
               </TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="dy-flex-1 dy-overflow-hidden">
+          <div className="dy-min-h-0 dy-flex-1 dy-overflow-hidden">
             <TabsContent value="library" className="dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0">
-              <div className="dy-flex dy-h-full">
-                <div className="dy-flex-1 dy-flex dy-flex-col dy-p-6 dy-space-y-4 dy-border-r">
-                  <div className="dy-flex dy-items-center dy-gap-4">
+              <div className="dy-flex dy-h-full dy-flex-col md:dy-flex-row">
+                <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-4 dy-border-b dy-p-4 md:dy-border-b-0 md:dy-border-r md:dy-p-6">
+                  <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row sm:dy-items-center sm:dy-gap-4">
                     <div className="dy-relative dy-flex-1 dy-group">
                       <Search className="dy-absolute dy-left-3.5 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground dy-group-focus-within:dy-text-primary dy-transition-colors" />
                       <Input
@@ -263,7 +263,7 @@ export function MediaLibraryDialog({
                       />
                     </div>
                     {multiple && (
-                      <div className="dy-flex dy-items-center dy-gap-1 dy-bg-muted/30 dy-p-1 dy-rounded-lg">
+                      <div className="dy-grid dy-grid-cols-2 dy-items-center dy-gap-1 dy-rounded-lg dy-bg-muted/30 dy-p-1 sm:dy-flex">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -278,7 +278,7 @@ export function MediaLibraryDialog({
                         >
                           Select All
                         </Button>
-                        <div className="dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1" />
+                        <div className="dy-hidden dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1 sm:dy-block" />
                         <Button
                           variant="ghost"
                           size="sm"
@@ -295,8 +295,8 @@ export function MediaLibraryDialog({
                       </div>
                     )}
                   </div>
-                  <ScrollArea className="dy-flex-1 dy--mx-2 dy-px-2">
-                    <div className="dy-grid dy-grid-cols-3 sm:dy-grid-cols-4 md:dy-grid-cols-5 dy-gap-4 dy-pb-4">
+                  <ScrollArea className="dy-min-h-0 dy-flex-1 dy--mx-2 dy-px-2">
+                    <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 lg:dy-gap-4">
                       {media?.map((item: any) => (
                         <button
                           key={item.id}
@@ -338,7 +338,7 @@ export function MediaLibraryDialog({
                               </div>
                             </div>
                           )}
-                          <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2.5 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity">
+                          <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2.5 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
                             <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{item.filename}</p>
                           </div>
                         </button>
@@ -353,11 +353,11 @@ export function MediaLibraryDialog({
                   </ScrollArea>
                 </div>
 
-                <div className="dy-w-80 dy-bg-muted/5 dy-p-6 dy-flex dy-flex-col dy-gap-6 dy-overflow-y-auto dy-border-l dy-border-muted/20">
+                <div className="dy-flex dy-max-h-[42dvh] dy-w-full dy-flex-col dy-gap-4 dy-overflow-y-auto dy-border-muted/20 dy-bg-muted/5 dy-p-4 md:dy-h-full md:dy-max-h-none md:dy-w-80 md:dy-gap-6 md:dy-border-l md:dy-p-6">
                   {selectedItem ? (
                     <>
-                      <div className="dy-space-y-5">
-                        <div className="dy-aspect-square dy-rounded-3xl dy-overflow-hidden dy-border dy-bg-background dy-shadow-2xl dy-group dy-relative dy-ring-1 dy-ring-border/50">
+                      <div className="dy-grid dy-grid-cols-[88px_minmax(0,1fr)] dy-gap-4 md:dy-block md:dy-space-y-5">
+                        <div className="dy-aspect-square dy-rounded-2xl dy-overflow-hidden dy-border dy-bg-background dy-shadow-xl dy-group dy-relative dy-ring-1 dy-ring-border/50 md:dy-rounded-3xl md:dy-shadow-2xl">
                           <img
                             src={getPreviewUrl(selectedItem)}
                             className="dy-w-full dy-h-full dy-object-contain dy-p-2"
@@ -384,7 +384,7 @@ export function MediaLibraryDialog({
                         </div>
                       </div>
 
-                      <div className="dy-space-y-3 dy-pt-6 dy-border-t dy-border-muted/20">
+                      <div className="dy-space-y-3 dy-border-t dy-border-muted/20 dy-pt-4 md:dy-pt-6">
                         {multiple ? (
                           <>
                             <Button
@@ -432,8 +432,8 @@ export function MediaLibraryDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="upload" className="dy-h-full dy-m-0 dy-p-8 focus-visible:dy-ring-0">
-              <div className="dy-h-full dy-flex dy-flex-col dy-items-center dy-justify-center dy-border-2 dy-border-dashed dy-border-primary/20 dy-rounded-[2.5rem] dy-bg-primary/5 hover:dy-bg-primary/10 dy-transition-all dy-group dy-relative dy-overflow-hidden">
+            <TabsContent value="upload" className="dy-h-full dy-m-0 dy-p-4 focus-visible:dy-ring-0 sm:dy-p-8">
+              <div className="dy-h-full dy-flex dy-flex-col dy-items-center dy-justify-center dy-border-2 dy-border-dashed dy-border-primary/20 dy-rounded-3xl dy-bg-primary/5 hover:dy-bg-primary/10 dy-transition-all dy-group dy-relative dy-overflow-hidden sm:dy-rounded-[2.5rem]">
                 <div className="dy-absolute dy-inset-0 dy-bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_100%)] dy-opacity-[0.03]" />
                 <input
                   type="file"
@@ -444,14 +444,14 @@ export function MediaLibraryDialog({
                 />
                 <label
                   htmlFor="media-upload-dialog"
-                  className="dy-flex dy-flex-col dy-items-center dy-gap-8 dy-cursor-pointer dy-p-12 dy-text-center dy-relative dy-z-10"
+                  className="dy-flex dy-flex-col dy-items-center dy-gap-5 dy-cursor-pointer dy-p-6 dy-text-center dy-relative dy-z-10 sm:dy-gap-8 sm:dy-p-12"
                 >
-                  <div className="dy-h-24 dy-w-24 dy-bg-background dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-primary dy-group-hover:dy-scale-110 dy-transition-all dy-shadow-2xl dy-shadow-primary/20 dy-border dy-border-primary/10">
-                    <Upload className="dy-h-10 dy-w-10" />
+                  <div className="dy-h-20 dy-w-20 dy-bg-background dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-primary dy-group-hover:dy-scale-110 dy-transition-all dy-shadow-2xl dy-shadow-primary/20 dy-border dy-border-primary/10 sm:dy-h-24 sm:dy-w-24">
+                    <Upload className="dy-h-8 dy-w-8 sm:dy-h-10 sm:dy-w-10" />
                   </div>
                   <div className="dy-space-y-2">
-                    <p className="dy-font-serif dy-font-bold dy-text-3xl dy-tracking-tight">Upload new assets</p>
-                    <p className="dy-text-muted-foreground/60 dy-font-medium">Drag and drop files here or click to browse your computer</p>
+                    <p className="dy-font-serif dy-font-bold dy-text-2xl dy-tracking-tight sm:dy-text-3xl">Upload new assets</p>
+                    <p className="dy-text-sm dy-text-muted-foreground/60 dy-font-medium sm:dy-text-base">Tap to browse, or drag files here on desktop</p>
                   </div>
                   <Button variant="secondary" className="dy-rounded-full dy-px-8 dy-h-12 dy-font-bold dy-shadow-sm dy-pointer-events-none dy-group-hover:dy-bg-primary dy-group-hover:dy-text-white dy-transition-all">
                     Choose Files
@@ -460,25 +460,25 @@ export function MediaLibraryDialog({
               </div>
             </TabsContent>
 
-            <TabsContent value="external" className="dy-h-full dy-m-0 dy-p-12 focus-visible:dy-ring-0">
-              <div className="dy-max-w-2xl dy-mx-auto dy-space-y-10 dy-pt-4">
-                <div className="dy-text-center dy-space-y-4">
-                  <div className="dy-h-20 dy-w-20 dy-bg-primary/10 dy-text-primary dy-rounded-3xl dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-6 dy-shadow-sm dy-rotate-3 dy-group-hover:dy-rotate-0 dy-transition-transform">
-                    <Globe className="dy-h-10 dy-w-10" />
+            <TabsContent value="external" className="dy-h-full dy-m-0 dy-overflow-y-auto dy-p-4 focus-visible:dy-ring-0 sm:dy-p-12">
+              <div className="dy-mx-auto dy-max-w-2xl dy-space-y-6 dy-pt-2 sm:dy-space-y-10 sm:dy-pt-4">
+                <div className="dy-text-center dy-space-y-3 sm:dy-space-y-4">
+                  <div className="dy-h-16 dy-w-16 dy-bg-primary/10 dy-text-primary dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-4 dy-shadow-sm dy-rotate-3 dy-group-hover:dy-rotate-0 dy-transition-transform sm:dy-h-20 sm:dy-w-20 sm:dy-rounded-3xl sm:dy-mb-6">
+                    <Globe className="dy-h-8 dy-w-8 sm:dy-h-10 sm:dy-w-10" />
                   </div>
-                  <h3 className="dy-text-3xl dy-font-serif dy-font-bold dy-tracking-tight">Add External Resource</h3>
+                  <h3 className="dy-text-2xl dy-font-serif dy-font-bold dy-tracking-tight sm:dy-text-3xl">Add External Resource</h3>
                   <p className="dy-text-sm dy-text-muted-foreground/70 dy-leading-relaxed dy-max-w-md dy-mx-auto">
                     Paste a link to any image, YouTube video, Vimeo link, or file to add it to your library without uploading.
                   </p>
                 </div>
 
-                <div className="dy-space-y-6">
-                  <div className="dy-flex dy-gap-3">
+                <div className="dy-space-y-5 sm:dy-space-y-6">
+                  <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row">
                     <div className="dy-relative dy-flex-1">
                       <LinkIcon className="dy-absolute dy-left-4 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground" />
                       <Input
                         placeholder="https://example.com/image.jpg or video link..."
-                        className="dy-h-14 dy-rounded-2xl dy-shadow-xl dy-border-muted dy-bg-muted/5 dy-pl-12 dy-text-base dy-font-medium focus:dy-bg-background dy-transition-all"
+                        className="dy-h-12 dy-rounded-2xl dy-shadow-xl dy-border-muted dy-bg-muted/5 dy-pl-12 dy-text-sm dy-font-medium focus:dy-bg-background dy-transition-all sm:dy-h-14 sm:dy-text-base"
                         value={externalUrl}
                         onChange={(e) => setExternalUrl(e.target.value)}
                       />
@@ -486,13 +486,13 @@ export function MediaLibraryDialog({
                     <Button
                       onClick={handleExternalUrlSubmit}
                       disabled={isUploading || !externalUrl}
-                      className="dy-h-14 dy-rounded-2xl dy-px-10 dy-font-bold dy-shadow-xl dy-shadow-primary/20 dy-bg-primary hover:dy-bg-primary/90 dy-transition-all active:dy-scale-95"
+                      className="dy-h-12 dy-w-full dy-rounded-2xl dy-px-8 dy-font-bold dy-shadow-xl dy-shadow-primary/20 dy-bg-primary hover:dy-bg-primary/90 dy-transition-all active:dy-scale-95 sm:dy-h-14 sm:dy-w-auto sm:dy-px-10"
                     >
                       {isUploading ? "Adding..." : "Add URL"}
                     </Button>
                   </div>
 
-                  <div className="dy-grid dy-grid-cols-2 dy-gap-4">
+                  <div className="dy-grid dy-grid-cols-1 dy-gap-3 sm:dy-grid-cols-2 sm:dy-gap-4">
                     <div className="dy-p-4 dy-rounded-2xl dy-bg-red-50/50 dy-border dy-border-red-100 dy-flex dy-items-start dy-gap-3">
                       <div className="dy-mt-0.5 dy-p-1.5 dy-bg-red-100 dy-rounded-lg dy-text-red-600">
                         <Video className="dy-h-4 dy-w-4" />

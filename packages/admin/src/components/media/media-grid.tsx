@@ -17,7 +17,7 @@ export function MediaGrid({ items, baseUrl, onDelete, slug }: MediaGridProps) {
   }
 
   return (
-    <div className="dy-grid dy-grid-cols-2 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-6 dy-gap-6">
+    <div className="dy-grid dy-grid-cols-2 dy-gap-3 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-6 lg:dy-gap-6">
       {items.map((item) => (
         <MediaCard
           key={item.id}
