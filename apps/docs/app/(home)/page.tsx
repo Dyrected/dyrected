@@ -1,13 +1,6 @@
 import { Hero } from '@/components/hero'
 import { Card } from '@/components/ui/card'
-import {
-  BookOpen,
-  Terminal,
-  Zap,
-  Layers,
-  Database,
-  Cloud,
-} from 'lucide-react'
+import { BookOpen, Terminal, Zap, Layers, Database, Cloud } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -17,46 +10,20 @@ export default function HomePage() {
         description="The headless CMS that lives in your codebase. Framework-agnostic, AI-native, and built for speed."
       >
         <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-          {/* Primary CTA — Signal Lime */}
-          <a
-            href="/docs/getting-started/introduction"
-            className="rounded-full px-8 py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: '#B6FF2E',
-              color: '#111110',
-              boxShadow: '0 4px 20px rgba(182,255,46,0.35)',
-            }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = '#9BE600')}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '#B6FF2E')}
-          >
+          <a href="/docs/getting-started/introduction" className="btn-lime rounded-full px-8 py-3 text-sm font-semibold">
             Get Started
           </a>
-          {/* Secondary CTA — Violet outline */}
           <a
             href="https://github.com/she-WritesCode/dyrected"
             target="_blank"
             rel="noreferrer"
-            className="rounded-full px-8 py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: 'transparent',
-              border: '1.5px solid rgba(124,61,255,0.4)',
-              color: '#7C3DFF',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = 'rgba(124,61,255,0.06)'
-              ;(e.currentTarget as HTMLElement).style.borderColor = '#7C3DFF'
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = 'transparent'
-              ;(e.currentTarget as HTMLElement).style.borderColor = 'rgba(124,61,255,0.4)'
-            }}
+            className="btn-violet-outline rounded-full px-8 py-3 text-sm font-semibold"
           >
             Star on GitHub
           </a>
         </div>
       </Hero>
 
-      {/* Doc section cards */}
       <section className="container mx-auto px-4 max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <Card
@@ -98,7 +65,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Open source / community — white break section per branding spec */}
+      {/* White break section — community/open source */}
       <section className="container mx-auto px-4 max-w-4xl text-center">
         <div
           className="rounded-3xl p-12"
@@ -114,59 +81,31 @@ export default function HomePage() {
           >
             Source Available &amp; Transparent
           </h2>
-          <p className="mb-8 max-w-lg mx-auto leading-relaxed" style={{ color: '#625F6C' }}>
+          <p className="mb-8 max-w-lg mx-auto leading-relaxed text-sm" style={{ color: '#625F6C' }}>
             Dyrected is source-available and built for the community. Join our Discord to contribute
             or get help with your project.
           </p>
           <div className="flex justify-center gap-6 text-sm font-medium">
-            <a
-              href="#"
-              className="transition-colors"
-              style={{ color: '#7C3DFF' }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#6427E8')}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#7C3DFF')}
-            >
-              Discord
-            </a>
+            <a href="#" className="link-violet">Discord</a>
             <span style={{ color: '#DED7F2' }}>•</span>
-            <a
-              href="#"
-              className="transition-colors"
-              style={{ color: '#7C3DFF' }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#6427E8')}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#7C3DFF')}
-            >
-              GitHub Discussions
-            </a>
+            <a href="#" className="link-violet">GitHub Discussions</a>
           </div>
         </div>
       </section>
 
-      {/* Final CTA — strongest color moment per branding spec */}
+      {/* Final CTA — strongest color moment: full Signal Lime section */}
       <section className="container mx-auto px-4 max-w-4xl text-center">
-        <div
-          className="rounded-3xl py-16 px-8"
-          style={{ background: '#B6FF2E' }}
-        >
+        <div className="rounded-3xl py-16 px-8" style={{ background: '#B6FF2E' }}>
           <h2
             className="text-3xl font-bold mb-4"
             style={{ fontFamily: 'var(--font-display, serif)', color: '#111110' }}
           >
             Ready to build?
           </h2>
-          <p className="mb-8 max-w-sm mx-auto text-sm leading-relaxed" style={{ color: '#111110', opacity: 0.7 }}>
-            Drop Dyrected into your Next.js or Nuxt app and have your first collection live in
-            minutes.
+          <p className="mb-8 max-w-sm mx-auto text-sm leading-relaxed" style={{ color: 'rgba(17,17,16,0.65)' }}>
+            Drop Dyrected into your Next.js or Nuxt app and have your first collection live in minutes.
           </p>
-          <a
-            href="/docs/getting-started/introduction"
-            className="inline-flex items-center rounded-full px-8 py-3 text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: '#111110',
-              color: '#B6FF2E',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-            }}
-          >
+          <a href="/docs/getting-started/introduction" className="btn-dark-on-lime inline-flex items-center rounded-full px-8 py-3 text-sm font-semibold">
             Read the docs →
           </a>
         </div>

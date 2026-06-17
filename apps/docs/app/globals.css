@@ -5,6 +5,72 @@
 
 /* ── Dyrected brand tokens ──────────────────────────────────────────────── */
 
+/* Branded interactive classes — CSS-only, no JS event handlers needed */
+.btn-lime {
+  background: #B6FF2E;
+  color: #111110;
+  box-shadow: 0 4px 20px rgba(182, 255, 46, 0.35);
+  transition: background 150ms, transform 100ms;
+}
+.btn-lime:hover { background: #9BE600; transform: scale(1.02); }
+.btn-lime:active { transform: scale(0.98); }
+
+.btn-violet-outline {
+  background: transparent;
+  border: 1.5px solid rgba(124, 61, 255, 0.4);
+  color: #7C3DFF;
+  transition: background 150ms, border-color 150ms, transform 100ms;
+}
+.btn-violet-outline:hover {
+  background: rgba(124, 61, 255, 0.06);
+  border-color: #7C3DFF;
+  transform: scale(1.02);
+}
+.btn-violet-outline:active { transform: scale(0.98); }
+
+.btn-dark-on-lime {
+  background: #111110;
+  color: #B6FF2E;
+  transition: opacity 150ms, transform 100ms;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.btn-dark-on-lime:hover { opacity: 0.88; transform: scale(1.02); }
+.btn-dark-on-lime:active { transform: scale(0.98); }
+
+.link-violet {
+  color: #7C3DFF;
+  transition: color 150ms;
+}
+.link-violet:hover { color: #6427E8; }
+
+.doc-card {
+  background: #FFFFFF;
+  border: 1px solid #DED7F2;
+  color: #111110;
+  transition: box-shadow 200ms, border-color 200ms;
+}
+.doc-card:hover {
+  box-shadow: 0 4px 24px rgba(124, 61, 255, 0.12);
+  border-color: rgba(124, 61, 255, 0.4);
+}
+.doc-card:hover .doc-card-icon {
+  background: rgba(124, 61, 255, 0.15);
+  transform: scale(1.05);
+}
+.doc-card-icon {
+  background: rgba(124, 61, 255, 0.08);
+  color: #7C3DFF;
+  transition: background 200ms, transform 200ms;
+}
+.doc-card:hover .doc-card-learn {
+  opacity: 1;
+}
+.doc-card-learn {
+  opacity: 0;
+  color: #7C3DFF;
+  transition: opacity 200ms;
+}
+
 /* Standard Tailwind color utilities used in custom components */
 @theme {
   --color-background: #FBFFF1;
