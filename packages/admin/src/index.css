@@ -5,6 +5,124 @@
 @tailwind utilities;
 
 @layer base {
+  /* Scoped Preflight resets for .dy-admin-ui to prevent global style leakage */
+  .dy-admin-ui,
+  .dy-admin-ui *::before,
+  .dy-admin-ui *::after,
+  .dy-admin-ui * {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: currentColor;
+  }
+
+  .dy-admin-ui a {
+    color: inherit;
+    text-decoration: inherit;
+  }
+
+  .dy-admin-ui blockquote,
+  .dy-admin-ui dl,
+  .dy-admin-ui dd,
+  .dy-admin-ui h1,
+  .dy-admin-ui h2,
+  .dy-admin-ui h3,
+  .dy-admin-ui h4,
+  .dy-admin-ui h5,
+  .dy-admin-ui h6,
+  .dy-admin-ui hr,
+  .dy-admin-ui figure,
+  .dy-admin-ui p,
+  .dy-admin-ui pre {
+    margin: 0;
+  }
+
+  .dy-admin-ui h1,
+  .dy-admin-ui h2,
+  .dy-admin-ui h3,
+  .dy-admin-ui h4,
+  .dy-admin-ui h5,
+  .dy-admin-ui h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  .dy-admin-ui ol,
+  .dy-admin-ui ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .dy-admin-ui button,
+  .dy-admin-ui input,
+  .dy-admin-ui optgroup,
+  .dy-admin-ui select,
+  .dy-admin-ui textarea {
+    font-family: inherit;
+    font-size: 100%;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+    margin: 0;
+    padding: 0;
+  }
+
+  .dy-admin-ui button,
+  .dy-admin-ui select {
+    text-transform: none;
+  }
+
+  .dy-admin-ui button,
+  .dy-admin-ui [type='button'],
+  .dy-admin-ui [type='reset'],
+  .dy-admin-ui [type='submit'] {
+    -webkit-appearance: button;
+    appearance: button;
+    background-color: transparent;
+    background-image: none;
+  }
+
+  .dy-admin-ui input,
+  .dy-admin-ui textarea,
+  .dy-admin-ui select {
+    background-color: transparent;
+  }
+
+  .dy-admin-ui ::-moz-focus-inner {
+    border-style: none;
+    padding: 0;
+  }
+
+  .dy-admin-ui :-moz-focusring {
+    outline: 1px dotted ButtonText;
+  }
+
+  .dy-admin-ui :-moz-ui-invalid {
+    box-shadow: none;
+  }
+
+  .dy-admin-ui textarea {
+    resize: vertical;
+  }
+
+  .dy-admin-ui img,
+  .dy-admin-ui svg,
+  .dy-admin-ui video,
+  .dy-admin-ui canvas,
+  .dy-admin-ui audio,
+  .dy-admin-ui iframe,
+  .dy-admin-ui embed,
+  .dy-admin-ui object {
+    display: block;
+  }
+
+  .dy-admin-ui img,
+  .dy-admin-ui video {
+    max-width: 100%;
+    height: auto;
+  }
+
   /* Dyrected defaults: Lime Paper, Signal Lime, and Violet. */
   .dy-admin-ui {
     /* Fonts */

@@ -6,6 +6,9 @@ const config: Config = {
   prefix: "dy-",
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  corePlugins: {
+    preflight: false,
+  },
   theme: {
     container: {
       center: true,
