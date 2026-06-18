@@ -14,7 +14,11 @@ import { FirstUserPage } from "../../pages/auth/first-user-page";
  * 5. If logged in (or no auth required), renders the children.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { client, user, setToken, schemas } = useDyrected();
+  const { client, user, setToken, schemas, initialToken } = useDyrected();
+
+  // Cloud-managed: host application has already authenticated the user.
+  // Skip setup and login flow — render the admin shell directly.
+  if (initialToken) return <>{children}</>;
   const queryClient = useQueryClient();
 
   // 1. Prefer __admins as the sole dashboard auth collection; fall back to the first auth collection.

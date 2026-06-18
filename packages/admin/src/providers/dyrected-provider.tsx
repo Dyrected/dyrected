@@ -14,6 +14,8 @@ interface DyrectedContextType {
   schemas: { collections: any[]; globals: any[]; admin?: any } | null;
   user: any | null;
   setToken: (token: string) => void;
+  // @internal – set by Dyrected Cloud to bypass admin-level auth
+  initialToken?: string;
   components?: {
     fields?: Record<string, React.ComponentType<any>>;
     [key: string]: any;
@@ -27,14 +29,18 @@ export interface DyrectedProviderProps {
   apiKey?: string;
   baseUrl?: string;
   siteId?: string;
+  // @internal – not for public docs. Dyrected Cloud passes this to bypass
+  // admin-level auth when the user is already authenticated at the cloud level.
+  initialToken?: string;
   components?: DyrectedContextType['components'];
 }
 
-export function DyrectedProvider({ 
-  children, 
-  apiKey: initialApiKey, 
+export function DyrectedProvider({
+  children,
+  apiKey: initialApiKey,
   baseUrl: initialBaseUrl,
   siteId: initialSiteId,
+  initialToken,
   components
 }: DyrectedProviderProps) {
   const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_url") : null) || "");
@@ -61,12 +67,21 @@ export function DyrectedProvider({
     }
   }, [baseUrl, apiKey, siteId]);
 
+  // Apply the cloud-issued token to the SDK client so API calls include it.
+  // Does not call me() — AuthGate skips auth entirely when initialToken is present.
   useEffect(() => {
+    if (initialToken && client) {
+      client.setToken(initialToken);
+    }
+  }, [initialToken, client]);
+
+  useEffect(() => {
+    if (initialToken) return; // cloud-managed: localStorage auth is not used
     const token = localStorage.getItem("dyrected_token");
     if (token && client && schemas && !user) {
       setToken(token);
     }
-  }, [client, schemas, user]);
+  }, [initialToken, client, schemas, user]);
 
   const setAuth = (newUrl: string, newKey: string, newSiteId?: string) => {
     localStorage.setItem("dyrected_url", newUrl);
@@ -115,6 +130,7 @@ export function DyrectedProvider({
       isAuthenticated: !!baseUrl && !!apiKey,
       schemas,
       user,
+      initialToken,
       components
     }}>
       {children}

@@ -120,6 +120,10 @@ export interface AdminUIProps {
   onNavigate?: (path: string) => void;
   isEmbedded?: boolean;
   components?: DyrectedProviderProps['components'];
+  // @internal – not for public docs. Used by Dyrected Cloud to bypass admin-level
+  // auth when the user is already authenticated at the cloud level. The token is
+  // minted server-side by the cloud backend and is short-lived (1h).
+  initialToken?: string;
 }
 
 // ─── Embedded component (BrowserRouter — real URL + history) ─────────────────
@@ -130,7 +134,8 @@ export function AdminUI({
   siteId,
   onNavigate,
   isEmbedded,
-  components
+  components,
+  initialToken,
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -146,7 +151,7 @@ export function AdminUI({
   return (
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
-        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components}>
+        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken}>
           <QueryProvider>
             <HashRouter>
               <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
