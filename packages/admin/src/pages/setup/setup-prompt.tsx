@@ -17,10 +17,18 @@ export interface SetupPromptProps {
   config: SetupPromptConfig;
 }
 
+function techStackToTab(ts?: string): "next" | "nuxt" | "react" | "vue" {
+  if (ts === "nextjs") return "next";
+  if (ts === "nuxt") return "nuxt";
+  if (ts === "react") return "react";
+  if (ts === "vue") return "vue";
+  return "next";
+}
+
 export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState<string | null>(null);
   const [isFresh, setIsFresh] = useState(false);
-  const [activeTab, setActiveTab] = useState<"next" | "nuxt" | "react" | "vue">("next");
+  const [activeTab, setActiveTab] = useState<"next" | "nuxt" | "react" | "vue">(() => techStackToTab(config.defaultTechStack));
 
   const promptText = isFresh
     ? generateFreshSetupPrompt(activeTab, config)

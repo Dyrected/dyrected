@@ -5,6 +5,7 @@ export interface SetupPromptConfig {
   baseUrl?: string;
   isSelfHosted?: boolean;
   existingSite?: boolean;
+  defaultTechStack?: string;
 }
 
 // ─────────────────────────────────────────────

@@ -124,6 +124,7 @@ export interface AdminUIProps {
   // auth when the user is already authenticated at the cloud level. The token is
   // minted server-side by the cloud backend and is short-lived (1h).
   initialToken?: string;
+  defaultTechStack?: string;
 }
 
 // ─── Embedded component (BrowserRouter — real URL + history) ─────────────────
@@ -136,6 +137,7 @@ export function AdminUI({
   isEmbedded,
   components,
   initialToken,
+  defaultTechStack,
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -151,7 +153,7 @@ export function AdminUI({
   return (
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
-        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken}>
+        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken} defaultTechStack={defaultTechStack}>
           <QueryProvider>
             <HashRouter>
               <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />

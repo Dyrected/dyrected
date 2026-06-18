@@ -7,6 +7,7 @@ interface DyrectedContextType {
     baseUrl: string;
     apiKey: string | undefined;
     siteId: string | undefined;
+    defaultTechStack?: string;
   };
   setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
   logout: () => void;
@@ -32,6 +33,7 @@ export interface DyrectedProviderProps {
   // @internal – not for public docs. Dyrected Cloud passes this to bypass
   // admin-level auth when the user is already authenticated at the cloud level.
   initialToken?: string;
+  defaultTechStack?: string;
   components?: DyrectedContextType['components'];
 }
 
@@ -41,6 +43,7 @@ export function DyrectedProvider({
   baseUrl: initialBaseUrl,
   siteId: initialSiteId,
   initialToken,
+  defaultTechStack,
   components
 }: DyrectedProviderProps) {
   const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_url") : null) || "");
@@ -123,7 +126,7 @@ export function DyrectedProvider({
   return (
     <DyrectedContext.Provider value={{
       client,
-      config: { baseUrl, apiKey, siteId },
+      config: { baseUrl, apiKey, siteId, defaultTechStack },
       setAuth,
       setToken,
       logout,
