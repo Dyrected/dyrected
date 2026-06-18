@@ -330,13 +330,13 @@ export default defineConfig({
 
 ## Theming & CSS Overrides
 
-The Admin UI uses CSS custom properties for all design tokens. You can override any of them in your host application's global stylesheet — the changes take effect inside the `.dy-admin-ui` root element.
+The Admin UI uses CSS custom properties for all design tokens. Override them on `.dy-admin-ui` from your host application's global stylesheet. Scoping overrides to `.dy-admin-ui` keeps the admin theme isolated from the rest of your app.
 
 All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS convention): `H S% L%`.
 
 ```css
 /* In your global.css — override any token you need */
-:root {
+.my-admin-page .dy-admin-ui {
   /* ── Fonts ─────────────────────────────────────────── */
   --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
@@ -356,6 +356,8 @@ All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS conventio
   /* ── Primary accent (buttons, active states, rings) ─── */
   --primary:            38 92% 50%;  /* default: amber */
   --primary-foreground: 60 3% 6%;   /* text on primary bg */
+  --intelligence:       259 100% 62%; /* links, navigation accents */
+  --intelligence-foreground: 0 0% 100%;
 
   /* ── Secondary (subtle buttons, tags) ───────────────── */
   --secondary:            60 10% 95%;
@@ -397,9 +399,11 @@ All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS conventio
 
 **Change the accent color to blue:**
 ```css
-:root {
+.my-admin-page .dy-admin-ui {
   --primary:            217 91% 60%;
   --primary-foreground: 0 0% 100%;
+  --intelligence:        217 91% 60%;
+  --intelligence-foreground: 0 0% 100%;
   --ring:               217 91% 60%;
   --sidebar-primary:            217 91% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
@@ -410,7 +414,7 @@ All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS conventio
 
 **Use a neutral grey palette (no warm tint):**
 ```css
-:root {
+.my-admin-page .dy-admin-ui {
   --background:      0 0% 98%;
   --card:            0 0% 100%;
   --muted:           0 0% 94%;
@@ -422,6 +426,66 @@ All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS conventio
 }
 ```
 
+**Use one brand color:**
+
+When you only have one brand color, use it for filled actions and active states, then derive lighter tints for secondary, muted, accent, and sidebar hover surfaces. Keep `--primary-foreground` high contrast against `--primary`.
+
+```css
+.my-admin-page .dy-admin-ui {
+  --background: 324 17% 97%;
+  --foreground: 325 17% 16%;
+
+  --primary: 321 17% 38%;
+  --primary-foreground: 324 17% 97%;
+  --intelligence: 321 17% 38%;
+  --intelligence-foreground: 324 17% 97%;
+
+  --secondary: 320 20% 95%;
+  --secondary-foreground: 325 17% 16%;
+  --muted: 320 20% 95%;
+  --muted-foreground: 321 10% 42%;
+  --accent: 320 20% 91%;
+  --accent-foreground: 321 17% 34%;
+
+  --border: 321 10% 86%;
+  --input: 321 10% 86%;
+  --ring: 321 17% 38% / 0.22;
+
+  --sidebar-background: 320 20% 95%;
+  --sidebar-foreground: 325 17% 16%;
+  --sidebar-primary: 321 17% 38%;
+  --sidebar-primary-foreground: 324 17% 97%;
+  --sidebar-accent: 320 20% 89%;
+  --sidebar-accent-foreground: 321 17% 34%;
+  --sidebar-border: 321 10% 84%;
+  --sidebar-ring: 321 17% 38%;
+}
+```
+
+**Use primary and accent colors:**
+
+When you have two brand colors, use `--primary` for committed actions like Save, Create, and Upload. Use `--intelligence` / accent tokens for links, active navigation details, hover text, and focus rings.
+
+```css
+.my-admin-page .dy-admin-ui {
+  --primary: 321 17% 38%;
+  --primary-foreground: 324 17% 97%;
+
+  --intelligence: 259 100% 62%;
+  --intelligence-foreground: 0 0% 100%;
+
+  --accent: 259 100% 96%;
+  --accent-foreground: 259 100% 42%;
+  --ring: 259 100% 62% / 0.24;
+
+  --sidebar-primary: 321 17% 38%;
+  --sidebar-primary-foreground: 324 17% 97%;
+  --sidebar-accent: 259 100% 96%;
+  --sidebar-accent-foreground: 259 100% 42%;
+  --sidebar-ring: 259 100% 62%;
+}
+```
+
 **Swap fonts (using a Google Font):**
 ```html
 <!-- In your <head> -->
@@ -429,13 +493,13 @@ All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS conventio
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet" />
 ```
 ```css
-:root {
+.my-admin-page .dy-admin-ui {
   --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Lora", ui-serif, Georgia, serif;
 }
 ```
 
-> **Scope:** All CSS variables are declared on `:root` but only consumed inside `.dy-admin-ui`. Overriding them on `:root` is safe and will not leak into the rest of your application's styles.
+> **Scope:** Prefer overriding variables on `.dy-admin-ui`, optionally nested under your admin page wrapper such as `.my-admin-page .dy-admin-ui`. This matches the Admin UI's scoped reset and prevents unrelated app styles from inheriting admin tokens.
 
 ---
 

@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90",
+        default: "dy-bg-primary! dy-text-primary-foreground hover:dy-bg-primary/90",
         destructive:
           "dy-bg-destructive dy-text-destructive-foreground hover:dy-bg-destructive/90",
         outline:
@@ -20,9 +20,9 @@ const buttonVariants = cva(
         link: "dy-text-primary dy-underline-offset-4 hover:dy-underline",
       },
       size: {
-        default: "dy-h-10 dy-px-4 dy-py-2",
-        sm: "dy-h-9 dy-rounded-md dy-px-3",
-        lg: "dy-h-11 dy-rounded-md dy-px-8",
+        default: "dy-h-10 dy-px-4! dy-py-2",
+        sm: "dy-h-9 dy-rounded-md dy-px-3!",
+        lg: "dy-h-11 dy-rounded-md dy-px-8!",
         icon: "dy-h-10 dy-w-10",
       },
     },
@@ -35,7 +35,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 
