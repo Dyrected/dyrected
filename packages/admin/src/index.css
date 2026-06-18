@@ -130,7 +130,7 @@
     --font-serif: "Fraunces", ui-serif, Georgia, serif;
 
     /* Backgrounds */
-    --background: 77 100% 97%;         /* #FBFFF1 Lime Paper */
+    --background: 77.14 100% 98.97%;         /* #FEFFFA Lime Paper */
     --foreground: 60 3% 6%;            /* #111110 near-black */
 
     --card: 0 0% 100%;                 /* #FFFFFF Plain White */
@@ -167,7 +167,7 @@
     --radius: 0.5rem;
 
     /* Sidebar */
-    --sidebar-background: 77 100% 97%;
+    --sidebar-background: 77.14 100% 98.97%;
     --sidebar-foreground: 60 3% 6%;
     --sidebar-primary: 81 100% 59%;
     --sidebar-primary-foreground: 60 3% 6%;
