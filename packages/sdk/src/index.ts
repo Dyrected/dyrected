@@ -458,6 +458,11 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     if (res && typeof res.ok === "boolean") {
       if (!res.ok) {
         const body = await res.json().catch(() => ({ message: "Unknown error" }));
+        if (res.status === 429 && typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("dyrected:rate-limit", {
+            detail: { message: body.message, code: body.code },
+          }));
+        }
         throw new DyrectedError(body.message || `Request failed with status ${res.status}`, res.status, body.code);
       }
       return res.json();

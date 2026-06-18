@@ -1,9 +1,18 @@
-import { DatabaseAdapter, PaginatedResult } from '@dyrected/core';
-import { MongoClient, Db, ObjectId } from 'mongodb';
+import { DatabaseAdapter, PaginatedResult, parseSort } from '@dyrected/core';
+import { MongoClient, Db, ObjectId, type SortDirection } from 'mongodb';
 
 export interface MongoAdapterConfig {
   url: string;
   dbName: string;
+}
+
+function normalizeMongoSort(sort: string | undefined): Record<string, SortDirection> {
+  return Object.fromEntries(
+    parseSort(sort).map(({ field, direction }) => {
+      const mongoDirection: SortDirection = direction === 'DESC' ? -1 : 1;
+      return [field, mongoDirection];
+    }),
+  ) as Record<string, SortDirection>;
 }
 
 export class MongoAdapter implements DatabaseAdapter {
@@ -37,12 +46,7 @@ export class MongoAdapter implements DatabaseAdapter {
     const query = args.where || {};
     const total = await col.countDocuments(query);
     
-    // Simple sort parsing (e.g. 'createdAt DESC' -> { createdAt: -1 })
-    let sortObj: any = { createdAt: -1 };
-    if (args.sort) {
-      const [field, order] = args.sort.split(' ');
-      sortObj = { [field]: order?.toUpperCase() === 'DESC' ? -1 : 1 };
-    }
+    const sortObj = normalizeMongoSort(args.sort);
 
     const cursor = col.find(query).sort(sortObj).skip(skip).limit(limit);
     const docs = await cursor.toArray();

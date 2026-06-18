@@ -1,4 +1,4 @@
-import { DatabaseAdapter, PaginatedResult, parseSqlWhere } from "@dyrected/core";
+import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere } from "@dyrected/core";
 import mysql from "mysql2/promise";
 
 export interface MysqlAdapterConfig {
@@ -10,6 +10,24 @@ export interface MysqlAdapterConfig {
   user?: string;
   password?: string;
   database?: string;
+}
+
+function escapeMysqlIdentifier(identifier: string) {
+  return `\`${identifier.replace(/`/g, "``")}\``;
+}
+
+function normalizeMysqlSort(sort: string | undefined, existingCols: string[]) {
+  return parseSort(sort)
+    .map(({ field, direction }) => {
+      if (field === "createdAt" || field === "created_at") return `\`created_at\` ${direction}`;
+      if (field === "updatedAt" || field === "updated_at") return `\`updated_at\` ${direction}`;
+      if (existingCols.includes(field) && !["id", "data"].includes(field)) {
+        return `${escapeMysqlIdentifier(field)} ${direction}`;
+      }
+
+      return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}')) ${direction}`;
+    })
+    .join(", ");
 }
 
 export class MysqlAdapter implements DatabaseAdapter {
@@ -203,9 +221,7 @@ FIX INSTRUCTIONS:
       whereParams = result.params;
     }
 
-    // Normalize camelCase sort fields → snake_case columns
-    const rawSort = args.sort ?? "created_at DESC";
-    const sort = rawSort.replace(/\bcreatedAt\b/g, "created_at").replace(/\bupdatedAt\b/g, "updated_at");
+    const sort = normalizeMysqlSort(args.sort, existingCols);
 
     // Count with filter applied for accurate pagination
     const [countRows] = await this.query(

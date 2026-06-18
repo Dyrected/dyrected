@@ -1,9 +1,26 @@
-import { DatabaseAdapter, CollectionConfig, GlobalConfig } from '@dyrected/core';
-import { parseSqlWhere } from '@dyrected/core';
+import { DatabaseAdapter, CollectionConfig, GlobalConfig, parseSort, parseSqlWhere } from '@dyrected/core';
 import Database from 'better-sqlite3';
 
 export interface SqliteAdapterConfig {
   filename: string;
+}
+
+function escapeSqliteIdentifier(identifier: string) {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function normalizeSqliteSort(sort: string | undefined, columns: string[]) {
+  return parseSort(sort)
+    .map(({ field, direction }) => {
+      if (field === 'createdAt' || field === 'created_at') return `"created_at" ${direction}`;
+      if (field === 'updatedAt' || field === 'updated_at') return `"updated_at" ${direction}`;
+      if (columns.includes(field) && !['id', 'data'].includes(field)) {
+        return `${escapeSqliteIdentifier(field)} ${direction}`;
+      }
+
+      return `json_extract(data, '$.${field}') ${direction}`;
+    })
+    .join(', ');
 }
 
 export class SqliteAdapter implements DatabaseAdapter {
@@ -101,11 +118,7 @@ export class SqliteAdapter implements DatabaseAdapter {
       whereParams = result.params;
     }
 
-    // Normalize sort — json fields live inside the data blob
-    const rawSort = args.sort || 'created_at DESC';
-    const sort = rawSort
-      .replace(/\bcreatedAt\b/g, 'created_at')
-      .replace(/\bupdatedAt\b/g, 'updated_at');
+    const sort = normalizeSqliteSort(args.sort, columns);
 
     // Count with same filter so pagination totals are accurate
     const { count } = this.sqlite

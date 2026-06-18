@@ -1,8 +1,26 @@
-import { DatabaseAdapter, PaginatedResult, parseSqlWhere } from '@dyrected/core';
+import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere } from '@dyrected/core';
 import postgres from 'postgres';
 
 export interface PostgresAdapterConfig {
   url: string;
+}
+
+function escapePgIdentifier(identifier: string) {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function normalizePgSort(sort: string | undefined, existingCols: string[]) {
+  return parseSort(sort)
+    .map(({ field, direction }) => {
+      if (field === 'createdAt' || field === 'created_at') return `"created_at" ${direction}`;
+      if (field === 'updatedAt' || field === 'updated_at') return `"updated_at" ${direction}`;
+      if (existingCols.includes(field) && !['id', 'data'].includes(field)) {
+        return `${escapePgIdentifier(field)} ${direction}`;
+      }
+
+      return `(data->>'${field.replace(/'/g, "''")}') ${direction}`;
+    })
+    .join(', ');
 }
 
 export class PostgresAdapter implements DatabaseAdapter {
@@ -153,9 +171,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     const countRes = await this.sql.unsafe(countQuery, params);
     const total = parseInt(countRes[0].total);
 
-    // Normalize sort field names from camelCase to snake_case
-    let sort = args.sort || 'createdAt DESC';
-    sort = sort.replace(/\bcreatedAt\b/g, 'created_at').replace(/\bupdatedAt\b/g, 'updated_at');
+    const sort = normalizePgSort(args.sort, existingCols);
 
     const rowsQuery = `
       SELECT * FROM ${tableName}
