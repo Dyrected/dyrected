@@ -247,12 +247,12 @@
   }
 }
 
-.media-preview-dialod-details-form div[style="min-width: 100%;display: table;"] {
+.dy-admin-ui .media-preview-dialod-details-form div[style="min-width: 100%;display: table;"] {
   display: flex !important;
 }
 
 /* TipTap Editor Tables */
-.dy-prose table {
+.dy-admin-ui .dy-prose table {
   border-collapse: collapse;
   table-layout: fixed;
   width: 100%;
@@ -260,8 +260,8 @@
   overflow: hidden;
 }
 
-.dy-prose table td,
-.dy-prose table th {
+.dy-admin-ui .dy-prose table td,
+.dy-admin-ui .dy-prose table th {
   min-width: 1em;
   border: 1px solid hsl(var(--border));
   padding: 8px 12px;
@@ -270,13 +270,13 @@
   position: relative;
 }
 
-.dy-prose table th {
+.dy-admin-ui .dy-prose table th {
   font-weight: 500;
   text-align: left;
   background-color: hsl(var(--muted) / 0.5);
 }
 
-.dy-prose table .selectedCell:after {
+.dy-admin-ui .dy-prose table .selectedCell:after {
   z-index: 2;
   position: absolute;
   content: "";
