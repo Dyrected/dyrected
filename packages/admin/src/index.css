@@ -16,49 +16,27 @@
     border-color: currentColor;
   }
 
-  .dy-admin-ui a {
+  .dy-admin-ui :where(a) {
     color: inherit;
     text-decoration: inherit;
   }
 
-  .dy-admin-ui blockquote,
-  .dy-admin-ui dl,
-  .dy-admin-ui dd,
-  .dy-admin-ui h1,
-  .dy-admin-ui h2,
-  .dy-admin-ui h3,
-  .dy-admin-ui h4,
-  .dy-admin-ui h5,
-  .dy-admin-ui h6,
-  .dy-admin-ui hr,
-  .dy-admin-ui figure,
-  .dy-admin-ui p,
-  .dy-admin-ui pre {
+  .dy-admin-ui :where(blockquote, dl, dd, h1, h2, h3, h4, h5, h6, hr, figure, p, pre) {
     margin: 0;
   }
 
-  .dy-admin-ui h1,
-  .dy-admin-ui h2,
-  .dy-admin-ui h3,
-  .dy-admin-ui h4,
-  .dy-admin-ui h5,
-  .dy-admin-ui h6 {
+  .dy-admin-ui :where(h1, h2, h3, h4, h5, h6) {
     font-size: inherit;
     font-weight: inherit;
   }
 
-  .dy-admin-ui ol,
-  .dy-admin-ui ul {
+  .dy-admin-ui :where(ol, ul) {
     list-style: none;
     margin: 0;
     padding: 0;
   }
 
-  .dy-admin-ui button,
-  .dy-admin-ui input,
-  .dy-admin-ui optgroup,
-  .dy-admin-ui select,
-  .dy-admin-ui textarea {
+  .dy-admin-ui :where(button, input, optgroup, select, textarea) {
     font-family: inherit;
     font-size: 100%;
     font-weight: inherit;
@@ -68,24 +46,18 @@
     padding: 0;
   }
 
-  .dy-admin-ui button,
-  .dy-admin-ui select {
+  .dy-admin-ui :where(button, select) {
     text-transform: none;
   }
 
-  .dy-admin-ui button,
-  .dy-admin-ui [type='button'],
-  .dy-admin-ui [type='reset'],
-  .dy-admin-ui [type='submit'] {
+  .dy-admin-ui :where(button, [type='button'], [type='reset'], [type='submit']) {
     -webkit-appearance: button;
     appearance: button;
     background-color: transparent;
     background-image: none;
   }
 
-  .dy-admin-ui input,
-  .dy-admin-ui textarea,
-  .dy-admin-ui select {
+  .dy-admin-ui :where(input, textarea, select) {
     background-color: transparent;
   }
 
@@ -102,23 +74,15 @@
     box-shadow: none;
   }
 
-  .dy-admin-ui textarea {
+  .dy-admin-ui :where(textarea) {
     resize: vertical;
   }
 
-  .dy-admin-ui img,
-  .dy-admin-ui svg,
-  .dy-admin-ui video,
-  .dy-admin-ui canvas,
-  .dy-admin-ui audio,
-  .dy-admin-ui iframe,
-  .dy-admin-ui embed,
-  .dy-admin-ui object {
+  .dy-admin-ui :where(img, svg, video, canvas, audio, iframe, embed, object) {
     display: block;
   }
 
-  .dy-admin-ui img,
-  .dy-admin-ui video {
+  .dy-admin-ui :where(img, video) {
     max-width: 100%;
     height: auto;
   }
@@ -182,12 +146,7 @@
     @apply dy-font-sans;
   }
 
-  .dy-admin-ui h1,
-  .dy-admin-ui h2,
-  .dy-admin-ui h3,
-  .dy-admin-ui h4,
-  .dy-admin-ui h5,
-  .dy-admin-ui h6 {
+  .dy-admin-ui :where(h1, h2, h3, h4, h5, h6) {
     @apply dy-font-serif;
     font-weight: 500;
     letter-spacing: 0;
@@ -199,8 +158,7 @@
     font-weight: 600;
   }
 
-  .dy-admin-ui button,
-  .dy-admin-ui label {
+  .dy-admin-ui :where(button, label) {
     font-weight: 500;
     letter-spacing: 0;
   }
@@ -234,15 +192,11 @@
 }
 
 @layer components {
-  .dy-admin-ui input,
-  .dy-admin-ui select,
-  .dy-admin-ui textarea {
+  .dy-admin-ui :where(input, select, textarea) {
     @apply focus-visible:dy-ring-0 focus-visible:dy-ring-offset-0 focus-visible:dy-outline-none focus:dy-outline-none dy-border-border/60 dy-bg-transparent dy-transition-all;
   }
 
-  .dy-admin-ui input:focus,
-  .dy-admin-ui select:focus,
-  .dy-admin-ui textarea:focus {
+  .dy-admin-ui :where(input, select, textarea):focus {
     border-color: hsl(var(--intelligence) / 0.5);
   }
 }
