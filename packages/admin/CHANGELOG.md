@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.29
+
+### Patch Changes
+
+- cbc6dad: Lower Admin UI scoped reset specificity with `:where(...)` so component utility classes can override reset styles normally.
+  - @dyrected/core@2.5.29
+  - @dyrected/sdk@2.5.29
+
 ## 2.5.28
 
 ### Patch Changes

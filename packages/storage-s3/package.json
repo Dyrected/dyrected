@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/storage-s3",
-  "version": "2.5.28",
+  "version": "2.5.29",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,5 +1,13 @@
 # @dyrected/react
 
+## 2.5.29
+
+### Patch Changes
+
+- Updated dependencies [cbc6dad]
+  - @dyrected/admin@2.5.29
+  - @dyrected/sdk@2.5.29
+
 ## 2.5.28
 
 ### Patch Changes
