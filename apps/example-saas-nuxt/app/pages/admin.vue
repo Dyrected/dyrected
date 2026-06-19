@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import RsvpLink from '~/components/RsvpLink.vue';
+import RsvpLink from "~/components/RsvpLink.vue";
 // DyrectedAdmin is auto-imported by @dyrected/nuxt.
 definePageMeta({ layout: false });
 
@@ -19,42 +19,46 @@ const customComponents = {
 </template>
 <style lang="css">
 /* Override Dyrected Admin UI variables to match SnackTrack Pro's premium gold & navy brand identity */
-:root {
+.dy-admin-ui {
   /* Fonts */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  /* Primary Accent: SnackTrack Gold (HSL: 48 100% 45%) */
+  /* Primary action: SnackTrack Gold */
   --primary: 48 100% 45%;
-  --primary-foreground: 215 67% 6%; /* dark navy text on gold bg */
-  --ring: 48 100% 45%;
+  --primary-foreground: 215 67% 6%;
 
-  /* Page Surface: SnackTrack Navy (HSL: 215 67% 6%) */
+  /* Intelligence/accent: also gold for this dark theme */
+  --intelligence: 48 100% 45%;
+  --intelligence-foreground: 215 67% 6%;
+
+  /* Page surface: SnackTrack Navy */
   --background: 215 67% 6%;
   --foreground: 210 40% 98%;
 
-  /* Cards & Panels: HSL: 215 60% 10% */
+  /* Cards & panels */
   --card: 215 60% 10%;
   --card-foreground: 210 40% 98%;
 
-  /* Popovers: HSL: 215 60% 10% */
+  /* Popovers */
   --popover: 215 60% 10%;
   --popover-foreground: 210 40% 98%;
 
-  /* Secondary (Tags, Subtle Buttons) */
+  /* Secondary */
   --secondary: 215 50% 15%;
   --secondary-foreground: 210 40% 98%;
 
-  /* Muted Elements */
+  /* Muted */
   --muted: 215 50% 15%;
   --muted-foreground: 215 20% 65%;
 
-  /* Accent (Hover tints) */
+  /* Hover/link accents */
   --accent: 215 50% 18%;
   --accent-foreground: 48 100% 45%;
 
-  /* Borders & Inputs */
+  /* Borders & inputs */
   --border: 215 40% 20%;
   --input: 215 40% 20%;
+  --ring: 48 100% 45%;
 
   /* Sidebar */
   --sidebar-background: 215 60% 8%;
@@ -68,7 +72,8 @@ const customComponents = {
 }
 
 /* Ensure the page body is dark when viewing the admin UI */
-html, body {
+html,
+body {
   background-color: hsl(215 67% 6%) !important;
   color: hsl(210 40% 98%) !important;
 }
