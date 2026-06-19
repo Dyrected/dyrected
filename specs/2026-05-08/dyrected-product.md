@@ -144,7 +144,7 @@ The fastest way to get started. Dyrected runs on managed infrastructure. You con
 **What you get:**
 
 - Hosted API at `api.dyrected.com`
-- Hosted admin dashboard at `app.dyrected.com`
+- Hosted admin dashboard at `cloud.dyrected.com`
 - Automatic SSL, backups, and uptime monitoring
 - CDN-cached content delivery globally
 - Managed PostgreSQL and Redis
@@ -366,7 +366,7 @@ In self-hosted mode, the admin opens directly to the content editor. There is no
 
 The admin is available as:
 
-- Hosted at `app.dyrected.com` (cloud)
+- Hosted at `cloud.dyrected.com` (cloud)
 - Self-hosted as a standalone web app
 - Embedded in your Next.js or Nuxt app at `/admin`
 
