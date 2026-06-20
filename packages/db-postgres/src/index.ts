@@ -27,6 +27,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   private sql!: postgres.Sql;
   private config: PostgresAdapterConfig;
   private initPromise: Promise<void> | null = null;
+  private inTransaction = false;
 
   constructor(config: PostgresAdapterConfig) {
     this.config = config;
@@ -196,7 +197,9 @@ export class PostgresAdapter implements DatabaseAdapter {
   async findOne(params: { collection: string; id: string }) {
     await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
-    const rows = await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
+    const rows = this.inTransaction
+      ? await this.sql`SELECT * FROM ${table} WHERE id = ${params.id} FOR UPDATE`
+      : await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
     const row = rows[0];
     if (!row) return null;
     return { id: row.id, ...row.data };
@@ -309,6 +312,17 @@ export class PostgresAdapter implements DatabaseAdapter {
       return this.sql.unsafe(query, params);
     }
     return this.sql.unsafe(query);
+  }
+
+  async transaction<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T> {
+    await this.ensureInitialized();
+    return await (this.sql.begin(async (sql) => {
+      const scoped = Object.create(this) as PostgresAdapter;
+      scoped.sql = sql as unknown as postgres.Sql;
+      scoped.initPromise = Promise.resolve();
+      scoped.inTransaction = true;
+      return callback(scoped);
+    }) as unknown as Promise<T>);
   }
 
   async ping() {

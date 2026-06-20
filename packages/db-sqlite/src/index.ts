@@ -25,6 +25,7 @@ function normalizeSqliteSort(sort: string | undefined, columns: string[]) {
 
 export class SqliteAdapter implements DatabaseAdapter {
   private sqlite: Database.Database;
+  private transactionQueue: Promise<void> = Promise.resolve();
 
   constructor(config: SqliteAdapterConfig) {
     this.sqlite = new Database(config.filename);
@@ -259,6 +260,24 @@ export class SqliteAdapter implements DatabaseAdapter {
     const stmt = this.sqlite.prepare(`INSERT OR REPLACE INTO dyrected_internal (key, value) VALUES (?, ?)`);
     stmt.run(`global_${params.slug}`, JSON.stringify(params.data));
     return params.data;
+  }
+
+  async transaction<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T> {
+    let release!: () => void;
+    const previous = this.transactionQueue;
+    this.transactionQueue = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+    this.sqlite.exec('BEGIN IMMEDIATE');
+    try {
+      const result = await callback(this);
+      this.sqlite.exec('COMMIT');
+      return result;
+    } catch (error) {
+      this.sqlite.exec('ROLLBACK');
+      throw error;
+    } finally {
+      release();
+    }
   }
 }
 

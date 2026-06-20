@@ -434,14 +434,21 @@ Components receive:
 - `schemas`: The full loaded `AdminSchemas` object.
 
 **Collection List Slots (`beforeList`, `beforeListTable`, `afterListTable`, `afterList`):**
-Components receive the same props as the dashboard, plus:
+Components receive:
+- `client`: The initialized `DyrectedClient` for data fetching or mutations.
+- `user`: The currently authenticated admin user document.
 - `collection`: The configuration of the current collection.
-- `data`: The paginated list response (`{ docs, totalDocs, totalPages, ... }`).
-- `page` / `setPage`: Current pagination state.
-- `where` / `setWhere`: Current filter state.
-- `selectedIds` / `setSelectedIds`: Array of document IDs selected via table checkboxes.
+- `collectionSlug`: The current collection's slug.
+- `response`: The current paginated response, or `undefined` while loading.
+- `documents`: The documents currently rendered. Media collections include all pages loaded by infinite scroll.
+- `isLoading`: Whether the list's initial request is pending.
+- `pagination`: Read-only `page`, `totalPages`, `total`, `hasNextPage`, and `hasPrevPage` values.
+- `permissions`: Read-only `canRead` and `canCreate` results for the current user.
+- `urls`: The collection list and new-document URLs.
 
-If an unconfigured component is passed, or if a component throws an error during render, the Admin UI will gracefully catch the error and skip it, ensuring the rest of the CMS remains usable.
+Use `client` for mutations and data fetching. Slot props intentionally do not expose setters for Dyrected's filters, pagination, or row selection.
+
+If a configured key is not registered, or if a component throws during render, the Admin UI skips that component so the rest of the CMS remains usable. Missing-key warnings are deduplicated in development.
 
 ## Theming & CSS Overrides
 

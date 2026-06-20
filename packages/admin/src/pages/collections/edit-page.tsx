@@ -56,13 +56,12 @@ export function EditEntryPage() {
 
   const schema = schemas?.collections.find((c: { slug: string }) => c.slug === slug)
 
-  const [prevSchemaSlug, setPrevSchemaSlug] = useState<string | null>(null)
-  if (schema && schema.slug !== prevSchemaSlug) {
-    setPrevSchemaSlug(schema.slug)
-    if (schema.admin?.previewUrl) {
-      setShowPreview(false)
-    }
-  }
+  const schemaSlug = schema?.slug
+  const schemaPreviewUrl = schema?.admin?.previewUrl
+  useEffect(() => {
+    if (!schemaSlug || !schemaPreviewUrl) return
+    setShowPreview((previous) => previous ? false : previous)
+  }, [schemaSlug, schemaPreviewUrl])
 
   // Fetch entry data if in edit mode
   const { data: entry, isLoading: isEntryLoading } = useQuery({
@@ -71,11 +70,10 @@ export function EditEntryPage() {
     enabled: !!client && isEdit,
   })
 
-  const [prevEntry, setPrevEntry] = useState<Record<string, unknown> | null>(null)
-  if (entry && entry !== prevEntry) {
-    setPrevEntry(entry)
-    setPreviewData(entry)
-  }
+  useEffect(() => {
+    if (!entry) return
+    setPreviewData((previous) => previous === entry ? previous : entry)
+  }, [entry, id, slug])
 
   // Password-change permissions
   // isSelf: the logged-in user is editing their own account

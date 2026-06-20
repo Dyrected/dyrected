@@ -5,6 +5,8 @@ description: Guide on setting up a publishing chain with capability gates and co
 
 This guide walks you through setting up a complete editorial approval workflow for a content management site.
 
+The configuration in this guide is also maintained as a type-checked integration fixture in the repository, so changes to the workflow API fail CI instead of silently making this example stale.
+
 ---
 
 ## 1. Define the Collection
@@ -13,7 +15,7 @@ Add `publishingWorkflow()` to the collection config:
 
 ```ts
 import { defineCollection } from "@dyrected/core"
-import { publishingWorkflow } from "@dyrected/core/workflows"
+import { publishingWorkflow } from "@dyrected/core"
 
 export const Posts = defineCollection({
   slug: "posts",

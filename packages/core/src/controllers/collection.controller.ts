@@ -7,9 +7,11 @@ import { AuditService } from '../services/audit.service.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { runCollectionHooks, executeFieldBeforeChange, executeFieldAfterRead } from '../utils/hooks.js';
 import { createReadonlyDb } from '../utils/readonly-db.js';
+import { evaluateAccess } from '../auth/jexl.js';
 import {
   WORKFLOW_HISTORY_COLLECTION,
   createWorkflowDocument,
+  canViewWorkflowDraft,
   initializeWorkflowDocument,
   materializeWorkflowDocument,
   saveWorkflowDraft,
@@ -71,7 +73,7 @@ export class CollectionController {
 
     // Workflow drafts are never visible to unauthenticated readers. The public
     // response is materialized from the last promoted snapshot below.
-    if (this.collection.workflow && !user) {
+    if (this.collection.workflow && !canViewWorkflowDraft(this.collection.workflow, user)) {
       where = where
         ? { AND: [where, { __published: { exists: true } }] }
         : { __published: { exists: true } };
@@ -449,9 +451,30 @@ export class CollectionController {
     const config = c.get('config');
     if (!config.db) return c.json({ message: 'Database not configured' }, 500);
     if (!this.collection.workflow) return c.json({ message: 'Workflows are not enabled for this collection' }, 404);
+    const documentId = c.req.param('id');
+    if (!documentId) return c.json({ message: 'Missing ID' }, 400);
+    const document = await config.db.findOne({ collection: this.collection.slug, id: documentId });
+    if (!document) return c.json({ message: 'Not Found' }, 404);
+    const readAccess = this.collection.access?.read;
+    if (readAccess !== undefined && readAccess !== null) {
+      const args = { user: c.get('user'), req: c.req as any, doc: document };
+      const result = typeof readAccess === 'function'
+        ? await readAccess(args)
+        : await evaluateAccess(readAccess, args);
+      let allowed = result === true;
+      if (result && typeof result === 'object') {
+        const match = await config.db.find({
+          collection: this.collection.slug,
+          where: { AND: [{ id: { equals: documentId } }, result] },
+          limit: 1,
+        });
+        allowed = match.total > 0;
+      }
+      if (!allowed) return c.json({ error: true, message: `Access denied: read on ${this.collection.slug}` }, 403);
+    }
     const result = await config.db.find({
       collection: WORKFLOW_HISTORY_COLLECTION,
-      where: { collection: { equals: this.collection.slug }, documentId: { equals: c.req.param('id') } },
+      where: { collection: { equals: this.collection.slug }, documentId: { equals: documentId } },
       sort: '-createdAt',
       limit: Math.min(Number(c.req.query('limit')) || 50, 100),
     });

@@ -52,6 +52,15 @@ export function workflowCapabilities(workflow: WorkflowConfig, user?: Authentica
   return capabilities;
 }
 
+export function canViewWorkflowDraft(workflow: WorkflowConfig, user?: AuthenticatedUser): boolean {
+  if (!user) return false;
+  const capabilities = workflowCapabilities(workflow, user);
+  if (capabilities.has("entry.edit")) return true;
+  return workflow.transitions.some((transition) =>
+    (transition.requiredCapabilities ?? []).some((capability) => capabilities.has(capability)),
+  );
+}
+
 export function availableWorkflowTransitions(
   workflow: WorkflowConfig,
   state: string,
@@ -80,7 +89,7 @@ export function materializeWorkflowDocument(
   if (!meta) return doc;
   const { __published, __workflow, ...working } = doc;
 
-  if (!user) {
+  if (!canViewWorkflowDraft(workflow, user)) {
     if (!__published || typeof __published !== "object") return null;
     return { id: doc.id, ...(__published as Record<string, unknown>), _workflow: publicMetadata(meta) };
   }
@@ -154,6 +163,7 @@ export async function dispatchLifecycleEvent(config: DyrectedConfig, event: Life
 
 export async function dispatchPendingLifecycleEvents(config: DyrectedConfig, limit = 50): Promise<number> {
   if (!config.db || !config.events?.handlers.length) return 0;
+  const maxAttempts = config.events.maxAttempts ?? 8;
   const result = await config.db.find({
     collection: LIFECYCLE_EVENTS_COLLECTION,
     where: { status: { in: ["pending", "failed"] } },
@@ -161,7 +171,10 @@ export async function dispatchPendingLifecycleEvents(config: DyrectedConfig, lim
     limit,
   });
   const now = Date.now();
-  const due = result.docs.filter((doc) => !doc.nextAttemptAt || new Date(doc.nextAttemptAt).getTime() <= now);
+  const due = result.docs.filter((doc) =>
+    Number(doc.attempts ?? 0) < maxAttempts &&
+    (!doc.nextAttemptAt || new Date(doc.nextAttemptAt).getTime() <= now),
+  );
   for (const event of due) await dispatchLifecycleEvent(config, event as LifecycleEvent);
   return due.length;
 }
@@ -279,12 +292,22 @@ export async function transitionWorkflow(args: {
   }
 
   const updated = await db.transaction(async (tx) => {
+    const locked = await tx.findOne({ collection: collection.slug, id });
+    if (!locked) throw Object.assign(new Error("Not Found"), { statusCode: 404 });
+    const lockedMeta = locked.__workflow as WorkflowMetadata;
+    if (
+      lockedMeta.revision !== meta.revision ||
+      lockedMeta.state !== meta.state ||
+      (expectedRevision !== undefined && lockedMeta.revision !== expectedRevision)
+    ) {
+      throw Object.assign(new Error("This entry changed since it was loaded. Refresh before transitioning it."), { statusCode: 409 });
+    }
     const now = new Date().toISOString();
-    const { __published: _published, __workflow: _workflow, id: _id, ...working } = original;
+    const { __published: _published, __workflow: _workflow, id: _id, ...working } = locked;
     const nextMeta: WorkflowMetadata = {
-      ...meta,
+      ...lockedMeta,
       state: transition.to,
-      ...(targetState.published ? { publishedRevision: meta.revision, publishedAt: now, publishedBy: user?.sub } : {}),
+      ...(targetState.published ? { publishedRevision: lockedMeta.revision, publishedAt: now, publishedBy: user?.sub } : {}),
       ...(transition.unpublish ? { publishedRevision: undefined, publishedAt: undefined, publishedBy: undefined } : {}),
     };
     const data: Record<string, unknown> = { __workflow: nextMeta };
@@ -293,11 +316,11 @@ export async function transitionWorkflow(args: {
     const next = await tx.update({ collection: collection.slug, id, data });
     await tx.create({
       collection: WORKFLOW_HISTORY_COLLECTION,
-      data: { collection: collection.slug, documentId: id, transition: transition.name, from: meta.state, to: transition.to, revision: meta.revision, comment: comment ?? null, actorId: user?.sub ?? null, createdAt: now },
+      data: { collection: collection.slug, documentId: id, transition: transition.name, from: lockedMeta.state, to: transition.to, revision: lockedMeta.revision, comment: comment ?? null, actorId: user?.sub ?? null, createdAt: now },
     });
     for (const event of events) await persistEvent(tx, event);
     if (collection.audit) {
-      await tx.create({ collection: "__audit", data: { collection: collection.slug, documentId: id, operation: "workflow.transition", user: user?.sub ?? null, timestamp: now, changes: JSON.stringify({ transition: transition.name, from: meta.state, to: transition.to, revision: meta.revision }) } });
+      await tx.create({ collection: "__audit", data: { collection: collection.slug, documentId: id, operation: "workflow.transition", user: user?.sub ?? null, timestamp: now, changes: JSON.stringify({ transition: transition.name, from: lockedMeta.state, to: transition.to, revision: lockedMeta.revision }) } });
     }
     return next;
   });

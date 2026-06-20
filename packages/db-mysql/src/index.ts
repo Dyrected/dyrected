@@ -34,6 +34,7 @@ export class MysqlAdapter implements DatabaseAdapter {
   private pool: any;
   private config: MysqlAdapterConfig;
   private initPromise: Promise<void> | null = null;
+  private inTransaction = false;
 
   constructor(config: MysqlAdapterConfig) {
     this.config = config;
@@ -190,7 +191,7 @@ FIX INSTRUCTIONS:
     page?: number;
     sort?: string;
   }): Promise<PaginatedResult> {
-    await this.ensureTable(args.collection);
+    if (!this.inTransaction) await this.ensureTable(args.collection);
     const tableName = this.getTableName(args.collection);
 
     const limit = args.limit ?? 10;
@@ -256,9 +257,10 @@ FIX INSTRUCTIONS:
   }
 
   async findOne(params: { collection: string; id: string }) {
-    await this.ensureTable(params.collection);
+    if (!this.inTransaction) await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
-    const [rows] = await this.query(`SELECT * FROM \`${tableName}\` WHERE id = ?`, [params.id]);
+    const lock = this.inTransaction ? " FOR UPDATE" : "";
+    const [rows] = await this.query(`SELECT * FROM \`${tableName}\` WHERE id = ?${lock}`, [params.id]);
     const row = rows[0];
     if (!row) return null;
     return {
@@ -270,7 +272,7 @@ FIX INSTRUCTIONS:
   }
 
   async create(params: { collection: string; data: any }) {
-    await this.ensureTable(params.collection);
+    if (!this.inTransaction) await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
 
     // Inspect columns for promoted fields
@@ -303,7 +305,7 @@ FIX INSTRUCTIONS:
   }
 
   async update(params: { collection: string; id: string; data: any }) {
-    await this.ensureTable(params.collection);
+    if (!this.inTransaction) await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
 
     // Inspect columns for promoted fields
@@ -340,7 +342,7 @@ FIX INSTRUCTIONS:
   }
 
   async delete(params: { collection: string; id: string }) {
-    await this.ensureTable(params.collection);
+    if (!this.inTransaction) await this.ensureTable(params.collection);
     const tableName = this.getTableName(params.collection);
     await this.query(`DELETE FROM \`${tableName}\` WHERE id = ?`, [params.id]);
   }
@@ -360,6 +362,26 @@ FIX INSTRUCTIONS:
       [`global_${params.slug}`, JSON.stringify(params.data)],
     );
     return params.data;
+  }
+
+  async transaction<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T> {
+    await this.ensureInitialized();
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const scoped = Object.create(this) as MysqlAdapter;
+      scoped.pool = connection;
+      scoped.initPromise = Promise.resolve();
+      scoped.inTransaction = true;
+      const result = await callback(scoped);
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 
   /** Gracefully close the connection pool. Call on process exit. */

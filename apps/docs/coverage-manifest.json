@@ -3,6 +3,7 @@
     "workflows": [
       "publishingWorkflow",
       "workflowCapabilities",
+      "canViewWorkflowDraft",
       "availableWorkflowTransitions",
       "initializeWorkflowDocument",
       "materializeWorkflowDocument",

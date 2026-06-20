@@ -4,6 +4,7 @@ import { defineCollection, defineConfig } from "../index.js";
 import {
   publishingWorkflow,
   initializeWorkflowDocument,
+  materializeWorkflowDocument,
   transitionWorkflow,
   saveWorkflowDraft,
   createWorkflowDocument,
@@ -12,20 +13,13 @@ import {
   LIFECYCLE_EVENTS_COLLECTION,
 } from "../workflows.js";
 import type { AuthenticatedUser, WorkflowMetadata } from "../types/index.js";
+import { EditorialPosts } from "./fixtures/editorial-workflow.js";
+import { generateOpenApi } from "../utils/openapi.js";
 
 // ─── Shared config builders ───────────────────────────────────────────────────
 
 function makeConfig(db: InMemoryAdapter) {
-  const posts = defineCollection({
-    slug: "posts",
-    workflow: publishingWorkflow(),
-    fields: [
-      { name: "title", type: "text", required: true },
-      { name: "body", type: "text" },
-    ],
-  });
-
-  return defineConfig({ collections: [posts], globals: [], db });
+  return defineConfig({ collections: [EditorialPosts], globals: [], db });
 }
 
 function makeUser(role: "editor" | "publisher" | "admin"): AuthenticatedUser {
@@ -65,6 +59,42 @@ describe("publishingWorkflow template", () => {
     expect(transitionNames).toContain("publish");
     expect(transitionNames).toContain("reject");
     expect(transitionNames).toContain("unpublish");
+  });
+
+  it("adds workflow operations and metadata to OpenAPI", () => {
+    const spec = generateOpenApi(defineConfig({ collections: [EditorialPosts], globals: [] }));
+    expect(spec.paths["/api/collections/posts/{id}/transitions/{transition}"]?.post).toBeTruthy();
+    expect(spec.paths["/api/collections/posts/{id}/workflow-history"]?.get).toBeTruthy();
+    expect(spec.components.schemas.posts.properties._workflow.$ref).toBe("#/components/schemas/WorkflowMetadata");
+  });
+});
+
+describe("workflow document visibility", () => {
+  const stored = {
+    id: "post-live",
+    title: "Working draft",
+    __published: { title: "Live title" },
+    __workflow: { state: "draft", revision: 2, publishedRevision: 1 },
+  };
+
+  it("serves the published snapshot to anonymous users and viewers", () => {
+    const workflow = publishingWorkflow();
+    expect(materializeWorkflowDocument(stored, workflow)?.title).toBe("Live title");
+    expect(materializeWorkflowDocument(stored, workflow, makeUser("admin"))?.title).toBe("Working draft");
+    expect(materializeWorkflowDocument(stored, workflow, {
+      sub: "viewer",
+      roles: ["viewer"],
+      collection: "users",
+    })?.title).toBe("Live title");
+  });
+
+  it("does not expose an unpublished draft to a viewer", () => {
+    const draft = { id: "draft", title: "Secret", __workflow: { state: "draft", revision: 1 } };
+    expect(materializeWorkflowDocument(draft, publishingWorkflow(), {
+      sub: "viewer",
+      roles: ["viewer"],
+      collection: "users",
+    })).toBeNull();
   });
 });
 
@@ -529,5 +559,26 @@ describe("dispatchPendingLifecycleEvents", () => {
 
     const dispatched = await dispatchPendingLifecycleEvents(config, 50);
     expect(dispatched).toBe(0);
+  });
+
+  it("does not retry events that exhausted maxAttempts", async () => {
+    const handler = vi.fn();
+    const exhaustedConfig = { ...config, events: { handlers: [handler], maxAttempts: 3 } };
+    await db.create({
+      collection: LIFECYCLE_EVENTS_COLLECTION,
+      data: {
+        id: "evt-exhausted",
+        name: "revision.created",
+        collection: "posts",
+        documentId: "p1",
+        status: "failed",
+        attempts: 3,
+        payload: {},
+        occurredAt: new Date().toISOString(),
+      },
+    });
+
+    expect(await dispatchPendingLifecycleEvents(exhaustedConfig, 50)).toBe(0);
+    expect(handler).not.toHaveBeenCalled();
   });
 });

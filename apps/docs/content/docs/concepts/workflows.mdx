@@ -12,8 +12,7 @@ Workflows enable structured editorial lifecycles in your Dyrected collections. B
 To enable workflows on a collection, add the `workflow` property to its definition. Dyrected ships with a built-in editorial approval template called `publishingWorkflow()` which implements the standard `draft` → `in_review` → `published` path.
 
 ```ts
-import { defineCollection } from "@dyrected/core"
-import { publishingWorkflow } from "@dyrected/core/workflows"
+import { defineCollection, publishingWorkflow } from "@dyrected/core"
 
 export const Articles = defineCollection({
   slug: "articles",
@@ -34,7 +33,7 @@ When a collection is configured with a workflow:
 
 1. **Working Drafts**: Creating or editing an item updates its working draft revision. The current revision number is tracked in `_workflow.revision`.
 2. **Promoted Snapshot**: When the item transitions to a state marked as `published: true` (e.g. the `'published'` state), Dyrected creates an atomic snapshot of the current working draft fields under a special `__published` namespace.
-3. **Public vs. Authenticated Views**: Anonymous visitors calling `client.find()` or `client.findOne()` are served the fields from `__published` directly. Authenticated users (e.g. in the Admin UI) see the current working draft fields so they can continue editing without affecting the live site.
+3. **Public vs. Working Views**: Anonymous visitors and authenticated users without workflow capabilities are served fields from `__published`. Editors, publishers, and other users with workflow capabilities see the current working draft so they can continue editing without affecting the live site.
 
 ---
 

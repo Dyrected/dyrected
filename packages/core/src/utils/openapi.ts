@@ -12,7 +12,43 @@ export function generateOpenApi(config: DyrectedConfig) {
       description: "Automatically generated OpenAPI specification for the Dyrected project.",
     },
     components: {
-      schemas: {},
+      schemas: {
+        WorkflowMetadata: {
+          type: "object",
+          required: ["state", "revision"],
+          properties: {
+            state: { type: "string" },
+            revision: { type: "integer", minimum: 1 },
+            publishedRevision: { type: "integer", minimum: 1 },
+            publishedAt: { type: "string", format: "date-time" },
+            publishedBy: { type: "string" },
+            availableTransitions: { type: "array", items: { type: "string" } },
+          },
+        },
+        WorkflowTransitionRequest: {
+          type: "object",
+          properties: {
+            expectedRevision: { type: "integer", minimum: 1 },
+            comment: { type: "string" },
+          },
+        },
+        WorkflowHistoryEntry: {
+          type: "object",
+          required: ["collection", "documentId", "transition", "from", "to", "revision", "createdAt"],
+          properties: {
+            id: { type: "string" },
+            collection: { type: "string" },
+            documentId: { type: "string" },
+            transition: { type: "string" },
+            from: { type: "string" },
+            to: { type: "string" },
+            revision: { type: "integer" },
+            comment: { type: "string", nullable: true },
+            actorId: { type: "string", nullable: true },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
+      },
       securitySchemes: {
         ApiKeyAuth: {
           type: "apiKey",
@@ -142,6 +178,53 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
       },
     };
+
+    if (collection.workflow) {
+      spec.paths[`${path}/{id}/transitions/{transition}`] = {
+        post: {
+          tags: ["Workflows"],
+          summary: `Transition ${labels.singular} workflow`,
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string" } },
+            { name: "transition", in: "path", required: true, schema: { type: "string", enum: collection.workflow.transitions.map((item) => item.name) } },
+          ],
+          requestBody: {
+            content: { "application/json": { schema: { $ref: "#/components/schemas/WorkflowTransitionRequest" } } },
+          },
+          responses: {
+            200: { description: "Transition applied", content: { "application/json": { schema: { $ref: `#/components/schemas/${slug}` } } } },
+            400: { description: "Required transition input is missing" },
+            403: { description: "Transition capability denied" },
+            409: { description: "Invalid state or stale revision" },
+          },
+        },
+      };
+      spec.paths[`${path}/{id}/workflow-history`] = {
+        get: {
+          tags: ["Workflows"],
+          summary: `Get ${labels.singular} workflow history`,
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string" } },
+            { name: "limit", in: "query", schema: { type: "integer", default: 50, maximum: 100 } },
+          ],
+          responses: {
+            200: {
+              description: "Workflow transition history",
+              content: { "application/json": { schema: {
+                type: "object",
+                properties: {
+                  docs: { type: "array", items: { $ref: "#/components/schemas/WorkflowHistoryEntry" } },
+                  total: { type: "integer" },
+                  limit: { type: "integer" },
+                  page: { type: "integer" },
+                },
+              } } },
+            },
+            403: { description: "Collection read access denied" },
+          },
+        },
+      };
+    }
   }
 
   // 4. Generate Paths for Globals
@@ -244,6 +327,7 @@ function collectionToSchema(collection: CollectionConfig) {
       id: { type: "string" },
       createdAt: { type: "string", format: "date-time" },
       updatedAt: { type: "string", format: "date-time" },
+      ...(collection.workflow ? { _workflow: { $ref: "#/components/schemas/WorkflowMetadata" } } : {}),
       ...properties,
     },
     required: ["id", ...required],

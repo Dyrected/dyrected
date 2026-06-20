@@ -35,7 +35,7 @@ Remove your custom `status` field from the collection definition.
 Add the `publishingWorkflow()` (or your custom workflow definition) to the collection:
 
 ```diff
-+import { publishingWorkflow } from "@dyrected/core/workflows"
++import { publishingWorkflow } from "@dyrected/core"
 
  export const Posts = defineCollection({
    slug: "posts",
@@ -58,7 +58,7 @@ When workflows are enabled, the `client.find()` and `client.findOne()` endpoints
 
 ## 4. Run the Data Migration
 
-Because the new workflow state is stored in the `_workflow` namespace rather than the top-level document, you need to migrate your existing database rows. 
+Workflow state is stored internally as `__workflow`. API responses expose the safe, request-specific metadata as `_workflow`. Published rows also need a `__published` snapshot, so migrate existing data before enabling the workflow configuration.
 
 Write a script to read each document and apply the correct state:
 
@@ -75,12 +75,20 @@ async function migrateStatuses() {
       collection: "posts",
       id: post.id,
       data: {
-        _workflow: {
+        __workflow: {
           state: isPublished ? "published" : "draft",
           revision: 1,
-          publishedRevision: isPublished ? 1 : null,
-          publishedAt: isPublished ? new Date().toISOString() : null
-        }
+          ...(isPublished ? {
+            publishedRevision: 1,
+            publishedAt: new Date().toISOString()
+          } : {})
+        },
+        ...(isPublished ? {
+          __published: {
+            title: post.title,
+            // Copy every public content field, excluding status and internal keys.
+          }
+        } : {})
       }
     })
   }
@@ -88,4 +96,4 @@ async function migrateStatuses() {
 ```
 
 > [!CAUTION]
-> Remember to run this data migration script before updating the collection configuration in production. If you change the config first, documents missing the `_workflow` state may be temporarily inaccessible.
+> Remember to run this data migration script before updating the collection configuration in production. Documents missing `__workflow`, or published documents missing `__published`, are not served through the workflow-aware public API.

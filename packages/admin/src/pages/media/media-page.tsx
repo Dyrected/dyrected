@@ -37,11 +37,15 @@ import { Progress } from "../../components/ui/progress"
 import { Separator } from "../../components/ui/separator"
 // import { FocalPointPicker } from "../../components/media/focal-point-picker"
 import { Blurhash } from "react-blurhash"
-import type { Media } from "@dyrected/sdk"
+import type { CollectionConfig } from "@dyrected/core"
+import type { Media, PaginatedResult } from "@dyrected/sdk"
 import { ImageCropDialog } from "../../components/forms/fields/image-crop-dialog"
+import { AdminComponentSlot } from "../../components/admin-component-slot"
+import type { CollectionListSlotProps } from "../../types/admin-components"
+import jexl from "jexl"
 
-export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string, schema?: { labels?: { plural?: string }; label?: string } }) {
-  const { client } = useDyrected()
+export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, schema: CollectionConfig }) {
+  const { client, components, user } = useDyrected()
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
@@ -75,6 +79,49 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   const mediaResponse = React.useMemo(() => {
     return data?.pages.flatMap((page) => page.docs) || []
   }, [data])
+
+  const readAccess = (schema.access as { read?: unknown })?.read
+  const createAccess = (schema.access as { create?: unknown })?.create
+  const evaluateAccess = (access: unknown) => {
+    if (access === false) return false
+    if (typeof access !== "string") return true
+
+    try {
+      return Boolean(jexl.evalSync(access, { user }))
+    } catch (error) {
+      console.warn("Media collection access evaluation failed:", error)
+      return false
+    }
+  }
+  const canRead = evaluateAccess(readAccess)
+  const canCreate = evaluateAccess(createAccess)
+
+  const lastPage = data?.pages[data.pages.length - 1]
+  const slotResponse: PaginatedResult<Record<string, unknown>> | undefined = lastPage
+    ? { ...lastPage, docs: mediaResponse as Record<string, unknown>[] }
+    : undefined
+  const collectionComponentProps: CollectionListSlotProps = {
+    client: client!,
+    user,
+    collection: schema,
+    collectionSlug,
+    response: slotResponse,
+    documents: mediaResponse as Record<string, unknown>[],
+    isLoading,
+    pagination: {
+      page: lastPage?.page ?? 1,
+      totalPages: lastPage?.totalPages ?? 1,
+      total: lastPage?.total ?? 0,
+      hasNextPage: Boolean(hasNextPage),
+      hasPrevPage: Boolean(lastPage?.hasPrevPage),
+    },
+    permissions: { canRead, canCreate },
+    urls: {
+      collection: `/collections/${collectionSlug}`,
+      create: `/collections/${collectionSlug}/new`,
+    },
+  }
+  const collectionSlots = schema.admin?.components
 
   const observerRef = React.useRef<IntersectionObserver | null>(null)
 
@@ -128,13 +175,14 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
   })
 
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
+    if (canCreate && acceptedFiles.length > 0) {
       setUploadFiles(acceptedFiles)
       setIsUploadOpen(true)
     }
-  }, [])
+  }, [canCreate])
 
   const handlePaste = React.useCallback((e: React.ClipboardEvent) => {
+    if (!canCreate) return
     const items = e.clipboardData?.items
     if (!items) return
     const filesToUpload: File[] = []
@@ -151,7 +199,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
       setUploadFiles(prev => [...prev, ...filesToUpload])
       setIsUploadOpen(true)
     }
-  }, [])
+  }, [canCreate])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -163,6 +211,17 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
     if (!open) {
       setUploadFiles([])
     }
+  }
+
+  if (!canRead) {
+    return (
+      <div className="dy-flex dy-h-[calc(100vh-200px)] dy-items-center dy-justify-center">
+        <div className="dy-space-y-2 dy-text-center">
+          <h3 className="dy-text-lg dy-font-bold">Access Denied</h3>
+          <p className="dy-text-sm dy-text-muted-foreground">You do not have permission to view this collection.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -179,19 +238,25 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
           </div>
         </div>
       )}
+      <AdminComponentSlot
+        slot="beforeList"
+        componentKeys={collectionSlots?.beforeList}
+        registry={components?.collectionList}
+        componentProps={collectionComponentProps}
+      />
       <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-border-border/50 dy-pb-5 sm:dy-flex-row sm:dy-items-end sm:dy-justify-between sm:dy-pb-6">
         <div className="dy-min-w-0">
           <div className="dy-flex dy-items-center dy-gap-2 dy-mb-1">
             <ImageIcon className="dy-h-5 dy-w-5 dy-flex-shrink-0 dy-text-primary" />
             <h1 className="dy-min-w-0 dy-break-words dy-text-2xl dy-font-bold dy-tracking-tight dy-text-foreground sm:dy-text-3xl">
-              {schema?.labels?.plural ?? schema?.label ?? (collectionSlug && collectionSlug !== 'media' ? (collectionSlug.charAt(0).toUpperCase() + collectionSlug.slice(1)) : "Media Library")}
+              {schema.labels?.plural ?? (collectionSlug !== 'media' ? (collectionSlug.charAt(0).toUpperCase() + collectionSlug.slice(1)) : "Media Library")}
             </h1>
           </div>
           <p className="dy-text-sm dy-leading-5 dy-text-muted-foreground">
             Manage your images, documents, and other assets for this site.
           </p>
         </div>
-        <Dialog open={isUploadOpen} onOpenChange={handleUploadOpenChange}>
+        {canCreate && <Dialog open={isUploadOpen} onOpenChange={handleUploadOpenChange}>
           <DialogTrigger asChild>
             <Button className="dy-h-10 dy-w-full dy-justify-center dy-px-4 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-shadow-md dy-transition-all active:dy-scale-95 sm:dy-w-auto">
               <Upload className="dy-mr-2 dy-h-4 dy-w-4" />
@@ -212,7 +277,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
               }}
             />
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       <div className="dy-flex dy-items-center dy-gap-4">
@@ -226,6 +291,13 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
           />
         </div>
       </div>
+
+      <AdminComponentSlot
+        slot="beforeListTable"
+        componentKeys={collectionSlots?.beforeListTable}
+        registry={components?.collectionList}
+        componentProps={collectionComponentProps}
+      />
 
       <ScrollArea className="dy-h-auto dy-pr-0 md:dy-h-[calc(100vh-320px)] md:dy-pr-4">
         {isLoading ? (
@@ -263,6 +335,19 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug?: string,
           </div>
         )}
       </ScrollArea>
+
+      <AdminComponentSlot
+        slot="afterListTable"
+        componentKeys={collectionSlots?.afterListTable}
+        registry={components?.collectionList}
+        componentProps={collectionComponentProps}
+      />
+      <AdminComponentSlot
+        slot="afterList"
+        componentKeys={collectionSlots?.afterList}
+        registry={components?.collectionList}
+        componentProps={collectionComponentProps}
+      />
 
       <MediaDetailsDialog
         key={selectedItem?.id as string}

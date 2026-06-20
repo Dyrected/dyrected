@@ -6,7 +6,9 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "eslint"
+    "lint": "eslint",
+    "docs:generate": "node scripts/generate-workflow-reference.mjs",
+    "docs:check": "node scripts/generate-workflow-reference.mjs --check && node scripts/check-contract.mjs && tsc -p tsconfig.examples.json --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
