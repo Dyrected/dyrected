@@ -1,3 +1,22 @@
+import type { icons as lucideIcons } from "lucide-react";
+
+/** A valid icon component name from the Lucide icon set bundled with Dyrected Admin. */
+export type AdminIconName = keyof typeof lucideIcons;
+
+/** Ordered custom component keys rendered around the built-in Admin dashboard. */
+export interface AdminDashboardComponentSlots {
+  beforeDashboard?: string[];
+  afterDashboard?: string[];
+}
+
+/** Ordered custom component keys rendered around a collection's list content. */
+export interface CollectionListComponentSlots {
+  beforeList?: string[];
+  beforeListTable?: string[];
+  afterListTable?: string[];
+  afterList?: string[];
+}
+
 // ─── Shared request context ───────────────────────────────────────────────────
 
 /**
@@ -42,6 +61,108 @@ export interface AuthenticatedUser {
   /** Any additional fields from the auth collection document. */
   [key: string]: unknown;
 }
+
+// ─── Workflows and lifecycle events ───────────────────────────────────────
+
+export const LIFECYCLE_EVENT_NAMES = [
+  "revision.created",
+  "workflow.transitioned",
+  "entry.published",
+  "entry.unpublished",
+] as const;
+
+export type LifecycleEventName = (typeof LIFECYCLE_EVENT_NAMES)[number];
+
+export interface WorkflowState {
+  /** Stable machine-readable state key. */
+  name: string;
+  /** Label rendered in the Admin UI. */
+  label: string;
+  /** Marks the state whose revision is visible to public readers. */
+  published?: boolean;
+  /** Optional visual tone used by the Admin UI. */
+  color?: "neutral" | "warning" | "success" | "danger" | "info";
+}
+
+export interface WorkflowTransition {
+  /** Stable transition key used by the REST and SDK APIs. */
+  name: string;
+  label: string;
+  from: string | string[];
+  to: string;
+  /** Every listed capability is required. */
+  requiredCapabilities?: string[];
+  /** Require a non-empty comment when performing the transition. */
+  requireComment?: boolean;
+  /** Remove the public snapshot after this transition commits. */
+  unpublish?: boolean;
+}
+
+export interface WorkflowRole {
+  /** Existing user role value, for example `editor` or `publisher`. */
+  role: string;
+  capabilities: string[];
+}
+
+export interface WorkflowConfig<TDoc extends object = Record<string, unknown>> {
+  initialState: string;
+  /** State used for a new working revision created from published content. */
+  draftState?: string;
+  states: WorkflowState[];
+  transitions: WorkflowTransition[];
+  /** Maps values in `user.roles` to workflow capabilities. */
+  roles?: WorkflowRole[];
+  hooks?: {
+    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];
+    afterTransition?: CollectionAfterTransitionHook<TDoc>[];
+  };
+}
+
+export interface WorkflowMetadata {
+  state: string;
+  revision: number;
+  publishedRevision?: number;
+  publishedAt?: string;
+  publishedBy?: string;
+  /** Transitions currently allowed for the requesting user. Response-only. */
+  availableTransitions?: string[];
+}
+
+export interface WorkflowTransitionContext<TDoc extends object = Record<string, unknown>> {
+  transition: WorkflowTransition;
+  from: string;
+  to: string;
+  doc: TDoc;
+  user?: AuthenticatedUser;
+  comment?: string;
+  req: HookRequestContext;
+  db: DatabaseAdapter;
+}
+
+export type CollectionBeforeTransitionHook<TDoc extends object = Record<string, unknown>> = (
+  args: WorkflowTransitionContext<TDoc>,
+) => void | Promise<void>;
+
+export type CollectionAfterTransitionHook<TDoc extends object = Record<string, unknown>> = (
+  args: WorkflowTransitionContext<TDoc> & { event: LifecycleEvent },
+) => void | Promise<void>;
+
+export interface LifecycleEvent<TPayload = Record<string, unknown>> {
+  id: string;
+  name: LifecycleEventName;
+  collection: string;
+  documentId: string;
+  occurredAt: string;
+  actorId?: string;
+  payload: TPayload;
+  attempts: number;
+  status: "pending" | "processing" | "delivered" | "failed";
+  nextAttemptAt?: string;
+  deliveredAt?: string;
+  lastError?: string;
+}
+
+export type LifecycleEventHandler = (event: LifecycleEvent) => void | Promise<void>;
 
 // ─── Field type literals ─────────────────────────────────────────────────────
 
@@ -1125,6 +1246,13 @@ export interface CollectionConfig<
   audit?: boolean;
 
   /**
+   * Optional state-machine workflow for this collection. Workflow-enabled
+   * entries keep an editable working revision and an independent public
+   * snapshot, so editing published content never changes the live response.
+   */
+  workflow?: WorkflowConfig<TDoc>;
+
+  /**
    * Collection-level access control.
    *
    * Each key is an operation; the value is a function (or Jexl string) that
@@ -1200,6 +1328,15 @@ export interface CollectionConfig<
 
   /** Admin UI configuration for this collection. */
   admin?: {
+    /**
+     * Lucide icon displayed beside this collection in the Admin sidebar.
+     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.
+     */
+    icon?: AdminIconName;
+
+    /** Custom component slots for this collection's list view. */
+    components?: CollectionListComponentSlots;
+
     /**
      * The field name used as the document's display title in the Admin list
      * view and breadcrumbs. Defaults to `'title'` if the field exists.
@@ -1401,6 +1538,11 @@ export interface GlobalConfig<
 
   /** Admin UI configuration for this global. */
   admin?: {
+    /**
+     * Lucide icon displayed beside this global in the Admin sidebar.
+     * Uses Lucide component names, e.g. `'Settings2'` or `'Palette'`.
+     */
+    icon?: AdminIconName;
     /** Groups this global under a named section in the Admin sidebar. */
     group?: string;
     /** If `true`, this global is not shown in the Admin UI sidebar. */
@@ -1518,6 +1660,12 @@ export interface DatabaseAdapter {
    * Optional — not all adapters support raw access.
    */
   execute?(query: string, params?: unknown[]): Promise<unknown>;
+
+  /**
+   * Run all adapter operations in `callback` as one atomic transaction.
+   * Shipped adapters implement this; workflow transitions require it.
+   */
+  transaction?<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T>;
 }
 
 /**
@@ -1637,6 +1785,8 @@ export interface ImageService {
  * }
  */
 export interface AdminConfig {
+  /** Custom component slots around the built-in dashboard. */
+  components?: AdminDashboardComponentSlots;
   branding?: {
     /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
     logo?: string;
@@ -1868,7 +2018,7 @@ export interface DyrectedConfig {
     templates?: {
       welcome?: (args: { email: string }) => { subject?: string; html: string };
       invite?: (args: { token: string; invitedByEmail?: string }) => { subject?: string; html: string };
-      resetPassword?: (args: { token: string }) => { subject?: string; html: string };
+      resetPassword?: (args: { token: string; url?: string }) => { subject?: string; html: string };
       passwordChanged?: (args: { email: string }) => { subject?: string; html: string };
     };
   };
@@ -1882,6 +2032,15 @@ export interface DyrectedConfig {
    */
   redis?: {
     url: string;
+  };
+
+  /** Durable lifecycle-event delivery configuration. */
+  events?: {
+    handlers: LifecycleEventHandler[];
+    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */
+    maxAttempts?: number;
+    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */
+    retryDelayMs?: number;
   };
 
   /**

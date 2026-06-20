@@ -50,7 +50,7 @@ export function MediaLibraryDialog({
 }: MediaLibraryDialogProps) {
   const { client, schemas } = useDyrected()
   const schema = React.useMemo(() => schemas?.collections?.find((c: any) => c.slug === collection), [schemas, collection])
-  const collectionLabel = React.useMemo(() => schema?.labels?.plural ?? schema?.label ?? (collection && collection !== 'media' ? (collection.charAt(0).toUpperCase() + collection.slice(1)) : "Media Library"), [schema, collection])
+  const collectionLabel = React.useMemo(() => schema?.labels?.plural ?? schema?.labels?.singular ?? (collection && collection !== 'media' ? (collection.charAt(0).toUpperCase() + collection.slice(1)) : "Media Library"), [schema, collection])
   const [searchQuery, setSearchQuery] = React.useState("")
   const [externalUrl, setExternalUrl] = React.useState("")
   const [activeTab, setActiveTab] = React.useState("library")

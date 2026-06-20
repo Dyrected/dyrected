@@ -7,10 +7,46 @@ import type {
   CollectionConfig,
   GlobalConfig,
   FieldType,
+  AdminIconName,
+  WorkflowMetadata,
+  LifecycleEvent,
 } from "@dyrected/core";
 import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
-export type { PaginatedResult, Media, Field, Block, CollectionConfig, GlobalConfig, FieldType };
+export type { PaginatedResult, Media, Field, Block, CollectionConfig, GlobalConfig, FieldType, AdminIconName, WorkflowMetadata, LifecycleEvent };
+
+/** Shape of a document returned from a workflow-enabled collection. */
+export interface WorkflowDocument {
+  id: string;
+  _workflow: WorkflowMetadata;
+  [key: string]: unknown;
+}
+
+/** Options accepted by `client.transition()`. */
+export interface TransitionOptions {
+  /**
+   * The revision number currently shown to the user. When provided, the server
+   * rejects the transition if the document has changed since it was loaded,
+   * preventing lost-update races.
+   */
+  expectedRevision?: number;
+  /** Required for transitions that have `requireComment: true` (e.g. `reject`). */
+  comment?: string;
+}
+
+/** A single workflow history entry returned by `client.workflowHistory()`. */
+export interface WorkflowHistoryEntry {
+  id: string;
+  collection: string;
+  documentId: string;
+  transition: string;
+  from: string;
+  to: string;
+  revision: number;
+  comment: string | null;
+  actorId: string | null;
+  createdAt: string;
+}
 
 type ExtractDoc<T> =
   T extends CollectionConfig<infer TDoc> ? TDoc :
@@ -295,6 +331,35 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
           method: "POST",
           body: JSON.stringify({ token, password }),
         }),
+      /**
+       * Perform a workflow transition on a single document.
+       *
+       * @param id - Document ID to transition.
+       * @param transitionName - The transition key (e.g. `'submit'`, `'publish'`, `'reject'`).
+       * @param opts - Optional `expectedRevision` (optimistic concurrency) and `comment`.
+       * @returns The updated document with refreshed `_workflow` metadata.
+       *
+       * @example
+       * // Publisher approves a submission
+       * const updated = await client.collection('posts').transition(id, 'publish')
+       *
+       * // Editor requests changes with a comment
+       * const updated = await client.collection('posts').transition(id, 'reject', {
+       *   expectedRevision: doc._workflow.revision,
+       *   comment: 'Please add more detail to section 2.',
+       * })
+       */
+      transition: (id: string, transitionName: string, opts?: TransitionOptions) =>
+        this.transition<TSchema["collections"][K]>(slug, id, transitionName, opts),
+      /**
+       * Fetch the workflow history for a single document — every transition that
+       * has ever been performed, newest first.
+       *
+       * @param id - Document ID.
+       * @param args - Optional `limit` (default 50, max 100).
+       */
+      workflowHistory: (id: string, args: { limit?: number } = {}) =>
+        this.workflowHistory(slug, id, args),
     };
   }
 
@@ -351,6 +416,53 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     return this.request(`/api/collections/${collection}/${id}`, {
       method: "DELETE",
     });
+  }
+
+  /**
+   * Perform a workflow transition on a document.
+   *
+   * Sends `POST /api/collections/:collection/:id/transitions/:transition`.
+   * Requires the client to have a valid bearer token set via `setToken()`.
+   *
+   * @param collection - Collection slug.
+   * @param id - Document ID.
+   * @param transitionName - Transition key defined in `WorkflowConfig.transitions`.
+   * @param opts - Optional concurrency guard and comment.
+   *
+   * @example
+   * const updated = await client.transition('posts', postId, 'publish')
+   */
+  async transition<T = WorkflowDocument>(
+    collection: string,
+    id: string,
+    transitionName: string,
+    opts: TransitionOptions = {},
+  ): Promise<T> {
+    return this.request(
+      `/api/collections/${collection}/${id}/transitions/${encodeURIComponent(transitionName)}`,
+      {
+        method: "POST",
+        body: JSON.stringify(opts),
+      },
+    );
+  }
+
+  /**
+   * Fetch the workflow history for a document.
+   *
+   * Sends `GET /api/collections/:collection/:id/workflow-history`.
+   *
+   * @param collection - Collection slug.
+   * @param id - Document ID.
+   * @param args - Optional `limit` (max 100).
+   */
+  async workflowHistory(
+    collection: string,
+    id: string,
+    args: { limit?: number } = {},
+  ): Promise<PaginatedResult<WorkflowHistoryEntry>> {
+    const query = args.limit ? `?limit=${args.limit}` : "";
+    return this.request(`/api/collections/${collection}/${id}/workflow-history${query}`);
   }
 
   async deleteMany(collection: string, ids: string[]): Promise<{ message: string }> {

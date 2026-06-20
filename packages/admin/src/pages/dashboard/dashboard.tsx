@@ -4,6 +4,8 @@ import { useQueries, useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
+import { AdminComponentSlot } from "../../components/admin-component-slot"
+import type { AdminSchemas, DashboardSlotProps } from "../../types/admin-components"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,7 +97,7 @@ function getStatusLabel(doc: Record<string, unknown>) {
 }
 
 export function Dashboard() {
-  const { client } = useDyrected()
+  const { client, components, user } = useDyrected()
 
   const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
     queryKey: ["schemas"],
@@ -176,21 +178,49 @@ export function Dashboard() {
     )
   }
 
+  const resolvedSchemas = schemas as AdminSchemas
+  const dashboardComponentProps: DashboardSlotProps = {
+    client: client!,
+    user,
+    schemas: resolvedSchemas,
+  }
+  const dashboardSlots = resolvedSchemas.admin?.components
+
   if (collections.length === 0 && globals.length === 0) {
     return (
-      <div className="dy-flex dy-h-64 dy-items-center dy-justify-center">
-        <div className="dy-space-y-4 dy-text-center">
-          <p className="dy-text-muted-foreground">No collections configured yet.</p>
-          <Button asChild>
-            <Link to="/setup">View Integration Guide</Link>
-          </Button>
+      <div className="dy-space-y-6">
+        <AdminComponentSlot
+          slot="beforeDashboard"
+          componentKeys={dashboardSlots?.beforeDashboard}
+          registry={components?.dashboard}
+          componentProps={dashboardComponentProps}
+        />
+        <div className="dy-flex dy-h-64 dy-items-center dy-justify-center">
+          <div className="dy-space-y-4 dy-text-center">
+            <p className="dy-text-muted-foreground">No collections configured yet.</p>
+            <Button asChild>
+              <Link to="/setup">Open Setup Guide</Link>
+            </Button>
+          </div>
         </div>
+        <AdminComponentSlot
+          slot="afterDashboard"
+          componentKeys={dashboardSlots?.afterDashboard}
+          registry={components?.dashboard}
+          componentProps={dashboardComponentProps}
+        />
       </div>
     )
   }
 
   return (
     <div className="dy-space-y-6 dy-animate-in dy-fade-in dy-duration-500 lg:dy-space-y-8">
+      <AdminComponentSlot
+        slot="beforeDashboard"
+        componentKeys={dashboardSlots?.beforeDashboard}
+        registry={components?.dashboard}
+        componentProps={dashboardComponentProps}
+      />
       <div className="dy-flex dy-flex-col dy-gap-4 lg:dy-flex-row lg:dy-items-end lg:dy-justify-between">
         <div className="dy-space-y-1">
           <h2 className="dy-font-serif dy-text-3xl dy-font-bold dy-tracking-tight">Dashboard</h2>
@@ -330,6 +360,12 @@ export function Dashboard() {
           )}
         </section>
       </div>
+      <AdminComponentSlot
+        slot="afterDashboard"
+        componentKeys={dashboardSlots?.afterDashboard}
+        registry={components?.dashboard}
+        componentProps={dashboardComponentProps}
+      />
     </div>
   )
 }

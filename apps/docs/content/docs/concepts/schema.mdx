@@ -1,135 +1,139 @@
 ---
 title: Schema Definition
-description: Defining your content model in Dyrected.
+description: How Dyrected stores data, how your config maps to database columns, and how schema changes are managed without breaking migrations.
 ---
 
-In Dyrected, your content model is defined as a series of **Collections** and **Globals** in your `dyrected.config.ts`.
+Your `dyrected.config.ts` is the single source of truth for everything — collections, globals, database adapter, storage, and email. Dyrected reads it at startup and derives the database schema, REST API, and Admin UI from it automatically.
 
-## Collections
+---
 
-Collections are used for content that has multiple entries, like blog posts, products, or users.
+## How data is stored
 
-```typescript
-export default defineConfig({
-  collections: [
-    {
-      slug: 'posts',
-      labels: {
-        singular: 'Post',
-        plural: 'Posts',
-      },
-      fields: [
-        { name: 'title', type: 'text', required: true },
-        { name: 'content', type: 'richText' },
-      ],
-    },
-  ],
-});
+Dyrected uses a **JSON blob strategy** by default. Each document is stored as a single row with an `id` column and a `data` JSON column. This means you can add, remove, or rename fields without running a migration — the schema is always in sync with your config.
+
+```
+┌──────────────────────────────────────────────────────┐
+│  posts table                                         │
+├────────────┬─────────────────────────────────────────┤
+│  id        │  data (JSON)                            │
+├────────────┼─────────────────────────────────────────┤
+│  post-123  │  { title: "Hello", status: "draft" }    │
+│  post-456  │  { title: "World", status: "published"} │
+└────────────┴─────────────────────────────────────────┘
 ```
 
-## Globals
+The tradeoff: JSON fields cannot use native database indexes. For fields you filter or sort by frequently, you can opt out of the JSON blob.
 
-Globals are used for "singleton" content that only has one instance, like site settings, navigation menus, or a home page hero section.
+---
 
-```typescript
-export default defineConfig({
-  globals: [
-    {
-      slug: 'settings',
-      label: 'Site Settings',
-      fields: [
-        { name: 'siteName', type: 'text' },
-        { name: 'logo', type: 'relationship', relationTo: 'media' },
-      ],
-    },
-  ],
-});
-```
+## Promoted fields
 
-## Admin Customization
+Setting `promoted: true` on a field extracts it from the JSON blob into its own SQL column with a native index. Queries on that field become significantly faster for large collections.
 
-You can control how your collections appear in the Admin UI:
-
-```typescript
-{
-  slug: 'posts',
-  admin: {
-    icon: 'Newspaper',
-    useAsTitle: 'title',
-    defaultColumns: ['title', 'createdAt'],
-    group: 'Content',
-    hidden: false
-  }
-}
-```
-
-`admin.icon` accepts only valid Lucide component names. Editors see it beside the collection or global in the Admin sidebar; invalid values from untyped clients safely fall back to the default icon.
-
-## Seeding & Migrations
-
-Dyrected provides built-in tools for managing data over time.
-
-### `initialData` (Auto-Seeding)
-You can provide an array of objects to automatically seed a collection or global when it is first created (or if it is empty).
-
-```typescript
-{
-  slug: 'categories',
-  initialData: [
-    { name: 'News', slug: 'news' },
-    { name: 'Events', slug: 'events' },
-  ],
-  fields: [...]
-}
-```
-
-### `renameTo` (Lazy Migration)
-If you rename a field, use `renameTo` to ensure old data is still readable under the new name.
-
-```typescript
-{
-  name: 'fullName',
-  type: 'text',
-  renameTo: 'name', // Checks 'name' if 'fullName' is missing
-}
-```
-
-### `promoted` (Performance)
-By default, Dyrected stores data in a JSON blob. This is great for flexibility, but large collections can suffer if you frequently filter by non-indexed fields. For fields that need native SQL indexing, set `promoted: true`.
-
-```typescript
+```ts
 {
   name: 'slug',
   type: 'text',
   unique: true,
-  promoted: true, // Extracted to a real SQL column
+  promoted: true,   // ← gets its own indexed SQL column
+}
+```
+
+After adding `promoted: true`, run `npx @dyrected/cli sync:schema` (Cloud) or restart your server (self-hosted) to create the column.
+
+**Supported types for promotion:** `text`, `number`, `boolean`, `date`, `datetime`.
+
+Good candidates for promotion: `slug`, `status`, `publishedAt`, `email`, `createdAt` — any field you `where` filter or `sort` by in list views.
+
+---
+
+## Timestamps
+
+By default, Dyrected injects `createdAt` and `updatedAt` into every document automatically. Both fields are promoted (indexed SQL columns).
+
+```ts
+defineCollection({
+  slug: 'posts',
+  timestamps: true,   // default — can be set to false to omit
+  fields: [...],
+})
+```
+
+You do not need to define these fields yourself. They appear in API responses and are available in access functions and hooks.
+
+---
+
+## Schema sync
+
+**Self-hosted projects** sync automatically on startup. When your server starts, Dyrected inspects your config and ensures every promoted field and `unique: true` field has the correct column in the database. No manual step needed.
+
+**Dyrected Cloud** requires an explicit sync because the database is remote:
+
+```bash
+npx @dyrected/cli sync:schema
+```
+
+Run this whenever you add a `promoted: true` field, add `unique: true` to an existing field, or change your database adapter. Regular field additions and removals (inside the JSON blob) do not require a sync.
+
+---
+
+## Lazy field migrations
+
+Renaming a field in your config would normally orphan existing data under the old key. Dyrected handles this with a lazy migration strategy using `renameTo`:
+
+```ts
+{
+  name: 'fullName',   // the new name
+  type: 'text',
+  renameTo: 'name',   // the old name to fall back on
 }
 ```
 
 **How it works:**
-1. When you run `sync:schema` (or when the service starts), Dyrected inspects your configuration.
-2. For every `promoted: true` field, it ensures a matching column exists in your SQL table (SQLite, Postgres, or MySQL).
-3. Queries using that field will automatically use the native SQL column instead of the JSON path, enabling the database to use its indexes.
+- **Read** — if `fullName` is missing in a document, Dyrected reads `name` instead.
+- **Write** — on the next save, the value is written under `fullName`. Over time, all documents migrate naturally without a bulk update.
 
-**Supported Types for Promotion:**
-- `text` (VARCHAR/TEXT)
-- `number` (INTEGER/FLOAT)
-- `checkbox` (BOOLEAN)
-- `date` (TIMESTAMP)
+Once all documents have been resaved under the new name, remove `renameTo`.
 
 ---
 
-### `renameTo` (Lazy Migration)
-Renaming fields in a live database is usually a nightmare. Dyrected handles this with "Lazy Migrations". If you rename a field in your config, add the `renameTo` property pointing to the old name.
+## Seeding initial data
 
-```typescript
-{
-  name: 'fullName',
-  type: 'text',
-  renameTo: 'name', // Checks 'name' if 'fullName' is missing
-}
+Use `initialData` to seed a collection or global the first time it is fetched and found to be empty. This is useful for default categories, config values, or demo content.
+
+```ts
+export const Categories = defineCollection({
+  slug: 'categories',
+  initialData: [
+    { name: 'News',   slug: 'news' },
+    { name: 'Events', slug: 'events' },
+  ],
+  fields: [
+    { name: 'name', type: 'text' },
+    { name: 'slug', type: 'text', promoted: true },
+  ],
+})
 ```
 
-**Lifecycle:**
-- **Read**: When fetching data, if `fullName` is missing, Dyrected will look for `name`.
-- **Write**: When you save the document, it will be saved under the new key (`fullName`). Over time, your data naturally migrates to the new schema as entries are updated.
+`initialData` runs once — if the collection already has documents, it is skipped entirely.
+
+---
+
+## System collections
+
+Dyrected reserves slugs prefixed with `__` for internal use:
+
+| Slug | Purpose |
+|---|---|
+| `__admins` | Conventionally used for CMS dashboard auth, separate from app users |
+| `__audit` | Stores audit log entries when `audit: true` is set on a collection |
+
+You can define `__admins` as a regular auth collection in your config — the double-underscore prefix just signals that it is infrastructure, not application content.
+
+---
+
+## Next steps
+
+- [Collections & Globals](/docs/concepts/collections-and-globals) — the two building blocks and when to use each
+- [Fields](/docs/concepts/fields) — what fields are available and how they map to the database
+- [Relationships](/docs/concepts/relationships) — how collections reference each other

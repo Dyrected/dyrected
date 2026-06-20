@@ -345,7 +345,16 @@ function FormFieldRendererInner({
             )}
           </div>
           <FormControl>
-            <FieldRenderer schema={schema} field={formField} collection={collection} context={{ user, schemas, siblingData: conditionData }} />
+            <FieldRenderer
+              schema={schema}
+              field={formField}
+              collection={collection}
+              context={{
+                user,
+                schemas: schemas as unknown as { collections: { slug: string; upload?: boolean }[]; globals: unknown[] },
+                siblingData: conditionData
+              }}
+            />
           </FormControl>
           {!isBoolean && schema.admin?.description && (
             <p className="dy-text-[11px] dy-text-muted-foreground/70 dy-leading-relaxed dy-italic">{schema.admin.description}</p>

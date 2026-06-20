@@ -7,6 +7,14 @@ import { AuditService } from '../services/audit.service.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { runCollectionHooks, executeFieldBeforeChange, executeFieldAfterRead } from '../utils/hooks.js';
 import { createReadonlyDb } from '../utils/readonly-db.js';
+import {
+  WORKFLOW_HISTORY_COLLECTION,
+  createWorkflowDocument,
+  initializeWorkflowDocument,
+  materializeWorkflowDocument,
+  saveWorkflowDraft,
+  transitionWorkflow,
+} from '../workflows.js';
 
 export class CollectionController {
   private collection: CollectionConfig;
@@ -61,6 +69,14 @@ export class CollectionController {
       where = beforeReadResult;
     }
 
+    // Workflow drafts are never visible to unauthenticated readers. The public
+    // response is materialized from the last promoted snapshot below.
+    if (this.collection.workflow && !user) {
+      where = where
+        ? { AND: [where, { __published: { exists: true } }] }
+        : { __published: { exists: true } };
+    }
+
     let result = await db!.find({
       collection: this.collection.slug,
       limit,
@@ -85,7 +101,10 @@ export class CollectionController {
       });
     }
 
-    result.docs = result.docs.map(doc => DefaultsService.apply(this.collection.fields, doc));
+    result.docs = result.docs
+      .map((doc) => this.collection.workflow ? materializeWorkflowDocument(doc, this.collection.workflow, user) : doc)
+      .filter((doc): doc is NonNullable<typeof doc> => doc !== null)
+      .map(doc => DefaultsService.apply(this.collection.fields, doc));
 
     // Run afterRead hooks (both collection and field levels)
     const processedDocs = [];
@@ -120,8 +139,13 @@ export class CollectionController {
     const user = c.get('user');
 
     if (!id) return c.json({ message: 'Missing ID' }, 400);
-    const doc = await db!.findOne({ collection: this.collection.slug, id });
+    let doc = await db!.findOne({ collection: this.collection.slug, id });
     if (!doc) return c.json({ message: 'Not Found' }, 404);
+
+    if (this.collection.workflow) {
+      doc = materializeWorkflowDocument(doc, this.collection.workflow, user);
+      if (!doc) return c.json({ message: 'Not Found' }, 404);
+    }
 
     const docWithDefaults = DefaultsService.apply(this.collection.fields, doc);
 
@@ -172,6 +196,10 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     };
 
+    if (this.collection.workflow) {
+      data = initializeWorkflowDocument(data, this.collection.workflow);
+    }
+
     if (this.collection.auth && data.password) {
       data.password = await hashPassword(data.password);
     }
@@ -186,7 +214,9 @@ export class CollectionController {
       db: readonlyDb,
     });
 
-    const doc = await db!.create({ collection: this.collection.slug, data });
+    const doc = this.collection.workflow
+      ? (await createWorkflowDocument({ config, collection: this.collection, data, user })).doc
+      : await db!.create({ collection: this.collection.slug, data });
 
     if (this.collection.audit && db) {
       AuditService.log(db, {
@@ -209,8 +239,11 @@ export class CollectionController {
     }, { isolated: true });
 
     // Run afterRead hooks on the returned doc
+    const responseDoc = this.collection.workflow
+      ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
+      : doc;
     const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
-      doc,
+      doc: responseDoc,
       req: c.req,
       user,
       db: readonlyDb,
@@ -289,8 +322,11 @@ export class CollectionController {
     }, { isolated: true });
 
     // Run afterRead hooks
+    const responseDoc = this.collection.workflow
+      ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
+      : doc;
     const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
-      doc,
+      doc: responseDoc,
       req: c.req,
       user,
       db: readonlyDb,
@@ -344,7 +380,9 @@ export class CollectionController {
       db: readonlyDb,
     });
 
-    const doc = await db!.update({ collection: this.collection.slug, id, data });
+    const doc = this.collection.workflow
+      ? (await saveWorkflowDraft({ config, collection: this.collection, id, originalDoc, data, user })).doc
+      : await db!.update({ collection: this.collection.slug, id, data });
 
     if (this.collection.audit && db) {
       AuditService.log(db, {
@@ -377,6 +415,47 @@ export class CollectionController {
     const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user, readonlyDb);
 
     return c.json(finalDoc);
+  }
+
+  async transition(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    if (!config.db) return c.json({ message: 'Database not configured' }, 500);
+    if (!this.collection.workflow) return c.json({ message: 'Workflows are not enabled for this collection' }, 404);
+
+    const id = c.req.param('id');
+    const transitionName = c.req.param('transition');
+    const body = await c.req.json().catch(() => ({})) as { expectedRevision?: number; comment?: string };
+    try {
+      const doc = await transitionWorkflow({
+        config,
+        collection: this.collection,
+        id,
+        transitionName,
+        expectedRevision: body.expectedRevision,
+        comment: body.comment,
+        user: c.get('user'),
+        req: c.req,
+      });
+      return c.json(materializeWorkflowDocument(doc, this.collection.workflow, c.get('user')));
+    } catch (error) {
+      const status = typeof (error as { statusCode?: unknown }).statusCode === 'number'
+        ? (error as { statusCode: number }).statusCode
+        : 500;
+      return c.json({ error: true, message: error instanceof Error ? error.message : String(error) }, status as 400);
+    }
+  }
+
+  async workflowHistory(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    if (!config.db) return c.json({ message: 'Database not configured' }, 500);
+    if (!this.collection.workflow) return c.json({ message: 'Workflows are not enabled for this collection' }, 404);
+    const result = await config.db.find({
+      collection: WORKFLOW_HISTORY_COLLECTION,
+      where: { collection: { equals: this.collection.slug }, documentId: { equals: c.req.param('id') } },
+      sort: '-createdAt',
+      limit: Math.min(Number(c.req.query('limit')) || 50, 100),
+    });
+    return c.json(result);
   }
 
   /**

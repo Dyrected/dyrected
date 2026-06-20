@@ -8,12 +8,14 @@ describe("Dynamic Router", async () => {
     collections: [
       defineCollection({
         slug: "posts",
+        admin: { icon: "Newspaper" },
         fields: [{ name: "title", type: "text" }],
       }),
     ],
     globals: [
       defineGlobal({
         slug: "settings",
+        admin: { icon: "Settings2" },
         fields: [{ name: "siteName", type: "text" }],
       }),
     ],
@@ -29,7 +31,9 @@ describe("Dynamic Router", async () => {
     expect(res.status).toBe(200);
     expect(data.collections).toHaveLength(1);
     expect(data.collections[0].slug).toBe("posts");
+    expect(data.collections[0].admin.icon).toBe("Newspaper");
     expect(data.globals[0].slug).toBe("settings");
+    expect(data.globals[0].admin.icon).toBe("Settings2");
   });
 
   it("should register collection routes", async () => {

@@ -1,8 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { defineConfig, defineCollection, defineGlobal } from '../index.js';
+import { defineConfig, defineCollection, defineGlobal, type AdminIconName } from '../index.js';
 import { MockDatabaseAdapter } from './mocks.js';
 
 describe('Configuration Helpers', () => {
+  it('only accepts valid Lucide names for admin navigation icons', () => {
+    const icon: AdminIconName = 'Newspaper';
+    // @ts-expect-error — invalid names must fail during configuration authoring.
+    const invalidIcon: AdminIconName = 'DefinitelyNotALucideIcon';
+
+    expect(icon).toBe('Newspaper');
+    expect(invalidIcon).toBe('DefinitelyNotALucideIcon');
+  });
+
   it('should define a collection correctly', () => {
     const posts = defineCollection({
       slug: 'posts',

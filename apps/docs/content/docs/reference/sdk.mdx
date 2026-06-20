@@ -173,6 +173,35 @@ const mediaDoc = await client.collection('media').upload(blob, {
 
 ---
 
+### `.transition(id, transitionName, options?)`
+
+Perform a workflow transition on a document. Returns the updated document.
+
+```ts
+const updated = await client.collection('posts').transition('abc123', 'publish', {
+  expectedRevision: 2, // Concurrency guard matching doc._workflow.revision
+  comment: 'Approving for publication.' // Required if requireComment: true
+})
+```
+
+---
+
+### `.workflowHistory(id, options?)`
+
+Fetch the workflow transition history for a document.
+
+```ts
+const history = await client.collection('posts').workflowHistory('abc123', {
+  limit: 20
+})
+
+// history.docs: WorkflowHistoryEntry[]
+// history.docs[0].transition: string ('submit', 'publish', etc.)
+// history.docs[0].comment: string | null
+```
+
+---
+
 ## Global Methods
 
 Access globals via `client.global(slug)`.

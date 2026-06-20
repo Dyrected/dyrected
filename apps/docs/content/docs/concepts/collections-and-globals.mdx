@@ -1,0 +1,125 @@
+---
+title: Collections & Globals
+description: The two building blocks of a Dyrected content model — when to use each and what they give you.
+---
+
+Every Dyrected project is made of two primitives: **collections** and **globals**. Together they define your content model, your database schema, your REST API, and your Admin UI — all from one config file.
+
+---
+
+## Collections
+
+A collection is for content that has **more than one instance** — blog posts, products, users, orders, form submissions. Each entry is a separate document with its own `id`.
+
+```ts
+export const Posts = defineCollection({
+  slug: 'posts',
+  fields: [
+    { name: 'title',  type: 'text',   required: true },
+    { name: 'status', type: 'select', options: ['draft', 'published'] },
+  ],
+})
+```
+
+Defining a collection gives you, automatically:
+
+| What you get | Detail |
+|---|---|
+| **List endpoint** | `GET /dyrected/api/posts` — paginated, filterable, sortable |
+| **Single endpoint** | `GET /dyrected/api/posts/:id` |
+| **Create endpoint** | `POST /dyrected/api/posts` |
+| **Update endpoint** | `PATCH /dyrected/api/posts/:id` |
+| **Delete endpoint** | `DELETE /dyrected/api/posts/:id` |
+| **List page** in Admin UI | Searchable table with configurable columns |
+| **Edit page** in Admin UI | Form generated from your `fields` array |
+| **SDK methods** | `.collection('posts').find()`, `.findOne()`, `.create()`, `.update()`, `.delete()` |
+
+---
+
+## Globals
+
+A global is for content that has **exactly one instance** — site settings, a navigation menu, a homepage hero, legal copy. There is no list; there is only one document, and it is always there.
+
+```ts
+export const SiteSettings = defineGlobal({
+  slug: 'site-settings',
+  fields: [
+    { name: 'siteName',    type: 'text' },
+    { name: 'logoUrl',     type: 'url' },
+    { name: 'primaryColor', type: 'text' },
+  ],
+})
+```
+
+Defining a global gives you:
+
+| What you get | Detail |
+|---|---|
+| **Get endpoint** | `GET /dyrected/api/globals/site-settings` |
+| **Update endpoint** | `PATCH /dyrected/api/globals/site-settings` |
+| **Edit page** in Admin UI | Single form — no list, no create button |
+| **SDK method** | `.global('site-settings').get()`, `.update()` |
+
+---
+
+## The decision rule
+
+> **Does this content have more than one instance?**
+> — Yes → Collection
+> — No → Global
+
+When in doubt, apply it literally:
+
+| Content | Type | Why |
+|---|---|---|
+| Blog posts | Collection | Many posts |
+| Products | Collection | Many products |
+| Users / members | Collection | Many users |
+| Orders | Collection | Many orders |
+| Contact form submissions | Collection | Many submissions |
+| Site settings | Global | One set of settings |
+| Navigation menu | Global | One nav |
+| Homepage hero | Global | One hero section |
+| Cookie policy text | Global | One document |
+| SEO defaults | Global | One set of defaults |
+
+If you think you need two globals for the same concept (e.g. "desktop nav" and "mobile nav"), that is usually a sign the nav structure should be a field on a single global, not two globals.
+
+---
+
+## Both live in `defineConfig`
+
+```ts
+// dyrected.config.ts
+import { defineConfig } from '@dyrected/core'
+
+export default defineConfig({
+  db: adapter,
+  collections: [Posts, Products, Users],
+  globals: [SiteSettings, Navigation],
+})
+```
+
+The order of entries in each array controls the order they appear in the Admin UI sidebar.
+
+---
+
+## What the slug controls
+
+The `slug` is the identifier used everywhere — in API paths, SDK calls, and the Admin UI URL. It must be unique across all collections and globals, lowercase, and hyphenated.
+
+```ts
+// slug: 'site-settings'
+// → API:   GET /dyrected/api/globals/site-settings
+// → SDK:   cms.global('site-settings').get()
+// → Admin: /admin/globals/site-settings
+```
+
+---
+
+## Next steps
+
+- [Fields](/docs/concepts/fields) — define the shape of each collection or global
+- [Access Control](/docs/concepts/access-control) — control who can read or write each collection
+- [Schema Definition](/docs/concepts/schema) — how collections map to your database and how migrations work
+- [Globals & Site Settings guide](/docs/guides/globals-and-site-settings) — a practical walkthrough

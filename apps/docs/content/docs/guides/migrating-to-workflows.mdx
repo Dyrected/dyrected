@@ -1,0 +1,91 @@
+---
+title: Migrating to Workflows
+description: Learn how to upgrade your existing string-based status fields to the new Editorial Approval Workflow.
+---
+
+If you built your Dyrected project before the introduction of Workflows, you likely used a simple string field (e.g. `status` or `_status`) to manage document visibility, paired with access control rules to restrict who could read unpublished content.
+
+With the new built-in Workflows feature, Dyrected now handles atomic draft saving, public snapshot materialisation, capability gating, and transition history out of the box.
+
+This guide explains how to migrate an existing `status` field to the new `workflow` system.
+
+---
+
+## 1. Remove the old `status` field
+
+Remove your custom `status` field from the collection definition.
+
+```diff
+ export const Posts = defineCollection({
+   slug: "posts",
+-  fields: [
+-    { name: "status", type: "select", options: ["draft", "published"], defaultValue: "draft" },
+-    { name: "title", type: "text" }
+-  ]
++  fields: [
++    { name: "title", type: "text" }
++  ]
+ })
+```
+
+---
+
+## 2. Enable the Workflow
+
+Add the `publishingWorkflow()` (or your custom workflow definition) to the collection:
+
+```diff
++import { publishingWorkflow } from "@dyrected/core/workflows"
+
+ export const Posts = defineCollection({
+   slug: "posts",
++  workflow: publishingWorkflow(),
+   fields: [
+     { name: "title", type: "text" }
+   ]
+ })
+```
+
+---
+
+## 3. Update Custom Filters
+
+If your frontend or API clients previously queried for published content by checking the `status` field (e.g., `?where={"status":{"equals":"published"}}`), you can remove this check entirely.
+
+When workflows are enabled, the `client.find()` and `client.findOne()` endpoints **automatically materialize the public snapshot** for anonymous users. Drafts are safely hidden without needing manual filters.
+
+---
+
+## 4. Run the Data Migration
+
+Because the new workflow state is stored in the `_workflow` namespace rather than the top-level document, you need to migrate your existing database rows. 
+
+Write a script to read each document and apply the correct state:
+
+```ts
+import { db } from "@dyrected/core"
+
+async function migrateStatuses() {
+  const posts = await db.find({ collection: "posts", limit: 1000 })
+
+  for (const post of posts.docs) {
+    const isPublished = post.status === "published"
+    
+    await db.update({
+      collection: "posts",
+      id: post.id,
+      data: {
+        _workflow: {
+          state: isPublished ? "published" : "draft",
+          revision: 1,
+          publishedRevision: isPublished ? 1 : null,
+          publishedAt: isPublished ? new Date().toISOString() : null
+        }
+      }
+    })
+  }
+}
+```
+
+> [!CAUTION]
+> Remember to run this data migration script before updating the collection configuration in production. If you change the config first, documents missing the `_workflow` state may be temporarily inaccessible.

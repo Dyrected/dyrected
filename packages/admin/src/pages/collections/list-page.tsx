@@ -24,6 +24,8 @@ import {
 import { RenderCell } from "../../components/ui/render-cell"
 import { PageHeader } from "../../components/ui/page-header"
 import { Pagination } from "../../components/ui/pagination"
+import { AdminComponentSlot } from "../../components/admin-component-slot"
+import type { CollectionListSlotProps } from "../../types/admin-components"
 import { MediaGrid } from "../../components/media/media-grid"
 import { getMediaUrl } from "../../lib/utils"
 import jexl from 'jexl'
@@ -33,7 +35,7 @@ interface CollectionListPageProps {
 }
 
 export function CollectionListPage({ slug }: CollectionListPageProps) {
-  const { client, user } = useDyrected()
+  const { client, components, user } = useDyrected()
   const queryClient = useQueryClient()
   const [page, setPage] = React.useState(1)
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
@@ -418,14 +420,6 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     return `${slug}:${configuredColumns.join(",") || "default"}`
   }, [schema, slug])
 
-  if (isLoading) {
-    return (
-      <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
-        <div className="dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent dy-h-8 dy-w-8"></div>
-      </div>
-    )
-  }
-
   if (!schema) {
     return <div>Collection not found: {slug}</div>
   }
@@ -470,9 +464,41 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
   }
 
+  const collectionComponentProps: CollectionListSlotProps = {
+    client: client!,
+    user,
+    collection: schema,
+    collectionSlug: slug,
+    response,
+    documents: response?.docs || [],
+    isLoading,
+    pagination: {
+      page,
+      totalPages,
+      total: response?.total ?? 0,
+      hasNextPage,
+      hasPrevPage,
+    },
+    permissions: {
+      canRead,
+      canCreate,
+    },
+    urls: {
+      collection: `/collections/${slug}`,
+      create: `/collections/${slug}/new`,
+    },
+  }
+  const collectionSlots = schema.admin?.components
+
   if (slug === "media") {
     return (
       <div className="dy-space-y-6 dy-animate-in lg:dy-space-y-8">
+        <AdminComponentSlot
+          slot="beforeList"
+          componentKeys={collectionSlots?.beforeList}
+          registry={components?.collectionList}
+          componentProps={collectionComponentProps}
+        />
         <PageHeader
           title="Media Library"
           description="Manage your media assets and uploads."
@@ -488,11 +514,31 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           )}
         </PageHeader>
 
-        <MediaGrid
-          items={response?.docs || []}
-          baseUrl={client?.getBaseUrl() || ""}
-          onDelete={handleDelete}
-          slug={slug}
+        <AdminComponentSlot
+          slot="beforeListTable"
+          componentKeys={collectionSlots?.beforeListTable}
+          registry={components?.collectionList}
+          componentProps={collectionComponentProps}
+        />
+
+        {isLoading ? (
+          <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
+            <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent" />
+          </div>
+        ) : (
+          <MediaGrid
+            items={response?.docs || []}
+            baseUrl={client?.getBaseUrl() || ""}
+            onDelete={handleDelete}
+            slug={slug}
+          />
+        )}
+
+        <AdminComponentSlot
+          slot="afterListTable"
+          componentKeys={collectionSlots?.afterListTable}
+          registry={components?.collectionList}
+          componentProps={collectionComponentProps}
         />
 
         <Pagination
@@ -503,12 +549,24 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           onPageChange={setPage}
           className="dy-mt-8"
         />
+        <AdminComponentSlot
+          slot="afterList"
+          componentKeys={collectionSlots?.afterList}
+          registry={components?.collectionList}
+          componentProps={collectionComponentProps}
+        />
       </div>
     )
   }
 
   return (
     <div className="dy-space-y-6 dy-animate-in lg:dy-space-y-8">
+      <AdminComponentSlot
+        slot="beforeList"
+        componentKeys={collectionSlots?.beforeList}
+        registry={components?.collectionList}
+        componentProps={collectionComponentProps}
+      />
       <PageHeader
         title={schema.labels?.plural || schema.label || schema.slug}
         description={`Manage your ${schema.labels?.plural || schema.label || schema.slug} entries and update content.`}
@@ -525,8 +583,19 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         )}
       </PageHeader>
 
+      <AdminComponentSlot
+        slot="beforeListTable"
+        componentKeys={collectionSlots?.beforeListTable}
+        registry={components?.collectionList}
+        componentProps={collectionComponentProps}
+      />
+
       <div className="dy-min-w-0">
-        <DataTable
+        {isLoading ? (
+          <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
+            <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent" />
+          </div>
+        ) : <DataTable
           key={slug}
           columns={columns}
           data={response?.docs || []}
@@ -588,6 +657,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
               </Button>
             )
           }}
+        />}
+        <AdminComponentSlot
+          slot="afterListTable"
+          componentKeys={collectionSlots?.afterListTable}
+          registry={components?.collectionList}
+          componentProps={collectionComponentProps}
         />
         <Pagination
           page={page}
@@ -596,6 +671,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           hasPrevPage={hasPrevPage}
           hasNextPage={hasNextPage}
           onPageChange={setPage}
+        />
+        <AdminComponentSlot
+          slot="afterList"
+          componentKeys={collectionSlots?.afterList}
+          registry={components?.collectionList}
+          componentProps={collectionComponentProps}
         />
       </div>
     </div>

@@ -21,6 +21,10 @@ We also provide a built-in Swagger UI for interactive testing and exploration:
 GET /api/docs
 ```
 
+## Workflows
+
+When a collection has `workflow` enabled, the OpenAPI spec automatically includes definitions for `POST /api/collections/:slug/:id/transitions/:transition` and `GET /api/collections/:slug/:id/workflow-history` along with their exact request/response schemas.
+
 ## Why OpenAPI?
 
 - **AI Prompting:** Provide the URL to an AI agent (like ChatGPT or Cursor) so it can understand your data structures perfectly.

@@ -1,9 +1,9 @@
 ---
 title: Access Control
-description: Function-based access control at the collection level and field level.
+description: Collection and field-level access control using JavaScript functions or Jexl expression strings.
 ---
 
-Dyrected uses a **function-based** access control system. Every collection and field defines its own rules as plain JavaScript functions — there is no global role registry or permission table.
+Dyrected uses a rule-based access control system. Every collection and field defines its own rules as either a JavaScript function or a Jexl expression string — there is no global role registry or permission table.
 
 ---
 
@@ -138,48 +138,174 @@ export const SiteSettings = defineGlobal({
 
 ---
 
+## Functions vs Jexl strings
+
+Each access key accepts either a **JavaScript function** or a **Jexl expression string**. Both are evaluated server-side on every request.
+
+```ts
+access: {
+  // Function — full JS, async-capable, can return a where filter
+  update: ({ user, doc }) => user?.role === 'admin' || user?.id === doc?.authorId,
+
+  // Jexl string — serialisable, storable in a database, works in Cloud schemas
+  delete: "user.role == 'admin'",
+}
+```
+
+| | Function | Jexl string |
+|---|---|---|
+| Async / DB lookups | Yes | No |
+| Row-level `where` filter | Yes (return an object) | No |
+| Serialisable / Cloud-compatible | No | Yes |
+| TypeScript autocomplete | Yes | No |
+
+Use functions when you need async lookups or row-level filtering. Use Jexl strings when your access rules need to be stored or synced to Dyrected Cloud. Simple boolean checks work equally well as either.
+
+---
+
 ## Common Patterns
 
-### Only authenticated users can write
+### Blog: public reads, staff writes, authors own their content
+
+Published posts are readable by anyone. Only logged-in users can create. Authors can edit their own posts; admins can edit anything. Only admins can delete.
 
 ```ts
-access: {
-  read:   () => true,
-  create: ({ user }) => !!user,
-  update: ({ user }) => !!user,
-  delete: ({ user }) => !!user,
+// Function form — use when you need the doc value or async logic
+export const Posts = defineCollection({
+  slug: 'posts',
+  access: {
+    read:   ({ user, doc }) => doc?.status === 'published' || !!user,
+    create: ({ user }) => !!user,
+    update: ({ user, doc }) => user?.role === 'admin' || user?.id === doc?.authorId,
+    delete: ({ user }) => user?.role === 'admin',
+  },
+  fields: [...],
+})
+
+// Jexl string form — use for simple role checks or Cloud-synced schemas
+export const Posts = defineCollection({
+  slug: 'posts',
+  access: {
+    read:   "doc.status == 'published' || user != null",
+    create: 'user != null',
+    update: "user.role == 'admin' || user.id == doc.authorId",
+    delete: "user.role == 'admin'",
+  },
+  fields: [...],
+})
+```
+
+To hide the `status` field from authors so they cannot self-publish, combine this with field-level access:
+
+```ts
+{
+  name: 'status',
+  type: 'select',
+  options: ['draft', 'published'],
+  access: {
+    update: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
+  },
 }
 ```
 
-### Admins can do everything; editors can read and update; viewers read-only
+---
+
+### Contact form / lead capture: public submit, staff reads only
+
+Anyone on the internet can submit the form. Only authenticated staff can read the submissions. Nobody can edit or delete entries after submission.
 
 ```ts
-access: {
-  read:   ({ user }) => !!user,
-  create: ({ user }) => ['admin', 'editor'].includes(user?.role),
-  update: ({ user }) => ['admin', 'editor'].includes(user?.role),
-  delete: ({ user }) => user?.role === 'admin',
-}
+export const Inquiries = defineCollection({
+  slug: 'inquiries',
+  access: {
+    create: () => true,
+    read:   ({ user }) => !!user,
+    update: () => false,
+    delete: ({ user }) => user?.role === 'admin',
+  },
+  fields: [
+    { name: 'name',    type: 'text',  required: true },
+    { name: 'email',   type: 'email', required: true },
+    { name: 'message', type: 'textarea' },
+  ],
+})
 ```
 
-### Authors own their content
+---
+
+### E-commerce orders: users see their own, admins see all
+
+`read` returning an object is treated as a `where` filter — so regular users automatically get a filtered list without any extra code in the API route.
 
 ```ts
-access: {
-  read:   ({ user, doc }) => doc?.status === 'published' || !!user,
-  create: ({ user }) => !!user,
-  update: ({ user, doc }) => user?.role === 'admin' || user?.id === doc?.authorId,
-  delete: ({ user }) => user?.role === 'admin',
-}
+export const Orders = defineCollection({
+  slug: 'orders',
+  access: {
+    read: ({ user }) => {
+      if (!user) return false
+      if (user.role === 'admin') return true
+      return { customer: { equals: user.id } }  // row-level filter
+    },
+    create: ({ user }) => !!user,
+    update: ({ user }) => user?.role === 'admin',
+    delete: ({ user }) => user?.role === 'admin',
+  },
+  fields: [...],
+})
 ```
 
-### Public contact form
+---
+
+### Role-based team: admin / editor / viewer
+
+A three-tier role model. Viewers can read. Editors can read and write. Only admins can delete.
 
 ```ts
-access: {
-  create: () => true,       // anyone can submit
-  read:   ({ user }) => !!user,  // only logged-in users can read submissions
-  update: () => false,
-  delete: ({ user }) => user?.role === 'admin',
-}
+// Function form — extract helpers so the rule isn't copy-pasted across collections
+const isEditor   = ({ user }: AccessArgs) => ['admin', 'editor'].includes(user?.role)
+const isAdmin    = ({ user }: AccessArgs) => user?.role === 'admin'
+const isLoggedIn = ({ user }: AccessArgs) => !!user
+
+export const Articles = defineCollection({
+  slug: 'articles',
+  access: {
+    read:   isLoggedIn,
+    create: isEditor,
+    update: isEditor,
+    delete: isAdmin,
+  },
+  fields: [...],
+})
+
+// Jexl string form
+export const Articles = defineCollection({
+  slug: 'articles',
+  access: {
+    read:   'user != null',
+    create: "user.role == 'admin' || user.role == 'editor'",
+    update: "user.role == 'admin' || user.role == 'editor'",
+    delete: "user.role == 'admin'",
+  },
+  fields: [...],
+})
+```
+
+---
+
+### Invite-only community: restrict create to admins
+
+Public reads, but only admins can create new members. Users can update their own profile. No one can delete via the API.
+
+```ts
+export const Members = defineCollection({
+  slug: 'members',
+  auth: true,
+  access: {
+    read:   () => true,
+    create: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.role === 'admin' || user?.id === doc?.id,
+    delete: () => false,
+  },
+  fields: [...],
+})
 ```

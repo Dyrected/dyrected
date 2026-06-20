@@ -2,6 +2,8 @@
 
 ## 2.5.29
 
+- Add type-safe Lucide `admin.icon` configuration for collection and global sidebar navigation.
+
 ## 2.5.28
 
 ### Patch Changes

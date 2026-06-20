@@ -4,6 +4,7 @@
 
 ### Patch Changes
 
+- Render type-safe collection and global Lucide icons in the sidebar with contextual fallbacks.
 - cbc6dad: Lower Admin UI scoped reset specificity with `:where(...)` so component utility classes can override reset styles normally.
   - @dyrected/core@2.5.29
   - @dyrected/sdk@2.5.29

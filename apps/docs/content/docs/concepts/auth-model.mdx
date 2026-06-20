@@ -1,0 +1,144 @@
+---
+title: Authentication Model
+description: How auth: true turns a collection into an authentication provider — endpoints, tokens, injected fields, and the stateless JWT model.
+---
+
+Authentication in Dyrected is opt-in and collection-scoped. Adding `auth: true` to any collection turns it into an auth provider. You can have multiple auth collections in one project — for example a `users` collection for your app's members and a separate `__admins` collection for the CMS dashboard.
+
+---
+
+## Enabling auth
+
+```ts
+export const Users = defineCollection({
+  slug: 'users',
+  auth: true,
+  fields: [
+    { name: 'name', type: 'text' },
+    { name: 'role', type: 'select', options: ['member', 'editor', 'admin'] },
+  ],
+})
+```
+
+`auth: true` does two things:
+
+1. **Injects fields** — `email` (required, unique) and `password` (hashed, never returned in API responses) are automatically added to every document.
+2. **Generates endpoints** — a full set of auth routes is mounted under `/dyrected/api/{slug}/`.
+
+You do not define `email` or `password` in your `fields` array — they are always present.
+
+---
+
+## Generated endpoints
+
+Every auth collection gets these endpoints automatically:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/{slug}/login` | `POST` | Exchange email + password for a JWT |
+| `/{slug}/logout` | `POST` | Returns a success message (token must be discarded client-side) |
+| `/{slug}/me` | `GET` | Return the authenticated user's document |
+| `/{slug}/refresh-token` | `POST` | Issue a new JWT from a valid existing one |
+| `/{slug}/forgot-password` | `POST` | Send a password reset email |
+| `/{slug}/reset-password` | `POST` | Set a new password using a reset token |
+| `/{slug}/invite` | `POST` | Send an invitation email (authenticated, admin use) |
+| `/{slug}/accept-invite` | `POST` | Accept an invite and set a password |
+| `/{slug}/first-user` | `POST` | Create the first user when the collection is empty |
+| `/{slug}/init` | `GET` | Returns `{ initialized: boolean }` — whether any users exist |
+
+---
+
+## Stateless JWT
+
+Dyrected auth is **stateless** — there are no server-side sessions. On login, the server signs a JWT with a secret from your environment and returns it. Every subsequent request must include it:
+
+```
+Authorization: Bearer <token>
+```
+
+The server verifies the token on every request. There is nothing to invalidate server-side on logout — the client discards the token and it expires naturally. The logout endpoint exists to signal this clearly:
+
+```json
+{ "success": true, "message": "Logged out. Discard your token." }
+```
+
+### What's in the token
+
+The JWT payload contains the user's `id`, `email`, `roles`, and the collection `slug` it was issued against. All of these are available as `user` in access functions and hooks:
+
+```ts
+access: {
+  update: ({ user }) => user?.role === 'admin',
+}
+```
+
+The `password` field is **never** included in the token or in any API read response.
+
+---
+
+## The `roles` field
+
+If your auth collection has a field named `roles`, its value is included in the JWT and available as `user.roles` in access functions. Dyrected does not enforce any role structure — `roles` can be a `select`, a `text`, or any shape you choose. The access function is where you interpret it.
+
+```ts
+// roles as a select (single role per user)
+{ name: 'role', type: 'select', options: ['member', 'editor', 'admin'] }
+
+// Access function reads user.role
+delete: ({ user }) => user?.role === 'admin'
+```
+
+---
+
+## Multiple auth collections
+
+You can have more than one auth collection. A common pattern is to keep `__admins` separate from your application's `users`:
+
+```ts
+export const Admins = defineCollection({
+  slug: '__admins',
+  auth: true,
+  fields: [
+    { name: 'name', type: 'text' },
+  ],
+})
+
+export const Users = defineCollection({
+  slug: 'users',
+  auth: true,
+  fields: [
+    { name: 'name', type: 'text' },
+    { name: 'plan', type: 'select', options: ['free', 'pro'] },
+  ],
+})
+```
+
+The Admin UI checks for an authenticated `__admins` user first, then falls back to any auth collection. Application users logging into your frontend are completely independent of who can log into the CMS dashboard.
+
+See [Separating Admin Auth](/docs/guides/separating-admin-auth) for the full walkthrough.
+
+---
+
+## Password reset flow
+
+The forgot-password endpoint accepts an optional `resetUrl` body parameter. When provided, Dyrected generates a clickable link in the reset email instead of just the raw token:
+
+```ts
+// POST /{slug}/forgot-password
+{
+  "email": "user@example.com",
+  "resetUrl": "https://mysite.com/reset-password"
+  // → link in email becomes https://mysite.com/reset-password?token=<token>
+}
+```
+
+If `resetUrl` is omitted, the email template receives only the raw `token`. See [Sending Email](/docs/guides/sending-email) for customising the reset email template.
+
+---
+
+## Next steps
+
+- [Adding Authentication](/docs/guides/adding-authentication) — step-by-step guide to wiring up a users collection
+- [Separating Admin Auth](/docs/guides/separating-admin-auth) — keep CMS dashboard auth independent from app users
+- [Invite-Only Registration](/docs/guides/invite-only-registration) — restrict sign-up to invited users
+- [Role-Based Access Control](/docs/guides/role-based-access-control) — use roles to gate collections and fields

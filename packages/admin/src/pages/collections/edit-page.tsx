@@ -10,6 +10,7 @@ import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl } from "../../lib/utils"
 import { Archive, Eye, EyeOff, Save, Volume2, FileIcon, Mail } from "lucide-react"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
+import { WorkflowPanel } from "../../components/workflow/WorkflowPanel"
 import jexl from 'jexl'
 
 export function EditEntryPage() {
@@ -172,6 +173,11 @@ export function EditEntryPage() {
   if (!schema) return <div>Collection not found</div>
   if (isEdit && isEntryLoading) return <div>Loading entry...</div>
 
+  // Workflow — available when the schema declares a workflow config and we
+  // have an existing entry with a _workflow metadata object.
+  const workflowConfig = (schema as any).workflow ?? null
+  const workflowMeta = isEdit && entry ? (entry as any)._workflow ?? null : null
+
   const hasStatus = schema?.fields.some((f: { name: string }) => f.name === "status")
   const currentStatus = entry?.status || "draft"
 
@@ -259,11 +265,11 @@ export function EditEntryPage() {
   }
 
   return (
-    <div className="dy-flex dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6">
+    <div className={cn("dy-flex dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6", showPreview ? "dy-h-screen" : "")}>
       {/* Left Column: Header + Form */}
       <div className={cn(
         "dy-flex-1 dy-px-4 dy-py-6 md:dy-px-6 lg:dy-px-8 lg:dy-py-8 dy-transition-all dy-duration-500",
-        showPreview ? "dy-max-w-2xl xl:dy-max-w-3xl" : "dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full"
+        showPreview ? "dy-max-w-2xl xl:dy-max-w-3xl dy-overflow-y-auto" : workflowConfig ? "dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full dy-overflow-y-auto"
       )}>
         <div className="dy-space-y-6">
           {/* Header */}
@@ -282,7 +288,8 @@ export function EditEntryPage() {
                   <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
                     {isEdit ? `Edit ${schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
                   </h1>
-                  {hasStatus && (
+                  {/* Legacy status field badge (non-workflow) */}
+                  {hasStatus && !workflowConfig && (
                     <Badge className={cn(
                       "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider",
                       currentStatus === "published" ? "dy-bg-emerald-100 dy-text-emerald-700 dy-border-emerald-200" : "dy-bg-amber-100 dy-text-amber-700 dy-border-amber-200"
@@ -516,15 +523,24 @@ export function EditEntryPage() {
         </div>
       </div>
 
-      {/* Right Column: Preview (starts from top) */}
+      {/* Workflow Sidebar — shown instead of preview when workflow is active */}
+      {workflowConfig && isEdit && workflowMeta && !showPreview && (
+        <div className="dy-hidden lg:dy-block dy-w-72 dy-shrink-0 dy-border-l dy-border-border/50 dy-bg-muted/5 dy-px-4 dy-py-8 dy-overflow-y-auto">
+          <WorkflowPanel
+            collection={slug!}
+            documentId={id!}
+            workflowMeta={workflowMeta}
+            workflowConfig={workflowConfig}
+          />
+        </div>
+      )}
+
+      {/* Right Column: Preview */}
       {previewUrl && (
         <div className={cn(
           "dy-hidden lg:dy-block dy-border-l dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden",
           showPreview ? "dy-flex-1 dy-opacity-100" : "dy-w-0 dy-opacity-0 dy-border-l-0"
         )}>
-          {/* We use negative margins to pull the preview up and out to the shell's padding edges if possible, 
-              but since we're inside a parent with padding, we'll just make it height-full.
-          */}
           <div className="dy-h-full">
             <LivePreviewPane
               previewUrl={previewUrl}

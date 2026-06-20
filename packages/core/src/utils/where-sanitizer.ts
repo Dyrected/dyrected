@@ -55,6 +55,10 @@ export function sanitizeWhereClause(where: WhereClause, fields: Field[]): WhereC
       }
 
       // It's a field condition
+      if (key === 'id') {
+        result[key] = value;
+        continue;
+      }
       const fieldDef = fieldMap.get(key);
 
       if (!fieldDef) continue; // Field doesn't exist

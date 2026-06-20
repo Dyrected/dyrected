@@ -110,7 +110,17 @@ export class InMemoryAdapter implements DatabaseAdapter {
     this.store[`__global_${params.slug}`]['__data'] = params.data;
     return params.data;
   }
+
+  /**
+   * In-memory transaction: just runs the callback with `this` as the adapter.
+   * The in-memory store is synchronous so there is nothing to roll back, but
+   * this satisfies the DatabaseAdapter interface so workflow tests can run.
+   */
+  async transaction<T>(fn: (txAdapter: DatabaseAdapter) => Promise<T>): Promise<T> {
+    return fn(this);
+  }
 }
+
 
 /** Legacy mock kept for backward compat with existing tests. */
 export class MockDatabaseAdapter implements DatabaseAdapter {

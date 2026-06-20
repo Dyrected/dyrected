@@ -26,6 +26,8 @@ export const Posts = defineCollection({
     afterChange:  [sendWebhook, revalidateCache],
     beforeDelete: [checkReferences],
     afterDelete:  [cleanupMedia],
+    beforeTransition: [requireCommentOnReject],
+    afterTransition: [notifyPublisher],
   },
   fields: [...],
 })
@@ -39,6 +41,8 @@ export const Posts = defineCollection({
 | `afterChange` | After the write is committed | `{ doc, previousDoc, req, user, operation }` | void (return value ignored) |
 | `beforeDelete` | Before the record is removed | `{ id, doc, req, user }` | void — **throw to abort** |
 | `afterDelete` | After the record is removed | `{ id, doc, req, user }` | void |
+| `beforeTransition`| Before a workflow state transition | `{ id, doc, req, user, transition, from, to }` | void — **throw to abort** |
+| `afterTransition`| After a workflow state transition | `{ id, doc, req, user, transition, from, to }` | void |
 
 **Notes on specific arguments:**
 
@@ -60,6 +64,8 @@ The following table summarizes the runtime capabilities of each collection hook,
 | `beforeChange` | ✓ | ✓ (read-only) | ✗ | ✓ (external only) |
 | `afterChange` | ✓ | ✓ | ✓ | ✓ (email, webhooks, capacity updates) |
 | `afterDelete` | ✓ | ✓ | ✓ | ✓ |
+| `beforeTransition`| ✓ | ✓ (read-only) | ✗ | ✗ |
+| `afterTransition`| ✓ | ✓ | ✓ | ✓ (email, webhooks) |
 
 > [!IMPORTANT]
 > **If you find yourself building an API route just to trigger a side effect after a save, check if `afterChange` covers it first.**  

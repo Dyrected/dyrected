@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { createClient, DyrectedClient } from "@dyrected/sdk";
+import type { AdminComponents, AdminSchemas } from "../types/admin-components";
 
 interface DyrectedContextType {
   client: DyrectedClient | null;
@@ -12,15 +13,12 @@ interface DyrectedContextType {
   setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
-  schemas: { collections: any[]; globals: any[]; admin?: any } | null;
+  schemas: AdminSchemas | null;
   user: any | null;
   setToken: (token: string) => void;
   // @internal – set by Dyrected Cloud to bypass admin-level auth
   initialToken?: string;
-  components?: {
-    fields?: Record<string, React.ComponentType<any>>;
-    [key: string]: any;
-  };
+  components?: AdminComponents;
 }
 
 const DyrectedContext = createContext<DyrectedContextType | undefined>(undefined);
@@ -50,7 +48,7 @@ export function DyrectedProvider({
   const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_key") : null) || undefined);
   const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
   const [client, setClient] = useState<DyrectedClient | null>(null);
-  const [schemas, setSchemas] = useState<{ collections: any[]; globals: any[]; admin?: any } | null>(null);
+  const [schemas, setSchemas] = useState<AdminSchemas | null>(null);
   const [user, setUser] = useState<any | null>(null);
 
   useEffect(() => {

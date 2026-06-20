@@ -146,6 +146,45 @@ DELETE /api/collections/:slug/:id
 
 ---
 
+### Transition a document workflow
+
+```
+POST /api/collections/:slug/:id/transitions/:transition
+Content-Type: application/json
+```
+
+Atomic state transition for collections with `workflow` enabled. Can require comment or reject/publish capabilities depending on the workflow config. 
+
+**Request body:**
+
+```json
+{
+  "expectedRevision": 3,
+  "comment": "Approved for publishing."
+}
+```
+
+**Response:** The document with its newly updated `_workflow` state.
+
+---
+
+### Get workflow history
+
+```
+GET /api/collections/:slug/:id/workflow-history
+```
+
+Returns the history of all transitions applied to this document.
+
+**Example:**
+```bash
+GET /api/collections/posts/abc123/workflow-history?limit=10
+```
+
+**Response:** Standard paginated list of `WorkflowHistoryEntry` records.
+
+---
+
 ## Upload Endpoints
 
 Upload collections use `multipart/form-data` for file creation:

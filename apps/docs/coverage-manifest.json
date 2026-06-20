@@ -1,0 +1,30 @@
+{
+  "coverage": {
+    "workflows": [
+      "publishingWorkflow",
+      "workflowCapabilities",
+      "availableWorkflowTransitions",
+      "initializeWorkflowDocument",
+      "materializeWorkflowDocument",
+      "transitionWorkflow",
+      "saveWorkflowDraft",
+      "createWorkflowDocument"
+    ],
+    "lifecycleEvents": [
+      "dispatchLifecycleEvent",
+      "dispatchPendingLifecycleEvents",
+      "createLifecycleEvent"
+    ],
+    "configKeys": [
+      "workflow"
+    ],
+    "sdkMethods": [
+      "transition",
+      "workflowHistory"
+    ],
+    "restApiEndpoints": [
+      "POST /api/collections/:slug/:id/transitions/:transition",
+      "GET /api/collections/:slug/:id/workflow-history"
+    ]
+  }
+}

@@ -146,6 +146,23 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         upload: !!col.upload,
         auth: !!col.auth,
         admin: col.admin,
+        workflow: col.workflow
+          ? {
+              initialState: col.workflow.initialState,
+              draftState: col.workflow.draftState,
+              states: col.workflow.states,
+              transitions: col.workflow.transitions.map((t) => ({
+                name: t.name,
+                label: t.label,
+                from: t.from,
+                to: t.to,
+                requiredCapabilities: t.requiredCapabilities,
+                requireComment: t.requireComment,
+                unpublish: t.unpublish,
+              })),
+              roles: col.workflow.roles,
+            }
+          : undefined,
       })));
 
     const filteredGlobals = await Promise.all(globals
@@ -393,6 +410,11 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     if (collection.auth) {
       app.post(`${path}/:id/change-password`, requireAuth(), (c) => controller.changePassword(c));
     }
+    // Workflow routes — only registered when the collection has a workflow configured
+    if (collection.workflow) {
+      app.post(`${path}/:id/transitions/:transition`, requireAuth(), (c) => controller.transition(c));
+      app.get(`${path}/:id/workflow-history`, requireAuth(), (c) => controller.workflowHistory(c));
+    }
   }
 
   // 5. Global Routes (Static)
@@ -412,6 +434,60 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
   // 7. Dynamic Routes (Tenant-specific)
   // This handles collections/globals defined via sync:schema and fetched via onSchemaFetch
+
+  // 7a. Workflow sub-routes for dynamic tenant collections.
+  // Must be registered BEFORE the /:id? catch-all so Hono doesn't swallow deeper paths.
+  // Pattern: POST /api/collections/:slug/:id/transitions/:transition
+  //          GET  /api/collections/:slug/:id/workflow-history
+  app.all("/api/collections/:slug/:id/*", requireAuth(), async (c) => {
+    const slug = c.req.param("slug");
+    const id = c.req.param("id");
+    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const config = c.get("config");
+
+    // Skip if static — static workflow routes are registered directly above;
+    // if this wildcard fires for a static slug it means the sub-path is unknown.
+    if (config.collections.some((col) => col.slug === slug)) {
+      return c.json({ message: "Not Found" }, 404);
+    }
+
+    if (!config.onSchemaFetch || !siteId) {
+      return c.json({ message: `Collection "${slug}" not found` }, 404);
+    }
+
+    const dynamic = await config.onSchemaFetch(siteId);
+    const collection = dynamic.collections?.find((col) => col.slug === slug);
+    if (!collection?.workflow) {
+      return c.json({ message: `Collection "${slug}" not found or has no workflow` }, 404);
+    }
+
+    const controller = new CollectionController(collection);
+    const rawPath = c.req.path;
+    const method = c.req.method;
+
+    // Resolve the transition name from the URL tail.
+    const transitionMatch = rawPath.match(/\/transitions\/([^/]+)$/);
+    if (transitionMatch && method === "POST") {
+      // Hono doesn't param-match on wildcards, so patch the param manually.
+      (c.req.raw as any).__transition = transitionMatch[1];
+      // Override param() for the controller
+      const origParam = c.req.param.bind(c.req);
+      c.req.param = (key?: string) => {
+        if (key === 'transition') return transitionMatch[1] as any;
+        if (key === 'id') return id as any;
+        return origParam(key as any);
+      };
+      return controller.transition(c);
+    }
+
+    if (rawPath.endsWith('/workflow-history') && method === "GET") {
+      return controller.workflowHistory(c);
+    }
+
+    return c.json({ message: "Not Found" }, 404);
+  });
+
+  // 7b. Core dynamic catch-all for tenant collections (list, create, findOne, update, delete).
   app.all("/api/collections/:slug/:id?", async (c) => {
     const slug = c.req.param("slug");
     const id = c.req.param("id");

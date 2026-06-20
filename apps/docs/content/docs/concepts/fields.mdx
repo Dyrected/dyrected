@@ -1,18 +1,18 @@
 ---
 title: Fields
-description: How fields define the shape of your content — the types available and the properties they share.
+description: How fields define the shape of your content — the types available, the properties they share, and how structural fields compose complex documents.
 ---
 
-A field is the basic unit of content in Dyrected. Every collection and global is made up of fields, and together they define both the database schema and the Admin UI form.
+A field is the basic unit of content in Dyrected. Every collection and global is made up of fields. Together they define the database schema, the REST API response shape, and the Admin UI form — all at once.
 
 ```ts
 defineCollection({
   slug: 'posts',
   fields: [
-    { name: 'title',     type: 'text',         required: true },
-    { name: 'body',      type: 'richText' },
-    { name: 'status',    type: 'select',        options: ['draft', 'published'], defaultValue: 'draft' },
-    { name: 'author',    type: 'relationship',  relationTo: 'users' },
+    { name: 'title',       type: 'text',         required: true },
+    { name: 'body',        type: 'richText' },
+    { name: 'status',      type: 'select',        options: ['draft', 'published'], defaultValue: 'draft' },
+    { name: 'author',      type: 'relationship',  relationTo: 'users' },
     { name: 'publishedAt', type: 'datetime' },
   ],
 })
@@ -29,31 +29,160 @@ defineCollection({
 | Date & time | `date`, `datetime`, `time` |
 | Selection | `select`, `multiSelect`, `radio` |
 | Relationships | `relationship`, `join` |
-| Structural | `object`, `array`, `blocks`, `json` |
+| Structural | `object`, `array`, `blocks` |
 | Layout | `row` |
+| Media | `image` |
+| Freeform | `json` |
+
+For full options on each type see the [Field Types Reference](/docs/reference/fields).
 
 ---
 
-## Every field shares these base properties
+## Base properties every field shares
+
+These properties apply to every field type:
+
+| Property | Type | Default | What it does |
+|---|---|---|---|
+| `name` | `string` | required | The key in the database and in JSON responses. Use camelCase. |
+| `type` | `FieldType` | required | Which field type to use. |
+| `label` | `string` | title-cased `name` | The label shown in the Admin UI form. |
+| `required` | `boolean` | `false` | Enforced on both client (Admin UI) and server (API validation). |
+| `unique` | `boolean` | `false` | Adds a database-level unique constraint. Requires a schema sync. |
+| `defaultValue` | any | `undefined` | Value used for new documents. Evaluated server-side. |
+| `promoted` | `boolean` | `false` | Extracts this field from the JSON blob into its own indexed SQL column. |
+| `renameTo` | `string` | — | Lazy migration — read from this old key if the new `name` is missing. |
+| `admin` | `object` | — | UI-only options: `placeholder`, `description`, `hidden`, `condition`, `readOnly`. |
+| `access` | `object` | — | Field-level `read` and `update` access functions. |
+| `hooks` | `object` | — | `beforeChange` and `afterRead` hooks at the field level. |
+
+### `required` vs `unique`
+
+`required` is enforced by validation — submitting a document without a required field returns a `400` with a validation error. `unique` is a database constraint — inserting a duplicate value returns a `409 Conflict`.
+
+### `promoted` and database indexes
+
+By default, every field value lives inside a JSON blob column. Setting `promoted: true` extracts the field into its own SQL column, which means the database can index it and queries using that field in `where` filters or `sort` are significantly faster. Good candidates: `slug`, `status`, `email`, `publishedAt`. See [Schema Definition](/docs/concepts/schema#promoted-fields).
+
+---
+
+## Structural fields
+
+Structural fields let you compose nested and repeating data inside a single document.
+
+### `object` — a fixed group of sub-fields
+
+Use `object` when a document has a named section with a fixed set of sub-fields.
 
 ```ts
 {
-  name: 'myField',          // key in the database and JSON response
-  type: 'text',             // field type (see table above)
-  label: 'My Field',        // Admin UI label (defaults to title-cased name)
-  required: false,          // enforced client and server-side
-  unique: false,            // database-level unique constraint
-  defaultValue: undefined,  // initial value for new documents
-  admin: { ... },           // UI-only options (placeholder, description, hidden, condition, tab...)
-  access: { read, update }, // field-level access control
-  hooks: { beforeChange, afterRead }, // field-level lifecycle hooks
+  name: 'seo',
+  type: 'object',
+  fields: [
+    { name: 'title',       type: 'text' },
+    { name: 'description', type: 'textarea' },
+    { name: 'image',       type: 'relationship', relationTo: 'media' },
+  ],
+}
+// Stored as: { seo: { title: '...', description: '...', image: 'media-id' } }
+```
+
+### `array` — a repeating group of sub-fields
+
+Use `array` when a document can have zero or more instances of the same structure.
+
+```ts
+{
+  name: 'testimonials',
+  type: 'array',
+  fields: [
+    { name: 'author', type: 'text' },
+    { name: 'quote',  type: 'textarea' },
+    { name: 'rating', type: 'number' },
+  ],
+}
+// Stored as: { testimonials: [{ author: '...', quote: '...', rating: 5 }, ...] }
+```
+
+### `blocks` — a repeating group with variable types
+
+Use `blocks` when each item in a list can be a different type. This is the foundation of page builders.
+
+```ts
+{
+  name: 'content',
+  type: 'blocks',
+  blocks: [
+    {
+      slug: 'hero',
+      fields: [
+        { name: 'heading',    type: 'text' },
+        { name: 'subheading', type: 'text' },
+        { name: 'cta',        type: 'text' },
+      ],
+    },
+    {
+      slug: 'richText',
+      fields: [
+        { name: 'body', type: 'richText' },
+      ],
+    },
+    {
+      slug: 'image',
+      fields: [
+        { name: 'image',   type: 'relationship', relationTo: 'media' },
+        { name: 'caption', type: 'text' },
+      ],
+    },
+  ],
+}
+// Each item in the array has a `blockType` property identifying its slug
+```
+
+See the [Building a Page Builder](/docs/guides/building-a-page-builder) guide for a full walkthrough.
+
+### `row` — layout only, no data
+
+`row` groups fields side by side in the Admin UI form. It has no effect on the API or database.
+
+```ts
+{
+  type: 'row',
+  fields: [
+    { name: 'firstName', type: 'text' },
+    { name: 'lastName',  type: 'text' },
+  ],
 }
 ```
 
-For a complete description of every field type and its options, see the [Field Types Reference](/docs/reference/fields).
+---
+
+## Field-level access and hooks
+
+Every field can define its own access rules and hooks independently of the collection:
+
+```ts
+{
+  name: 'internalNotes',
+  type: 'textarea',
+  access: {
+    read:   ({ user }) => user?.role === 'admin',  // stripped from response if false
+    update: ({ user }) => user?.role === 'admin',  // ignored on write if false
+  },
+  hooks: {
+    beforeChange: [({ value }) => value?.trim()],
+    afterRead:    [({ value }) => value ?? ''],
+  },
+}
+```
+
+Field access is evaluated **after** collection-level access is granted. See [Access Control](/docs/concepts/access-control) for the full model.
 
 ---
 
-## Fields are the schema
+## Next steps
 
-When Dyrected syncs the schema (on startup for self-hosted projects, or via `npx @dyrected/cli sync:schema` for Cloud), it uses your field definitions to create or update database columns. Changing a field type is a migration — see [Schema concepts](/docs/concepts/schema) for how lazy migrations work.
+- [Field Types Reference](/docs/reference/fields) — every field type and all its options
+- [Relationships](/docs/concepts/relationships) — how `relationship` and `join` fields link collections
+- [Schema Definition](/docs/concepts/schema) — how fields map to database columns and how migrations work
+- [Building a Page Builder](/docs/guides/building-a-page-builder) — using `blocks` for flexible layouts

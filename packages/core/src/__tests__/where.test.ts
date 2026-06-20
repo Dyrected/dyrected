@@ -17,7 +17,15 @@ describe('where clause filtering', () => {
 
     const config = defineConfig({
       collections: [
-        defineCollection({ slug: 'posts', fields: [{ name: 'title', type: 'text' }] }),
+        defineCollection({
+          slug: 'posts',
+          fields: [
+            { name: 'title', type: 'text' },
+            { name: 'status', type: 'text' },
+            { name: 'views', type: 'number' },
+            { name: 'tags', type: 'text', hasMany: true }
+          ]
+        }),
       ],
       globals: [],
       db,

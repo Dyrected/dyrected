@@ -24,6 +24,13 @@ import { ErrorBoundary } from "./components/error-boundary";
 import { AuthGate } from "./components/auth/auth-gate";
 import { Toaster } from "./components/ui/sonner";
 
+export type {
+  AdminComponents,
+  AdminSchemas,
+  CollectionListSlotProps,
+  DashboardSlotProps,
+} from "./types/admin-components";
+
 // ─── Route that resolves collection → list or media page ─────────────────────
 
 function CollectionRoute() {
