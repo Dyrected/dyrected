@@ -1,5 +1,11 @@
 # @dyrected/docs
 
+## 0.1.12
+
+### Patch Changes
+
+- fa1ad68: feat: add workflow reference generation scripts, improve admin documentation, and implement dashboard testing utilities
+
 ## 0.1.11
 
 ### Patch Changes

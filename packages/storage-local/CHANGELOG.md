@@ -1,5 +1,12 @@
 # @dyrected/storage-local
 
+## 2.5.31
+
+### Patch Changes
+
+- Updated dependencies [fa1ad68]
+  - @dyrected/core@2.5.31
+
 ## 2.5.30
 
 ### Patch Changes
