@@ -10,26 +10,16 @@ Before you start, ensure you have:
 - A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
 
-<Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt.js', 'React']}>
-<Tab value="Dyrected Cloud">
+<Tabs items={['Dyrected Cloud (SPA)', 'Next.js', 'Nuxt.js']}>
+<Tab value="Dyrected Cloud (SPA)">
 
-### 1. Create your site
-Sign up at [cloud.dyrected.com](https://cloud.dyrected.com) and create a new **Site**.
+**SPA** stands for Single-Page Application — a client-side app that runs entirely in the browser, such as a React (Vite), Vue, or Svelte project. There is no Node.js server handling requests; your app fetches content directly from the Dyrected Cloud API using an API key.
 
-### 2. Copy the AI Prompt
-Immediately after creating your site, you will see a **Setup Prompt**. This is pre-filled with your Site ID and API Key.
+The full Cloud setup guide — including account creation, connecting your SPA, and going live — lives at:
 
-### 3. Give it to your AI
-Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.). 
+**[dyrected.com/guide](https://dyrected.com/guide)**
 
-**The AI will automatically:**
-- Install the necessary dependencies (`@dyrected/admin`, `@dyrected/core`).
-- Create a `dyrected.config.ts` with your initial collections.
-- **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
-- **Sync your Schema**: The AI will run `npx @dyrected/cli sync:schema` for you so your cloud database is ready immediately.
-
-### 4. Build and ship
-Run your site and your new dashboard will be live at `yourwebsite.com/admin`.
+It covers React, Vue, Svelte, and more, and is kept up to date alongside the Cloud dashboard.
 
 </Tab>
 <Tab value="Next.js">
@@ -83,72 +73,6 @@ The CLI auto-detects your framework from `package.json`. Choose **SQLite** for l
 3. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL to start managing content.
 
 > **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
-
-</Tab>
-<Tab value="React">
-
-The easiest way to get started with a plain React (Vite/CRA) app is using the interactive CLI.
-
-**1. Initialize**
-
-```bash
-npx @dyrected/cli init
-```
-
-The CLI auto-detects your framework. Choose **SQLite** for local development. It will:
-- Install `@dyrected/react`, `@dyrected/core`, `@dyrected/db-sqlite`, and `@dyrected/sdk`.
-- Create a `dyrected.config.ts`.
-- Mount the API server and Admin UI into your dev setup.
-- Generate a `.env.example`.
-
-**2. Wrap your app**
-
-```tsx
-// src/main.tsx
-import { DyrectedProvider } from '@dyrected/react'
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({
-  baseUrl: import.meta.env.VITE_DYRECTED_URL,
-  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
-})
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <DyrectedProvider client={client}>
-    <App />
-  </DyrectedProvider>
-)
-```
-
-**3. Embed the Admin UI**
-
-```tsx
-// src/pages/Admin.tsx
-import { DyrectedAdmin } from '@dyrected/react'
-import '@dyrected/admin/styles'
-
-export function AdminPage() {
-  return (
-    <DyrectedAdmin
-      baseUrl={import.meta.env.VITE_DYRECTED_URL}
-      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
-      basename="/admin"
-    />
-  )
-}
-```
-
-Mount `<AdminPage />` at `/admin` in your router. The admin dashboard will be live at `localhost:5173/admin`.
-
-**4. Configure and Run**
-
-1. Copy `.env.example` to `.env` and fill in the values.
-2. Run `pnpm dev`.
-3. Open `http://localhost:5173/admin` to start managing content.
-
-> **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
-
-> **Peer dependencies:** `<DyrectedAdmin />` requires `react-router-dom` and `@tanstack/react-query`. The CLI installs these automatically.
 
 </Tab>
 </Tabs>

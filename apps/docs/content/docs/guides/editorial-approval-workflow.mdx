@@ -1,0 +1,49 @@
+---
+title: Editorial Approval Workflow
+description: Guide on setting up a publishing chain with capability gates and comment requirements.
+---
+
+This guide walks you through setting up a complete editorial approval workflow for a content management site.
+
+---
+
+## 1. Define the Collection
+
+Add `publishingWorkflow()` to the collection config:
+
+```ts
+import { defineCollection } from "@dyrected/core"
+import { publishingWorkflow } from "@dyrected/core/workflows"
+
+export const Posts = defineCollection({
+  slug: "posts",
+  workflow: publishingWorkflow(),
+  fields: [
+    { name: "title", type: "text", required: true },
+    { name: "body", type: "richText" },
+  ]
+})
+```
+
+---
+
+## 2. Assign Capabilities to Roles
+
+The publishing workflow maps roles (e.g. `'editor'`, `'publisher'`) to capabilities:
+- **Editor**: Can write drafts and perform `'submit'` (Submit for review).
+- **Publisher**: Can write drafts, submit, `'publish'` (Publish), `'reject'` (Request changes), and `'unpublish'` (Unpublish).
+
+Make sure your auth users collection has a `roles` field containing either `['editor']` or `['publisher']`.
+
+---
+
+## 3. Require Comments on Rejection
+
+The `'reject'` transition (Request changes) has `requireComment: true`. In the Admin UI, clicking **Request changes** opens a dialog asking for a revision comment (e.g., "Please fix spelling"). The comment is recorded in the history log:
+
+```ts
+const doc = await client.collection('posts').transition(postId, 'reject', {
+  expectedRevision: currentRevision,
+  comment: 'Needs better images.'
+})
+```
