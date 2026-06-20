@@ -45,4 +45,60 @@ describe('Configuration Helpers', () => {
     expect(config.collections).toEqual([]);
     expect(config.db).toBeInstanceOf(MockDatabaseAdapter);
   });
+
+  it('rejects components passed directly into admin.components configuration (type test)', () => {
+    const FakeComponent = () => 'div';
+
+    const validDashboard = defineConfig({
+      collections: [],
+      globals: [],
+      db: new MockDatabaseAdapter(),
+      admin: {
+        components: {
+          beforeDashboard: ['custom-banner'],
+        }
+      }
+    });
+
+    const invalidDashboard = defineConfig({
+      collections: [],
+      globals: [],
+      db: new MockDatabaseAdapter(),
+      admin: {
+        components: {
+          // @ts-expect-error — must be an array of strings
+          beforeDashboard: [FakeComponent],
+          // @ts-expect-error — must be an array of strings
+          afterDashboard: FakeComponent,
+        }
+      }
+    });
+
+    const validCollection = defineCollection({
+      slug: 'posts',
+      fields: [],
+      admin: {
+        components: {
+          beforeList: ['custom-header'],
+          beforeListTable: ['custom-filters'],
+          afterListTable: ['custom-footer'],
+          afterList: ['custom-pagination'],
+        }
+      }
+    });
+
+    const invalidCollection = defineCollection({
+      slug: 'posts',
+      fields: [],
+      admin: {
+        components: {
+          // @ts-expect-error — must be an array of strings
+          beforeList: [FakeComponent],
+        }
+      }
+    });
+
+    expect(validDashboard.admin?.components?.beforeDashboard).toEqual(['custom-banner']);
+    expect(validCollection.admin?.components?.beforeList).toEqual(['custom-header']);
+  });
 });

@@ -102,7 +102,7 @@ export class CollectionController {
     }
 
     result.docs = result.docs
-      .map((doc) => this.collection.workflow ? materializeWorkflowDocument(doc, this.collection.workflow, user) : doc)
+      .map((doc) => this.collection.workflow ? materializeWorkflowDocument(doc as any, this.collection.workflow, user) : doc)
       .filter((doc): doc is NonNullable<typeof doc> => doc !== null)
       .map(doc => DefaultsService.apply(this.collection.fields, doc));
 
@@ -429,14 +429,14 @@ export class CollectionController {
       const doc = await transitionWorkflow({
         config,
         collection: this.collection,
-        id,
-        transitionName,
+        id: id as string,
+        transitionName: transitionName as string,
         expectedRevision: body.expectedRevision,
         comment: body.comment,
         user: c.get('user'),
-        req: c.req,
+        req: { query: c.req.query(), headers: c.req.header(), raw: c.req.raw },
       });
-      return c.json(materializeWorkflowDocument(doc, this.collection.workflow, c.get('user')));
+      return c.json(materializeWorkflowDocument(doc as any, this.collection.workflow, c.get('user')));
     } catch (error) {
       const status = typeof (error as { statusCode?: unknown }).statusCode === 'number'
         ? (error as { statusCode: number }).statusCode

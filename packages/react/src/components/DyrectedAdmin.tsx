@@ -5,6 +5,13 @@ import '@dyrected/admin/styles';
 // It is used internally by Dyrected Cloud and should not be documented or promoted.
 export type DyrectedAdminProps = AdminUIProps;
 
+export type {
+  AdminComponents,
+  AdminSchemas,
+  CollectionListSlotProps,
+  DashboardSlotProps,
+} from "@dyrected/admin";
+
 export function DyrectedAdmin(props: DyrectedAdminProps) {
   return <AdminUI {...props} />;
 }

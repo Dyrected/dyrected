@@ -336,6 +336,113 @@ export default defineConfig({
 | `branding.fontSerif` | `string` | `"Instrument Serif"` | CSS font-family for headings and display. |
 | `meta.titleSuffix` | `string` | Appended to the `<title>` tag on every admin page. |
 
+## Customizing the Admin UI with Component Slots
+
+You can inject custom React or Vue components into specific areas of the Admin UI using Component Slots. First, declare the slot keys in your Dyrected configuration, then provide the matching components to the `<DyrectedAdmin>` wrapper.
+
+### 1. Configure the Slot Keys
+
+In your `dyrected.config.ts`, declare the component keys you want to render in the `admin.components` array for the dashboard or collections.
+
+```ts
+import { defineConfig, defineCollection } from '@dyrected/core'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  admin: {
+    components: {
+      beforeList: ['posts-header'],
+      afterListTable: ['custom-pagination'],
+    }
+  },
+  fields: [...]
+})
+
+export default defineConfig({
+  collections: [Posts],
+  admin: {
+    components: {
+      beforeDashboard: ['welcome-banner'],
+      afterDashboard: ['analytics-widget'],
+    }
+  }
+})
+```
+
+### 2. Provide the Components
+
+When mounting the Admin UI in your frontend, pass the `components` prop containing the component registries for `dashboard` and `collectionList`.
+
+**React / Next.js:**
+```tsx
+import { DyrectedAdmin } from '@dyrected/next/admin'
+
+function WelcomeBanner(props) {
+  return <div className="p-4 bg-blue-50">Welcome, {props.user.email}!</div>
+}
+
+export default function AdminPage() {
+  return (
+    <DyrectedAdmin
+      components={{
+        dashboard: {
+          'welcome-banner': WelcomeBanner,
+          'analytics-widget': AnalyticsWidget,
+        },
+        collectionList: {
+          'posts-header': PostsHeader,
+          'custom-pagination': CustomPagination,
+        }
+      }}
+    />
+  )
+}
+```
+
+**Vue / Nuxt:**
+```vue
+<template>
+  <DyrectedAdmin
+    :components="{
+      dashboard: {
+        'welcome-banner': WelcomeBanner,
+        'analytics-widget': AnalyticsWidget,
+      },
+      collectionList: {
+        'posts-header': PostsHeader,
+        'custom-pagination': CustomPagination,
+      }
+    }"
+  />
+</template>
+
+<script setup>
+import { DyrectedAdmin } from '@dyrected/vue'
+import WelcomeBanner from './WelcomeBanner.vue'
+import AnalyticsWidget from './AnalyticsWidget.vue'
+import PostsHeader from './PostsHeader.vue'
+import CustomPagination from './CustomPagination.vue'
+</script>
+```
+
+### Available Slots and Props
+
+**Dashboard Slots (`beforeDashboard`, `afterDashboard`):**
+Components receive:
+- `client`: The initialized `DyrectedClient` for data fetching.
+- `user`: The currently authenticated admin user document.
+- `schemas`: The full loaded `AdminSchemas` object.
+
+**Collection List Slots (`beforeList`, `beforeListTable`, `afterListTable`, `afterList`):**
+Components receive the same props as the dashboard, plus:
+- `collection`: The configuration of the current collection.
+- `data`: The paginated list response (`{ docs, totalDocs, totalPages, ... }`).
+- `page` / `setPage`: Current pagination state.
+- `where` / `setWhere`: Current filter state.
+- `selectedIds` / `setSelectedIds`: Array of document IDs selected via table checkboxes.
+
+If an unconfigured component is passed, or if a component throws an error during render, the Admin UI will gracefully catch the error and skip it, ensuring the rest of the CMS remains usable.
+
 ## Theming & CSS Overrides
 
 The Admin UI uses CSS custom properties for all design tokens. Override them on `.dy-admin-ui` from your host application's global stylesheet. Scoping overrides to `.dy-admin-ui` keeps the admin theme isolated from the rest of your app.

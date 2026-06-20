@@ -119,7 +119,7 @@ export function createLifecycleEvent(args: {
 }
 
 async function persistEvent(db: DatabaseAdapter, event: LifecycleEvent) {
-  await db.create({ collection: LIFECYCLE_EVENTS_COLLECTION, data: event });
+  await db.create({ collection: LIFECYCLE_EVENTS_COLLECTION, data: event as any });
 }
 
 export async function dispatchLifecycleEvent(config: DyrectedConfig, event: LifecycleEvent): Promise<void> {

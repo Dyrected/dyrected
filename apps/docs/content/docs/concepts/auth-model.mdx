@@ -1,6 +1,6 @@
 ---
 title: Authentication Model
-description: How auth: true turns a collection into an authentication provider — endpoints, tokens, injected fields, and the stateless JWT model.
+description: "How `auth: true` turns a collection into an authentication provider — endpoints, tokens, injected fields, and the stateless JWT model."
 ---
 
 Authentication in Dyrected is opt-in and collection-scoped. Adding `auth: true` to any collection turns it into an auth provider. You can have multiple auth collections in one project — for example a `users` collection for your app's members and a separate `__admins` collection for the CMS dashboard.
@@ -11,13 +11,13 @@ Authentication in Dyrected is opt-in and collection-scoped. Adding `auth: true` 
 
 ```ts
 export const Users = defineCollection({
-  slug: 'users',
+  slug: "users",
   auth: true,
   fields: [
-    { name: 'name', type: 'text' },
-    { name: 'role', type: 'select', options: ['member', 'editor', 'admin'] },
+    { name: "name", type: "text" },
+    { name: "role", type: "select", options: ["member", "editor", "admin"] },
   ],
-})
+});
 ```
 
 `auth: true` does two things:
@@ -33,18 +33,18 @@ You do not define `email` or `password` in your `fields` array — they are alwa
 
 Every auth collection gets these endpoints automatically:
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/{slug}/login` | `POST` | Exchange email + password for a JWT |
-| `/{slug}/logout` | `POST` | Returns a success message (token must be discarded client-side) |
-| `/{slug}/me` | `GET` | Return the authenticated user's document |
-| `/{slug}/refresh-token` | `POST` | Issue a new JWT from a valid existing one |
-| `/{slug}/forgot-password` | `POST` | Send a password reset email |
-| `/{slug}/reset-password` | `POST` | Set a new password using a reset token |
-| `/{slug}/invite` | `POST` | Send an invitation email (authenticated, admin use) |
-| `/{slug}/accept-invite` | `POST` | Accept an invite and set a password |
-| `/{slug}/first-user` | `POST` | Create the first user when the collection is empty |
-| `/{slug}/init` | `GET` | Returns `{ initialized: boolean }` — whether any users exist |
+| Endpoint                  | Method | Purpose                                                         |
+| ------------------------- | ------ | --------------------------------------------------------------- |
+| `/{slug}/login`           | `POST` | Exchange email + password for a JWT                             |
+| `/{slug}/logout`          | `POST` | Returns a success message (token must be discarded client-side) |
+| `/{slug}/me`              | `GET`  | Return the authenticated user's document                        |
+| `/{slug}/refresh-token`   | `POST` | Issue a new JWT from a valid existing one                       |
+| `/{slug}/forgot-password` | `POST` | Send a password reset email                                     |
+| `/{slug}/reset-password`  | `POST` | Set a new password using a reset token                          |
+| `/{slug}/invite`          | `POST` | Send an invitation email (authenticated, admin use)             |
+| `/{slug}/accept-invite`   | `POST` | Accept an invite and set a password                             |
+| `/{slug}/first-user`      | `POST` | Create the first user when the collection is empty              |
+| `/{slug}/init`            | `GET`  | Returns `{ initialized: boolean }` — whether any users exist    |
 
 ---
 
@@ -96,21 +96,19 @@ You can have more than one auth collection. A common pattern is to keep `__admin
 
 ```ts
 export const Admins = defineCollection({
-  slug: '__admins',
+  slug: "__admins",
   auth: true,
-  fields: [
-    { name: 'name', type: 'text' },
-  ],
-})
+  fields: [{ name: "name", type: "text" }],
+});
 
 export const Users = defineCollection({
-  slug: 'users',
+  slug: "users",
   auth: true,
   fields: [
-    { name: 'name', type: 'text' },
-    { name: 'plan', type: 'select', options: ['free', 'pro'] },
+    { name: "name", type: "text" },
+    { name: "plan", type: "select", options: ["free", "pro"] },
   ],
-})
+});
 ```
 
 The Admin UI checks for an authenticated `__admins` user first, then falls back to any auth collection. Application users logging into your frontend are completely independent of who can log into the CMS dashboard.
