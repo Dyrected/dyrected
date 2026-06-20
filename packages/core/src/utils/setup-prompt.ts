@@ -167,6 +167,7 @@ COLLECTION OPTIONS:
 - upload: true       — media library with file upload support
 - auth: true         — adds login/me endpoints; password field is auto-managed
 - audit: true        — enables activity logging
+- admin.icon         — valid Lucide component name for sidebar navigation (e.g. 'Newspaper')
 - admin.useAsTitle   — field used as display title in admin list view
 - admin.group        — groups collection under a sidebar heading
 - admin.hidden       — hides collection from the sidebar (internal/system use)
@@ -211,7 +212,7 @@ const media = defineCollection({
 
 const pages = defineCollection({
   slug: 'pages',
-  admin: { useAsTitle: 'title', group: 'Content' },
+  admin: { icon: 'FileText', useAsTitle: 'title', group: 'Content' },
   fields: [
     { name: 'title', label: 'Title', type: 'text', required: true },
     { name: 'slug',  label: 'URL Slug', type: 'text', required: true, unique: true },

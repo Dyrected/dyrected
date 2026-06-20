@@ -1,5 +1,5 @@
 import * as React from "react"
-import * as Icons from "lucide-react"
+import { icons, type LucideIcon } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
@@ -31,9 +31,15 @@ const getIconCategory = (name: string): string => {
   return "others"
 }
 
-const allIconNames = Object.keys(Icons).filter(
-  key => typeof (Icons as Record<string, unknown>)[key] === "function" && /^[A-Z]/.test(key)
-)
+type IconName = keyof typeof icons
+
+// Lucide icons are React forwardRef objects, not functions. Use the package's
+// supported dynamic registry rather than inferring icons from namespace exports.
+export const availableIconNames = Object.keys(icons) as IconName[]
+
+function getIcon(name: string): LucideIcon | undefined {
+  return icons[name as IconName]
+}
 
 interface IconPickerProps {
   schema: FieldSchema
@@ -48,12 +54,12 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
   const [visibleCount, setVisibleCount] = React.useState(100)
 
   const selectedIconName: string = field.value || ""
-  const SelectedIcon = selectedIconName ? (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[selectedIconName] : null
+  const SelectedIcon = selectedIconName ? getIcon(selectedIconName) : undefined
 
   const filteredIcons = React.useMemo(() => {
-    let list = allIconNames
+    let list = availableIconNames
     if (selectedCategory !== "all") {
-      list = allIconNames.filter(name => getIconCategory(name) === selectedCategory)
+      list = availableIconNames.filter(name => getIconCategory(name) === selectedCategory)
     }
     if (search) {
       const q = search.toLowerCase()
@@ -118,7 +124,7 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
           <ScrollArea className="dy-h-[240px]">
             <div className="dy-grid dy-grid-cols-7 dy-gap-1 dy-pr-3">
               {filteredIcons.slice(0, visibleCount).map(name => {
-                const IconComp = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name]
+                const IconComp = icons[name]
                 return (
                   <button
                     key={name}

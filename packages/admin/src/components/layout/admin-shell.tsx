@@ -22,7 +22,16 @@ import {
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { cn, getMediaUrl } from "../../lib/utils"
+import { resolveAdminIcon } from "../../lib/admin-icons"
 import { BrandingProvider } from "./branding-provider"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu"
 import logo from "@/assets/dyrected.svg"
 
 // ---------------------------------------------------------------------------
@@ -236,7 +245,7 @@ function SidebarInner({
               <NavItem
                 key={col.slug}
                 to={`/collections/${col.slug}`}
-                icon={ImageIcon}
+                icon={resolveAdminIcon(col.admin?.icon, ImageIcon)}
                 label={col.labels?.plural ?? col.label ?? col.slug}
                 active={location.pathname.startsWith(`/collections/${col.slug}`)}
                 collapsed={collapsed}
@@ -290,7 +299,7 @@ function SidebarInner({
                   <NavItem
                     key={col.slug}
                     to={`/collections/${col.slug}`}
-                    icon={col.auth ? Users : Database}
+                    icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
                     label={navLabel}
                     active={location.pathname.startsWith(`/collections/${col.slug}`)}
                     collapsed={collapsed}
@@ -329,7 +338,7 @@ function SidebarInner({
                 <NavItem
                   key={glob.slug}
                   to={`/globals/${glob.slug}`}
-                  icon={Settings}
+                  icon={resolveAdminIcon(glob.admin?.icon, Settings)}
                   label={glob.label ?? glob.slug}
                   active={location.pathname === `/globals/${glob.slug}`}
                   collapsed={collapsed}
@@ -343,76 +352,97 @@ function SidebarInner({
 
       {/* Footer */}
       <div className="dy-border-t dy-border-border dy-px-2 dy-py-3 dy-shrink-0 dy-space-y-0.5">
-        {/* Integration guide — always visible so embedded users can access the prompt */}
+        {/* Setup guidance — always visible to embedded and standalone users. */}
         <NavItem
           to="/setup"
           icon={Sparkles}
-          label="Integration Guide"
+          label="Setup & Help"
           active={location.pathname === "/setup"}
           collapsed={collapsed}
           onClick={onNavigate}
         />
 
         {!isEmbedded && user && (
-          <div className={cn(
-            "dy-flex dy-items-center dy-gap-2 dy-px-3 dy-py-2 dy-rounded-md dy-bg-accent/40 dy-mb-1",
-            collapsed ? "dy-justify-center dy-px-2" : ""
-          )}>
-            <div className="dy-flex dy-h-6 dy-w-6 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-              {(user.name || user.email || "?")[0].toUpperCase()}
-            </div>
-            {!collapsed && (
-              <div className="dy-flex dy-flex-col dy-min-w-0 dy-flex-1">
-                <span className="dy-text-[12px] dy-font-medium dy-text-foreground dy-truncate">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                title={collapsed ? user.name || user.email : undefined}
+                aria-label={`Open account menu for ${user.name || user.email}`}
+                className={cn(
+                  "dy-group dy-flex dy-w-full dy-items-center dy-gap-2.5 dy-rounded-md dy-px-2.5 dy-py-2 dy-text-left dy-transition-colors hover:dy-bg-accent/70 focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
+                  collapsed ? "dy-justify-center dy-px-2" : ""
+                )}
+              >
+                <div className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/15 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
+                  {(user.name || user.email || "?")[0].toUpperCase()}
+                </div>
+                {!collapsed && (
+                  <>
+                    <div className="dy-flex dy-min-w-0 dy-flex-1 dy-flex-col">
+                      <span className="dy-truncate dy-text-[12px] dy-font-medium dy-text-foreground">
+                        {user.name || user.email}
+                      </span>
+                      {user.name && user.email && (
+                        <span className="dy-truncate dy-text-[10px] dy-text-muted-foreground">
+                          {user.email}
+                        </span>
+                      )}
+                    </div>
+                    <ChevronDown className="dy-h-3.5 dy-w-3.5 dy-shrink-0 dy-text-muted-foreground/60 dy-transition-transform group-data-[state=open]:dy-rotate-180" />
+                  </>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side={collapsed ? "right" : "top"}
+              align="end"
+              sideOffset={8}
+              className="dy-w-56 dy-rounded-lg dy-p-1.5 dy-shadow-xl"
+            >
+              <DropdownMenuLabel className="dy-px-2 dy-py-2 dy-font-normal">
+                <span className="dy-block dy-truncate dy-text-xs dy-font-medium dy-text-foreground">
                   {user.name || user.email}
                 </span>
                 {user.name && user.email && (
-                  <span className="dy-text-[10px] dy-text-muted-foreground dy-truncate">
+                  <span className="dy-mt-0.5 dy-block dy-truncate dy-text-[11px] dy-text-muted-foreground">
                     {user.email}
                   </span>
                 )}
-              </div>
-            )}
-          </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={logout}
+                className="dy-cursor-pointer dy-py-2 dy-text-destructive focus:dy-bg-destructive/10 focus:dy-text-destructive"
+              >
+                <LogOut className="dy-h-4 dy-w-4" />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
-        {!isEmbedded && (
-          <button
-            onClick={logout}
-            title={collapsed ? "Logout" : undefined}
-            className={cn(
-              "dy-flex dy-w-full dy-items-center dy-gap-3 dy-rounded-md dy-px-3 dy-py-2 dy-text-[13px] dy-font-medium dy-text-muted-foreground dy-transition-colors hover:dy-bg-destructive/10 hover:dy-text-destructive",
-              collapsed ? "dy-justify-center dy-px-2" : ""
-            )}
-          >
-            <LogOut className="dy-h-[15px] dy-w-[15px] dy-shrink-0" />
-            {!collapsed && <span>Logout</span>}
-          </button>
-        )}
-      </div>
-
-      {/* Desktop Collapse Toggle at Bottom */}
-      {onToggleCollapse && !isEmbedded && (
-        <div className="dy-mt-auto dy-p-4 dy-border-t dy-border-border/40">
+        {onToggleCollapse && !isEmbedded && (
           <button
             onClick={onToggleCollapse}
             className={cn(
-              "dy-w-full dy-flex dy-items-center dy-gap-3 dy-p-2.5 dy-rounded-xl dy-text-muted-foreground/60 hover:dy-text-foreground hover:dy-bg-accent/50 dy-transition-all dy-group/btn",
-              collapsed ? "dy-justify-center" : "dy-px-3"
+              "dy-group/btn dy-mt-1 dy-flex dy-h-7 dy-w-full dy-items-center dy-gap-2 dy-rounded-md dy-px-2.5 dy-text-[11px] dy-font-medium dy-text-muted-foreground/45 dy-transition-colors hover:dy-bg-accent/40 hover:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
+              collapsed ? "dy-justify-center dy-px-2" : ""
             )}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
-              <PanelLeftOpen className="dy-h-5 dy-w-5" />
+              <PanelLeftOpen className="dy-h-3.5 dy-w-3.5" />
             ) : (
               <>
-                <PanelLeftClose className="dy-h-5 dy-w-5 dy-group-hover/btn:dy--translate-x-0.5 dy-transition-transform" />
-                <span className="dy-text-sm dy-font-medium dy-text-[13px]">Collapse Sidebar</span>
+                <PanelLeftClose className="dy-h-3.5 dy-w-3.5 dy-transition-transform dy-group-hover/btn:dy--translate-x-0.5" />
+                <span>Collapse sidebar</span>
               </>
             )}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

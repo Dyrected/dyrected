@@ -434,7 +434,7 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
               items={fields.map(f => f.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="dy-pt-2">
+              <div className="dy-pt-2 dy-space-y-4">
                 {fields.map((item, index) => (
                   <SortableBlockItem
                     key={item.id}
