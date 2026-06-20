@@ -1,5 +1,12 @@
 # @dyrected/db-mysql
 
+## 2.5.30
+
+### Patch Changes
+
+- Updated dependencies [1a2e552]
+  - @dyrected/core@2.5.30
+
 ## 2.5.29
 
 ### Patch Changes
