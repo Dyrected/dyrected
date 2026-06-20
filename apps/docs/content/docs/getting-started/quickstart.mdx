@@ -10,7 +10,7 @@ Before you start, ensure you have:
 - A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
 
-<Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt.js']}>
+<Tabs items={['Dyrected Cloud', 'Next.js', 'Nuxt.js', 'React']}>
 <Tab value="Dyrected Cloud">
 
 ### 1. Create your site
@@ -83,6 +83,72 @@ The CLI auto-detects your framework from `package.json`. Choose **SQLite** for l
 3. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL to start managing content.
 
 > **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
+
+</Tab>
+<Tab value="React">
+
+The easiest way to get started with a plain React (Vite/CRA) app is using the interactive CLI.
+
+**1. Initialize**
+
+```bash
+npx @dyrected/cli init
+```
+
+The CLI auto-detects your framework. Choose **SQLite** for local development. It will:
+- Install `@dyrected/react`, `@dyrected/core`, `@dyrected/db-sqlite`, and `@dyrected/sdk`.
+- Create a `dyrected.config.ts`.
+- Mount the API server and Admin UI into your dev setup.
+- Generate a `.env.example`.
+
+**2. Wrap your app**
+
+```tsx
+// src/main.tsx
+import { DyrectedProvider } from '@dyrected/react'
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({
+  baseUrl: import.meta.env.VITE_DYRECTED_URL,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+})
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <DyrectedProvider client={client}>
+    <App />
+  </DyrectedProvider>
+)
+```
+
+**3. Embed the Admin UI**
+
+```tsx
+// src/pages/Admin.tsx
+import { DyrectedAdmin } from '@dyrected/react'
+import '@dyrected/admin/styles'
+
+export function AdminPage() {
+  return (
+    <DyrectedAdmin
+      baseUrl={import.meta.env.VITE_DYRECTED_URL}
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      basename="/admin"
+    />
+  )
+}
+```
+
+Mount `<AdminPage />` at `/admin` in your router. The admin dashboard will be live at `localhost:5173/admin`.
+
+**4. Configure and Run**
+
+1. Copy `.env.example` to `.env` and fill in the values.
+2. Run `pnpm dev`.
+3. Open `http://localhost:5173/admin` to start managing content.
+
+> **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
+
+> **Peer dependencies:** `<DyrectedAdmin />` requires `react-router-dom` and `@tanstack/react-query`. The CLI installs these automatically.
 
 </Tab>
 </Tabs>

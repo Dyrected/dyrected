@@ -37,6 +37,8 @@ Create the client once and export it — import it wherever you need data. The c
 
 ## SvelteKit
 
+In SvelteKit, create your client in `$lib/cms.ts` and import it into load functions and form actions. All data fetching happens server-side by default — the SDK runs in the Node adapter and the client is never exposed to the browser.
+
 ### Fetching data in a `+page.server.ts`
 
 ```ts
@@ -95,6 +97,8 @@ const settings = await cms.global('site-settings').get()
 
 ## Astro
 
+Astro runs the SDK at build time (static) or at request time (SSR). Create your client in `src/lib/cms.ts` and import it in `.astro` component frontmatter or in API route handlers.
+
 ### In a `.astro` component (SSR or static)
 
 ```astro
@@ -131,6 +135,8 @@ export const GET: APIRoute = async () => {
 ---
 
 ## Vanilla Node.js / scripts
+
+Use the SDK in standalone scripts for seeding data, running migrations, or one-off admin operations — no framework required.
 
 ```ts
 import { createClient } from '@dyrected/sdk'

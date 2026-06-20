@@ -7,7 +7,9 @@ The `admin` object on a `CollectionConfig`, `GlobalConfig`, or `Field` configure
 
 ---
 
-## Collection `admin` Options
+## Collection Labels
+
+The top-level `labels` object customizes the human-readable names Dyrected uses for this collection throughout the Admin UI — in buttons, breadcrumbs, and navigation.
 
 ```ts
 export const Posts = defineCollection({
@@ -17,15 +19,12 @@ export const Posts = defineCollection({
     plural: 'Blog Posts',
   },
   admin: {
+    icon: 'Newspaper',
     useAsTitle: 'title',
     ...
   },
 })
 ```
-
-### `labels`
-
-Customizes the human-readable names used for the collection in the Admin UI.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -35,6 +34,8 @@ Customizes the human-readable names used for the collection in the Admin UI.
 ---
 
 ## Collection `admin` Options
+
+The `admin` object on a collection controls how it appears in the sidebar, what the list table looks like, and whether the edit page shows a live preview pane. These options have no effect on the API or database.
 
 ```ts
 export const Posts = defineCollection({
@@ -53,6 +54,7 @@ export const Posts = defineCollection({
 
 | Property | Type | Default | Description |
 |---|---|---|---|
+| `icon` | `AdminIconName` | Contextual default | Lucide component name displayed in the sidebar, such as `'Newspaper'` or `'ShoppingBag'`. TypeScript autocompletes valid names and rejects invalid ones. |
 | `useAsTitle` | `string` | `'id'` | The field name used as the document title throughout the Admin UI — in the list table, breadcrumb, and relationship pickers. |
 | `defaultColumns` | `string[]` | First 3 non-hidden fields | The ordered list of field names to display as columns in the list table. If omitted, the first three visible fields are shown. |
 | `group` | `string` | none | Groups this collection under a labelled section in the sidebar. Collections with the same `group` string are collapsed together. |
@@ -140,10 +142,13 @@ If `previewUrl` returns `null` or `undefined`, the preview pane is hidden.
 
 ## Global `admin` Options
 
+Globals support a subset of the collection admin options. Use these to control where the global appears in the sidebar and whether it is visible at all.
+
 ```ts
 export const SiteSettings = defineGlobal({
   slug: 'site-settings',
   admin: {
+    icon: 'Settings2',
     group: 'Configuration',
     hidden: false,
   },
@@ -153,12 +158,15 @@ export const SiteSettings = defineGlobal({
 
 | Property | Type | Default | Description |
 |---|---|---|---|
+| `icon` | `AdminIconName` | `Settings` | Lucide component name displayed beside the global in the sidebar. |
 | `group` | `string` | none | Same as collections — groups this global under a labelled sidebar section. |
 | `hidden` | `boolean` | `false` | Hides the global from the sidebar. |
 
 ---
 
 ## Field `admin` Options
+
+Every field accepts an `admin` object that controls how it renders inside the edit form — its placeholder, help text, visibility, and conditional display rules. None of these options affect validation or the API response.
 
 ```ts
 {
@@ -509,11 +517,23 @@ The sidebar is built dynamically from your config at runtime, following this ord
 
 1. **Grouped collections** — Collections with an `admin.group` are listed inside a collapsible section labelled with the group name.
 2. **Ungrouped collections** — Collections without `admin.group` are listed at the top level.
-3. **Media** — Upload-enabled collections (`upload: true`) automatically get a camera icon and appear in a dedicated "Media" section.
+3. **Media** — Upload-enabled collections (`upload: true`) automatically get an image icon and appear in a dedicated "Media" section.
 4. **Globals** — Listed below collections, also respecting `admin.group`.
 5. **Hidden items** — Collections or globals with `admin.hidden: true` are excluded entirely.
 
 The order within each group matches the order they appear in your `collections` / `globals` array in `defineConfig`.
+
+Set `admin.icon` to override the contextual default. Dyrected accepts Lucide component names in PascalCase and provides type-safe autocomplete:
+
+```ts
+const Posts = defineCollection({
+  slug: 'posts',
+  admin: { icon: 'Newspaper' },
+  fields: [...],
+})
+```
+
+Configured icons take precedence over defaults. Without an override, upload collections use `Image`, auth collections use `Users`, regular collections use `Database`, and globals use `Settings`. Invalid values received from untyped JavaScript or a remote schema fall back to the relevant default.
 
 ---
 

@@ -1,4 +1,0 @@
-{
-  "title": "Features",
-  "pages": ["auth", "separated-auth", "audit-trail", "uploads", "email", "live-preview"]
-}

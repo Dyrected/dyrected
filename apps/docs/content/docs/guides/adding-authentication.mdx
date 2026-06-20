@@ -193,8 +193,29 @@ const { user } = useDyrectedAuth('users')
 
 ---
 
+---
+
+## Auth endpoint reference
+
+All endpoints are prefixed with `/api/collections/{slug}`.
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/{slug}/login` | Email + password login. Returns `{ token, user }`. |
+| `POST` | `/{slug}/logout` | Stateless — returns `{ success: true }`. Client discards the token. |
+| `GET` | `/{slug}/me` | Returns the current user document (requires `Authorization: Bearer <token>`). |
+| `POST` | `/{slug}/refresh-token` | Exchange a valid JWT for a fresh one with a new expiry. |
+| `POST` | `/{slug}/forgot-password` | Send a password-reset email. Accepts `{ email, resetUrl? }`. Always returns `200`. |
+| `POST` | `/{slug}/reset-password` | Reset password using the token from the reset email. Accepts `{ token, password }`. |
+| `POST` | `/{slug}/invite` | Send an invite email. Requires auth. Accepts `{ email }`. |
+| `POST` | `/{slug}/accept-invite` | Create an account from an invite token. Accepts `{ token, password, ...extraFields }`. Returns `{ token, user }`. |
+
+The `password` field is always stripped from API read responses.
+
+---
+
 ## Next steps
 
 - [Invite-only registration](/docs/guides/invite-only-registration) — restrict sign-up to invited users
 - [Role-based access control](/docs/guides/role-based-access-control) — admin / editor / viewer roles
-- [Auth Endpoints](/docs/features/auth) — full REST API reference
+- [Separating Admin Auth](/docs/guides/separating-admin-auth) — isolate dashboard access with `__admins`

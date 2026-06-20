@@ -29,7 +29,7 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
 {
   slug: 'media',
   upload: {
-    mimeTypes:   ['image/jpeg', 'image/png', 'image/webp'],
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
     maxFileSize: 5 * 1024 * 1024,
     imageSizes: [
       { name: 'thumbnail', width: 300, height: 300, fit: 'cover' },

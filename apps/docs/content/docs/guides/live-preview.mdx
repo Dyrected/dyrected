@@ -14,10 +14,9 @@ Live preview renders your frontend in an iframe inside the Admin UI. As the edit
 {
   slug: 'posts',
   admin: {
-    livePreview: {
-      url: ({ doc }) =>
-        `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${doc.slug}/preview`,
-    },
+    previewUrl: (doc) =>
+      doc?.slug ? `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${doc.slug}/preview` : null,
+    previewMode: 'postMessage', // default
   },
   fields: [...],
 }
@@ -124,12 +123,12 @@ onMounted(() => {
 </template>
 ```
 
-**Option B — `useDyrectedLivePreview` composable**
+**Option B — `useLivePreview` composable**
 
 ```vue
 <!-- pages/blog/[slug]/preview.vue -->
 <script setup lang="ts">
-const { data: post } = useLivePreview({ initialData: null, depth: 1 })
+const { data: post } = useLivePreview({ initialData: null })
 </script>
 
 <template>
@@ -189,4 +188,4 @@ export default defineNuxtRouteMiddleware((to) => {
 3. The preview pane loads your frontend in an iframe
 4. Edit the title — it updates in real time
 
-See [Live Preview reference](/docs/features/live-preview) for full config options.
+See [`previewUrl` and `previewMode`](/docs/concepts/schema) in the collection config reference for all options, including token mode for statically generated sites.

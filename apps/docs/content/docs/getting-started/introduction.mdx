@@ -41,11 +41,23 @@ The short version: Dyrected gives you Payload's developer experience (config-as-
 
 ## Self-hosted or Cloud?
 
-**[Dyrected Cloud](/docs/deployment/cloud)** — create an account, run `npx @dyrected/cli sync:schema`, set two env vars, and your site is live. No database to provision, no storage bucket to configure, no infrastructure to maintain. Starts at $19/month.
+| | Self-Hosted | Cloud |
+|---|---|---|
+| **Engine** | Runs inside your app | Runs on Dyrected's servers |
+| **Database** | Your own (SQLite, Postgres, MySQL) | Fully managed |
+| **Storage** | Local disk or your S3/R2/Cloudinary | Fully managed |
+| **Auth** | You manage JWT secret and sessions | Managed, with workspace RBAC |
+| **Multi-site** | One site per deployment | Multiple sites per workspace |
+| **Price** | Free (BSL) | Paid — see [Billing](/docs/cloud/billing) |
+| **Best for** | Full control, data residency, offline | Speed, teams, multiple client sites |
 
-**Self-hosted** — bring your own Postgres/SQLite/MongoDB and storage. Free under the BSL. Right for teams with strict data residency requirements or who already have infrastructure in place.
+**Cloud makes sense when:**
+- You're an agency managing multiple client sites — each gets its own site in one workspace
+- You want to ship fast — no Postgres to provision, no S3 bucket to configure
+- You need multi-site without deploying new infrastructure
+- You're a solo developer who wants a low-maintenance stack
 
-Not sure? Read [Self-Hosted vs Cloud](/docs/getting-started/self-hosted-vs-cloud).
+Both modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
 
 ---
 
@@ -54,8 +66,6 @@ Not sure? Read [Self-Hosted vs Cloud](/docs/getting-started/self-hosted-vs-cloud
 **I want the fastest path to a live site** → [Deploy with Dyrected Cloud](/docs/deployment/cloud)
 
 **I want to get started locally first** → [Quickstart](/docs/getting-started/quickstart)
-
-**I want to understand self-hosted vs cloud** → [Self-Hosted vs Cloud](/docs/getting-started/self-hosted-vs-cloud)
 
 **I want to add a blog to an existing Next.js app** → [Building a Blog](/docs/guides/building-a-blog)
 

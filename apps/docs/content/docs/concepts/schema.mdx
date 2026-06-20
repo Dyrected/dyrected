@@ -54,6 +54,7 @@ You can control how your collections appear in the Admin UI:
 {
   slug: 'posts',
   admin: {
+    icon: 'Newspaper',
     useAsTitle: 'title',
     defaultColumns: ['title', 'createdAt'],
     group: 'Content',
@@ -61,6 +62,8 @@ You can control how your collections appear in the Admin UI:
   }
 }
 ```
+
+`admin.icon` accepts only valid Lucide component names. Editors see it beside the collection or global in the Admin sidebar; invalid values from untyped clients safely fall back to the default icon.
 
 ## Seeding & Migrations
 

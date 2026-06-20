@@ -1,16 +1,19 @@
 {
   "title": "Guides",
   "pages": [
-    "using-hooks",
     "building-a-blog",
     "adding-authentication",
     "file-uploads",
+    "sending-email",
     "invite-only-registration",
     "role-based-access-control",
+    "separating-admin-auth",
+    "audit-trail",
+    "live-preview",
+    "using-hooks",
     "building-a-page-builder",
     "nuxt-dynamic-pages",
     "configuring-storage",
-    "live-preview",
     "handling-form-submissions",
     "globals-and-site-settings"
   ]

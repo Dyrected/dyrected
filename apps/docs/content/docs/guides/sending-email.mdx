@@ -1,0 +1,175 @@
+---
+title: Sending Email
+description: Configure transactional email, customise built-in templates, and send emails from hooks.
+---
+
+Dyrected sends transactional emails automatically for auth events — welcome, invite, password reset, and password changed. You wire in your own email provider via a `send` callback; Dyrected never cares which library or service you use.
+
+---
+
+## 1. Wire in your email provider
+
+```ts
+// dyrected.config.ts
+export default defineConfig({
+  email: {
+    from: 'noreply@mysite.com',
+    send: async ({ to, subject, html }) => {
+      // call your email library here
+    },
+  },
+})
+```
+
+### Resend
+
+```ts
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export default defineConfig({
+  email: {
+    from: 'noreply@mysite.com',
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({ from: 'noreply@mysite.com', to, subject, html })
+    },
+  },
+})
+```
+
+### Nodemailer (SMTP)
+
+```ts
+import nodemailer from 'nodemailer'
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: 587,
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+})
+
+export default defineConfig({
+  email: {
+    from: 'noreply@mysite.com',
+    send: async ({ to, subject, html }) => {
+      await transporter.sendMail({ from: 'noreply@mysite.com', to, subject, html })
+    },
+  },
+})
+```
+
+Any library that sends email works — Postmark, SendGrid, AWS SES, etc.
+
+---
+
+## 2. Development — Ethereal fallback
+
+If `email` is not configured and `NODE_ENV` is not `production`, Dyrected automatically routes emails through [Ethereal](https://ethereal.email/) — a free fake SMTP service that captures outgoing emails without delivering them. No account or setup required.
+
+On first send, credentials and a preview URL are printed to the console:
+
+```
+[dyrected/core] No email config — using Ethereal for dev email preview.
+[dyrected/core] Ethereal login: https://ethereal.email  user: xxx@ethereal.email  pass: xxx
+[dyrected/core] Email preview URL: https://ethereal.email/message/WaQKMgKddxQDoou...
+```
+
+Click the preview URL to see the rendered email.
+
+---
+
+## 3. Built-in email events
+
+Four auth events trigger automatic emails. All are best-effort — a failed send is logged but never blocks the API response.
+
+| Event | Trigger | Template key |
+|---|---|---|
+| Account created | `POST /{slug}/first-user` or `POST /{slug}/accept-invite` | `welcome` |
+| Invitation sent | `POST /{slug}/invite` | `invite` |
+| Password reset requested | `POST /{slug}/forgot-password` | `resetPassword` |
+| Password successfully changed | `POST /{slug}/reset-password` | `passwordChanged` |
+
+---
+
+## 4. Customise built-in templates
+
+Override the HTML (and optionally the subject) for any built-in email by adding a `templates` object. Each key is a function that receives relevant data and returns `{ html, subject? }`. Omitting `subject` keeps the default.
+
+```ts
+export default defineConfig({
+  email: {
+    from: 'noreply@mysite.com',
+    send: async ({ to, subject, html }) => { /* ... */ },
+    templates: {
+      welcome: ({ email }) => ({
+        subject: 'Welcome to Acme',
+        html: `<h1>Welcome!</h1><p>Your account is ready: ${email}</p>`,
+      }),
+      invite: ({ token, invitedByEmail }) => ({
+        subject: "You've been invited to Acme",
+        html: `
+          <p>Invited by <strong>${invitedByEmail}</strong>.</p>
+          <p>Your invite token: <pre>${token}</pre></p>
+        `,
+      }),
+      resetPassword: ({ token, url }) => ({
+        subject: 'Reset your Acme password',
+        html: url
+          ? `<p><a href="${url}">Reset your password</a> (expires in 1 hour)</p>`
+          : `<p>Your reset token (expires in 1 hour):</p><pre>${token}</pre>`,
+      }),
+      passwordChanged: ({ email }) => ({
+        subject: 'Your Acme password was changed',
+        html: `<p>The password for <strong>${email}</strong> was just changed.</p>`,
+      }),
+    },
+  },
+})
+```
+
+### Template args reference
+
+| Template | Args |
+|---|---|
+| `welcome` | `{ email: string }` |
+| `invite` | `{ token: string, invitedByEmail?: string }` |
+| `resetPassword` | `{ token: string, url?: string }` — `url` is the full reset link when `resetUrl` was passed to `forgot-password` |
+| `passwordChanged` | `{ email: string }` |
+
+---
+
+## 5. Send custom emails from hooks
+
+For emails beyond the four built-in events — order confirmations, notifications, etc. — use an `afterChange` hook with your email library directly:
+
+```ts
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export default defineConfig({
+  collections: [
+    {
+      slug: 'orders',
+      hooks: {
+        afterChange: [
+          async ({ doc, operation }) => {
+            if (operation === 'create') {
+              await resend.emails.send({
+                from: 'orders@mysite.com',
+                to: doc.customerEmail,
+                subject: `Order #${doc.id} confirmed`,
+                html: `<p>Thanks for your order!</p>`,
+              })
+            }
+          },
+        ],
+      },
+      fields: [
+        { name: 'customerEmail', type: 'email', required: true },
+      ],
+    },
+  ],
+})
+```

@@ -31,18 +31,19 @@ The `defineConfig` helper expects an object with the following properties:
 | `upload` | `boolean \| object` | Enable file uploads and define image sizes/mime types. |
 | `access` | `object` | Control `read`, `create`, `update`, and `delete` permissions. |
 | `hooks` | `object` | Lifecycle hooks (e.g., `beforeChange`, `afterRead`). |
-| `admin` | `object` | UI customizations like `useAsTitle`, `defaultColumns`, and `urlPattern`. |
+| `admin` | `object` | UI customizations like `icon`, `useAsTitle`, `defaultColumns`, and `urlPattern`. |
 
 ### Collection `admin` options
 
 | Property | Type | Description |
 | :--- | :--- | :--- |
+| `icon` | `AdminIconName` | Valid Lucide component name for the sidebar, such as `Newspaper`. |
 | `useAsTitle` | `string` | Field name to use as the document title in the Admin UI list view. |
 | `defaultColumns` | `string[]` | Columns shown by default in the list view. |
 | `group` | `string` | Groups this collection under a named sidebar heading. |
 | `hidden` | `boolean` | Hides the collection from the Admin UI sidebar entirely. |
-| `previewUrl` | `string \| function` | URL or jexl expression for the Live Preview pane. See [Live Preview](/docs/features/live-preview). |
-| `urlPattern` | `string` | Frontend URL pattern for this collection, used by `url` fields to resolve internal links. Use `{fieldName}` placeholders — e.g. `"/{slug}"` or `"/blog/{slug}"`. See [URL field](/docs/concepts/fields#url). |
+| `previewUrl` | `string \| function` | URL or jexl expression for the Live Preview pane. See [Live Preview](/docs/guides/live-preview). |
+| `urlPattern` | `string` | Frontend URL pattern for this collection, used by `url` fields to resolve internal links. Use `{fieldName}` placeholders — e.g. `"/{slug}"` or `"/blog/{slug}"`. See [URL field](/docs/reference/fields#url). |
 
 ---
 
@@ -57,6 +58,7 @@ Globals follow a similar structure to collections but are intended for singleton
 | `label` | `string` | Display name in the Admin UI. |
 | `access` | `object` | Control `read` and `update` permissions. |
 | `hooks` | `object` | Lifecycle hooks (same as collections, excluding delete). |
+| `admin.icon` | `AdminIconName` | Valid Lucide component name for the global's sidebar icon. |
 
 ---
 
@@ -108,7 +110,7 @@ export default defineConfig({
 })
 ```
 
-See [Email](/docs/features/email) for the full guide — provider examples, the Ethereal dev fallback, and custom template overrides.
+See [Email](/docs/guides/sending-email) for the full guide — provider examples, the Ethereal dev fallback, and custom template overrides.
 
 ---
 
