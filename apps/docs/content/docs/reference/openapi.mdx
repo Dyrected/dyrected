@@ -1,34 +1,43 @@
 ---
 title: OpenAPI Specification
-description: Technical API definitions for developers and AI.
+description: Generate and consume the project-specific Dyrected OpenAPI document.
 ---
 
-Every Dyrected project automatically generates a comprehensive OpenAPI 3.0 specification based on your custom content model.
+Every Dyrected project generates an OpenAPI document from its current content model.
 
-## Accessing the Spec
-
-You can access your live OpenAPI specification at the following endpoint on your Dyrected instance:
+## Accessing the specification
 
 ```bash
 GET /api/openapi.json
 ```
 
-## Interactive Documentation
+Use the runtime document for client generation and validation because it contains your actual collection slugs, fields, access-oriented route families, globals, uploads, and workflows.
 
-We also provide a built-in Swagger UI for interactive testing and exploration:
+The documentation site also publishes a [representative OpenAPI document](/openapi.json) built from a maximal fixture. It is useful for tooling tests and general route discovery, but it is not your project's schema.
+
+## Interactive documentation
 
 ```bash
 GET /api/docs
 ```
 
-## Workflows
+The interactive UI executes real requests against the application. Use non-production credentials and least-privilege test users when exploring mutation routes.
 
-When a collection has `workflow` enabled, the OpenAPI spec automatically includes definitions for `POST /api/collections/:slug/:id/transitions/:transition` and `GET /api/collections/:slug/:id/workflow-history` along with their exact request/response schemas.
+## Workflows and generated schemas
 
-## Why OpenAPI?
+Workflow-enabled collections add transition and history operations with their request and response schemas. Upload, auth, preference, preview, and dynamic-option route families are also represented when enabled by the configuration.
 
-- **AI Prompting:** Provide the URL to an AI agent (like ChatGPT or Cursor) so it can understand your data structures perfectly.
-- **SDK Generation:** Use tools like `openapi-generator` to create typed clients for any programming language.
-- **Validation:** Ensure your requests match the expected schema before they even reach your server.
+## Why use OpenAPI?
 
-> The OpenAPI spec is dynamically generated at runtime from your config — it updates automatically whenever you change your `dyrected.config.ts`.
+- Generate clients for languages not covered by the TypeScript SDK.
+- Validate integration requests in tests and gateways.
+- Give development tools an exact, project-specific API contract.
+- Detect route or schema drift during deployment.
+
+Regenerate clients when the content contract changes. Do not treat an old downloaded specification as permanently compatible.
+
+## Generated representative facts
+
+{/* GENERATED:REFERENCE-OPENAPI:START */}
+The representative document currently contains **49 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+{/* GENERATED:REFERENCE-OPENAPI:END */}

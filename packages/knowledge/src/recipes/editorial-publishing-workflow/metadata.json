@@ -1,0 +1,9 @@
+{
+  "id": "editorial-publishing-workflow",
+  "title": "Add draft, review, and publishing states",
+  "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
+  "category": "workflows",
+  "intents": ["add draft and publish states", "require review before publishing", "create an editorial workflow", "let editors submit content for approval"],
+  "concepts": ["publishingWorkflow", "workflow transitions", "capabilities"],
+  "requires": []
+}

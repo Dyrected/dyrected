@@ -1,0 +1,23 @@
+{
+  "title": "Recipes",
+  "pages": [
+    "index",
+    "---Content modeling---",
+    "page-builder-blocks",
+    "relationship-and-reverse-join",
+    "---Data lifecycle---",
+    "auto-slug",
+    "cross-field-validation",
+    "safe-field-rename",
+    "---Admin experience---",
+    "conditional-admin-field",
+    "dependent-dropdown",
+    "---Access control---",
+    "owner-scoped-access",
+    "role-based-access",
+    "---Workflows---",
+    "editorial-publishing-workflow",
+    "---Integrations---",
+    "upload-collection"
+  ]
+}

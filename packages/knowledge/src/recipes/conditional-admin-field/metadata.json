@@ -1,0 +1,9 @@
+{
+  "id": "conditional-admin-field",
+  "title": "Show an Admin field only when it is relevant",
+  "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
+  "category": "admin-experience",
+  "intents": ["show a field conditionally", "hide irrelevant form fields", "show discount only with a coupon", "make the admin form react to another field"],
+  "concepts": ["admin.condition", "Jexl", "conditional fields"],
+  "requires": []
+}

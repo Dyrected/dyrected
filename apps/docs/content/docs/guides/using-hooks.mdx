@@ -14,29 +14,29 @@ For the full API reference see [Core Concepts → Hooks](/docs/concepts/hooks).
 A `beforeChange` collection hook lets you derive the slug from the title on every create, and only update it on edits when the title actually changed.
 
 ```ts
-import slugify from 'slugify'
+import slugify from "slugify";
 
 export const Posts = defineCollection({
-  slug: 'posts',
+  slug: "posts",
   hooks: {
     beforeChange: [
       ({ data, operation }) => {
         // Always set on create; only update when title is included in the patch
-        if (operation === 'create' || data.title !== undefined) {
+        if (operation === "create" || data.title !== undefined) {
           return {
             ...data,
             slug: slugify(data.title, { lower: true, strict: true }),
-          }
+          };
         }
-        return data
+        return data;
       },
     ],
   },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'slug',  type: 'text' },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "slug", label: "Slug", type: "text" },
   ],
-})
+});
 ```
 
 To do the same **live in the Admin UI** (so editors see the slug update as they type), add an `onChange` hook to the `slug` field:
@@ -125,25 +125,25 @@ Throw an error from any `beforeChange` hook to cancel the operation. The databas
 
 ```ts
 export const Orders = defineCollection({
-  slug: 'orders',
+  slug: "orders",
   hooks: {
     beforeChange: [
       ({ data }) => {
         if (data.quantity < 1) {
-          throw new Error('Quantity must be at least 1.')
+          throw new Error("Quantity must be at least 1.");
         }
         if (data.total < 0) {
-          throw new Error('Order total cannot be negative.')
+          throw new Error("Order total cannot be negative.");
         }
-        return data
+        return data;
       },
     ],
   },
   fields: [
-    { name: 'quantity', type: 'number' },
-    { name: 'total',    type: 'number' },
+    { name: "quantity", label: "Quantity", type: "number" },
+    { name: "total", label: "Total", type: "number" },
   ],
-})
+});
 ```
 
 ---
@@ -154,7 +154,7 @@ Chain a collection `beforeChange` hook after individual field hooks to derive a 
 
 ```ts
 export const LineItems = defineCollection({
-  slug: 'line-items',
+  slug: "line-items",
   hooks: {
     beforeChange: [
       ({ data }) => ({
@@ -164,11 +164,11 @@ export const LineItems = defineCollection({
     ],
   },
   fields: [
-    { name: 'quantity',  type: 'number' },
-    { name: 'unitPrice', type: 'number' },
-    { name: 'total',     type: 'number', admin: { readOnly: true } },
+    { name: "quantity", label: "Quantity", type: "number" },
+    { name: "unitPrice", label: "Unit Price", type: "number" },
+    { name: "total", label: "Total", type: "number", admin: { readOnly: true } },
   ],
-})
+});
 ```
 
 Show the computed value live in the Admin UI with an `onChange` hook:
@@ -381,44 +381,46 @@ When the parent field changes, any value that is no longer in the new option lis
 
 ```ts
 export const Locations = defineCollection({
-  slug: 'locations',
+  slug: "locations",
   fields: [
     {
-      name: 'country',
-      type: 'select',
+      name: "country",
+      label: "Country",
+      type: "select",
       options: [
-        { label: 'United States', value: 'us' },
-        { label: 'Canada',        value: 'ca' },
+        { label: "United States", value: "us" },
+        { label: "Canada", value: "ca" },
       ],
     },
     {
-      name: 'region',
-      type: 'select',
+      name: "region",
+      label: "Region",
+      type: "select",
       options: [],
       admin: {
         hooks: {
           options: ({ siblingData }) => {
-            if (siblingData.country === 'us') {
+            if (siblingData.country === "us") {
               return [
-                { label: 'California',    value: 'CA' },
-                { label: 'New York',      value: 'NY' },
-                { label: 'Texas',         value: 'TX' },
-              ]
+                { label: "California", value: "CA" },
+                { label: "New York", value: "NY" },
+                { label: "Texas", value: "TX" },
+              ];
             }
-            if (siblingData.country === 'ca') {
+            if (siblingData.country === "ca") {
               return [
-                { label: 'Ontario',          value: 'ON' },
-                { label: 'Quebec',           value: 'QC' },
-                { label: 'British Columbia', value: 'BC' },
-              ]
+                { label: "Ontario", value: "ON" },
+                { label: "Quebec", value: "QC" },
+                { label: "British Columbia", value: "BC" },
+              ];
             }
-            return []
+            return [];
           },
         },
       },
     },
   ],
-})
+});
 ```
 
 Three levels deep works the same way — each dependent field reads from `siblingData` and returns its own list.
@@ -484,26 +486,120 @@ For field hooks the same applies at the value level:
 
 ---
 
+## Guard a workflow transition
+
+`beforeTransition` runs before a state change is committed. Throw to cancel the transition — the document stays in its current state and the error is returned to the caller.
+
+```ts
+import { defineCollection, publishingWorkflow } from "@dyrected/core";
+
+export const Articles = defineCollection({
+  slug: "articles",
+  workflow: {
+    ...publishingWorkflow(),
+    hooks: {
+      beforeTransition: [
+        ({ transition, doc }) => {
+          if (transition.name === "submit" && !doc.content) {
+            throw new Error(
+              "An article must have content before it can be submitted for review.",
+            );
+          }
+        },
+      ],
+    },
+  },
+  fields: [
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "content", label: "Content", type: "richText" },
+  ],
+});
+```
+
+---
+
+## Notify after a workflow transition
+
+`afterTransition` is the right place for emails, webhooks, and other side effects that should fire when a document changes state. The transition has already been committed — throwing here does not roll it back.
+
+```ts
+import { sendEmail } from "../utils/email";
+
+export const Articles = defineCollection({
+  slug: "articles",
+  workflow: {
+    ...publishingWorkflow(),
+    hooks: {
+      afterTransition: [
+        async ({ doc, transition, user }) => {
+          if (transition.name === "submit") {
+            // Notify the editorial team that a draft is waiting for review
+            await sendEmail({
+              to: process.env.EDITORIAL_EMAIL!,
+              subject: `New article ready for review: ${doc.title}`,
+              body: `Submitted by ${user?.email}. Open the dashboard to review.`,
+            });
+          }
+
+          if (transition.name === "publish") {
+            // Revalidate the page on the live site
+            await fetch(`${process.env.SITE_URL}/api/revalidate`, {
+              method: "POST",
+              headers: {
+                "x-revalidate-secret": process.env.REVALIDATE_SECRET!,
+              },
+              body: JSON.stringify({ path: `/articles/${doc.slug}` }),
+            });
+          }
+
+          if (transition.name === "reject") {
+            // Notify the author that changes were requested
+            await sendEmail({
+              to: doc.authorEmail,
+              subject: `Changes requested on: ${doc.title}`,
+              body:
+                doc._workflow?.comment ??
+                "Please review the feedback and resubmit.",
+            });
+          }
+        },
+      ],
+    },
+  },
+  fields: [
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "authorEmail", label: "Author Email", type: "email" },
+    { name: "content", label: "Content", type: "richText" },
+  ],
+});
+```
+
+> [!NOTE]
+> Workflow hooks are only available on collections that have a `workflow` config. The `transition`, `from`, and `to` arguments tell you exactly what changed — use them to send targeted notifications rather than firing on every state change.
+
+---
+
 ## Sync a global setting after it changes
 
 ```ts
 export const SiteSettings = defineGlobal({
-  slug: 'site-settings',
+  slug: "site-settings",
   hooks: {
     afterChange: [
       async ({ doc }) => {
         // Bust the edge cache when site settings are updated
         await fetch(`${process.env.CDN_PURGE_URL}`, {
-          method: 'POST',
+          method: "POST",
           headers: { Authorization: `Bearer ${process.env.CDN_TOKEN}` },
-          body: JSON.stringify({ paths: ['/'] }),
-        })
+          body: JSON.stringify({ paths: ["/"] }),
+        });
       },
     ],
   },
   fields: [
-    { name: 'siteName', type: 'text' },
-    { name: 'tagline',  type: 'text' },
+    { name: "siteName", label: "Site Name", type: "text" },
+    { name: "tagline", label: "Tagline", type: "text" },
   ],
-})
+});
 ```
+

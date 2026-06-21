@@ -1,0 +1,9 @@
+{
+  "id": "page-builder-blocks",
+  "title": "Build flexible pages from reusable blocks",
+  "description": "Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.",
+  "category": "content-modeling",
+  "intents": ["build a page builder", "let editors arrange page sections", "create reusable content blocks", "model flexible landing pages"],
+  "concepts": ["blocks", "Block", "content modeling"],
+  "requires": []
+}

@@ -19,8 +19,8 @@ export const Articles = defineCollection({
   // Activates the editorial approval workflow
   workflow: publishingWorkflow(),
   fields: [
-    { name: "title", type: "text", required: true },
-    { name: "content", type: "richText" },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "content", label: "Content", type: "richText" },
   ],
 })
 ```
@@ -62,3 +62,4 @@ export const CustomWorkflow = {
   ],
 }
 ```
+

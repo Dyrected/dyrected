@@ -75,6 +75,9 @@ npx @dyrected/cli sync:schema
 
 Run this whenever you add a `promoted: true` field, add `unique: true` to an existing field, or change your database adapter. Regular field additions and removals (inside the JSON blob) do not require a sync.
 
+> [!NOTE]
+> **MongoDB does not have a sync step.** MongoDB is schema-less — collections and fields are created on first write. There are no columns to add and no migration to run. `renameTo` and `defaultValue` still work exactly as described above (applied on read), but you never need to run `sync:schema` with the MongoDB adapter.
+
 ---
 
 ## Lazy field migrations
@@ -109,8 +112,8 @@ export const Categories = defineCollection({
     { name: 'Events', slug: 'events' },
   ],
   fields: [
-    { name: 'name', type: 'text' },
-    { name: 'slug', type: 'text', promoted: true },
+    { name: 'name', label: 'Name', type: 'text' },
+    { name: 'slug', label: 'Slug', type: 'text', promoted: true },
   ],
 })
 ```
@@ -137,3 +140,4 @@ You can define `__admins` as a regular auth collection in your config — the do
 - [Collections & Globals](/docs/concepts/collections-and-globals) — the two building blocks and when to use each
 - [Fields](/docs/concepts/fields) — what fields are available and how they map to the database
 - [Relationships](/docs/concepts/relationships) — how collections reference each other
+

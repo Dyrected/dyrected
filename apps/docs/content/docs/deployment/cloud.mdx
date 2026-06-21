@@ -11,7 +11,7 @@ Dyrected Cloud handles the database, storage, and API, so you can focus on build
 <Tab value="AI-First (Recommended)">
 
 ### 1. Create your site
-Sign up at [cloud.dyrected.com](https://cloud.dyrected.com) and create a new **Site**.
+Sign up at [app.dyrected.com](https://app.dyrected.com) and create a new **Site**.
 
 ### 2. Copy the AI Prompt
 Immediately after creating your site, you will see a **Setup Prompt**. This is pre-filled with your Site ID and API Key.
@@ -46,7 +46,7 @@ export default defineConfig({
   collections: [
     {
       slug: 'posts',
-      fields: [{ name: 'title', type: 'text', required: true }],
+      fields: [{ name: 'title', label: 'Title', type: 'text', required: true }],
     },
   ],
 })
@@ -87,7 +87,7 @@ npx @dyrected/cli sync:schema
 
 ## Managed Admin vs. Embedded Admin
 
-While you can always use the [Hosted Dashboard](https://cloud.dyrected.com) to manage content, embedding it into your own app is the "Pro" way to work. It allows you to:
+While you can always use the [Hosted Dashboard](https://app.dyrected.com) to manage content, embedding it into your own app is the "Pro" way to work. It allows you to:
 - Keep everything under your own domain (e.g., `my-app.com/admin`).
 - Give your clients a white-labeled experience.
 - Build custom UI components alongside the CMS.
@@ -99,3 +99,4 @@ While you can always use the [Hosted Dashboard](https://cloud.dyrected.com) to m
 - [Managing Media](/docs/guides/file-uploads)
 - [Authentication](/docs/guides/adding-authentication)
 - [Docker deployment](/docs/deployment/docker) if you want to host Dyrected yourself.
+

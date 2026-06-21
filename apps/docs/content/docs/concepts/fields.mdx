@@ -9,11 +9,11 @@ A field is the basic unit of content in Dyrected. Every collection and global is
 defineCollection({
   slug: 'posts',
   fields: [
-    { name: 'title',       type: 'text',         required: true },
-    { name: 'body',        type: 'richText' },
-    { name: 'status',      type: 'select',        options: ['draft', 'published'], defaultValue: 'draft' },
-    { name: 'author',      type: 'relationship',  relationTo: 'users' },
-    { name: 'publishedAt', type: 'datetime' },
+    { name: 'title', label: 'Title',       type: 'text',         required: true },
+    { name: 'body', label: 'Body',        type: 'richText' },
+    { name: 'status', label: 'Status',      type: 'select',        options: ['draft', 'published'], defaultValue: 'draft' },
+    { name: 'author', label: 'Author',      type: 'relationship',  relationTo: 'users' },
+    { name: 'publishedAt', label: 'Published At', type: 'datetime' },
   ],
 })
 ```
@@ -79,9 +79,9 @@ Use `object` when a document has a named section with a fixed set of sub-fields.
   name: 'seo',
   type: 'object',
   fields: [
-    { name: 'title',       type: 'text' },
-    { name: 'description', type: 'textarea' },
-    { name: 'image',       type: 'relationship', relationTo: 'media' },
+    { name: 'title', label: 'Title',       type: 'text' },
+    { name: 'description', label: 'Description', type: 'textarea' },
+    { name: 'image', label: 'Image',       type: 'relationship', relationTo: 'media' },
   ],
 }
 // Stored as: { seo: { title: '...', description: '...', image: 'media-id' } }
@@ -96,9 +96,9 @@ Use `array` when a document can have zero or more instances of the same structur
   name: 'testimonials',
   type: 'array',
   fields: [
-    { name: 'author', type: 'text' },
-    { name: 'quote',  type: 'textarea' },
-    { name: 'rating', type: 'number' },
+    { name: 'author', label: 'Author', type: 'text' },
+    { name: 'quote', label: 'Quote',  type: 'textarea' },
+    { name: 'rating', label: 'Rating', type: 'number' },
   ],
 }
 // Stored as: { testimonials: [{ author: '...', quote: '...', rating: 5 }, ...] }
@@ -116,22 +116,22 @@ Use `blocks` when each item in a list can be a different type. This is the found
     {
       slug: 'hero',
       fields: [
-        { name: 'heading',    type: 'text' },
-        { name: 'subheading', type: 'text' },
-        { name: 'cta',        type: 'text' },
+        { name: 'heading', label: 'Heading',    type: 'text' },
+        { name: 'subheading', label: 'Subheading', type: 'text' },
+        { name: 'cta', label: 'Cta',        type: 'text' },
       ],
     },
     {
       slug: 'richText',
       fields: [
-        { name: 'body', type: 'richText' },
+        { name: 'body', label: 'Body', type: 'richText' },
       ],
     },
     {
       slug: 'image',
       fields: [
-        { name: 'image',   type: 'relationship', relationTo: 'media' },
-        { name: 'caption', type: 'text' },
+        { name: 'image', label: 'Image',   type: 'relationship', relationTo: 'media' },
+        { name: 'caption', label: 'Caption', type: 'text' },
       ],
     },
   ],
@@ -149,8 +149,8 @@ See the [Building a Page Builder](/docs/guides/building-a-page-builder) guide fo
 {
   type: 'row',
   fields: [
-    { name: 'firstName', type: 'text' },
-    { name: 'lastName',  type: 'text' },
+    { name: 'firstName', label: 'First Name', type: 'text' },
+    { name: 'lastName', label: 'Last Name',  type: 'text' },
   ],
 }
 ```
@@ -186,3 +186,4 @@ Field access is evaluated **after** collection-level access is granted. See [Acc
 - [Relationships](/docs/concepts/relationships) — how `relationship` and `join` fields link collections
 - [Schema Definition](/docs/concepts/schema) — how fields map to database columns and how migrations work
 - [Building a Page Builder](/docs/guides/building-a-page-builder) — using `blocks` for flexible layouts
+

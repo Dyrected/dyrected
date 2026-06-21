@@ -14,14 +14,14 @@ Dyrected exposes a RESTful JSON API for every collection and global defined in y
 
 Endpoints follow a consistent structure based on your collection and global slugs:
 
-| Resource | Endpoints |
-|---|---|
-| Collections | `GET /api/collections/:slug` · `POST` · `GET /:id` · `PATCH /:id` · `DELETE /:id` |
-| Globals | `GET /api/globals/:slug` · `PATCH /api/globals/:slug` |
-| Auth | `POST /api/collections/:slug/login` · `/logout` · `/me` · `/invite` · `/accept-invite` · `/forgot-password` · `/reset-password` |
-| Uploads | `POST /api/collections/:slug` (multipart) |
-| Schema | `GET /api/schemas` |
-| Preview | `POST /api/preview-token` · `GET /api/preview-data` |
+| Resource    | Endpoints                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Collections | `GET /api/collections/:slug` · `POST` · `GET /:id` · `PATCH /:id` · `DELETE /:id`                                               |
+| Globals     | `GET /api/globals/:slug` · `PATCH /api/globals/:slug`                                                                           |
+| Auth        | `POST /api/collections/:slug/login` · `/logout` · `/me` · `/invite` · `/accept-invite` · `/forgot-password` · `/reset-password` |
+| Uploads     | `POST /api/collections/:slug` (multipart)                                                                                       |
+| Schema      | `GET /api/schemas`                                                                                                              |
+| Preview     | `POST /api/preview-token` · `GET /api/preview-data`                                                                             |
 
 See [REST API Reference](/docs/reference/rest-api) for the full endpoint documentation, query parameters (`where`, `sort`, `limit`, `depth`), and error codes.
 
@@ -32,18 +32,18 @@ See [REST API Reference](/docs/reference/rest-api) for the full endpoint documen
 `@dyrected/sdk` is a framework-agnostic TypeScript client:
 
 ```ts
-import { createClient } from '@dyrected/sdk'
+import { createClient } from "@dyrected/sdk";
 
 const client = createClient({
-  baseUrl: 'https://your-site.com/dyrected',
+  baseUrl: "https://your-site.com/dyrected",
   apiKey: process.env.DYRECTED_API_KEY,
-})
+});
 
-const { docs } = await client.collection('posts').find({
-  where: { status: { equals: 'published' } },
-  sort: '-createdAt',
+const { docs } = await client.collection("posts").find({
+  where: { status: { equals: "published" } },
+  sort: "-createdAt",
   depth: 1,
-})
+});
 ```
 
 See [SDK Reference](/docs/reference/sdk) for all methods, and [SDK Integration Guide](/docs/integrations/sdk) for framework-specific setup (SvelteKit, Astro, vanilla JS, etc.).
@@ -54,11 +54,11 @@ See [SDK Reference](/docs/reference/sdk) for all methods, and [SDK Integration G
 
 Every request is authenticated with one of:
 
-| Method | Header | When to use |
-|---|---|---|
-| Site API Key | `x-api-key: <key>` | Server-to-server, trusted backend code |
-| JWT | `Authorization: Bearer <token>` | Logged-in users, Admin UI, client-side apps |
-| Site ID | `x-site-id: <id>` | Cloud mode — send alongside the API key |
+| Method       | Header                          | When to use                                 |
+| ------------ | ------------------------------- | ------------------------------------------- |
+| Site API Key | `x-api-key: <key>`              | Server-to-server, trusted backend code      |
+| JWT          | `Authorization: Bearer <token>` | Logged-in users, Admin UI, client-side apps |
+| Site ID      | `x-site-id: <id>`               | Cloud mode — send alongside the API key     |
 
 Endpoints with `access: () => true` on the collection do not require any auth header for `GET` requests.
 

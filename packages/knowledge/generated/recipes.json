@@ -1,0 +1,224 @@
+[
+  {
+    "id": "auto-slug",
+    "title": "Generate a slug from a title",
+    "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
+    "category": "data-lifecycle",
+    "intents": [
+      "make the URL follow the title",
+      "automatically generate a slug",
+      "create friendly URLs from titles",
+      "keep a slug synchronized with a title"
+    ],
+    "concepts": [
+      "beforeChange",
+      "admin.hooks.onChange",
+      "promoted",
+      "unique"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"slug\",\n      type: \"text\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange: ({ siblingData }) => toSlug(siblingData.title),\n        },\n      },\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/auto-slug"
+  },
+  {
+    "id": "conditional-admin-field",
+    "title": "Show an Admin field only when it is relevant",
+    "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
+    "category": "admin-experience",
+    "intents": [
+      "show a field conditionally",
+      "hide irrelevant form fields",
+      "show discount only with a coupon",
+      "make the admin form react to another field"
+    ],
+    "concepts": [
+      "admin.condition",
+      "Jexl",
+      "conditional fields"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    { name: \"couponCode\", type: \"text\", label: \"Coupon code\" },\n    {\n      name: \"discountPercent\",\n      type: \"number\",\n      label: \"Discount percentage\",\n      admin: { condition: \"couponCode != null && couponCode != ''\" },\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/conditional-admin-field"
+  },
+  {
+    "id": "cross-field-validation",
+    "title": "Validate related fields before saving",
+    "description": "Reject invalid combinations of field values before they reach the database.",
+    "category": "data-lifecycle",
+    "intents": [
+      "validate fields before saving",
+      "make sure an end date is after the start date",
+      "reject invalid form submissions",
+      "validate multiple fields together"
+    ],
+    "concepts": [
+      "beforeChange",
+      "validation",
+      "throw to abort"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Events = defineCollection({\n  slug: \"events\",\n  hooks: {\n    beforeChange: [\n      ({ data, doc }) => {\n        const startsAt = data.startsAt ?? doc?.startsAt;\n        const endsAt = data.endsAt ?? doc?.endsAt;\n\n        const start = startsAt ? new Date(startsAt) : undefined;\n        const end = endsAt ? new Date(endsAt) : undefined;\n\n        if (start && Number.isNaN(start.getTime())) {\n          throw new Error(\"The event start time must be a valid date.\");\n        }\n        if (end && Number.isNaN(end.getTime())) {\n          throw new Error(\"The event end time must be a valid date.\");\n        }\n        if (start && end && end <= start) {\n          throw new Error(\"The event end time must be after its start time.\");\n        }\n\n        return data;\n      },\n    ],\n  },\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"startsAt\",\n      type: \"datetime\",\n      label: \"Starts at\",\n      required: true,\n    },\n    {\n      name: \"endsAt\",\n      type: \"datetime\",\n      label: \"Ends at\",\n      required: true,\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/cross-field-validation"
+  },
+  {
+    "id": "dependent-dropdown",
+    "title": "Update a dropdown from another field",
+    "description": "Change available Admin UI options immediately when an editor changes a related field.",
+    "category": "admin-experience",
+    "intents": [
+      "make one dropdown depend on another",
+      "show states based on the selected country",
+      "create a cascading dropdown",
+      "update select options while editing"
+    ],
+    "concepts": [
+      "admin.hooks.options",
+      "select",
+      "siblingData"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Locations = defineCollection({\n  slug: \"locations\",\n  fields: [\n    {\n      name: \"country\",\n      type: \"select\",\n      label: \"Country\",\n      required: true,\n      options: [\n        { label: \"Nigeria\", value: \"ng\" },\n        { label: \"United States\", value: \"us\" },\n      ],\n    },\n    {\n      name: \"region\",\n      type: \"select\",\n      label: \"State or region\",\n      required: true,\n      options: [],\n      admin: {\n        hooks: {\n          options: ({ siblingData }) => {\n            if (siblingData.country === \"ng\") return [\"Lagos\", \"Abuja\", \"Oyo\"];\n            if (siblingData.country === \"us\")\n              return [\"California\", \"New York\", \"Texas\"];\n            return [];\n          },\n        },\n      },\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/dependent-dropdown"
+  },
+  {
+    "id": "editorial-publishing-workflow",
+    "title": "Add draft, review, and publishing states",
+    "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
+    "category": "workflows",
+    "intents": [
+      "add draft and publish states",
+      "require review before publishing",
+      "create an editorial workflow",
+      "let editors submit content for approval"
+    ],
+    "concepts": [
+      "publishingWorkflow",
+      "workflow transitions",
+      "capabilities"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, publishingWorkflow } from \"@dyrected/core\";\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  workflow: publishingWorkflow(),\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    { name: \"body\", type: \"richText\", label: \"Body\", required: true },\n  ],\n});",
+    "docsPath": "/docs/recipes/editorial-publishing-workflow"
+  },
+  {
+    "id": "owner-scoped-access",
+    "title": "Limit documents to their owner",
+    "description": "Return a where constraint from access control so authenticated users only read their own records.",
+    "category": "access-control",
+    "intents": [
+      "users should only see their own records",
+      "add row level access",
+      "scope documents by owner",
+      "prevent users reading another user's data"
+    ],
+    "concepts": [
+      "access.read",
+      "where",
+      "row-level access"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Projects = defineCollection({\n  slug: \"projects\",\n  access: {\n    read: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    create: ({ user }) => Boolean(user),\n    update: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    delete: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        if (!user) throw new Error(\"Authentication is required to create a project.\");\n        return { ...data, owner: user.sub };\n      },\n    ],\n  },\n  fields: [\n    { name: \"name\", type: \"text\", label: \"Project name\", required: true },\n    {\n      name: \"owner\",\n      type: \"relationship\",\n      label: \"Owner\",\n      relationTo: \"users\",\n      required: true,\n      admin: { readOnly: true },\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/owner-scoped-access"
+  },
+  {
+    "id": "page-builder-blocks",
+    "title": "Build flexible pages from reusable blocks",
+    "description": "Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.",
+    "category": "content-modeling",
+    "intents": [
+      "build a page builder",
+      "let editors arrange page sections",
+      "create reusable content blocks",
+      "model flexible landing pages"
+    ],
+    "concepts": [
+      "blocks",
+      "Block",
+      "content modeling"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\nimport type { Block } from \"@dyrected/core\";\n\nexport const HeroBlock = {\n  slug: \"hero\",\n  labels: { singular: \"Hero\", plural: \"Heroes\" },\n  fields: [\n    { name: \"heading\", type: \"text\", label: \"Heading\", required: true },\n    { name: \"body\", type: \"textarea\", label: \"Body\" },\n  ],\n} satisfies Block;\n\nexport const CallToActionBlock = {\n  slug: \"callToAction\",\n  labels: { singular: \"Call to action\", plural: \"Calls to action\" },\n  fields: [\n    { name: \"label\", type: \"text\", label: \"Link label\", required: true },\n    { name: \"url\", type: \"url\", label: \"URL\", required: true },\n  ],\n} satisfies Block;\n\nexport const Pages = defineCollection({\n  slug: \"pages\",\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"layout\",\n      type: \"blocks\",\n      label: \"Page layout\",\n      blocks: [HeroBlock, CallToActionBlock],\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/page-builder-blocks"
+  },
+  {
+    "id": "relationship-and-reverse-join",
+    "title": "Model a relationship and its reverse lookup",
+    "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
+    "category": "content-modeling",
+    "intents": [
+      "connect posts to authors",
+      "show every post written by a user",
+      "create a reverse relationship",
+      "model one-to-many content"
+    ],
+    "concepts": [
+      "relationship",
+      "join",
+      "relationTo",
+      "depth"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Users = defineCollection({\n  slug: \"users\",\n  auth: true,\n  fields: [\n    { name: \"name\", type: \"text\", label: \"Name\", required: true },\n    {\n      name: \"posts\",\n      type: \"join\",\n      label: \"Posts\",\n      collection: \"posts\",\n      on: \"author\",\n      limit: 20,\n    },\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"author\",\n      type: \"relationship\",\n      label: \"Author\",\n      relationTo: \"users\",\n      required: true,\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/relationship-and-reverse-join"
+  },
+  {
+    "id": "role-based-access",
+    "title": "Restrict content operations by user role",
+    "description": "Allow public reads, editor writes, and administrator deletion with collection access rules.",
+    "category": "access-control",
+    "intents": [
+      "only editors can update content",
+      "restrict deletion to admins",
+      "make content publicly readable",
+      "add role based access"
+    ],
+    "concepts": [
+      "access",
+      "AuthenticatedUser",
+      "roles"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Articles = defineCollection({\n  slug: \"articles\",\n  access: {\n    read: () => true,\n    create: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    update: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    delete: ({ user }) => user?.roles?.includes(\"admin\") ?? false,\n  },\n  fields: [{ name: \"title\", type: \"text\", label: \"Title\", required: true }],\n});",
+    "docsPath": "/docs/recipes/role-based-access"
+  },
+  {
+    "id": "safe-field-rename",
+    "title": "Rename a field without orphaning existing data",
+    "description": "Use renameTo and a safe default while documents migrate lazily to a new field name.",
+    "category": "data-lifecycle",
+    "intents": [
+      "rename a field safely",
+      "change a field name without losing data",
+      "migrate an existing schema",
+      "keep old documents working after a rename"
+    ],
+    "concepts": [
+      "renameTo",
+      "defaultValue",
+      "schema evolution"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Customers = defineCollection({\n  slug: \"customers\",\n  fields: [\n    {\n      name: \"fullName\",\n      type: \"text\",\n      label: \"Full name\",\n      renameTo: \"name\",\n      defaultValue: \"\",\n      required: true,\n    },\n  ],\n});",
+    "docsPath": "/docs/recipes/safe-field-rename"
+  },
+  {
+    "id": "upload-collection",
+    "title": "Create a media upload collection",
+    "description": "Enable file uploads and capture accessible metadata in a dedicated media collection.",
+    "category": "integrations",
+    "intents": [
+      "let editors upload images",
+      "create a media library",
+      "store uploaded files",
+      "add image uploads to my project"
+    ],
+    "concepts": [
+      "upload",
+      "StorageAdapter",
+      "media"
+    ],
+    "requires": [],
+    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n  },\n  fields: [\n    { name: \"alt\", type: \"text\", label: \"Alternative text\", required: true },\n    { name: \"caption\", type: \"textarea\", label: \"Caption\" },\n  ],\n});",
+    "docsPath": "/docs/recipes/upload-collection"
+  }
+]

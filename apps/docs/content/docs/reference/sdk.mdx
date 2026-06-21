@@ -1,60 +1,39 @@
 ---
 title: SDK Reference
-description: Using the @dyrected/sdk client in any JavaScript or TypeScript project.
+description: Use the framework-agnostic @dyrected/sdk client safely and typefully.
 ---
 
-`@dyrected/sdk` is a framework-agnostic TypeScript client for the Dyrected REST API. It works in Next.js, Nuxt.js, SvelteKit, plain Node.js, and browser environments.
-
-> [!NOTE]
-> **Scope Statement:** The SDK covers document CRUD and relationship traversal via `depth`. It does not expose count, aggregate, or complex join queries. For those, write an API route and query the database directly using your database adapter.
-
----
+`@dyrected/sdk` is the framework-agnostic client for Dyrected's REST API. It works in server runtimes and browsers with `fetch`. The SDK covers documents, globals, auth, preferences, preview data, uploads, and workflows; database-specific aggregation belongs behind an application endpoint.
 
 ## Installation
 
 ```bash
 pnpm add @dyrected/sdk
-# or
-npm install @dyrected/sdk
 ```
 
----
+## Creating a client
 
-## Creating a Client
+Pass the origin or mount base before `/api`; SDK methods append `/api/...` themselves.
 
 ```ts
 import { createClient } from '@dyrected/sdk'
 
-const client = createClient({
-  baseUrl: 'https://your-site.com/api',  // Your Dyrected API base URL
-  apiKey: process.env.DYRECTED_API_KEY,  // Site API Key
-  siteId: process.env.DYRECTED_SITE_ID,  // Required in Cloud mode
+export const client = createClient({
+  baseUrl: 'https://example.com',
+  apiKey: process.env.DYRECTED_API_KEY,
+  siteId: process.env.DYRECTED_SITE_ID,
 })
 ```
 
-### Options
+Do not expose a privileged site API key in browser bundles. Use public collection access, a user JWT, or a trusted server boundary as appropriate.
 
-| Option | Type | Required | Description |
-|---|---|---|---|
-| `baseUrl` | `string` | ✅ | Base URL of your Dyrected instance |
-| `apiKey` | `string` | | Site API Key. Sent as `x-api-key` header. |
-| `siteId` | `string` | | Site ID. Sent as `x-site-id` header. Required in Cloud mode. |
-| `defaultDepth` | `number` | | Default relationship population depth (default: `1`) |
-| `fetch` | `typeof fetch` | | Custom `fetch` implementation (e.g., for Node 18 polyfills) |
+`defaultDepth` defaults to `1`. A custom `fetch` is useful for framework instrumentation, tests, or runtimes that provide their own request implementation.
 
----
+## Collection methods
 
-## Collection Methods
+Access a collection through `client.collection(slug)`, never `client.collections`.
 
-All collection methods are accessed via `client.collection(slug)`.
-
-### `.find(options?)`
-
-> [!TIP]
-> **Looking for a single document by ID?**  
-> Use `client.collection('posts').findOne(id)` instead of `find({ where: { id: { equals: id } }, limit: 1 })`. It returns the document directly, rather than a paginated result.
-
-Returns a paginated list of documents.
+### Finding documents
 
 ```ts
 const result = await client.collection('posts').find({
@@ -62,330 +41,333 @@ const result = await client.collection('posts').find({
   page: 1,
   sort: '-createdAt',
   depth: 1,
-  where: {
-    status: { equals: 'published' },
-  },
+  where: { status: { equals: 'published' } },
 })
-
-// result.docs: Post[]
-// result.total: number
-// result.totalPages: number
-// result.hasNextPage: boolean
 ```
 
-When `where` is passed as an object, the SDK serializes it for the REST API automatically. Boolean values such as `{ featured: { equals: true } }` are preserved and parsed correctly by the server.
+Use `findOne(id)` when the ID is known. Use `depth: 0` for lightweight lists and increase it only when the view needs hydrated relationships.
 
-#### Where Operators
+Common filter operators include `equals`, `not_equals`, `in`, `not_in`, `exists`, `gt`, `gte`, `lt`, `lte`, `contains`, and `starts_with`. Multiple sibling field conditions are combined with AND.
 
-Dyrected supports a rich set of operators for filtering your data. These work seamlessly across all database adapters.
-
-| Operator | Description | Example |
-|---|---|---|
-| `equals` | Strict equality | `{ status: { equals: 'published' } }` |
-| `not_equals` | Inequality | `{ status: { not_equals: 'draft' } }` |
-| `in` | Value exists in array | `{ category: { in: ['news', 'events'] } }` |
-| `not_in` | Value does not exist in array | `{ category: { not_in: ['spam'] } }` |
-| `exists` | Field is present (or not) | `{ publishedAt: { exists: true } }` |
-| `gt` | Numeric/date greater than | `{ price: { gt: 100 } }` |
-| `gte` | Numeric/date greater than or equal | `{ age: { gte: 18 } }` |
-| `lt` | Numeric/date less than | `{ price: { lt: 500 } }` |
-| `lte` | Numeric/date less than or equal | `{ age: { lte: 65 } }` |
-| `contains` | Case-insensitive contains | `{ title: { contains: 'typescript' } }` |
-| `starts_with` | Starts with value | `{ slug: { starts_with: 'post-' } }` |
-
-Multiple fields in the same `where` object are combined with `AND`.
-
-### Relationship Depth
-
-The `depth` parameter controls how many levels of relationships are automatically "hydrated" (populated) in a single request.
-
-- **`depth: 0`**: Only returns the ID of the related document.
-- **`depth: 1`** (Default): Populates the first level of relationships with their full document data.
-- **`depth: 2+`**: Recursively populates nested relationships.
-
-> [!TIP]
-> Use `depth: 0` for high-performance listing pages where you only need IDs, and higher depth for detail pages where you need full author/category info.
-
----
-
-### `.findOne(id, options?)`
-
-Fetch a single document by ID.
-
-```ts
-const post = await client.collection('posts').findOne('abc123', { depth: 2 })
-```
-
----
-
-### `.create(data)`
-
-Create a new document.
+### Creating, updating, and deleting
 
 ```ts
 const post = await client.collection('posts').create({
-  title: 'My New Post',
+  title: 'A new post',
   status: 'draft',
 })
+
+await client.collection('posts').update(post.id, { status: 'published' })
+await client.collection('posts').delete(post.id)
 ```
 
----
+Updates are partial. Access rules, hooks, validation, and workflows still run on the server.
 
-### `.update(id, data)`
+`deleteMany(ids)` is available for authorized bulk deletion. Treat it as a destructive operation and confirm intent in application UI.
 
-Partially update a document. Only the fields you pass are changed.
+### Uploading files
 
 ```ts
-const updated = await client.collection('posts').update('abc123', {
-  status: 'published',
-  publishedAt: new Date().toISOString(),
+const media = await client.collection('media').upload(file, {
+  alt: 'Mountain at sunrise',
 })
 ```
 
----
+The collection must be upload-enabled. In browsers, pass a `File` or `Blob`; keep provider credentials on the server.
 
-### `.delete(id)`
-
-Delete a document by ID.
+## Workflow methods
 
 ```ts
-await client.collection('posts').delete('abc123')
-```
+const updated = await client.collection('posts').transition(
+  'post-id',
+  'publish',
+  {
+    expectedRevision: 2,
+    comment: 'Approved after legal review.',
+  },
+)
 
----
-
-### `.upload(file, data?)`
-
-Upload a file to an upload collection. Accepts a `File` or `Blob` (browser).
-
-```ts
-// Browser — File from <input type="file">
-const mediaDoc = await client.collection('media').upload(file, {
-  alt: 'A mountain landscape',
-})
-
-// Blob from fetch or canvas
-const blob = await fetch('/some-image.jpg').then(r => r.blob())
-const mediaDoc = await client.collection('media').upload(blob, {
-  alt: 'Fetched image',
+const history = await client.collection('posts').workflowHistory('post-id', {
+  limit: 20,
 })
 ```
 
----
+Use `expectedRevision` to detect concurrent edits. Available transitions and required comments come from the collection workflow; do not hard-code permissions from button visibility.
 
-### `.transition(id, transitionName, options?)`
-
-Perform a workflow transition on a document. Returns the updated document.
-
-```ts
-const updated = await client.collection('posts').transition('abc123', 'publish', {
-  expectedRevision: 2, // Concurrency guard matching doc._workflow.revision
-  comment: 'Approving for publication.' // Required if requireComment: true
-})
-```
-
----
-
-### `.workflowHistory(id, options?)`
-
-Fetch the workflow transition history for a document.
-
-```ts
-const history = await client.collection('posts').workflowHistory('abc123', {
-  limit: 20
-})
-
-// history.docs: WorkflowHistoryEntry[]
-// history.docs[0].transition: string ('submit', 'publish', etc.)
-// history.docs[0].comment: string | null
-```
-
----
-
-## Global Methods
-
-Access globals via `client.global(slug)`.
-
-### `.get(options?)`
+## Globals
 
 ```ts
 const settings = await client.global('site-settings').get({ depth: 1 })
+await client.global('site-settings').update({ siteName: 'Example' })
 ```
 
-### `.update(data)`
-
-```ts
-await client.global('site-settings').update({
-  maintenanceMode: true,
-})
-```
-
----
+Globals are singleton values and do not have collection pagination.
 
 ## Authentication
 
-Authentication is performed on auth-enabled collections.
-
-### `.login(email, password)`
+Authentication methods live on an auth-enabled collection:
 
 ```ts
-const { token, user } = await client.collection('users').login('admin@example.com', 'password')
+const { token, user } = await client
+  .collection('users')
+  .login('editor@example.com', password)
 
-// Attach token to the client for subsequent requests
 client.setToken(token)
+const currentUser = await client.collection('users').me()
 ```
 
-### `.logout()`
+The fluent collection client also exposes logout, token refresh, initialization checks, first-user registration, invitations, invitation acceptance, password changes, reset-link requests, and password reset. These methods are meaningful only for `auth: true` collections.
+
+Call `clearToken()` after logout. `getAuthHeaders()` returns the supported authentication headers when a raw request must share the SDK's current credentials.
+
+## Schemas, preferences, and preview data
+
+- `getSchemas()` returns serialized collection and global schemas.
+- `getPreference(key)` and `setPreference(key, value)` store authenticated user preferences.
+- `getPreviewData(token)` resolves signed preview data.
+
+Preview tokens are credentials. Do not log them or place them in long-lived analytics URLs.
+
+## TypeScript schema inference
+
+Use `InferSchema` with exported collection/global constants so response types follow the configuration rather than manually duplicated interfaces.
 
 ```ts
-await client.collection('users').logout()
-client.clearToken()
+import { createClient, type InferSchema } from '@dyrected/sdk'
+import type { Posts, SiteSettings } from './dyrected.config'
+
+type Schema = InferSchema<
+  { posts: typeof Posts },
+  { 'site-settings': typeof SiteSettings }
+>
+
+const typedClient = createClient<Schema>({ baseUrl: 'https://example.com' })
+const { docs } = await typedClient.collection('posts').find()
 ```
 
-### `.me()`
+## Error handling
 
-Returns the currently authenticated user document.
-
-```ts
-const user = await client.collection('users').me()
-```
-
-### `.refreshToken()`
-
-```ts
-const { token } = await client.collection('users').refreshToken()
-client.setToken(token)
-```
-
-### `.invite(email)`
-
-Send an invitation to an email address (requires an authenticated token set via `setToken`).
-
-```ts
-await client.collection('users').invite('newuser@example.com')
-```
-
-### `.acceptInvite(token, password, extraFields?)`
-
-Create an account from an invite token. Returns `{ token, user }` — the user is logged in immediately.
-
-```ts
-const { token, user } = await client.collection('users').acceptInvite(inviteToken, 'my-password', {
-  name: 'Jane Doe',
-})
-client.setToken(token)
-```
-
----
-
-### `.setToken(token)` / `.clearToken()`
-
-Manually manage the authentication header.
-
-```ts
-client.setToken(token)
-client.clearToken()
-```
-
----
-
-## Schema Methods
-
-### `.getSchemas()`
-
-Returns the full schema definition for all collections and globals.
-
-```ts
-const schemas = await client.getSchemas()
-// schemas.collections: CollectionSchema[]
-// schemas.globals: GlobalSchema[]
-```
-
----
-
-## Preference Methods
-
-Preferences store small user-specific Admin UI choices, such as visible table columns. They are keyed strings and return JSON-compatible values.
-
-### `.getPreference(key)`
-
-```ts
-const pref = await client.getPreference<string[]>('columns:pages')
-// pref.value: string[] | null
-```
-
-### `.setPreference(key, value)`
-
-```ts
-await client.setPreference('columns:pages', ['title', 'slug', 'updatedAt'])
-```
-
-The Admin UI falls back to local storage when server preferences are unavailable.
-
----
-
-## TypeScript Generics
-
-The SDK is fully typed. Pass your document type as a generic for type-safe responses:
-
-```ts
-interface Post {
-  id: string
-  title: string
-  status: 'draft' | 'published'
-  author: string | Author  // string at depth=0, Author at depth>=1
-  createdAt: string
-}
-
-const result = await client.collection<Post>('posts').find({ depth: 1 })
-// result.docs is Post[]
-```
-
----
-
-## Error Handling
-
-The SDK throws a `DyrectedError` on non-2xx responses.
+Non-success responses throw `DyrectedError`.
 
 ```ts
 import { DyrectedError } from '@dyrected/sdk'
 
 try {
-  const post = await client.collection('posts').findOne('invalid-id')
-} catch (err) {
-  if (err instanceof DyrectedError) {
-    console.log(err.statusCode) // 404
-    console.log(err.message)
-    console.log(err.errors)     // validation error array (on 400)
+  await client.collection('posts').findOne('missing-id')
+} catch (error) {
+  if (error instanceof DyrectedError) {
+    console.error(error.statusCode, error.message, error.errors)
+  } else {
+    throw error
   }
 }
 ```
 
----
+Handle authorization and validation failures explicitly; do not turn every failure into an empty successful state. Use `initialData` only when a deliberate seed/fallback behavior is desired.
 
-## Next.js Usage
+## Framework usage
+
+Create server-scoped clients when credentials differ per request. Avoid a process-global mutable token in multi-user server code. See the [Next.js](/docs/integrations/nextjs), [Nuxt](/docs/integrations/nuxt), and [SDK integration](/docs/integrations/sdk) guides.
+
+## Generated SDK contracts
+
+Only public exported contracts and public class members belong in this region.
+
+{/* GENERATED:REFERENCE-SDK:START */}
+## BaseSchema
+
+Exported interface from @dyrected/sdk.
 
 ```ts
-// app/blog/[slug]/page.tsx
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({
-  baseUrl: process.env.DYRECTED_URL!,
-  apiKey: process.env.DYRECTED_API_KEY!,
-})
-
-export default async function BlogPost({ params }: { params: { slug: string } }) {
-  const { docs } = await client.collection('posts').find({
-    where: { slug: { equals: params.slug } },
-    depth: 1,
-  })
-  const post = docs[0]
-  if (!post) notFound()
-
-  return <article>{post.title}</article>
+export interface BaseSchema {
+  collections: Record<string, any>;
+  globals: Record<string, any>;
 }
 ```
 
-## Nuxt.js Usage
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>collections</code> | <code>collections: Record&lt;string, any&gt;</code> |  |
+| <code>globals</code> | <code>globals: Record&lt;string, any&gt;</code> |  |
 
-See [useDyrected composable](/docs/integrations/nuxt) — the Nuxt.js module wraps this SDK with SSR-aware caching via `useAsyncData`.
+
+## createClient
+
+Exported function from @dyrected/sdk.
+
+```ts
+export function createClient<
+  TSchema extends { collections: any; globals: any } = any,
+>(config: DyrectedClientConfig): DyrectedClient<TSchema>
+```
+
+
+## DyrectedClient
+
+Exported class from @dyrected/sdk.
+
+```ts
+export class DyrectedClient<TSchema extends BaseSchema = any> {
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>setToken</code> | <code>setToken(token: string): void</code> | Update the Authorization header with a Bearer token. Call this after a successful login. |
+| <code>clearToken</code> | <code>clearToken(): void</code> | Remove the Authorization header. Call this after logout. |
+| <code>getAuthHeaders</code> | <code>getAuthHeaders(): Record&lt;string, string&gt;</code> | Returns the headers needed to authenticate raw &#96;fetch()&#96; calls made outside the SDK client (e.g. streaming endpoints, dynamic options).  Includes the Authorization bearer token (if set), x-api-key, and x-site-id. |
+| <code>getBaseUrl</code> | <code>getBaseUrl()</code> |  |
+| <code>getSchemas</code> | <code>getSchemas(): Promise&lt;&#123; collections: any[]; globals: any[] &#125;&gt;</code> |  |
+| <code>getPreference</code> | <code>getPreference&lt;T = unknown&gt;(key: string): Promise&lt;&#123; key: string; value: T &#124; null &#125;&gt;</code> |  |
+| <code>setPreference</code> | <code>setPreference&lt;T = unknown&gt;(key: string, value: T): Promise&lt;&#123; key: string; value: T &#125;&gt;</code> |  |
+| <code>getPreviewData</code> | <code>getPreviewData(token: string): Promise&lt;any&gt;</code> | Fetch draft data for a specific preview token. Used in "token" preview mode. |
+| <code>find</code> | <code>find&lt;K extends keyof TSchema["collections"]&gt;(collection: K &amp; string, args: QueryArgs = &#123;&#125;): Promise&lt;PaginatedResult&lt;TSchema["collections"][K]&gt;&gt;</code> |  |
+| <code>collection</code> | <code>collection&lt;K extends keyof TSchema["collections"]&gt;(slug: K &amp; string)</code> | Returns a fluent query builder for a collection. |
+| <code>global</code> | <code>global&lt;K extends keyof TSchema["globals"]&gt;(slug: K &amp; string)</code> | Access a global by its slug with a fluent builder. |
+| <code>findOne</code> | <code>findOne&lt;T = any&gt;(collection: string, id: string, args: &#123; depth?: number; initialData?: T &#125; = &#123;&#125;): Promise&lt;T&gt;</code> |  |
+| <code>create</code> | <code>create&lt;T = any&gt;(collection: string, data: any): Promise&lt;T&gt;</code> |  |
+| <code>update</code> | <code>update&lt;T = any&gt;(collection: string, id: string, data: any): Promise&lt;T&gt;</code> |  |
+| <code>delete</code> | <code>delete(collection: string, id: string): Promise&lt;&#123; message: string &#125;&gt;</code> |  |
+| <code>transition</code> | <code>transition&lt;T = WorkflowDocument&gt;(collection: string, id: string, transitionName: string, opts: TransitionOptions = &#123;&#125;): Promise&lt;T&gt;</code> | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
+| <code>workflowHistory</code> | <code>workflowHistory(collection: string, id: string, args: &#123; limit?: number &#125; = &#123;&#125;): Promise&lt;PaginatedResult&lt;WorkflowHistoryEntry&gt;&gt;</code> | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
+| <code>deleteMany</code> | <code>deleteMany(collection: string, ids: string[]): Promise&lt;&#123; message: string &#125;&gt;</code> |  |
+| <code>getGlobal</code> | <code>getGlobal&lt;T = any&gt;(slug: string, args: &#123; depth?: number; initialData?: T &#125; = &#123;&#125;): Promise&lt;T&gt;</code> |  |
+| <code>updateGlobal</code> | <code>updateGlobal&lt;T = any&gt;(slug: string, data: any): Promise&lt;T&gt;</code> |  |
+| <code>listMedia</code> | <code>listMedia(args: QueryArgs = &#123;&#125;, collection: string = "media"): Promise&lt;PaginatedResult&lt;Media&gt;&gt;</code> |  |
+| <code>uploadMedia</code> | <code>uploadMedia(file: File, collection: string = "media"): Promise&lt;Media&gt;</code> |  |
+| <code>deleteMedia</code> | <code>deleteMedia(id: string, collection: string = "media"): Promise&lt;&#123; message: string &#125;&gt;</code> |  |
+
+
+## DyrectedClientConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface DyrectedClientConfig {
+  baseUrl: string;
+  apiKey?: string;
+  siteId?: string;
+  headers?: Record<string, string>;
+  fetch?: typeof fetch;
+  /** Default depth for relationship population. Applied to every request unless overridden per-call. */
+  defaultDepth?: number;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>baseUrl</code> | <code>baseUrl: string</code> |  |
+| <code>apiKey</code> | <code>apiKey?: string</code> |  |
+| <code>siteId</code> | <code>siteId?: string</code> |  |
+| <code>headers</code> | <code>headers?: Record&lt;string, string&gt;</code> |  |
+| <code>fetch</code> | <code>fetch?: typeof fetch</code> |  |
+| <code>defaultDepth</code> | <code>defaultDepth?: number</code> | Default depth for relationship population. Applied to every request unless overridden per-call. |
+
+
+## DyrectedError
+
+Structured error thrown by the SDK when the server returns a non-2xx response.
+
+```ts
+export class DyrectedError extends Error {
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>statusCode</code> | <code>readonly statusCode: number</code> |  |
+| <code>errors</code> | <code>readonly errors: &#123; field?: string; message: string &#125;[]</code> |  |
+
+
+## InferSchema
+
+Derives a typed `TSchema` from your exported collection and global config constants.
+
+Pass it to `createClient<Schema>()` so every `find`, `findOne`, `create`,
+`update`, `global().get()` call returns the inferred document shape — no
+manual interfaces required.
+
+```ts
+export type InferSchema<
+  TCollections extends Record<string, CollectionConfig<any>>,
+  TGlobals extends Record<string, GlobalConfig<any>> = Record<never, never>,
+> = {
+  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };
+  globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
+};
+```
+
+
+## TransitionOptions
+
+Options accepted by `client.transition()`.
+
+```ts
+export interface TransitionOptions {
+  /**
+   * The revision number currently shown to the user. When provided, the server
+   * rejects the transition if the document has changed since it was loaded,
+   * preventing lost-update races.
+   */
+  expectedRevision?: number;
+  /** Required for transitions that have `requireComment: true` (e.g. `reject`). */
+  comment?: string;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>expectedRevision</code> | <code>expectedRevision?: number</code> | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
+| <code>comment</code> | <code>comment?: string</code> | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
+
+
+## WorkflowDocument
+
+Shape of a document returned from a workflow-enabled collection.
+
+```ts
+export interface WorkflowDocument {
+  id: string;
+  _workflow: WorkflowMetadata;
+  [key: string]: unknown;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>id</code> | <code>id: string</code> |  |
+| <code>_workflow</code> | <code>_workflow: WorkflowMetadata</code> |  |
+
+
+## WorkflowHistoryEntry
+
+A single workflow history entry returned by `client.workflowHistory()`.
+
+```ts
+export interface WorkflowHistoryEntry {
+  id: string;
+  collection: string;
+  documentId: string;
+  transition: string;
+  from: string;
+  to: string;
+  revision: number;
+  comment: string | null;
+  actorId: string | null;
+  createdAt: string;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>id</code> | <code>id: string</code> |  |
+| <code>collection</code> | <code>collection: string</code> |  |
+| <code>documentId</code> | <code>documentId: string</code> |  |
+| <code>transition</code> | <code>transition: string</code> |  |
+| <code>from</code> | <code>from: string</code> |  |
+| <code>to</code> | <code>to: string</code> |  |
+| <code>revision</code> | <code>revision: number</code> |  |
+| <code>comment</code> | <code>comment: string &#124; null</code> |  |
+| <code>actorId</code> | <code>actorId: string &#124; null</code> |  |
+| <code>createdAt</code> | <code>createdAt: string</code> |  |
+{/* GENERATED:REFERENCE-SDK:END */}

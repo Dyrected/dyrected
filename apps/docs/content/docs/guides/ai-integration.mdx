@@ -1,0 +1,279 @@
+---
+title: Using Dyrected with AI Coding Tools
+description: How to set up AI coding agents to work correctly with Dyrected — a complete intent-to-pattern reference, schema rules, and critical DO NOTs.
+---
+
+Dyrected is declarative and schema-driven, which makes it an unusually good fit for AI coding tools. Everything — collections, globals, fields, hooks, access control — is defined in a single TypeScript config file that any agent can read and modify.
+
+This guide covers how to give your AI agent the context it needs to work correctly, and provides a complete intent-to-pattern reference so you can describe what you want in plain language without knowing Dyrected's terminology.
+
+---
+
+## Two ways to load Dyrected context into an AI
+
+### 1. The AI rules file and agent pointers
+
+When you run `npx @dyrected/cli init`, Dyrected creates a `.dyrected/ai-rules.md` file in your project root. This file teaches any AI coding agent how to work with Dyrected safely — the correct imports, schema evolution rules it must never break, a DO NOT list, and the full intent-to-pattern table below.
+
+Commit this file to your repository. Because AI tools discover instructions differently, the CLI also creates non-destructive pointer files for `AGENTS.md`, `CLAUDE.md`, GitHub Copilot, and Cursor when those files do not already exist. Existing project instructions are never overwritten.
+
+If you did not use `init`, generate it manually:
+
+```bash
+npx @dyrected/cli generate:ai-rules
+```
+
+### 2. The Claude Code skill (active — invoke on demand)
+
+For Claude Code users, there is a dedicated skill that loads the full Dyrected knowledge into any session when invoked:
+
+```bash
+npx skills add dyrected/agent-skills@dyrected
+```
+
+Once installed, use `/dyrected-cms` at the start of any Dyrected task. The skill encodes the same pattern vocabulary as the AI rules file, formatted as instructions the AI follows actively rather than reads passively. It is particularly useful when starting a session in a project that does not yet have a `.dyrected/ai-rules.md` file, or when working with a fresh codebase.
+
+---
+
+## Never do these things
+
+These rules prevent the most common and most damaging AI mistakes with Dyrected. They are included in `.dyrected/ai-rules.md` automatically.
+
+- **Never use `client.collections`** — the only correct entry point is `client.collection('slug')`
+- **Never add custom auth or session middleware on admin routes** — Dyrected handles authentication internally; adding your own breaks the dashboard
+- **Never define `email` or `password` fields on an `auth: true` collection** — they are injected automatically
+- **Never delete a field from the config** — existing documents store data under that key; removing it orphans the data permanently
+- **Never rename a field directly** — use `renameTo` for a lazy, zero-downtime migration
+- **Never add a new field to an existing collection without `defaultValue`** — existing documents need a safe read fallback
+- **Never use function callbacks in `admin.condition`** if the project uses Dyrected Cloud — use Jexl string expressions; functions are stripped on cloud sync
+
+---
+
+## Schema rules the agent must follow
+
+See [Schema Definition](/docs/concepts/schema) for the full reference.
+
+**Renaming a field safely** — set `renameTo` to the old name; remove it once all documents are resaved:
+
+```ts
+{
+  name: 'fullName',   // new name
+  type: 'text',
+  renameTo: 'name',   // old key — read fallback until all docs are resaved
+}
+```
+
+**Indexing a field for fast queries** — add `promoted: true`, then run `sync:schema`:
+
+```ts
+{ name: 'slug', type: 'text', unique: true, promoted: true }
+```
+
+**MongoDB exception** — MongoDB is schema-less and skips the sync step entirely. `renameTo` and `defaultValue` still apply on read, but you never run `sync:schema` with the MongoDB adapter.
+
+---
+
+## Zero-state resilience
+
+Always write frontend data fetches with `initialData` fallbacks so the page renders when the backend is unreachable or the collection is empty:
+
+```ts
+const { docs } = await client.collection("posts").find({ initialData: [] });
+const settings = await client
+  .global("site-settings")
+  .get({ initialData: { siteName: "My Site" } });
+```
+
+---
+
+## Relationships and depth
+
+See [Relationships](/docs/concepts/relationships) and [Depth](/docs/concepts/depth).
+
+A `relationship` field stores the ID of a document in another collection (the owning side). A `join` field is a virtual reverse lookup — it stores nothing; it queries the other collection at read time.
+
+```ts
+// relationship — stores an ID
+{ name: 'author', type: 'relationship', relationTo: 'users' }
+{ name: 'tags',   type: 'relationship', relationTo: 'tags', hasMany: true }
+
+// join — virtual reverse lookup (nothing stored)
+{
+  name: 'posts',
+  type: 'join',
+  collection: 'posts',  // collection to look in
+  on: 'author',         // relationship field on that collection
+  limit: 20,
+}
+```
+
+Control how many levels of relationships are hydrated with `depth`:
+
+| `depth`       | What you get                                          |
+| ------------- | ----------------------------------------------------- |
+| `0`           | ID strings only — smallest payload                    |
+| `1` (default) | Direct relationships hydrated; nested ones remain IDs |
+| `2`           | Two levels deep                                       |
+
+Use `depth: 0` on list pages. Use `depth: 1` (the default) when you need related field values.
+
+---
+
+## Dynamic options
+
+See [Dynamic Options](/docs/concepts/dynamic-options).
+
+Three ways to populate `select`, `multiSelect`, and `radio` fields:
+
+| Approach                               | Runs    | Use when                                  |
+| -------------------------------------- | ------- | ----------------------------------------- |
+| Static array                           | —       | Fixed list known at build time            |
+| `async` resolver function on `options` | Server  | DB queries, API keys, user-filtered lists |
+| `admin.hooks.options`                  | Browser | Instant dependent / cascading dropdowns   |
+
+```ts
+// Server-side resolver
+{
+  name: 'category',
+  type: 'select',
+  options: async ({ db }) => {
+    const result = await db.find({ collection: 'categories' })
+    return result.docs.map(c => ({ label: c.name, value: c.id }))
+  },
+}
+
+// Client-side UI hook — instant, no network round-trip
+{
+  name: 'region',
+  type: 'select',
+  options: [],
+  admin: {
+    hooks: {
+      options: ({ siblingData }) =>
+        siblingData.country === 'us'
+          ? [{ label: 'California', value: 'CA' }, { label: 'New York', value: 'NY' }]
+          : [],
+    },
+  },
+}
+```
+
+---
+
+## Conditional fields
+
+See [Admin Configuration](/docs/admin/configuration#condition--conditional-fields).
+
+Use `admin.condition` with a Jexl string expression to show or hide a field based on sibling values. Use string expressions, not functions, for cloud compatibility:
+
+```ts
+{ name: 'scheduledAt', type: 'datetime', admin: { condition: 'status == "scheduled"' } }
+{ name: 'salePrice',   type: 'number',   admin: { condition: 'onSale == true && price > 0' } }
+```
+
+---
+
+## Custom field components and component slots
+
+See [Admin Configuration](/docs/admin/configuration).
+
+**Custom field input** — replace any field's default input with your own component:
+
+```ts
+// dyrected.config.ts
+{
+  name: 'brandColor',
+  type: 'text',
+  admin: { component: 'products.brandColor' },
+}
+```
+
+```tsx
+// Register the component in your <DyrectedAdmin> wrapper
+<DyrectedAdmin
+  components={{ fields: { "products.brandColor": BrandColorPicker } }}
+/>
+```
+
+The component receives `value`, `onChange`, `field`, `path`, `disabled`, and `collection` as props.
+
+**Component slots** — inject custom panels into the dashboard or collection list pages:
+
+```ts
+// dyrected.config.ts
+defineConfig({
+  admin: { components: ["dashboard.analytics"] },
+});
+```
+
+```tsx
+<DyrectedAdmin
+  components={{ slots: { "dashboard.analytics": AnalyticsDashboard } }}
+/>
+```
+
+---
+
+## Intent → pattern reference
+
+Describe what you want in plain language. An AI agent with `.dyrected/ai-rules.md` in the workspace will use this table automatically. You can also paste it directly into a prompt.
+
+| If you want to…                                               | Use this pattern                                                                                           |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Auto-generate a slug from a title                             | `beforeChange` collection hook (server) + `admin.hooks.onChange` on the slug field (live preview in admin) |
+| Validate data before saving                                   | `beforeChange` collection hook — throw to abort                                                            |
+| Run logic after a document is saved                           | `afterChange` collection hook — never `await` slow ops inline; use `.catch()`                              |
+| Send a webhook or email when content changes                  | `afterChange` collection hook                                                                              |
+| Revalidate a Next.js / Nuxt page after a save                 | `afterChange` collection hook posting to the revalidation endpoint                                         |
+| Only admins can see a field                                   | Field-level `access: { read: ({ user }) => user?.roles?.includes('admin') ?? false }`                      |
+| Different roles can edit different fields                     | Field-level `access.update`                                                                                |
+| Restrict who can create / edit / delete                       | Collection-level `access` config                                                                           |
+| Track who created or changed a document                       | `audit: true` on the collection                                                                            |
+| Content approval / draft-publish flow                         | `workflow: publishingWorkflow()` on the collection                                                         |
+| Guard a workflow transition                                   | `workflow.hooks.beforeTransition` — throw to cancel                                                        |
+| Notify someone after a workflow state change                  | `workflow.hooks.afterTransition`                                                                           |
+| Different content per site (multi-tenant)                     | `siteId` on the collection + `beforeRead` hook to scope queries                                            |
+| Share content across all sites                                | `shared: true` on the collection                                                                           |
+| Show a dependent dropdown based on another field (instant)    | `admin.hooks.options` on the dependent select field                                                        |
+| Populate a dropdown from a database query or external API     | Server-side `options` async resolver function on the field                                                 |
+| Show a live computed value in the admin form                  | `admin.hooks.onChange` on the output field                                                                 |
+| Show or hide a field based on another field's value           | `admin.condition` with a Jexl string expression                                                            |
+| Query or sort a field efficiently at scale                    | `promoted: true` on the field, then run `sync:schema`                                                      |
+| One fixed set of content (site name, logo, tagline…)          | `defineGlobal`                                                                                             |
+| Multiple entries the client can add or remove                 | `defineCollection`                                                                                         |
+| Flexible page layouts (hero, cards, testimonials…)            | `blocks` field — one block definition per layout type                                                      |
+| Seed default content on first run                             | `initialData` on the collection or global                                                                  |
+| Reference a document in another collection                    | `relationship` field with `relationTo: 'slug'`                                                             |
+| Store multiple references (tags, categories…)                 | `relationship` field with `hasMany: true`                                                                  |
+| Show all related documents on the other side (reverse lookup) | `join` field with `collection` and `on`                                                                    |
+| Fetch a document with its related data populated              | Use `depth: 1` (default) on the query                                                                      |
+| Allow users to log in to the app                              | `auth: true` on a collection                                                                               |
+| Separate admin login from app user login                      | Define a `__admins` collection with `auth: true`                                                           |
+| Allow file / image uploads                                    | `upload: true` (or an upload config object) on a collection                                                |
+| Replace the default input for a field with a custom component | `admin.component` string key + register in `<DyrectedAdmin>`                                               |
+| Inject a custom panel into the dashboard or a collection page | Component slots in `admin.components` config + register in `<DyrectedAdmin>`                               |
+
+---
+
+## Working with the agent in batches
+
+When adding Dyrected to an existing codebase, work in small, verified batches:
+
+1. **Foundation first** — install packages, set up the config, admin route, and environment variables. Verify before creating any content types.
+2. **Three content areas at a time** — create no more than three related collections or globals per batch, connect them to the UI, and verify lint/types/build before moving on.
+3. **Fix before continuing** — if a batch fails verification, fix it before starting the next one.
+
+---
+
+## Related
+
+- [Schema Definition](/docs/concepts/schema) — promoted fields, lazy migrations, seeding
+- [Hooks](/docs/concepts/hooks) — full hook lifecycle and capabilities
+- [Using Hooks](/docs/guides/using-hooks) — slugs, validation, webhooks, workflow transitions
+- [Relationships](/docs/concepts/relationships) — `relationship` vs `join`
+- [Depth](/docs/concepts/depth) — relationship hydration
+- [Dynamic Options](/docs/concepts/dynamic-options) — static, server resolver, client hook
+- [Auth Model](/docs/concepts/auth-model) — `auth: true`, injected fields, generated endpoints
+- [Access Control](/docs/concepts/access-control) — collection and field-level permissions
+- [Workflows](/docs/concepts/workflows) — draft/publish state machines
+- [Admin Configuration](/docs/admin/configuration) — component slots, conditional fields, custom inputs

@@ -13,7 +13,7 @@ export default defineConfig({
       slug: 'users',
       auth: true,
       fields: [
-        { name: 'name', type: 'text' },
+        { name: 'name', label: 'Name', type: 'text' },
       ],
     },
   ],
@@ -102,7 +102,7 @@ async function submit(e: Event) {
   access: {
     read:   ({ user }) => !!user,
     create: ({ user }) => !!user,
-    update: ({ user, doc }) => user?.id === doc.userId,
+    update: ({ user, doc }) => user?.sub === doc.userId,
     delete: ({ user }) => user?.role === 'admin',
   },
 }

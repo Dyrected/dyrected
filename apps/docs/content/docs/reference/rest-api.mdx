@@ -1,415 +1,167 @@
 ---
 title: REST API Reference
-description: Complete reference for every Dyrected HTTP endpoint — collections, globals, auth, uploads, and schemas.
+description: Endpoint behavior, authentication, filtering, errors, and a generated OpenAPI inventory.
 ---
 
-Dyrected exposes a RESTful JSON API for every collection and global defined in your config. All endpoints share a consistent structure and support a common set of query parameters.
-
----
+Dyrected derives a REST API from collections and globals in `dyrected.config.ts`. Runtime OpenAPI is project-specific; the generated inventory below uses a representative maximal configuration to cover every route family.
 
 ## Base URL
 
-All endpoints are relative to the base URL of your Dyrected instance:
+Self-hosted routes are normally exposed beneath the application origin:
 
+```text
+https://example.com/api
 ```
-https://your-site.com/api
-```
 
-In Cloud mode, this is your configured cloud backend URL. In self-hosted mode, it is wherever you mounted the Dyrected router.
-
----
+SDK configuration takes the origin before `/api`, because SDK methods add `/api` themselves.
 
 ## Authentication
 
-Every request must include one of:
+Depending on access configuration, requests use a site API key, a user JWT, and—in Cloud mode—a site identifier.
 
-| Method | Header | When to use |
+| Credential | Header | Typical use |
 |---|---|---|
-| Site API Key | `x-api-key: <key>` | Server-to-server, trusted backend code |
-| JWT | `Authorization: Bearer <token>` | Logged-in users, Admin UI, client-side apps |
-| Site ID | `x-site-id: <id>` | Cloud mode — must be sent alongside the API key |
+| Site API key | `x-api-key` | Trusted server-to-server access |
+| User JWT | `Authorization: Bearer …` | User-scoped and Admin operations |
+| Site ID | `x-site-id` | Cloud tenant selection |
 
-Endpoints that have `access: () => true` (public read) do not require any auth header for GET requests.
+An endpoint can be public when its access rule allows the operation. The representative table's authentication column reflects the fixture, not a guarantee about your project.
 
----
+## Listing and filtering
 
-## Common Query Parameters
-
-All list endpoints (`GET /api/collections/:slug`) accept these parameters:
-
-| Parameter | Type | Example | Description |
-|---|---|---|---|
-| `limit` | `number` | `?limit=20` | Max documents per page (default: 10, max: 100) |
-| `page` | `number` | `?page=2` | Page number (1-indexed) |
-| `sort` | `string` | `?sort=-createdAt` | Field to sort by. Prefix `-` for descending. |
-| `depth` | `number` | `?depth=1` | How deeply to populate relationship fields (default: 0) |
-| `where` | JSON string | `?where=%7B...%7D` | Encoded JSON filter object (see [Filtering](#filtering)) |
-
-### Standard List Response
-
-```json
-{
-  "docs": [...],
-  "total": 87,
-  "limit": 10,
-  "page": 1,
-  "totalPages": 9,
-  "hasNextPage": true,
-  "hasPrevPage": false,
-  "nextPage": 2,
-  "prevPage": null
-}
-```
-
----
-
-## Collection Endpoints
-
-### List documents
-
-```
-GET /api/collections/:slug
-```
-
-Returns a paginated list of documents.
-
-**Example:**
-```bash
-GET /api/collections/posts?limit=5&sort=-publishedAt&where=%7B%22status%22%3A%7B%22equals%22%3A%22published%22%7D%7D&depth=1
-```
-
----
-
-### Get a single document
-
-```
-GET /api/collections/:slug/:id
-```
-
-Returns one document by its ID.
-
-**Example:**
-```bash
-GET /api/collections/posts/abc123?depth=2
-```
-
----
-
-### Create a document
-
-```
-POST /api/collections/:slug
-Content-Type: application/json
-```
-
-**Request body:** A JSON object containing the document fields.
-
-```json
-{
-  "title": "My First Post",
-  "status": "draft",
-  "author": "user-id-here"
-}
-```
-
-**Response:** The created document, including its auto-generated `id`, `createdAt`, and `updatedAt`.
-
----
-
-### Update a document
-
-```
-PATCH /api/collections/:slug/:id
-Content-Type: application/json
-```
-
-Partial update — only send the fields you want to change.
-
-```json
-{
-  "status": "published",
-  "publishedAt": "2024-06-01T10:00:00.000Z"
-}
-```
-
-**Response:** The full updated document.
-
----
-
-### Delete a document
-
-```
-DELETE /api/collections/:slug/:id
-```
-
-**Response:** `200 OK` with the deleted document.
-
----
-
-### Transition a document workflow
-
-```
-POST /api/collections/:slug/:id/transitions/:transition
-Content-Type: application/json
-```
-
-Atomic state transition for collections with `workflow` enabled. Can require comment or reject/publish capabilities depending on the workflow config. 
-
-**Request body:**
-
-```json
-{
-  "expectedRevision": 3,
-  "comment": "Approved for publishing."
-}
-```
-
-**Response:** The document with its newly updated `_workflow` state.
-
----
-
-### Get workflow history
-
-```
-GET /api/collections/:slug/:id/workflow-history
-```
-
-Returns the history of all transitions applied to this document.
-
-**Example:**
-```bash
-GET /api/collections/posts/abc123/workflow-history?limit=10
-```
-
-**Response:** Standard paginated list of `WorkflowHistoryEntry` records.
-
----
-
-## Upload Endpoints
-
-Upload collections use `multipart/form-data` for file creation:
-
-### Upload a file
-
-```
-POST /api/collections/:slug
-Content-Type: multipart/form-data
-```
-
-**Form fields:**
-- `file` — the binary file (required)
-- Any additional fields from your schema (e.g., `alt`, `caption`)
-
-**Example:**
-```bash
-curl -X POST https://mysite.com/api/collections/media \
-  -H "x-api-key: sk_live_..." \
-  -F "file=@photo.jpg" \
-  -F "alt=Mountain landscape"
-```
-
----
-
-## Global Endpoints
-
-### Get a global
-
-```
-GET /api/globals/:slug
-```
-
-Returns the current state of the global document.
-
----
-
-### Update a global
-
-```
-PATCH /api/globals/:slug
-Content-Type: application/json
-```
-
-```json
-{
-  "siteName": "My Awesome Site",
-  "tagline": "Building the future"
-}
-```
-
----
-
-## Auth Endpoints
-
-For any collection with `auth: true`. Replace `:slug` with your auth collection slug (e.g., `users`).
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/collections/:slug/login` | Login with email + password |
-| `POST` | `/api/collections/:slug/logout` | Logout (requires JWT) |
-| `GET` | `/api/collections/:slug/me` | Get current user (requires JWT) |
-| `POST` | `/api/collections/:slug/refresh-token` | Refresh JWT (requires JWT) |
-| `POST` | `/api/collections/:slug/forgot-password` | Send reset email |
-| `POST` | `/api/collections/:slug/reset-password` | Reset with token |
-
-See [Authentication Collections](/docs/guides/adding-authentication) for full details and request/response shapes.
-
----
-
-## Schema Endpoint
-
-### Get all schemas
-
-```
-GET /api/schemas
-```
-
-Returns the full schema definition for all collections and globals, derived from your `dyrected.config.ts`. When called with a valid JWT, the response also includes resolved `access` flags for the authenticated user.
-
-Useful for:
-- Building generic admin UIs
-- Generating typed SDK clients
-- Introspecting the config at runtime
-
----
-
-## Preview Endpoints
-
-### Generate Preview Token
-
-```
-POST /api/preview-token
-Content-Type: application/json
-```
-
-Issues a short-lived, signed JWT for accessing draft content. Requires an authenticated user with `update` access to the requested document.
-
-**Request body:**
-```json
-{
-  "collection": "posts",
-  "id": "abc-123",
-  "data": { ... } // Draft data from the form
-}
-```
-
-**Response:**
-```json
-{
-  "token": "eyJhbG..."
-}
-```
-
----
-
-### Get Preview Data
-
-```
-GET /api/preview-data?token=<jwt>
-```
-
-Retrieves draft data using a valid preview token. This endpoint is public (no `x-api-key` required) as it relies on the signed token for authorization.
-
-**Response:**
-```json
-{
-  "collection": "posts",
-  "id": "abc-123",
-  "data": { ... }
-}
-```
-
----
-
-## Filtering
-
-The `where` parameter accepts an encoded JSON object:
-
-```
-?where=%7B%22status%22%3A%7B%22equals%22%3A%22published%22%7D%7D
-```
-
-Equivalent unencoded object:
-
-```json
-{
-  "status": {
-    "equals": "published"
-  }
-}
-```
-
-When building URLs manually, stringify and encode the object:
+Collection list routes accept `limit`, `page`, `sort`, `depth`, and a JSON-encoded `where` object.
 
 ```ts
-const where = { status: { equals: 'published' } }
 const query = new URLSearchParams({
-  where: JSON.stringify(where),
   limit: '10',
+  sort: '-createdAt',
+  depth: '1',
+  where: JSON.stringify({ status: { equals: 'published' } }),
 })
+
+const response = await fetch(`/api/collections/posts?${query}`)
 ```
 
-Incoming `where` clauses are sanitized against the collection schema. Fields marked with `admin.filterable: false` are removed from filters, and boolean values are parsed consistently across database adapters.
+Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. Incoming filters are sanitized against the configured schema; fields with `admin.filterable: false` cannot be used for filtering.
 
-### Operators
-
-| Operator | Example | Description |
-|---|---|---|
-| `equals` | `{ "status": { "equals": "published" } }` | Exact match |
-| `not_equals` | `{ "status": { "not_equals": "archived" } }` | Not equal |
-| `contains` | `{ "title": { "contains": "typescript" } }` | Case-insensitive contains |
-| `starts_with` | `{ "slug": { "starts_with": "post-" } }` | Starts with value |
-| `in` | `{ "status": { "in": ["draft", "published"] } }` | Value is in list |
-| `not_in` | `{ "role": { "not_in": ["guest"] } }` | Value is not in list |
-| `gt` | `{ "price": { "gt": 100 } }` | Numeric/date greater than |
-| `gte` | `{ "age": { "gte": 18 } }` | Numeric/date greater than or equal |
-| `lt` | `{ "price": { "lt": 500 } }` | Numeric/date less than |
-| `lte` | `{ "age": { "lte": 65 } }` | Numeric/date less than or equal |
-| `exists` | `{ "publishedAt": { "exists": true } }` | Field is not null |
-
-### Combining conditions
-
-Multiple field conditions at the same level are combined with **AND**:
+List responses use the shared pagination envelope:
 
 ```json
 {
-  "status": { "equals": "published" },
-  "featured": { "equals": true }
+  "docs": [],
+  "total": 0,
+  "limit": 10,
+  "page": 1,
+  "totalPages": 0,
+  "hasNextPage": false,
+  "hasPrevPage": false
 }
 ```
 
----
+## Collections
 
-## Error Responses
+- `GET /api/collections/{slug}` lists documents.
+- `POST /api/collections/{slug}` creates a document or upload.
+- `GET /api/collections/{slug}/{id}` reads one document.
+- `PATCH /api/collections/{slug}/{id}` performs a partial update.
+- `DELETE /api/collections/{slug}/{id}` deletes one document.
+- `DELETE /api/collections/{slug}/delete-many` deletes authorized IDs in bulk.
+- `POST /api/collections/{slug}/seed` initializes configured seed content.
 
-All errors follow a consistent shape:
+Access rules, hooks, field validation, relationship depth, and workflows apply at this boundary.
 
-```json
-{
-  "error": "Not Found",
-  "message": "Document with ID 'abc123' not found in collection 'posts'.",
-  "statusCode": 404
-}
+## Uploads and media
+
+Upload collections accept `multipart/form-data` with a required `file` part and optional configured metadata fields.
+
+```bash
+curl -X POST https://example.com/api/collections/media \
+  -H "Authorization: Bearer $DYRECTED_TOKEN" \
+  -F "file=@photo.jpg" \
+  -F "alt=Mountain at sunrise"
 ```
 
-| Status | Meaning |
-|---|---|
-| `400` | Bad request — validation error or missing required field |
-| `401` | Unauthorized — missing or invalid auth token/API key |
-| `403` | Forbidden — access function returned `false` |
-| `404` | Document or collection not found |
-| `409` | Conflict — unique constraint violation |
-| `413` | Payload too large — file exceeds `maxFileSize` |
-| `500` | Internal server error |
+Use URLs returned by the API. Local storage can serve bytes through `/api/media/{filename}`; cloud adapters normally return provider/CDN URLs.
 
-Validation errors (400) include a detailed `errors` array:
+## Globals
 
-```json
-{
-  "error": "Validation Error",
-  "statusCode": 400,
-  "errors": [
-    { "field": "title", "message": "Title is required." },
-    { "field": "email", "message": "Must be a valid email address." }
-  ]
-}
-```
+`GET /api/globals/{slug}` reads a singleton and `PATCH /api/globals/{slug}` updates it. Global access and hooks run in the same way as their configured operations.
+
+## Authentication routes
+
+Auth-enabled collections add login, logout, current-user, refresh, invitation, initialization, first-user, password reset, and password-change routes. Consult runtime OpenAPI for exact request and response schemas because the collection slug and document fields are project-specific.
+
+## Workflows
+
+Workflow-enabled collections add an atomic transition route and paginated workflow history. Supply `expectedRevision` when the client must reject stale transitions, and include comments when required by the configured transition.
+
+## Schemas, preferences, preview, and dynamic options
+
+- `/api/schemas` serializes current collection/global schemas.
+- `/api/preferences/{key}` stores authenticated user preferences.
+- `/api/preview-token` creates a signed preview credential; `/api/preview-data` resolves it.
+- `/api/dyrected/options/{collection}/{field}` resolves server-side dynamic options.
+
+Preview tokens and schema responses can expose application structure. Apply appropriate transport security and avoid logging secrets.
+
+## Error responses
+
+Use HTTP status codes as the primary error category and display server validation messages safely. Common cases include invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected server failures (`500`).
+
+Clients should not retry validation or authorization failures blindly. Retry transient failures only when the operation is idempotent or has an application-level idempotency strategy.
+
+## Generated endpoint inventory
+
+{/* GENERATED:REFERENCE-REST-API:START */}
+| Method | Path | Summary | Authentication |
+| --- | --- | --- | --- |
+| GET | `/api/collections/media` | Find Media | Required |
+| POST | `/api/collections/media` | Create Media item | Required |
+| DELETE | `/api/collections/media/{id}` | Delete Media item | Required |
+| GET | `/api/collections/media/{id}` | Get a single Media item | Required |
+| PATCH | `/api/collections/media/{id}` | Update Media item | Required |
+| DELETE | `/api/collections/media/delete-many` | Delete multiple Media | Required |
+| GET | `/api/collections/media/media` | List Media | Required |
+| POST | `/api/collections/media/media` | Upload Media item | Required |
+| GET | `/api/collections/media/media/{filename}` | Serve Media item bytes | Public |
+| POST | `/api/collections/media/seed` | Seed initial Media | Required |
+| GET | `/api/collections/posts` | Find Posts | Required |
+| POST | `/api/collections/posts` | Create Post | Required |
+| DELETE | `/api/collections/posts/{id}` | Delete Post | Required |
+| GET | `/api/collections/posts/{id}` | Get a single Post | Required |
+| PATCH | `/api/collections/posts/{id}` | Update Post | Required |
+| POST | `/api/collections/posts/{id}/transitions/{transition}` | Transition Post workflow | Required |
+| GET | `/api/collections/posts/{id}/workflow-history` | Get Post workflow history | Required |
+| DELETE | `/api/collections/posts/delete-many` | Delete multiple Posts | Required |
+| POST | `/api/collections/posts/seed` | Seed initial Posts | Required |
+| GET | `/api/collections/users` | Find Users | Required |
+| POST | `/api/collections/users` | Create User | Required |
+| DELETE | `/api/collections/users/{id}` | Delete User | Required |
+| GET | `/api/collections/users/{id}` | Get a single User | Required |
+| PATCH | `/api/collections/users/{id}` | Update User | Required |
+| POST | `/api/collections/users/{id}/change-password` | Change a User password | Required |
+| POST | `/api/collections/users/accept-invite` | Accept an invitation | Public |
+| DELETE | `/api/collections/users/delete-many` | Delete multiple Users | Required |
+| POST | `/api/collections/users/first-user` | Register the first User | Public |
+| POST | `/api/collections/users/forgot-password` | Request a password reset | Public |
+| GET | `/api/collections/users/init` | Get Users initialization state | Public |
+| POST | `/api/collections/users/invite` | Invite a User | Required |
+| POST | `/api/collections/users/login` | Log in to Users | Public |
+| POST | `/api/collections/users/logout` | Log out of Users | Required |
+| GET | `/api/collections/users/me` | Get the current User | Required |
+| POST | `/api/collections/users/refresh-token` | Refresh an authentication token | Required |
+| POST | `/api/collections/users/reset-password` | Reset a password | Public |
+| POST | `/api/collections/users/seed` | Seed initial Users | Required |
+| GET | `/api/docs` | Open interactive API documentation | Public |
+| GET | `/api/dyrected/options/{collection}/{field}` | Resolve dynamic field options | Required |
+| GET | `/api/globals/settings` | Get Site settings | Required |
+| PATCH | `/api/globals/settings` | Update Site settings | Required |
+| POST | `/api/globals/settings/seed` | Seed Site settings | Required |
+| GET | `/api/media/{filename}` | Serve a stored file | Public |
+| GET | `/api/openapi.json` | Get the OpenAPI specification | Public |
+| GET | `/api/preferences/{key}` | Get an authenticated user preference | Required |
+| PUT | `/api/preferences/{key}` | Set an authenticated user preference | Required |
+| GET | `/api/preview-data` | Resolve preview data from a token | Public |
+| POST | `/api/preview-token` | Create a preview token | Required |
+| GET | `/api/schemas` | Get the serialized Dyrected schema | Public |
+{/* GENERATED:REFERENCE-REST-API:END */}

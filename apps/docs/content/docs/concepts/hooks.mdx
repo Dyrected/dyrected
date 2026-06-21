@@ -94,8 +94,8 @@ export const Registrations = defineCollection({
     ]
   },
   fields: [
-    { name: 'name', type: 'text', required: true },
-    { name: 'email', type: 'email', required: true },
+    { name: 'name', label: 'Name', type: 'text', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
   ]
 })
 ```
@@ -273,3 +273,62 @@ beforeDelete: [
 ```
 
 Use this pattern for `beforeChange` validation too — throw a descriptive error and the data will never reach the database.
+
+---
+
+## Choosing between field hooks and collection hooks
+
+Both can run logic before or after a write, but they operate at different scopes and have different trade-offs.
+
+| | Field hook | Collection hook |
+|---|---|---|
+| **Scope** | A single field's value | The full data object |
+| **Input** | `{ value, originalDoc, data, user }` | `{ data, doc, req, user, operation }` |
+| **Output** | The new value for this field | A modified version of the whole `data` object |
+| **Runs inside `array`/`object`/`blocks`** | Yes — automatically for every nested item | No — only at the top-level document |
+| **Can read sibling fields** | Yes — via `data` | Yes — the whole payload is available |
+| **Can write back multiple fields** | No — only its own value | Yes |
+| **Typical use** | Normalise, transform, mask one value | Derive cross-field values, validate multiple fields together, generate slugs |
+
+### Use a field hook when
+
+- The logic only needs the field's own value and does not depend on other fields
+- You want the transformation to apply recursively inside `array`, `object`, or `blocks` (field hooks automatically run on every nested item — collection hooks do not)
+- The hook is a simple, stateless transformation: trim whitespace, lowercase an email, hash a password, mask a sensitive value on read
+
+```ts
+// Good fit for a field hook — only needs its own value
+{
+  name: 'email',
+  type: 'email',
+  hooks: {
+    beforeChange: [({ value }) => value?.toLowerCase().trim()],
+  },
+}
+```
+
+### Use a collection hook when
+
+- The logic reads or writes **more than one field** (e.g. generate `slug` from `title`, compute `total` from `quantity × price`)
+- You need to validate multiple fields together and throw a single clear error
+- The hook needs `operation` to behave differently on create vs update
+- You need `previousDoc` to detect what changed (only available in `afterChange`)
+
+```ts
+// Good fit for a collection hook — reads title to write slug
+hooks: {
+  beforeChange: [
+    ({ data, operation }) => {
+      if (operation === 'create' || data.title !== undefined) {
+        return { ...data, slug: slugify(data.title, { lower: true, strict: true }) }
+      }
+      return data
+    },
+  ],
+}
+```
+
+### When in doubt
+
+Start with a field hook. Promote to a collection hook only if you find yourself reaching for `data` to read a sibling field or needing to return a modified version of the whole object.
+

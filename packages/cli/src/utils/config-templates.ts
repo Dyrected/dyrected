@@ -7,7 +7,7 @@ export function buildDbConfig(db: string): string {
     case "sqlite":
       return `sqliteAdapter({ filename: './data.db' })`;
     case "mongodb":
-      return `mongodbAdapter({ url: process.env.DATABASE_URL! })`;
+      return `mongodbAdapter({ url: process.env.DATABASE_URL!, dbName: process.env.MONGODB_DB_NAME || 'dyrected' })`;
     default:
       return `postgresAdapter({ url: process.env.DATABASE_URL! })`;
   }
@@ -16,19 +16,23 @@ export function buildDbConfig(db: string): string {
 export function buildStorageConfig(storage: string): string {
   switch (storage) {
     case "local":
-      return `localAdapter({ directory: './public/uploads', serveFrom: '/uploads' })`;
+      return `localStorage({ uploadDir: './public/uploads', staticUrlPrefix: '/uploads' })`;
     case "s3":
-      return `s3Adapter({ bucket: process.env.S3_BUCKET!, region: process.env.S3_REGION!, accessKeyId: process.env.S3_ACCESS_KEY_ID!, secretAccessKey: process.env.S3_SECRET_ACCESS_KEY! })`;
+      return `s3Storage({ bucket: process.env.S3_BUCKET!, region: process.env.S3_REGION!, credentials: { accessKeyId: process.env.S3_ACCESS_KEY_ID!, secretAccessKey: process.env.S3_SECRET_ACCESS_KEY! } })`;
     case "b2":
-      return `b2Adapter({ bucketId: process.env.B2_BUCKET_ID!, keyId: process.env.B2_KEY_ID!, applicationKey: process.env.B2_APPLICATION_KEY! })`;
+      return `b2Storage({ bucketId: process.env.B2_BUCKET_ID!, bucketName: process.env.B2_BUCKET_NAME!, applicationKeyId: process.env.B2_KEY_ID!, applicationKey: process.env.B2_APPLICATION_KEY! })`;
     case "cloudinary":
-      return `cloudinaryAdapter({ cloudName: process.env.CLOUDINARY_CLOUD_NAME!, apiKey: process.env.CLOUDINARY_API_KEY!, apiSecret: process.env.CLOUDINARY_API_SECRET! })`;
+      return `cloudinaryStorage({ cloudName: process.env.CLOUDINARY_CLOUD_NAME!, apiKey: process.env.CLOUDINARY_API_KEY!, apiSecret: process.env.CLOUDINARY_API_SECRET! })`;
     default:
-      return `localAdapter({ directory: './public/uploads', serveFrom: '/uploads' })`;
+      return `localStorage({ uploadDir: './public/uploads', staticUrlPrefix: '/uploads' })`;
   }
 }
 
-export function buildEnvTemplate(db: string, storage: string, framework: string): string {
+export function buildEnvTemplate(
+  db: string,
+  storage: string,
+  framework: string,
+): string {
   const lines = [
     `# Dyrected CMS — Environment Variables`,
     `DATABASE_URL=${
@@ -44,24 +48,46 @@ export function buildEnvTemplate(db: string, storage: string, framework: string)
   ];
 
   if (storage === "s3") {
-    lines.push(`S3_BUCKET=my-bucket`, `S3_REGION=us-east-1`, `S3_ACCESS_KEY_ID=`, `S3_SECRET_ACCESS_KEY=`);
+    lines.push(
+      `S3_BUCKET=my-bucket`,
+      `S3_REGION=us-east-1`,
+      `S3_ACCESS_KEY_ID=`,
+      `S3_SECRET_ACCESS_KEY=`,
+    );
   } else if (storage === "b2") {
-    lines.push(`B2_BUCKET_ID=`, `B2_KEY_ID=`, `B2_APPLICATION_KEY=`);
+    lines.push(
+      `B2_BUCKET_ID=`,
+      `B2_BUCKET_NAME=`,
+      `B2_KEY_ID=`,
+      `B2_APPLICATION_KEY=`,
+    );
   } else if (storage === "cloudinary") {
-    lines.push(`CLOUDINARY_CLOUD_NAME=`, `CLOUDINARY_API_KEY=`, `CLOUDINARY_API_SECRET=`);
+    lines.push(
+      `CLOUDINARY_CLOUD_NAME=`,
+      `CLOUDINARY_API_KEY=`,
+      `CLOUDINARY_API_SECRET=`,
+    );
   }
 
+  if (db === "mongodb") lines.push(`MONGODB_DB_NAME=dyrected`);
+
   const prefix = framework === "next" ? "NEXT_PUBLIC_" : "NUXT_PUBLIC_";
-  lines.push(``, `${prefix}DYRECTED_URL=http://localhost:3000`, `${prefix}DYRECTED_API_KEY=local-dev`);
+  lines.push(
+    ``,
+    `${prefix}DYRECTED_URL=http://localhost:3000`,
+    `${prefix}DYRECTED_API_KEY=local-dev`,
+  );
   return lines.join("\n") + "\n";
 }
 
 export function buildViteEnvTemplate(): string {
-  return [
-    `# Dyrected CMS — Environment Variables`,
-    `# Connect to Dyrected Cloud or a self-hosted instance`,
-    `VITE_DYRECTED_URL=https://api.dyrected.cloud`,
-    `VITE_DYRECTED_API_KEY=sk_live_...`,
-    `VITE_DYRECTED_SITE_ID=site_...`,
-  ].join("\n") + "\n";
+  return (
+    [
+      `# Dyrected CMS — Environment Variables`,
+      `# Connect to Dyrected Cloud or a self-hosted instance`,
+      `VITE_DYRECTED_URL=https://api.dyrected.cloud`,
+      `VITE_DYRECTED_API_KEY=sk_live_...`,
+      `VITE_DYRECTED_SITE_ID=site_...`,
+    ].join("\n") + "\n"
+  );
 }

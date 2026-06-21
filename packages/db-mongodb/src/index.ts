@@ -1,15 +1,28 @@
-import { DatabaseAdapter, PaginatedResult, parseMongoWhere, parseSort } from '@dyrected/core';
-import { MongoClient, Db, ObjectId, type ClientSession, type SortDirection } from 'mongodb';
+import {
+  DatabaseAdapter,
+  PaginatedResult,
+  parseMongoWhere,
+  parseSort,
+} from "@dyrected/core";
+import {
+  MongoClient,
+  Db,
+  ObjectId,
+  type ClientSession,
+  type SortDirection,
+} from "mongodb";
 
 export interface MongoAdapterConfig {
   url: string;
   dbName: string;
 }
 
-function normalizeMongoSort(sort: string | undefined): Record<string, SortDirection> {
+function normalizeMongoSort(
+  sort: string | undefined,
+): Record<string, SortDirection> {
   return Object.fromEntries(
     parseSort(sort).map(({ field, direction }) => {
-      const mongoDirection: SortDirection = direction === 'DESC' ? -1 : 1;
+      const mongoDirection: SortDirection = direction === "DESC" ? -1 : 1;
       return [field, mongoDirection];
     }),
   ) as Record<string, SortDirection>;
@@ -40,10 +53,16 @@ export class MongoAdapter implements DatabaseAdapter {
   }
 
   private getGlobalCollection() {
-    return this.db.collection('dyrected_globals');
+    return this.db.collection("dyrected_globals");
   }
 
-  async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
+  async find(args: {
+    collection: string;
+    where?: any;
+    limit?: number;
+    page?: number;
+    sort?: string;
+  }): Promise<PaginatedResult> {
     await this.ensureInitialized();
     const col = this.db.collection(this.getCollectionName(args.collection));
     const limit = args.limit || 10;
@@ -52,16 +71,20 @@ export class MongoAdapter implements DatabaseAdapter {
 
     const query = args.where ? parseMongoWhere(args.where) : {};
     const total = await col.countDocuments(query, { session: this.session });
-    
+
     const sortObj = normalizeMongoSort(args.sort);
 
-    const cursor = col.find(query, { session: this.session }).sort(sortObj).skip(skip).limit(limit);
+    const cursor = col
+      .find(query, { session: this.session })
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limit);
     const docs = await cursor.toArray();
 
     const totalPages = Math.ceil(total / limit);
 
     return {
-      docs: docs.map(doc => {
+      docs: docs.map((doc) => {
         const { _id, ...rest } = doc;
         return { id: _id.toString(), ...rest };
       }),
@@ -70,7 +93,7 @@ export class MongoAdapter implements DatabaseAdapter {
       page,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPrevPage: page > 1
+      hasPrevPage: page > 1,
     };
   }
 
@@ -102,19 +125,31 @@ export class MongoAdapter implements DatabaseAdapter {
       { $set: updateData },
       { session: this.session },
     );
-    return { id: params.id, ...updateData };
+    const updated = await col.findOne(
+      { _id: this.toObjectId(params.id) as any },
+      { session: this.session },
+    );
+    if (!updated) return { id: params.id, ...updateData };
+    const { _id, ...rest } = updated;
+    return { id: _id.toString(), ...rest };
   }
 
   async delete(params: { collection: string; id: string }) {
     await this.ensureInitialized();
     const col = this.db.collection(this.getCollectionName(params.collection));
-    await col.deleteOne({ _id: this.toObjectId(params.id) as any }, { session: this.session });
+    await col.deleteOne(
+      { _id: this.toObjectId(params.id) as any },
+      { session: this.session },
+    );
   }
 
   async getGlobal(params: { slug: string }) {
     await this.ensureInitialized();
     const col = this.getGlobalCollection();
-    const doc = await col.findOne({ slug: params.slug }, { session: this.session });
+    const doc = await col.findOne(
+      { slug: params.slug },
+      { session: this.session },
+    );
     if (!doc) return {};
     const { _id, slug, ...data } = doc;
     return data;
@@ -126,12 +161,14 @@ export class MongoAdapter implements DatabaseAdapter {
     await col.updateOne(
       { slug: params.slug },
       { $set: params.data },
-      { upsert: true, session: this.session }
+      { upsert: true, session: this.session },
     );
     return params.data;
   }
 
-  async transaction<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T> {
+  async transaction<T>(
+    callback: (db: DatabaseAdapter) => Promise<T>,
+  ): Promise<T> {
     await this.ensureInitialized();
     const session = this.client.startSession();
     try {
@@ -156,4 +193,5 @@ export class MongoAdapter implements DatabaseAdapter {
   }
 }
 
-export const mongodbAdapter = (config: MongoAdapterConfig) => new MongoAdapter(config);
+export const mongodbAdapter = (config: MongoAdapterConfig) =>
+  new MongoAdapter(config);

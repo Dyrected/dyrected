@@ -14,8 +14,8 @@ export const Users = defineCollection({
   slug: "users",
   auth: true,
   fields: [
-    { name: "name", type: "text" },
-    { name: "role", type: "select", options: ["member", "editor", "admin"] },
+    { name: "name", label: "Name", type: "text" },
+    { name: "role", label: "Role", type: "select", options: ["member", "editor", "admin"] },
   ],
 });
 ```
@@ -98,15 +98,15 @@ You can have more than one auth collection. A common pattern is to keep `__admin
 export const Admins = defineCollection({
   slug: "__admins",
   auth: true,
-  fields: [{ name: "name", type: "text" }],
+  fields: [{ name: "name", label: "Name", type: "text" }],
 });
 
 export const Users = defineCollection({
   slug: "users",
   auth: true,
   fields: [
-    { name: "name", type: "text" },
-    { name: "plan", type: "select", options: ["free", "pro"] },
+    { name: "name", label: "Name", type: "text" },
+    { name: "plan", label: "Plan", type: "select", options: ["free", "pro"] },
   ],
 });
 ```
@@ -140,3 +140,4 @@ If `resetUrl` is omitted, the email template receives only the raw `token`. See 
 - [Separating Admin Auth](/docs/guides/separating-admin-auth) — keep CMS dashboard auth independent from app users
 - [Invite-Only Registration](/docs/guides/invite-only-registration) — restrict sign-up to invited users
 - [Role-Based Access Control](/docs/guides/role-based-access-control) — use roles to gate collections and fields
+

@@ -60,9 +60,10 @@ export default defineConfig({
     defineCollection({
       slug: 'products',
       fields: [
-        { name: 'title', type: 'text' },
+        { name: 'title', label: 'Title', type: 'text' },
         {
           name: 'brandColor',
+          label: 'Brand Color',
           type: 'text',
           admin: {
             component: 'products.brandColor',  // unique key — matches the prop below
@@ -319,3 +320,4 @@ packages/vue/
 │   │   └── react-in-vue.ts        # React root mounting + prop sync
 │   └── index.ts
 ```
+

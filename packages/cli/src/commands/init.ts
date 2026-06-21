@@ -4,10 +4,24 @@ import fs from "fs-extra";
 import path from "path";
 import prompts from "prompts";
 import { execSync } from "child_process";
-import { generateAIPrompt } from "@dyrected/sdk";
-import { detectFramework, detectPackageManager, type SupportedFramework } from "../utils/detect.js";
-import { buildDbConfig, buildStorageConfig, buildEnvTemplate, buildViteEnvTemplate } from "../utils/config-templates.js";
-import { writeNextFiles, writeNuxtFiles, writeReactFiles, writeVueFiles } from "../utils/writers.js";
+import {
+  detectFramework,
+  detectPackageManager,
+  type SupportedFramework,
+} from "../utils/detect.js";
+import { buildAiRules } from "@dyrected/knowledge";
+import {
+  buildDbConfig,
+  buildStorageConfig,
+  buildEnvTemplate,
+  buildViteEnvTemplate,
+} from "../utils/config-templates.js";
+import {
+  writeNextFiles,
+  writeNuxtFiles,
+  writeReactFiles,
+  writeVueFiles,
+} from "../utils/writers.js";
 
 export function registerInit(program: Command) {
   program
@@ -34,18 +48,35 @@ After running init:
 
       if (detection && !detection.supported) {
         console.log(chalk.yellow(`  Detected framework: ${detection.name}`));
-        console.log(chalk.red(`\n  Dyrected doesn't have a native ${detection.name} integration yet.`));
-        console.log(chalk.dim(`  Supported frameworks: Next.js, Nuxt 3, React, Vue`));
-        console.log(chalk.dim(`  You can still use the SDK directly: https://docs.dyrected.com/docs/integrations/sdk\n`));
+        console.log(
+          chalk.red(
+            `\n  Dyrected doesn't have a native ${detection.name} integration yet.`,
+          ),
+        );
+        console.log(
+          chalk.dim(`  Supported frameworks: Next.js, Nuxt 3, React, Vue`),
+        );
+        console.log(
+          chalk.dim(
+            `  You can still use the SDK directly: https://docs.dyrected.com/docs/integrations/sdk\n`,
+          ),
+        );
         process.exit(0);
       }
 
       let framework: SupportedFramework;
       if (detection?.supported) {
         const labels: Record<SupportedFramework, string> = {
-          next: "Next.js", nuxt: "Nuxt 3", react: "React", vue: "Vue",
+          next: "Next.js",
+          nuxt: "Nuxt 3",
+          react: "React",
+          vue: "Vue",
         };
-        console.log(chalk.dim(`  Detected framework: ${labels[detection.framework]} — skipping prompt\n`));
+        console.log(
+          chalk.dim(
+            `  Detected framework: ${labels[detection.framework]} — skipping prompt\n`,
+          ),
+        );
         framework = detection.framework;
       } else {
         const answer = await prompts({
@@ -121,10 +152,12 @@ After running init:
       // ── 1. Install dependencies ────────────────────────────────────────────
       let deps: string;
       if (isSpa) {
-        const frameworkPkg = framework === "react" ? "@dyrected/react" : "@dyrected/vue";
+        const frameworkPkg =
+          framework === "react" ? "@dyrected/react" : "@dyrected/vue";
         deps = frameworkPkg;
       } else {
-        const frameworkPkg = framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
+        const frameworkPkg =
+          framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
         const dbPkg = `@dyrected/db-${db}`;
         const storagePkg = `@dyrected/storage-${storage}`;
         deps = [frameworkPkg, dbPkg, storagePkg].join(" ");
@@ -134,7 +167,9 @@ After running init:
       try {
         execSync(`${packageManager} add ${deps}`, { cwd, stdio: "inherit" });
       } catch {
-        console.log(chalk.yellow("\nCould not auto-install. Run the following manually:"));
+        console.log(
+          chalk.yellow("\nCould not auto-install. Run the following manually:"),
+        );
         console.log(chalk.cyan(`  ${packageManager} add ${deps}\n`));
       }
 
@@ -143,8 +178,19 @@ After running init:
         const dbPkg = `@dyrected/db-${db}`;
         const storagePkg = `@dyrected/storage-${storage}`;
         const dbImport = `import { ${db}Adapter } from '${dbPkg}'`;
-        const storageImport = `import { ${storage}Adapter } from '${storagePkg}'`;
-        const configContent = buildDyrectedConfig(dbImport, storageImport, buildDbConfig(db), buildStorageConfig(storage));
+        const storageFactory = {
+          local: "localStorage",
+          s3: "s3Storage",
+          b2: "b2Storage",
+          cloudinary: "cloudinaryStorage",
+        }[storage];
+        const storageImport = `import { ${storageFactory} } from '${storagePkg}'`;
+        const configContent = buildDyrectedConfig(
+          dbImport,
+          storageImport,
+          buildDbConfig(db),
+          buildStorageConfig(storage),
+        );
 
         const configPath = path.join(cwd, "dyrected.config.ts");
         if (await fs.pathExists(configPath)) {
@@ -178,7 +224,9 @@ After running init:
       }
 
       // ── 4. .env setup ──────────────────────────────────────────────────────
-      const envContent = isSpa ? buildViteEnvTemplate() : buildEnvTemplate(db, storage, framework);
+      const envContent = isSpa
+        ? buildViteEnvTemplate()
+        : buildEnvTemplate(db, storage, framework);
       const envExamplePath = path.join(cwd, ".env.example");
       await fs.outputFile(envExamplePath, envContent);
       console.log(chalk.green("✔  .env.example written"));
@@ -207,10 +255,14 @@ After running init:
               envPath,
               `\n# ── Dyrected CMS ──────────────────────────────────────────────────\n${missingVars}`,
             );
-            console.log(chalk.green("✔  .env file updated with missing variables"));
+            console.log(
+              chalk.green("✔  .env file updated with missing variables"),
+            );
           }
         } else {
-          console.log(chalk.dim("ℹ  .env already contains all required variables."));
+          console.log(
+            chalk.dim("ℹ  .env already contains all required variables."),
+          );
         }
       } else {
         const { createEnv } = await prompts({
@@ -225,36 +277,85 @@ After running init:
         }
       }
 
+      // ── AI rules ──────────────────────────────────────────────────────────
+      const aiRulesPath = path.join(cwd, ".dyrected", "ai-rules.md");
+      if (!(await fs.pathExists(aiRulesPath))) {
+        await fs.outputFile(aiRulesPath, buildAiRules());
+        console.log(chalk.green("✔  .dyrected/ai-rules.md created"));
+      }
+
+      const agentRulePointers = [
+        {
+          path: path.join(cwd, "AGENTS.md"),
+          content:
+            "# Project agent instructions\n\nRead and follow `.dyrected/ai-rules.md` for every Dyrected CMS task.\n",
+        },
+        {
+          path: path.join(cwd, "CLAUDE.md"),
+          content: "# Project instructions\n\n@.dyrected/ai-rules.md\n",
+        },
+        {
+          path: path.join(cwd, ".github", "copilot-instructions.md"),
+          content:
+            "# Copilot instructions\n\nRead and follow `.dyrected/ai-rules.md` for every Dyrected CMS task.\n",
+        },
+        {
+          path: path.join(cwd, ".cursor", "rules", "dyrected.mdc"),
+          content:
+            "---\ndescription: Dyrected CMS project rules\nalwaysApply: true\n---\n\nRead and follow `.dyrected/ai-rules.md` before changing Dyrected configuration or integration code.\n",
+        },
+      ];
+      for (const pointer of agentRulePointers) {
+        if (!(await fs.pathExists(pointer.path)))
+          await fs.outputFile(pointer.path, pointer.content);
+      }
+
       // ── Done ───────────────────────────────────────────────────────────────
       console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
       if (isSpa) {
-        console.log(chalk.cyan(`  1. Set VITE_DYRECTED_URL and VITE_DYRECTED_API_KEY in .env`));
-        console.log(chalk.cyan(`  2. Add a route for /${adminPath} in your router config`));
-        console.log(chalk.cyan("  3. Start your dev server and open the admin route\n"));
+        console.log(
+          chalk.cyan(
+            `  1. Set VITE_DYRECTED_URL and VITE_DYRECTED_API_KEY in .env`,
+          ),
+        );
+        console.log(
+          chalk.cyan(
+            `  2. Add a route for /${adminPath} in your router config`,
+          ),
+        );
+        console.log(
+          chalk.cyan("  3. Start your dev server and open the admin route\n"),
+        );
       } else {
-        console.log(chalk.cyan(`  1. Configure your environment variables in .env`));
-        console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
+        console.log(
+          chalk.cyan(`  1. Configure your environment variables in .env`),
+        );
+        console.log(
+          chalk.cyan(
+            `  2. Open http://localhost:3000/${adminPath} to start managing content.`,
+          ),
+        );
         console.log(chalk.cyan("  3. Run: npx @dyrected/cli generate:types\n"));
       }
 
-      if (!isSpa) {
-        const promptText = generateAIPrompt(framework as any, {
-          baseUrl: "http://localhost:3000",
-          isSelfHosted: true,
-        });
-        const promptPath = path.join(cwd, "dyrected-ai-prompt.md");
-        await fs.outputFile(promptPath, promptText);
-
-        console.log(chalk.bold.magenta("🤖 AI INTEGRATION PROMPT"));
-        console.log(chalk.cyan(`  Prompt saved to: ${chalk.bold("dyrected-ai-prompt.md")}`));
-        console.log(
-          chalk.dim("  Copy the contents of this file to your AI (Claude, GPT, etc.) to scaffold your CMS logic.\n"),
-        );
-      }
+      console.log(chalk.bold.magenta("🤖 Using Claude Code or Cursor?"));
+      console.log(
+        chalk.dim(
+          "  Install the Dyrected skill to give your AI agent full context:",
+        ),
+      );
+      console.log(
+        chalk.cyan("  npx skills add dyrected/agent-skills@dyrected\n"),
+      );
     });
 }
 
-function buildDyrectedConfig(dbImport: string, storageImport: string, dbConfig: string, storageConfig: string): string {
+function buildDyrectedConfig(
+  dbImport: string,
+  storageImport: string,
+  dbConfig: string,
+  storageConfig: string,
+): string {
   return `import { defineCollection, defineGlobal, defineConfig } from '@dyrected/core'
 ${dbImport}
 ${storageImport}

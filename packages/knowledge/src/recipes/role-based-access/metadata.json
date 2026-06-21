@@ -1,0 +1,9 @@
+{
+  "id": "role-based-access",
+  "title": "Restrict content operations by user role",
+  "description": "Allow public reads, editor writes, and administrator deletion with collection access rules.",
+  "category": "access-control",
+  "intents": ["only editors can update content", "restrict deletion to admins", "make content publicly readable", "add role based access"],
+  "concepts": ["access", "AuthenticatedUser", "roles"],
+  "requires": []
+}

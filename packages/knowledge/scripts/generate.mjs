@@ -1,0 +1,865 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import ts from "typescript";
+import jitiModule from "jiti";
+import { replaceGeneratedRegion } from "./hybrid-regions.mjs";
+
+const packageRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+const repositoryRoot = path.resolve(packageRoot, "../..");
+const recipesRoot = path.join(packageRoot, "src/recipes");
+const generatedRoot = path.join(packageRoot, "generated");
+const generatedSource = path.join(packageRoot, "src/generated/recipes.ts");
+const generatedReferencesSource = path.join(
+  packageRoot,
+  "src/generated/references.ts",
+);
+const generatedAiSource = path.join(packageRoot, "src/generated/ai.ts");
+const docsRoot = path.join(repositoryRoot, "apps/docs/content/docs/recipes");
+const allDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
+const docsPublicRoot = path.join(repositoryRoot, "apps/docs/public");
+const checkOnly = process.argv.includes("--check");
+const categories = new Set([
+  "content-modeling",
+  "data-lifecycle",
+  "admin-experience",
+  "access-control",
+  "workflows",
+  "integrations",
+]);
+
+function fail(message) {
+  console.error(`[knowledge] ${message}`);
+  process.exitCode = 1;
+}
+
+function validateMetadata(directory, metadata) {
+  const requiredStrings = ["id", "title", "description", "category"];
+  for (const key of requiredStrings) {
+    if (typeof metadata[key] !== "string" || metadata[key].trim() === "") {
+      throw new Error(`${directory}/metadata.json requires a non-empty ${key}`);
+    }
+  }
+  if (metadata.id !== directory)
+    throw new Error(`${directory}: metadata id must match its directory name`);
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(metadata.id))
+    throw new Error(`${directory}: recipe id must be stable kebab-case`);
+  if (!categories.has(metadata.category))
+    throw new Error(`${directory}: unsupported category ${metadata.category}`);
+  for (const key of ["intents", "concepts", "requires"]) {
+    if (
+      !Array.isArray(metadata[key]) ||
+      metadata[key].some((item) => typeof item !== "string")
+    ) {
+      throw new Error(
+        `${directory}/metadata.json requires a string array for ${key}`,
+      );
+    }
+  }
+  if (metadata.intents.length === 0)
+    throw new Error(
+      `${directory}: at least one plain-language intent is required`,
+    );
+  if (metadata.concepts.length === 0)
+    throw new Error(`${directory}: at least one Dyrected concept is required`);
+  if (!fs.existsSync(path.join(recipesRoot, directory, "recipe.test.ts")))
+    throw new Error(`${directory}: every recipe requires recipe.test.ts`);
+}
+
+function validateRecipeSource(directory, source) {
+  const file = ts.createSourceFile(
+    `${directory}/recipe.ts`,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const propertyName = (property) => {
+    if (!property.name) return undefined;
+    if (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) {
+      return property.name.text;
+    }
+    return undefined;
+  };
+
+  const visit = (node) => {
+    if (ts.isObjectLiteralExpression(node)) {
+      const properties = new Map(
+        node.properties.map((property) => [propertyName(property), property]),
+      );
+      if (
+        properties.has("name") &&
+        properties.has("type") &&
+        !properties.has("label")
+      ) {
+        const position = file.getLineAndCharacterOfPosition(
+          node.getStart(file),
+        );
+        throw new Error(
+          `${directory}/recipe.ts:${position.line + 1} every named Dyrected field must define an explicit label`,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(file);
+}
+
+function nodeDescription(node) {
+  return (node.jsDoc ?? [])
+    .map((doc) => (typeof doc.comment === "string" ? doc.comment : ""))
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function declarationName(node) {
+  return node.name &&
+    (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name))
+    ? node.name.text
+    : undefined;
+}
+
+function memberSignature(member, sourceFile) {
+  const name = declarationName(member) ?? "member";
+  if (ts.isMethodDeclaration(member) || ts.isMethodSignature(member)) {
+    const typeParameters = member.typeParameters?.length
+      ? `<${member.typeParameters.map((item) => item.getText(sourceFile)).join(", ")}>`
+      : "";
+    const parameters = member.parameters
+      .map((item) => item.getText(sourceFile))
+      .join(", ");
+    const returnType = member.type
+      ? `: ${member.type.getText(sourceFile)}`
+      : "";
+    return `${name}${typeParameters}(${parameters})${returnType}`;
+  }
+  return member.getText(sourceFile).replace(/;$/, "");
+}
+
+function isPublicMember(member) {
+  const modifiers = ts.canHaveModifiers(member)
+    ? ts.getModifiers(member)
+    : undefined;
+  return !modifiers?.some(
+    (modifier) =>
+      modifier.kind === ts.SyntaxKind.PrivateKeyword ||
+      modifier.kind === ts.SyntaxKind.ProtectedKeyword,
+  );
+}
+
+function extractReferences(sourcePath, options) {
+  const source = fs.readFileSync(sourcePath, "utf8");
+  const sourceFile = ts.createSourceFile(
+    sourcePath,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const references = [];
+
+  for (const node of sourceFile.statements) {
+    const modifiers = ts.canHaveModifiers(node)
+      ? ts.getModifiers(node)
+      : undefined;
+    if (
+      !modifiers?.some(
+        (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword,
+      )
+    )
+      continue;
+    const name = ts.isVariableStatement(node)
+      ? declarationName(node.declarationList.declarations[0])
+      : declarationName(node);
+    if (
+      !name ||
+      (options.names && !options.names.has(name)) ||
+      (options.matches && !options.matches(name))
+    )
+      continue;
+
+    let kind;
+    if (ts.isInterfaceDeclaration(node)) kind = "interface";
+    else if (ts.isTypeAliasDeclaration(node)) kind = "type";
+    else if (ts.isClassDeclaration(node)) kind = "class";
+    else if (ts.isFunctionDeclaration(node)) kind = "function";
+    else if (ts.isVariableStatement(node)) kind = "constant";
+    else continue;
+
+    const members =
+      "members" in node && node.members
+        ? [...node.members]
+            .filter(isPublicMember)
+            .map((member) => ({
+              name: declarationName(member) ?? "member",
+              signature: memberSignature(member, sourceFile),
+              description: nodeDescription(member),
+            }))
+            .filter((member) => member.name !== "member")
+        : [];
+    const raw = node.getText(sourceFile);
+    let signature = raw;
+    if (ts.isFunctionDeclaration(node) && node.body) {
+      signature = source
+        .slice(node.getStart(sourceFile), node.body.getStart(sourceFile))
+        .trim();
+    } else if (ts.isClassDeclaration(node)) {
+      const firstMember = node.members[0];
+      const headerEnd = firstMember
+        ? firstMember.getFullStart()
+        : node.end - 1;
+      signature = `${source
+        .slice(node.getStart(sourceFile), headerEnd)
+        .trim()}\n}`;
+    }
+    references.push({
+      id: `${options.sourcePackage}:${name}`,
+      name,
+      kind,
+      category: options.category,
+      sourcePackage: options.sourcePackage,
+      description: nodeDescription(node),
+      signature,
+      members,
+    });
+  }
+
+  return references;
+}
+
+function walkFiles(directory, extension) {
+  const files = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...walkFiles(target, extension));
+    else if (target.endsWith(extension)) files.push(target);
+  }
+  return files.sort();
+}
+
+function frontmatterValue(source, key) {
+  return (
+    source.match(new RegExp(`^${key}:\\s*["']?(.+?)["']?$`, "m"))?.[1] ?? ""
+  );
+}
+
+function outputFile(target, content) {
+  if (checkOnly) {
+    const current = fs.existsSync(target)
+      ? fs.readFileSync(target, "utf8")
+      : "";
+    if (current !== content)
+      fail(`Generated file is stale: ${path.relative(repositoryRoot, target)}`);
+    return;
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, content);
+}
+
+function outputGeneratedRegion(target, name, content) {
+  if (!fs.existsSync(target)) {
+    throw new Error(
+      `${path.relative(repositoryRoot, target)} must be created with authored content and ${name} markers before generation`,
+    );
+  }
+
+  const current = fs.readFileSync(target, "utf8");
+  let next;
+  try {
+    next = replaceGeneratedRegion(current, name, content);
+  } catch (error) {
+    throw new Error(
+      `${path.relative(repositoryRoot, target)}: ${error.message}`,
+    );
+  }
+  outputFile(target, next);
+}
+
+const directories = fs
+  .readdirSync(recipesRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
+
+const recipes = directories.map((directory) => {
+  const directoryPath = path.join(recipesRoot, directory);
+  const metadata = JSON.parse(
+    fs.readFileSync(path.join(directoryPath, "metadata.json"), "utf8"),
+  );
+  validateMetadata(directory, metadata);
+  const source = fs
+    .readFileSync(path.join(directoryPath, "recipe.ts"), "utf8")
+    .trimEnd();
+  validateRecipeSource(directory, source);
+  return { ...metadata, source, docsPath: `/docs/recipes/${metadata.id}` };
+});
+
+const ids = new Set();
+for (const recipe of recipes) {
+  if (ids.has(recipe.id)) throw new Error(`Duplicate recipe id: ${recipe.id}`);
+  ids.add(recipe.id);
+}
+
+const recipesJson = `${JSON.stringify(recipes, null, 2)}\n`;
+const intentIndex = Object.fromEntries(
+  recipes
+    .flatMap((recipe) =>
+      recipe.intents.map((intent) => [intent.toLowerCase(), recipe.id]),
+    )
+    .sort(([left], [right]) => left.localeCompare(right)),
+);
+
+outputFile(path.join(generatedRoot, "recipes.json"), recipesJson);
+outputFile(
+  path.join(generatedRoot, "intent-index.json"),
+  `${JSON.stringify(intentIndex, null, 2)}\n`,
+);
+outputFile(
+  generatedSource,
+  `/* Generated by scripts/generate.mjs. Do not edit manually. */\nimport type { Recipe } from "../types.js";\n\nexport const recipes: readonly Recipe[] = ${recipesJson.trim()};\n`,
+);
+
+const categoryLabels = {
+  "content-modeling": "Content modeling",
+  "data-lifecycle": "Data lifecycle",
+  "admin-experience": "Admin experience",
+  "access-control": "Access control",
+  workflows: "Workflows",
+  integrations: "Integrations",
+};
+
+for (const recipe of recipes) {
+  const intentList = recipe.intents.map((intent) => `- ${intent}`).join("\n");
+  const conceptList = recipe.concepts
+    .map((concept) => `\`${concept}\``)
+    .join(", ");
+  const requires =
+    recipe.requires.length > 0
+      ? recipe.requires.map((item) => `\`${item}\``).join(", ")
+      : "No additional packages.";
+  const generatedRecipe = `${recipe.description}
+
+## Use this when
+
+${intentList}
+
+## Dyrected concepts
+
+${conceptList}
+
+**Additional packages:** ${requires}
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by \`@dyrected/knowledge\`.
+
+\`\`\`ts
+${recipe.source}
+\`\`\``;
+  outputGeneratedRegion(
+    path.join(docsRoot, `${recipe.id}.mdx`),
+    "RECIPE",
+    generatedRecipe,
+  );
+}
+
+const groupedPages = [];
+for (const category of categories) {
+  const categoryRecipes = recipes.filter(
+    (recipe) => recipe.category === category,
+  );
+  if (categoryRecipes.length === 0) continue;
+  groupedPages.push(
+    `---${categoryLabels[category]}---`,
+    ...categoryRecipes.map((recipe) => recipe.id),
+  );
+}
+const coreTypesPath = path.join(
+  repositoryRoot,
+  "packages/core/src/types/index.ts",
+);
+const workflowPath = path.join(
+  repositoryRoot,
+  "packages/core/src/workflows.ts",
+);
+const sdkPath = path.join(repositoryRoot, "packages/sdk/src/index.ts");
+const configNames = new Set([
+  "DyrectedConfig",
+  "CollectionConfig",
+  "GlobalConfig",
+  "AdminConfig",
+  "UploadConfig",
+]);
+const fieldNames = new Set([
+  "Field",
+  "FieldType",
+  "FieldBase",
+  "InferDocShape",
+  "SystemDocFields",
+  "AuthDocFields",
+  "UploadDocFields",
+]);
+const adapterNames = new Set([
+  "DatabaseAdapter",
+  "ReadonlyDatabaseAdapter",
+  "PaginatedResult",
+  "StorageAdapter",
+  "FileData",
+  "ImageService",
+]);
+
+const references = [
+  ...extractReferences(coreTypesPath, {
+    category: "configuration",
+    sourcePackage: "@dyrected/core",
+    names: configNames,
+  }),
+  ...extractReferences(coreTypesPath, {
+    category: "fields",
+    sourcePackage: "@dyrected/core",
+    names: fieldNames,
+  }),
+  ...extractReferences(coreTypesPath, {
+    category: "hooks",
+    sourcePackage: "@dyrected/core",
+    matches: (name) => name.includes("Hook") || name === "AuthenticatedUser",
+  }),
+  ...extractReferences(coreTypesPath, {
+    category: "adapters",
+    sourcePackage: "@dyrected/core",
+    names: adapterNames,
+  }),
+  ...extractReferences(coreTypesPath, {
+    category: "workflows",
+    sourcePackage: "@dyrected/core",
+    matches: (name) =>
+      name.startsWith("Workflow") || name.startsWith("Lifecycle"),
+  }),
+  ...extractReferences(workflowPath, {
+    category: "workflows",
+    sourcePackage: "@dyrected/core",
+  }),
+  ...extractReferences(sdkPath, {
+    category: "sdk",
+    sourcePackage: "@dyrected/sdk",
+  }),
+].sort((left, right) => left.id.localeCompare(right.id));
+
+const jiti =
+  typeof jitiModule.createJiti === "function"
+    ? jitiModule.createJiti(import.meta.url, { interopDefault: true })
+    : jitiModule(import.meta.url, { interopDefault: true });
+const [{ generateOpenApi }, maximalConfigModule] = await Promise.all([
+  jiti.import(path.join(repositoryRoot, "packages/core/src/index.ts")),
+  jiti.import(path.join(packageRoot, "src/fixtures/maximal-config.ts")),
+]);
+const openapi = generateOpenApi(maximalConfigModule.default);
+const httpMethods = new Set([
+  "get",
+  "post",
+  "put",
+  "patch",
+  "delete",
+  "options",
+  "head",
+]);
+const endpoints = Object.entries(openapi.paths ?? {})
+  .flatMap(([endpointPath, pathItem]) =>
+    Object.entries(pathItem)
+      .filter(([method]) => httpMethods.has(method))
+      .map(([method, operation]) => ({
+        id: `${method.toUpperCase()} ${endpointPath}`,
+        method: method.toUpperCase(),
+        path: endpointPath,
+        summary: operation.summary ?? "",
+        tags: operation.tags ?? [],
+        authenticated:
+          operation.security === undefined
+            ? Array.isArray(openapi.security) && openapi.security.length > 0
+            : Array.isArray(operation.security) &&
+              operation.security.length > 0,
+        parameters: (operation.parameters ?? []).map((parameter) => ({
+          name: parameter.name,
+          in: parameter.in,
+          required: parameter.required === true,
+          ...(parameter.description
+            ? { description: parameter.description }
+            : {}),
+        })),
+        responses: Object.keys(operation.responses ?? {}).sort(),
+      })),
+  )
+  .sort(
+    (left, right) =>
+      left.path.localeCompare(right.path) ||
+      left.method.localeCompare(right.method),
+  );
+
+outputFile(
+  path.join(generatedRoot, "references.json"),
+  `${JSON.stringify(references, null, 2)}\n`,
+);
+outputFile(
+  path.join(generatedRoot, "endpoints.json"),
+  `${JSON.stringify(endpoints, null, 2)}\n`,
+);
+outputFile(
+  path.join(generatedRoot, "openapi.json"),
+  `${JSON.stringify(openapi, null, 2)}\n`,
+);
+outputFile(
+  generatedReferencesSource,
+  `/* Generated by scripts/generate.mjs. Do not edit manually. */\nimport type { EndpointReference, ReferenceEntry } from "../types.js";\n\nexport const references: readonly ReferenceEntry[] = ${JSON.stringify(references, null, 2)};\n\nexport const endpoints: readonly EndpointReference[] = ${JSON.stringify(endpoints, null, 2)};\n`,
+);
+
+function escapeTable(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("{", "&#123;")
+    .replaceAll("}", "&#125;")
+    .replaceAll("`", "&#96;")
+    .replaceAll("|", "&#124;")
+    .replaceAll("\n", " ");
+}
+
+function renderReferenceSections(entries) {
+  return entries
+    .map((entry) => {
+      const members = entry.members.length
+        ? `\n| Member | Signature | Description |\n| --- | --- | --- |\n${entry.members
+            .map(
+              (member) =>
+                `| <code>${escapeTable(member.name)}</code> | <code>${escapeTable(member.signature)}</code> | ${escapeTable(member.description)} |`,
+            )
+            .join("\n")}\n`
+        : "";
+      return `## ${entry.name}\n\n${entry.description || `Exported ${entry.kind} from ${entry.sourcePackage}.`}\n\n\`\`\`ts\n${entry.signature}\n\`\`\`\n${members}`;
+    })
+    .join("\n\n")
+    .trimEnd();
+}
+
+const referencePages = [
+  [
+    "reference/configuration.mdx",
+    "Configuration reference",
+    "Canonical configuration contracts exported by @dyrected/core.",
+    ["configuration"],
+  ],
+  [
+    "reference/fields.mdx",
+    "Field reference",
+    "Canonical field types, properties, and inferred document values.",
+    ["fields", "hooks"],
+  ],
+  [
+    "reference/sdk.mdx",
+    "SDK reference",
+    "Public classes, methods, options, and return contracts exported by @dyrected/sdk.",
+    ["sdk"],
+  ],
+  [
+    "adapters/databases.mdx",
+    "Database adapters",
+    "The database adapter contract and shared pagination shape.",
+    ["adapters"],
+  ],
+  [
+    "adapters/storage.mdx",
+    "Storage adapters",
+    "The storage adapter, file-data, and image-service contracts.",
+    ["adapters"],
+  ],
+  [
+    "reference/generated-workflows.mdx",
+    "Workflow reference",
+    "Workflow types, lifecycle events, helpers, and transition contracts.",
+    ["workflows"],
+  ],
+];
+for (const [
+  relativePath,
+  title,
+  description,
+  pageCategories,
+] of referencePages) {
+  let pageEntries = references.filter((entry) =>
+    pageCategories.includes(entry.category),
+  );
+  if (relativePath.includes("databases"))
+    pageEntries = pageEntries.filter(
+      (entry) =>
+        entry.name.includes("Database") || entry.name === "PaginatedResult",
+    );
+  if (relativePath.includes("storage"))
+    pageEntries = pageEntries.filter(
+      (entry) =>
+        !entry.name.includes("Database") && entry.name !== "PaginatedResult",
+    );
+  outputGeneratedRegion(
+    path.join(allDocsRoot, relativePath),
+    relativePath
+      .replace(/\.mdx$/, "")
+      .replaceAll("/", "-")
+      .toUpperCase(),
+    renderReferenceSections(pageEntries),
+  );
+}
+
+const endpointRows = endpoints
+  .map(
+    (endpoint) =>
+      `| ${endpoint.method} | \`${endpoint.path}\` | ${escapeTable(endpoint.summary)} | ${endpoint.authenticated ? "Required" : "Public"} |`,
+  )
+  .join("\n");
+const restInventory = `| Method | Path | Summary | Authentication |\n| --- | --- | --- | --- |\n${endpointRows}`;
+outputGeneratedRegion(
+  path.join(allDocsRoot, "reference/rest-api.mdx"),
+  "REFERENCE-REST-API",
+  restInventory,
+);
+outputGeneratedRegion(
+  path.join(allDocsRoot, "reference/openapi.mdx"),
+  "REFERENCE-OPENAPI",
+  `The representative document currently contains **${endpoints.length} operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.`,
+);
+outputFile(
+  path.join(docsPublicRoot, "openapi.json"),
+  `${JSON.stringify(openapi, null, 2)}\n`,
+);
+
+const recipeCards = recipes
+  .map(
+    (recipe) =>
+      `- [${recipe.title}](${recipe.docsPath}) — ${recipe.description}`,
+  )
+  .join("\n");
+outputGeneratedRegion(
+  path.join(docsRoot, "index.mdx"),
+  "RECIPE-INDEX",
+  recipeCards,
+);
+outputFile(
+  path.join(docsRoot, "meta.json"),
+  `${JSON.stringify({ title: "Recipes", pages: ["index", ...groupedPages] }, null, 2)}\n`,
+);
+
+function classifyFence(language, code, recipeSources) {
+  if (recipeSources.has(code.trim()))
+    return [
+      "compiled-recipe",
+      "Compiled and behavior-tested by @dyrected/knowledge",
+    ];
+  if (["json", "jsonc"].includes(language)) {
+    if (language === "json") {
+      try {
+        JSON.parse(code);
+        return ["parsed", "Parsed as JSON"];
+      } catch {
+        return [
+          "illustrative",
+          "Contains comments, placeholders, or partial JSON",
+        ];
+      }
+    }
+    return ["syntax-checked", "Classified as JSON with comments"];
+  }
+  if (
+    ["ts", "tsx", "js", "jsx", "typescript", "javascript"].includes(language)
+  ) {
+    const kind = language.includes("x")
+      ? ts.ScriptKind.TSX
+      : language.startsWith("j")
+        ? ts.ScriptKind.JS
+        : ts.ScriptKind.TS;
+    const parsed = ts.createSourceFile(
+      "example.ts",
+      code,
+      ts.ScriptTarget.Latest,
+      true,
+      kind,
+    );
+    return parsed.parseDiagnostics.length === 0 && !code.includes("...")
+      ? ["syntax-checked", "Parsed by the TypeScript compiler"]
+      : [
+          "illustrative",
+          "Contains placeholders or intentionally partial source",
+        ];
+  }
+  if (["bash", "sh", "shell", "dockerfile"].includes(language))
+    return [
+      "command",
+      "Command example; package and CLI names are inventoried",
+    ];
+  if (
+    ["vue", "svelte", "astro", "html", "css", "yaml", "yml", "sql"].includes(
+      language,
+    )
+  )
+    return ["syntax-checked", `Inventoried ${language || "text"} example`];
+  return ["illustrative", "Output, prose, or non-executable illustration"];
+}
+
+const inventory = [];
+const recipeSources = new Set(recipes.map((recipe) => recipe.source.trim()));
+for (const filename of walkFiles(allDocsRoot, ".mdx")) {
+  const source = fs.readFileSync(filename, "utf8");
+  const page = `/${path
+    .relative(allDocsRoot, filename)
+    .replace(/\\/g, "/")
+    .replace(/\.mdx$/, "")}`;
+  const fencePattern = /```([\w+-]*)[^\n]*\n([\s\S]*?)```/g;
+  let match;
+  let index = 0;
+  while ((match = fencePattern.exec(source))) {
+    const language = match[1].toLowerCase();
+    const [classification, validation] = classifyFence(
+      language,
+      match[2],
+      recipeSources,
+    );
+    inventory.push({
+      id: `${page}#example-${++index}`,
+      page,
+      language,
+      classification,
+      validation,
+    });
+  }
+}
+outputFile(
+  path.join(generatedRoot, "examples-inventory.json"),
+  `${JSON.stringify(inventory, null, 2)}\n`,
+);
+
+const fieldTypeSource =
+  references.find((entry) => entry.name === "FieldType")?.signature ?? "";
+const fieldTypes = [...fieldTypeSource.matchAll(/["']([^"']+)["']/g)].map(
+  (match) => match[1],
+);
+const intentLines = recipes.flatMap((recipe) =>
+  recipe.intents.map(
+    (intent) =>
+      `- “${intent}” → [${recipe.title}](https://docs.dyrected.com${recipe.docsPath})`,
+  ),
+);
+const generatedSections = {
+  FIELD_TYPES: fieldTypes.map((type) => `\`${type}\``).join(", "),
+  RECIPES: recipes
+    .map(
+      (recipe) =>
+        `- [${recipe.title}](https://docs.dyrected.com${recipe.docsPath}) — ${recipe.description}`,
+    )
+    .join("\n"),
+  INTENTS: intentLines.join("\n"),
+  REFERENCES: [
+    "- [Configuration](https://docs.dyrected.com/docs/reference/configuration)",
+    "- [Fields and hooks](https://docs.dyrected.com/docs/reference/fields)",
+    "- [Database adapters](https://docs.dyrected.com/docs/adapters/databases)",
+    "- [Storage adapters](https://docs.dyrected.com/docs/adapters/storage)",
+    "- [SDK](https://docs.dyrected.com/docs/reference/sdk)",
+    "- [Workflows](https://docs.dyrected.com/docs/reference/generated-workflows)",
+    "- [REST and OpenAPI](https://docs.dyrected.com/docs/reference/rest-api)",
+  ].join("\n"),
+};
+
+function renderHybridTemplate(templatePath) {
+  let rendered = fs.readFileSync(templatePath, "utf8").trimEnd();
+  for (const [name, content] of Object.entries(generatedSections)) {
+    try {
+      rendered = replaceGeneratedRegion(rendered, name, content);
+    } catch (error) {
+      throw new Error(
+        `${path.relative(repositoryRoot, templatePath)}: ${error.message}`,
+      );
+    }
+  }
+  return `${rendered}\n`;
+}
+
+const aiRules = renderHybridTemplate(
+  path.join(packageRoot, "src/templates/ai-rules.md"),
+);
+const skill = renderHybridTemplate(
+  path.join(packageRoot, "src/templates/SKILL.md"),
+);
+const llmsIndex = {
+  generatedBy: "@dyrected/knowledge",
+  recipes: recipes.map(({ id, title, description, docsPath, intents }) => ({
+    id,
+    title,
+    description,
+    docsPath,
+    intents,
+  })),
+  references: references.map(({ id, name, category, sourcePackage }) => ({
+    id,
+    name,
+    category,
+    sourcePackage,
+  })),
+  endpoints: endpoints.map(({ method, path, summary }) => ({
+    method,
+    path,
+    summary,
+  })),
+  fieldTypes,
+};
+outputFile(path.join(generatedRoot, "ai-rules.md"), aiRules);
+outputFile(path.join(generatedRoot, "SKILL.md"), skill);
+outputFile(
+  path.join(generatedRoot, "llms-index.json"),
+  `${JSON.stringify(llmsIndex, null, 2)}\n`,
+);
+outputFile(path.join(repositoryRoot, "skills/dyrected/SKILL.md"), skill);
+outputFile(
+  generatedAiSource,
+  `/* Generated by scripts/generate.mjs. Do not edit manually. */\nexport const AI_RULES = ${JSON.stringify(aiRules)};\nexport const SKILL = ${JSON.stringify(skill)};\nexport function buildAiRules(): string { return AI_RULES; }\n`,
+);
+
+const docEntries = walkFiles(allDocsRoot, ".mdx").map((filename) => {
+  const source = fs.readFileSync(filename, "utf8");
+  const relative = path
+    .relative(allDocsRoot, filename)
+    .replace(/\\/g, "/")
+    .replace(/\/index\.mdx$/, "")
+    .replace(/\.mdx$/, "");
+  return {
+    title: frontmatterValue(source, "title") || relative,
+    description: frontmatterValue(source, "description"),
+    url: `https://docs.dyrected.com/docs/${relative}`,
+    source,
+  };
+});
+const conciseDocs = docEntries
+  .map(
+    (entry) =>
+      `- [${entry.title}](${entry.url})${entry.description ? `: ${entry.description}` : ""}`,
+  )
+  .join("\n");
+outputFile(
+  docsPublicRoot + "/llms.txt",
+  `# Dyrected\n\nCanonical documentation map generated by @dyrected/knowledge.\n\n## Documentation\n\n${conciseDocs}\n\n## Intent-to-pattern index\n\n${intentLines.join("\n")}\n`,
+);
+const normalizeMdx = (source) =>
+  source
+    .replace(/^---[\s\S]*?---\s*/, "")
+    .replace(/^import .*$/gm, "")
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .trim();
+outputFile(
+  docsPublicRoot + "/llms-full.txt",
+  `# Dyrected complete documentation\n\n${docEntries.map((entry) => `## ${entry.title}\n\nCanonical URL: ${entry.url}\n\n${normalizeMdx(entry.source)}`).join("\n\n---\n\n")}\n`,
+);
+
+if (process.exitCode) process.exit(process.exitCode);
+if (!checkOnly)
+  console.log(
+    `[knowledge] Generated ${recipes.length} recipes, ${references.length} references, ${endpoints.length} endpoints, and ${inventory.length} example records.`,
+  );

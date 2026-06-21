@@ -1,4 +1,14 @@
-import type { CollectionConfig, DyrectedConfig, Field, GlobalConfig, InferDocShape, Prettify, SystemDocFields, AuthDocFields, UploadDocFields } from './types/index.js';
+import type {
+  CollectionConfig,
+  DyrectedConfig,
+  Field,
+  GlobalConfig,
+  InferDocShape,
+  Prettify,
+  SystemDocFields,
+  AuthDocFields,
+  UploadDocFields,
+} from "./types/index.js";
 
 /**
  * Define a collection. When called without an explicit type argument, TypeScript
@@ -31,16 +41,49 @@ import type { CollectionConfig, DyrectedConfig, Field, GlobalConfig, InferDocSha
  */
 // Overload 1: auth collection — infer fields + add system + auth fields
 export function defineCollection<const TFields extends Field[]>(
-  config: Omit<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>, 'fields' | 'auth'> & { fields: TFields; auth: true },
-): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>;
+  config: Omit<
+    CollectionConfig<
+      Prettify<
+        { id: string } & InferDocShape<TFields> &
+          SystemDocFields &
+          AuthDocFields
+      >
+    >,
+    "fields" | "auth"
+  > & { fields: TFields; auth: true },
+): CollectionConfig<
+  Prettify<
+    { id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields
+  >
+>;
 // Overload 2: upload/media collection — infer fields + add system + upload fields
 export function defineCollection<const TFields extends Field[]>(
-  config: Omit<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>, 'fields' | 'upload'> & { fields: TFields; upload: true },
-): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>;
+  config: Omit<
+    CollectionConfig<
+      Prettify<
+        { id: string } & InferDocShape<TFields> &
+          SystemDocFields &
+          UploadDocFields
+      >
+    >,
+    "fields" | "upload"
+  > & { fields: TFields; upload: true },
+): CollectionConfig<
+  Prettify<
+    { id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields
+  >
+>;
 // Overload 3: base collection — infer fields + add system fields
 export function defineCollection<const TFields extends Field[]>(
-  config: Omit<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>, 'fields'> & { fields: TFields },
-): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>;
+  config: Omit<
+    CollectionConfig<
+      Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>
+    >,
+    "fields"
+  > & { fields: TFields },
+): CollectionConfig<
+  Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>
+>;
 // Overload 4: explicit TDoc
 export function defineCollection<TDoc extends object>(
   config: CollectionConfig<TDoc>,
@@ -77,7 +120,9 @@ export function defineCollection(config: unknown): unknown {
  */
 // Overload 1: no explicit TDoc — infer from fields
 export function defineGlobal<const TFields extends Field[]>(
-  config: Omit<GlobalConfig<Prettify<InferDocShape<TFields>>>, 'fields'> & { fields: TFields },
+  config: Omit<GlobalConfig<Prettify<InferDocShape<TFields>>>, "fields"> & {
+    fields: TFields;
+  },
 ): GlobalConfig<Prettify<InferDocShape<TFields>>>;
 // Overload 2: explicit TDoc
 export function defineGlobal<TDoc extends object>(
@@ -99,10 +144,10 @@ export function defineConfig(config: DyrectedConfig): DyrectedConfig {
   return config;
 }
 
-export * from './types/index.js';
-export * from './utils/setup-prompt.js';
-export * from './utils/config.js';
-export * from './utils/parse-where.js';
-export * from './utils/parse-sort.js';
-export * from './utils/hooks.js';
-export * from './workflows.js';
+export * from "./types/index.js";
+export * from "./utils/config.js";
+export * from "./utils/parse-where.js";
+export * from "./utils/parse-sort.js";
+export * from "./utils/hooks.js";
+export * from "./utils/openapi.js";
+export * from "./workflows.js";

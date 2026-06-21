@@ -6,6 +6,7 @@ description: Get Dyrected running — choose Cloud for zero infrastructure or se
 ## Prerequisites
 
 Before you start, ensure you have:
+
 - [Node.js 18+](https://nodejs.org) installed
 - A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
@@ -33,6 +34,7 @@ npx @dyrected/cli init
 ```
 
 The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
+
 - Install `@dyrected/core`, `@dyrected/next`, and `@dyrected/db-sqlite`.
 - Create a `dyrected.config.ts`.
 - Detect your project layout (`src/` directory, App Router vs Pages Router) and write files in the right place.
@@ -61,6 +63,7 @@ npx @dyrected/cli init
 ```
 
 The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
+
 - Install dependencies and create `dyrected.config.ts`.
 - Detect whether you use an `app/` directory and write the admin page to the correct location (`app/pages/cms/index.vue` or `pages/cms/index.vue`).
 - Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
@@ -88,4 +91,4 @@ The CLI auto-detects your framework from `package.json`. Choose **SQLite** for l
 
 ---
 
-The `npx @dyrected/cli init` command will generate a specialized AI prompt tailored to your project. Paste it into Claude, Cursor, or ChatGPT to instantly scaffold your content model and frontend logic.
+The `npx @dyrected/cli init` command generates `.dyrected/ai-rules.md` plus non-destructive instruction pointers for supported AI coding tools. Commit these files so agents can translate plain-language requests—such as “make the URL follow the title”—into the correct Dyrected patterns automatically.

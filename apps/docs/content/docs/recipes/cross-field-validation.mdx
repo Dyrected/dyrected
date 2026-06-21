@@ -1,0 +1,82 @@
+---
+title: Validate Related Fields Before Saving
+description: Merge partial updates and reject invalid cross-field combinations.
+---
+
+Collection `beforeChange` hooks can validate the complete logical document even when an update contains only one changed field.
+
+{/* GENERATED:RECIPE:START */}
+Reject invalid combinations of field values before they reach the database.
+
+## Use this when
+
+- validate fields before saving
+- make sure an end date is after the start date
+- reject invalid form submissions
+- validate multiple fields together
+
+## Dyrected concepts
+
+`beforeChange`, `validation`, `throw to abort`
+
+**Additional packages:** No additional packages.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const Events = defineCollection({
+  slug: "events",
+  hooks: {
+    beforeChange: [
+      ({ data, doc }) => {
+        const startsAt = data.startsAt ?? doc?.startsAt;
+        const endsAt = data.endsAt ?? doc?.endsAt;
+
+        const start = startsAt ? new Date(startsAt) : undefined;
+        const end = endsAt ? new Date(endsAt) : undefined;
+
+        if (start && Number.isNaN(start.getTime())) {
+          throw new Error("The event start time must be a valid date.");
+        }
+        if (end && Number.isNaN(end.getTime())) {
+          throw new Error("The event end time must be a valid date.");
+        }
+        if (start && end && end <= start) {
+          throw new Error("The event end time must be after its start time.");
+        }
+
+        return data;
+      },
+    ],
+  },
+  fields: [
+    { name: "title", type: "text", label: "Title", required: true },
+    {
+      name: "startsAt",
+      type: "datetime",
+      label: "Starts at",
+      required: true,
+    },
+    {
+      name: "endsAt",
+      type: "datetime",
+      label: "Ends at",
+      required: true,
+    },
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}
+
+## Decisions and cautions
+
+- Merge incoming values with the existing document before comparing fields on partial updates.
+- Validate that parsed dates are valid before comparing them.
+- Return the original patch after validation; returning a merged document can accidentally overwrite concurrent values.
+- Use stable application error codes when clients need localized or field-specific messages.
+
+Use field validation when one value can be checked independently. Use a collection hook when correctness depends on siblings or the previous document.

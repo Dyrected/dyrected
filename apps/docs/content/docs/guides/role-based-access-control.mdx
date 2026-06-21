@@ -11,9 +11,10 @@ description: Restrict what different users can read, create, edit, and delete ba
   slug: 'users',
   auth: true,
   fields: [
-    { name: 'name', type: 'text', required: true },
+    { name: 'name', label: 'Name', type: 'text', required: true },
     {
       name: 'role',
+      label: 'Role',
       type: 'select',
       options: ['admin', 'editor', 'viewer'],
       defaultValue: 'viewer',
@@ -37,7 +38,7 @@ description: Restrict what different users can read, create, edit, and delete ba
   access: {
     read:   ({ user }) => !!user,
     create: () => false,                                    // use invite instead
-    update: ({ user, id }) => user?.role === 'admin' || user?.id === id,
+    update: ({ user, id }) => user?.role === 'admin' || user?.sub === id,
     delete: ({ user }) => user?.role === 'admin',
   },
 }
@@ -56,23 +57,23 @@ description: Restrict what different users can read, create, edit, and delete ba
     create: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
     update: ({ user, doc }) => {
       if (user?.role === 'admin') return true
-      return user?.role === 'editor' && doc?.createdBy === user?.id
+      return user?.role === 'editor' && doc?.createdBy === user?.sub
     },
     delete: ({ user }) => user?.role === 'admin',
   },
   hooks: {
     beforeChange: [
       ({ data, operation, user }) => {
-        if (operation === 'create') return { ...data, createdBy: user?.id }
+        if (operation === 'create') return { ...data, createdBy: user?.sub }
         return data
       },
     ],
   },
   fields: [
-    { name: 'title',     type: 'text' },
-    { name: 'content',   type: 'richtext' },
-    { name: 'status',    type: 'select', options: ['draft', 'published'], defaultValue: 'draft' },
-    { name: 'createdBy', type: 'relationship', relationTo: 'users' },
+    { name: 'title', label: 'Title',     type: 'text' },
+    { name: 'content', label: 'Content',   type: 'richtext' },
+    { name: 'status', label: 'Status',    type: 'select', options: ['draft', 'published'], defaultValue: 'draft' },
+    { name: 'createdBy', label: 'Created By', type: 'relationship', relationTo: 'users' },
   ],
 }
 ```

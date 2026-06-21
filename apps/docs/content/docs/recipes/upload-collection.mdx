@@ -1,0 +1,53 @@
+---
+title: Create a Media Upload Collection
+description: Validate uploads and store accessible editorial metadata.
+---
+
+An upload collection combines generated file metadata with fields your editors control.
+
+{/* GENERATED:RECIPE:START */}
+Enable file uploads and capture accessible metadata in a dedicated media collection.
+
+## Use this when
+
+- let editors upload images
+- create a media library
+- store uploaded files
+- add image uploads to my project
+
+## Dyrected concepts
+
+`upload`, `StorageAdapter`, `media`
+
+**Additional packages:** No additional packages.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const Media = defineCollection({
+  slug: "media",
+  upload: {
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+    maxFileSize: 10 * 1024 * 1024,
+  },
+  fields: [
+    { name: "alt", type: "text", label: "Alternative text", required: true },
+    { name: "caption", type: "textarea", label: "Caption" },
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}
+
+## Decisions and cautions
+
+- Use `allowedMimeTypes`, and validate file content at the trust boundary when uploads are untrusted.
+- Set a size limit that accounts for request infrastructure as well as application memory.
+- Require meaningful alternative text when images convey content; allow an explicit decorative policy when they do not.
+- Consume returned URLs instead of constructing storage paths.
+- Keep provider credentials and upload signing logic on the server.
+
+Use image sizes only when an image service is configured. Provider-native transformations may be a better fit when the storage provider owns delivery.

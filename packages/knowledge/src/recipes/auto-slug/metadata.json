@@ -1,0 +1,14 @@
+{
+  "id": "auto-slug",
+  "title": "Generate a slug from a title",
+  "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
+  "category": "data-lifecycle",
+  "intents": [
+    "make the URL follow the title",
+    "automatically generate a slug",
+    "create friendly URLs from titles",
+    "keep a slug synchronized with a title"
+  ],
+  "concepts": ["beforeChange", "admin.hooks.onChange", "promoted", "unique"],
+  "requires": []
+}

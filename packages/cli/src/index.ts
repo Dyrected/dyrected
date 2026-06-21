@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { registerInit } from "./commands/init.js";
 import { registerGenerateTypes } from "./commands/generate-types.js";
+import { registerGenerateAiRules } from "./commands/generate-ai-rules.js";
 import { registerSyncSchema } from "./commands/sync-schema.js";
 
 const program = new Command();
@@ -15,6 +16,7 @@ program
 Commands:
   init              Bootstrap Dyrected in your project (interactive)
   generate:types    Generate TypeScript types from your schema
+  generate:ai-rules Generate canonical instructions for AI coding tools
   sync:schema       Push your local schema to Dyrected Cloud
 
 Run \`npx @dyrected/cli <command> --help\` for detailed usage and examples.
@@ -23,6 +25,7 @@ Run \`npx @dyrected/cli <command> --help\` for detailed usage and examples.
 
 registerInit(program);
 registerGenerateTypes(program);
+registerGenerateAiRules(program);
 registerSyncSchema(program);
 
 program.parse();

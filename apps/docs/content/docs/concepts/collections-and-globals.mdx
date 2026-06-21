@@ -15,8 +15,8 @@ A collection is for content that has **more than one instance** — blog posts, 
 export const Posts = defineCollection({
   slug: 'posts',
   fields: [
-    { name: 'title',  type: 'text',   required: true },
-    { name: 'status', type: 'select', options: ['draft', 'published'] },
+    { name: 'title', label: 'Title',  type: 'text',   required: true },
+    { name: 'status', label: 'Status', type: 'select', options: ['draft', 'published'] },
   ],
 })
 ```
@@ -44,9 +44,9 @@ A global is for content that has **exactly one instance** — site settings, a n
 export const SiteSettings = defineGlobal({
   slug: 'site-settings',
   fields: [
-    { name: 'siteName',    type: 'text' },
-    { name: 'logoUrl',     type: 'url' },
-    { name: 'primaryColor', type: 'text' },
+    { name: 'siteName', label: 'Site Name',    type: 'text' },
+    { name: 'logoUrl', label: 'Logo Url',     type: 'url' },
+    { name: 'primaryColor', label: 'Primary Color', type: 'text' },
   ],
 })
 ```
@@ -123,3 +123,4 @@ The `slug` is the identifier used everywhere — in API paths, SDK calls, and th
 - [Access Control](/docs/concepts/access-control) — control who can read or write each collection
 - [Schema Definition](/docs/concepts/schema) — how collections map to your database and how migrations work
 - [Globals & Site Settings guide](/docs/guides/globals-and-site-settings) — a practical walkthrough
+

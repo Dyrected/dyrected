@@ -37,7 +37,7 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
     ],
   },
   fields: [
-    { name: 'alt', type: 'text' },
+    { name: 'alt', label: 'Alt', type: 'text' },
   ],
 }
 ```
@@ -130,8 +130,8 @@ const media = await $fetch('/dyrected/collections/media', {
 {
   slug: 'posts',
   fields: [
-    { name: 'title',      type: 'text' },
-    { name: 'coverImage', type: 'relationship', relationTo: 'media' },
+    { name: 'title', label: 'Title',      type: 'text' },
+    { name: 'coverImage', label: 'Cover Image', type: 'relationship', relationTo: 'media' },
   ],
 }
 ```
@@ -190,3 +190,4 @@ defineProps<{ post: any }>()
 > For Nuxt.js Image optimisation, use `<NuxtImg>` from `@nuxt/image` and add your storage domain to `image.domains` in `nuxt.config.ts`.
 </Tab>
 </Tabs>
+

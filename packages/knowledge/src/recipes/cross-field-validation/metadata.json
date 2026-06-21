@@ -1,0 +1,14 @@
+{
+  "id": "cross-field-validation",
+  "title": "Validate related fields before saving",
+  "description": "Reject invalid combinations of field values before they reach the database.",
+  "category": "data-lifecycle",
+  "intents": [
+    "validate fields before saving",
+    "make sure an end date is after the start date",
+    "reject invalid form submissions",
+    "validate multiple fields together"
+  ],
+  "concepts": ["beforeChange", "validation", "throw to abort"],
+  "requires": []
+}

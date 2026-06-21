@@ -17,14 +17,14 @@ export default defineConfig({
       slug: 'site-settings',
       label: 'Site Settings',
       fields: [
-        { name: 'siteName',  type: 'text',         required: true },
-        { name: 'tagline',   type: 'text' },
-        { name: 'logo',      type: 'relationship',  relationTo: 'media' },
-        { name: 'favicon',   type: 'relationship',  relationTo: 'media' },
-        { name: 'seoDefault', type: 'object', fields: [
-          { name: 'title',       type: 'text' },
-          { name: 'description', type: 'textarea' },
-          { name: 'ogImage',     type: 'relationship', relationTo: 'media' },
+        { name: 'siteName', label: 'Site Name',  type: 'text',         required: true },
+        { name: 'tagline', label: 'Tagline',   type: 'text' },
+        { name: 'logo', label: 'Logo',      type: 'relationship',  relationTo: 'media' },
+        { name: 'favicon', label: 'Favicon',   type: 'relationship',  relationTo: 'media' },
+        { name: 'seoDefault', label: 'Seo Default', type: 'object', fields: [
+          { name: 'title', label: 'Title',       type: 'text' },
+          { name: 'description', label: 'Description', type: 'textarea' },
+          { name: 'ogImage', label: 'Og Image',     type: 'relationship', relationTo: 'media' },
         ]},
       ],
     },
@@ -34,10 +34,11 @@ export default defineConfig({
       fields: [
         {
           name: 'items',
+          label: 'Items',
           type: 'array',
           fields: [
-            { name: 'label', type: 'text', required: true },
-            { name: 'url',   type: 'text', required: true },
+            { name: 'label', label: 'Label', type: 'text', required: true },
+            { name: 'url', label: 'Url',   type: 'text', required: true },
           ],
         },
       ],
@@ -191,3 +192,4 @@ Content-Type: application/json
 | `footer` | Columns, social links, legal copy |
 | `announcement` | Banner message, enabled toggle, CTA link |
 | `theme` | Accent colour, font choice, dark mode default |
+

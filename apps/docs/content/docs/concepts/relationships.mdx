@@ -15,8 +15,8 @@ A `relationship` field stores the `id` of a document in another collection. It i
 export const Posts = defineCollection({
   slug: 'posts',
   fields: [
-    { name: 'title',  type: 'text' },
-    { name: 'author', type: 'relationship', relationTo: 'users' },
+    { name: 'title', label: 'Title',  type: 'text' },
+    { name: 'author', label: 'Author', type: 'relationship', relationTo: 'users' },
   ],
 })
 ```
@@ -43,9 +43,10 @@ export const Users = defineCollection({
   slug: 'users',
   auth: true,
   fields: [
-    { name: 'name', type: 'text' },
+    { name: 'name', label: 'Name', type: 'text' },
     {
       name: 'posts',
+      label: 'Posts',
       type: 'join',
       collection: 'posts',  // the collection to look in
       on: 'author',         // the relationship field on that collection
@@ -138,3 +139,4 @@ For a full explanation of depth behaviour see [Understanding Depth](/docs/concep
 // categories collection
 { name: 'products', type: 'join', collection: 'products', on: 'category', limit: 50 }
 ```
+

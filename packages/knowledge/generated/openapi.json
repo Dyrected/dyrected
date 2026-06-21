@@ -1,0 +1,1643 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Dyrected API",
+    "version": "1.0.0",
+    "description": "Automatically generated OpenAPI specification for the Dyrected project."
+  },
+  "components": {
+    "schemas": {
+      "WorkflowMetadata": {
+        "type": "object",
+        "required": [
+          "state",
+          "revision"
+        ],
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "publishedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedBy": {
+            "type": "string"
+          },
+          "availableTransitions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "WorkflowTransitionRequest": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkflowHistoryEntry": {
+        "type": "object",
+        "required": [
+          "collection",
+          "documentId",
+          "transition",
+          "from",
+          "to",
+          "revision",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "transition": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "actorId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      },
+      "AuthCredentials": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "user": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "users": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "media": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "alt": {
+            "type": "string",
+            "description": "Alternative text"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "posts": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "_workflow": {
+            "$ref": "#/components/schemas/WorkflowMetadata"
+          },
+          "title": {
+            "type": "string",
+            "description": "Title"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Published at"
+          },
+          "author": {
+            "type": "string",
+            "description": "Author"
+          },
+          "hero": {
+            "type": "string",
+            "description": "Hero image"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ]
+      },
+      "settings": {
+        "type": "object",
+        "properties": {
+          "siteName": {
+            "type": "string",
+            "description": "Site name"
+          }
+        },
+        "required": [
+          "siteName"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    }
+  },
+  "paths": {
+    "/api/schemas": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get the serialized Dyrected schema",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Collection and global schema definitions"
+          }
+        }
+      }
+    },
+    "/api/openapi.json": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Get the OpenAPI specification",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.0 document"
+          }
+        }
+      }
+    },
+    "/api/docs": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Open interactive API documentation",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Swagger UI HTML"
+          }
+        }
+      }
+    },
+    "/api/dyrected/options/{collection}/{field}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Resolve dynamic field options",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "field",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved option items"
+          }
+        }
+      }
+    },
+    "/api/preferences/{key}": {
+      "get": {
+        "tags": [
+          "Preferences"
+        ],
+        "summary": "Get an authenticated user preference",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preference value"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Preferences"
+        ],
+        "summary": "Set an authenticated user preference",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated preference"
+          }
+        }
+      }
+    },
+    "/api/preview-token": {
+      "post": {
+        "tags": [
+          "Preview"
+        ],
+        "summary": "Create a preview token",
+        "responses": {
+          "200": {
+            "description": "Short-lived preview token"
+          }
+        }
+      }
+    },
+    "/api/preview-data": {
+      "get": {
+        "tags": [
+          "Preview"
+        ],
+        "summary": "Resolve preview data from a token",
+        "security": [],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preview document data"
+          }
+        }
+      }
+    },
+    "/api/collections/users": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Find Users",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON filter"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort field (e.g. -createdAt)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/users"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Create User",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collections/users/{id}": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Get a single User",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Update User",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Delete User",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/api/collections/users/delete-many": {
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Delete multiple Users",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted and failed document IDs"
+          }
+        }
+      }
+    },
+    "/api/collections/users/seed": {
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Seed initial Users",
+        "responses": {
+          "200": {
+            "description": "Seeded documents"
+          }
+        }
+      }
+    },
+    "/api/collections/users/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Log in to Users",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthCredentials"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/api/collections/users/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Log out of Users",
+        "responses": {
+          "200": {
+            "description": "Logged out"
+          }
+        }
+      }
+    },
+    "/api/collections/users/init": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get Users initialization state",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Initialization state"
+          }
+        }
+      }
+    },
+    "/api/collections/users/first-user": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Register the first User",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/api/collections/users/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Get the current User",
+        "responses": {
+          "200": {
+            "description": "Authenticated user"
+          }
+        }
+      }
+    },
+    "/api/collections/users/refresh-token": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Refresh an authentication token",
+        "responses": {
+          "200": {
+            "description": "Refreshed token"
+          }
+        }
+      }
+    },
+    "/api/collections/users/forgot-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Request a password reset",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/api/collections/users/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Reset a password",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/api/collections/users/invite": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Invite a User",
+        "responses": {
+          "200": {
+            "description": "Invitation sent"
+          }
+        }
+      }
+    },
+    "/api/collections/users/accept-invite": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Accept an invitation",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/api/collections/users/{id}/change-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Change a User password",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password changed"
+          }
+        }
+      }
+    },
+    "/api/collections/media": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Find Media",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON filter"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort field (e.g. -createdAt)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/media"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Create Media item",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/media"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/media"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collections/media/{id}": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Get a single Media item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/media"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Update Media item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/media"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/media"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Delete Media item",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/api/collections/media/delete-many": {
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Delete multiple Media",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted and failed document IDs"
+          }
+        }
+      }
+    },
+    "/api/collections/media/seed": {
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Seed initial Media",
+        "responses": {
+          "200": {
+            "description": "Seeded documents"
+          }
+        }
+      }
+    },
+    "/api/collections/media/media": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "List Media",
+        "responses": {
+          "200": {
+            "description": "Paginated media documents"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Upload Media item",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Uploaded media document"
+          }
+        }
+      }
+    },
+    "/api/collections/media/media/{filename}": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Serve Media item bytes",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Stored file"
+          },
+          "404": {
+            "description": "File not found"
+          }
+        }
+      }
+    },
+    "/api/collections/posts": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Find Posts",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON filter"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Sort field (e.g. -createdAt)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/posts"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Create Post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/posts"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/posts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/collections/posts/{id}": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Get a single Post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/posts"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Update Post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/posts"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/posts"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Delete Post",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/api/collections/posts/delete-many": {
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Delete multiple Posts",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ids"
+                ],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted and failed document IDs"
+          }
+        }
+      }
+    },
+    "/api/collections/posts/seed": {
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Seed initial Posts",
+        "responses": {
+          "200": {
+            "description": "Seeded documents"
+          }
+        }
+      }
+    },
+    "/api/collections/posts/{id}/transitions/{transition}": {
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Transition Post workflow",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transition",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "submit",
+                "publish",
+                "reject",
+                "unpublish"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowTransitionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transition applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/posts"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Required transition input is missing"
+          },
+          "403": {
+            "description": "Transition capability denied"
+          },
+          "409": {
+            "description": "Invalid state or stale revision"
+          }
+        }
+      }
+    },
+    "/api/collections/posts/{id}/workflow-history": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Get Post workflow history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow transition history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/WorkflowHistoryEntry"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Collection read access denied"
+          }
+        }
+      }
+    },
+    "/api/globals/settings": {
+      "get": {
+        "tags": [
+          "Globals"
+        ],
+        "summary": "Get Site settings",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Globals"
+        ],
+        "summary": "Update Site settings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/settings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/settings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/globals/settings/seed": {
+      "post": {
+        "tags": [
+          "Globals"
+        ],
+        "summary": "Seed Site settings",
+        "responses": {
+          "200": {
+            "description": "Seeded global"
+          }
+        }
+      }
+    },
+    "/api/media/{filename}": {
+      "get": {
+        "tags": [
+          "Media"
+        ],
+        "summary": "Serve a stored file",
+        "security": [],
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored file bytes"
+          },
+          "404": {
+            "description": "File not found"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ]
+}

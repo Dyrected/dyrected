@@ -36,7 +36,7 @@ export const Posts = defineCollection({
   access: {
     read:   ({ user, doc }) => doc?.status === 'published' || !!user,
     create: ({ user }) => ['editor', 'admin'].includes(user?.role),
-    update: ({ user, doc }) => user?.id === doc?.authorId || user?.role === 'admin',
+    update: ({ user, doc }) => user?.sub === doc?.authorId || user?.role === 'admin',
     delete: ({ user }) => user?.role === 'admin',
   },
   fields: [...],
@@ -71,7 +71,7 @@ access: {
   read: ({ user }) => {
     if (!user) return false
     if (user.role === 'admin') return true
-    return { customer: user.id }   // adds WHERE customer = user.id
+    return { customer: user.sub }   // adds WHERE customer = user.sub
   }
 }
 ```
@@ -86,7 +86,7 @@ Access functions can be `async` — useful for lookups:
 access: {
   update: async ({ user, doc }) => {
     const org = await db.findOne({ collection: 'orgs', id: doc.orgId })
-    return org?.members.includes(user?.id)
+    return org?.members.includes(user?.sub)
   }
 }
 ```
@@ -145,7 +145,7 @@ Each access key accepts either a **JavaScript function** or a **Jexl expression 
 ```ts
 access: {
   // Function — full JS, async-capable, can return a where filter
-  update: ({ user, doc }) => user?.role === 'admin' || user?.id === doc?.authorId,
+  update: ({ user, doc }) => user?.role === 'admin' || user?.sub === doc?.authorId,
 
   // Jexl string — serialisable, storable in a database, works in Cloud schemas
   delete: "user.role == 'admin'",
@@ -176,7 +176,7 @@ export const Posts = defineCollection({
   access: {
     read:   ({ user, doc }) => doc?.status === 'published' || !!user,
     create: ({ user }) => !!user,
-    update: ({ user, doc }) => user?.role === 'admin' || user?.id === doc?.authorId,
+    update: ({ user, doc }) => user?.role === 'admin' || user?.sub === doc?.authorId,
     delete: ({ user }) => user?.role === 'admin',
   },
   fields: [...],
@@ -188,7 +188,7 @@ export const Posts = defineCollection({
   access: {
     read:   "doc.status == 'published' || user != null",
     create: 'user != null',
-    update: "user.role == 'admin' || user.id == doc.authorId",
+    update: "user.role == 'admin' || user.sub == doc.authorId",
     delete: "user.role == 'admin'",
   },
   fields: [...],
@@ -224,9 +224,9 @@ export const Inquiries = defineCollection({
     delete: ({ user }) => user?.role === 'admin',
   },
   fields: [
-    { name: 'name',    type: 'text',  required: true },
-    { name: 'email',   type: 'email', required: true },
-    { name: 'message', type: 'textarea' },
+    { name: 'name', label: 'Name',    type: 'text',  required: true },
+    { name: 'email', label: 'Email',   type: 'email', required: true },
+    { name: 'message', label: 'Message', type: 'textarea' },
   ],
 })
 ```
@@ -244,7 +244,7 @@ export const Orders = defineCollection({
     read: ({ user }) => {
       if (!user) return false
       if (user.role === 'admin') return true
-      return { customer: { equals: user.id } }  // row-level filter
+      return { customer: { equals: user.sub } }  // row-level filter
     },
     create: ({ user }) => !!user,
     update: ({ user }) => user?.role === 'admin',
@@ -303,7 +303,7 @@ export const Members = defineCollection({
   access: {
     read:   () => true,
     create: ({ user }) => user?.role === 'admin',
-    update: ({ user, doc }) => user?.role === 'admin' || user?.id === doc?.id,
+    update: ({ user, doc }) => user?.role === 'admin' || user?.sub === doc?.id,
     delete: () => false,
   },
   fields: [...],

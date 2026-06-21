@@ -31,8 +31,8 @@ const posts = defineCollection({
   slug: 'posts',
   audit: true,
   fields: [
-    { name: 'title', type: 'text' },
-    { name: 'body',  type: 'richText' },
+    { name: 'title', label: 'Title', type: 'text' },
+    { name: 'body', label: 'Body',  type: 'richText' },
   ],
 })
 ```
@@ -98,3 +98,4 @@ const logs = await client.collection('__audit').find({
 - Audit logging never blocks the primary write. If logging fails, the error is recorded to the server console but the original request succeeds.
 - The `__audit` collection is hidden in the Admin UI sidebar by default. Surface it by referencing the slug explicitly in your config with `admin: { hidden: false }`.
 - Diffs are computed as a shallow comparison. Nested objects are compared by JSON serialisation.
+

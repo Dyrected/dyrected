@@ -70,3 +70,21 @@ Both modes use the same `dyrected.config.ts`. You can migrate from self-hosted t
 **I want to add a blog to an existing Next.js app** → [Building a Blog](/docs/guides/building-a-blog)
 
 **I just need to know what API endpoints exist** → [REST API Reference](/docs/reference/rest-api)
+
+---
+
+## Using Dyrected with AI coding tools
+
+Dyrected is designed to work well with AI coding agents. Because your entire CMS — collections, fields, hooks, access rules — lives in a single TypeScript file, any agent can read it, reason about it, and modify it.
+
+**`.dyrected/ai-rules.md`** is generated automatically when you run `npx @dyrected/cli init`. It teaches any AI agent in your workspace (Claude, Cursor, Windsurf, Copilot) how to work correctly with Dyrected — the DO NOTs, schema evolution rules, and a plain-language intent-to-pattern reference.
+
+**The Dyrected Claude Code skill** loads the same knowledge on demand in any session:
+
+```bash
+npx skills add dyrected/agent-skills@dyrected
+```
+
+Then use `/dyrected` at the start of any task. The skill covers setup, content modeling, hooks, access control, relationships, uploads, workflows, and more — all from plain-language descriptions, without needing to know Dyrected's terminology.
+
+→ [Using Dyrected with AI Coding Tools](/docs/guides/ai-integration)

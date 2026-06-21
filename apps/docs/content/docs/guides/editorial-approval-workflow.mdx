@@ -21,8 +21,8 @@ export const Posts = defineCollection({
   slug: "posts",
   workflow: publishingWorkflow(),
   fields: [
-    { name: "title", type: "text", required: true },
-    { name: "body", type: "richText" },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "body", label: "Body", type: "richText" },
   ]
 })
 ```
@@ -49,3 +49,4 @@ const doc = await client.collection('posts').transition(postId, 'reject', {
   comment: 'Needs better images.'
 })
 ```
+

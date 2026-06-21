@@ -18,8 +18,8 @@ const admins = defineCollection({
   slug: '__admins',
   auth: true,
   fields: [
-    { name: 'name', type: 'text' },
-    { name: 'roles', type: 'multiSelect', options: ['admin', 'editor'] },
+    { name: 'name', label: 'Name', type: 'text' },
+    { name: 'roles', label: 'Roles', type: 'multiSelect', options: ['admin', 'editor'] },
   ],
 })
 ```
@@ -81,3 +81,4 @@ const admins = defineCollection({ slug: '__admins', auth: true, fields: [...] })
 Restart your server. The Admin UI will authenticate against the existing records in `collection___admins`.
 
 > **Warning:** If you restart before renaming the table, Dyrected will create a new empty `collection___admins` table and prompt you to create a first user. Your old data will still exist in `collection_users` but will be inaccessible to the admin system.
+

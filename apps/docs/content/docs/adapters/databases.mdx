@@ -1,209 +1,254 @@
 ---
 title: Database Adapters
-description: Connect Dyrected to your preferred database.
+description: Choose, configure, migrate, and extend Dyrected database adapters.
 ---
 
-Dyrected is database-agnostic. Choose the adapter that fits your infrastructure and pass it to `defineConfig` as `db`. All adapters implement the same `DatabaseAdapter` interface, so your application code never changes when you switch.
+Dyrected is database-agnostic. Choose the adapter that matches your deployment and pass it to `defineConfig` as `db`. Application code talks to the shared `DatabaseAdapter` contract, so database-specific concerns stay at the infrastructure boundary.
 
-> **On Dyrected Cloud, no database adapter is needed.** The database is fully managed — just omit the `db` field from your config and run `dyrected push`. [Learn more →](/docs/deployment/cloud)
+> **Dyrected Cloud manages the database.** Cloud projects normally omit `db` and synchronize their configuration through the Cloud workflow. See [Cloud Deployment](/docs/deployment/cloud).
 
----
+## Supported adapters
 
-## Supported Adapters
-
-### PostgreSQL — `@dyrected/db-postgres` (Recommended)
-
-Best choice for production. Uses `postgres` (node-postgres) under the hood with full JSONB support.
+### PostgreSQL — `@dyrected/db-postgres` (recommended for most production deployments)
 
 ```ts
 import { PostgresAdapter } from '@dyrected/db-postgres'
 
 export default defineConfig({
-  db: new PostgresAdapter({
-    url: process.env.DATABASE_URL,  // postgresql://user:pass@host:5432/db
-  }),
+  db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
 })
 ```
 
-**Connection pool config:**
-
-```ts
-new PostgresAdapter({
-  url: process.env.DATABASE_URL,
-  max: 10,       // maximum pool size (default: 10)
-  idle: 20_000,  // ms before an idle connection is closed (default: 20s)
-  connect: 30,   // connection timeout in seconds (default: 30)
-})
-```
-
-> **Vercel / serverless:** Set `max: 1` to avoid exhausting the connection pool across short-lived function instances.
-
----
+The current public adapter configuration accepts the connection `url`. Tune external poolers and hosting limits according to your provider; do not copy undocumented constructor options from older examples.
 
 ### SQLite — `@dyrected/db-sqlite`
 
-Great for local development, single-server deployments, and edge environments. Uses `better-sqlite3`.
+SQLite is convenient for local development and persistent single-server deployments.
 
 ```ts
 import { SqliteAdapter } from '@dyrected/db-sqlite'
 
 export default defineConfig({
-  db: new SqliteAdapter({
-    filename: 'dyrected.db',   // path to the SQLite file
-  }),
+  db: new SqliteAdapter({ filename: './dyrected.db' }),
+  collections: [],
+  globals: [],
 })
 ```
 
-> **Note:** SQLite is not suitable for serverless deployments (Vercel, Cloudflare Workers) because the filesystem is ephemeral. Use PostgreSQL instead.
-
----
+Do not place a local SQLite file on an ephemeral serverless filesystem. Use a durable database service for horizontally scaled or short-lived runtimes.
 
 ### MongoDB — `@dyrected/db-mongodb`
-
-For document-based workloads. Uses the official MongoDB Node.js driver.
 
 ```ts
 import { MongoAdapter } from '@dyrected/db-mongodb'
 
 export default defineConfig({
   db: new MongoAdapter({
-    url: process.env.MONGODB_URI,  // mongodb+srv://...
+    url: process.env.MONGODB_URI!,
+    dbName: process.env.MONGODB_DATABASE!,
   }),
+  collections: [],
+  globals: [],
 })
 ```
 
----
+MongoDB is schema-flexible, but content-contract migrations still matter: renamed fields, defaults, access rules, and application expectations must remain compatible with existing documents.
 
 ### MySQL — `@dyrected/db-mysql`
- 
-Best for massive scale and high-concurrency workloads. Supports standard MySQL and PlanetScale (using `mysql2`).
- 
+
 ```ts
 import { MysqlAdapter } from '@dyrected/db-mysql'
- 
+
 export default defineConfig({
-  db: new MysqlAdapter({
-    url: process.env.DATABASE_URL,  // mysql://user:pass@host:3306/db
-  }),
+  db: new MysqlAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
 })
 ```
 
-**Connection options:**
+The adapter also accepts individual connection properties. Prefer an environment-provided URL when your hosting provider rotates credentials or manages connection details.
 
-```ts
-new MysqlAdapter({
-  host: 'localhost',
-  user: 'root',
-  password: '...',
-  database: 'test',
-  // Or use a URL
-  url: 'mysql://...', 
-})
-```
+## Schema synchronization
 
-> **Performance:** The MySQL adapter automatically uses connection pooling via `mysql2/promise`, making it ideal for multi-tenant CMS environments.
+Relational adapters create missing collection tables and may add promoted columns. Schema synchronization is designed to preserve document data, but it is not equivalent to “no schema changes”: promoting a field can issue `ALTER TABLE` statements.
 
----
+Before a production schema change:
 
-## Schema sync
+1. Back up the database according to the provider's recovery procedure.
+2. Review new unique constraints and promoted-field types against existing values.
+3. Run synchronization in a staging environment with production-like data.
+4. Deploy code that can read both old and new shapes during a rolling migration.
 
-On startup, Dyrected calls `db.sync()` to ensure the required tables or collections exist. This is non-destructive — it creates missing tables but never drops or alters existing columns.
+MongoDB does not need relational column creation, but application-level migration rules still apply.
 
-```ts
-// Called automatically by createDyrectedApp(). No manual call needed.
-await config.db.sync(config.collections, config.globals)
-```
+## Field renames and promotion
 
-> **Production note:** `sync()` is safe to run on every deploy. It is equivalent to `CREATE TABLE IF NOT EXISTS` — no data is ever lost.
-
----
-
-## Database Migrations
-
-Dyrected uses a "Schema-Flexible" approach. Because data is stored in JSON columns, you can add new fields to your `defineCollection` config without ever running a SQL migration. New fields will simply appear as `null` for old documents and work perfectly for new ones.
-
-However, for production systems, you may eventually need to rename fields or optimize performance. Dyrected provides built-in "Lazy Migrations":
-
-### 1. Renaming Fields (`renameTo`)
-When you rename a field in your config, Dyrected can automatically migrate data from the old key on-the-fly.
+Use `renameTo` as the old storage key while the current `name` is the new key:
 
 ```ts
 {
   name: 'fullName',
   type: 'text',
-  renameTo: 'name', // If 'fullName' is missing, it reads from 'name'
+  label: 'Full name',
+  renameTo: 'name',
+  defaultValue: '',
 }
 ```
 
-### 2. Field Promotion (`promoted`)
-If a field becomes critical for performance (e.g., needs a high-speed native index or a unique constraint), you can "promote" it to a real SQL column.
+Keep the fallback until production documents have been migrated and verified. Removing it early can make old values appear missing.
+
+Use `promoted: true` for fields that require efficient filtering, sorting, or relational constraints—not as a default for every field:
 
 ```ts
 {
   name: 'slug',
   type: 'text',
+  label: 'Slug',
   unique: true,
-  promoted: true, // Dyrected will extract this to a dedicated column
+  promoted: true,
 }
 ```
 
-> **Note:** Promoted fields require a one-time SQL migration to create the column. Once created, Dyrected handles the extraction automatically.
+## Writing a custom adapter
 
----
+Implement the generated contract below and import its types from `@dyrected/core`. Workflow transitions rely on atomic transactions; an adapter intended to support workflows should implement `transaction` correctly rather than emulating it with independent writes.
 
-## `DatabaseAdapter` interface
+Use parameterized queries, validate identifiers derived from collection slugs, and return the shared pagination envelope. Contract tests live in `@dyrected/adapter-contract-tests` and should be run against custom implementations.
 
-Implement this interface to support any database. All methods are async.
+## Generated database contracts
+
+{/* GENERATED:ADAPTERS-DATABASES:START */}
+## DatabaseAdapter
+
+The interface every database adapter must implement.
+
+Dyrected ships adapters for PostgreSQL, MySQL, SQLite, and MongoDB.
+Implement this interface to connect any other database.
 
 ```ts
-import type { DatabaseAdapter, PaginatedResult } from '@dyrected/core'
+export interface DatabaseAdapter {
+  /** Find a paginated list of documents in a collection. */
+  find(args: {
+    collection: string;
+    where?: Record<string, unknown>;
+    limit?: number;
+    page?: number;
+    sort?: string;
+  }): Promise<PaginatedResult>;
 
-class MyCustomAdapter implements DatabaseAdapter {
-  // Required: list documents
-  async find(args: {
-    collection: string
-    where?: Record<string, any>
-    limit?: number
-    page?: number
-    sort?: string
-  }): Promise<PaginatedResult> { ... }
+  /** Find a single document by its ID. Returns `null` if not found. */
+  findOne(args: {
+    collection: string;
+    id: string;
+  }): Promise<BaseDocument | null>;
 
-  // Required: single document by ID
-  async findOne(args: { collection: string; id: string }): Promise<any> { ... }
+  /** Insert a new document and return it with its generated `id`. */
+  create(args: {
+    collection: string;
+    data: Record<string, unknown>;
+  }): Promise<BaseDocument>;
 
-  // Required: insert a document
-  async create(args: { collection: string; data: any }): Promise<any> { ... }
+  /** Update a document by ID and return the updated document. */
+  update(args: {
+    collection: string;
+    id: string;
+    data: Record<string, unknown>;
+  }): Promise<BaseDocument>;
 
-  // Required: partial update by ID
-  async update(args: { collection: string; id: string; data: any }): Promise<any> { ... }
+  /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
+  delete(args: { collection: string; id: string }): Promise<unknown>;
 
-  // Required: delete by ID
-  async delete(args: { collection: string; id: string }): Promise<any> { ... }
+  /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */
+  getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 
-  // Required: fetch a global singleton
-  async getGlobal(args: { slug: string }): Promise<any> { ... }
+  /** Create or replace the singleton document for a global. */
+  updateGlobal(args: {
+    slug: string;
+    data: Record<string, unknown>;
+  }): Promise<Record<string, unknown>>;
 
-  // Required: upsert a global singleton
-  async updateGlobal(args: { slug: string; data: any }): Promise<any> { ... }
+  /**
+   * Sync the database schema with the current collection and global configs.
+   * Called on startup to create tables/collections that don't exist yet.
+   * Not all adapters implement this (e.g. MongoDB is schema-less).
+   */
+  sync?(
+    collections: CollectionConfig[],
+    globals: GlobalConfig[],
+  ): Promise<void>;
 
-  // Optional: create tables/collections on startup
-  async sync?(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void> { ... }
+  /**
+   * Execute a raw SQL query or database command.
+   * Optional — not all adapters support raw access.
+   */
+  execute?(query: string, params?: unknown[]): Promise<unknown>;
 
-  // Optional: raw query execution
-  async execute?(query: string, params?: any[]): Promise<any> { ... }
+  /**
+   * Run all adapter operations in `callback` as one atomic transaction.
+   * Shipped adapters implement this; workflow transitions require it.
+   */
+  transaction?<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T>;
 }
 ```
 
-### `PaginatedResult` shape
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>find</code> | <code>find(args: &#123;     collection: string;     where?: Record&lt;string, unknown&gt;;     limit?: number;     page?: number;     sort?: string;   &#125;): Promise&lt;PaginatedResult&gt;</code> | Find a paginated list of documents in a collection. |
+| <code>findOne</code> | <code>findOne(args: &#123;     collection: string;     id: string;   &#125;): Promise&lt;BaseDocument &#124; null&gt;</code> | Find a single document by its ID. Returns &#96;null&#96; if not found. |
+| <code>create</code> | <code>create(args: &#123;     collection: string;     data: Record&lt;string, unknown&gt;;   &#125;): Promise&lt;BaseDocument&gt;</code> | Insert a new document and return it with its generated &#96;id&#96;. |
+| <code>update</code> | <code>update(args: &#123;     collection: string;     id: string;     data: Record&lt;string, unknown&gt;;   &#125;): Promise&lt;BaseDocument&gt;</code> | Update a document by ID and return the updated document. |
+| <code>delete</code> | <code>delete(args: &#123; collection: string; id: string &#125;): Promise&lt;unknown&gt;</code> | Delete a document by ID. Return value is intentionally untyped — callers do not use it. |
+| <code>getGlobal</code> | <code>getGlobal(args: &#123; slug: string &#125;): Promise&lt;Record&lt;string, unknown&gt;&gt;</code> | Fetch the singleton document for a global. Returns an empty object if not yet initialised. |
+| <code>updateGlobal</code> | <code>updateGlobal(args: &#123;     slug: string;     data: Record&lt;string, unknown&gt;;   &#125;): Promise&lt;Record&lt;string, unknown&gt;&gt;</code> | Create or replace the singleton document for a global. |
+| <code>sync</code> | <code>sync(collections: CollectionConfig[], globals: GlobalConfig[]): Promise&lt;void&gt;</code> | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
+| <code>execute</code> | <code>execute(query: string, params?: unknown[]): Promise&lt;unknown&gt;</code> | Execute a raw SQL query or database command. Optional — not all adapters support raw access. |
+| <code>transaction</code> | <code>transaction&lt;T&gt;(callback: (db: DatabaseAdapter) =&gt; Promise&lt;T&gt;): Promise&lt;T&gt;</code> | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it. |
+
+
+## PaginatedResult
+
+The envelope returned by collection list endpoints (`GET /api/collections/:slug`).
 
 ```ts
-interface PaginatedResult {
-  docs: any[]
-  total: number
-  limit: number
-  page: number
-  totalPages: number
-  hasNextPage: boolean
-  hasPrevPage: boolean
+export interface PaginatedResult<T = Record<string, any>> {
+  /** The documents on the current page. */
+  docs: T[];
+  /** Total number of documents matching the query (across all pages). */
+  total: number;
+  /** Maximum number of documents per page as requested. */
+  limit: number;
+  /** The current page number (1-indexed). */
+  page: number;
+  /** Total number of pages given the current `limit`. */
+  totalPages: number;
+  /** Whether a next page exists. */
+  hasNextPage: boolean;
+  /** Whether a previous page exists. */
+  hasPrevPage: boolean;
 }
 ```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>docs</code> | <code>docs: T[]</code> | The documents on the current page. |
+| <code>total</code> | <code>total: number</code> | Total number of documents matching the query (across all pages). |
+| <code>limit</code> | <code>limit: number</code> | Maximum number of documents per page as requested. |
+| <code>page</code> | <code>page: number</code> | The current page number (1-indexed). |
+| <code>totalPages</code> | <code>totalPages: number</code> | Total number of pages given the current &#96;limit&#96;. |
+| <code>hasNextPage</code> | <code>hasNextPage: boolean</code> | Whether a next page exists. |
+| <code>hasPrevPage</code> | <code>hasPrevPage: boolean</code> | Whether a previous page exists. |
+
+
+## ReadonlyDatabaseAdapter
+
+Exported type from @dyrected/core.
+
+```ts
+export type ReadonlyDatabaseAdapter = Pick<
+  DatabaseAdapter,
+  "find" | "findOne" | "getGlobal"
+>;
+```
+{/* GENERATED:ADAPTERS-DATABASES:END */}

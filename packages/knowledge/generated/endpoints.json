@@ -1,0 +1,891 @@
+[
+  {
+    "id": "GET /api/collections/media",
+    "method": "GET",
+    "path": "/api/collections/media",
+    "summary": "Find Media",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "where",
+        "in": "query",
+        "required": false,
+        "description": "JSON filter"
+      },
+      {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "description": "Sort field (e.g. -createdAt)"
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/media",
+    "method": "POST",
+    "path": "/api/collections/media",
+    "summary": "Create Media item",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "201"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/media/{id}",
+    "method": "DELETE",
+    "path": "/api/collections/media/{id}",
+    "summary": "Delete Media item",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "204"
+    ]
+  },
+  {
+    "id": "GET /api/collections/media/{id}",
+    "method": "GET",
+    "path": "/api/collections/media/{id}",
+    "summary": "Get a single Media item",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "PATCH /api/collections/media/{id}",
+    "method": "PATCH",
+    "path": "/api/collections/media/{id}",
+    "summary": "Update Media item",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/media/delete-many",
+    "method": "DELETE",
+    "path": "/api/collections/media/delete-many",
+    "summary": "Delete multiple Media",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/collections/media/media",
+    "method": "GET",
+    "path": "/api/collections/media/media",
+    "summary": "List Media",
+    "tags": [
+      "Media"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/media/media",
+    "method": "POST",
+    "path": "/api/collections/media/media",
+    "summary": "Upload Media item",
+    "tags": [
+      "Media"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "201"
+    ]
+  },
+  {
+    "id": "GET /api/collections/media/media/{filename}",
+    "method": "GET",
+    "path": "/api/collections/media/media/{filename}",
+    "summary": "Serve Media item bytes",
+    "tags": [
+      "Media"
+    ],
+    "authenticated": false,
+    "parameters": [
+      {
+        "name": "filename",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200",
+      "404"
+    ]
+  },
+  {
+    "id": "POST /api/collections/media/seed",
+    "method": "POST",
+    "path": "/api/collections/media/seed",
+    "summary": "Seed initial Media",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/collections/posts",
+    "method": "GET",
+    "path": "/api/collections/posts",
+    "summary": "Find Posts",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "where",
+        "in": "query",
+        "required": false,
+        "description": "JSON filter"
+      },
+      {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "description": "Sort field (e.g. -createdAt)"
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/posts",
+    "method": "POST",
+    "path": "/api/collections/posts",
+    "summary": "Create Post",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "201"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/posts/{id}",
+    "method": "DELETE",
+    "path": "/api/collections/posts/{id}",
+    "summary": "Delete Post",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "204"
+    ]
+  },
+  {
+    "id": "GET /api/collections/posts/{id}",
+    "method": "GET",
+    "path": "/api/collections/posts/{id}",
+    "summary": "Get a single Post",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "PATCH /api/collections/posts/{id}",
+    "method": "PATCH",
+    "path": "/api/collections/posts/{id}",
+    "summary": "Update Post",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/posts/{id}/transitions/{transition}",
+    "method": "POST",
+    "path": "/api/collections/posts/{id}/transitions/{transition}",
+    "summary": "Transition Post workflow",
+    "tags": [
+      "Workflows"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      },
+      {
+        "name": "transition",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200",
+      "400",
+      "403",
+      "409"
+    ]
+  },
+  {
+    "id": "GET /api/collections/posts/{id}/workflow-history",
+    "method": "GET",
+    "path": "/api/collections/posts/{id}/workflow-history",
+    "summary": "Get Post workflow history",
+    "tags": [
+      "Workflows"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      }
+    ],
+    "responses": [
+      "200",
+      "403"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/posts/delete-many",
+    "method": "DELETE",
+    "path": "/api/collections/posts/delete-many",
+    "summary": "Delete multiple Posts",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/posts/seed",
+    "method": "POST",
+    "path": "/api/collections/posts/seed",
+    "summary": "Seed initial Posts",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/collections/users",
+    "method": "GET",
+    "path": "/api/collections/users",
+    "summary": "Find Users",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "where",
+        "in": "query",
+        "required": false,
+        "description": "JSON filter"
+      },
+      {
+        "name": "sort",
+        "in": "query",
+        "required": false,
+        "description": "Sort field (e.g. -createdAt)"
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users",
+    "method": "POST",
+    "path": "/api/collections/users",
+    "summary": "Create User",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "201"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/users/{id}",
+    "method": "DELETE",
+    "path": "/api/collections/users/{id}",
+    "summary": "Delete User",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "204"
+    ]
+  },
+  {
+    "id": "GET /api/collections/users/{id}",
+    "method": "GET",
+    "path": "/api/collections/users/{id}",
+    "summary": "Get a single User",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "PATCH /api/collections/users/{id}",
+    "method": "PATCH",
+    "path": "/api/collections/users/{id}",
+    "summary": "Update User",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/{id}/change-password",
+    "method": "POST",
+    "path": "/api/collections/users/{id}/change-password",
+    "summary": "Change a User password",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "id",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/accept-invite",
+    "method": "POST",
+    "path": "/api/collections/users/accept-invite",
+    "summary": "Accept an invitation",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400"
+    ]
+  },
+  {
+    "id": "DELETE /api/collections/users/delete-many",
+    "method": "DELETE",
+    "path": "/api/collections/users/delete-many",
+    "summary": "Delete multiple Users",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/first-user",
+    "method": "POST",
+    "path": "/api/collections/users/first-user",
+    "summary": "Register the first User",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/forgot-password",
+    "method": "POST",
+    "path": "/api/collections/users/forgot-password",
+    "summary": "Request a password reset",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400"
+    ]
+  },
+  {
+    "id": "GET /api/collections/users/init",
+    "method": "GET",
+    "path": "/api/collections/users/init",
+    "summary": "Get Users initialization state",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/invite",
+    "method": "POST",
+    "path": "/api/collections/users/invite",
+    "summary": "Invite a User",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/login",
+    "method": "POST",
+    "path": "/api/collections/users/login",
+    "summary": "Log in to Users",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200",
+      "401"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/logout",
+    "method": "POST",
+    "path": "/api/collections/users/logout",
+    "summary": "Log out of Users",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/collections/users/me",
+    "method": "GET",
+    "path": "/api/collections/users/me",
+    "summary": "Get the current User",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/refresh-token",
+    "method": "POST",
+    "path": "/api/collections/users/refresh-token",
+    "summary": "Refresh an authentication token",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/reset-password",
+    "method": "POST",
+    "path": "/api/collections/users/reset-password",
+    "summary": "Reset a password",
+    "tags": [
+      "Authentication"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/seed",
+    "method": "POST",
+    "path": "/api/collections/users/seed",
+    "summary": "Seed initial Users",
+    "tags": [
+      "Collections"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/docs",
+    "method": "GET",
+    "path": "/api/docs",
+    "summary": "Open interactive API documentation",
+    "tags": [
+      "System"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/dyrected/options/{collection}/{field}",
+    "method": "GET",
+    "path": "/api/dyrected/options/{collection}/{field}",
+    "summary": "Resolve dynamic field options",
+    "tags": [
+      "System"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "collection",
+        "in": "path",
+        "required": true
+      },
+      {
+        "name": "field",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/globals/settings",
+    "method": "GET",
+    "path": "/api/globals/settings",
+    "summary": "Get Site settings",
+    "tags": [
+      "Globals"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "PATCH /api/globals/settings",
+    "method": "PATCH",
+    "path": "/api/globals/settings",
+    "summary": "Update Site settings",
+    "tags": [
+      "Globals"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/globals/settings/seed",
+    "method": "POST",
+    "path": "/api/globals/settings/seed",
+    "summary": "Seed Site settings",
+    "tags": [
+      "Globals"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/media/{filename}",
+    "method": "GET",
+    "path": "/api/media/{filename}",
+    "summary": "Serve a stored file",
+    "tags": [
+      "Media"
+    ],
+    "authenticated": false,
+    "parameters": [
+      {
+        "name": "filename",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200",
+      "404"
+    ]
+  },
+  {
+    "id": "GET /api/openapi.json",
+    "method": "GET",
+    "path": "/api/openapi.json",
+    "summary": "Get the OpenAPI specification",
+    "tags": [
+      "System"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/preferences/{key}",
+    "method": "GET",
+    "path": "/api/preferences/{key}",
+    "summary": "Get an authenticated user preference",
+    "tags": [
+      "Preferences"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "key",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "PUT /api/preferences/{key}",
+    "method": "PUT",
+    "path": "/api/preferences/{key}",
+    "summary": "Set an authenticated user preference",
+    "tags": [
+      "Preferences"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "key",
+        "in": "path",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/preview-data",
+    "method": "GET",
+    "path": "/api/preview-data",
+    "summary": "Resolve preview data from a token",
+    "tags": [
+      "Preview"
+    ],
+    "authenticated": false,
+    "parameters": [
+      {
+        "name": "token",
+        "in": "query",
+        "required": true
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "POST /api/preview-token",
+    "method": "POST",
+    "path": "/api/preview-token",
+    "summary": "Create a preview token",
+    "tags": [
+      "Preview"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  },
+  {
+    "id": "GET /api/schemas",
+    "method": "GET",
+    "path": "/api/schemas",
+    "summary": "Get the serialized Dyrected schema",
+    "tags": [
+      "System"
+    ],
+    "authenticated": false,
+    "parameters": [],
+    "responses": [
+      "200"
+    ]
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "name": "@dyrected/knowledge",
+  "version": "0.1.0",
+  "description": "Compiled Dyrected recipes, intent metadata, and portable knowledge artifacts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./recipes.json": "./generated/recipes.json",
+    "./intent-index.json": "./generated/intent-index.json",
+    "./references.json": "./generated/references.json",
+    "./endpoints.json": "./generated/endpoints.json",
+    "./openapi.json": "./generated/openapi.json",
+    "./examples-inventory.json": "./generated/examples-inventory.json",
+    "./llms-index.json": "./generated/llms-index.json",
+    "./ai-rules.md": "./generated/ai-rules.md",
+    "./SKILL.md": "./generated/SKILL.md"
+  },
+  "files": [
+    "dist",
+    "generated",
+    "README.md"
+  ],
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "generate:check": "node scripts/generate.mjs --check",
+    "typecheck": "tsc --noEmit",
+    "build": "pnpm generate && tsup src/index.ts --format esm --dts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@dyrected/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "jiti": "^2.7.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.4.5",
+    "vitest": "^1.0.0"
+  },
+  "license": "BSL-1.1",
+  "author": "Busola Okeowo <busolaokemoney@gmail.com>",
+  "homepage": "https://dyrected.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dyrected/dyrected.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,4 +1,12 @@
 {
   "title": "API Reference",
-  "pages": ["introduction", "fields", "rest-api", "sdk", "openapi", "configuration", "generated-workflows"]
+  "pages": [
+    "introduction",
+    "fields",
+    "rest-api",
+    "sdk",
+    "openapi",
+    "configuration",
+    "generated-workflows"
+  ]
 }

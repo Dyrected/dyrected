@@ -1,0 +1,70 @@
+---
+title: Model a Relationship and Its Reverse Lookup
+description: Store one owning reference and expose a bounded virtual reverse lookup.
+---
+
+The relationship is the source of truth. The join is a read-time view of documents that point back to the current entry.
+
+{/* GENERATED:RECIPE:START */}
+Store an author relationship on posts and expose the author's posts through a virtual join field.
+
+## Use this when
+
+- connect posts to authors
+- show every post written by a user
+- create a reverse relationship
+- model one-to-many content
+
+## Dyrected concepts
+
+`relationship`, `join`, `relationTo`, `depth`
+
+**Additional packages:** No additional packages.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const Users = defineCollection({
+  slug: "users",
+  auth: true,
+  fields: [
+    { name: "name", type: "text", label: "Name", required: true },
+    {
+      name: "posts",
+      type: "join",
+      label: "Posts",
+      collection: "posts",
+      on: "author",
+      limit: 20,
+    },
+  ],
+});
+
+export const Posts = defineCollection({
+  slug: "posts",
+  fields: [
+    { name: "title", type: "text", label: "Title", required: true },
+    {
+      name: "author",
+      type: "relationship",
+      label: "Author",
+      relationTo: "users",
+      required: true,
+    },
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}
+
+## Decisions and cautions
+
+- Keep the `join.on` name synchronized with the target relationship field.
+- Bound large joins with `limit` and make the owning relationship efficient to filter.
+- Choose relationship depth per view; eager hydration can multiply payload and query cost.
+- Define deletion behavior at the application level. A reverse join alone does not imply cascade deletion.
+
+Use `hasMany` on the owning relationship for many-to-many references; do not add a second independently writable relationship merely to simulate the reverse side.

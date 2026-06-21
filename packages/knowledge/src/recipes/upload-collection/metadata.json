@@ -1,0 +1,9 @@
+{
+  "id": "upload-collection",
+  "title": "Create a media upload collection",
+  "description": "Enable file uploads and capture accessible metadata in a dedicated media collection.",
+  "category": "integrations",
+  "intents": ["let editors upload images", "create a media library", "store uploaded files", "add image uploads to my project"],
+  "concepts": ["upload", "StorageAdapter", "media"],
+  "requires": []
+}

@@ -128,7 +128,9 @@ export interface WorkflowMetadata {
   availableTransitions?: string[];
 }
 
-export interface WorkflowTransitionContext<TDoc extends object = Record<string, unknown>> {
+export interface WorkflowTransitionContext<
+  TDoc extends object = Record<string, unknown>,
+> {
   transition: WorkflowTransition;
   from: string;
   to: string;
@@ -139,11 +141,13 @@ export interface WorkflowTransitionContext<TDoc extends object = Record<string, 
   db: DatabaseAdapter;
 }
 
-export type CollectionBeforeTransitionHook<TDoc extends object = Record<string, unknown>> = (
-  args: WorkflowTransitionContext<TDoc>,
-) => void | Promise<void>;
+export type CollectionBeforeTransitionHook<
+  TDoc extends object = Record<string, unknown>,
+> = (args: WorkflowTransitionContext<TDoc>) => void | Promise<void>;
 
-export type CollectionAfterTransitionHook<TDoc extends object = Record<string, unknown>> = (
+export type CollectionAfterTransitionHook<
+  TDoc extends object = Record<string, unknown>,
+> = (
   args: WorkflowTransitionContext<TDoc> & { event: LifecycleEvent },
 ) => void | Promise<void>;
 
@@ -162,7 +166,9 @@ export interface LifecycleEvent<TPayload = Record<string, unknown>> {
   lastError?: string;
 }
 
-export type LifecycleEventHandler = (event: LifecycleEvent) => void | Promise<void>;
+export type LifecycleEventHandler = (
+  event: LifecycleEvent,
+) => void | Promise<void>;
 
 // ─── Field type literals ─────────────────────────────────────────────────────
 
@@ -648,18 +654,17 @@ export type GlobalBeforeReadHook = CollectionBeforeReadHook;
  * Runs after the global document is fetched, before the response is sent.
  * @see {@link CollectionAfterReadHook}
  */
-export type GlobalAfterReadHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
-  doc: TDoc;
-  req: HookRequestContext;
-  user?: AuthenticatedUser;
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange` for writes.
-   */
-  db: ReadonlyDatabaseAdapter;
-}) => TDoc | Promise<TDoc>;
+export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> =
+  (args: {
+    doc: TDoc;
+    req: HookRequestContext;
+    user?: AuthenticatedUser;
+    /**
+     * Database adapter for cross-collection reads. Write operations (create,
+     * update, delete) will throw — use `afterChange` for writes.
+     */
+    db: ReadonlyDatabaseAdapter;
+  }) => TDoc | Promise<TDoc>;
 
 /**
  * Runs before the global document is updated.
@@ -710,17 +715,16 @@ export type GlobalAfterChangeHook<
  *
  * This broad type remains for backwards compatibility with the internal hook runner.
  */
-export type HookFunction<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
-  data?: Partial<TDoc>;
-  doc?: TDoc;
-  user?: AuthenticatedUser;
-  req?: HookRequestContext;
-  operation?: "create" | "update" | "delete";
-  db?: DatabaseAdapter;
-  [key: string]: unknown;
-}) => unknown | Promise<unknown>;
+export type HookFunction<TDoc extends object = Record<string, unknown>> =
+  (args: {
+    data?: Partial<TDoc>;
+    doc?: TDoc;
+    user?: AuthenticatedUser;
+    req?: HookRequestContext;
+    operation?: "create" | "update" | "delete";
+    db?: DatabaseAdapter;
+    [key: string]: unknown;
+  }) => unknown | Promise<unknown>;
 
 // ─── Access control ───────────────────────────────────────────────────────────
 
@@ -754,14 +758,16 @@ export type HookFunction<
  *   update: "user.roles contains 'editor'",
  * }
  */
-export type AccessFunction<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
-  user: AuthenticatedUser | undefined;
-  doc?: TDoc;
-  data?: Partial<TDoc>;
-  req: HookRequestContext;
-}) => boolean | Record<string, unknown> | Promise<boolean | Record<string, unknown>>;
+export type AccessFunction<TDoc extends object = Record<string, unknown>> =
+  (args: {
+    user: AuthenticatedUser | undefined;
+    doc?: TDoc;
+    data?: Partial<TDoc>;
+    req: HookRequestContext;
+  }) =>
+    | boolean
+    | Record<string, unknown>
+    | Promise<boolean | Record<string, unknown>>;
 
 // ─── Field definition ─────────────────────────────────────────────────────────
 
@@ -922,7 +928,12 @@ interface FieldBase {
      * // Only show the discount field when a coupon code is entered
      * condition: (data) => !!data.couponCode
      */
-    condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;
+    condition?:
+      | ((
+          data: Record<string, unknown>,
+          siblingData: Record<string, unknown>,
+        ) => boolean)
+      | string;
 
     /**
      * Presentation style for fields with multiple built-in admin renderers.
@@ -1034,8 +1045,21 @@ type FieldHooks<TValue> = {
    * }
    */
   hooks?: {
-    beforeChange?: Array<(args: { value: TValue; originalDoc?: Record<string, unknown>; data: Record<string, unknown>; user?: AuthenticatedUser }) => unknown>;
-    afterRead?: Array<(args: { value: TValue; doc: Record<string, unknown>; user?: AuthenticatedUser }) => unknown>;
+    beforeChange?: Array<
+      (args: {
+        value: TValue;
+        originalDoc?: Record<string, unknown>;
+        data: Record<string, unknown>;
+        user?: AuthenticatedUser;
+      }) => unknown
+    >;
+    afterRead?: Array<
+      (args: {
+        value: TValue;
+        doc: Record<string, unknown>;
+        user?: AuthenticatedUser;
+      }) => unknown
+    >;
   };
 };
 
@@ -1134,15 +1158,35 @@ type FieldAdminHooks<TValue> = {
  * { name: 'slug', type: 'text' as const, hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
  * ```
  */
-export type Field = FieldBase & (
-  | ({ type: 'text' | 'textarea' | 'email' | 'url' | 'icon' | 'date' | 'datetime' | 'select' | 'radio' } & FieldHooks<string> & FieldAdminHooks<string>)
-  | ({ type: 'number' } & FieldHooks<number> & FieldAdminHooks<number>)
-  | ({ type: 'boolean' } & FieldHooks<boolean> & FieldAdminHooks<boolean>)
-  | ({ type: 'multiSelect' } & FieldHooks<string[]> & FieldAdminHooks<string[]>)
-  | ({ type: 'relationship' | 'image' } & FieldHooks<string | string[]> & FieldAdminHooks<string | string[]>)
-  | ({ type: 'richText' | 'json' } & FieldHooks<Record<string, unknown>> & FieldAdminHooks<Record<string, unknown>>)
-  | ({ type: 'object' | 'array' | 'blocks' | 'join' | 'row' } & FieldHooks<unknown> & FieldAdminHooks<unknown>)
-);
+export type Field = FieldBase &
+  (
+    | ({
+        type:
+          | "text"
+          | "textarea"
+          | "email"
+          | "url"
+          | "icon"
+          | "date"
+          | "datetime"
+          | "time"
+          | "select"
+          | "radio";
+      } & FieldHooks<string> &
+        FieldAdminHooks<string>)
+    | ({ type: "number" } & FieldHooks<number> & FieldAdminHooks<number>)
+    | ({ type: "boolean" } & FieldHooks<boolean> & FieldAdminHooks<boolean>)
+    | ({ type: "multiSelect" } & FieldHooks<string[]> &
+        FieldAdminHooks<string[]>)
+    | ({ type: "relationship" | "image" } & FieldHooks<string | string[]> &
+        FieldAdminHooks<string | string[]>)
+    | ({ type: "richText" | "json" } & FieldHooks<Record<string, unknown>> &
+        FieldAdminHooks<Record<string, unknown>>)
+    | ({
+        type: "object" | "array" | "blocks" | "join" | "row";
+      } & FieldHooks<unknown> &
+        FieldAdminHooks<unknown>)
+  );
 
 // ─── Collection config ────────────────────────────────────────────────────────
 
@@ -1368,7 +1412,9 @@ export interface CollectionConfig<
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?:
+      | string
+      | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.
@@ -1494,9 +1540,7 @@ export interface UploadConfig {
  *
  * @template TDoc  The TypeScript shape of this global's document.
  */
-export interface GlobalConfig<
-  TDoc extends object = Record<string, unknown>,
-> {
+export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   /**
    * Unique identifier for this global.
    * Used as the URL segment (`/api/globals/:slug`) and the storage key.
@@ -1621,10 +1665,16 @@ export interface DatabaseAdapter {
   }): Promise<PaginatedResult>;
 
   /** Find a single document by its ID. Returns `null` if not found. */
-  findOne(args: { collection: string; id: string }): Promise<BaseDocument | null>;
+  findOne(args: {
+    collection: string;
+    id: string;
+  }): Promise<BaseDocument | null>;
 
   /** Insert a new document and return it with its generated `id`. */
-  create(args: { collection: string; data: Record<string, unknown> }): Promise<BaseDocument>;
+  create(args: {
+    collection: string;
+    data: Record<string, unknown>;
+  }): Promise<BaseDocument>;
 
   /** Update a document by ID and return the updated document. */
   update(args: {
@@ -1636,8 +1686,8 @@ export interface DatabaseAdapter {
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
 
-  /** Fetch the singleton document for a global. Returns `null` if not yet initialised. */
-  getGlobal(args: { slug: string }): Promise<Record<string, unknown> | null>;
+  /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */
+  getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 
   /** Create or replace the singleton document for a global. */
   updateGlobal(args: {
@@ -1676,7 +1726,10 @@ export interface DatabaseAdapter {
  * and field-level hooks. Write operations are available in `afterChange`
  * and `afterDelete` hooks where the full {@link DatabaseAdapter} is provided.
  */
-export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, 'find' | 'findOne' | 'getGlobal'>;
+export type ReadonlyDatabaseAdapter = Pick<
+  DatabaseAdapter,
+  "find" | "findOne" | "getGlobal"
+>;
 
 // ─── File / storage ───────────────────────────────────────────────────────────
 
@@ -1828,54 +1881,76 @@ export interface AdminConfig {
 export type Prettify<T> = { [K in keyof T]: T[K] };
 
 /** Maps a field's runtime type tag to its TypeScript value type. @internal */
-type FieldValueType<F extends Field> =
-  F['type'] extends 'text' | 'textarea' | 'email' | 'url' | 'icon' | 'date' | 'select' | 'radio'
-    ? string
-    : F['type'] extends 'number'
+type FieldValueType<F extends Field> = F["type"] extends
+  | "text"
+  | "textarea"
+  | "email"
+  | "url"
+  | "icon"
+  | "date"
+  | "datetime"
+  | "time"
+  | "select"
+  | "radio"
+  ? string
+  : F["type"] extends "number"
     ? number
-    : F['type'] extends 'boolean'
-    ? boolean
-    : F['type'] extends 'multiSelect'
-    ? string[]
-    : F['type'] extends 'relationship'
-    ? F extends { hasMany: true } ? string[] : string
-    : F['type'] extends 'image'
-    ? string
-    : F['type'] extends 'richText' | 'json'
-    ? Record<string, unknown>
-    : F['type'] extends 'object'
-    ? F extends { fields: infer SF extends readonly Field[] }
-      ? Prettify<InferDocShape<SF>>
-      : Record<string, unknown>
-    : F['type'] extends 'array'
-    ? F extends { fields: infer SF extends readonly Field[] }
-      ? Array<Prettify<InferDocShape<SF>>>
-      : unknown[]
-    : F['type'] extends 'blocks'
-    ? F extends { blocks: infer B extends readonly Block[] }
-      ? Array<InferBlocksUnion<B>>
-      : Array<{ blockType: string } & Record<string, unknown>>
-    : unknown;
+    : F["type"] extends "boolean"
+      ? boolean
+      : F["type"] extends "multiSelect"
+        ? string[]
+        : F["type"] extends "relationship"
+          ? F extends { hasMany: true }
+            ? string[]
+            : string
+          : F["type"] extends "image"
+            ? F extends { hasMany: true }
+              ? string[]
+              : string
+            : F["type"] extends "richText" | "json"
+              ? Record<string, unknown>
+              : F["type"] extends "object"
+                ? F extends { fields: infer SF extends readonly Field[] }
+                  ? Prettify<InferDocShape<SF>>
+                  : Record<string, unknown>
+                : F["type"] extends "array"
+                  ? F extends { fields: infer SF extends readonly Field[] }
+                    ? Array<Prettify<InferDocShape<SF>>>
+                    : unknown[]
+                  : F["type"] extends "blocks"
+                    ? F extends { blocks: infer B extends readonly Block[] }
+                      ? Array<InferBlocksUnion<B>>
+                      : Array<{ blockType: string } & Record<string, unknown>>
+                    : unknown;
 
 /** Build a discriminated-union type covering all possible block shapes. @internal */
 type InferBlocksUnion<Blocks extends readonly Block[]> =
-  Blocks extends readonly [infer B extends Block, ...infer Rest extends readonly Block[]]
-    ? B['fields'] extends readonly Field[]
-      ? ({ blockType: B['slug'] } & Prettify<InferDocShape<B['fields']>>) | InferBlocksUnion<Rest>
-      : ({ blockType: B['slug'] } & Record<string, unknown>) | InferBlocksUnion<Rest>
+  Blocks extends readonly [
+    infer B extends Block,
+    ...infer Rest extends readonly Block[],
+  ]
+    ? B["fields"] extends readonly Field[]
+      ?
+          | ({ blockType: B["slug"] } & Prettify<InferDocShape<B["fields"]>>)
+          | InferBlocksUnion<Rest>
+      :
+          | ({ blockType: B["slug"] } & Record<string, unknown>)
+          | InferBlocksUnion<Rest>
     : never;
 
 /** Converts one field definition to its corresponding document key/value pair. @internal */
-type InferFieldEntry<F extends Field> =
-  F extends { type: 'row'; fields: infer SF extends readonly Field[] }
-    ? InferDocShape<SF>
-    : F extends { type: 'join' }
+type InferFieldEntry<F extends Field> = F extends {
+  type: "row";
+  fields: infer SF extends readonly Field[];
+}
+  ? InferDocShape<SF>
+  : F extends { type: "join" }
     ? Record<never, never>
     : F extends { name: infer N extends string; required: true }
-    ? { [K in N]: FieldValueType<F> }
-    : F extends { name: infer N extends string }
-    ? { [K in N]?: FieldValueType<F> }
-    : Record<never, never>;
+      ? { [K in N]: FieldValueType<F> }
+      : F extends { name: infer N extends string }
+        ? { [K in N]?: FieldValueType<F> }
+        : Record<never, never>;
 
 /**
  * Infer a document shape from a literal fields tuple.
@@ -1900,9 +1975,12 @@ type InferFieldEntry<F extends Field> =
 export type InferDocShape<Fields extends readonly Field[]> =
   Fields extends readonly []
     ? Record<never, never>
-    : Fields extends readonly [infer Head extends Field, ...infer Tail extends readonly Field[]]
-    ? InferFieldEntry<Head> & InferDocShape<Tail>
-    : Record<string, unknown>;
+    : Fields extends readonly [
+          infer Head extends Field,
+          ...infer Tail extends readonly Field[],
+        ]
+      ? InferFieldEntry<Head> & InferDocShape<Tail>
+      : Record<string, unknown>;
 
 // ─── Automatic system / collection-kind doc fields ───────────────────────────
 
@@ -1926,7 +2004,7 @@ export type SystemDocFields = {
 export type AuthDocFields = {
   email: string;
   password?: string;
-  roles?: string;
+  roles?: string[];
 };
 
 /**
@@ -1944,7 +2022,10 @@ export type UploadDocFields = {
   focalPoint?: { x: number; y: number };
   /** Base64 BlurHash for progressive image loading. */
   blurhash?: string;
-  sizes?: Record<string, { filename?: string; url?: string; width?: number; height?: number }>;
+  sizes?: Record<
+    string,
+    { filename?: string; url?: string; width?: number; height?: number }
+  >;
 };
 
 // ─── Root config ──────────────────────────────────────────────────────────────
@@ -2013,13 +2094,26 @@ export interface DyrectedConfig {
     /** The `From` address for all outbound emails. */
     from: string;
     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
-    send: (args: { to: string; subject: string; html: string }) => Promise<void>;
+    send: (args: {
+      to: string;
+      subject: string;
+      html: string;
+    }) => Promise<void>;
     /** Override the default email templates. */
     templates?: {
       welcome?: (args: { email: string }) => { subject?: string; html: string };
-      invite?: (args: { token: string; invitedByEmail?: string }) => { subject?: string; html: string };
-      resetPassword?: (args: { token: string; url?: string }) => { subject?: string; html: string };
-      passwordChanged?: (args: { email: string }) => { subject?: string; html: string };
+      invite?: (args: { token: string; invitedByEmail?: string }) => {
+        subject?: string;
+        html: string;
+      };
+      resetPassword?: (args: { token: string; url?: string }) => {
+        subject?: string;
+        html: string;
+      };
+      passwordChanged?: (args: { email: string }) => {
+        subject?: string;
+        html: string;
+      };
     };
   };
 
@@ -2070,6 +2164,9 @@ export interface DyrectedConfig {
    */
   onSchemaFetch?: (
     siteId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) => Promise<{ collections?: CollectionConfig<any>[]; globals?: GlobalConfig<any>[] }>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<{
+    collections?: CollectionConfig<any>[];
+    globals?: GlobalConfig<any>[];
+  }>;
 }

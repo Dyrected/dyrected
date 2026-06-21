@@ -228,3 +228,54 @@ curl -X POST https://yoursite.com/dyrected/collections/media \
 ```
 
 A successful response includes a `url` field pointing to your storage provider. If the URL resolves in the browser, the setup is working correctly.
+
+---
+
+## Writing a custom adapter
+
+All storage adapters implement the `StorageAdapter` interface from `@dyrected/core`:
+
+```ts
+import type { StorageAdapter, FileData } from '@dyrected/core'
+
+export class MyStorageAdapter implements StorageAdapter {
+  async upload(args: {
+    filename: string
+    buffer: Uint8Array
+    mimeType: string
+    prefix?: string
+  }): Promise<FileData> {
+    // Upload the file and return its metadata
+    return { filename: args.filename, mimeType: args.mimeType, url: '...' }
+  }
+
+  async delete(args: { filename: string }): Promise<void> {
+    // Remove the file
+  }
+
+  getURL(args: { filename: string }): string {
+    // Return the public URL for a stored file
+    return `https://cdn.example.com/${args.filename}`
+  }
+}
+```
+
+### The `resolve()` method
+
+`resolve()` is an **optional** method used only by adapters that serve files through the Dyrected API itself (rather than through a CDN URL):
+
+```ts
+async resolve(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null> {
+  // Read the file from local disk and return its bytes
+}
+```
+
+**When to implement `resolve()`:** Only if your adapter stores files somewhere that cannot be accessed with a direct public URL — for example, on the local filesystem in a self-hosted setup. Dyrected calls `resolve()` to serve the file through its own API at `/dyrected/media/<filename>`.
+
+**When to omit `resolve()`:** Cloud adapters (S3, R2, Cloudinary, Spaces) never implement this. Their files are publicly accessible via CDN URLs, so Dyrected redirects directly to those URLs without reading the bytes itself. Omitting `resolve()` on a cloud adapter is correct — it is not a missing feature.
+
+| Adapter | Implements `resolve()`? | Why |
+|---------|------------------------|-----|
+| `LocalStorageAdapter` | Yes | Files live on disk; served through Dyrected API |
+| `S3StorageAdapter` | No | Files served directly from S3 / CDN URL |
+| `CloudinaryStorageAdapter` | No | Files served directly from Cloudinary CDN |

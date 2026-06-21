@@ -1,0 +1,3558 @@
+[
+  {
+    "id": "/adapters/databases#example-1",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/databases#example-2",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/databases#example-3",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/databases#example-4",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/databases#example-5",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/adapters/databases#example-6",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/adapters/databases#example-7",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/databases#example-8",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/databases#example-9",
+    "page": "/adapters/databases",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/storage#example-1",
+    "page": "/adapters/storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/storage#example-2",
+    "page": "/adapters/storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/storage#example-3",
+    "page": "/adapters/storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/storage#example-4",
+    "page": "/adapters/storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/storage#example-5",
+    "page": "/adapters/storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/storage#example-6",
+    "page": "/adapters/storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/adapters/storage#example-7",
+    "page": "/adapters/storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/admin/configuration#example-1",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-2",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-3",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/admin/configuration#example-4",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-5",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-6",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-7",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/admin/configuration#example-8",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-9",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-10",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-11",
+    "page": "/admin/configuration",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/admin/configuration#example-12",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-13",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-14",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-15",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-16",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-17",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-18",
+    "page": "/admin/configuration",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/admin/configuration#example-19",
+    "page": "/admin/configuration",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/admin/configuration#example-20",
+    "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-21",
+    "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-22",
+    "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-23",
+    "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-24",
+    "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-25",
+    "page": "/admin/configuration",
+    "language": "html",
+    "classification": "syntax-checked",
+    "validation": "Inventoried html example"
+  },
+  {
+    "id": "/admin/configuration#example-26",
+    "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-27",
+    "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/overview#example-1",
+    "page": "/admin/overview",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/overview#example-2",
+    "page": "/admin/overview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/admin/overview#example-3",
+    "page": "/admin/overview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/admin/overview#example-4",
+    "page": "/admin/overview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/admin/overview#example-5",
+    "page": "/admin/overview",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/overview#example-6",
+    "page": "/admin/overview",
+    "language": "svelte",
+    "classification": "syntax-checked",
+    "validation": "Inventoried svelte example"
+  },
+  {
+    "id": "/admin/overview#example-7",
+    "page": "/admin/overview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/admin/overview#example-8",
+    "page": "/admin/overview",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/overview#example-9",
+    "page": "/admin/overview",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-1",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/access-control#example-2",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-3",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-4",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/access-control#example-5",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/access-control#example-6",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-7",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-8",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-9",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-10",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-11",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/access-control#example-12",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-13",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/access-control#example-14",
+    "page": "/concepts/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/auth-model#example-1",
+    "page": "/concepts/auth-model",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/auth-model#example-2",
+    "page": "/concepts/auth-model",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/concepts/auth-model#example-3",
+    "page": "/concepts/auth-model",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/concepts/auth-model#example-4",
+    "page": "/concepts/auth-model",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/auth-model#example-5",
+    "page": "/concepts/auth-model",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/auth-model#example-6",
+    "page": "/concepts/auth-model",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/auth-model#example-7",
+    "page": "/concepts/auth-model",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/collections-and-globals#example-1",
+    "page": "/concepts/collections-and-globals",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/collections-and-globals#example-2",
+    "page": "/concepts/collections-and-globals",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/collections-and-globals#example-3",
+    "page": "/concepts/collections-and-globals",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/collections-and-globals#example-4",
+    "page": "/concepts/collections-and-globals",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/depth#example-1",
+    "page": "/concepts/depth",
+    "language": "jsonc",
+    "classification": "syntax-checked",
+    "validation": "Classified as JSON with comments"
+  },
+  {
+    "id": "/concepts/depth#example-2",
+    "page": "/concepts/depth",
+    "language": "jsonc",
+    "classification": "syntax-checked",
+    "validation": "Classified as JSON with comments"
+  },
+  {
+    "id": "/concepts/depth#example-3",
+    "page": "/concepts/depth",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-1",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-2",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-3",
+    "page": "/concepts/dynamic-options",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-4",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-5",
+    "page": "/concepts/dynamic-options",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-6",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-7",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-8",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-9",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-10",
+    "page": "/concepts/dynamic-options",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-11",
+    "page": "/concepts/dynamic-options",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/concepts/dynamic-options#example-12",
+    "page": "/concepts/dynamic-options",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/concepts/fields#example-1",
+    "page": "/concepts/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/fields#example-2",
+    "page": "/concepts/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/fields#example-3",
+    "page": "/concepts/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/fields#example-4",
+    "page": "/concepts/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/fields#example-5",
+    "page": "/concepts/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/fields#example-6",
+    "page": "/concepts/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/hooks#example-1",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/hooks#example-2",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/hooks#example-3",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/hooks#example-4",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/hooks#example-5",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/hooks#example-6",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/hooks#example-7",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/hooks#example-8",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/hooks#example-9",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/hooks#example-10",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/hooks#example-11",
+    "page": "/concepts/hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/lifecycle-events#example-1",
+    "page": "/concepts/lifecycle-events",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/relationships#example-1",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/relationships#example-2",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/relationships#example-3",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/relationships#example-4",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/relationships#example-5",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/relationships#example-6",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/relationships#example-7",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/relationships#example-8",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/relationships#example-9",
+    "page": "/concepts/relationships",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/schema#example-1",
+    "page": "/concepts/schema",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/concepts/schema#example-2",
+    "page": "/concepts/schema",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/schema#example-3",
+    "page": "/concepts/schema",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/schema#example-4",
+    "page": "/concepts/schema",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/concepts/schema#example-5",
+    "page": "/concepts/schema",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/concepts/schema#example-6",
+    "page": "/concepts/schema",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/workflows#example-1",
+    "page": "/concepts/workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/concepts/workflows#example-2",
+    "page": "/concepts/workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/cloud#example-1",
+    "page": "/deployment/cloud",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deployment/cloud#example-2",
+    "page": "/deployment/cloud",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/cloud#example-3",
+    "page": "/deployment/cloud",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/cloud#example-4",
+    "page": "/deployment/cloud",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment/cloud#example-5",
+    "page": "/deployment/cloud",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deployment/docker#example-1",
+    "page": "/deployment/docker",
+    "language": "dockerfile",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deployment/docker#example-2",
+    "page": "/deployment/docker",
+    "language": "yaml",
+    "classification": "syntax-checked",
+    "validation": "Inventoried yaml example"
+  },
+  {
+    "id": "/deployment/docker#example-3",
+    "page": "/deployment/docker",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deployment/docker#example-4",
+    "page": "/deployment/docker",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/docker#example-5",
+    "page": "/deployment/docker",
+    "language": "yaml",
+    "classification": "syntax-checked",
+    "validation": "Inventoried yaml example"
+  },
+  {
+    "id": "/deployment/embedding#example-1",
+    "page": "/deployment/embedding",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deployment/embedding#example-2",
+    "page": "/deployment/embedding",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/embedding#example-3",
+    "page": "/deployment/embedding",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deployment/embedding#example-4",
+    "page": "/deployment/embedding",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/deployment/railway#example-1",
+    "page": "/deployment/railway",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment/railway#example-2",
+    "page": "/deployment/railway",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/vercel#example-1",
+    "page": "/deployment/vercel",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/vercel#example-2",
+    "page": "/deployment/vercel",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment/vercel#example-3",
+    "page": "/deployment/vercel",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deployment/vercel#example-4",
+    "page": "/deployment/vercel",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment/vercel#example-5",
+    "page": "/deployment/vercel",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/getting-started/introduction#example-1",
+    "page": "/getting-started/introduction",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/getting-started/production-checklist#example-1",
+    "page": "/getting-started/production-checklist",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/getting-started/quickstart#example-1",
+    "page": "/getting-started/quickstart",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/getting-started/quickstart#example-2",
+    "page": "/getting-started/quickstart",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/adding-authentication#example-1",
+    "page": "/guides/adding-authentication",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/adding-authentication#example-2",
+    "page": "/guides/adding-authentication",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/adding-authentication#example-3",
+    "page": "/guides/adding-authentication",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/adding-authentication#example-4",
+    "page": "/guides/adding-authentication",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/adding-authentication#example-5",
+    "page": "/guides/adding-authentication",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/adding-authentication#example-6",
+    "page": "/guides/adding-authentication",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/adding-authentication#example-7",
+    "page": "/guides/adding-authentication",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/adding-authentication#example-8",
+    "page": "/guides/adding-authentication",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/adding-authentication#example-9",
+    "page": "/guides/adding-authentication",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/adding-authentication#example-10",
+    "page": "/guides/adding-authentication",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/adding-authentication#example-11",
+    "page": "/guides/adding-authentication",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/ai-integration#example-1",
+    "page": "/guides/ai-integration",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/ai-integration#example-2",
+    "page": "/guides/ai-integration",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/ai-integration#example-3",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/ai-integration#example-4",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/ai-integration#example-5",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/ai-integration#example-6",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/ai-integration#example-7",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/ai-integration#example-8",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/ai-integration#example-9",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/ai-integration#example-10",
+    "page": "/guides/ai-integration",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/ai-integration#example-11",
+    "page": "/guides/ai-integration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/ai-integration#example-12",
+    "page": "/guides/ai-integration",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/audit-trail#example-1",
+    "page": "/guides/audit-trail",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/audit-trail#example-2",
+    "page": "/guides/audit-trail",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/guides/audit-trail#example-3",
+    "page": "/guides/audit-trail",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-blog#example-1",
+    "page": "/guides/building-a-blog",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-blog#example-2",
+    "page": "/guides/building-a-blog",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/building-a-blog#example-3",
+    "page": "/guides/building-a-blog",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/building-a-blog#example-4",
+    "page": "/guides/building-a-blog",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-blog#example-5",
+    "page": "/guides/building-a-blog",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/building-a-blog#example-6",
+    "page": "/guides/building-a-blog",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-blog#example-7",
+    "page": "/guides/building-a-blog",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-blog#example-8",
+    "page": "/guides/building-a-blog",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/building-a-blog#example-9",
+    "page": "/guides/building-a-blog",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-blog#example-10",
+    "page": "/guides/building-a-blog",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/building-a-blog#example-11",
+    "page": "/guides/building-a-blog",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/building-a-blog#example-12",
+    "page": "/guides/building-a-blog",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-blog#example-13",
+    "page": "/guides/building-a-blog",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-1",
+    "page": "/guides/building-a-page-builder",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-2",
+    "page": "/guides/building-a-page-builder",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-3",
+    "page": "/guides/building-a-page-builder",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-4",
+    "page": "/guides/building-a-page-builder",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-5",
+    "page": "/guides/building-a-page-builder",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-6",
+    "page": "/guides/building-a-page-builder",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-7",
+    "page": "/guides/building-a-page-builder",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-8",
+    "page": "/guides/building-a-page-builder",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/configuring-storage#example-1",
+    "page": "/guides/configuring-storage",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/guides/configuring-storage#example-2",
+    "page": "/guides/configuring-storage",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/guides/configuring-storage#example-3",
+    "page": "/guides/configuring-storage",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/configuring-storage#example-4",
+    "page": "/guides/configuring-storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/configuring-storage#example-5",
+    "page": "/guides/configuring-storage",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/configuring-storage#example-6",
+    "page": "/guides/configuring-storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/configuring-storage#example-7",
+    "page": "/guides/configuring-storage",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/configuring-storage#example-8",
+    "page": "/guides/configuring-storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/configuring-storage#example-9",
+    "page": "/guides/configuring-storage",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/configuring-storage#example-10",
+    "page": "/guides/configuring-storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/configuring-storage#example-11",
+    "page": "/guides/configuring-storage",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/configuring-storage#example-12",
+    "page": "/guides/configuring-storage",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/configuring-storage#example-13",
+    "page": "/guides/configuring-storage",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/configuring-storage#example-14",
+    "page": "/guides/configuring-storage",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/editorial-approval-workflow#example-1",
+    "page": "/guides/editorial-approval-workflow",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/editorial-approval-workflow#example-2",
+    "page": "/guides/editorial-approval-workflow",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/file-uploads#example-1",
+    "page": "/guides/file-uploads",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/file-uploads#example-2",
+    "page": "/guides/file-uploads",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/file-uploads#example-3",
+    "page": "/guides/file-uploads",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/file-uploads#example-4",
+    "page": "/guides/file-uploads",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/file-uploads#example-5",
+    "page": "/guides/file-uploads",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/file-uploads#example-6",
+    "page": "/guides/file-uploads",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/file-uploads#example-7",
+    "page": "/guides/file-uploads",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/file-uploads#example-8",
+    "page": "/guides/file-uploads",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/file-uploads#example-9",
+    "page": "/guides/file-uploads",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/globals-and-site-settings#example-1",
+    "page": "/guides/globals-and-site-settings",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/globals-and-site-settings#example-2",
+    "page": "/guides/globals-and-site-settings",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/globals-and-site-settings#example-3",
+    "page": "/guides/globals-and-site-settings",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/globals-and-site-settings#example-4",
+    "page": "/guides/globals-and-site-settings",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/globals-and-site-settings#example-5",
+    "page": "/guides/globals-and-site-settings",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/globals-and-site-settings#example-6",
+    "page": "/guides/globals-and-site-settings",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/globals-and-site-settings#example-7",
+    "page": "/guides/globals-and-site-settings",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/handling-form-submissions#example-1",
+    "page": "/guides/handling-form-submissions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/handling-form-submissions#example-2",
+    "page": "/guides/handling-form-submissions",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/handling-form-submissions#example-3",
+    "page": "/guides/handling-form-submissions",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/handling-form-submissions#example-4",
+    "page": "/guides/handling-form-submissions",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-1",
+    "page": "/guides/invite-only-registration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-2",
+    "page": "/guides/invite-only-registration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-3",
+    "page": "/guides/invite-only-registration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-4",
+    "page": "/guides/invite-only-registration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-5",
+    "page": "/guides/invite-only-registration",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-6",
+    "page": "/guides/invite-only-registration",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-7",
+    "page": "/guides/invite-only-registration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/invite-only-registration#example-8",
+    "page": "/guides/invite-only-registration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-1",
+    "page": "/guides/live-preview",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/live-preview#example-2",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-3",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-4",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-5",
+    "page": "/guides/live-preview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/live-preview#example-6",
+    "page": "/guides/live-preview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/live-preview#example-7",
+    "page": "/guides/live-preview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-8",
+    "page": "/guides/live-preview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/migrating-to-workflows#example-1",
+    "page": "/guides/migrating-to-workflows",
+    "language": "diff",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/migrating-to-workflows#example-2",
+    "page": "/guides/migrating-to-workflows",
+    "language": "diff",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/migrating-to-workflows#example-3",
+    "page": "/guides/migrating-to-workflows",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-1",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-2",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-3",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-4",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-5",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-6",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-7",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-8",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-9",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-10",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-11",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-12",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/nuxt-dynamic-pages#example-13",
+    "page": "/guides/nuxt-dynamic-pages",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/guides/role-based-access-control#example-1",
+    "page": "/guides/role-based-access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/role-based-access-control#example-2",
+    "page": "/guides/role-based-access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/role-based-access-control#example-3",
+    "page": "/guides/role-based-access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/role-based-access-control#example-4",
+    "page": "/guides/role-based-access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/role-based-access-control#example-5",
+    "page": "/guides/role-based-access-control",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/role-based-access-control#example-6",
+    "page": "/guides/role-based-access-control",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/role-based-access-control#example-7",
+    "page": "/guides/role-based-access-control",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/sending-email#example-1",
+    "page": "/guides/sending-email",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/sending-email#example-2",
+    "page": "/guides/sending-email",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/sending-email#example-3",
+    "page": "/guides/sending-email",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/sending-email#example-4",
+    "page": "/guides/sending-email",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/sending-email#example-5",
+    "page": "/guides/sending-email",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/sending-email#example-6",
+    "page": "/guides/sending-email",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/separating-admin-auth#example-1",
+    "page": "/guides/separating-admin-auth",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/separating-admin-auth#example-2",
+    "page": "/guides/separating-admin-auth",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/separating-admin-auth#example-3",
+    "page": "/guides/separating-admin-auth",
+    "language": "sql",
+    "classification": "syntax-checked",
+    "validation": "Inventoried sql example"
+  },
+  {
+    "id": "/guides/separating-admin-auth#example-4",
+    "page": "/guides/separating-admin-auth",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-1",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-2",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-3",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-4",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-5",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/using-hooks#example-6",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-7",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-8",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-9",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-10",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-11",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-12",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-13",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-14",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-15",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-16",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-17",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/using-hooks#example-18",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-19",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-20",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-21",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-22",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/using-hooks#example-23",
+    "page": "/guides/using-hooks",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-1",
+    "page": "/integrations/nextjs",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/nextjs#example-2",
+    "page": "/integrations/nextjs",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/nextjs#example-3",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-4",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-5",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nextjs#example-6",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nextjs#example-7",
+    "page": "/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-8",
+    "page": "/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-9",
+    "page": "/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-10",
+    "page": "/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-11",
+    "page": "/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-12",
+    "page": "/integrations/nextjs",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/integrations/nextjs#example-13",
+    "page": "/integrations/nextjs",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/nextjs#example-14",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nextjs#example-15",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-16",
+    "page": "/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nextjs#example-17",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nextjs#example-18",
+    "page": "/integrations/nextjs",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nuxt#example-1",
+    "page": "/integrations/nuxt",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/nuxt#example-2",
+    "page": "/integrations/nuxt",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/nuxt#example-3",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nuxt#example-4",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nuxt#example-5",
+    "page": "/integrations/nuxt",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/integrations/nuxt#example-6",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nuxt#example-7",
+    "page": "/integrations/nuxt",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/nuxt#example-8",
+    "page": "/integrations/nuxt",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/nuxt#example-9",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-10",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-11",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-12",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-13",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-14",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-15",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-16",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-17",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nuxt#example-18",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-19",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nuxt#example-20",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nuxt#example-21",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-1",
+    "page": "/integrations/react",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/react#example-2",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-3",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-4",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-5",
+    "page": "/integrations/react",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-6",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/react#example-7",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-8",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-9",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-1",
+    "page": "/integrations/sdk",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/sdk#example-2",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-3",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-4",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-5",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-6",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-7",
+    "page": "/integrations/sdk",
+    "language": "astro",
+    "classification": "syntax-checked",
+    "validation": "Inventoried astro example"
+  },
+  {
+    "id": "/integrations/sdk#example-8",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-9",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-10",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-11",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-12",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-13",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/sdk#example-14",
+    "page": "/integrations/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/vue#example-1",
+    "page": "/integrations/vue",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/integrations/vue#example-2",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-3",
+    "page": "/integrations/vue",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/vue#example-4",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-5",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-6",
+    "page": "/integrations/vue",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/vue#example-7",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-8",
+    "page": "/integrations/vue",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/vue#example-9",
+    "page": "/integrations/vue",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/vue#example-10",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-11",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-12",
+    "page": "/integrations/vue",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/vue#example-13",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-14",
+    "page": "/integrations/vue",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/recipes/auto-slug#example-1",
+    "page": "/recipes/auto-slug",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/conditional-admin-field#example-1",
+    "page": "/recipes/conditional-admin-field",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/cross-field-validation#example-1",
+    "page": "/recipes/cross-field-validation",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/dependent-dropdown#example-1",
+    "page": "/recipes/dependent-dropdown",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/editorial-publishing-workflow#example-1",
+    "page": "/recipes/editorial-publishing-workflow",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/owner-scoped-access#example-1",
+    "page": "/recipes/owner-scoped-access",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/page-builder-blocks#example-1",
+    "page": "/recipes/page-builder-blocks",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/relationship-and-reverse-join#example-1",
+    "page": "/recipes/relationship-and-reverse-join",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/role-based-access#example-1",
+    "page": "/recipes/role-based-access",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/safe-field-rename#example-1",
+    "page": "/recipes/safe-field-rename",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/recipes/upload-collection#example-1",
+    "page": "/recipes/upload-collection",
+    "language": "ts",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/reference/configuration#example-1",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-2",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-3",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-4",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-5",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-6",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/configuration#example-7",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-8",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-9",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/configuration#example-10",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/configuration#example-11",
+    "page": "/reference/configuration",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-1",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-2",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-3",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-4",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-5",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-6",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-7",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-8",
+    "page": "/reference/fields",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-9",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-10",
+    "page": "/reference/fields",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/reference/fields#example-11",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-12",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-13",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-14",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-15",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-16",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-17",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-18",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-19",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-20",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-21",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-22",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-23",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-24",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-25",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-26",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-27",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-28",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-29",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-30",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-31",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-32",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-33",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-34",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-35",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-36",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-37",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-38",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-39",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-40",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-41",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-42",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-43",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-44",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-45",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-46",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-47",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-48",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-49",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-50",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-51",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-52",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-1",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-2",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-3",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-4",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-5",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-6",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-7",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-8",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-9",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-10",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-11",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-12",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-13",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-14",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-15",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-16",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-17",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-18",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-19",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-20",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-21",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-22",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-23",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/generated-workflows#example-24",
+    "page": "/reference/generated-workflows",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/introduction#example-1",
+    "page": "/reference/introduction",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/introduction#example-2",
+    "page": "/reference/introduction",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/reference/openapi#example-1",
+    "page": "/reference/openapi",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/reference/openapi#example-2",
+    "page": "/reference/openapi",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/reference/rest-api#example-1",
+    "page": "/reference/rest-api",
+    "language": "text",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/reference/rest-api#example-2",
+    "page": "/reference/rest-api",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/rest-api#example-3",
+    "page": "/reference/rest-api",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/reference/rest-api#example-4",
+    "page": "/reference/rest-api",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/reference/sdk#example-1",
+    "page": "/reference/sdk",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/reference/sdk#example-2",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-3",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-4",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-5",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-6",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-7",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-8",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-9",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-10",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-11",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-12",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-13",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-14",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-15",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-16",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-17",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-18",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-19",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  }
+]

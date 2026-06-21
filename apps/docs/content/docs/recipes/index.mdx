@@ -1,0 +1,32 @@
+---
+title: Recipes
+description: Compiled implementation patterns with authored decisions, cautions, and alternatives.
+---
+
+Recipes start from an outcome rather than a Dyrected term. Each page combines authored guidance with canonical source compiled and tested by `@dyrected/knowledge`.
+
+Copy a recipe only after reading its cautions: access rules, schema migrations, URL policy, provider behavior, and editorial workflow are application decisions that generated code cannot make for you.
+
+## Recipe index
+
+{/* GENERATED:RECIPE-INDEX:START */}
+- [Generate a slug from a title](/docs/recipes/auto-slug) — Generate stable URL slugs on the server while showing editors the value live in the Admin UI.
+- [Show an Admin field only when it is relevant](/docs/recipes/conditional-admin-field) — Use a serializable Admin condition to reveal a field from the editor's current form values.
+- [Validate related fields before saving](/docs/recipes/cross-field-validation) — Reject invalid combinations of field values before they reach the database.
+- [Update a dropdown from another field](/docs/recipes/dependent-dropdown) — Change available Admin UI options immediately when an editor changes a related field.
+- [Add draft, review, and publishing states](/docs/recipes/editorial-publishing-workflow) — Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
+- [Limit documents to their owner](/docs/recipes/owner-scoped-access) — Return a where constraint from access control so authenticated users only read their own records.
+- [Build flexible pages from reusable blocks](/docs/recipes/page-builder-blocks) — Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
+- [Model a relationship and its reverse lookup](/docs/recipes/relationship-and-reverse-join) — Store an author relationship on posts and expose the author's posts through a virtual join field.
+- [Restrict content operations by user role](/docs/recipes/role-based-access) — Allow public reads, editor writes, and administrator deletion with collection access rules.
+- [Rename a field without orphaning existing data](/docs/recipes/safe-field-rename) — Use renameTo and a safe default while documents migrate lazily to a new field name.
+- [Create a media upload collection](/docs/recipes/upload-collection) — Enable file uploads and capture accessible metadata in a dedicated media collection.
+{/* GENERATED:RECIPE-INDEX:END */}
+
+## Choosing a pattern
+
+- Use field hooks for transformations local to one value; use collection hooks for cross-field behavior.
+- Use server access rules for security and Admin conditions for presentation.
+- Use relationships for stored ownership and joins for reverse lookup.
+- Use workflows for capability-controlled editorial states rather than an informal status field.
+- Treat schema evolution and public URLs as migrations, not ordinary refactors.

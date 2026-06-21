@@ -3,6 +3,7 @@
   "pages": [
     "getting-started",
     "guides",
+    "recipes",
     "concepts",
     "admin",
     "adapters",

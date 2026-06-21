@@ -1,0 +1,79 @@
+---
+title: Generate a Slug from a Title
+description: Keep server-written slugs correct while giving editors immediate feedback.
+---
+
+Use two layers: a server hook guarantees correctness for every API write, while the Admin hook previews the value as an editor types.
+
+{/* GENERATED:RECIPE:START */}
+Generate stable URL slugs on the server while showing editors the value live in the Admin UI.
+
+## Use this when
+
+- make the URL follow the title
+- automatically generate a slug
+- create friendly URLs from titles
+- keep a slug synchronized with a title
+
+## Dyrected concepts
+
+`beforeChange`, `admin.hooks.onChange`, `promoted`, `unique`
+
+**Additional packages:** No additional packages.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const toSlug = (value: unknown) =>
+  String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+export const Posts = defineCollection({
+  slug: "posts",
+  hooks: {
+    beforeChange: [
+      ({ data, operation }) => {
+        if (operation === "create" || data.title !== undefined) {
+          return { ...data, slug: toSlug(data.title) };
+        }
+        return data;
+      },
+    ],
+  },
+  fields: [
+    { name: "title", type: "text", label: "Title", required: true },
+    {
+      name: "slug",
+      type: "text",
+      label: "Slug",
+      required: true,
+      unique: true,
+      promoted: true,
+      admin: {
+        hooks: {
+          onChange: ({ siblingData }) => toSlug(siblingData.title),
+        },
+      },
+    },
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}
+
+## Decisions and cautions
+
+- Decide whether changing a title should change an existing public URL. Stable URLs often need a “generate on create unless empty” policy instead of permanent synchronization.
+- A unique constraint detects collisions but does not resolve them. Add a deterministic suffix or ask the editor to choose when two titles normalize to the same slug.
+- The compact normalizer is ASCII-oriented. Use a tested transliteration library when non-Latin titles must produce readable slugs.
+- Keep the server hook even when the Admin preview exists; imports, scripts, and direct API clients bypass browser hooks.
+
+## Alternatives
+
+Use an explicit editor-controlled slug when redirects and long-lived URLs matter. For immutable identifiers, generate from a stable ID rather than mutable title text.

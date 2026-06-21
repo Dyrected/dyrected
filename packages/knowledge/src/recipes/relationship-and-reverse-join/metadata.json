@@ -1,0 +1,9 @@
+{
+  "id": "relationship-and-reverse-join",
+  "title": "Model a relationship and its reverse lookup",
+  "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
+  "category": "content-modeling",
+  "intents": ["connect posts to authors", "show every post written by a user", "create a reverse relationship", "model one-to-many content"],
+  "concepts": ["relationship", "join", "relationTo", "depth"],
+  "requires": []
+}

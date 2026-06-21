@@ -1,0 +1,21 @@
+{
+  "name": "@dyrected/adapter-contract-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@dyrected/core": "workspace:*",
+    "@dyrected/db-mongodb": "workspace:*",
+    "@dyrected/db-mysql": "workspace:*",
+    "@dyrected/db-postgres": "workspace:*",
+    "@dyrected/db-sqlite": "workspace:*",
+    "@dyrected/storage-b2": "workspace:*",
+    "@dyrected/storage-cloudinary": "workspace:*",
+    "@dyrected/storage-local": "workspace:*",
+    "@dyrected/storage-s3": "workspace:*",
+    "@types/node": "^20.12.12",
+    "vitest": "^1.0.0"
+  }
+}

@@ -1,0 +1,72 @@
+---
+title: Build Flexible Pages from Reusable Blocks
+description: Model editor-controlled layouts with stable block contracts.
+---
+
+Blocks work well when editors choose from a bounded design vocabulary and the frontend owns rendering.
+
+{/* GENERATED:RECIPE:START */}
+Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
+
+## Use this when
+
+- build a page builder
+- let editors arrange page sections
+- create reusable content blocks
+- model flexible landing pages
+
+## Dyrected concepts
+
+`blocks`, `Block`, `content modeling`
+
+**Additional packages:** No additional packages.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection } from "@dyrected/core";
+import type { Block } from "@dyrected/core";
+
+export const HeroBlock = {
+  slug: "hero",
+  labels: { singular: "Hero", plural: "Heroes" },
+  fields: [
+    { name: "heading", type: "text", label: "Heading", required: true },
+    { name: "body", type: "textarea", label: "Body" },
+  ],
+} satisfies Block;
+
+export const CallToActionBlock = {
+  slug: "callToAction",
+  labels: { singular: "Call to action", plural: "Calls to action" },
+  fields: [
+    { name: "label", type: "text", label: "Link label", required: true },
+    { name: "url", type: "url", label: "URL", required: true },
+  ],
+} satisfies Block;
+
+export const Pages = defineCollection({
+  slug: "pages",
+  fields: [
+    { name: "title", type: "text", label: "Title", required: true },
+    {
+      name: "layout",
+      type: "blocks",
+      label: "Page layout",
+      blocks: [HeroBlock, CallToActionBlock],
+    },
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}
+
+## Decisions and cautions
+
+- Keep block slugs stable; they are persisted as `blockType`.
+- Render unknown block types safely during rolling deployments.
+- Add new optional fields with compatible defaults and migrate removed/renamed fields deliberately.
+- Avoid a block for every cosmetic variation. Model content meaning first and keep layout variants constrained.
+
+Use an `array` when every item has one shape. Use related collections when entries need independent reuse, permissions, or querying.

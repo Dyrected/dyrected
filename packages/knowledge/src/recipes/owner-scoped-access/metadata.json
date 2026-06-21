@@ -1,0 +1,9 @@
+{
+  "id": "owner-scoped-access",
+  "title": "Limit documents to their owner",
+  "description": "Return a where constraint from access control so authenticated users only read their own records.",
+  "category": "access-control",
+  "intents": ["users should only see their own records", "add row level access", "scope documents by owner", "prevent users reading another user's data"],
+  "concepts": ["access.read", "where", "row-level access"],
+  "requires": []
+}

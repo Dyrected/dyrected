@@ -1,5 +1,10 @@
-import { DatabaseAdapter, PaginatedResult, parseSort, parseSqlWhere } from '@dyrected/core';
-import postgres from 'postgres';
+import {
+  DatabaseAdapter,
+  PaginatedResult,
+  parseSort,
+  parseSqlWhere,
+} from "@dyrected/core";
+import postgres from "postgres";
 
 export interface PostgresAdapterConfig {
   url: string;
@@ -12,15 +17,17 @@ function escapePgIdentifier(identifier: string) {
 function normalizePgSort(sort: string | undefined, existingCols: string[]) {
   return parseSort(sort)
     .map(({ field, direction }) => {
-      if (field === 'createdAt' || field === 'created_at') return `"created_at" ${direction}`;
-      if (field === 'updatedAt' || field === 'updated_at') return `"updated_at" ${direction}`;
-      if (existingCols.includes(field) && !['id', 'data'].includes(field)) {
+      if (field === "createdAt" || field === "created_at")
+        return `"created_at" ${direction}`;
+      if (field === "updatedAt" || field === "updated_at")
+        return `"updated_at" ${direction}`;
+      if (existingCols.includes(field) && !["id", "data"].includes(field)) {
         return `${escapePgIdentifier(field)} ${direction}`;
       }
 
       return `(data->>'${field.replace(/'/g, "''")}') ${direction}`;
     })
-    .join(', ');
+    .join(", ");
 }
 
 export class PostgresAdapter implements DatabaseAdapter {
@@ -32,7 +39,10 @@ export class PostgresAdapter implements DatabaseAdapter {
   constructor(config: PostgresAdapterConfig) {
     this.config = config;
     this.ensureInitialized().catch((err) => {
-      console.error('[dyrected/db-postgres] Initialization promise failed:', err);
+      console.error(
+        "[dyrected/db-postgres] Initialization promise failed:",
+        err,
+      );
     });
   }
 
@@ -44,12 +54,12 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   private async initialize() {
-    let dbName = '';
-    let defaultUrl = '';
+    let dbName = "";
+    let defaultUrl = "";
     try {
       const parsed = new URL(this.config.url);
-      dbName = parsed.pathname.replace(/^\//, '');
-      parsed.pathname = '/postgres';
+      dbName = parsed.pathname.replace(/^\//, "");
+      parsed.pathname = "/postgres";
       defaultUrl = parsed.toString();
     } catch (err) {
       // url might not be a valid URL string or parsed pathname is empty
@@ -62,15 +72,19 @@ export class PostgresAdapter implements DatabaseAdapter {
           SELECT 1 FROM pg_database WHERE datname = ${dbName}
         `;
         if (exists.length === 0) {
-          await tempSql.unsafe(`CREATE DATABASE "${dbName.replace(/"/g, '""')}"`);
-          console.log(`[dyrected/db-postgres] Database "${dbName}" checked/created successfully`);
+          await tempSql.unsafe(
+            `CREATE DATABASE "${dbName.replace(/"/g, '""')}"`,
+          );
+          console.log(
+            `[dyrected/db-postgres] Database "${dbName}" checked/created successfully`,
+          );
         }
         await tempSql.end();
       } catch (err: any) {
         console.warn(
           `[dyrected/db-postgres] Auto-creation of database "${dbName}" skipped/failed:\n` +
-          `  Error: ${err.message}\n` +
-          `  Please ensure the database exists or your credentials have CREATEDB privileges.`
+            `  Error: ${err.message}\n` +
+            `  Please ensure the database exists or your credentials have CREATEDB privileges.`,
         );
       }
     }
@@ -89,7 +103,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   private getTableIdentifier(slug: string) {
-    if (slug.includes('.')) {
+    if (slug.includes(".")) {
       // If it's already qualified (contains a dot), trust the caller has formatted it correctly
       // e.g. "ws_123"."collection_posts"
       return this.sql.unsafe(slug);
@@ -115,26 +129,36 @@ export class PostgresAdapter implements DatabaseAdapter {
       FROM information_schema.columns 
       WHERE table_name = ${`collection_${slug}`}
     `;
-    const existingCols = cols.map(c => c.column_name);
+    const existingCols = cols.map((c) => c.column_name);
 
     for (const field of fields) {
       if (field.promoted && !existingCols.includes(field.name)) {
-        console.log(`[dyrected/postgres] Promoting field "${field.name}" to column in ${slug}`);
-        let sqlType = 'TEXT';
-        if (field.type === 'number') sqlType = 'NUMERIC';
-        if (field.type === 'boolean') sqlType = 'BOOLEAN';
-        
-        await this.sql.unsafe(`ALTER TABLE ${slug.includes('.') ? slug : `collection_${slug}`} ADD COLUMN "${field.name}" ${sqlType}`);
+        console.log(
+          `[dyrected/postgres] Promoting field "${field.name}" to column in ${slug}`,
+        );
+        let sqlType = "TEXT";
+        if (field.type === "number") sqlType = "NUMERIC";
+        if (field.type === "boolean") sqlType = "BOOLEAN";
+
+        await this.sql.unsafe(
+          `ALTER TABLE ${slug.includes(".") ? slug : `collection_${slug}`} ADD COLUMN "${field.name}" ${sqlType}`,
+        );
       }
     }
   }
 
-  async find(args: { collection: string; where?: any; limit?: number; page?: number; sort?: string }): Promise<PaginatedResult> {
+  async find(args: {
+    collection: string;
+    where?: any;
+    limit?: number;
+    page?: number;
+    sort?: string;
+  }): Promise<PaginatedResult> {
     await this.ensureInitialized();
     const tableSlug = args.collection;
-    const tableName = tableSlug.includes('.')
+    const tableName = tableSlug.includes(".")
       ? tableSlug
-      : `"${tableSlug.startsWith('collection_') ? tableSlug : `collection_${tableSlug}`}"`;
+      : `"${tableSlug.startsWith("collection_") ? tableSlug : `collection_${tableSlug}`}"`;
     const limit = args.limit || 10;
     const page = args.page || 1;
     const offset = (page - 1) * limit;
@@ -145,23 +169,23 @@ export class PostgresAdapter implements DatabaseAdapter {
       FROM information_schema.columns 
       WHERE table_name = ${`collection_${tableSlug}`}
     `;
-    const existingCols = cols.map(c => c.column_name);
+    const existingCols = cols.map((c) => c.column_name);
 
     // Build parameterized WHERE using the shared DSL translator (Postgres JSON path)
-    let whereSql = '';
+    let whereSql = "";
     let params: any[] = [];
     if (args.where && Object.keys(args.where).length > 0) {
       const parsed = parseSqlWhere(
         args.where,
         (field: string) => {
-          if (field === 'createdAt') return '"created_at"';
-          if (field === 'updatedAt') return '"updated_at"';
-          if (existingCols.includes(field) && !['id', 'data'].includes(field)) {
+          if (field === "createdAt") return '"created_at"';
+          if (field === "updatedAt") return '"updated_at"';
+          if (existingCols.includes(field) && !["id", "data"].includes(field)) {
             return `"${field}"`;
           }
           return `data->>'${field}'`;
         },
-        'pg',
+        "pg",
       );
       whereSql = `WHERE ${parsed.sql}`;
       params = parsed.params;
@@ -198,7 +222,8 @@ export class PostgresAdapter implements DatabaseAdapter {
     await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
     const rows = this.inTransaction
-      ? await this.sql`SELECT * FROM ${table} WHERE id = ${params.id} FOR UPDATE`
+      ? await this
+          .sql`SELECT * FROM ${table} WHERE id = ${params.id} FOR UPDATE`
       : await this.sql`SELECT * FROM ${table} WHERE id = ${params.id}`;
     const row = rows[0];
     if (!row) return null;
@@ -208,14 +233,14 @@ export class PostgresAdapter implements DatabaseAdapter {
   async create(params: { collection: string; data: any }) {
     await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
-    
+
     // Inspect columns for promoted fields
     const cols = await this.sql`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = ${`collection_${params.collection}`}
     `;
-    const existingCols = cols.map(c => c.column_name);
+    const existingCols = cols.map((c) => c.column_name);
 
     const id = params.data.id || Math.random().toString(36).substring(7);
     const data = { ...params.data };
@@ -224,7 +249,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     // Extract promoted fields
     const promotedValues: Record<string, any> = {};
     for (const col of existingCols) {
-      if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
+      if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
       if (data[col] !== undefined) {
         promotedValues[col] = data[col];
       }
@@ -243,19 +268,19 @@ export class PostgresAdapter implements DatabaseAdapter {
   async update(params: { collection: string; id: string; data: any }) {
     await this.ensureInitialized();
     const table = this.getTableIdentifier(params.collection);
-    
+
     // Inspect columns for promoted fields
     const cols = await this.sql`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = ${`collection_${params.collection}`}
     `;
-    const existingCols = cols.map(c => c.column_name);
+    const existingCols = cols.map((c) => c.column_name);
 
     const data = { ...params.data };
     const promotedValues: Record<string, any> = {};
     for (const col of existingCols) {
-      if (['id', 'data', 'created_at', 'updated_at'].includes(col)) continue;
+      if (["id", "data", "created_at", "updated_at"].includes(col)) continue;
       if (data[col] !== undefined) {
         promotedValues[col] = data[col];
       }
@@ -270,10 +295,15 @@ export class PostgresAdapter implements DatabaseAdapter {
         WHERE id = ${params.id}
       `;
     } else {
-      await this.sql`UPDATE ${table} SET data = data || ${data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
+      await this
+        .sql`UPDATE ${table} SET data = data || ${data}::jsonb, updated_at = CURRENT_TIMESTAMP WHERE id = ${params.id}`;
     }
 
-    return { id: params.id, ...params.data };
+    const updated = await this.findOne({
+      collection: params.collection,
+      id: params.id,
+    });
+    return updated ?? { id: params.id, ...params.data };
   }
 
   async sync(collections: any[]) {
@@ -290,7 +320,8 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async getGlobal(params: { slug: string }) {
     await this.ensureInitialized();
-    const rows = await this.sql`SELECT value FROM dyrected_internal WHERE key = ${`global_${params.slug}`}`;
+    const rows = await this
+      .sql`SELECT value FROM dyrected_internal WHERE key = ${`global_${params.slug}`}`;
     const row = rows[0];
     if (!row) return {};
     return row.value;
@@ -314,7 +345,9 @@ export class PostgresAdapter implements DatabaseAdapter {
     return this.sql.unsafe(query);
   }
 
-  async transaction<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T> {
+  async transaction<T>(
+    callback: (db: DatabaseAdapter) => Promise<T>,
+  ): Promise<T> {
     await this.ensureInitialized();
     return await (this.sql.begin(async (sql) => {
       const scoped = Object.create(this) as PostgresAdapter;
@@ -331,10 +364,14 @@ export class PostgresAdapter implements DatabaseAdapter {
       await this.sql`SELECT 1`;
       return true;
     } catch (error) {
-      console.error('[dyrected-db-postgres] Database connectivity check failed:', error);
+      console.error(
+        "[dyrected-db-postgres] Database connectivity check failed:",
+        error,
+      );
       return false;
     }
   }
 }
 
-export const postgresAdapter = (config: PostgresAdapterConfig) => new PostgresAdapter(config);
+export const postgresAdapter = (config: PostgresAdapterConfig) =>
+  new PostgresAdapter(config);

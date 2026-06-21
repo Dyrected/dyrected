@@ -22,9 +22,9 @@ export default defineConfig({
         create: () => true,                            // Anyone can create
       },
       fields: [
-        { name: 'name', type: 'text', required: true },
-        { name: 'email', type: 'email', required: true },
-        { name: 'message', type: 'textarea', required: true },
+        { name: 'name', label: 'Name', type: 'text', required: true },
+        { name: 'email', label: 'Email', type: 'email', required: true },
+        { name: 'message', label: 'Message', type: 'textarea', required: true },
       ],
     },
   ],
@@ -97,3 +97,4 @@ Once submitted, your data appears instantly in the **Dyrected Admin**.
 - **Permissions**: Ensure your `read` access is restricted to admins so user data stays private.
 - **Validation**: Dyrected automatically validates the data against your schema before saving it. If the email is invalid or a required field is missing, you'll get a `400 Bad Request` with details.
 - **Emails**: You can use the `hooks` feature in your collection to send an email notification whenever a new submission is created.
+

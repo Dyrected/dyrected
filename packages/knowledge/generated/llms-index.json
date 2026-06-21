@@ -1,0 +1,812 @@
+{
+  "generatedBy": "@dyrected/knowledge",
+  "recipes": [
+    {
+      "id": "auto-slug",
+      "title": "Generate a slug from a title",
+      "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
+      "docsPath": "/docs/recipes/auto-slug",
+      "intents": [
+        "make the URL follow the title",
+        "automatically generate a slug",
+        "create friendly URLs from titles",
+        "keep a slug synchronized with a title"
+      ]
+    },
+    {
+      "id": "conditional-admin-field",
+      "title": "Show an Admin field only when it is relevant",
+      "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
+      "docsPath": "/docs/recipes/conditional-admin-field",
+      "intents": [
+        "show a field conditionally",
+        "hide irrelevant form fields",
+        "show discount only with a coupon",
+        "make the admin form react to another field"
+      ]
+    },
+    {
+      "id": "cross-field-validation",
+      "title": "Validate related fields before saving",
+      "description": "Reject invalid combinations of field values before they reach the database.",
+      "docsPath": "/docs/recipes/cross-field-validation",
+      "intents": [
+        "validate fields before saving",
+        "make sure an end date is after the start date",
+        "reject invalid form submissions",
+        "validate multiple fields together"
+      ]
+    },
+    {
+      "id": "dependent-dropdown",
+      "title": "Update a dropdown from another field",
+      "description": "Change available Admin UI options immediately when an editor changes a related field.",
+      "docsPath": "/docs/recipes/dependent-dropdown",
+      "intents": [
+        "make one dropdown depend on another",
+        "show states based on the selected country",
+        "create a cascading dropdown",
+        "update select options while editing"
+      ]
+    },
+    {
+      "id": "editorial-publishing-workflow",
+      "title": "Add draft, review, and publishing states",
+      "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
+      "docsPath": "/docs/recipes/editorial-publishing-workflow",
+      "intents": [
+        "add draft and publish states",
+        "require review before publishing",
+        "create an editorial workflow",
+        "let editors submit content for approval"
+      ]
+    },
+    {
+      "id": "owner-scoped-access",
+      "title": "Limit documents to their owner",
+      "description": "Return a where constraint from access control so authenticated users only read their own records.",
+      "docsPath": "/docs/recipes/owner-scoped-access",
+      "intents": [
+        "users should only see their own records",
+        "add row level access",
+        "scope documents by owner",
+        "prevent users reading another user's data"
+      ]
+    },
+    {
+      "id": "page-builder-blocks",
+      "title": "Build flexible pages from reusable blocks",
+      "description": "Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.",
+      "docsPath": "/docs/recipes/page-builder-blocks",
+      "intents": [
+        "build a page builder",
+        "let editors arrange page sections",
+        "create reusable content blocks",
+        "model flexible landing pages"
+      ]
+    },
+    {
+      "id": "relationship-and-reverse-join",
+      "title": "Model a relationship and its reverse lookup",
+      "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
+      "docsPath": "/docs/recipes/relationship-and-reverse-join",
+      "intents": [
+        "connect posts to authors",
+        "show every post written by a user",
+        "create a reverse relationship",
+        "model one-to-many content"
+      ]
+    },
+    {
+      "id": "role-based-access",
+      "title": "Restrict content operations by user role",
+      "description": "Allow public reads, editor writes, and administrator deletion with collection access rules.",
+      "docsPath": "/docs/recipes/role-based-access",
+      "intents": [
+        "only editors can update content",
+        "restrict deletion to admins",
+        "make content publicly readable",
+        "add role based access"
+      ]
+    },
+    {
+      "id": "safe-field-rename",
+      "title": "Rename a field without orphaning existing data",
+      "description": "Use renameTo and a safe default while documents migrate lazily to a new field name.",
+      "docsPath": "/docs/recipes/safe-field-rename",
+      "intents": [
+        "rename a field safely",
+        "change a field name without losing data",
+        "migrate an existing schema",
+        "keep old documents working after a rename"
+      ]
+    },
+    {
+      "id": "upload-collection",
+      "title": "Create a media upload collection",
+      "description": "Enable file uploads and capture accessible metadata in a dedicated media collection.",
+      "docsPath": "/docs/recipes/upload-collection",
+      "intents": [
+        "let editors upload images",
+        "create a media library",
+        "store uploaded files",
+        "add image uploads to my project"
+      ]
+    }
+  ],
+  "references": [
+    {
+      "id": "@dyrected/core:AdminConfig",
+      "name": "AdminConfig",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AuthDocFields",
+      "name": "AuthDocFields",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:AuthenticatedUser",
+      "name": "AuthenticatedUser",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:availableWorkflowTransitions",
+      "name": "availableWorkflowTransitions",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:canViewWorkflowDraft",
+      "name": "canViewWorkflowDraft",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionAfterChangeHook",
+      "name": "CollectionAfterChangeHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionAfterDeleteHook",
+      "name": "CollectionAfterDeleteHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionAfterReadHook",
+      "name": "CollectionAfterReadHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionAfterTransitionHook",
+      "name": "CollectionAfterTransitionHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeChangeHook",
+      "name": "CollectionBeforeChangeHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeDeleteHook",
+      "name": "CollectionBeforeDeleteHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeReadHook",
+      "name": "CollectionBeforeReadHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeTransitionHook",
+      "name": "CollectionBeforeTransitionHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionConfig",
+      "name": "CollectionConfig",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:createLifecycleEvent",
+      "name": "createLifecycleEvent",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:createWorkflowDocument",
+      "name": "createWorkflowDocument",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DatabaseAdapter",
+      "name": "DatabaseAdapter",
+      "category": "adapters",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:dispatchLifecycleEvent",
+      "name": "dispatchLifecycleEvent",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:dispatchPendingLifecycleEvents",
+      "name": "dispatchPendingLifecycleEvents",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DyrectedConfig",
+      "name": "DyrectedConfig",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:Field",
+      "name": "Field",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:FieldAfterReadHook",
+      "name": "FieldAfterReadHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:FieldBeforeChangeHook",
+      "name": "FieldBeforeChangeHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:FieldHook",
+      "name": "FieldHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:FieldType",
+      "name": "FieldType",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:FileData",
+      "name": "FileData",
+      "category": "adapters",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:GlobalAfterChangeHook",
+      "name": "GlobalAfterChangeHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:GlobalAfterReadHook",
+      "name": "GlobalAfterReadHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:GlobalBeforeChangeHook",
+      "name": "GlobalBeforeChangeHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:GlobalBeforeReadHook",
+      "name": "GlobalBeforeReadHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:GlobalConfig",
+      "name": "GlobalConfig",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:HookFunction",
+      "name": "HookFunction",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:HookRequestContext",
+      "name": "HookRequestContext",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ImageService",
+      "name": "ImageService",
+      "category": "adapters",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:InferDocShape",
+      "name": "InferDocShape",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:initializeWorkflowDocument",
+      "name": "initializeWorkflowDocument",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:LIFECYCLE_EVENTS_COLLECTION",
+      "name": "LIFECYCLE_EVENTS_COLLECTION",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:LifecycleEvent",
+      "name": "LifecycleEvent",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:LifecycleEventHandler",
+      "name": "LifecycleEventHandler",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:LifecycleEventName",
+      "name": "LifecycleEventName",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:materializeWorkflowDocument",
+      "name": "materializeWorkflowDocument",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:PaginatedResult",
+      "name": "PaginatedResult",
+      "category": "adapters",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:publishingWorkflow",
+      "name": "publishingWorkflow",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ReadonlyDatabaseAdapter",
+      "name": "ReadonlyDatabaseAdapter",
+      "category": "adapters",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:saveWorkflowDraft",
+      "name": "saveWorkflowDraft",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:StorageAdapter",
+      "name": "StorageAdapter",
+      "category": "adapters",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:SystemDocFields",
+      "name": "SystemDocFields",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:transitionWorkflow",
+      "name": "transitionWorkflow",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:UploadConfig",
+      "name": "UploadConfig",
+      "category": "configuration",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:UploadDocFields",
+      "name": "UploadDocFields",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WORKFLOW_HISTORY_COLLECTION",
+      "name": "WORKFLOW_HISTORY_COLLECTION",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:workflowCapabilities",
+      "name": "workflowCapabilities",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WorkflowConfig",
+      "name": "WorkflowConfig",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WorkflowMetadata",
+      "name": "WorkflowMetadata",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WorkflowRole",
+      "name": "WorkflowRole",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WorkflowState",
+      "name": "WorkflowState",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WorkflowTransition",
+      "name": "WorkflowTransition",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WorkflowTransitionContext",
+      "name": "WorkflowTransitionContext",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/sdk:BaseSchema",
+      "name": "BaseSchema",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:createClient",
+      "name": "createClient",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:DyrectedClient",
+      "name": "DyrectedClient",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:DyrectedClientConfig",
+      "name": "DyrectedClientConfig",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:DyrectedError",
+      "name": "DyrectedError",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:InferSchema",
+      "name": "InferSchema",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:TransitionOptions",
+      "name": "TransitionOptions",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:WorkflowDocument",
+      "name": "WorkflowDocument",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:WorkflowHistoryEntry",
+      "name": "WorkflowHistoryEntry",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    }
+  ],
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/collections/media",
+      "summary": "Find Media"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/media",
+      "summary": "Create Media item"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/media/{id}",
+      "summary": "Delete Media item"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/media/{id}",
+      "summary": "Get a single Media item"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/collections/media/{id}",
+      "summary": "Update Media item"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/media/delete-many",
+      "summary": "Delete multiple Media"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/media/media",
+      "summary": "List Media"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/media/media",
+      "summary": "Upload Media item"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/media/media/{filename}",
+      "summary": "Serve Media item bytes"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/media/seed",
+      "summary": "Seed initial Media"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/posts",
+      "summary": "Find Posts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/posts",
+      "summary": "Create Post"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/posts/{id}",
+      "summary": "Delete Post"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/posts/{id}",
+      "summary": "Get a single Post"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/collections/posts/{id}",
+      "summary": "Update Post"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/posts/{id}/transitions/{transition}",
+      "summary": "Transition Post workflow"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/posts/{id}/workflow-history",
+      "summary": "Get Post workflow history"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/posts/delete-many",
+      "summary": "Delete multiple Posts"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/posts/seed",
+      "summary": "Seed initial Posts"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/users",
+      "summary": "Find Users"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users",
+      "summary": "Create User"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/users/{id}",
+      "summary": "Delete User"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/users/{id}",
+      "summary": "Get a single User"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/collections/users/{id}",
+      "summary": "Update User"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/{id}/change-password",
+      "summary": "Change a User password"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/accept-invite",
+      "summary": "Accept an invitation"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/collections/users/delete-many",
+      "summary": "Delete multiple Users"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/first-user",
+      "summary": "Register the first User"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/forgot-password",
+      "summary": "Request a password reset"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/users/init",
+      "summary": "Get Users initialization state"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/invite",
+      "summary": "Invite a User"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/login",
+      "summary": "Log in to Users"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/logout",
+      "summary": "Log out of Users"
+    },
+    {
+      "method": "GET",
+      "path": "/api/collections/users/me",
+      "summary": "Get the current User"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/refresh-token",
+      "summary": "Refresh an authentication token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/reset-password",
+      "summary": "Reset a password"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/seed",
+      "summary": "Seed initial Users"
+    },
+    {
+      "method": "GET",
+      "path": "/api/docs",
+      "summary": "Open interactive API documentation"
+    },
+    {
+      "method": "GET",
+      "path": "/api/dyrected/options/{collection}/{field}",
+      "summary": "Resolve dynamic field options"
+    },
+    {
+      "method": "GET",
+      "path": "/api/globals/settings",
+      "summary": "Get Site settings"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/globals/settings",
+      "summary": "Update Site settings"
+    },
+    {
+      "method": "POST",
+      "path": "/api/globals/settings/seed",
+      "summary": "Seed Site settings"
+    },
+    {
+      "method": "GET",
+      "path": "/api/media/{filename}",
+      "summary": "Serve a stored file"
+    },
+    {
+      "method": "GET",
+      "path": "/api/openapi.json",
+      "summary": "Get the OpenAPI specification"
+    },
+    {
+      "method": "GET",
+      "path": "/api/preferences/{key}",
+      "summary": "Get an authenticated user preference"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/preferences/{key}",
+      "summary": "Set an authenticated user preference"
+    },
+    {
+      "method": "GET",
+      "path": "/api/preview-data",
+      "summary": "Resolve preview data from a token"
+    },
+    {
+      "method": "POST",
+      "path": "/api/preview-token",
+      "summary": "Create a preview token"
+    },
+    {
+      "method": "GET",
+      "path": "/api/schemas",
+      "summary": "Get the serialized Dyrected schema"
+    }
+  ],
+  "fieldTypes": [
+    "text",
+    "textarea",
+    "richText",
+    "number",
+    "boolean",
+    "date",
+    "datetime",
+    "time",
+    "select",
+    "multiSelect",
+    "radio",
+    "relationship",
+    "array",
+    "object",
+    "json",
+    "blocks",
+    "image",
+    "email",
+    "url",
+    "icon",
+    "join",
+    "row"
+  ]
+}

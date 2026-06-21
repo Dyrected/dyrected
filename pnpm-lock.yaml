@@ -27,6 +27,9 @@ importers:
 
   apps/docs:
     dependencies:
+      '@dyrected/knowledge':
+        specifier: workspace:^
+        version: link:../../packages/knowledge
       '@radix-ui/react-slot':
         specifier: ^1.2.4
         version: 1.2.4(@types/react@19.2.14)(react@19.2.6)
@@ -119,6 +122,42 @@ importers:
       tailwindcss:
         specifier: ^4.1.0
         version: 4.3.0
+
+  packages/adapter-contract-tests:
+    devDependencies:
+      '@dyrected/core':
+        specifier: workspace:*
+        version: link:../core
+      '@dyrected/db-mongodb':
+        specifier: workspace:*
+        version: link:../db-mongodb
+      '@dyrected/db-mysql':
+        specifier: workspace:*
+        version: link:../db-mysql
+      '@dyrected/db-postgres':
+        specifier: workspace:*
+        version: link:../db-postgres
+      '@dyrected/db-sqlite':
+        specifier: workspace:*
+        version: link:../db-sqlite
+      '@dyrected/storage-b2':
+        specifier: workspace:*
+        version: link:../storage-b2
+      '@dyrected/storage-cloudinary':
+        specifier: workspace:*
+        version: link:../storage-cloudinary
+      '@dyrected/storage-local':
+        specifier: workspace:*
+        version: link:../storage-local
+      '@dyrected/storage-s3':
+        specifier: workspace:*
+        version: link:../storage-s3
+      '@types/node':
+        specifier: ^20.12.12
+        version: 20.19.39
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.39)
 
   packages/admin:
     dependencies:
@@ -348,6 +387,9 @@ importers:
       '@dyrected/core':
         specifier: workspace:^
         version: link:../core
+      '@dyrected/knowledge':
+        specifier: workspace:^
+        version: link:../knowledge
       '@dyrected/sdk':
         specifier: workspace:^
         version: link:../sdk
@@ -603,6 +645,28 @@ importers:
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
+
+  packages/knowledge:
+    dependencies:
+      '@dyrected/core':
+        specifier: workspace:^
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.12.12
+        version: 20.19.39
+      jiti:
+        specifier: ^2.7.0
+        version: 2.7.0
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(jiti@1.21.7)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.39)
 
   packages/sdk:
     devDependencies:

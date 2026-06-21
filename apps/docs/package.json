@@ -3,14 +3,18 @@
   "version": "0.1.12",
   "private": true,
   "scripts": {
+    "predev": "pnpm docs:generate",
     "dev": "next dev -p 3001",
+    "prebuild": "pnpm docs:generate",
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint",
-    "docs:generate": "node scripts/generate-workflow-reference.mjs",
-    "docs:check": "node scripts/generate-workflow-reference.mjs --check && node scripts/check-contract.mjs && tsc -p tsconfig.examples.json --noEmit"
+    "docs:generate": "pnpm --filter @dyrected/knowledge generate",
+    "docs:check": "pnpm --filter @dyrected/knowledge generate:check && pnpm --filter @dyrected/knowledge typecheck && pnpm --filter @dyrected/knowledge test && node scripts/check-contract.mjs && tsc -p tsconfig.examples.json --noEmit",
+    "docs:goldens": "pnpm --filter @dyrected/react build && pnpm --filter @dyrected/next build && pnpm --filter @dyrected/vue build && pnpm --filter @dyrected/nuxt build"
   },
   "dependencies": {
+    "@dyrected/knowledge": "workspace:^",
     "@radix-ui/react-slot": "^1.2.4",
     "@tailwindcss/postcss": "^4.3.0",
     "class-variance-authority": "^0.7.1",

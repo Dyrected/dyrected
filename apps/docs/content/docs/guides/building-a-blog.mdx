@@ -24,11 +24,11 @@ export default defineConfig({
       slug: 'posts',
       access: { read: () => true },
       fields: [
-        { name: 'title',       type: 'text',     required: true },
-        { name: 'slug',        type: 'text',     required: true },
-        { name: 'content',     type: 'richtext' },
-        { name: 'status',      type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
-        { name: 'publishedAt', type: 'date' },
+        { name: 'title', label: 'Title',       type: 'text',     required: true },
+        { name: 'slug', label: 'Slug',        type: 'text',     required: true },
+        { name: 'content', label: 'Content',     type: 'richtext' },
+        { name: 'status', label: 'Status',      type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
+        { name: 'publishedAt', label: 'Published At', type: 'date' },
       ],
     },
   ],
@@ -303,3 +303,4 @@ definePageMeta({ layout: false })
 </Tabs>
 
 See [Admin UI Overview](/docs/admin/overview) for setup details.
+
