@@ -18,5 +18,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir packages/core build
       - run: pnpm --dir packages/sdk build
+      - run: pnpm --dir packages/knowledge build
       - run: pnpm --dir apps/docs docs:check
       - run: pnpm --dir apps/docs build
