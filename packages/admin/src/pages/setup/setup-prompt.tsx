@@ -7,9 +7,16 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import type { SetupPromptConfig } from "@dyrected/sdk";
 
-export type { SetupPromptConfig };
+export interface SetupPromptConfig {
+  siteName?: string;
+  siteId?: string;
+  apiKey?: string;
+  baseUrl?: string;
+  isSelfHosted?: boolean;
+  existingSite?: boolean;
+  defaultTechStack?: string;
+}
 
 export interface SetupPromptProps {
   config: SetupPromptConfig;
