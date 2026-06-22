@@ -49,6 +49,8 @@
 }
 
 :root {
+  --font-geist-sans: "Geist Sans", system-ui, -apple-system, sans-serif;
+  --font-geist-mono: "Geist Mono", monospace;
   --background: oklch(0.08 0.025 250);
   --foreground: oklch(0.96 0.015 250);
   --card: oklch(0.11 0.025 250);

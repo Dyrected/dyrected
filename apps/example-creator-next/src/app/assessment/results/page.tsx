@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, ChevronRight, HelpCircle, RefreshCw, Calendar, Mail, UserPlus, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, RefreshCw, Calendar, UserPlus } from "lucide-react";
 import { getStoredResults, getStoredProfile, saveProfile, AssessmentResult } from "@/lib/storage";
 import ScoreChart from "@/components/ScoreChart";
 
 function ResultsContent() {
-  const router = useRouter();
+
   const searchParams = useSearchParams();
   const resultId = searchParams.get("id");
 
@@ -21,17 +21,21 @@ function ResultsContent() {
 
   // Load results from localStorage
   useEffect(() => {
-    const results = getStoredResults();
-    const found = results.find((r) => r.id === resultId) || results[0];
-    if (found) {
-      setResult(found);
-    }
-    
-    // Check if profile already exists
-    const existingProfile = getStoredProfile();
-    if (existingProfile) {
-      setProfileSaved(true);
-    }
+    const timeoutId = setTimeout(() => {
+      const results = getStoredResults();
+      const found = results.find((r) => r.id === resultId) || results[0];
+      if (found) {
+        setResult(found);
+      }
+      
+      // Check if profile already exists
+      const existingProfile = getStoredProfile();
+      if (existingProfile) {
+        setProfileSaved(true);
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [resultId]);
 
   const handleCreateAccount = (e: React.FormEvent) => {
