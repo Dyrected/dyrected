@@ -47,7 +47,10 @@ export default defineConfig({
 Create `app/dyrected/[...route]/route.ts` to handle CMS requests.
 
 ```ts
-export { GET, POST, PUT, PATCH, DELETE } from "@dyrected/next";
+import { dyrectedNextHandler } from "@dyrected/next";
+import config from "../../../dyrected.config";
+
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config);
 ```
 
 ### Step D: Mount the Admin UI

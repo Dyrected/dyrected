@@ -99,17 +99,12 @@ The Dyrected Hono router is compatible with the Vercel Edge Runtime for lower la
 
 ```ts
 // app/dyrected/[...route]/route.ts
-import { createDyrectedApp } from '@dyrected/core/server'
+import { dyrectedNextHandler } from '@dyrected/next'
 import config from '@/dyrected.config'
 
 export const runtime = 'edge'
 
-const app = createDyrectedApp(config)
-
-export const GET    = app.fetch
-export const POST   = app.fetch
-export const PATCH  = app.fetch
-export const DELETE = app.fetch
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
 ```
 
 > **Edge limitations:** The Edge Runtime does not support `better-sqlite3`. Use `@dyrected/db-postgres` with a Neon serverless driver, or keep the default Node.js runtime.

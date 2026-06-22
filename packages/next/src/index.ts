@@ -1,26 +1,6 @@
-import type { DyrectedConfig } from "@dyrected/core";
-import { createDyrectedApp } from "@dyrected/core/server";
 import { createClient, DyrectedClient } from "@dyrected/sdk";
-import { handle } from "hono/vercel";
-
-/**
- * Creates a standard Next.js Route Handler for Dyrected CMS.
- * Usage in app/dyrected/[...dyrected]/route.ts:
- *
- * export const { GET, POST, PATCH, DELETE } = dyrectedNextHandler(config);
- */
-export function dyrectedNextHandler(config: DyrectedConfig) {
-  const handler = handle(createDyrectedApp(config) as any);
-
-  return {
-    GET: handler,
-    POST: handler,
-    PATCH: handler,
-    DELETE: handler,
-    PUT: handler,
-    OPTIONS: handler,
-  };
-}
+export { dyrectedNextHandler } from "./handler.js";
+export type { DyrectedNextHandlerOptions } from "./handler.js";
 
 /**
  * Returns a pre-configured Dyrected SDK client for server-side use.
@@ -36,8 +16,8 @@ export function getDyrectedClient(): DyrectedClient {
   });
 }
 
-export * from "./components/DyrectedMedia";
-export * from "./components/DyrectedImage";
+export * from "./components/DyrectedMedia.js";
+export * from "./components/DyrectedImage.js";
 
 // Re-export React integration layer so Next.js users have one package to import from
 export { DyrectedProvider, useDyrected, useLivePreview } from "@dyrected/react";

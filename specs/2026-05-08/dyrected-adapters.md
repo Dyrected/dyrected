@@ -84,7 +84,10 @@ Create a single catch-all route handler. The adapter exports named HTTP method h
 
 ```ts
 // app/dyrected/[...route]/route.ts
-export { GET, POST, PUT, PATCH, DELETE } from "@dyrected/next";
+import { dyrectedNextHandler } from "@dyrected/next";
+import config from "../../../dyrected.config";
+
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config);
 ```
 
 That is the entire file. Dyrected now handles every request under `/dyrected/`.

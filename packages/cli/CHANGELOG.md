@@ -1,5 +1,15 @@
 # @dyrected/cli
 
+## 2.5.33
+
+### Patch Changes
+
+- Await lazy Dyrected app initialization in Next.js route handlers, mount API routes
+  under `/dyrected` by default, support custom route prefixes, and generate valid
+  App Router scaffolding from the CLI.
+  - @dyrected/core@2.5.33
+  - @dyrected/sdk@2.5.33
+
 ## 2.5.32
 
 ### Patch Changes

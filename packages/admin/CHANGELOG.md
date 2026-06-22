@@ -1,5 +1,12 @@
 # @dyrected/admin
 
+## 2.5.33
+
+### Patch Changes
+
+- @dyrected/core@2.5.33
+- @dyrected/sdk@2.5.33
+
 ## 2.5.32
 
 ### Patch Changes

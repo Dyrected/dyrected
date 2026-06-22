@@ -3976,12 +3976,7 @@ The Dyrected Hono router is compatible with the Vercel Edge Runtime for lower la
 
 export const runtime = 'edge'
 
-const app = createDyrectedApp(config)
-
-export const GET    = app.fetch
-export const POST   = app.fetch
-export const PATCH  = app.fetch
-export const DELETE = app.fetch
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
 ```
 
 > **Edge limitations:** The Edge Runtime does not support `better-sqlite3`. Use `@dyrected/db-postgres` with a Neon serverless driver, or keep the default Node.js runtime.
@@ -4901,12 +4896,7 @@ export default defineConfig({
 
 
 
-const app = createDyrectedApp(config)
-
-export const GET    = app.fetch
-export const POST   = app.fetch
-export const PATCH  = app.fetch
-export const DELETE = app.fetch
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
 ```
 </Tab>
 <Tab value="Nuxt.js">
@@ -8146,9 +8136,9 @@ export const SiteSettings = defineGlobal({
 
 Canonical URL: https://docs.dyrected.com/docs/integrations/nextjs
 
-Dyrected integrates natively with Next.js via a catch-all API route. Supports both App Router and Pages Router. You can fetch data server-side, client-side, or use the SDK in Server Components.
+Dyrected integrates natively with the Next.js App Router via a catch-all API route. You can fetch data server-side, client-side, or use the SDK in Server Components.
 
-> **Recommended:** Use the CLI to set up Dyrected automatically. It detects App Router vs Pages Router, your `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
+> **Recommended:** Use the CLI to set up Dyrected automatically. It detects your App Router and optional `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
 > ```bash
 > npx @dyrected/cli init
 > ```
@@ -8226,19 +8216,16 @@ export default defineConfig({
 
 ```ts
 // app/dyrected/[...route]/route.ts  (or src/app/dyrected/[...route]/route.ts)
-export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'
+
+
+
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
 ```
 
 All Dyrected REST endpoints are now available at `/dyrected/...`.
 
-### Pages Router
-
-```ts
-// pages/api/dyrected/[...route].ts  (or src/pages/api/dyrected/[...route].ts)
-export { default } from '@dyrected/next'
-```
-
-All Dyrected REST endpoints are available at `/api/dyrected/...`.
+If your catch-all route uses another prefix, pass it explicitly—for example,
+`dyrectedNextHandler(config, { basePath: '/cms' })`.
 
 ---
 

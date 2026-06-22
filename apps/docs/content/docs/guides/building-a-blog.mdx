@@ -43,15 +43,10 @@ export default defineConfig({
 <Tab value="Next.js">
 ```ts
 // app/dyrected/[...route]/route.ts
-import { createDyrectedApp } from '@dyrected/core/server'
+import { dyrectedNextHandler } from '@dyrected/next'
 import config from '@/dyrected.config'
 
-const app = createDyrectedApp(config)
-
-export const GET    = app.fetch
-export const POST   = app.fetch
-export const PATCH  = app.fetch
-export const DELETE = app.fetch
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
 ```
 </Tab>
 <Tab value="Nuxt.js">
@@ -303,4 +298,3 @@ definePageMeta({ layout: false })
 </Tabs>
 
 See [Admin UI Overview](/docs/admin/overview) for setup details.
-

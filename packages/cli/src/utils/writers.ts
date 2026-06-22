@@ -72,30 +72,24 @@ export async function writeNextFiles(cwd: string, adminPath: string) {
   const hasPagesRouter = await fs.pathExists(pagesDir);
 
   if (hasPagesRouter && !hasAppRouter) {
-    const rel = hasSrc ? "src/pages" : "pages";
-    const apiRoutePath = path.join(pagesDir, "api/dyrected/[...route].ts");
-    if (!(await fs.pathExists(apiRoutePath))) {
-      await fs.outputFile(apiRoutePath, `export { default } from '@dyrected/next'\n`);
-      console.log(chalk.green(`✔  ${rel}/api/dyrected/[...route].ts written`));
-    }
-    const adminPagePath = path.join(pagesDir, `${adminPath}.tsx`);
-    if (!(await fs.pathExists(adminPagePath))) {
-      await fs.outputFile(
-        adminPagePath,
-        `import { DyrectedAdmin } from '@dyrected/next/admin'
-
-export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/api/dyrected" />
-}
-`,
-      );
-      console.log(chalk.green(`✔  ${rel}/${adminPath}.tsx written`));
-    }
+    throw new Error(
+      "@dyrected/next requires the Next.js App Router. Add an app/ directory before running init.",
+    );
   } else {
     const rel = hasSrc ? "src/app" : "app";
     const apiRoutePath = path.join(appDir, "dyrected/[...route]/route.ts");
     if (!(await fs.pathExists(apiRoutePath))) {
-      await fs.outputFile(apiRoutePath, `export { GET, POST, PUT, PATCH, DELETE } from '@dyrected/next'\n`);
+      const configImport = hasSrc
+        ? "../../../../dyrected.config"
+        : "../../../dyrected.config";
+      await fs.outputFile(
+        apiRoutePath,
+        `import { dyrectedNextHandler } from '@dyrected/next'
+import config from '${configImport}'
+
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
+`,
+      );
       console.log(chalk.green(`✔  ${rel}/dyrected/[...route]/route.ts written`));
     }
     const adminPagePath = path.join(appDir, `${adminPath}/page.tsx`);
