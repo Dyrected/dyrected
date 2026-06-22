@@ -15,3 +15,5 @@ The package is presentation-neutral: Fumadocs, MCP servers, skills, websites, an
 Every named field in a canonical recipe must define an explicit `label`. The generator validates this rule and fails before producing documentation when a label is missing.
 
 Run `pnpm generate` to update committed artifacts and Fumadocs MDX. Run `pnpm generate:check` in CI to fail when generated output is stale.
+
+A game changer.
