@@ -1,0 +1,14 @@
+{
+  "header": {
+    "badge": "Diagnostic Analysis",
+    "title": "Your Timeline Alignment Report"
+  },
+  "saveReport": {
+    "title": "Save Report to Timeline Dashboard",
+    "description": "Don't let this diagnostic fade into alternate timelines. Enter your details to create a simulated account and save this assessment to your live dashboard."
+  },
+  "bookingCta": {
+    "title": "Want Help Accelerating Your Timeline?",
+    "description": "Book a 1-on-1 Future Alignment Session with Dr. Tomorrow to map your target habits, review this report, and lock in the timeline where things worked out."
+  }
+}

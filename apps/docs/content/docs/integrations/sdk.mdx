@@ -25,7 +25,7 @@ npm install @dyrected/sdk
 import { createClient } from '@dyrected/sdk'
 
 export const cms = createClient({
-  baseUrl: 'https://your-site.com/dyrected',
+  baseUrl: 'https://your-site.com',
   apiKey: process.env.DYRECTED_API_KEY,
   siteId: process.env.DYRECTED_SITE_ID,  // Cloud mode only
 })
@@ -167,7 +167,7 @@ The SDK works in the browser. Use a public API key (one whose collection access 
 import { createClient } from '@dyrected/sdk'
 
 const cms = createClient({
-  baseUrl: 'https://your-site.com/dyrected',
+  baseUrl: 'https://your-site.com',
   apiKey: import.meta.env.PUBLIC_DYRECTED_API_KEY,
 })
 

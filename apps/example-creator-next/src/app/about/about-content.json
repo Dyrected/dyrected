@@ -1,0 +1,66 @@
+{
+  "hero": {
+    "titlePrefix": "Meet",
+    "titleHighlight": "Dr. Tomorrow",
+    "description": "Helping people make better decisions today by understanding the habits, choices, and systems that guarantee a better tomorrow."
+  },
+  "profile": {
+    "badge": "Founder & Lead Coach",
+    "name": "Dr. Tomorrow",
+    "title": "Certified Future Alignment Specialist",
+    "bioParagraphs": [
+      "Dr. Tomorrow has spent decades studying successful timelines and helping people avoid becoming cautionary tales. Frustrated by standard productivity coaching that focuses on past mistakes, he developed the Future-Back Framework.",
+      "By establishing a virtual dialog with the person you could become, Dr. Tomorrow breaks down goal resistance, eliminates procrastination loops, and turns abstract goals into immediate daily systems."
+    ],
+    "specialization": "Timeline Correction & Habit Design",
+    "experience": "12,000+ Hours Coached"
+  },
+  "values": {
+    "titlePrefix": "Our Core",
+    "titleHighlight": "Values",
+    "description": "The operational guidelines we use to construct aligned trajectories.",
+    "list": [
+      {
+        "icon": "Compass",
+        "title": "Timeline Agency",
+        "desc": "We believe that you are never locked into a bad timeline. Your next decision is the portal to a better outcome."
+      },
+      {
+        "icon": "Award",
+        "title": "System Ownership",
+        "desc": "Motivation is a fair-weather friend. Systems, habits, and clean environments are the actual building blocks of success."
+      },
+      {
+        "icon": "Globe",
+        "title": "Optimistic Science",
+        "desc": "Growth should be fun, slightly experimental, and optimistic, rather than a dry, guilt-inducing chore."
+      }
+    ]
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "description": "Everything you need to know about time-travel coaching.",
+    "list": [
+      {
+        "q": "Can I take the assessment without booking coaching?",
+        "a": "Absolutely. The assessment is 100% free, requires no credit card, and gives you instant scores. You can print or download your growth roadmap and apply it yourself."
+      },
+      {
+        "q": "Will Future Me really contact me?",
+        "a": "Yes. Every time you make a major commitment or experience a lapse in discipline, Future You is emotionally affected. While we don't have direct, physical portal mail, our automated 'Concerned Emails' feature is a highly realistic simulation of their exact perspective."
+      },
+      {
+        "q": "Can I save my assessment results?",
+        "a": "Yes. After completing the assessment, you can input a mock Name and Email to immediately save your results to your interactive Timeline Dashboard. This allows you to track progress over time."
+      },
+      {
+        "q": "How does coaching work?",
+        "a": "We use a proprietary Future-Back Methodology. Instead of analyzing why you didn't do something in the past, Dr. Tomorrow helps you look back from the timeline where things worked out, analyzing the exact steps you took to achieve it."
+      },
+      {
+        "q": "What if Future Me is disappointed?",
+        "a": "Don't panic. The fact that you are here means you still possess the agency to change the trajectory. Drift warning is just feedback, not a life sentence."
+      }
+    ]
+  }
+}

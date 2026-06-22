@@ -1,0 +1,107 @@
+{
+  "hero": {
+    "badge": "COACHING FROM THE TIMELINE WHERE THINGS WORKED OUT",
+    "titlePrefix": "Future You Has Been",
+    "titleHighlight": "Trying To Reach You",
+    "description": "The version of you from five years in the future has reviewed your life choices and would like to offer some suggestions. Take a free assessment, discover where you're stuck, and get a roadmap toward the future you actually want."
+  },
+  "simulator": {
+    "title": "Visualizing Your",
+    "titleHighlight": "Trajectory",
+    "description": "Slide to simulate what happens if your current habits persist versus what happens when you upgrade your timeline systems.",
+    "widgetLabel": "Timeline Alignment Simulator",
+    "ranges": [
+      {
+        "maxVal": 29,
+        "title": "Timeline Concerned",
+        "focus": "1.2 hrs/day",
+        "finished": "18%",
+        "status": "Concerned Emails",
+        "statusColor": "text-accent border-accent/30 bg-accent/5",
+        "comment": "Warning: Spending 3 hours researching productivity apps instead of doing actual work. Future You is disappointed."
+      },
+      {
+        "maxVal": 64,
+        "title": "Timeline Cautiously Optimistic",
+        "focus": "2.8 hrs/day",
+        "finished": "48%",
+        "status": "Questionable Decisions",
+        "statusColor": "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
+        "comment": "Drift detected: Standard perfectionist patterns. 5 unfinished side projects. Potential exists, but accountability is low."
+      },
+      {
+        "maxVal": 84,
+        "title": "Timeline Proud",
+        "focus": "4.5 hrs/day",
+        "finished": "82%",
+        "status": "Solid Trajectory",
+        "statusColor": "text-primary border-primary/30 bg-primary/5",
+        "comment": "Looking good! Building consistent habits. Side project launched. Future You is starting to smile."
+      },
+      {
+        "maxVal": 100,
+        "title": "Timeline Bragging",
+        "focus": "6.0 hrs/day",
+        "finished": "96%",
+        "status": "Dinner Party Unbearable",
+        "statusColor": "text-secondary border-secondary/30 bg-secondary/5",
+        "comment": "Optimal Alignment: Future You is actively bragging to neighbors about your discipline. Keep going!"
+      }
+    ]
+  },
+  "howItWorks": {
+    "title": "The Path to",
+    "titleHighlight": "Timeline Correction",
+    "description": "Dr. Tomorrow has mapped the exact sequence of events required to close the gap between your current self and your future self.",
+    "steps": [
+      {
+        "step": "01",
+        "title": "Take Assessment",
+        "desc": "Complete our diagnostic tool to find where you are currently losing focus and drift."
+      },
+      {
+        "step": "02",
+        "title": "See Future Review",
+        "desc": "Read the report Dr. Tomorrow generated from the timeline where things worked out."
+      },
+      {
+        "step": "03",
+        "title": "Get Growth Roadmap",
+        "desc": "Receive a structured habit audit detailing exactly what actions to prioritize next."
+      },
+      {
+        "step": "04",
+        "title": "Secure Alignment",
+        "desc": "Work 1-on-1 to lock in your timeline and ensure future versions have reason to brag."
+      }
+    ]
+  },
+  "featuredAssessment": {
+    "badge": "Featured Diagnostics",
+    "title": "How Disappointed Is Future You?",
+    "description": "Take our signature 15-question alignment check to find if Future You is currently proud, cautious, or actively draft-emailing complaints. No account required."
+  },
+  "testimonials": {
+    "title": "Success Stories from",
+    "titleHighlight": "Aligned Clients",
+    "description": "Real results from people who listened to their futures.",
+    "list": [
+      {
+        "quote": "Future Me was 100% right about the gym thing. It turns out that starting five years ago makes a huge difference today.",
+        "author": "Michael K.",
+        "title": "Former Excuse Collector",
+        "avatar": "MK"
+      },
+      {
+        "quote": "I spent three years preparing templates, buying domains, and telling people I was building a startup. Dr. Tomorrow forced me to execute. I finally launched the business instead of just talking about it.",
+        "author": "Sarah L.",
+        "title": "Recovering Perfectionist",
+        "avatar": "SL"
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "Future You Is Waiting.",
+    "description": "Every decision you make today writes the email you receive tomorrow. Secure your timeline alignment now."
+  }
+}

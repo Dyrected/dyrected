@@ -221,7 +221,7 @@ const thumbnailUrl = doc.url.replace(
 After configuring, test with a direct upload:
 
 ```bash
-curl -X POST https://yoursite.com/dyrected/collections/media \
+curl -X POST https://yoursite.com/api/collections/media \
   -H "x-api-key: your-api-key" \
   -F "file=@test-image.jpg" \
   -F "alt=Test upload"
@@ -270,7 +270,7 @@ async resolve(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeTyp
 }
 ```
 
-**When to implement `resolve()`:** Only if your adapter stores files somewhere that cannot be accessed with a direct public URL — for example, on the local filesystem in a self-hosted setup. Dyrected calls `resolve()` to serve the file through its own API at `/dyrected/media/<filename>`.
+**When to implement `resolve()`:** Only if your adapter stores files somewhere that cannot be accessed with a direct public URL — for example, on the local filesystem in a self-hosted setup. Dyrected calls `resolve()` to serve the file through its own API at `/api/media/<filename>`.
 
 **When to omit `resolve()`:** Cloud adapters (S3, R2, Cloudinary, Spaces) never implement this. Their files are publicly accessible via CDN URLs, so Dyrected redirects directly to those URLs without reading the bytes itself. Omitting `resolve()` on a cloud adapter is correct — it is not a missing feature.
 

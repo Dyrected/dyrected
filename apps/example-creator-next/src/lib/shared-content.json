@@ -1,0 +1,74 @@
+{
+  "services": [
+    {
+      "id": "future-alignment",
+      "name": "Future Alignment Session",
+      "description": "A one-on-one deep dive focused on identifying the single biggest timeline gap between Present You and Future You.",
+      "benefits": [
+        "Find where your current trajectory leads",
+        "Isolate the single biggest growth obstacle",
+        "Get a clear 3-step timeline course correction"
+      ],
+      "duration": "60 Minutes",
+      "price": "$149"
+    },
+    {
+      "id": "timeline-upgrade",
+      "name": "Timeline Upgrade Program",
+      "description": "A comprehensive, structured coaching package designed to help clients build durable daily habits that future versions will appreciate.",
+      "benefits": [
+        "8 weekly 1-on-1 accountability checks",
+        "Custom habit-stacking tracking dashboard",
+        "Direct texting access to Dr. Tomorrow"
+      ],
+      "duration": "8 Weeks",
+      "price": "$999"
+    },
+    {
+      "id": "anti-procrastination",
+      "name": "Anti-Procrastination Intervention",
+      "description": "An intensive emergency intervention service for individuals whose Future Self has already filed multiple complaints.",
+      "benefits": [
+        "Urgent system audit (find procrastination loops)",
+        "Instant focus blocker tool installations",
+        "Daily action checks to break the freeze response"
+      ],
+      "duration": "30 Days",
+      "price": "$499"
+    }
+  ],
+  "categories": {
+    "CONCERNED": {
+      "title": "Future You Is Sending Concerned Emails",
+      "range": [15, 30],
+      "summary": "Future You has reviewed the situation, is pacing back and forth in their premium workspace, and would like to schedule an immediate intervention.",
+      "strengths": ["Still breathing", "Untapped potential detected", "Hope remains"],
+      "growthOpportunities": ["Consistency in daily execution", "Focusing on single priorities", "Goal clarity and specificity"],
+      "recommendation": "Start with just one meaningful, tiny daily habit and focus exclusively on building initial momentum."
+    },
+    "OPTIMISTIC": {
+      "title": "Future You Is Cautiously Optimistic",
+      "range": [31, 50],
+      "summary": "Future You sees promise but has noticed several unfinished projects, abandoned plans, and questionable late-night decisions.",
+      "strengths": ["High self-awareness", "Strong ambition", "Desire for genuine growth"],
+      "growthOpportunities": ["Reliability and follow-through", "Accountability structures", "Moving from planning to execution"],
+      "recommendation": "Focus on building automatic systems and environments instead of relying on temporary motivation."
+    },
+    "PROUD": {
+      "title": "Future You Is Proud",
+      "range": [51, 65],
+      "summary": "You are making excellent progress and building a solid, reliable foundation that future versions will thank you for.",
+      "strengths": ["Consistent self-discipline", "Clear focus on goals", "Proactive growth mindset"],
+      "growthOpportunities": ["Leverage and delegation", "Broader leadership impact", "Long-term legacy planning"],
+      "recommendation": "Identify the few high-impact actions (the 80/20 rule) that create the absolute biggest multiplier effects."
+    },
+    "BRAGGING": {
+      "title": "Future You Is Bragging About You",
+      "range": [66, 75],
+      "summary": "Future You has become borderline unbearable at dinner parties because they cannot stop bragging about your achievements.",
+      "strengths": ["Outstanding consistency", "Total ownership of results", "Strategic, timeline-aware thinking"],
+      "growthOpportunities": ["Scaling your impact", "Mentoring others in growth", "Pursuing even more audacious goals"],
+      "recommendation": "Your next challenge is expansion and scaling your impact, rather than simple survival. Dream bigger."
+    }
+  }
+}

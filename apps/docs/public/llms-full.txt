@@ -1893,7 +1893,7 @@ export const Users = defineCollection({
 `auth: true` does two things:
 
 1. **Injects fields** — `email` (required, unique) and `password` (hashed, never returned in API responses) are automatically added to every document.
-2. **Generates endpoints** — a full set of auth routes is mounted under `/dyrected/api/{slug}/`.
+2. **Generates endpoints** — a full set of auth routes is mounted under `/api/{slug}/`.
 
 You do not define `email` or `password` in your `fields` array — they are always present.
 
@@ -2039,11 +2039,11 @@ Defining a collection gives you, automatically:
 
 | What you get | Detail |
 |---|---|
-| **List endpoint** | `GET /dyrected/api/posts` — paginated, filterable, sortable |
-| **Single endpoint** | `GET /dyrected/api/posts/:id` |
-| **Create endpoint** | `POST /dyrected/api/posts` |
-| **Update endpoint** | `PATCH /dyrected/api/posts/:id` |
-| **Delete endpoint** | `DELETE /dyrected/api/posts/:id` |
+| **List endpoint** | `GET /api/posts` — paginated, filterable, sortable |
+| **Single endpoint** | `GET /api/posts/:id` |
+| **Create endpoint** | `POST /api/posts` |
+| **Update endpoint** | `PATCH /api/posts/:id` |
+| **Delete endpoint** | `DELETE /api/posts/:id` |
 | **List page** in Admin UI | Searchable table with configurable columns |
 | **Edit page** in Admin UI | Form generated from your `fields` array |
 | **SDK methods** | `.collection('posts').find()`, `.findOne()`, `.create()`, `.update()`, `.delete()` |
@@ -2069,8 +2069,8 @@ Defining a global gives you:
 
 | What you get | Detail |
 |---|---|
-| **Get endpoint** | `GET /dyrected/api/globals/site-settings` |
-| **Update endpoint** | `PATCH /dyrected/api/globals/site-settings` |
+| **Get endpoint** | `GET /api/globals/site-settings` |
+| **Update endpoint** | `PATCH /api/globals/site-settings` |
 | **Edit page** in Admin UI | Single form — no list, no create button |
 | **SDK method** | `.global('site-settings').get()`, `.update()` |
 
@@ -2124,7 +2124,7 @@ The `slug` is the identifier used everywhere — in API paths, SDK calls, and th
 
 ```ts
 // slug: 'site-settings'
-// → API:   GET /dyrected/api/globals/site-settings
+// → API:   GET /api/globals/site-settings
 // → SDK:   cms.global('site-settings').get()
 // → Admin: /admin/globals/site-settings
 ```
@@ -5611,7 +5611,7 @@ const thumbnailUrl = doc.url.replace(
 After configuring, test with a direct upload:
 
 ```bash
-curl -X POST https://yoursite.com/dyrected/collections/media \
+curl -X POST https://yoursite.com/api/collections/media \
   -H "x-api-key: your-api-key" \
   -F "file=@test-image.jpg" \
   -F "alt=Test upload"
@@ -5660,7 +5660,7 @@ async resolve(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeTyp
 }
 ```
 
-**When to implement `resolve()`:** Only if your adapter stores files somewhere that cannot be accessed with a direct public URL — for example, on the local filesystem in a self-hosted setup. Dyrected calls `resolve()` to serve the file through its own API at `/dyrected/media/<filename>`.
+**When to implement `resolve()`:** Only if your adapter stores files somewhere that cannot be accessed with a direct public URL — for example, on the local filesystem in a self-hosted setup. Dyrected calls `resolve()` to serve the file through its own API at `/api/media/<filename>`.
 
 **When to omit `resolve()`:** Cloud adapters (S3, R2, Cloudinary, Spaces) never implement this. Their files are publicly accessible via CDN URLs, so Dyrected redirects directly to those URLs without reading the bytes itself. Omitting `resolve()` on a cloud adapter is correct — it is not a missing feature.
 
@@ -5838,7 +5838,7 @@ const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
-const media = await $fetch('/dyrected/collections/media', {
+const media = await $fetch('/api/collections/media', {
   method: 'POST',
   headers: { 'x-api-key': useRuntimeConfig().public.dyrectedApiKey },
   body: form,
@@ -9077,7 +9077,7 @@ npm install @dyrected/sdk
 
 
 export const cms = createClient({
-  baseUrl: 'https://your-site.com/dyrected',
+  baseUrl: 'https://your-site.com',
   apiKey: process.env.DYRECTED_API_KEY,
   siteId: process.env.DYRECTED_SITE_ID,  // Cloud mode only
 })
@@ -9219,7 +9219,7 @@ The SDK works in the browser. Use a public API key (one whose collection access 
 
 
 const cms = createClient({
-  baseUrl: 'https://your-site.com/dyrected',
+  baseUrl: 'https://your-site.com',
   apiKey: import.meta.env.PUBLIC_DYRECTED_API_KEY,
 })
 
@@ -12634,7 +12634,7 @@ See [REST API Reference](/docs/reference/rest-api) for the full endpoint documen
 
 
 const client = createClient({
-  baseUrl: "https://your-site.com/dyrected",
+  baseUrl: "https://your-site.com",
   apiKey: process.env.DYRECTED_API_KEY,
 });
 

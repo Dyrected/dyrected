@@ -1,0 +1,26 @@
+{
+  "serviceStep": {
+    "title": "Choose Coaching Service",
+    "description": "Select which timeline upgrade program you wish to coordinate with Dr. Tomorrow."
+  },
+  "intakeStep": {
+    "title": "Future Intake Questionnaire",
+    "description": "Please complete this brief questionnaire so Dr. Tomorrow can audit your trajectory."
+  },
+  "scheduleStep": {
+    "title": "Schedule Your Alignment Slot",
+    "description": "Select your preferred space-time coordinates for the session.",
+    "dates": [
+      { "label": "Tomorrow", "desc": "Optimal Portal Alignment" },
+      { "label": "In 2 Days", "desc": "Standard Trajectory" },
+      { "label": "In 3 Days", "desc": "Emergency Alignment" },
+      { "label": "Next Monday", "desc": "Fresh Cycle Start" }
+    ]
+  },
+  "successStep": {
+    "badge": "Timeline Correction Confirmed",
+    "title": "Booking Complete!",
+    "description": "Dr. Tomorrow has locked in your coordinates. We are currently listening for the quantum notification of your session.",
+    "note": "Note: If you receive this session request five years ago, please ignore it. That was a calibration error. Otherwise, see you in alignment!"
+  }
+}

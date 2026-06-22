@@ -1,0 +1,32 @@
+{
+  "hero": {
+    "badge": "COMMUNICATION PORTAL",
+    "titlePrefix": "Establish",
+    "titleHighlight": "Contact",
+    "description": "Reach out to Dr. Tomorrow. We respond in 2–3 business days, or instantly if we successfully figure out time travel in the interim."
+  },
+  "channels": [
+    {
+      "icon": "Mail",
+      "title": "Electronic Mail",
+      "detail": "hello@futureyoucoaching.com",
+      "variant": "primary"
+    },
+    {
+      "icon": "Globe",
+      "title": "Temporal Sector",
+      "detail": "Portal Frequency: Alpha-7",
+      "variant": "secondary"
+    },
+    {
+      "icon": "Brain",
+      "title": "Warning Notice",
+      "detail": "If you receive a message from yourself claiming to be from the future, verify the security hash.",
+      "variant": "muted"
+    }
+  ],
+  "success": {
+    "title": "Transmission Successful",
+    "description": "Your signal has been injected into the timeline pipeline. Dr. Tomorrow has already received this in 2031, and our present-day staff will reply shortly."
+  }
+}

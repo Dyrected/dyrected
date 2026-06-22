@@ -112,7 +112,7 @@ const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
-const media = await $fetch('/dyrected/collections/media', {
+const media = await $fetch('/api/collections/media', {
   method: 'POST',
   headers: { 'x-api-key': useRuntimeConfig().public.dyrectedApiKey },
   body: form,
@@ -190,4 +190,3 @@ defineProps<{ post: any }>()
 > For Nuxt.js Image optimisation, use `<NuxtImg>` from `@nuxt/image` and add your storage domain to `image.domains` in `nuxt.config.ts`.
 </Tab>
 </Tabs>
-

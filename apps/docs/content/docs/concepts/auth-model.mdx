@@ -23,7 +23,7 @@ export const Users = defineCollection({
 `auth: true` does two things:
 
 1. **Injects fields** — `email` (required, unique) and `password` (hashed, never returned in API responses) are automatically added to every document.
-2. **Generates endpoints** — a full set of auth routes is mounted under `/dyrected/api/{slug}/`.
+2. **Generates endpoints** — a full set of auth routes is mounted under `/api/{slug}/`.
 
 You do not define `email` or `password` in your `fields` array — they are always present.
 
@@ -140,4 +140,3 @@ If `resetUrl` is omitted, the email template receives only the raw `token`. See 
 - [Separating Admin Auth](/docs/guides/separating-admin-auth) — keep CMS dashboard auth independent from app users
 - [Invite-Only Registration](/docs/guides/invite-only-registration) — restrict sign-up to invited users
 - [Role-Based Access Control](/docs/guides/role-based-access-control) — use roles to gate collections and fields
-
