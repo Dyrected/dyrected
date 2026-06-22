@@ -3,7 +3,6 @@ import {
   BookOpen,
   Code2,
   Compass,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
