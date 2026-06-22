@@ -3,54 +3,25 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { ArrowRight, Calendar, AlertTriangle, Sparkles, CheckCircle2, ChevronRight, HelpCircle, User } from "lucide-react";
+import { ArrowRight, Calendar, AlertTriangle, Sparkles, ChevronRight } from "lucide-react";
+import homeContent from "./home-content.json";
 
 export default function Home() {
   const [sliderVal, setSliderVal] = useState(50);
 
-  // Dynamic slider state data
+  // Dynamic slider state data loaded from JSON content
   const getSliderState = (val: number) => {
-    if (val < 30) {
-      return {
-        title: "Timeline Concerned",
-        focus: "1.2 hrs/day",
-        finished: "18%",
-        status: "Concerned Emails",
-        color: "text-accent border-accent/30 bg-accent/5",
-        barColor: "bg-accent",
-        comment: "Warning: Spending 3 hours researching productivity apps instead of doing actual work. Future You is disappointed."
-      };
-    } else if (val < 65) {
-      return {
-        title: "Timeline Cautiously Optimistic",
-        focus: "2.8 hrs/day",
-        finished: "48%",
-        status: "Questionable Decisions",
-        color: "text-yellow-500 border-yellow-500/30 bg-yellow-500/5",
-        barColor: "bg-yellow-500",
-        comment: "Drift detected: Standard perfectionist patterns. 5 unfinished side projects. Potential exists, but accountability is low."
-      };
-    } else if (val < 85) {
-      return {
-        title: "Timeline Proud",
-        focus: "4.5 hrs/day",
-        finished: "82%",
-        status: "Solid Trajectory",
-        color: "text-primary border-primary/30 bg-primary/5",
-        barColor: "bg-primary",
-        comment: "Looking good! Building consistent habits. Side project launched. Future You is starting to smile."
-      };
-    } else {
-      return {
-        title: "Timeline Bragging",
-        focus: "6.0 hrs/day",
-        finished: "96%",
-        status: "Dinner Party Unbearable",
-        color: "text-secondary border-secondary/30 bg-secondary/5",
-        barColor: "bg-secondary",
-        comment: "Optimal Alignment: Future You is actively bragging to neighbors about your discipline. Keep going!"
-      };
-    }
+    const range = homeContent.simulator.ranges.find((r) => val <= r.maxVal) || 
+      homeContent.simulator.ranges[homeContent.simulator.ranges.length - 1];
+    
+    return {
+      title: range.title,
+      focus: range.focus,
+      finished: range.finished,
+      status: range.status,
+      color: range.statusColor,
+      comment: range.comment
+    };
   };
 
   const sliderState = getSliderState(sliderVal);
@@ -65,14 +36,14 @@ export default function Home() {
             <div className="space-y-6 max-w-2xl">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 px-3.5 py-1.5 text-xs font-semibold text-primary glow-text-purple">
                 <Sparkles className="h-3.5 w-3.5 text-secondary animate-pulse" />
-                <span>COACHING FROM THE TIMELINE WHERE THINGS WORKED OUT</span>
+                <span>{homeContent.hero.badge}</span>
               </div>
               <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-                Future You Has Been{" "}
-                <span className="text-gradient-purple-teal">Trying To Reach You</span>
+                {homeContent.hero.titlePrefix}{" "}
+                <span className="text-gradient-purple-teal">{homeContent.hero.titleHighlight}</span>
               </h1>
               <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-                The version of you from five years in the future has reviewed your life choices and would like to offer some suggestions. Take a free assessment, discover where you&apos;re stuck, and get a roadmap toward the future you actually want.
+                {homeContent.hero.description}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
@@ -114,10 +85,11 @@ export default function Home() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center space-y-12">
           <div className="space-y-4">
             <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-              Visualizing Your <span className="text-gradient-lime-teal">Trajectory</span>
+              {homeContent.simulator.title}{" "}
+              <span className="text-gradient-lime-teal">{homeContent.simulator.titleHighlight}</span>
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
-              Slide to simulate what happens if your current habits persist versus what happens when you upgrade your timeline systems.
+              {homeContent.simulator.description}
             </p>
           </div>
 
@@ -126,7 +98,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-4">
               <div>
                 <h3 className="text-sm font-bold tracking-wider text-muted-foreground uppercase">
-                  Timeline Alignment Simulator
+                  {homeContent.simulator.widgetLabel}
                 </h3>
                 <p className="text-lg font-bold text-white mt-1">
                   Current score: <span className="text-primary">{sliderVal} / 100</span>
@@ -194,36 +166,16 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-4 max-w-3xl mx-auto">
             <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-              The Path to <span className="text-gradient-purple-teal">Timeline Correction</span>
+              {homeContent.howItWorks.title}{" "}
+              <span className="text-gradient-purple-teal">{homeContent.howItWorks.titleHighlight}</span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Dr. Tomorrow has mapped the exact sequence of events required to close the gap between your current self and your future self.
+              {homeContent.howItWorks.description}
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 mt-16">
-            {[
-              {
-                step: "01",
-                title: "Take Assessment",
-                desc: "Complete our diagnostic tool to find where you are currently losing focus and drift.",
-              },
-              {
-                step: "02",
-                title: "See Future Review",
-                desc: "Read the report Dr. Tomorrow generated from the timeline where things worked out.",
-              },
-              {
-                step: "03",
-                title: "Get Growth Roadmap",
-                desc: "Receive a structured habit audit detailing exactly what actions to prioritize next.",
-              },
-              {
-                step: "04",
-                title: "Secure Alignment",
-                desc: "Work 1-on-1 to lock in your timeline and ensure future versions have reason to brag.",
-              },
-            ].map((step, idx) => (
+            {homeContent.howItWorks.steps.map((step, idx) => (
               <div
                 key={step.step}
                 className="relative bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between hover:border-primary/40 transition-all group duration-300"
@@ -254,13 +206,13 @@ export default function Home() {
           <div className="glass-panel-glow-lime rounded-3xl p-8 sm:p-12 md:flex md:items-center md:justify-between gap-8 max-w-4xl mx-auto border-white/5">
             <div className="space-y-4 max-w-xl">
               <div className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 border border-secondary/30 px-3 py-1 text-xs font-semibold text-secondary">
-                <span>Featured Diagnostics</span>
+                <span>{homeContent.featuredAssessment.badge}</span>
               </div>
               <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">
-                How Disappointed Is Future You?
+                {homeContent.featuredAssessment.title}
               </h2>
               <p className="text-muted-foreground text-sm sm:text-base leading-relaxed">
-                Take our signature 15-question alignment check to find if Future You is currently proud, cautious, or actively draft-emailing complaints. No account required.
+                {homeContent.featuredAssessment.description}
               </p>
             </div>
             <div className="mt-8 md:mt-0 shrink-0">
@@ -281,28 +233,16 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center space-y-12">
           <div className="space-y-4 max-w-xl mx-auto">
             <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-              Success Stories from <span className="text-gradient-purple-teal">Aligned Clients</span>
+              {homeContent.testimonials.title}{" "}
+              <span className="text-gradient-purple-teal">{homeContent.testimonials.titleHighlight}</span>
             </h2>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Real results from people who listened to their futures.
+              {homeContent.testimonials.description}
             </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto text-left">
-            {[
-              {
-                quote: "Future Me was 100% right about the gym thing. It turns out that starting five years ago makes a huge difference today.",
-                author: "Michael K.",
-                title: "Former Excuse Collector",
-                avatar: "MK"
-              },
-              {
-                quote: "I spent three years preparing templates, buying domains, and telling people I was building a startup. Dr. Tomorrow forced me to execute. I finally launched the business instead of just talking about it.",
-                author: "Sarah L.",
-                title: "Recovering Perfectionist",
-                avatar: "SL"
-              }
-            ].map((t) => (
+            {homeContent.testimonials.list.map((t) => (
               <div
                 key={t.author}
                 className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between"
@@ -332,10 +272,10 @@ export default function Home() {
         
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
           <h2 className="font-heading text-4xl sm:text-5xl font-extrabold text-white">
-            Future You Is Waiting.
+            {homeContent.finalCta.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Every decision you make today writes the email you receive tomorrow. Secure your timeline alignment now.
+            {homeContent.finalCta.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link

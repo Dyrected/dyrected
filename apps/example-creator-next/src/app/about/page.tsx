@@ -2,52 +2,19 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { HelpCircle, ChevronDown, Award, Globe, Compass, ShieldAlert } from "lucide-react";
+import { HelpCircle, ChevronDown, Award, Globe, Compass } from "lucide-react";
+import aboutContent from "./about-content.json";
+
+// Map icon strings to Lucide components
+const iconMap: Record<string, any> = {
+  Compass,
+  Award,
+  Globe
+};
 
 export default function About() {
   // FAQ Open/Close state helper
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-
-  const faqs = [
-    {
-      q: "Can I take the assessment without booking coaching?",
-      a: "Absolutely. The assessment is 100% free, requires no credit card, and gives you instant scores. You can print or download your growth roadmap and apply it yourself."
-    },
-    {
-      q: "Will Future Me really contact me?",
-      a: "Yes. Every time you make a major commitment or experience a lapse in discipline, Future You is emotionally affected. While we don't have direct, physical portal mail, our automated 'Concerned Emails' feature is a highly realistic simulation of their exact perspective."
-    },
-    {
-      q: "Can I save my assessment results?",
-      a: "Yes. After completing the assessment, you can input a mock Name and Email to immediately save your results to your interactive Timeline Dashboard. This allows you to track progress over time."
-    },
-    {
-      q: "How does coaching work?",
-      a: "We use a proprietary Future-Back Methodology. Instead of analyzing why you didn't do something in the past, Dr. Tomorrow helps you look back from the timeline where things worked out, analyzing the exact steps you took to achieve it."
-    },
-    {
-      q: "What if Future Me is disappointed?",
-      a: "Don't panic. The fact that you are here means you still possess the agency to change the trajectory. Drift warning is just feedback, not a life sentence."
-    }
-  ];
-
-  const values = [
-    {
-      icon: Compass,
-      title: "Timeline Agency",
-      desc: "We believe that you are never locked into a bad timeline. Your next decision is the portal to a better outcome."
-    },
-    {
-      icon: Award,
-      title: "System Ownership",
-      desc: "Motivation is a fair-weather friend. Systems, habits, and clean environments are the actual building blocks of success."
-    },
-    {
-      icon: Globe,
-      title: "Optimistic Science",
-      desc: "Growth should be fun, slightly experimental, and optimistic, rather than a dry, guilt-inducing chore."
-    }
-  ];
 
   return (
     <div className="flex flex-col w-full bg-background pb-16">
@@ -55,10 +22,11 @@ export default function About() {
       <section className="py-16 md:py-24 border-b border-white/5 bg-linear-to-b from-[#0c0c16] to-background">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <h1 className="font-heading text-4xl sm:text-5xl font-extrabold text-white">
-            Meet <span className="text-gradient-purple-teal">Dr. Tomorrow</span>
+            {aboutContent.hero.titlePrefix}{" "}
+            <span className="text-gradient-purple-teal">{aboutContent.hero.titleHighlight}</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Helping people make better decisions today by understanding the habits, choices, and systems that guarantee a better tomorrow.
+            {aboutContent.hero.description}
           </p>
         </div>
       </section>
@@ -72,7 +40,7 @@ export default function About() {
               <div className="relative w-full max-w-md aspect-square rounded-3xl overflow-hidden glass-panel p-4">
                 <Image
                   src="/dr_tomorrow.png"
-                  alt="Dr. Tomorrow"
+                  alt={aboutContent.profile.name}
                   fill
                   className="object-cover p-2 rounded-2xl"
                   priority
@@ -84,23 +52,20 @@ export default function About() {
             <div className="lg:col-span-7 space-y-6">
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 border border-secondary/30 px-3 py-1 text-xs font-semibold text-secondary">
-                  <span>Founder & Lead Coach</span>
+                  <span>{aboutContent.profile.badge}</span>
                 </div>
                 <h2 className="font-heading text-3xl font-extrabold text-white">
-                  Dr. Tomorrow
+                  {aboutContent.profile.name}
                 </h2>
                 <p className="text-sm text-primary font-bold tracking-wider uppercase">
-                  Certified Future Alignment Specialist
+                  {aboutContent.profile.title}
                 </p>
               </div>
 
               <div className="text-muted-foreground space-y-4 leading-relaxed">
-                <p>
-                  Dr. Tomorrow has spent decades studying successful timelines and helping people avoid becoming cautionary tales. Frustrated by standard productivity coaching that focuses on past mistakes, he developed the **Future-Back Framework**.
-                </p>
-                <p>
-                  By establishing a virtual dialog with the person you could become, Dr. Tomorrow breaks down goal resistance, eliminates procrastination loops, and turns abstract goals into immediate daily systems.
-                </p>
+                {aboutContent.profile.bioParagraphs.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
               </div>
 
               <div className="border-t border-white/5 pt-6 grid grid-cols-2 gap-4">
@@ -109,7 +74,7 @@ export default function About() {
                     Specialization
                   </h4>
                   <p className="text-sm font-semibold text-white mt-1">
-                    Timeline Correction & Habit Design
+                    {aboutContent.profile.specialization}
                   </p>
                 </div>
                 <div>
@@ -117,7 +82,7 @@ export default function About() {
                     Experience
                   </h4>
                   <p className="text-sm font-semibold text-white mt-1">
-                    12,000+ Hours Coached
+                    {aboutContent.profile.experience}
                   </p>
                 </div>
               </div>
@@ -131,16 +96,17 @@ export default function About() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center space-y-4">
             <h2 className="font-heading text-3xl font-extrabold text-white">
-              Our Core <span className="text-gradient-lime-teal">Values</span>
+              {aboutContent.values.titlePrefix}{" "}
+              <span className="text-gradient-lime-teal">{aboutContent.values.titleHighlight}</span>
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto text-sm">
-              The operational guidelines we use to construct aligned trajectories.
+              {aboutContent.values.description}
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
-            {values.map((v) => {
-              const Icon = v.icon;
+            {aboutContent.values.list.map((v) => {
+              const Icon = iconMap[v.icon] || Compass;
               return (
                 <div key={v.title} className="bg-white/5 border border-white/5 rounded-2xl p-6 space-y-4">
                   <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/20 border border-primary/30 text-primary">
@@ -165,15 +131,15 @@ export default function About() {
           <div className="text-center space-y-4">
             <h2 className="font-heading text-3xl font-extrabold text-white flex items-center justify-center gap-2">
               <HelpCircle className="h-7 w-7 text-primary animate-pulse" />
-              <span>Frequently Asked Questions</span>
+              <span>{aboutContent.faq.title}</span>
             </h2>
             <p className="text-muted-foreground text-sm">
-              Everything you need to know about time-travel coaching.
+              {aboutContent.faq.description}
             </p>
           </div>
 
           <div className="space-y-4">
-            {faqs.map((faq, idx) => {
+            {aboutContent.faq.list.map((faq, idx) => {
               const isOpen = openFaq === idx;
               return (
                 <div

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CheckCircle2, Clock, Calendar, ArrowRight, ShieldAlert, Sparkles, Zap } from "lucide-react";
 import { SERVICES } from "@/lib/storage";
+import servicesContent from "./services-content.json";
 
 export default function Services() {
   const getIcon = (id: string) => {
@@ -45,13 +46,13 @@ export default function Services() {
       <section className="py-16 md:py-24 border-b border-white/5 bg-linear-to-b from-[#0c0c16] to-background text-center">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 px-3.5 py-1.5 text-xs font-semibold text-primary glow-text-purple">
-            <span>UPGRADE YOUR TIMELINE</span>
+            <span>{servicesContent.hero.badge}</span>
           </div>
           <h1 className="font-heading text-4xl sm:text-5xl font-extrabold text-white">
-            Coaching <span className="text-gradient-purple-teal">Programs</span>
+            {servicesContent.hero.titlePrefix} <span className="text-gradient-purple-teal">{servicesContent.hero.titleHighlight}</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Select the level of alignment required to get your life on track. Our options range from single alignment audits to emergency procrastination interventions.
+            {servicesContent.hero.description}
           </p>
         </div>
       </section>
@@ -136,15 +137,15 @@ export default function Services() {
           <div className="flex items-center gap-3">
             <ShieldAlert className="h-8 w-8 text-accent shrink-0 animate-bounce" />
             <div>
-              <h4 className="text-sm font-bold text-white">Unsure which program is right for you?</h4>
-              <p className="text-xs text-muted-foreground">Take the free Disappointment Diagnostic to calculate your exact drift metrics.</p>
+              <h4 className="text-sm font-bold text-white">{servicesContent.warningCallout.title}</h4>
+              <p className="text-xs text-muted-foreground">{servicesContent.warningCallout.description}</p>
             </div>
           </div>
           <Link
             href="/assessment"
             className="rounded-full bg-white/10 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/15 transition-all"
           >
-            Run Diagnostic
+            {servicesContent.warningCallout.actionLabel}
           </Link>
         </div>
       </section>

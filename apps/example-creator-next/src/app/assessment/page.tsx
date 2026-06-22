@@ -2,26 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Brain, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, Check } from "lucide-react";
 import { saveAssessmentResult, getCategoryByScore } from "@/lib/storage";
+import assessmentContent from "./assessment-content.json";
 
-const QUESTIONS = [
-  { text: "I consistently follow through on important commitments.", comment: "Future You is currently cross-checking this with your calendar." },
-  { text: "I spend more time taking action than planning.", comment: "Writing lists of lists does not count as action. Just a heads up." },
-  { text: "I manage my money intentionally.", comment: "Future You would appreciate it if we didn't buy that mechanical keyboard." },
-  { text: "I prioritize my health even when life gets busy.", comment: "Yes, sleeping count counts. Also eating things that aren't pizza." },
-  { text: "I know what my biggest goals are.", comment: "Vague goals like 'be successful' make Dr. Tomorrow cry." },
-  { text: "I spend time every week working toward those goals.", comment: "Thinking about them while scrolling is not 'working toward'." },
-  { text: "I avoid distractions when I need to focus.", comment: "Are you opening another tab right now? We see you." },
-  { text: "I make decisions instead of endlessly researching.", comment: "The 84th review video of that laptop is probably redundant." },
-  { text: "I keep promises I make to myself.", comment: "This is the core foundation of your alignment. Be honest." },
-  { text: "I regularly invest in learning and growth.", comment: "Buying courses you never open doesn't count. Actually opening them does." },
-  { text: "I finish projects I start.", comment: "R.I.P. to the 12 unfinished code repositories in your folders." },
-  { text: "I use my time intentionally.", comment: "Scroll loops are a temporal black hole. Avoid them." },
-  { text: "I am building habits that support the life I want.", comment: "Small daily stacks become massive timeline gains." },
-  { text: "I take responsibility for my results.", comment: "Blaming the algorithm is standard, but ineffective." },
-  { text: "I would be proud if my next five years looked exactly like my last five years.", comment: "The big final question. Take a breath. This is why we are here." }
-];
+const QUESTIONS = assessmentContent.questions;
 
 export default function Assessment() {
   const router = useRouter();
@@ -92,7 +77,7 @@ export default function Assessment() {
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary animate-pulse" />
             <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              Disappointment Diagnostic
+              {assessmentContent.header.badge}
             </span>
           </div>
           <span className="text-sm font-bold text-white">

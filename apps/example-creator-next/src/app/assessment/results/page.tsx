@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, ChevronRight, RefreshCw, Calendar, UserPlus } from "lucide-react";
 import { getStoredResults, getStoredProfile, saveProfile, AssessmentResult } from "@/lib/storage";
 import ScoreChart from "@/components/ScoreChart";
+import resultsContent from "./results-content.json";
 
 function ResultsContent() {
 
@@ -94,10 +95,10 @@ function ResultsContent() {
       {/* Top Header */}
       <div className="text-center space-y-4">
         <span className="text-xs font-bold text-primary uppercase tracking-widest bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
-          Diagnostic Analysis
+          {resultsContent.header.badge}
         </span>
         <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-          Your Timeline Alignment Report
+          {resultsContent.header.title}
         </h1>
         <p className="text-muted-foreground text-sm">
           Generated on {new Date(result.timestamp).toLocaleDateString()}
@@ -194,10 +195,10 @@ function ResultsContent() {
             <div className="md:col-span-7 space-y-3">
               <h3 className="font-heading text-lg sm:text-xl font-bold text-white flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-secondary animate-pulse" />
-                <span>Save Report to Timeline Dashboard</span>
+                <span>{resultsContent.saveReport.title}</span>
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Don&apos;t let this diagnostic fade into alternate timelines. Enter your details to create a simulated account and save this assessment to your live dashboard.
+                {resultsContent.saveReport.description}
               </p>
             </div>
             
@@ -260,10 +261,10 @@ function ResultsContent() {
       {/* Booking CTA Section */}
       <section className="glass-panel-glow border-primary/20 rounded-3xl p-8 text-center space-y-6 max-w-2xl mx-auto">
         <h3 className="font-heading text-2xl font-extrabold text-white">
-          Want Help Accelerating Your Timeline?
+          {resultsContent.bookingCta.title}
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Book a 1-on-1 **Future Alignment Session** with Dr. Tomorrow to map your target habits, review this report, and lock in the timeline where things worked out.
+          {resultsContent.bookingCta.description}
         </p>
         <Link
           href="/booking?service=future-alignment"

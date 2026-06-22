@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Brain, Sparkles, Send, CheckCircle2 } from "lucide-react";
+import footerContent from "./footer-content.json";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -20,6 +21,9 @@ export default function Footer() {
     setSubscribed(true);
     setEmail("");
   };
+
+  // Safely split the success message to keep the bold title styling
+  const [successTitle, successBody] = footerContent.newsletter.successMessage.split("! ");
 
   return (
     <footer className="border-t border-white/5 bg-[#0b0b13] text-muted-foreground">
@@ -41,7 +45,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-sm max-w-xs text-muted-foreground leading-relaxed">
-              &ldquo;Helping Present You Become the Person Future You Keeps Bragging About.&rdquo;
+              &ldquo;{footerContent.tagline}&rdquo;
             </p>
             <div className="flex gap-4">
               {["X", "GitHub", "YouTube", "Discord"].map((platform) => (
@@ -109,18 +113,18 @@ export default function Footer() {
             {/* Newsletter */}
             <div>
               <h3 className="text-xs font-bold uppercase tracking-widest text-white flex items-center gap-1.5">
-                <span>Timeline Alerts</span>
+                <span>{footerContent.newsletter.title}</span>
                 <Sparkles className="h-3 w-3 text-secondary animate-pulse" />
               </h3>
               <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-                Receive warnings and advice from timelines where you actually got your life together.
+                {footerContent.newsletter.description}
               </p>
               {subscribed ? (
                 <div className="mt-4 flex items-start gap-2 rounded-xl bg-secondary/10 border border-secondary/20 p-3 text-sm text-secondary">
                   <CheckCircle2 className="h-5 w-5 shrink-0" />
                   <div>
-                    <span className="font-semibold block text-white">Subscribed!</span>
-                    We&apos;ll email you 5 years ago to warn you about tomorrow.
+                    <span className="font-semibold block text-white">{successTitle}!</span>
+                    {successBody}
                   </div>
                 </div>
               ) : (
@@ -155,7 +159,7 @@ export default function Footer() {
         <div className="mt-12 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
           <p>© 2026 Future You Coaching. All rights reserved.</p>
           <p className="text-muted-foreground/60 italic">
-            Disclaimer: Results may vary by timeline. Anti-gravity or space-time fluctuations are not covered under standard terms.
+            {footerContent.disclaimer}
           </p>
         </div>
       </div>
