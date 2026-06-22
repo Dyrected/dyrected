@@ -112,10 +112,7 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
                   </dd>
                 </div>
               </dl>
-              <div className="dy-mt-5 dy-flex dy-items-start dy-gap-2 dy-border-t dy-border-border dy-pt-4 dy-text-xs dy-leading-5 dy-text-muted-foreground">
-                <ShieldCheck className="dy-mt-0.5 dy-h-4 dy-w-4 dy-shrink-0 dy-text-primary" />
-                API keys and authentication tokens never leave this admin page.
-              </div>
+
             </div>
           </div>
         </div>
