@@ -103,9 +103,21 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
+/**
+ * Props for the `<AdminUI />` embedded component.
+ *
+ * Use this when mounting the admin inside an existing React app or a
+ * framework-specific wrapper (Next.js, Nuxt, Astro, etc.).
+ */
 export interface AdminUIProps {
+  /** API key used to authenticate requests to the Dyrected backend. */
   apiKey?: string;
+  /**
+   * Base URL of the Dyrected backend API (e.g. `"https://example.com/dyrected"`).
+   * Defaults to `"/dyrected"` (same-origin).
+   */
   baseUrl?: string;
+  /** Site ID for multi-tenant deployments. Omit for single-site setups. */
   siteId?: string;
   /**
    * The base path where the admin is mounted in the host app.
@@ -125,7 +137,13 @@ export interface AdminUIProps {
    *   <AdminUI onNavigate={(path) => navigateTo('/admin' + path)} ... />
    */
   onNavigate?: (path: string) => void;
+  /**
+   * Set to `true` when the admin is rendered inside a host app shell
+   * (e.g. inside a dashboard layout). Adjusts internal spacing and
+   * removes the standalone top-bar.
+   */
   isEmbedded?: boolean;
+  /** Custom component overrides for fields, dashboard slots, and collection list views. */
   components?: DyrectedProviderProps['components'];
   // @internal – not for public docs. Used by Dyrected Cloud to bypass admin-level
   // auth when the user is already authenticated at the cloud level. The token is
@@ -136,6 +154,18 @@ export interface AdminUIProps {
 
 // ─── Embedded component (BrowserRouter — real URL + history) ─────────────────
 
+/**
+ * The main admin UI component. Mount this inside your React app.
+ *
+ * Uses a `HashRouter` internally so it can be embedded without conflicting
+ * with the host app's router. If you need real URL history, use
+ * `renderAdminUI` with a custom router wrapper instead.
+ *
+ * @example
+ * ```tsx
+ * <AdminUI baseUrl="/dyrected" apiKey="my-key" isEmbedded />
+ * ```
+ */
 export function AdminUI({
   apiKey,
   baseUrl = "/dyrected",
@@ -174,8 +204,19 @@ export function AdminUI({
 }
 
 /**
- * Renders the Admin UI into a DOM element. 
- * Useful for non-React frameworks like Nuxt, Svelte, or Vanilla JS.
+ * Imperatively renders the Admin UI into a DOM element.
+ * Useful for non-React frameworks (Nuxt, Svelte, Vanilla JS, Web Components).
+ *
+ * @param container - The DOM element to mount into.
+ * @param props - Same props as `<AdminUI />`.
+ * @returns A cleanup function that unmounts the React root.
+ *
+ * @example
+ * ```ts
+ * const cleanup = renderAdminUI(document.getElementById('admin')!, { baseUrl: '/dyrected' });
+ * // Later:
+ * cleanup();
+ * ```
  */
 export function renderAdminUI(container: HTMLElement, props: AdminUIProps) {
   const root = createRoot(container);
@@ -189,12 +230,21 @@ export function renderAdminUI(container: HTMLElement, props: AdminUIProps) {
 
 // ─── Standalone component (MemoryRouter — for iframe / self-hosted mode) ──────
 
+/** Props for the `<AdminStandalone />` self-contained iframe variant. */
 export interface AdminStandaloneProps {
+  /** API key for authenticating backend requests. */
   apiKey: string;
+  /** Base URL of the Dyrected backend API. */
   baseUrl: string;
+  /** Site ID for multi-tenant deployments. */
   siteId?: string;
 }
 
+/**
+ * A fully self-contained admin UI that uses a `MemoryRouter`.
+ * Intended for iframe or self-hosted deployments where the admin owns
+ * the entire page and does not share URL history with a host app.
+ */
 export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProps) {
   return (
     <div className="dy-admin-ui dy-h-full">

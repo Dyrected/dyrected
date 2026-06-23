@@ -1,11 +1,23 @@
 import * as z from "zod"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 
+/**
+ * Normalises a field's `options` array to the canonical `{ label, value }` shape.
+ * Accepts either a shorthand string array or the full object form.
+ */
 export function normalizeOptions(options: string[] | { label: string; value: string }[] | undefined): { label: string; value: string }[] {
   if (!options) return []
   return options.map(opt => typeof opt === "string" ? { label: opt, value: opt } : opt)
 }
 
+/**
+ * Builds a Zod schema shape from a collection's field definitions.
+ * Used by the form engine to validate the edit form before submission.
+ *
+ * @param fields - Field definitions from the collection schema.
+ * @param isEdit - When `true`, password fields accept an empty string (no change).
+ * @returns A record of Zod validators keyed by field name, suitable for `z.object(shape)`.
+ */
 export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false) {
   const shape: Record<string, z.ZodTypeAny> = {}
   fields.forEach((field) => {
@@ -120,6 +132,17 @@ export function buildSchemaShape(fields: FieldSchema[], isEdit: boolean = false)
   return shape
 }
 
+/**
+ * Builds `react-hook-form` default values from a collection's field definitions
+ * and an existing document (or an empty object for new documents).
+ *
+ * Handles nested `object`, `array`, and `blocks` fields recursively.
+ * Relationship and image fields are normalised to their IDs.
+ * Password fields are always reset to `""` so they are never pre-filled.
+ *
+ * @param fields - Field definitions from the collection schema.
+ * @param defaults - Existing document data, or `{}` for a new document.
+ */
 export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
   return fields.reduce((acc, field) => {
     if ((field.type as string) === "join") {
@@ -194,6 +217,14 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
   }, {} as any)
 }
 
+/**
+ * Flattens a nested `react-hook-form` errors object into a list of
+ * `{ path, message }` pairs for rendering under individual fields.
+ *
+ * @param errors - The `formState.errors` object from `react-hook-form`.
+ * @param path - Dot-notation prefix accumulated during recursion (omit when calling externally).
+ * @returns A flat array of field path / error message pairs.
+ */
 export function getFlatErrors(
   errors: Record<string, unknown>,
   path: string = "",
@@ -218,6 +249,14 @@ export function getFlatErrors(
   return result
 }
 
+/**
+ * Formats a dot-notation field path into a human-readable label.
+ * Array indices are converted to 1-based "Item N" labels.
+ *
+ * @example
+ * formatPath("address.street")      // → "Address > Street"
+ * formatPath("items.0.name")        // → "Items > Item 1 > Name"
+ */
 export function formatPath(path: string): string {
   return path
     .split(".")

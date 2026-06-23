@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.35
+
+### Patch Changes
+
+- docs: add JSDoc comments to public API, form utilities, and core helper functions
+  - @dyrected/core@2.5.35
+  - @dyrected/sdk@2.5.35
+
 ## 2.5.34
 
 ### Patch Changes

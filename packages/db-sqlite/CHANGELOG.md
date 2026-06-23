@@ -1,5 +1,11 @@
 # @dyrected/db-sqlite
 
+## 2.5.35
+
+### Patch Changes
+
+- @dyrected/core@2.5.35
+
 ## 2.5.34
 
 ### Patch Changes

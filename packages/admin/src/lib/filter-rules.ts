@@ -1,14 +1,26 @@
 import type { WhereClause, WhereOperatorName, WhereOperator } from '@dyrected/core';
 
+/**
+ * A single filter rule in the admin filter builder.
+ * An array of rules is AND'd together and converted to a `WhereClause`
+ * before being passed to `collection.find({ where })`.
+ */
 export interface FilterRule {
+  /** Field name from the collection schema. */
   field: string;
+  /** Comparison operator (e.g. `"equals"`, `"contains"`, `"gt"`). */
   operator: WhereOperatorName;
+  /** Comparison value. `undefined` when the operator is `"exists"`. */
   value: unknown;
 }
 
 /**
- * Converts an array of FilterRules into a WhereClause.
- * All rules are ANDed together.
+ * Converts an array of `FilterRule`s into a flat `WhereClause`.
+ * All rules are AND'd together. When the same field appears more than once
+ * the extra conditions are moved into the top-level `AND` array.
+ *
+ * @param rules - Active filter rules from the filter builder UI.
+ * @returns A `WhereClause` ready to pass to `collection.find({ where })`.
  */
 export function rulesToWhere(rules: FilterRule[]): WhereClause {
   if (!rules || rules.length === 0) {
@@ -39,8 +51,12 @@ export function rulesToWhere(rules: FilterRule[]): WhereClause {
 }
 
 /**
- * Converts a flat WhereClause back into an array of FilterRules.
- * Best effort extraction for UI state.
+ * Converts a flat `WhereClause` back into an array of `FilterRule`s.
+ * Best-effort: nested `AND` conditions are unpacked; `OR` clauses are ignored.
+ * Used to restore filter builder state from the URL `?where=` param.
+ *
+ * @param where - A `WhereClause` object, typically parsed from the URL.
+ * @returns An array of `FilterRule`s suitable for rendering in the filter builder.
  */
 export function whereToRules(where: WhereClause | undefined): FilterRule[] {
   if (!where || Object.keys(where).length === 0) return [];

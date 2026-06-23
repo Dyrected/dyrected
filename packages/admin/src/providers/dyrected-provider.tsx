@@ -139,6 +139,13 @@ export function DyrectedProvider({
   );
 }
 
+/**
+ * Returns the Dyrected admin context: the SDK client, current user, loaded
+ * schemas, auth helpers, and registered component overrides.
+ *
+ * Must be called within a component tree wrapped by `DyrectedProvider`.
+ * Throws if called outside of that context.
+ */
 export const useDyrected = () => {
   const context = useContext(DyrectedContext);
   if (!context) throw new Error("useDyrected must be used within a DyrectedProvider");

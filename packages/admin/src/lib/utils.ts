@@ -5,10 +5,29 @@ const customTwMerge = extendTailwindMerge({
   prefix: "dy-",
 });
 
+/**
+ * Merges Tailwind class names, resolving conflicts with the `dy-` prefix.
+ * Drop-in replacement for `clsx` that handles Dyrected's scoped Tailwind build.
+ */
 export function cn(...inputs: ClassValue[]) {
   return customTwMerge(clsx(inputs));
 }
 
+/**
+ * Resolves a media field value to an absolute URL.
+ *
+ * Handles three input shapes:
+ * - A fully-qualified URL (`https://...`) — returned as-is.
+ * - A root-relative path (`/uploads/...`) — origin prepended from `baseUrl`.
+ * - A bare filename or storage path (`default/photo.jpg`) — prefixed with `/api/media/`.
+ *
+ * Bare strings that look like document IDs (no extension, no slash) are returned
+ * as an empty string so they are not treated as media assets.
+ *
+ * @param val - A media field value: a URL string, storage path, or a document object with a `url` or `filename` property.
+ * @param baseUrl - The Dyrected backend base URL, used to build the origin for relative paths.
+ * @returns A fully-qualified URL string, or `""` if the value cannot be resolved.
+ */
 export function getMediaUrl(val: string | any, baseUrl: string) {
   if (!val) {
     return "";
