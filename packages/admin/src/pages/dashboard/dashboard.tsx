@@ -184,7 +184,7 @@ export function Dashboard() {
     user,
     schemas: resolvedSchemas,
   }
-  const dashboardSlots = resolvedSchemas.admin?.components
+  const dashboardSlots = resolvedSchemas?.admin?.components
 
   if (collections.length === 0 && globals.length === 0) {
     return (
