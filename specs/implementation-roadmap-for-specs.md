@@ -6,46 +6,47 @@ This document consolidates a high‑level implementation roadmap that aligns wit
 
 ## Spec Files Overview (Priority Order)
 
-| Priority | Spec File | Primary Focus | Key Implementation Areas |
+| Priority | Spec File | Status | Key Implementation Areas |
 | :--- | :--- | :--- | :--- |
-| 1️⃣ | [list-filters-spec.md](file:///Users/busola/Work/dyrected/specs/list-filters-spec.md) | Advanced collection list filtering | Backend JSON `where` validation, field filterable permissions, clean schema stripping, and frontend filter builder UI. |
-| 2️⃣ | [custom-actions-spec.md](file:///Users/busola/Work/dyrected/specs/custom-actions-spec.md) | Custom API routes & list actions | Allow developers to register custom endpoints and add action buttons to collection list views. |
-| 3️⃣ | [gaps-in-field-implementation.md](file:///Users/busola/Work/dyrected/specs/gaps-in-field-implementation.md) | UI field inputs gap checklist | Track and complete remaining small edge cases in core fields (JSON tree view, rich text tables, confirm array deletes). |
-| 4️⃣ | [database-testing-plan.md](file:///Users/busola/Work/dyrected/specs/database-testing-plan.md) | Core DB Transaction & CRUD tests | Comprehensive unit tests for transactional stability, validation errors, and cross-collection relations. |
-| 5️⃣ | [db-adapters-testing-plan.md](file:///Users/busola/Work/dyrected/specs/db-adapters-testing-plan.md) | Adapter compatibility testing | Run identical test suites across SQLite, Postgres, and MongoDB adapter layers to guarantee feature parity. |
-| 6️⃣ | [proposed-advanced-hooks-spec.md](file:///Users/busola/Work/dyrected/specs/proposed-advanced-hooks-spec.md) | Advanced execution hooks | Add custom pre/post hooks, context sharing between middleware, and hook cancellation abort flows. |
-| 7️⃣ | [ai-first-architecture-spec.md](file:///Users/busola/Work/dyrected/specs/ai-first-architecture-spec.md) | MCP & AI integrations | Expose collections, schemas, and media resources dynamically via Model Context Protocol (MCP) endpoints for agents. |
-| 💤 | [media-library-features.md](file:///Users/busola/Work/dyrected/specs/future/media-library-features.md) _(Future)_ | Media management & external links | Vimeo iframe embedding, list view toggle, SVG upload settings/sanitization, replace/optimize images, and usage tracking. |
-| 💤 | [plugin-form-builder-architecture.md](file:///Users/busola/Work/dyrected/specs/future/plugin-form-builder-architecture.md) _(Future)_ | Runtime form visual creator | Enable custom plugin UI components and a drag-and-drop schema layout editor (Postponed / Future backlog). |
+| ✅ | [list-filters-spec.md](file:///Users/busola/Work/dyrected/specs/list-filters-spec.md) | **Fully implemented** | `FilterRule`, `rulesToWhere`, `whereToRules` in `lib/filter-rules.ts`; `FilterBuilder` UI component; URL `?where=` state in list page; backend `where-sanitizer.ts` + collection-level `filterable` guard in controller. |
+| 1️⃣ | [custom-actions-spec.md](file:///Users/busola/Work/dyrected/specs/custom-actions-spec.md) | **Not started** | `rowActions` / `bulkActions` arrays on `AdminComponents`; `RowActionProps` / `BulkActionProps` interfaces; refactor hardcoded Edit/Delete/Bulk Delete out of `list-page.tsx`. |
+| ⚠️ | [gaps-in-field-implementation.md](file:///Users/busola/Work/dyrected/specs/gaps-in-field-implementation.md) | **Mostly done — 2 items open** | All critical and high items implemented. Open: server-side validation error mapping to field paths; `cacheTTL` on dynamic options typed but not server-enforced. |
+| ⚠️ | [database-testing-plan.md](file:///Users/busola/Work/dyrected/specs/database-testing-plan.md) | **Partially done** | `adapter-contract-tests/database-contract.ts` covers CRUD, `find()` filters, `sync()`, and settings. Gaps: transaction rollback tests, validation-error integration tests, cross-collection relation edge cases. |
+| ✅ | [db-adapters-testing-plan.md](file:///Users/busola/Work/dyrected/specs/db-adapters-testing-plan.md) | **Fully implemented** | `adapter-contract-tests` runs the same `runDatabaseAdapterContract` suite against SQLite (always), Postgres, MySQL, and MongoDB (env-gated). Storage adapters (Local, S3, B2, Cloudinary) covered by `runStorageAdapterContract`. |
+| 2️⃣ | [proposed-advanced-hooks-spec.md](file:///Users/busola/Work/dyrected/specs/proposed-advanced-hooks-spec.md) | **Not started** | Auth lifecycle hooks (`beforeLogin`, `afterLogin`, etc.), media upload hooks, server lifecycle hooks (`onReady`), client-side async validation hook, API response serialization hook. |
+| 3️⃣ | [ai-first-architecture-spec.md](file:///Users/busola/Work/dyrected/specs/ai-first-architecture-spec.md) | **Not started** | MCP server package; schema/collection/media resource URIs; MCP tool specs; CLI schema & block auto-generator. (`.dyrected/ai-rules.md` template exists in `knowledge` package — that's the only piece present.) |
+| 💤 | [media-library-features.md](file:///Users/busola/Work/dyrected/specs/future/media-library-features.md) _(Future)_ | Backlog | Vimeo iframe embedding, list view toggle, SVG upload settings/sanitization, replace/optimize images, and usage tracking. |
+| 💤 | [plugin-form-builder-architecture.md](file:///Users/busola/Work/dyrected/specs/future/plugin-form-builder-architecture.md) _(Future)_ | Backlog | Custom plugin UI components and drag-and-drop schema layout editor. |
 
 ---
 
 ## Prioritized Milestones
 
-### 1. List Filtering (Milestone 1)
-* **Goal**: Enable powerful list querying.
-* **Tasks**:
-  * Implement backend validation and schema-aware filter stripping in `where` clauses ([list-filters-spec.md](file:///Users/busola/Work/dyrected/specs/list-filters-spec.md)).
-  * Build the frontend list filters modal and badge controls.
+### ✅ Milestone 1 — List Filtering (Complete)
 
-### 2. Custom Actions & Field Polish (Milestone 2)
-* **Goal**: Provide custom endpoints and polish interactive field UX.
-* **Tasks**:
-  * Create registering middleware for custom actions in collections ([custom-actions-spec.md](file:///Users/busola/Work/dyrected/specs/custom-actions-spec.md)).
-  * Resolve remaining field gaps (JSON tree error mapping, array deletions, clean fields).
+Full filter builder shipped: `FilterRule` / `rulesToWhere` / `whereToRules` utilities, `FilterBuilder` UI, URL-serialised filter state (`?where=`), backend `where-sanitizer`, and `filterable` flag on collections and fields.
 
-### 3. DB Adapter & Transactional Testing (Milestone 3)
-* **Goal**: Robust stability guarantees.
+### Milestone 2 — Custom Actions (Next)
+* **Goal**: Let users plug custom row and bulk actions into the list view.
 * **Tasks**:
-  * Execute validation/transaction integration test suites ([database-testing-plan.md](file:///Users/busola/Work/dyrected/specs/database-testing-plan.md)).
-  * Run multi-adapter compatibility checks ([db-adapters-testing-plan.md](file:///Users/busola/Work/dyrected/specs/db-adapters-testing-plan.md)).
+  * Define `RowActionProps`, `BulkActionProps`, and the `rowActions` / `bulkActions` keys on `AdminComponents`.
+  * Refactor hardcoded Edit / Delete row actions in `list-page.tsx` (~lines 277–296) into resolved default entries.
+  * Refactor inline bulk delete (~lines 627–656) into a default bulk action following the same pattern.
+  * Update `DataTable.bulkActions` prop signature to accept the resolved component list.
 
-### 4. Advanced Architecture & DX (Milestone 4)
-* **Goal**: Advanced features and MCP integrations.
+### Milestone 3 — Field Gaps & DB Testing Completion (Polish)
+* **Goal**: Close the two remaining field gaps and fill transaction/validation test coverage.
 * **Tasks**:
-  * Implement hooks context pipeline ([proposed-advanced-hooks-spec.md](file:///Users/busola/Work/dyrected/specs/proposed-advanced-hooks-spec.md)).
-  * Expose schemas/collections via MCP endpoints for AI agent interactions ([ai-first-architecture-spec.md](file:///Users/busola/Work/dyrected/specs/ai-first-architecture-spec.md)).
-  * Ergonomics improvements to TypeScript SDK interfaces.
+  * Implement server-side validation error mapping to field paths ([gaps-in-field-implementation.md](file:///Users/busola/Work/dyrected/specs/gaps-in-field-implementation.md)).
+  * Enforce `cacheTTL` server-side for dynamic options.
+  * Add transaction rollback, validation-error, and cross-collection relation tests to `database-contract.ts` ([database-testing-plan.md](file:///Users/busola/Work/dyrected/specs/database-testing-plan.md)).
+
+### Milestone 4 — Advanced Hooks & MCP (Future)
+* **Goal**: Advanced extensibility and AI-agent integrations.
+* **Tasks**:
+  * Auth lifecycle hooks, media upload hooks, server `onReady` hook, client-side async validation hook, and response serialization hook ([proposed-advanced-hooks-spec.md](file:///Users/busola/Work/dyrected/specs/proposed-advanced-hooks-spec.md)).
+  * MCP server package exposing collections, schemas, and media resources as resource URIs and tool specs ([ai-first-architecture-spec.md](file:///Users/busola/Work/dyrected/specs/ai-first-architecture-spec.md)).
+  * CLI schema & block auto-generator.
 
 ---
 
@@ -64,6 +65,8 @@ These specs are fully implemented and moved to archival date folders.
 
 | Spec | Summary | Completed |
 | :--- | :--- | :--- |
+| [list-filters-spec.md](file:///Users/busola/Work/dyrected/specs/list-filters-spec.md) | Full filter builder: `FilterRule` utilities, `FilterBuilder` UI, URL `?where=` state, backend sanitizer, and `filterable` flag on collections and fields. | ✅ 2026-06-23 |
+| [db-adapters-testing-plan.md](file:///Users/busola/Work/dyrected/specs/db-adapters-testing-plan.md) | `adapter-contract-tests` package runs identical DB and storage contract suites against SQLite, Postgres, MySQL, MongoDB, S3, B2, and Cloudinary. | ✅ 2026-06-23 |
 | [bug-fixes-boolean-filter-and-sibling-id.md](file:///Users/busola/Work/dyrected/specs/2026-06-16/bug-fixes-boolean-filter-and-sibling-id.md) | Fixed Postgres boolean parameter query errors and resolved sibling data document ID missing contexts. | ✅ 2026-06-16 |
 | [dx-feedback-and-docs-improvements.md](file:///Users/busola/Work/dyrected/specs/2026-06-16/dx-feedback-and-docs-improvements.md) | Standardized depth guides, hooks capability lifecycle documentation, `findOne` calls, and Vue custom component guides. | ✅ 2026-06-16 |
 | `client-side-reactivity-spec.md` | `admin.hooks.onChange` and `admin.hooks.options` — client-side value derivation and cascading dropdowns in sandbox hidden-iframe. | ✅ 2026-05-29 |
