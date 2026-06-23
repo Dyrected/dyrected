@@ -49,7 +49,7 @@ Use this if you want to run the Dyrected engine directly inside your Nuxt app. W
 import config from './dyrected.config'
 
 export default defineNuxtConfig({
-  modules: [['@dyrected/nuxt', { adminPath: 'cms' }]],
+  modules: [['@dyrected/nuxt', { adminPath: 'admin' }]],
   dyrected: {
     ...config,
     apiBase: '/dyrected',
@@ -62,7 +62,7 @@ export default defineNuxtConfig({
 The `adminPath` option tells the module where your admin page lives, so it can print the URL when the dev server starts:
 
 ```
-  ➜  Dyrected admin:  http://localhost:3000/cms
+  ➜  Dyrected admin:  http://localhost:3000/admin
   ➜  Dyrected API:    http://localhost:3000/dyrected
 ```
 
@@ -249,12 +249,12 @@ const { data: page, isLive } = useLivePreview({
 
 The Admin UI is a React-based dashboard. The `@dyrected/nuxt` module provides a `<DyrectedAdmin />` component that handles all the React-to-Vue bridging, mounting, and routing isolation for you.
 
-If you used `npx @dyrected/cli init`, this file is already created in the right place. The CLI detects whether your project uses an `app/` directory (Nuxt's `srcDir`) and writes to `app/pages/cms/index.vue` or `pages/cms/index.vue` accordingly.
+If you used `npx @dyrected/cli init`, this file is already created in the right place. The CLI detects whether your project uses an `app/` directory (Nuxt's `srcDir`) and writes to the admin path you chose, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
 
-For manual setup, create the file at `pages/cms/index.vue` (or `app/pages/cms/index.vue` if using `srcDir`):
+For manual setup, create the file at `pages/admin/index.vue` (or `app/pages/admin/index.vue` if using `srcDir`):
 
 ```vue
-<!-- pages/cms/index.vue -->
+<!-- pages/admin/index.vue -->
 <script setup lang="ts">
 definePageMeta({
   layout: false,
@@ -263,7 +263,7 @@ definePageMeta({
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/cms" />
+    <DyrectedAdmin basename="/admin" />
   </ClientOnly>
 </template>
 ```

@@ -2,12 +2,12 @@
 
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Calendar, Check, CheckCircle2, ChevronRight, Clock, ShieldAlert, Sparkles, User, Zap } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronRight } from "lucide-react";
 import { SERVICES, getStoredProfile, saveBooking, Booking } from "@/lib/storage";
+import bookingContent from "./booking-content.json";
 
 function BookingContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const serviceParam = searchParams.get("service");
 
@@ -98,12 +98,7 @@ function BookingContent() {
   };
 
   // Mock Calendar Options
-  const dates = [
-    { label: "Tomorrow", desc: "Optimal Portal Alignment" },
-    { label: "In 2 Days", desc: "Standard Trajectory" },
-    { label: "In 3 Days", desc: "Emergency Alignment" },
-    { label: "Next Monday", desc: "Fresh Cycle Start" }
-  ];
+  const dates = bookingContent.scheduleStep.dates;
 
   const times = ["9:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"];
 
@@ -134,10 +129,10 @@ function BookingContent() {
         <div className="space-y-8">
           <div className="text-center space-y-3">
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">
-              Choose Coaching Service
+              {bookingContent.serviceStep.title}
             </h1>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Select which timeline upgrade program you wish to coordinate with Dr. Tomorrow.
+              {bookingContent.serviceStep.description}
             </p>
           </div>
 
@@ -178,10 +173,10 @@ function BookingContent() {
               <span>Back to services</span>
             </button>
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">
-              Future Intake Questionnaire
+              {bookingContent.intakeStep.title}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Please complete this brief questionnaire so Dr. Tomorrow can audit your trajectory.
+              {bookingContent.intakeStep.description}
             </p>
           </div>
 
@@ -309,10 +304,10 @@ function BookingContent() {
               <span>Back to questionnaire</span>
             </button>
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">
-              Schedule Your Alignment Slot
+              {bookingContent.scheduleStep.title}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Select your preferred space-time coordinates for the session.
+              {bookingContent.scheduleStep.description}
             </p>
           </div>
 
@@ -427,13 +422,13 @@ function BookingContent() {
 
           <div className="space-y-2">
             <span className="text-xs font-bold text-secondary uppercase tracking-widest">
-              Timeline Correction Confirmed
+              {bookingContent.successStep.badge}
             </span>
             <h1 className="font-heading text-3xl font-extrabold text-white">
-              Booking Complete!
+              {bookingContent.successStep.title}
             </h1>
             <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-              Dr. Tomorrow has locked in your coordinates. We are currently listening for the quantum notification of your session.
+              {bookingContent.successStep.description}
             </p>
           </div>
 
@@ -459,7 +454,7 @@ function BookingContent() {
 
           {/* Funny Note */}
           <p className="text-xs text-muted-foreground/60 italic max-w-sm mx-auto leading-normal">
-            Note: If you receive this session request five years ago, please ignore it. That was a calibration error. Otherwise, see you in alignment!
+            {bookingContent.successStep.note}
           </p>
 
           <div className="flex gap-4 justify-center pt-2">

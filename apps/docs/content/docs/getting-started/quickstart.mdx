@@ -33,15 +33,17 @@ The easiest way to get started with Next.js is using the interactive CLI.
 npx @dyrected/cli init
 ```
 
-The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
+The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
 
-- Install `@dyrected/core`, `@dyrected/next`, and `@dyrected/db-sqlite`.
+- Install `@dyrected/core`, `@dyrected/next`, `@dyrected/db-sqlite`, and `@dyrected/storage-local`.
 - Create a `dyrected.config.ts`.
-- Detect your project layout (`src/` directory, App Router vs Pages Router) and write files in the right place.
-- Mount the API route at `app/dyrected/[...route]/route.ts` (or `pages/api/dyrected/[...route].ts` for Pages Router).
-- Mount the Admin UI at `app/cms/page.tsx` (or `pages/cms.tsx` for Pages Router).
+- Detect your App Router layout, including optional `src/` directory, and write files in the right place.
+- Mount the API route at `app/dyrected/[...route]/route.ts` or `src/app/dyrected/[...route]/route.ts`.
+- Mount the Admin UI at the path you choose during setup, defaulting to `app/admin/page.tsx` or `src/app/admin/page.tsx`.
 - Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
+
+> **Note:** `@dyrected/next` requires the Next.js App Router. If your app only has the Pages Router, add an `app/` directory before running init.
 
 **2. Configure and Run**
 
@@ -62,10 +64,10 @@ The easiest way to get started with Nuxt.js is using the interactive CLI.
 npx @dyrected/cli init
 ```
 
-The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
+The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
 
-- Install dependencies and create `dyrected.config.ts`.
-- Detect whether you use an `app/` directory and write the admin page to the correct location (`app/pages/cms/index.vue` or `pages/cms/index.vue`).
+- Install `@dyrected/core`, `@dyrected/nuxt`, `@dyrected/db-sqlite`, and `@dyrected/storage-local`, then create `dyrected.config.ts`.
+- Detect whether you use an `app/` directory and write the admin page to the path you choose during setup, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
 - Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
 - Generate a `.env.example`.
 

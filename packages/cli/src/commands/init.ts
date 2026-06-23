@@ -160,7 +160,7 @@ After running init:
           framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
         const dbPkg = `@dyrected/db-${db}`;
         const storagePkg = `@dyrected/storage-${storage}`;
-        deps = [frameworkPkg, dbPkg, storagePkg].join(" ");
+        deps = ["@dyrected/core", frameworkPkg, dbPkg, storagePkg].join(" ");
       }
 
       console.log(chalk.blue(`\nInstalling ${deps}...`));

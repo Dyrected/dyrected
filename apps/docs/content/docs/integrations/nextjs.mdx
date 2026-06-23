@@ -183,29 +183,19 @@ This approach has zero network overhead and is the fastest option for self-hoste
 
 The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles Next.js router integration, CSS imports, and client-only mounting.
 
-If you used `npx @dyrected/cli init`, this file is already written in the correct location — the CLI detects your `src/` layout and whether you're using App Router or Pages Router.
-
-### App Router
+If you used `npx @dyrected/cli init`, this file is already written in the correct location — the CLI detects your optional `src/` layout and writes an App Router page.
 
 ```tsx
-// app/cms/page.tsx  (or src/app/cms/page.tsx)
+// app/admin/page.tsx  (or src/app/admin/page.tsx)
 import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/dyrected" />
+  return <DyrectedAdmin />
 }
 ```
 
-### Pages Router
-
-```tsx
-// pages/cms.tsx  (or src/pages/cms.tsx)
-import { DyrectedAdmin } from '@dyrected/next/admin'
-
-export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/api/dyrected" />
-}
-```
+> [!NOTE]
+> `@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx @dyrected/cli init`.
 
 > [!TIP]
 > `DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
@@ -217,7 +207,7 @@ export default function AdminPage() {
 When you run `npx @dyrected/cli init`, it generates an `instrumentation.ts` file at your project root (or `src/instrumentation.ts` for `src/` layouts). This uses Next.js's built-in instrumentation hook to log the admin and API URLs whenever the server starts:
 
 ```
-  ➜  Dyrected admin:  http://localhost:3000/cms
+  ➜  Dyrected admin:  http://localhost:3000/admin
   ➜  Dyrected API:    http://localhost:3000/dyrected
 ```
 

@@ -99,7 +99,7 @@ export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(co
         `import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/dyrected" />
+  return <DyrectedAdmin />
 }
 `,
       );

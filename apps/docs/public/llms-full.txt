@@ -4181,15 +4181,17 @@ The easiest way to get started with Next.js is using the interactive CLI.
 npx @dyrected/cli init
 ```
 
-The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
+The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
 
-- Install `@dyrected/core`, `@dyrected/next`, and `@dyrected/db-sqlite`.
+- Install `@dyrected/core`, `@dyrected/next`, `@dyrected/db-sqlite`, and `@dyrected/storage-local`.
 - Create a `dyrected.config.ts`.
-- Detect your project layout (`src/` directory, App Router vs Pages Router) and write files in the right place.
-- Mount the API route at `app/dyrected/[...route]/route.ts` (or `pages/api/dyrected/[...route].ts` for Pages Router).
-- Mount the Admin UI at `app/cms/page.tsx` (or `pages/cms.tsx` for Pages Router).
+- Detect your App Router layout, including optional `src/` directory, and write files in the right place.
+- Mount the API route at `app/dyrected/[...route]/route.ts` or `src/app/dyrected/[...route]/route.ts`.
+- Mount the Admin UI at the path you choose during setup, defaulting to `app/admin/page.tsx` or `src/app/admin/page.tsx`.
 - Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
+
+> **Note:** `@dyrected/next` requires the Next.js App Router. If your app only has the Pages Router, add an `app/` directory before running init.
 
 **2. Configure and Run**
 
@@ -4210,10 +4212,10 @@ The easiest way to get started with Nuxt.js is using the interactive CLI.
 npx @dyrected/cli init
 ```
 
-The CLI auto-detects your framework from `package.json`. Choose **SQLite** for local development. It will:
+The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
 
-- Install dependencies and create `dyrected.config.ts`.
-- Detect whether you use an `app/` directory and write the admin page to the correct location (`app/pages/cms/index.vue` or `pages/cms/index.vue`).
+- Install `@dyrected/core`, `@dyrected/nuxt`, `@dyrected/db-sqlite`, and `@dyrected/storage-local`, then create `dyrected.config.ts`.
+- Detect whether you use an `app/` directory and write the admin page to the path you choose during setup, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
 - Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
 - Generate a `.env.example`.
 
@@ -8316,29 +8318,19 @@ This approach has zero network overhead and is the fastest option for self-hoste
 
 The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles Next.js router integration, CSS imports, and client-only mounting.
 
-If you used `npx @dyrected/cli init`, this file is already written in the correct location — the CLI detects your `src/` layout and whether you're using App Router or Pages Router.
-
-### App Router
+If you used `npx @dyrected/cli init`, this file is already written in the correct location — the CLI detects your optional `src/` layout and writes an App Router page.
 
 ```tsx
-// app/cms/page.tsx  (or src/app/cms/page.tsx)
+// app/admin/page.tsx  (or src/app/admin/page.tsx)
 
 
 export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/dyrected" />
+  return <DyrectedAdmin />
 }
 ```
 
-### Pages Router
-
-```tsx
-// pages/cms.tsx  (or src/pages/cms.tsx)
-
-
-export default function AdminPage() {
-  return <DyrectedAdmin apiPath="/api/dyrected" />
-}
-```
+> [!NOTE]
+> `@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx @dyrected/cli init`.
 
 > [!TIP]
 > `DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
@@ -8350,7 +8342,7 @@ export default function AdminPage() {
 When you run `npx @dyrected/cli init`, it generates an `instrumentation.ts` file at your project root (or `src/instrumentation.ts` for `src/` layouts). This uses Next.js's built-in instrumentation hook to log the admin and API URLs whenever the server starts:
 
 ```
-  ➜  Dyrected admin:  http://localhost:3000/cms
+  ➜  Dyrected admin:  http://localhost:3000/admin
   ➜  Dyrected API:    http://localhost:3000/dyrected
 ```
 
@@ -8537,7 +8529,7 @@ Use this if you want to run the Dyrected engine directly inside your Nuxt app. W
 
 
 export default defineNuxtConfig({
-  modules: [['@dyrected/nuxt', { adminPath: 'cms' }]],
+  modules: [['@dyrected/nuxt', { adminPath: 'admin' }]],
   dyrected: {
     ...config,
     apiBase: '/dyrected',
@@ -8550,7 +8542,7 @@ export default defineNuxtConfig({
 The `adminPath` option tells the module where your admin page lives, so it can print the URL when the dev server starts:
 
 ```
-  ➜  Dyrected admin:  http://localhost:3000/cms
+  ➜  Dyrected admin:  http://localhost:3000/admin
   ➜  Dyrected API:    http://localhost:3000/dyrected
 ```
 
@@ -8737,12 +8729,12 @@ const { data: page, isLive } = useLivePreview({
 
 The Admin UI is a React-based dashboard. The `@dyrected/nuxt` module provides a `<DyrectedAdmin />` component that handles all the React-to-Vue bridging, mounting, and routing isolation for you.
 
-If you used `npx @dyrected/cli init`, this file is already created in the right place. The CLI detects whether your project uses an `app/` directory (Nuxt's `srcDir`) and writes to `app/pages/cms/index.vue` or `pages/cms/index.vue` accordingly.
+If you used `npx @dyrected/cli init`, this file is already created in the right place. The CLI detects whether your project uses an `app/` directory (Nuxt's `srcDir`) and writes to the admin path you chose, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
 
-For manual setup, create the file at `pages/cms/index.vue` (or `app/pages/cms/index.vue` if using `srcDir`):
+For manual setup, create the file at `pages/admin/index.vue` (or `app/pages/admin/index.vue` if using `srcDir`):
 
 ```vue
-<!-- pages/cms/index.vue -->
+<!-- pages/admin/index.vue -->
 <script setup lang="ts">
 definePageMeta({
   layout: false,
@@ -8751,7 +8743,7 @@ definePageMeta({
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/cms" />
+    <DyrectedAdmin basename="/admin" />
   </ClientOnly>
 </template>
 ```
