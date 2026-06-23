@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.34
+
+### Patch Changes
+
+- 46b11d6: fix: add optional chaining to resolvedSchemas to prevent runtime error when accessing admin components
+  - @dyrected/core@2.5.34
+  - @dyrected/sdk@2.5.34
+
 ## 2.5.33
 
 ### Patch Changes
