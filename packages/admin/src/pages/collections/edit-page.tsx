@@ -284,7 +284,7 @@ export function EditEntryPage() {
               <div>
                 <div className="dy-flex dy-items-center dy-gap-3">
                   <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
-                    {isEdit ? `Edit ${schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
+                    {isEdit ? `Edit ${schema.labels?.plural || schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
                   </h1>
                   {/* Legacy status field badge (non-workflow) */}
                   {hasStatus && !workflowConfig && (
