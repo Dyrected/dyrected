@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.39
+
+### Patch Changes
+
+- b5c8fea: fix: improve CSV importer data handling and simplify UI components by removing unused pagination and refactoring select options.
+  - @dyrected/core@2.5.39
+  - @dyrected/sdk@2.5.39
+
 ## 2.5.38
 
 ### Patch Changes

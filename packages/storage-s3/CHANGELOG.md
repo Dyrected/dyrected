@@ -1,5 +1,11 @@
 # @dyrected/storage-s3
 
+## 2.5.39
+
+### Patch Changes
+
+- @dyrected/core@2.5.39
+
 ## 2.5.38
 
 ### Patch Changes
