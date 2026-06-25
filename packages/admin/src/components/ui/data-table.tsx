@@ -9,7 +9,6 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
@@ -31,7 +30,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu"
-import { ChevronLeft, ChevronRight, Settings2 } from "lucide-react"
+import { Settings2 } from "lucide-react"
 import { usePreferences } from "../../hooks/use-preferences"
 
 const EMPTY_VISIBILITY: VisibilityState = {}
@@ -80,7 +79,6 @@ export function DataTable<TData, TValue>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -197,36 +195,6 @@ export function DataTable<TData, TValue>({
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="dy-flex dy-flex-col dy-gap-3 dy-px-2 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between">
-        <div className="dy-flex-1 dy-text-xs dy-text-muted-foreground sm:dy-text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="dy-flex dy-items-center dy-justify-between dy-gap-2 sm:dy-justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            className="dy-h-9 dy-w-9 dy-p-0"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="dy-h-4 dy-w-4" />
-          </Button>
-          <span className="dy-min-w-0 dy-text-center dy-text-xs dy-font-medium sm:dy-text-sm">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="dy-h-9 dy-w-9 dy-p-0"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRight className="dy-h-4 dy-w-4" />
-          </Button>
-        </div>
       </div>
     </div>
   )

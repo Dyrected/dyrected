@@ -22,18 +22,9 @@ import { MediaPicker } from "../forms/fields/media-picker"
 import { IconPicker } from "../forms/fields/icon-picker"
 import { getMediaUrl, cn } from "../../lib/utils"
 import { Undo2, Save } from "lucide-react"
+import { FieldRenderer } from "../forms/field-renderer"
 
-function SelectCellDisplay({
-  field,
-  value,
-  collection,
-  siblingValues,
-}: {
-  field: Field
-  value: unknown
-  collection: string
-  siblingValues: Record<string, unknown>
-}) {
+function useFieldOptions(field: Field, collection: string, siblingValues: Record<string, unknown>) {
   const { client } = useDyrected()
   const isDynamic = !!(field.options && typeof field.options === "object" && "_dynamic" in field.options)
 
@@ -41,28 +32,22 @@ function SelectCellDisplay({
     queryKey: ["options", collection, field.name, siblingValues],
     queryFn: async () => {
       const q = new URLSearchParams()
-      if (siblingValues) {
-        Object.entries(siblingValues).forEach(([k, v]) => {
-          if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
-            q.append(k, String(v))
-          }
-        })
-      }
+      Object.entries(siblingValues).forEach(([k, v]) => {
+        if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") q.append(k, String(v))
+      })
       const baseUrl = client?.getBaseUrl() || ""
       const url = `${baseUrl}/api/dyrected/options/${collection}/${field.name}?${q.toString()}`
       const authHeaders: Record<string, string> = {}
       const token = typeof window !== "undefined" ? localStorage.getItem("dyrected_token") : null
       if (token) authHeaders["Authorization"] = `Bearer ${token}`
-      const res = await fetch(url, {
-        headers: { "Content-Type": "application/json", ...authHeaders },
-      })
+      const res = await fetch(url, { headers: { "Content-Type": "application/json", ...authHeaders } })
       if (!res.ok) throw new Error("Failed to fetch options")
       return res.json()
     },
     enabled: !!client && isDynamic && !!collection && !!field.name,
   })
 
-  const options = React.useMemo(() => {
+  return React.useMemo(() => {
     const rawOptions = isDynamic ? (dynamicOptions || []) : field.options
     return (Array.isArray(rawOptions) ? rawOptions : []).map((opt: unknown) => {
       if (typeof opt === "object" && opt !== null) {
@@ -71,62 +56,16 @@ function SelectCellDisplay({
       return { label: String(opt), value: String(opt) }
     })
   }, [isDynamic, dynamicOptions, field.options])
+}
 
+function SelectCellDisplay({ field, value, collection, siblingValues }: { field: Field; value: unknown; collection: string; siblingValues: Record<string, unknown> }) {
+  const options = useFieldOptions(field, collection, siblingValues)
   const matched = options.find((opt) => opt.value === String(value ?? ""))
   return <span>{matched ? matched.label : (value !== null && value !== undefined ? String(value) : "")}</span>
 }
 
-function SelectPopoverEditor({
-  field,
-  value,
-  collection,
-  siblingValues,
-  onCommit,
-}: {
-  field: Field
-  value: unknown
-  collection: string
-  siblingValues: Record<string, unknown>
-  onCommit: (val: string) => void
-}) {
-  const { client } = useDyrected()
-  const isDynamic = !!(field.options && typeof field.options === "object" && "_dynamic" in field.options)
-
-  const { data: dynamicOptions } = useQuery({
-    queryKey: ["options", collection, field.name, siblingValues],
-    queryFn: async () => {
-      const q = new URLSearchParams()
-      if (siblingValues) {
-        Object.entries(siblingValues).forEach(([k, v]) => {
-          if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
-            q.append(k, String(v))
-          }
-        })
-      }
-      const baseUrl = client?.getBaseUrl() || ""
-      const url = `${baseUrl}/api/dyrected/options/${collection}/${field.name}?${q.toString()}`
-      const authHeaders: Record<string, string> = {}
-      const token = typeof window !== "undefined" ? localStorage.getItem("dyrected_token") : null
-      if (token) authHeaders["Authorization"] = `Bearer ${token}`
-      const res = await fetch(url, {
-        headers: { "Content-Type": "application/json", ...authHeaders },
-      })
-      if (!res.ok) throw new Error("Failed to fetch options")
-      return res.json()
-    },
-    enabled: !!client && isDynamic && !!collection && !!field.name,
-  })
-
-  const options = React.useMemo(() => {
-    const rawOptions = isDynamic ? (dynamicOptions || []) : field.options
-    return (Array.isArray(rawOptions) ? rawOptions : []).map((opt: unknown) => {
-      if (typeof opt === "object" && opt !== null) {
-        return { label: (opt as Record<string, unknown>).label as string, value: String((opt as Record<string, unknown>).value ?? "") }
-      }
-      return { label: String(opt), value: String(opt) }
-    })
-  }, [isDynamic, dynamicOptions, field.options])
-
+function SelectPopoverEditor({ field, value, collection, siblingValues, onCommit }: { field: Field; value: unknown; collection: string; siblingValues: Record<string, unknown>; onCommit: (val: string) => void }) {
+  const options = useFieldOptions(field, collection, siblingValues)
   return (
     <div className="dy-max-h-60 dy-overflow-y-auto dy-flex dy-flex-col dy-divide-y dy-divide-border dy-bg-popover dy-rounded-md">
       {options.map((opt) => (
@@ -145,6 +84,138 @@ function SelectPopoverEditor({
       {options.length === 0 && (
         <div className="dy-text-xs dy-text-muted-foreground dy-p-3 dy-text-center">No options available</div>
       )}
+    </div>
+  )
+}
+
+function MultiSelectCellDisplay({ field, value, collection, siblingValues }: { field: Field; value: unknown; collection: string; siblingValues: Record<string, unknown> }) {
+  const options = useFieldOptions(field, collection, siblingValues)
+  const selected = Array.isArray(value) ? value.map(String) : []
+  const labels = selected.map((v) => options.find((o) => o.value === v)?.label ?? v)
+  return <span>{labels.length > 0 ? labels.join(", ") : ""}</span>
+}
+
+function MultiSelectPopoverEditor({ field, value, collection, siblingValues, onToggle }: { field: Field; value: string[]; collection: string; siblingValues: Record<string, unknown>; onToggle: (val: string[]) => void }) {
+  const options = useFieldOptions(field, collection, siblingValues)
+  const selected = Array.isArray(value) ? value.map(String) : []
+
+  return (
+    <div className="dy-max-h-60 dy-overflow-y-auto dy-flex dy-flex-col dy-divide-y dy-divide-border dy-bg-popover dy-rounded-md">
+      {options.map((opt) => {
+        const checked = selected.includes(opt.value)
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            className={cn(
+              "dy-w-full dy-text-left dy-px-3 dy-py-2 dy-text-xs hover:dy-bg-accent hover:dy-text-accent-foreground dy-transition-colors dy-flex dy-items-center dy-gap-2",
+              checked && "dy-bg-accent/50"
+            )}
+            onClick={() => onToggle(checked ? selected.filter((v) => v !== opt.value) : [...selected, opt.value])}
+          >
+            <span className={cn(
+              "dy-w-3.5 dy-h-3.5 dy-rounded-sm dy-border dy-border-border dy-flex-shrink-0 dy-flex dy-items-center dy-justify-center",
+              checked && "dy-bg-primary dy-border-primary"
+            )}>
+              {checked && <span className="dy-text-primary-foreground dy-text-[10px] dy-leading-none">✓</span>}
+            </span>
+            {opt.label}
+          </button>
+        )
+      })}
+      {options.length === 0 && <div className="dy-text-xs dy-text-muted-foreground dy-p-3 dy-text-center">No options available</div>}
+    </div>
+  )
+}
+
+function SubFieldRow({ subField, value, onChange, collection }: { subField: Field; value: unknown; onChange: (val: unknown) => void; collection: string }) {
+  const { user, schemas } = useDyrected()
+
+  const handleChange = React.useCallback((eventOrValue: unknown) => {
+    if (eventOrValue != null && typeof eventOrValue === "object" && "target" in (eventOrValue as object)) {
+      const e = eventOrValue as React.ChangeEvent<HTMLInputElement>
+      if (e.target.type === "checkbox") {
+        onChange(e.target.checked)
+      } else if (e.target.value === "") {
+        onChange(null)
+      } else if (subField.type === "number") {
+        onChange(Number(e.target.value))
+      } else {
+        onChange(e.target.value)
+      }
+    } else {
+      onChange(eventOrValue)
+    }
+  }, [onChange, subField.type])
+
+  const syntheticField = React.useMemo(() => ({
+    value: value ?? (subField.type === "boolean" ? false : ""),
+    onChange: handleChange,
+    name: subField.name ?? "",
+    ref: { current: null } as React.MutableRefObject<null>,
+  }), [value, handleChange, subField.name, subField.type])
+
+  return (
+    <div className="dy-flex dy-flex-col dy-gap-0.5">
+      <label className="dy-text-[10px] dy-text-muted-foreground">{subField.label || subField.name}</label>
+      <FieldRenderer
+        schema={subField as unknown as import("@dyrected/sdk").Field}
+        field={syntheticField}
+        collection={collection}
+        context={{
+          user: user ?? null,
+          schemas: schemas as unknown as { collections: { slug: string; upload?: boolean }[]; globals: unknown[] },
+          siblingData: {},
+        }}
+      />
+    </div>
+  )
+}
+
+function ObjectPopoverEditor({ field, value, onChange, collection }: { field: Field; value: unknown; onChange: (val: Record<string, unknown>) => void; collection: string }) {
+  const subFields = ((field as any).fields as Field[]) || []
+  const obj = (typeof value === "object" && value !== null && !Array.isArray(value)) ? value as Record<string, unknown> : {}
+  return (
+    <div className="dy-flex dy-flex-col dy-gap-3 dy-max-h-[400px] dy-overflow-y-auto">
+      <div className="dy-text-xs dy-font-semibold dy-text-muted-foreground">{field.label || field.name}</div>
+      {subFields.filter((sf) => !["object", "array", "blocks", "join", "row", "richText"].includes(sf.type)).map((sf) => (
+        <SubFieldRow key={sf.name} subField={sf} value={obj[sf.name]} onChange={(val) => onChange({ ...obj, [sf.name]: val })} collection={collection} />
+      ))}
+      {subFields.length === 0 && <div className="dy-text-xs dy-text-muted-foreground">No fields defined</div>}
+    </div>
+  )
+}
+
+function ArrayPopoverEditor({ field, value, onChange, collection }: { field: Field; value: unknown; onChange: (val: Record<string, unknown>[]) => void; collection: string }) {
+  const subFields = ((field as any).fields as Field[]) || []
+  const items = Array.isArray(value) ? (value as Record<string, unknown>[]) : []
+
+  const updateItem = (idx: number, key: string, val: unknown) =>
+    onChange(items.map((item, i) => (i === idx ? { ...item, [key]: val } : item)))
+
+  return (
+    <div className="dy-flex dy-flex-col dy-gap-3 dy-max-h-[400px] dy-overflow-y-auto">
+      <div className="dy-text-xs dy-font-semibold dy-text-muted-foreground">{field.label || field.name} ({items.length} items)</div>
+      {items.map((item, idx) => (
+        <div key={idx} className="dy-border dy-rounded-md dy-p-2 dy-flex dy-flex-col dy-gap-2">
+          <div className="dy-flex dy-items-center dy-justify-between">
+            <span className="dy-text-[10px] dy-font-medium dy-text-muted-foreground">Item {idx + 1}</span>
+            <button type="button" className="dy-text-[10px] dy-text-destructive hover:dy-underline" onClick={() => onChange(items.filter((_, i) => i !== idx))}>
+              Remove
+            </button>
+          </div>
+          {subFields.filter((sf) => !["object", "array", "blocks", "join", "row", "richText"].includes(sf.type)).map((sf) => (
+            <SubFieldRow key={sf.name} subField={sf} value={item[sf.name]} onChange={(val) => updateItem(idx, sf.name, val)} collection={collection} />
+          ))}
+        </div>
+      ))}
+      <button
+        type="button"
+        className="dy-w-full dy-border dy-border-dashed dy-rounded dy-py-1.5 dy-text-xs dy-text-muted-foreground hover:dy-bg-muted/30 dy-transition-colors"
+        onClick={() => onChange([...items, {}])}
+      >
+        + Add item
+      </button>
     </div>
   )
 }
@@ -275,7 +346,7 @@ export function SpreadsheetEditor({
     const cols: Column<any, any>[] = []
 
     const displayFields = schema.fields.filter(
-      (f) => f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+      (f) => f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join" && f.type !== "blocks"
     )
 
     displayFields.forEach((field) => {
@@ -301,7 +372,41 @@ export function SpreadsheetEditor({
         return
       }
 
-      // 3. Date & Temporal (Inline standard inputs without modals)
+      // 3. Number (inline input, no popover)
+      if (field.type === "number") {
+        const numberColumn = {
+          component: ({ rowData: value, setRowData: onChange, focus }: any) => {
+            const numValue = value != null ? String(value) : ""
+            return (
+              <input
+                type="number"
+                className="dy-w-full dy-h-full dy-bg-transparent dy-outline-none dy-px-2 dy-text-xs dy-text-foreground [appearance:textfield] [&::-webkit-outer-spin-button]:dy-appearance-none [&::-webkit-inner-spin-button]:dy-appearance-none"
+                value={numValue}
+                onChange={(e) => {
+                  const raw = e.target.value
+                  onChange(raw === "" ? null : Number(raw))
+                }}
+                disabled={isReadOnly}
+                autoFocus={focus}
+              />
+            )
+          },
+          deleteValue: () => null,
+          copyValue: ({ rowData: value }: any) => String(value ?? ""),
+          pasteValue: ({ value }: any) => {
+            const n = Number(value)
+            return isNaN(n) ? null : n
+          },
+        }
+        cols.push({
+          ...keyColumn(field.name, numberColumn),
+          title: field.label || field.name,
+          disabled: isReadOnly,
+        })
+        return
+      }
+
+      // 4. Date & Temporal (Inline standard inputs without modals)
       if (field.type === "date" || field.type === "datetime" || field.type === "time") {
         const inputType = field.type === "date" ? "date" : field.type === "datetime" ? "datetime-local" : "time";
         const dateColumn = {
@@ -349,15 +454,18 @@ export function SpreadsheetEditor({
         return
       }
 
-      // 4. Fallback rendering for popups (RichText, JSON, Media, Relational, Select/Searchable Select, Textarea)
+      // 5. Fallback rendering for popups (RichText, JSON, Media, Relational, Select, Textarea, multiSelect, object, array)
       const popupColumn = {
         component: ({ rowData, rowIndex }: any) => {
           if (!rowData) return null
           const value = rowData[field.name]
           const isSelectOrRadio = field.type === "select" || field.type === "radio"
+          const isMultiSelect = field.type === "multiSelect"
+          const isArray = field.type === "array"
+          const isObject = field.type === "object"
 
           let display = ""
-          if (!isSelectOrRadio && value !== null && value !== undefined) {
+          if (!isSelectOrRadio && !isMultiSelect && !isArray && !isObject && value !== null && value !== undefined) {
             if (typeof value === "object") {
               display = (value as any).title || (value as any).name || (value as any).filename || JSON.stringify(value)
             } else {
@@ -365,9 +473,17 @@ export function SpreadsheetEditor({
             }
           }
 
-          // Strips HTML for clean richText spreadsheet rendering
           if (field.type === "richText" && display) {
             display = display.replace(/<[^>]*>/g, "")
+          }
+
+          if (isArray) {
+            display = Array.isArray(value) ? `${value.length} item${value.length !== 1 ? "s" : ""}` : "0 items"
+          }
+
+          if (isObject && typeof value === "object" && value !== null) {
+            const keys = Object.keys(value as object).filter((k) => (value as any)[k] != null)
+            display = keys.length > 0 ? keys.slice(0, 2).map((k) => `${k}: ${String((value as any)[k]).slice(0, 15)}`).join(", ") : "{ empty }"
           }
 
           const isMedia = field.type === "image" || field.relationTo === "media" ||
@@ -392,12 +508,11 @@ export function SpreadsheetEditor({
               ) : null}
               {isSelectOrRadio ? (
                 <span className="dy-text-xs dy-text-foreground">
-                  <SelectCellDisplay
-                    field={field}
-                    value={value}
-                    collection={slug}
-                    siblingValues={rowData}
-                  />
+                  <SelectCellDisplay field={field} value={value} collection={slug} siblingValues={rowData} />
+                </span>
+              ) : isMultiSelect ? (
+                <span className="dy-text-xs dy-text-foreground">
+                  <MultiSelectCellDisplay field={field} value={value} collection={slug} siblingValues={rowData} />
                 </span>
               ) : (
                 <span className="dy-text-xs dy-text-muted-foreground">{display || `Click to edit`}</span>
@@ -539,10 +654,16 @@ export function SpreadsheetEditor({
           <>
             <PopoverAnchor virtualRef={{ current: activePopover.element }} />
             <PopoverContent
-              className="dy-z-[100] dy-p-3 dy-w-80 dy-bg-popover dy-border dy-rounded-md dy-shadow-md"
+              className={cn(
+                "dy-z-[100] dy-p-3 dy-bg-popover dy-border dy-rounded-md dy-shadow-md",
+                activePopover.field.type === "object" || activePopover.field.type === "array"
+                  ? "dy-w-96"
+                  : "dy-w-80"
+              )}
               onInteractOutside={() => {
                 const { rowIdx, field } = activePopover
-                if (field.type !== "textarea" && field.type !== "json") return
+                const localDraftTypes = ["textarea", "json", "object", "array"]
+                if (!localDraftTypes.includes(field.type)) return
                 const row = gridData[rowIdx]
                 if (row) {
                   setDrafts((prev) => ({
@@ -652,6 +773,37 @@ export function SpreadsheetEditor({
                     setLocalDraft(val)
                     commitValue(val)
                   }}
+                />
+              )}
+
+              {activePopover.field.type === "multiSelect" && (
+                <MultiSelectPopoverEditor
+                  field={activePopover.field}
+                  value={Array.isArray(localDraft) ? localDraft as string[] : []}
+                  collection={slug}
+                  siblingValues={gridData[activePopover.rowIdx] || {}}
+                  onToggle={(val) => {
+                    setLocalDraft(val)
+                    commitValue(val)
+                  }}
+                />
+              )}
+
+              {activePopover.field.type === "object" && (
+                <ObjectPopoverEditor
+                  field={activePopover.field}
+                  value={localDraft}
+                  onChange={(val) => setLocalDraft(val)}
+                  collection={slug}
+                />
+              )}
+
+              {activePopover.field.type === "array" && (
+                <ArrayPopoverEditor
+                  field={activePopover.field}
+                  value={localDraft}
+                  onChange={(val) => setLocalDraft(val)}
+                  collection={slug}
                 />
               )}
             </PopoverContent>

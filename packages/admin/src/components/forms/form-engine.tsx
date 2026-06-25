@@ -483,8 +483,8 @@ export function FormEngine({
   const renderFieldColumn = (field: FieldSchema) => (
     <div
       key={field.name}
-      className="dy-min-w-0 dy-px-3"
-      style={{ width: field.admin?.width || "100%" }}
+      className="dy-min-w-0 dy-px-3 dy-w-full sm:dy-w-[var(--field-w)]"
+      style={{ '--field-w': field.admin?.width || "100%" } as React.CSSProperties}
     >
       <FormFieldRenderer
         schema={field}

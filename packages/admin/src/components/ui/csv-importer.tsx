@@ -132,7 +132,7 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
 
     switch (field.type) {
       case "number": {
-        const num = Number(strVal)
+        const num = Number(strVal.replace(/[$€£¥₹₦₩₪₺₽฿,]/g, ""))
         if (isNaN(num)) return { value: null, error: "Must be a valid number" }
         return { value: num }
       }
@@ -147,6 +147,22 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
         const date = new Date(strVal)
         if (isNaN(date.getTime())) return { value: null, error: "Must be a valid date" }
         return { value: date.toISOString() }
+      }
+      case "image": {
+        try {
+          new URL(strVal)
+          return { value: strVal }
+        } catch {
+          return { value: null, error: "Must be a valid image URL" }
+        }
+      }
+      case "url": {
+        try {
+          new URL(strVal)
+          return { value: { type: "custom", url: strVal, label: "" } }
+        } catch {
+          return { value: null, error: "Must be a valid URL (e.g. https://example.com)" }
+        }
       }
       case "select":
       case "radio": {
@@ -243,7 +259,23 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
       }
 
       try {
-        await client!.collection(slug).create(rowResult.data)
+        const data = { ...rowResult.data }
+
+        for (const field of importableFields) {
+          if (field.type !== "image") continue
+          const url = data[field.name]
+          if (!url || typeof url !== "string") continue
+          const mediaCollection = (field as { relationTo?: string }).relationTo || "media"
+          const response = await fetch(url)
+          if (!response.ok) throw new Error(`Failed to fetch image: ${url}`)
+          const blob = await response.blob()
+          const filename = url.split("/").pop()?.split("?")[0] || "image"
+          const file = new File([blob], filename, { type: blob.type })
+          const media = await client!.collection(mediaCollection).upload(file)
+          data[field.name] = media.id
+        }
+
+        await client!.collection(slug).create(data)
         success++
         setSuccessCount(success)
       } catch (error: unknown) {
@@ -323,7 +355,7 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
             Map the columns in your CSV file to the corresponding fields of the collection. All required fields must be mapped to proceed.
           </div>
 
-          <ScrollArea className="dy-h-[300px] dy-pr-4 dy-border dy-border-border dy-rounded-xl">
+          <div className="dy-h-[300px] dy-overflow-y-auto dy-border dy-border-border dy-rounded-xl">
             <div className="dy-divide-y dy-divide-border">
               {csvHeaders.map((header) => {
                 const mappedVal = mapping[header] ?? "__ignore__"
@@ -360,7 +392,7 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
                 )
               })}
             </div>
-          </ScrollArea>
+          </div>
 
           {requiredFields.length > 0 && (
             <div className="dy-space-y-2">
@@ -411,8 +443,8 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
             )}
           </div>
 
-          <ScrollArea className="dy-h-[300px] dy-border dy-border-border dy-rounded-xl">
-            <table className="dy-w-full dy-text-left dy-border-collapse">
+          <div className="dy-h-[300px] dy-overflow-auto dy-border dy-border-border dy-rounded-xl">
+            <table className="dy-w-full dy-min-w-max dy-text-left dy-border-collapse">
               <thead>
                 <tr className="dy-border-b dy-border-border dy-bg-muted/40 dy-text-xs dy-font-semibold dy-text-muted-foreground">
                   <th className="dy-p-3 dy-w-16">Row</th>
@@ -456,7 +488,7 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
                 ))}
               </tbody>
             </table>
-          </ScrollArea>
+          </div>
 
           <div className="dy-flex dy-justify-between dy-pt-4">
             <Button variant="outline" onClick={() => setStep("map")}>
