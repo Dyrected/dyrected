@@ -13085,8 +13085,9 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 | <code>getAuthHeaders</code> | <code>getAuthHeaders(): Record&lt;string, string&gt;</code> | Returns the headers needed to authenticate raw &#96;fetch()&#96; calls made outside the SDK client (e.g. streaming endpoints, dynamic options).  Includes the Authorization bearer token (if set), x-api-key, and x-site-id. |
 | <code>getBaseUrl</code> | <code>getBaseUrl()</code> |  |
 | <code>getSchemas</code> | <code>getSchemas(): Promise&lt;&#123; collections: any[]; globals: any[] &#125;&gt;</code> |  |
-| <code>getPreference</code> | <code>getPreference&lt;T = unknown&gt;(key: string): Promise&lt;&#123; key: string; value: T &#124; null &#125;&gt;</code> |  |
-| <code>setPreference</code> | <code>setPreference&lt;T = unknown&gt;(key: string, value: T): Promise&lt;&#123; key: string; value: T &#125;&gt;</code> |  |
+| <code>getPreference</code> | <code>getPreference&lt;T = unknown&gt;(key: string, options?: &#123; scope?: 'personal' &#124; 'global' &#125;): Promise&lt;&#123; key: string; value: T &#124; null &#125;&gt;</code> |  |
+| <code>setPreference</code> | <code>setPreference&lt;T = unknown&gt;(key: string, value: T, options?: &#123; scope?: 'personal' &#124; 'global' &#125;): Promise&lt;&#123; key: string; value: T &#125;&gt;</code> |  |
+| <code>deletePreference</code> | <code>deletePreference(key: string, options?: &#123; scope?: 'personal' &#124; 'global' &#125;): Promise&lt;&#123; success: boolean &#125;&gt;</code> |  |
 | <code>getPreviewData</code> | <code>getPreviewData(token: string): Promise&lt;any&gt;</code> | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>find</code> | <code>find&lt;K extends keyof TSchema["collections"]&gt;(collection: K &amp; string, args: QueryArgs = &#123;&#125;): Promise&lt;PaginatedResult&lt;TSchema["collections"][K]&gt;&gt;</code> |  |
 | <code>collection</code> | <code>collection&lt;K extends keyof TSchema["collections"]&gt;(slug: K &amp; string)</code> | Returns a fluent query builder for a collection. |

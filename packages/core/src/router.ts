@@ -303,10 +303,21 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
+    const scope = c.req.query("scope");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
     if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
     if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
+
+    const getGlobalPreference = async () => {
+      const globalDoc = await db.findOne({ collection: "__global_preferences", id: key });
+      return globalDoc ? globalDoc.value : null;
+    };
+
+    if (scope === "global") {
+      const globalValue = await getGlobalPreference();
+      return c.json({ key, value: globalValue });
+    }
 
     const doc = await db.findOne({ collection: user.collection, id: user.sub });
     if (!doc) return c.json({ error: true, message: "User not found." }, 404);
@@ -315,19 +326,49 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       ? doc.__preferences as Record<string, unknown>
       : {};
 
-    return c.json({ key, value: preferences[key] ?? null });
+    if (key in preferences) {
+      return c.json({ key, value: preferences[key] ?? null });
+    }
+
+    const globalValue = await getGlobalPreference();
+    return c.json({ key, value: globalValue });
   });
 
   app.put("/api/preferences/:key", requireAuth(), async (c) => {
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
+    const scope = c.req.query("scope");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
     if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
     if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
 
     const body = await c.req.json().catch(() => ({}));
+
+    if (scope === "global") {
+      const isAdminUser = Array.isArray(user?.roles) && user.roles.includes('admin');
+      if (!isAdminUser) {
+        return c.json({ error: true, message: "Only administrators can save global preferences." }, 403);
+      }
+
+      const existing = await db.findOne({ collection: "__global_preferences", id: key });
+      if (existing) {
+        await db.update({
+          collection: "__global_preferences",
+          id: key,
+          data: { value: body.value }
+        });
+      } else {
+        await db.create({
+          collection: "__global_preferences",
+          data: { id: key, value: body.value }
+        });
+      }
+
+      return c.json({ key, value: body.value });
+    }
+
     const doc = await db.findOne({ collection: user.collection, id: user.sub });
     if (!doc) return c.json({ error: true, message: "User not found." }, 404);
 
@@ -343,6 +384,43 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     });
 
     return c.json({ key, value: body.value });
+  });
+
+  app.delete("/api/preferences/:key", requireAuth(), async (c) => {
+    const db = config.db;
+    const user = c.get("user");
+    const key = c.req.param("key");
+    const scope = c.req.query("scope");
+
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+    if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
+    if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
+
+    if (scope === "global") {
+      const isAdminUser = Array.isArray(user?.roles) && user.roles.includes('admin');
+      if (!isAdminUser) {
+        return c.json({ error: true, message: "Only administrators can delete global preferences." }, 403);
+      }
+      await db.delete({ collection: "__global_preferences", id: key });
+      return c.json({ success: true });
+    }
+
+    const doc = await db.findOne({ collection: user.collection, id: user.sub });
+    if (!doc) return c.json({ error: true, message: "User not found." }, 404);
+
+    const preferences = typeof doc.__preferences === "object" && doc.__preferences !== null
+      ? { ...doc.__preferences as Record<string, unknown> }
+      : {};
+    
+    delete preferences[key];
+
+    await db.update({
+      collection: user.collection,
+      id: user.sub,
+      data: { __preferences: preferences },
+    });
+
+    return c.json({ success: true });
   });
 
   // Global Media Fallback (Proxies to the 'media' collection)

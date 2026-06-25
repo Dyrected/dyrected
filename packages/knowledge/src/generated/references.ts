@@ -1308,12 +1308,17 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "getPreference",
-        "signature": "getPreference<T = unknown>(key: string): Promise<{ key: string; value: T | null }>",
+        "signature": "getPreference<T = unknown>(key: string, options?: { scope?: 'personal' | 'global' }): Promise<{ key: string; value: T | null }>",
         "description": ""
       },
       {
         "name": "setPreference",
-        "signature": "setPreference<T = unknown>(key: string, value: T): Promise<{ key: string; value: T }>",
+        "signature": "setPreference<T = unknown>(key: string, value: T, options?: { scope?: 'personal' | 'global' }): Promise<{ key: string; value: T }>",
+        "description": ""
+      },
+      {
+        "name": "deletePreference",
+        "signature": "deletePreference(key: string, options?: { scope?: 'personal' | 'global' }): Promise<{ success: boolean }>",
         "description": ""
       },
       {

@@ -19,7 +19,66 @@ import {
   Image as ImageIcon,
   Lock,
   FileDown,
+  Settings2,
+  GripVertical,
 } from "lucide-react"
+
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import type { DragEndEvent } from "@dnd-kit/core"
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+
+import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
+
+function SortableColumnItem({
+  id,
+  label,
+  visible,
+  onToggleVisible
+}: {
+  id: string
+  label: string
+  visible: boolean
+  onToggleVisible: (val: boolean) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "dy-flex dy-items-center dy-gap-2.5 dy-p-2 dy-bg-background dy-border dy-border-border/60 dy-rounded-lg dy-shadow-sm dy-transition-all",
+        isDragging && "dy-opacity-50 dy-border-primary"
+      )}
+    >
+      <div {...attributes} {...listeners} className="dy-cursor-grab active:dy-cursor-grabbing dy-text-muted-foreground/60 hover:dy-text-foreground dy-p-0.5">
+        <GripVertical className="dy-h-3.5 dy-w-3.5" />
+      </div>
+      <Checkbox
+        checked={visible}
+        onCheckedChange={(val) => onToggleVisible(!!val)}
+      />
+      <div className="dy-flex-1 dy-text-xs dy-font-medium dy-text-foreground">
+        {label}
+      </div>
+    </div>
+  )
+}
+
 
 import { RenderCell } from "../../components/ui/render-cell"
 import { PageHeader } from "../../components/ui/page-header"
@@ -27,19 +86,9 @@ import { Pagination } from "../../components/ui/pagination"
 import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { CollectionListSlotProps } from "../../types/admin-components"
 import { MediaGrid } from "../../components/media/media-grid"
-import { getMediaUrl } from "../../lib/utils"
+import { getMediaUrl, cn } from "../../lib/utils"
 import jexl from 'jexl'
-
 import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
-import { Grid, List as ListIcon, ChevronDown, Check } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu"
 
 interface CollectionListPageProps {
   slug: string
@@ -51,7 +100,6 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const [page, setPage] = React.useState(1)
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
   const [searchParams, setSearchParams] = useSearchParams()
-  const [viewMode, setViewMode] = React.useState<"list" | "spreadsheet">("list")
   const whereParam = searchParams.get('where')
 
   const rules = React.useMemo(() => {
@@ -92,6 +140,187 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   })
 
   const schema = schemas?.collections.find((c: CollectionConfig) => c.slug === slug)
+
+  interface ColumnPreference {
+    name: string
+    visible: boolean
+  }
+
+  interface ListLayoutPreference {
+    viewMode: "list" | "spreadsheet"
+    columns: ColumnPreference[]
+  }
+
+  const allAvailableColumns = React.useMemo(() => {
+    if (!schema) return []
+    const allDisplayFields = schema.fields.filter((f: Field) =>
+      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+    )
+    return [
+      ...allDisplayFields.map((field: Field) => field.name),
+      "id",
+      "createdAt",
+      "updatedAt",
+    ].filter((name, index, self) => self.indexOf(name) === index)
+  }, [schema])
+
+  const defaultListColumns = React.useMemo((): string[] => {
+    if (!schema) return []
+    const allDisplayFields = schema.fields.filter((f: Field) =>
+      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+    )
+    const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
+      ? schema.admin.defaultColumns
+      : []
+    return configuredColumns.length > 0
+      ? configuredColumns
+      : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
+  }, [schema])
+
+  const defaultListPreference = React.useMemo((): ListLayoutPreference => {
+    const visibleSet = new Set(defaultListColumns)
+    const cols = allAvailableColumns.map(name => ({
+      name,
+      visible: visibleSet.has(name)
+    }))
+    return {
+      viewMode: "list",
+      columns: cols
+    }
+  }, [allAvailableColumns, defaultListColumns])
+
+  const prefKey = `layout:collections:${slug}:list`
+
+  const { data: rawPreference } = useQuery({
+    queryKey: ["preferences", prefKey],
+    queryFn: async () => {
+      if (!client) return null
+      const res = await client.getPreference<unknown>(prefKey)
+      return res.value
+    },
+    enabled: !!client,
+    staleTime: 5000,
+    refetchOnWindowFocus: true,
+  })
+
+  const reconciledPreference = React.useMemo((): ListLayoutPreference => {
+    if (!rawPreference) {
+      return defaultListPreference
+    }
+
+    let parsedViewMode: "list" | "spreadsheet" = "list"
+    let parsedColumns: ColumnPreference[] = []
+
+    if (Array.isArray(rawPreference)) {
+      parsedViewMode = "list"
+      parsedColumns = rawPreference.map(item => {
+        if (typeof item === "string") {
+          return { name: item, visible: true }
+        }
+        if (item && typeof item === "object" && "name" in item) {
+          const obj = item as { name: string; visible?: boolean }
+          return { name: obj.name, visible: obj.visible !== false }
+        }
+        return null
+      }).filter((x): x is ColumnPreference => x !== null)
+    } else if (rawPreference && typeof rawPreference === "object") {
+      const rawPrefObj = rawPreference as { viewMode?: string; columns?: unknown[] }
+      parsedViewMode = rawPrefObj.viewMode === "spreadsheet" ? "spreadsheet" : "list"
+      if (Array.isArray(rawPrefObj.columns)) {
+        parsedColumns = rawPrefObj.columns.map((item: unknown) => {
+          if (typeof item === "string") {
+            return { name: item, visible: true }
+          }
+          if (item && typeof item === "object" && "name" in item) {
+            const obj = item as { name: string; visible?: boolean }
+            return { name: obj.name, visible: obj.visible !== false }
+          }
+          return null
+        }).filter((x: ColumnPreference | null): x is ColumnPreference => x !== null)
+      }
+    }
+
+    const validColumns = parsedColumns.filter(col => allAvailableColumns.includes(col.name))
+    const validNames = validColumns.map(col => col.name)
+    const missingColumns = allAvailableColumns
+      .filter(name => !validNames.includes(name))
+      .map(name => ({ name, visible: false }))
+
+    return {
+      viewMode: parsedViewMode,
+      columns: [...validColumns, ...missingColumns]
+    }
+  }, [rawPreference, defaultListPreference, allAvailableColumns])
+
+  const [localPreference, setLocalPreference] = React.useState<ListLayoutPreference>(reconciledPreference)
+
+  const syncPreference = React.useState(() => {
+    return (next: ListLayoutPreference) => {
+      setLocalPreference((prev) => {
+        const isViewModeSame = prev.viewMode === next.viewMode
+        const isColsSame = prev.columns.length === next.columns.length &&
+          prev.columns.every((col, i) => col.name === next.columns[i].name && col.visible === next.columns[i].visible)
+        return isViewModeSame && isColsSame ? prev : next
+      })
+    }
+  })[0]
+
+  React.useEffect(() => {
+    syncPreference(reconciledPreference)
+  }, [reconciledPreference, syncPreference])
+
+  const savePreferenceMutation = useMutation({
+    mutationFn: async ({ scope, value }: { scope: 'personal' | 'global'; value: ListLayoutPreference }) => {
+      if (!client) throw new Error("Client not available")
+      const clientWithPrefs = client as unknown as {
+        setPreference: (key: string, value: unknown, options?: { scope?: string }) => Promise<{ key: string; value: unknown }>
+        deletePreference: (key: string, options?: { scope?: string }) => Promise<{ success: boolean }>
+      }
+      await clientWithPrefs.setPreference(prefKey, value, { scope })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["preferences", prefKey] })
+    },
+  })
+
+  const resetPreferenceMutation = useMutation({
+    mutationFn: async ({ scope }: { scope: 'personal' | 'global' }) => {
+      if (!client) throw new Error("Client not available")
+      const clientWithPrefs = client as unknown as {
+        setPreference: (key: string, value: unknown, options?: { scope?: string }) => Promise<{ key: string; value: unknown }>
+        deletePreference: (key: string, options?: { scope?: string }) => Promise<{ success: boolean }>
+      }
+      await clientWithPrefs.deletePreference(prefKey, { scope })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["preferences", prefKey] })
+    },
+  })
+
+  const saveColumns = (scope: 'personal' | 'global') => savePreferenceMutation.mutateAsync({ scope, value: localPreference })
+  const resetColumns = () => resetPreferenceMutation.mutateAsync({ scope: 'personal' })
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDndDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    setLocalPreference((prev) => {
+      const oldIndex = prev.columns.findIndex(c => c.name === active.id)
+      const newIndex = prev.columns.findIndex(c => c.name === over.id)
+      if (oldIndex === -1 || newIndex === -1) return prev
+      return {
+        ...prev,
+        columns: arrayMove(prev.columns, oldIndex, newIndex)
+      }
+    })
+  }
 
   // Fetch collection data
   const { data: response, isLoading } = useQuery({
@@ -272,18 +501,11 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
     )
     const fieldByName = new Map<string, Field>(allDisplayFields.map((field: Field) => [field.name, field]))
-    const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
-      ? schema.admin.defaultColumns
-      : []
+    const configuredColumns = localPreference.columns.filter(col => col.visible).map(col => col.name)
     const visibleColumnNames = configuredColumns.length > 0
       ? configuredColumns
       : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
-    const systemColumnNames = ["id", "createdAt", "updatedAt"]
-    const allColumnNames = [
-      ...visibleColumnNames,
-      ...allDisplayFields.map((field: Field) => field.name),
-      ...systemColumnNames,
-    ].filter((name, index, names) => names.indexOf(name) === index)
+    const allColumnNames = visibleColumnNames
     const firstVisibleFieldName = visibleColumnNames.find((name) => fieldByName.has(name))
     const titleFieldName = visibleColumnNames.includes(schema.admin?.useAsTitle || "")
       ? schema.admin?.useAsTitle
@@ -417,44 +639,9 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     })
 
     return cols
-  }, [schema, client, deleteMutation.isPending, user, handleDelete, slug, schemas])
+  }, [schema, client, deleteMutation.isPending, user, handleDelete, slug, schemas, localPreference.columns])
 
-  const initialColumnVisibility = React.useMemo(() => {
-    if (!schema) return {}
 
-    const allDisplayFields = schema.fields.filter((f: Field) =>
-      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
-    )
-    const validColumnNames = new Set([
-      ...allDisplayFields.map((field: Field) => field.name),
-      "id",
-      "createdAt",
-      "updatedAt",
-    ])
-    const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
-      ? schema.admin.defaultColumns
-      : []
-    const visibleColumnNames = new Set(
-      (configuredColumns.length > 0
-        ? configuredColumns
-        : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
-      ).filter((name) => validColumnNames.has(name))
-    )
-
-    const visibility: Record<string, boolean> = {}
-    validColumnNames.forEach((name) => {
-      visibility[name] = visibleColumnNames.has(name)
-    })
-    return visibility
-  }, [schema])
-
-  const columnPreferenceKey = React.useMemo(() => {
-    if (!schema) return slug
-    const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
-      ? schema.admin.defaultColumns
-      : []
-    return `${slug}:${configuredColumns.join(",") || "default"}`
-  }, [schema, slug])
 
   if (!schema) {
     return <div>Collection not found: {slug}</div>
@@ -609,51 +796,120 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         icon={Database}
       >
         <div className="dy-flex dy-items-center dy-gap-2 dy-w-full sm:dy-w-auto">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="dy-h-8 dy-px-3 dy-gap-1.5 dy-text-xs">
-                {viewMode === "list" ? (
-                  <ListIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
-                ) : (
-                  <Grid className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
-                )}
-                <span>{viewMode === "list" ? "List View" : "Spreadsheet"}</span>
-                <ChevronDown className="dy-h-3 dy-w-3 dy-text-muted-foreground/60" />
+                <Settings2 className="dy-h-3.5 dy-w-3.5" />
+                <span>View Settings</span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="dy-w-56">
-              <DropdownMenuLabel className="dy-text-xs dy-font-normal dy-text-muted-foreground/50 dy-px-3 dy-py-1.5">
-                Layout
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="dy-opacity-50" />
-              <DropdownMenuItem
-                onClick={() => setViewMode("list")}
-                className="dy-flex dy-items-center dy-justify-between dy-py-2 dy-cursor-pointer"
-              >
-                <div className="dy-flex dy-items-center dy-gap-2.5">
-                  <ListIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
-                  <div className="dy-flex dy-flex-col">
-                    <span className="dy-text-xs dy-font-medium">List View</span>
-                    <span className="dy-text-[10px] dy-text-muted-foreground">Read-only table listing</span>
-                  </div>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="dy-w-80 dy-p-4 dy-space-y-4">
+              <div className="dy-space-y-1.5">
+                <h4 className="dy-text-xs dy-font-semibold dy-text-foreground dy-text-left">Layout Mode</h4>
+                <div className="dy-grid dy-grid-cols-2 dy-gap-2">
+                  <Button
+                    size="sm"
+                    variant={localPreference.viewMode === "list" ? "default" : "outline"}
+                    className="dy-h-8 dy-text-xs"
+                    onClick={() => setLocalPreference(prev => ({ ...prev, viewMode: "list" }))}
+                  >
+                    List View
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={localPreference.viewMode === "spreadsheet" ? "default" : "outline"}
+                    className="dy-h-8 dy-text-xs"
+                    onClick={() => setLocalPreference(prev => ({ ...prev, viewMode: "spreadsheet" }))}
+                  >
+                    Spreadsheet
+                  </Button>
                 </div>
-                {viewMode === "list" && <Check className="dy-h-3.5 dy-w-3.5 dy-text-primary" />}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setViewMode("spreadsheet")}
-                className="dy-flex dy-items-center dy-justify-between dy-py-2 dy-cursor-pointer"
-              >
-                <div className="dy-flex dy-items-center dy-gap-2.5">
-                  <Grid className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
-                  <div className="dy-flex dy-flex-col">
-                    <span className="dy-text-xs dy-font-medium">Spreadsheet</span>
-                    <span className="dy-text-[10px] dy-text-muted-foreground">Airtable-style editing</span>
-                  </div>
+              </div>
+
+              <div className="dy-space-y-1.5">
+                <h4 className="dy-text-xs dy-font-semibold dy-text-foreground dy-text-left">Columns</h4>
+                <p className="dy-text-[10px] dy-text-muted-foreground dy-text-left">Reorder and toggle column visibility.</p>
+                <div className="dy-max-h-[200px] dy-overflow-y-auto dy-space-y-1 dy-pr-1 dy-outline-none">
+                  <DndContext
+                    sensors={dndSensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDndDragEnd}
+                  >
+                    <SortableContext
+                      items={localPreference.columns.map(c => c.name)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="dy-space-y-1">
+                        {localPreference.columns.map((col) => {
+                          let label = col.name
+                          if (col.name === "id") label = "ID"
+                          else if (col.name === "createdAt") label = "Created"
+                          else if (col.name === "updatedAt") label = "Last Updated"
+                          else {
+                            const field = schema.fields.find((f: Field) => f.name === col.name)
+                            if (field) label = field.label || field.name
+                          }
+                          return (
+                            <SortableColumnItem
+                              key={col.name}
+                              id={col.name}
+                              label={label}
+                              visible={col.visible}
+                              onToggleVisible={(visible) => {
+                                setLocalPreference(prev => ({
+                                  ...prev,
+                                  columns: prev.columns.map(c => c.name === col.name ? { ...c, visible } : c)
+                                }))
+                              }}
+                            />
+                          )
+                        })}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 </div>
-                {viewMode === "spreadsheet" && <Check className="dy-h-3.5 dy-w-3.5 dy-text-primary" />}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </div>
+
+              <div className="dy-pt-2 dy-border-t dy-border-border/60 dy-flex dy-flex-col dy-gap-2">
+                <div className="dy-grid dy-grid-cols-2 dy-gap-2">
+                  <Button
+                    size="sm"
+                    className="dy-h-7 dy-text-[10px]"
+                    onClick={() => {
+                      saveColumns("personal")
+                      toast.success("Saved personal view preferences")
+                    }}
+                  >
+                    Save for Me
+                  </Button>
+                  {user?.role === "admin" && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="dy-h-7 dy-text-[10px]"
+                      onClick={() => {
+                        saveColumns("global")
+                        toast.success("Saved global view preferences")
+                      }}
+                    >
+                      Save for Everyone
+                    </Button>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="dy-h-7 dy-text-[10px] dy-w-full"
+                  onClick={() => {
+                    resetColumns()
+                    toast.success("Reset view preferences to default")
+                  }}
+                >
+                  Reset to Default
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {canCreate && (
             <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
@@ -673,13 +929,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         registry={components?.collectionList}
         componentProps={collectionComponentProps}
       />
-
       <div className="dy-min-w-0">
         {isLoading ? (
           <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
             <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent" />
           </div>
-        ) : viewMode === "spreadsheet" ? (
+        ) : localPreference.viewMode === "spreadsheet" ? (
           <SpreadsheetEditor
             slug={slug}
             schema={schema}
@@ -697,8 +952,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             searchKey={schema.admin?.useAsTitle || schema.fields.find((f: Field) => !f.admin?.hidden)?.name || "id"}
             onRowSelectionChange={setRowSelection}
             rowSelection={rowSelection}
-            persistenceKey={columnPreferenceKey}
-            initialColumnVisibility={initialColumnVisibility}
+            hideViewButton={true}
             toolbarActions={(
               <>
                 <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />

@@ -193,17 +193,31 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
   async getPreference<T = unknown>(
     key: string,
+    options?: { scope?: 'personal' | 'global' }
   ): Promise<{ key: string; value: T | null }> {
-    return this.request(`/api/preferences/${encodeURIComponent(key)}`);
+    const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
+    return this.request(`/api/preferences/${encodeURIComponent(key)}${scopeParam}`);
   }
 
   async setPreference<T = unknown>(
     key: string,
     value: T,
+    options?: { scope?: 'personal' | 'global' }
   ): Promise<{ key: string; value: T }> {
-    return this.request(`/api/preferences/${encodeURIComponent(key)}`, {
+    const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
+    return this.request(`/api/preferences/${encodeURIComponent(key)}${scopeParam}`, {
       method: "PUT",
       body: JSON.stringify({ value }),
+    });
+  }
+
+  async deletePreference(
+    key: string,
+    options?: { scope?: 'personal' | 'global' }
+  ): Promise<{ success: boolean }> {
+    const scopeParam = options?.scope ? `?scope=${options.scope}` : "";
+    return this.request(`/api/preferences/${encodeURIComponent(key)}${scopeParam}`, {
+      method: "DELETE",
     });
   }
 

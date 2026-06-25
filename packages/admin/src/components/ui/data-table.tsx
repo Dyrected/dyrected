@@ -46,6 +46,7 @@ interface DataTableProps<TData, TValue> {
   toolbarActions?: React.ReactNode
   persistenceKey?: string
   initialColumnVisibility?: VisibilityState
+  hideViewButton?: boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -58,6 +59,7 @@ export function DataTable<TData, TValue>({
   toolbarActions,
   persistenceKey,
   initialColumnVisibility,
+  hideViewButton = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -94,33 +96,35 @@ export function DataTable<TData, TValue>({
   return (
     <div className="dy-w-full dy-space-y-4">
       <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row sm:dy-items-center sm:dy-gap-4">
-        <div className={`dy-order-1 dy-grid dy-w-full dy-gap-2 sm:dy-order-3 sm:dy-ml-auto sm:dy-flex sm:dy-w-auto sm:dy-items-center ${toolbarActions ? "dy-grid-cols-3" : "dy-grid-cols-1"}`}>
+        <div className={`dy-order-1 dy-grid dy-w-full dy-gap-2 sm:dy-order-3 sm:dy-ml-auto sm:dy-flex sm:dy-w-auto sm:dy-items-center ${toolbarActions ? (hideViewButton ? "dy-grid-cols-2" : "dy-grid-cols-3") : (hideViewButton ? "dy-grid-cols-1" : "dy-grid-cols-2")}`}>
           {toolbarActions}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="dy-flex dy-h-9 dy-w-full dy-gap-2 sm:dy-h-8 sm:dy-w-auto">
-                <Settings2 className="dy-h-4 dy-w-4" />
-                View
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="dy-capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!hideViewButton && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="dy-flex dy-h-9 dy-w-full dy-gap-2 sm:dy-h-8 sm:dy-w-auto">
+                  <Settings2 className="dy-h-4 dy-w-4" />
+                  View
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="dy-capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {searchKey && (
