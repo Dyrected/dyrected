@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/cli",
-  "version": "2.5.37",
+  "version": "2.5.38",
   "type": "module",
   "files": [
     "dist"

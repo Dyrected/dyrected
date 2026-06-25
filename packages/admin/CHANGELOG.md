@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.38
+
+### Patch Changes
+
+- 60e0617: feat: implement CSV import component with column mapping, validation, and batch processing support
+  - @dyrected/core@2.5.38
+  - @dyrected/sdk@2.5.38
+
 ## 2.5.37
 
 ### Patch Changes

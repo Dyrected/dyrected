@@ -1,5 +1,13 @@
 # @dyrected/react
 
+## 2.5.38
+
+### Patch Changes
+
+- Updated dependencies [60e0617]
+  - @dyrected/admin@2.5.38
+  - @dyrected/sdk@2.5.38
+
 ## 2.5.37
 
 ### Patch Changes
