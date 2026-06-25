@@ -1,4 +1,4 @@
 {
   "title": "Admin UI",
-  "pages": ["overview", "configuration"]
+  "pages": ["overview", "configuration", "spreadsheet-editor", "csv-import"]
 }

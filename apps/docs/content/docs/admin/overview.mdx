@@ -186,7 +186,7 @@ A sortable, searchable data table for any collection.
 - **Search:** The search input queries the field specified by `admin.useAsTitle` (or the first visible field).
 - **Title column:** The column for the `admin.useAsTitle` field (or the first visible field) is rendered as a clickable link that navigates directly to the edit page.
 - **Columns:** Initial columns are controlled by `admin.defaultColumns`. Falls back to a sensible set of visible fields and system timestamps. `row`, `join`, and unknown column names are ignored automatically.
-- **View preferences:** Editors can change visible columns from the View dropdown. Preferences are saved per user when server preferences are available, with local storage as a fallback.
+- **View preferences:** Editors reorder or toggle columns using the **View** button. On the edit page, the same button switches to a drag-to-reorder mode for fields. Preferences are saved personally per editor; admins can also publish a team-wide default using **Save for Everyone**. See [View Preferences](/docs/admin/view-preferences).
 - **Filters:** The filter builder uses a draft/apply flow, so editors can add and edit filter rules before applying them to the list query.
 - **Status column:** Automatically added if the collection has a `status` field.
 - **Actions:** Edit (navigates to edit page), Delete.

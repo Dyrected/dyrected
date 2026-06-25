@@ -1,0 +1,162 @@
+---
+title: View Preferences
+description: How editors personalise column order and field layout in the Admin UI, and how admins publish team-wide defaults.
+---
+
+The Admin UI remembers how each editor prefers to see their data. Editors can reorder list columns and edit-page fields using the **View** button — no configuration required. Preferences are saved per user and survive page refreshes. Admins can also save a preference as the team-wide default so new editors start with a sensible layout without any extra setup.
+
+---
+
+## List page: column order
+
+On any collection list page, the **View** button opens a panel where editors can:
+
+- Toggle columns on or off
+- Drag columns to reorder them
+
+Changes take effect immediately. The preference is saved automatically so the next visit opens with the same layout.
+
+The initial column set comes from `admin.defaultColumns` in your config. If that is not set, the first three non-hidden fields are used:
+
+```ts
+export const Posts = defineCollection({
+  slug: 'posts',
+  admin: {
+    defaultColumns: ['title', 'status', 'publishedAt'],
+  },
+  fields: [...],
+})
+```
+
+Any field name that no longer exists in `fields` is silently dropped when the preference is loaded. Fields added to the collection after a preference was saved are appended to the end, so nothing disappears unexpectedly.
+
+---
+
+## Edit page: field order
+
+On the edit page, the **View** button (in the top-right of the form header) switches to a drag-to-reorder mode. Fields are displayed as cards that can be rearranged. Saving the preference applies the new order to the form view.
+
+The initial field order is whatever order `fields` appears in your config. The same reconciliation logic applies: removed fields are dropped, new fields are appended.
+
+---
+
+## Personal vs. global preferences
+
+Two save targets are available:
+
+| Button | Who it affects | Required role |
+|---|---|---|
+| **Save for Me** | The signed-in editor only | Any authenticated user |
+| **Save for Everyone** | All editors on this site | `admin` role only |
+
+Personal preferences take precedence over the team-wide (global) default. An editor who has never customised their view inherits the global default if one exists, or falls back to `admin.defaultColumns` from the config.
+
+The **Save for Everyone** button is only visible to users whose `roles` array includes `"admin"`.
+
+---
+
+## How the cascade works
+
+When an editor opens a list or edit page, preferences are resolved in this order:
+
+1. The editor's personal preference (saved with **Save for Me**)
+2. The global preference saved by an admin (saved with **Save for Everyone**)
+3. `admin.defaultColumns` from the collection config (list page only)
+4. The first three non-hidden fields (list page fallback)
+
+Resetting a personal preference removes it and reveals the global default (or the config default). Resetting the global preference removes it and reveals the config default.
+
+---
+
+## Preferences REST API
+
+Preferences are stored and retrieved through a scoped key-value API on your Dyrected server. You can call it directly if you're building custom tooling or extending the admin.
+
+### `GET /api/preferences/:key`
+
+Returns the active preference for the signed-in user, applying the cascade described above.
+
+```
+GET /api/preferences/list-columns:posts
+Authorization: Bearer <token>
+```
+
+Response:
+
+```json
+{
+  "key": "list-columns:posts",
+  "value": ["title", "status", "publishedAt"]
+}
+```
+
+To fetch the global preference directly without the personal cascade, pass `?scope=global`:
+
+```
+GET /api/preferences/list-columns:posts?scope=global
+```
+
+### `PUT /api/preferences/:key`
+
+Saves a preference. Pass `?scope=global` to save the team-wide default (admin role required).
+
+```
+PUT /api/preferences/list-columns:posts
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "value": ["title", "status", "author", "publishedAt"] }
+```
+
+For global scope:
+
+```
+PUT /api/preferences/list-columns:posts?scope=global
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{ "value": ["title", "status", "author", "publishedAt"] }
+```
+
+Returns `403` if the user does not have the `admin` role and `scope=global` is requested.
+
+### `DELETE /api/preferences/:key`
+
+Deletes a saved preference, reverting to the next level in the cascade. Pass `?scope=global` to delete the team-wide default (admin only).
+
+```
+DELETE /api/preferences/list-columns:posts
+Authorization: Bearer <token>
+```
+
+---
+
+## SDK
+
+The Dyrected SDK exposes the same three operations through `client.getPreference`, `client.setPreference`, and `client.deletePreference`:
+
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const cms = createClient({ baseUrl: '...', apiKey: '...' })
+
+// Read the active preference (personal → global → config default)
+const pref = await cms.getPreference('list-columns:posts')
+// pref.value → string[] | null
+
+// Save a personal preference
+await cms.setPreference('list-columns:posts', ['title', 'status', 'publishedAt'])
+
+// Save a global preference (requires admin role)
+await cms.setPreference('list-columns:posts', ['title', 'status', 'publishedAt'], {
+  scope: 'global',
+})
+
+// Reset to the next level in the cascade
+await cms.deletePreference('list-columns:posts')
+
+// Reset the global default (requires admin role)
+await cms.deletePreference('list-columns:posts', { scope: 'global' })
+```
+
+Preference keys are arbitrary strings. The Admin UI uses `list-columns:<slug>` for column order and `edit-fields:<slug>` for field order, but you can use any key for custom tooling.

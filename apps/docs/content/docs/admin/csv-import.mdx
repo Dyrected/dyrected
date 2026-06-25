@@ -1,0 +1,138 @@
+---
+title: CSV Import & Export
+description: Bulk-import records from a spreadsheet and export any collection to CSV directly from the Admin UI.
+---
+
+The Admin UI includes a built-in CSV importer and exporter on every collection list page. Import handles field mapping, validation, and image resolution. Export fetches every page of the collection and flattens it to a single downloadable file.
+
+---
+
+## CSV Import
+
+### Opening the wizard
+
+Navigate to any collection list page and click **Import CSV** in the top-right toolbar (visible only when you have create access for that collection). A dialog opens and walks you through five steps.
+
+---
+
+### Step 1 — Upload
+
+Drop a `.csv` file onto the upload zone or click to browse. The wizard accepts any UTF-8 CSV with a header row and will skip entirely blank rows automatically.
+
+---
+
+### Step 2 — Map fields
+
+Each column in your CSV is listed on the left. Use the dropdown on the right to choose which collection field that column should map to. Columns you do not need can be set to **Ignore field** — they will be skipped during import.
+
+The wizard auto-maps columns whose headers exactly match a field name (case-insensitive). Review the suggestions before proceeding; a mis-mapped column produces validation errors in the Preview step.
+
+Only fields that can be written are shown in the mapping dropdowns. System fields (`id`, `createdAt`, `updatedAt`) and virtual fields (`join`, `row`) are excluded.
+
+---
+
+### Step 3 — Preview and validate
+
+The first 20 rows are shown in a table with the mapped field values. Each cell is validated against the field type before the import starts:
+
+| Field type | What is validated | Value stored |
+|---|---|---|
+| `text`, `textarea`, `richText`, `email`, `json` | Raw string passed through | String |
+| `number` | Parsed as a number; commas and currency symbols stripped (`$€£¥₹₦₩₪₺₽฿`) | Number |
+| `boolean` | Accepts `true`/`false`, `yes`/`no`, `1`/`0` (case-insensitive) | Boolean |
+| `date` | Parsed with `new Date()`; must produce a valid date | ISO date string |
+| `datetime` | Parsed with `new Date()`; must produce a valid datetime | ISO datetime string |
+| `select`, `radio` | Must match one of the field's defined option values | String |
+| `image` | Must be a valid absolute URL; the image is fetched and uploaded during import | Media document ID |
+| `url` | Must be a valid absolute URL | `{ type: "custom", url: "...", label: "" }` |
+
+Rows with any validation error are highlighted in red. They will be **skipped** during the actual import — not aborted. You can proceed with valid rows or go back to fix the CSV and re-upload.
+
+---
+
+### Step 4 — Importing
+
+The wizard imports records one at a time. A progress bar tracks completed rows. You can see a live count of successes and failures as they happen.
+
+#### Image URL resolution
+
+For `image` fields, the wizard fetches the URL at import time, converts the response to a `File`, uploads it to the collection's configured media collection (typically `media`), and stores the resulting document ID — not the original URL. This means:
+
+- The image must be publicly accessible at import time.
+- It will be stored in your configured storage adapter (local, S3, R2, Cloudinary, etc.) and auto-resized if image sizes are configured.
+- If the fetch fails, that row is counted as a failure with an error message.
+
+#### URL field format
+
+`url` fields store an external link object rather than a plain string. The importer sets `type: "custom"` and leaves `label` empty. You can update the label in the Admin UI after import.
+
+---
+
+### Step 5 — Complete
+
+A summary shows how many records were created and how many rows failed. If any rows failed, a **Download Errors CSV** button appears. The errors file contains the original row data plus an `_error` column describing what went wrong for each row, so you can fix and re-import just the failures.
+
+---
+
+### Number formats
+
+The importer accepts numbers written with:
+
+- Commas as thousands separators — `1,000`, `1,234,567`
+- Currency prefixes or suffixes — `$99.99`, `₦5,000`, `€1.200`
+
+All non-numeric characters except `.` are stripped before parsing. The result must be a finite number; strings like `N/A` or `—` will fail validation.
+
+---
+
+### Partial failure behaviour
+
+A row fails if:
+
+- A required field is missing or blank in the mapped column.
+- A cell value does not pass type validation (e.g. a non-numeric value in a `number` field).
+- An image URL cannot be fetched or uploaded.
+- The collection API returns an error for that document (e.g. a unique constraint violation).
+
+Failed rows do not stop the import. All valid rows are created; only the failures are collected for the error report. Re-importing the error CSV will not duplicate previously imported rows because each row is sent as a fresh create request — there is no upsert logic.
+
+---
+
+## CSV Export
+
+### Running an export
+
+On any collection list page, click **Export CSV** in the top-right toolbar. The button is always visible (no special permission beyond read access). While the export is running the button shows "Exporting..." and is disabled.
+
+The file downloads automatically as `{collection-slug}-export.csv` once all pages have been fetched.
+
+---
+
+### What is exported
+
+The export always fetches **every record** in the collection — not just the current page or the current search/filter state. The columns included are:
+
+| Column | Description |
+|---|---|
+| `ID` | The document's `id` field |
+| All visible fields | Every field except `password`, hidden fields (`admin.hidden: true`), and virtual fields (`join`, `row`) |
+| `Last Updated` | The document's `updatedAt` timestamp |
+
+---
+
+### How complex values are flattened
+
+| Value type | How it appears in the CSV |
+|---|---|
+| String / number / boolean | Rendered as-is |
+| `null` / `undefined` | Empty cell |
+| Media / image | The full storage URL of the file |
+| Relationship | The related document's `title`, `name`, or `label` — falling back to its `id` |
+| Array | Items joined with `"; "` |
+| Object (other) | JSON-stringified |
+
+---
+
+### Filters and search are not applied
+
+The export always returns the full collection regardless of any active search query or filter. If you need a filtered export, use the [SDK](/docs/reference/sdk) to query the collection programmatically and build your own CSV from the result.
