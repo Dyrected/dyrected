@@ -21,6 +21,7 @@ import {
   FileDown,
   Settings2,
   GripVertical,
+  FileUp,
 } from "lucide-react"
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
@@ -29,6 +30,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from "@dnd-kit/utilities"
 
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
+import { CsvImporterDialog } from "../../components/ui/csv-importer-dialog"
 
 function SortableColumnItem({
   id,
@@ -99,6 +101,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const queryClient = useQueryClient()
   const [page, setPage] = React.useState(1)
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
+  const [isImportOpen, setIsImportOpen] = React.useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const whereParam = searchParams.get('where')
 
@@ -912,13 +915,24 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           </Popover>
 
           {canCreate && (
-            <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
-              <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
-                <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
-                <span className="sm:dy-hidden">Add</span>
-                <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.label || schema.slug}</span>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="dy-h-8 dy-px-3 dy-gap-1.5 dy-text-xs dy-w-full sm:dy-w-auto"
+                onClick={() => setIsImportOpen(true)}
+              >
+                <FileUp className="dy-h-3.5 dy-w-3.5" />
+                <span>Import CSV</span>
               </Button>
-            </Link>
+              <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
+                <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
+                  <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
+                  <span className="sm:dy-hidden">Add</span>
+                  <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.label || schema.slug}</span>
+                </Button>
+              </Link>
+            </>
           )}
         </div>
       </PageHeader>
@@ -1029,6 +1043,13 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           componentProps={collectionComponentProps}
         />
       </div>
+
+      <CsvImporterDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        slug={slug}
+        schema={schema}
+      />
     </div>
   )
 }
