@@ -19,7 +19,7 @@ const customComponents = {
 </template>
 <style lang="css">
 /* Override Dyrected Admin UI variables to match SnackTrack Pro's premium gold & navy brand identity */
-.dy-admin-ui {
+:root .dy-admin-ui {
   /* Fonts */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 

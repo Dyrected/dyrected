@@ -238,3 +238,73 @@
   background: rgba(175, 190, 253, 0.4);
   pointer-events: none;
 }
+
+/* React Datasheet Grid custom design system variables integration */
+.dy-admin-ui .dsg-container {
+  --dsg-border-color: hsl(var(--border) / 0.8) !important;
+  --dsg-selection-border-color: hsl(var(--intelligence)) !important;
+  --dsg-selection-border-radius: var(--radius) !important;
+  --dsg-selection-border-width: 2px !important;
+  --dsg-selection-background-color: hsl(var(--intelligence) / 0.04) !important;
+  --dsg-selection-disabled-border-color: hsl(var(--muted-foreground) / 0.5) !important;
+  --dsg-selection-disabled-background-color: hsl(var(--muted) / 0.2) !important;
+  --dsg-corner-indicator-width: 8px !important;
+  --dsg-header-text-color: hsl(var(--muted-foreground)) !important;
+  --dsg-header-active-text-color: hsl(var(--foreground)) !important;
+  --dsg-cell-background-color: hsl(var(--card)) !important;
+  --dsg-cell-disabled-background-color: hsl(var(--muted) / 0.1) !important;
+  --dsg-transition-duration: .15s !important;
+  --dsg-expand-rows-indicator-width: 10px !important;
+  --dsg-scroll-shadow-width: 8px !important;
+  --dsg-scroll-shadow-color: rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid var(--dsg-border-color);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: none;
+  font-family: var(--font-sans) !important;
+}
+
+.dy-admin-ui .dsg-row-header,
+.dy-admin-ui .dsg-corner-header {
+  background-color: hsl(var(--muted) / 0.3) !important;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dy-admin-ui .dsg-cell {
+  font-size: 13px !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+.dy-admin-ui .dsg-input {
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  color: hsl(var(--foreground)) !important;
+  padding: 0 8px !important;
+}
+
+.dy-admin-ui .dsg-container {
+  border: solid 1px hsl(var(--border) / 0.8) !important;
+  border-top: none !important;
+  border-left: none !important;
+  cursor: cell !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--card)) !important;
+  position: relative !important;
+  width: 100% !important;
+  overflow: auto !important;
+  will-change: transform !important;
+  direction: ltr !important;
+}
+
+
+
+.dy-admin-ui .dsg-container .dsg-add-row {
+  background: hsl(var(--card)) !important;
+}

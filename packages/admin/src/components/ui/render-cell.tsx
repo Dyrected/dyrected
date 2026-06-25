@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "./badge"
 import { Calendar } from "lucide-react"
 import { getMediaUrl } from "../../lib/utils"
@@ -48,7 +49,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   // Handle Relationship (Populated)
   if (field.type === "relationship" && typeof value === "object") {
     const relTo = field.relationTo || field.collection
-    const relatedCollection = schemas?.collections.find((c: any) => c.slug === relTo)
+    const relatedCollection = schemas?.collections?.find((c: any) => c?.slug === relTo)
     const displayField = relatedCollection?.admin?.useAsTitle || "title"
     const displayValue = value[displayField] || value.name || value.id || "Unknown"
 
@@ -105,6 +106,6 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
 
 function isUploadCollection(slug: string | undefined, schemas: any) {
   if (!slug) return false
-  const collection = schemas?.collections.find((c: any) => c.slug === slug)
+  const collection = schemas?.collections?.find((c: any) => c?.slug === slug)
   return !!collection?.upload
 }

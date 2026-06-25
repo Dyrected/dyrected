@@ -316,11 +316,16 @@ const Authors = defineCollection({
       name: "country",
       type: "select",
       options: async () => {
+        const cache = (globalThis as any) as { __dyrectedCountryOptions?: { label: string; value: string }[] };
+        if (cache.__dyrectedCountryOptions) return cache.__dyrectedCountryOptions;
         const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2");
+        if (!response.ok) return [];
         const data = (await response.json()) as Array<{ name: { common: string }; cca2: string }>;
-        return data
+        if (!Array.isArray(data)) return [];
+        cache.__dyrectedCountryOptions = data
           .map((country) => ({ label: country.name.common, value: country.cca2 }))
           .sort((a, b) => a.label.localeCompare(b.label));
+        return cache.__dyrectedCountryOptions;
       },
       admin: { width: "50%" },
     },

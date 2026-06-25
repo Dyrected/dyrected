@@ -30,6 +30,17 @@ import { MediaGrid } from "../../components/media/media-grid"
 import { getMediaUrl } from "../../lib/utils"
 import jexl from 'jexl'
 
+import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
+import { Grid, List as ListIcon, ChevronDown, Check } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../../components/ui/dropdown-menu"
+
 interface CollectionListPageProps {
   slug: string
 }
@@ -40,6 +51,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const [page, setPage] = React.useState(1)
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
   const [searchParams, setSearchParams] = useSearchParams()
+  const [viewMode, setViewMode] = React.useState<"list" | "spreadsheet">("list")
   const whereParam = searchParams.get('where')
 
   const rules = React.useMemo(() => {
@@ -64,10 +76,13 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     setPage(1)
   }, [setSearchParams]);
 
-  React.useEffect(() => {
-    setPage((prev) => prev === 1 ? prev : 1)
-    setRowSelection((prev) => Object.keys(prev).length === 0 ? prev : {})
-  }, [slug])
+  // Reset page and selection when slug changes
+  const [prevSlug, setPrevSlug] = React.useState(slug)
+  if (prevSlug !== slug) {
+    setPrevSlug(slug)
+    setPage(1)
+    setRowSelection({})
+  }
 
   // Fetch schema to know fields
   const { data: schemas } = useQuery({
@@ -126,6 +141,27 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     },
     onError: (error: Error) => {
       toast.error("Failed to delete entries", {
+        description: error.message
+      })
+    }
+  })
+
+  const bulkSaveMutation = useMutation({
+    mutationFn: async ({ updates, creates }: { updates: Record<string, Record<string, unknown>>; creates: Record<string, unknown>[] }) => {
+      const updatePromises = Object.entries(updates).map(([id, changes]) =>
+        client!.collection(slug).update(id, changes)
+      )
+      const createPromises = creates.map((row) =>
+        client!.collection(slug).create(row)
+      )
+      await Promise.all([...updatePromises, ...createPromises])
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["collection", slug] })
+      toast.success("Spreadsheet changes saved successfully")
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to save changes", {
         description: error.message
       })
     }
@@ -572,15 +608,63 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         description={`Manage your ${schema.labels?.plural || schema.label || schema.slug} entries and update content.`}
         icon={Database}
       >
-        {canCreate && (
-          <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
-            <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
-              <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
-              <span className="sm:dy-hidden">Add</span>
-              <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.label || schema.slug}</span>
-            </Button>
-          </Link>
-        )}
+        <div className="dy-flex dy-items-center dy-gap-2 dy-w-full sm:dy-w-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="dy-h-8 dy-px-3 dy-gap-1.5 dy-text-xs">
+                {viewMode === "list" ? (
+                  <ListIcon className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+                ) : (
+                  <Grid className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+                )}
+                <span>{viewMode === "list" ? "List View" : "Spreadsheet"}</span>
+                <ChevronDown className="dy-h-3 dy-w-3 dy-text-muted-foreground/60" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="dy-w-56">
+              <DropdownMenuLabel className="dy-text-xs dy-font-normal dy-text-muted-foreground/50 dy-px-3 dy-py-1.5">
+                Layout
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="dy-opacity-50" />
+              <DropdownMenuItem
+                onClick={() => setViewMode("list")}
+                className="dy-flex dy-items-center dy-justify-between dy-py-2 dy-cursor-pointer"
+              >
+                <div className="dy-flex dy-items-center dy-gap-2.5">
+                  <ListIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
+                  <div className="dy-flex dy-flex-col">
+                    <span className="dy-text-xs dy-font-medium">List View</span>
+                    <span className="dy-text-[10px] dy-text-muted-foreground">Read-only table listing</span>
+                  </div>
+                </div>
+                {viewMode === "list" && <Check className="dy-h-3.5 dy-w-3.5 dy-text-primary" />}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setViewMode("spreadsheet")}
+                className="dy-flex dy-items-center dy-justify-between dy-py-2 dy-cursor-pointer"
+              >
+                <div className="dy-flex dy-items-center dy-gap-2.5">
+                  <Grid className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
+                  <div className="dy-flex dy-flex-col">
+                    <span className="dy-text-xs dy-font-medium">Spreadsheet</span>
+                    <span className="dy-text-[10px] dy-text-muted-foreground">Airtable-style editing</span>
+                  </div>
+                </div>
+                {viewMode === "spreadsheet" && <Check className="dy-h-3.5 dy-w-3.5 dy-text-primary" />}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {canCreate && (
+            <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
+              <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
+                <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
+                <span className="sm:dy-hidden">Add</span>
+                <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.label || schema.slug}</span>
+              </Button>
+            </Link>
+          )}
+        </div>
       </PageHeader>
 
       <AdminComponentSlot
@@ -595,69 +679,81 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
           <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
             <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent" />
           </div>
-        ) : <DataTable
-          key={slug}
-          columns={columns}
-          data={response?.docs || []}
-          searchKey={schema.admin?.useAsTitle || schema.fields.find((f: Field) => !f.admin?.hidden)?.name || "id"}
-          onRowSelectionChange={setRowSelection}
-          rowSelection={rowSelection}
-          persistenceKey={columnPreferenceKey}
-          initialColumnVisibility={initialColumnVisibility}
-          toolbarActions={(
-            <>
-              <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />
-              <Button
-                variant="outline"
-                size="sm"
-                className="dy-h-9 dy-w-full dy-justify-center dy-gap-2 dy-rounded-md dy-px-3 dy-text-[11px] dy-shadow-sm dy-transition-all active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto"
-                onClick={handleExportCsv}
-                disabled={exporting}
-              >
-                {exporting ? (
-                  <div className="dy-h-3 dy-w-3 dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent" />
-                ) : (
-                  <FileDown className="dy-h-3.5 dy-w-3.5" />
-                )}
-                <span className="dy-hidden sm:dy-inline">{exporting ? "Exporting..." : "Export CSV"}</span>
-                <span className="sm:dy-hidden">{exporting ? "Exporting" : "Export"}</span>
-              </Button>
-            </>
-          )}
-          bulkActions={(selectedIds) => {
-            const deletableIds = selectedIds.filter(id => {
-              const item = response?.docs?.find((d: Record<string, unknown>) => d.id === id)
-              if (!item) return false
-              if (schema.auth && id === user?.id) return false
-              
-              const deleteAccess = (schema.access as { delete?: unknown })?.delete
-              let canDelete = true
-              if (deleteAccess === false) {
-                canDelete = false
-              } else if (typeof deleteAccess === 'string') {
-                try {
-                  canDelete = jexl.evalSync(deleteAccess, { user, ...item })
-                } catch (e) {
-                  console.warn("Delete access eval failed:", e)
+        ) : viewMode === "spreadsheet" ? (
+          <SpreadsheetEditor
+            slug={slug}
+            schema={schema}
+            data={response?.docs || []}
+            onSave={async (updates, creates) => {
+              await bulkSaveMutation.mutateAsync({ updates, creates: creates || [] })
+            }}
+            isSaving={bulkSaveMutation.isPending}
+          />
+        ) : (
+          <DataTable
+            key={slug}
+            columns={columns}
+            data={response?.docs || []}
+            searchKey={schema.admin?.useAsTitle || schema.fields.find((f: Field) => !f.admin?.hidden)?.name || "id"}
+            onRowSelectionChange={setRowSelection}
+            rowSelection={rowSelection}
+            persistenceKey={columnPreferenceKey}
+            initialColumnVisibility={initialColumnVisibility}
+            toolbarActions={(
+              <>
+                <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="dy-h-9 dy-w-full dy-justify-center dy-gap-2 dy-rounded-md dy-px-3 dy-text-[11px] dy-shadow-sm dy-transition-all active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto"
+                  onClick={handleExportCsv}
+                  disabled={exporting}
+                >
+                  {exporting ? (
+                    <div className="dy-h-3 dy-w-3 dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent" />
+                  ) : (
+                    <FileDown className="dy-h-3.5 dy-w-3.5" />
+                  )}
+                  <span className="dy-hidden sm:dy-inline">{exporting ? "Exporting..." : "Export CSV"}</span>
+                  <span className="sm:dy-hidden">{exporting ? "Exporting" : "Export"}</span>
+                </Button>
+              </>
+            )}
+            bulkActions={(selectedIds) => {
+              const deletableIds = selectedIds.filter(id => {
+                const item = response?.docs?.find((d: Record<string, unknown>) => d.id === id)
+                if (!item) return false
+                if (schema.auth && id === user?.id) return false
+                
+                const deleteAccess = (schema.access as { delete?: unknown })?.delete
+                let canDelete = true
+                if (deleteAccess === false) {
+                  canDelete = false
+                } else if (typeof deleteAccess === 'string') {
+                  try {
+                    canDelete = jexl.evalSync(deleteAccess, { user, ...item })
+                  } catch (e) {
+                    console.warn("Delete access eval failed:", e)
+                  }
                 }
-              }
-              return canDelete
-            })
+                return canDelete
+              })
 
-            return (
-              <Button
-                variant="destructive"
-                size="sm"
-                className="dy-h-8"
-                onClick={() => handleBulkDelete(deletableIds)}
-                disabled={bulkDeleteMutation.isPending || deletableIds.length === 0}
-              >
-                <Trash2 className="dy-h-4 dy-w-4 dy-mr-2" />
-                Delete Selected ({deletableIds.length})
-              </Button>
-            )
-          }}
-        />}
+              return (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="dy-h-8"
+                  onClick={() => handleBulkDelete(deletableIds)}
+                  disabled={bulkDeleteMutation.isPending || deletableIds.length === 0}
+                >
+                  <Trash2 className="dy-h-4 dy-w-4 dy-mr-2" />
+                  Delete Selected ({deletableIds.length})
+                </Button>
+              )
+            }}
+          />
+        )}
         <AdminComponentSlot
           slot="afterListTable"
           componentKeys={collectionSlots?.afterListTable}
@@ -682,3 +778,4 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     </div>
   )
 }
+

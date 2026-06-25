@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-provider"
 import { FormEngine } from "../../components/forms/form-engine"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, Plus } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl } from "../../lib/utils"
@@ -263,7 +263,7 @@ export function EditEntryPage() {
   }
 
   return (
-    <div className={cn("dy-flex dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6", showPreview ? "dy-h-screen" : "")}>
+    <div key={id || "new"} className={cn("dy-flex dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6", showPreview ? "dy-h-screen" : "")}>
       {/* Left Column: Header + Form */}
       <div className={cn(
         "dy-flex-1 dy-px-4 dy-py-6 md:dy-px-6 lg:dy-px-8 lg:dy-py-8 dy-transition-all dy-duration-500",
@@ -331,6 +331,17 @@ export function EditEntryPage() {
                   title={showPreview ? "Hide Preview" : "Live Preview"}
                 >
                   {showPreview ? <EyeOff className="dy-h-3.5 dy-w-3.5" /> : <Eye className="dy-h-3.5 dy-w-3.5" />}
+                </Button>
+              )}
+              {isEdit && canCreate && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="dy-h-8 dy-w-8 dy-rounded-lg dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground dy-transition-all"
+                  onClick={() => navigate(`/collections/${slug}/new`)}
+                  title="Add new entry"
+                >
+                  <Plus className="dy-h-3.5 dy-w-3.5" />
                 </Button>
               )}
               <Button
