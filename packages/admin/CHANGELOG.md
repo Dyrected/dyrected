@@ -1,5 +1,14 @@
 # @dyrected/admin
 
+## 2.5.36
+
+### Patch Changes
+
+- eb77809: Native Spreadsheet Editing (Airtable-style)
+  User can bulk edit with spreadsheet
+  - @dyrected/core@2.5.36
+  - @dyrected/sdk@2.5.36
+
 ## 2.5.35
 
 ### Patch Changes

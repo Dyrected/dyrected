@@ -1,5 +1,13 @@
 # @dyrected/vue
 
+## 2.5.36
+
+### Patch Changes
+
+- Updated dependencies [eb77809]
+  - @dyrected/admin@2.5.36
+  - @dyrected/sdk@2.5.36
+
 ## 2.5.35
 
 ### Patch Changes
