@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/knowledge",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Compiled Dyrected recipes, intent metadata, and portable knowledge artifacts",
   "type": "module",
   "main": "./dist/index.js",
