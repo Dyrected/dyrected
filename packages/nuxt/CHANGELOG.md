@@ -1,5 +1,15 @@
 # @dyrected/nuxt
 
+## 2.5.40
+
+### Patch Changes
+
+- Updated dependencies [d5aa016]
+  - @dyrected/core@2.5.40
+  - @dyrected/sdk@2.5.40
+  - @dyrected/vue@2.5.40
+  - @dyrected/admin@2.5.40
+
 ## 2.5.39
 
 ### Patch Changes

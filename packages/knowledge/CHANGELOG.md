@@ -1,5 +1,13 @@
 # @dyrected/knowledge
 
+## 0.2.2
+
+### Patch Changes
+
+- d5aa016: fix docs and global seeding
+- Updated dependencies [d5aa016]
+  - @dyrected/core@2.5.40
+
 ## 0.2.1
 
 ### Patch Changes

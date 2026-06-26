@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.5.40
+
+### Patch Changes
+
+- d5aa016: fix docs and global seeding
+
 ## 2.5.39
 
 ## 2.5.38
