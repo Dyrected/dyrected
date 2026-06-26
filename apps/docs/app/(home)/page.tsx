@@ -14,7 +14,7 @@ export default function HomePage() {
             Get Started
           </a>
           <a
-            href="https://github.com/she-WritesCode/dyrected"
+            href="https://github.com/Dyrected/dyrected"
             target="_blank"
             rel="noreferrer"
             className="btn-violet-outline rounded-full px-8 py-3 text-sm font-semibold"
