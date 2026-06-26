@@ -364,6 +364,62 @@
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
+    "id": "/admin/view-preferences#example-1",
+    "page": "/admin/view-preferences",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/view-preferences#example-2",
+    "page": "/admin/view-preferences",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/admin/view-preferences#example-3",
+    "page": "/admin/view-preferences",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/admin/view-preferences#example-4",
+    "page": "/admin/view-preferences",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/admin/view-preferences#example-5",
+    "page": "/admin/view-preferences",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/admin/view-preferences#example-6",
+    "page": "/admin/view-preferences",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/admin/view-preferences#example-7",
+    "page": "/admin/view-preferences",
+    "language": "",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/admin/view-preferences#example-8",
+    "page": "/admin/view-preferences",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/concepts/access-control#example-1",
     "page": "/concepts/access-control",
     "language": "ts",

@@ -579,7 +579,7 @@ admin: {
 
 Fields not in this list are still accessible in the Edit form — they simply don't appear as initial list columns. If a field name in `defaultColumns` does not exist in `fields`, it is silently ignored.
 
-Editors can still use the View dropdown to show or hide columns. Those choices are saved as user preferences when the preferences API is available, with local storage as a fallback.
+Editors can still reorder or toggle columns using the **View** button. Their choices are saved as personal preferences and can be overridden at the team level by an admin. See [View Preferences](/docs/admin/view-preferences) for the full cascade and API reference.
 
 ### `filterable`
 
@@ -1156,6 +1156,146 @@ Access is resolved **server-side** via the `/api/schemas` response, which includ
 
 ---
 
+## CSV Import & Export
+
+Canonical URL: https://docs.dyrected.com/docs/admin/csv-import
+
+The Admin UI includes a built-in CSV importer and exporter on every collection list page. Import handles field mapping, validation, and image resolution. Export fetches every page of the collection and flattens it to a single downloadable file.
+
+---
+
+## CSV Import
+
+### Opening the wizard
+
+Navigate to any collection list page and click **Import CSV** in the top-right toolbar (visible only when you have create access for that collection). A dialog opens and walks you through five steps.
+
+---
+
+### Step 1 — Upload
+
+Drop a `.csv` file onto the upload zone or click to browse. The wizard accepts any UTF-8 CSV with a header row and will skip entirely blank rows automatically.
+
+---
+
+### Step 2 — Map fields
+
+Each column in your CSV is listed on the left. Use the dropdown on the right to choose which collection field that column should map to. Columns you do not need can be set to **Ignore field** — they will be skipped during import.
+
+The wizard auto-maps columns whose headers exactly match a field name (case-insensitive). Review the suggestions before proceeding; a mis-mapped column produces validation errors in the Preview step.
+
+Only fields that can be written are shown in the mapping dropdowns. System fields (`id`, `createdAt`, `updatedAt`) and virtual fields (`join`, `row`) are excluded.
+
+---
+
+### Step 3 — Preview and validate
+
+The first 20 rows are shown in a table with the mapped field values. Each cell is validated against the field type before the import starts:
+
+| Field type | What is validated | Value stored |
+|---|---|---|
+| `text`, `textarea`, `richText`, `email`, `json` | Raw string passed through | String |
+| `number` | Parsed as a number; commas and currency symbols stripped (`$€£¥₹₦₩₪₺₽฿`) | Number |
+| `boolean` | Accepts `true`/`false`, `yes`/`no`, `1`/`0` (case-insensitive) | Boolean |
+| `date` | Parsed with `new Date()`; must produce a valid date | ISO date string |
+| `datetime` | Parsed with `new Date()`; must produce a valid datetime | ISO datetime string |
+| `select`, `radio` | Must match one of the field's defined option values | String |
+| `image` | Must be a valid absolute URL; the image is fetched and uploaded during import | Media document ID |
+| `url` | Must be a valid absolute URL | `{ type: "custom", url: "...", label: "" }` |
+
+Rows with any validation error are highlighted in red. They will be **skipped** during the actual import — not aborted. You can proceed with valid rows or go back to fix the CSV and re-upload.
+
+---
+
+### Step 4 — Importing
+
+The wizard imports records one at a time. A progress bar tracks completed rows. You can see a live count of successes and failures as they happen.
+
+#### Image URL resolution
+
+For `image` fields, the wizard fetches the URL at import time, converts the response to a `File`, uploads it to the collection's configured media collection (typically `media`), and stores the resulting document ID — not the original URL. This means:
+
+- The image must be publicly accessible at import time.
+- It will be stored in your configured storage adapter (local, S3, R2, Cloudinary, etc.) and auto-resized if image sizes are configured.
+- If the fetch fails, that row is counted as a failure with an error message.
+
+#### URL field format
+
+`url` fields store an external link object rather than a plain string. The importer sets `type: "custom"` and leaves `label` empty. You can update the label in the Admin UI after import.
+
+---
+
+### Step 5 — Complete
+
+A summary shows how many records were created and how many rows failed. If any rows failed, a **Download Errors CSV** button appears. The errors file contains the original row data plus an `_error` column describing what went wrong for each row, so you can fix and re-import just the failures.
+
+---
+
+### Number formats
+
+The importer accepts numbers written with:
+
+- Commas as thousands separators — `1,000`, `1,234,567`
+- Currency prefixes or suffixes — `$99.99`, `₦5,000`, `€1.200`
+
+All non-numeric characters except `.` are stripped before parsing. The result must be a finite number; strings like `N/A` or `—` will fail validation.
+
+---
+
+### Partial failure behaviour
+
+A row fails if:
+
+- A required field is missing or blank in the mapped column.
+- A cell value does not pass type validation (e.g. a non-numeric value in a `number` field).
+- An image URL cannot be fetched or uploaded.
+- The collection API returns an error for that document (e.g. a unique constraint violation).
+
+Failed rows do not stop the import. All valid rows are created; only the failures are collected for the error report. Re-importing the error CSV will not duplicate previously imported rows because each row is sent as a fresh create request — there is no upsert logic.
+
+---
+
+## CSV Export
+
+### Running an export
+
+On any collection list page, click **Export CSV** in the top-right toolbar. The button is always visible (no special permission beyond read access). While the export is running the button shows "Exporting..." and is disabled.
+
+The file downloads automatically as `{collection-slug}-export.csv` once all pages have been fetched.
+
+---
+
+### What is exported
+
+The export always fetches **every record** in the collection — not just the current page or the current search/filter state. The columns included are:
+
+| Column | Description |
+|---|---|
+| `ID` | The document's `id` field |
+| All visible fields | Every field except `password`, hidden fields (`admin.hidden: true`), and virtual fields (`join`, `row`) |
+| `Last Updated` | The document's `updatedAt` timestamp |
+
+---
+
+### How complex values are flattened
+
+| Value type | How it appears in the CSV |
+|---|---|
+| String / number / boolean | Rendered as-is |
+| `null` / `undefined` | Empty cell |
+| Media / image | The full storage URL of the file |
+| Relationship | The related document's `title`, `name`, or `label` — falling back to its `id` |
+| Array | Items joined with `"; "` |
+| Object (other) | JSON-stringified |
+
+---
+
+### Filters and search are not applied
+
+The export always returns the full collection regardless of any active search query or filter. If you need a filtered export, use the [SDK](/docs/reference/sdk) to query the collection programmatically and build your own CSV from the result.
+
+---
+
 ## Admin UI
 
 Canonical URL: https://docs.dyrected.com/docs/admin/overview
@@ -1343,7 +1483,7 @@ A sortable, searchable data table for any collection.
 - **Search:** The search input queries the field specified by `admin.useAsTitle` (or the first visible field).
 - **Title column:** The column for the `admin.useAsTitle` field (or the first visible field) is rendered as a clickable link that navigates directly to the edit page.
 - **Columns:** Initial columns are controlled by `admin.defaultColumns`. Falls back to a sensible set of visible fields and system timestamps. `row`, `join`, and unknown column names are ignored automatically.
-- **View preferences:** Editors can change visible columns from the View dropdown. Preferences are saved per user when server preferences are available, with local storage as a fallback.
+- **View preferences:** Editors reorder or toggle columns using the **View** button. On the edit page, the same button switches to a drag-to-reorder mode for fields. Preferences are saved personally per editor; admins can also publish a team-wide default using **Save for Everyone**. See [View Preferences](/docs/admin/view-preferences).
 - **Filters:** The filter builder uses a draft/apply flow, so editors can add and edit filter rules before applying them to the list query.
 - **Status column:** Automatically added if the collection has a `status` field.
 - **Actions:** Edit (navigates to edit page), Delete.
@@ -1471,6 +1611,268 @@ Your component receives:
 | `json`         | Code editor                  | JSON syntax highlighting                                                                   |
 | `blocks`       | Block picker + inline editor | One editor per block type                                                                  |
 | `row`          | Flex row container           | Virtual layout field — arranges children side-by-side; no data stored                      |
+
+---
+
+## Spreadsheet View
+
+Canonical URL: https://docs.dyrected.com/docs/admin/spreadsheet-editor
+
+Every collection list in the Admin UI has two layout modes: the default **List View** for browsing and filtering, and **Spreadsheet View** for bulk editing. Spreadsheet View renders your collection as a grid where you can edit fields directly in place — no page navigation required.
+
+---
+
+## Activating spreadsheet view
+
+Open the column-settings popover in the top-right corner of any collection list. Under **Layout Mode**, click **Spreadsheet**. The preference is saved per user and per collection, so switching back to List View at any time is non-destructive.
+
+The grid renders all fields defined on the collection, in definition order, with the same column visibility and ordering you configured in List View.
+
+---
+
+## Editing cells
+
+Different field types commit their changes in different ways.
+
+### Inline fields
+
+These fields are edited directly inside the cell — no popover opens:
+
+| Field type | Behaviour |
+|---|---|
+| `text`, `email`, `url` | Click the cell and type. Commits on blur. |
+| `number` | Click the cell and type. Commits on blur. |
+| `boolean` | Click the checkbox to toggle. Commits immediately. |
+| `date`, `datetime`, `time` | Click the cell to open the native date/time picker inline. Commits on change. |
+
+### Popover fields
+
+Clicking a cell opens a small popover anchored to that cell. Press **Escape** to discard changes and close without saving. Clicking outside commits the current value for text-like fields.
+
+| Field type | Popover contents |
+|---|---|
+| `textarea` | Resizable textarea. Commits on blur (click outside). Escape discards. |
+| `json` | JSON editor. Commits on blur. Escape discards. |
+| `select`, `radio` | Scrollable option list. Commits immediately on selection. |
+| `multiSelect` | Checkable option list. Each toggle commits immediately. |
+| `relationship` | Relationship picker. Commits immediately on selection. |
+| `image` | Media picker. Commits immediately on selection. |
+| `icon` | Icon picker. Commits immediately on selection. |
+| `object` | Inline form with all sub-fields rendered using the same field components as the main edit form. Commits on blur. |
+| `array` | Per-item sub-form with Add and Remove controls. Commits on blur. |
+
+### Rich text
+
+Clicking a `richText` cell opens a **slide-out side panel** with the full rich-text editor. Changes commit when you close the panel. Closing without editing leaves the original value unchanged.
+
+---
+
+## Pending changes
+
+Edits are held locally until you explicitly save or discard them. A floating bar appears at the bottom of the grid whenever there are unsaved changes, showing a count of modified and newly added records.
+
+| Action | What happens |
+|---|---|
+| **Save Changes** | Sends all pending updates and new-row creates to the API in parallel. Clears the pending state on success. |
+| **Discard** | Reverts all unsaved changes, including new rows. |
+
+Navigating away while there are pending changes does not warn you — save before leaving.
+
+---
+
+## Adding rows
+
+Click the **+ Add row** button at the bottom of the grid to append a new empty row. New rows appear immediately in the grid and grow the grid height without scrolling. They are included in the pending-changes count and created via the collection's `create` API endpoint when you save.
+
+---
+
+## Field visibility
+
+Spreadsheet View respects the same `admin.hidden` flag used by the main edit form. Fields marked `hidden: true` are excluded from the grid.
+
+`blocks` fields are also excluded — their polymorphic structure cannot be meaningfully collapsed into a single cell. To edit block content, open the individual document in the edit form.
+
+Fields marked `admin.readOnly: true` are rendered in the grid but cannot be edited.
+
+---
+
+## Keyboard navigation
+
+`react-datasheet-grid` (the underlying grid library) supports standard spreadsheet keyboard controls:
+
+| Key | Action |
+|---|---|
+| `Tab` / `Shift+Tab` | Move to the next / previous cell |
+| `Enter` | Confirm edit and move down |
+| `Escape` | Cancel edit and close popover |
+| `Delete` / `Backspace` | Clear the cell value |
+| Arrow keys | Navigate between cells |
+| `Ctrl+C` / `Cmd+C` | Copy cell value |
+| `Ctrl+V` / `Cmd+V` | Paste into selected cell |
+
+---
+
+## View Preferences
+
+Canonical URL: https://docs.dyrected.com/docs/admin/view-preferences
+
+The Admin UI remembers how each editor prefers to see their data. Editors can reorder list columns and edit-page fields using the **View** button — no configuration required. Preferences are saved per user and survive page refreshes. Admins can also save a preference as the team-wide default so new editors start with a sensible layout without any extra setup.
+
+---
+
+## List page: column order
+
+On any collection list page, the **View** button opens a panel where editors can:
+
+- Toggle columns on or off
+- Drag columns to reorder them
+
+Changes take effect immediately. The preference is saved automatically so the next visit opens with the same layout.
+
+The initial column set comes from `admin.defaultColumns` in your config. If that is not set, the first three non-hidden fields are used:
+
+```ts
+export const Posts = defineCollection({
+  slug: 'posts',
+  admin: {
+    defaultColumns: ['title', 'status', 'publishedAt'],
+  },
+  fields: [...],
+})
+```
+
+Any field name that no longer exists in `fields` is silently dropped when the preference is loaded. Fields added to the collection after a preference was saved are appended to the end, so nothing disappears unexpectedly.
+
+---
+
+## Edit page: field order
+
+On the edit page, the **View** button (in the top-right of the form header) switches to a drag-to-reorder mode. Fields are displayed as cards that can be rearranged. Saving the preference applies the new order to the form view.
+
+The initial field order is whatever order `fields` appears in your config. The same reconciliation logic applies: removed fields are dropped, new fields are appended.
+
+---
+
+## Personal vs. global preferences
+
+Two save targets are available:
+
+| Button | Who it affects | Required role |
+|---|---|---|
+| **Save for Me** | The signed-in editor only | Any authenticated user |
+| **Save for Everyone** | All editors on this site | `admin` role only |
+
+Personal preferences take precedence over the team-wide (global) default. An editor who has never customised their view inherits the global default if one exists, or falls back to `admin.defaultColumns` from the config.
+
+The **Save for Everyone** button is only visible to users whose `roles` array includes `"admin"`.
+
+---
+
+## How the cascade works
+
+When an editor opens a list or edit page, preferences are resolved in this order:
+
+1. The editor's personal preference (saved with **Save for Me**)
+2. The global preference saved by an admin (saved with **Save for Everyone**)
+3. `admin.defaultColumns` from the collection config (list page only)
+4. The first three non-hidden fields (list page fallback)
+
+Resetting a personal preference removes it and reveals the global default (or the config default). Resetting the global preference removes it and reveals the config default.
+
+---
+
+## Preferences REST API
+
+Preferences are stored and retrieved through a scoped key-value API on your Dyrected server. You can call it directly if you're building custom tooling or extending the admin.
+
+### `GET /api/preferences/:key`
+
+Returns the active preference for the signed-in user, applying the cascade described above.
+
+```
+GET /api/preferences/list-columns:posts
+Authorization: Bearer <token>
+```
+
+Response:
+
+```json
+{
+  "key": "list-columns:posts",
+  "value": ["title", "status", "publishedAt"]
+}
+```
+
+To fetch the global preference directly without the personal cascade, pass `?scope=global`:
+
+```
+GET /api/preferences/list-columns:posts?scope=global
+```
+
+### `PUT /api/preferences/:key`
+
+Saves a preference. Pass `?scope=global` to save the team-wide default (admin role required).
+
+```
+PUT /api/preferences/list-columns:posts
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{ "value": ["title", "status", "author", "publishedAt"] }
+```
+
+For global scope:
+
+```
+PUT /api/preferences/list-columns:posts?scope=global
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{ "value": ["title", "status", "author", "publishedAt"] }
+```
+
+Returns `403` if the user does not have the `admin` role and `scope=global` is requested.
+
+### `DELETE /api/preferences/:key`
+
+Deletes a saved preference, reverting to the next level in the cascade. Pass `?scope=global` to delete the team-wide default (admin only).
+
+```
+DELETE /api/preferences/list-columns:posts
+Authorization: Bearer <token>
+```
+
+---
+
+## SDK
+
+The Dyrected SDK exposes the same three operations through `client.getPreference`, `client.setPreference`, and `client.deletePreference`:
+
+```ts
+
+
+const cms = createClient({ baseUrl: '...', apiKey: '...' })
+
+// Read the active preference (personal → global → config default)
+const pref = await cms.getPreference('list-columns:posts')
+// pref.value → string[] | null
+
+// Save a personal preference
+await cms.setPreference('list-columns:posts', ['title', 'status', 'publishedAt'])
+
+// Save a global preference (requires admin role)
+await cms.setPreference('list-columns:posts', ['title', 'status', 'publishedAt'], {
+  scope: 'global',
+})
+
+// Reset to the next level in the cascade
+await cms.deletePreference('list-columns:posts')
+
+// Reset the global default (requires admin role)
+await cms.deletePreference('list-columns:posts', { scope: 'global' })
+```
+
+Preference keys are arbitrary strings. The Admin UI uses `list-columns:<slug>` for column order and `edit-fields:<slug>` for field order, but you can use any key for custom tooling.
 
 ---
 
@@ -3434,6 +3836,8 @@ export default defineConfig({
 })
 ```
 
+> **Building a marketing site?** For pages where editors assemble sections (hero, rich text, call-to-action), use a `blocks` field instead of a fixed collection. See [Building a Page Builder](/docs/guides/building-a-page-builder).
+
 ### 3. Embed the Admin UI
 Create a page in your app to host the dashboard.
 
@@ -4068,6 +4472,8 @@ Both modes use the same `dyrected.config.ts`. You can migrate from self-hosted t
 ## Which path is right for you?
 
 **I want the fastest path to a live site** → [Deploy with Dyrected Cloud](/docs/deployment/cloud)
+
+**I want to build a marketing site with flexible page sections** → [Building a Page Builder](/docs/guides/building-a-page-builder)
 
 **I want to get started locally first** → [Quickstart](/docs/getting-started/quickstart)
 
@@ -13063,9 +13469,9 @@ export interface BaseSchema {
 Exported function from @dyrected/sdk.
 
 ```ts
-export function createClient<
-  TSchema extends { collections: any; globals: any } = any,
->(config: DyrectedClientConfig): DyrectedClient<TSchema>
+export function createClient<TSchema extends { collections: any; globals: any } = any>(
+  config: DyrectedClientConfig,
+): DyrectedClient<TSchema>
 ```
 
 
@@ -13085,9 +13491,9 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 | <code>getAuthHeaders</code> | <code>getAuthHeaders(): Record&lt;string, string&gt;</code> | Returns the headers needed to authenticate raw &#96;fetch()&#96; calls made outside the SDK client (e.g. streaming endpoints, dynamic options).  Includes the Authorization bearer token (if set), x-api-key, and x-site-id. |
 | <code>getBaseUrl</code> | <code>getBaseUrl()</code> |  |
 | <code>getSchemas</code> | <code>getSchemas(): Promise&lt;&#123; collections: any[]; globals: any[] &#125;&gt;</code> |  |
-| <code>getPreference</code> | <code>getPreference&lt;T = unknown&gt;(key: string, options?: &#123; scope?: 'personal' &#124; 'global' &#125;): Promise&lt;&#123; key: string; value: T &#124; null &#125;&gt;</code> |  |
-| <code>setPreference</code> | <code>setPreference&lt;T = unknown&gt;(key: string, value: T, options?: &#123; scope?: 'personal' &#124; 'global' &#125;): Promise&lt;&#123; key: string; value: T &#125;&gt;</code> |  |
-| <code>deletePreference</code> | <code>deletePreference(key: string, options?: &#123; scope?: 'personal' &#124; 'global' &#125;): Promise&lt;&#123; success: boolean &#125;&gt;</code> |  |
+| <code>getPreference</code> | <code>getPreference&lt;T = unknown&gt;(key: string, options?: &#123; scope?: "personal" &#124; "global" &#125;): Promise&lt;&#123; key: string; value: T &#124; null &#125;&gt;</code> |  |
+| <code>setPreference</code> | <code>setPreference&lt;T = unknown&gt;(key: string, value: T, options?: &#123; scope?: "personal" &#124; "global" &#125;): Promise&lt;&#123; key: string; value: T &#125;&gt;</code> |  |
+| <code>deletePreference</code> | <code>deletePreference(key: string, options?: &#123; scope?: "personal" &#124; "global" &#125;): Promise&lt;&#123; success: boolean &#125;&gt;</code> |  |
 | <code>getPreviewData</code> | <code>getPreviewData(token: string): Promise&lt;any&gt;</code> | Fetch draft data for a specific preview token. Used in "token" preview mode. |
 | <code>find</code> | <code>find&lt;K extends keyof TSchema["collections"]&gt;(collection: K &amp; string, args: QueryArgs = &#123;&#125;): Promise&lt;PaginatedResult&lt;TSchema["collections"][K]&gt;&gt;</code> |  |
 | <code>collection</code> | <code>collection&lt;K extends keyof TSchema["collections"]&gt;(slug: K &amp; string)</code> | Returns a fluent query builder for a collection. |

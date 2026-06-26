@@ -35,7 +35,7 @@ export class GlobalController {
     }
 
     let data = await db.getGlobal({ slug: this.global.slug });
-    const isEmpty = !data || Object.keys(data).length === 0;
+    const isEmpty = !data || isFunctionallyEmpty(data);
 
     if (isEmpty && this.global.initialData) {
       console.log(`[dyrected/core] Auto-seeding global "${this.global.slug}" from config.initialData`);
@@ -126,9 +126,9 @@ export class GlobalController {
       return c.json({ message: "Invalid initial data" }, 400);
     }
 
-    // Check if empty
+    // Check if functionally empty
     const existing = await db.getGlobal({ slug: this.global.slug });
-    if (existing && Object.keys(existing).length > 0) {
+    if (existing && !isFunctionallyEmpty(existing)) {
       return c.json({ message: "Global is not empty, skipping seed" });
     }
 
@@ -138,3 +138,18 @@ export class GlobalController {
     return c.json({ message: "Seed successful", data: initialData }, 201);
   }
 }
+
+function isFunctionallyEmpty(obj: any): boolean {
+  if (obj === null || obj === undefined || obj === "") return true;
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return true;
+    return obj.every(isFunctionallyEmpty);
+  }
+  if (typeof obj === "object") {
+    const keys = Object.keys(obj);
+    if (keys.length === 0) return true;
+    return keys.every((key) => isFunctionallyEmpty(obj[key]));
+  }
+  return false;
+}
+

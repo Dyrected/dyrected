@@ -517,9 +517,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   // Must be registered BEFORE the /:id? catch-all so Hono doesn't swallow deeper paths.
   // Pattern: POST /api/collections/:slug/:id/transitions/:transition
   //          GET  /api/collections/:slug/:id/workflow-history
-  app.all("/api/collections/:slug/:id/*", requireAuth(), async (c) => {
+  // 7a. Workflow sub-routes for dynamic tenant collections.
+  // Must be registered BEFORE the /:id? catch-all so Hono doesn't swallow deeper paths.
+  // Pattern: POST /api/collections/:slug/:id/transitions/:transition
+  //          GET  /api/collections/:slug/:id/workflow-history
+  app.post("/api/collections/:slug/:id/transitions/:transition", requireAuth(), async (c) => {
     const slug = c.req.param("slug");
-    const id = c.req.param("id");
     const siteId = c.req.header("X-Site-Id") || c.get("siteId");
     const config = c.get("config");
 
@@ -540,29 +543,30 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     }
 
     const controller = new CollectionController(collection);
-    const rawPath = c.req.path;
-    const method = c.req.method;
+    return controller.transition(c);
+  });
 
-    // Resolve the transition name from the URL tail.
-    const transitionMatch = rawPath.match(/\/transitions\/([^/]+)$/);
-    if (transitionMatch && method === "POST") {
-      // Hono doesn't param-match on wildcards, so patch the param manually.
-      (c.req.raw as any).__transition = transitionMatch[1];
-      // Override param() for the controller
-      const origParam = c.req.param.bind(c.req);
-      c.req.param = (key?: string) => {
-        if (key === 'transition') return transitionMatch[1] as any;
-        if (key === 'id') return id as any;
-        return origParam(key as any);
-      };
-      return controller.transition(c);
+  app.get("/api/collections/:slug/:id/workflow-history", requireAuth(), async (c) => {
+    const slug = c.req.param("slug");
+    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const config = c.get("config");
+
+    if (config.collections.some((col) => col.slug === slug)) {
+      return c.json({ message: "Not Found" }, 404);
     }
 
-    if (rawPath.endsWith('/workflow-history') && method === "GET") {
-      return controller.workflowHistory(c);
+    if (!config.onSchemaFetch || !siteId) {
+      return c.json({ message: `Collection "${slug}" not found` }, 404);
     }
 
-    return c.json({ message: "Not Found" }, 404);
+    const dynamic = await config.onSchemaFetch(siteId);
+    const collection = dynamic.collections?.find((col) => col.slug === slug);
+    if (!collection?.workflow) {
+      return c.json({ message: `Collection "${slug}" not found or has no workflow` }, 404);
+    }
+
+    const controller = new CollectionController(collection);
+    return controller.workflowHistory(c);
   });
 
   // 7b. Core dynamic catch-all for tenant collections (list, create, findOne, update, delete).
@@ -623,8 +627,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.json({ message: `Collection "${slug}" not found` }, 404);
   });
 
-  app.all("/api/globals/:slug", async (c) => {
+  app.all("/api/globals/:slug/:id?", async (c) => {
     const slug = c.req.param("slug");
+    const id = c.req.param("id");
     const siteId = c.req.header("X-Site-Id") || c.get("siteId");
     const config = c.get("config");
 
@@ -639,8 +644,13 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
       if (global) {
         const controller = new GlobalController(global);
-        if (c.req.method === "GET") return controller.get(c);
-        if (c.req.method === "PATCH") return controller.update(c);
+        const method = c.req.method;
+        if (id) {
+          if (method === "POST" && id === "seed") return controller.seed(c);
+        } else {
+          if (method === "GET") return controller.get(c);
+          if (method === "PATCH") return controller.update(c);
+        }
       }
     }
 
