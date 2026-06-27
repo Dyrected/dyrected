@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.5.43
+
+### Patch Changes
+
+- feat: add support for external authentication provider exchange and update Node.js requirement to 22+
+
 ## 2.5.42
 
 ### Patch Changes
