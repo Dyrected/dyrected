@@ -56,8 +56,7 @@ const Nav = defineGlobal({
       type: "array",
       label: "Navigation Links",
       admin: {
-        description:
-          "Each link must point to a valid page on this site (e.g. /about).",
+        description: "Each link must point to a valid page on this site (e.g. /about).",
       },
       fields: [
         { name: "name", type: "text", label: "Label", required: true },
@@ -142,8 +141,7 @@ const HomePageGlobal = defineGlobal({
           type: "text",
           label: "Badge Label",
           admin: {
-            description:
-              "Short all-caps label inside the small pill above the headline.",
+            description: "Short all-caps label inside the small pill above the headline.",
           },
         },
         {
@@ -176,8 +174,7 @@ const HomePageGlobal = defineGlobal({
           type: "array",
           label: "Slider Ranges",
           admin: {
-            description:
-              "Keep exactly 4 ranges. Each covers a portion of the 0–100 slider scale.",
+            description: "Keep exactly 4 ranges. Each covers a portion of the 0–100 slider scale.",
           },
           fields: [
             {
@@ -211,8 +208,7 @@ const HomePageGlobal = defineGlobal({
               type: "text",
               label: "Status Colour Classes",
               admin: {
-                description:
-                  "Tailwind classes for the badge colour — do not change unless you know Tailwind CSS.",
+                description: "Tailwind classes for the badge colour — do not change unless you know Tailwind CSS.",
               },
             },
             {
@@ -534,8 +530,7 @@ const ServicesCollection = defineCollection({
       type: "array",
       label: "Benefits",
       admin: {
-        description:
-          "Each benefit is one short sentence shown as a bullet point.",
+        description: "Each benefit is one short sentence shown as a bullet point.",
       },
       fields: [{ name: "text", type: "text", label: "Benefit", required: true }],
     },
@@ -674,8 +669,7 @@ const AssessmentResultsPageGlobal = defineGlobal({
       type: "object",
       label: "Score Categories",
       admin: {
-        description:
-          "Four result tiers shown based on the assessment score. Do not remove any tier.",
+        description: "Four result tiers shown based on the assessment score. Do not remove any tier.",
       },
       fields: [
         {
@@ -694,17 +688,13 @@ const AssessmentResultsPageGlobal = defineGlobal({
               name: "strengths",
               type: "array",
               label: "Strengths (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Strength", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Strength", required: true }],
             },
             {
               name: "growthOpportunities",
               type: "array",
               label: "Growth Opportunities (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Opportunity", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Opportunity", required: true }],
             },
             {
               name: "recommendation",
@@ -730,17 +720,13 @@ const AssessmentResultsPageGlobal = defineGlobal({
               name: "strengths",
               type: "array",
               label: "Strengths (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Strength", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Strength", required: true }],
             },
             {
               name: "growthOpportunities",
               type: "array",
               label: "Growth Opportunities (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Opportunity", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Opportunity", required: true }],
             },
             {
               name: "recommendation",
@@ -766,17 +752,13 @@ const AssessmentResultsPageGlobal = defineGlobal({
               name: "strengths",
               type: "array",
               label: "Strengths (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Strength", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Strength", required: true }],
             },
             {
               name: "growthOpportunities",
               type: "array",
               label: "Growth Opportunities (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Opportunity", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Opportunity", required: true }],
             },
             {
               name: "recommendation",
@@ -802,17 +784,13 @@ const AssessmentResultsPageGlobal = defineGlobal({
               name: "strengths",
               type: "array",
               label: "Strengths (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Strength", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Strength", required: true }],
             },
             {
               name: "growthOpportunities",
               type: "array",
               label: "Growth Opportunities (3 bullet points)",
-              fields: [
-                { name: "text", type: "text", label: "Opportunity", required: true },
-              ],
+              fields: [{ name: "text", type: "text", label: "Opportunity", required: true }],
             },
             {
               name: "recommendation",
@@ -889,13 +867,7 @@ const Articles = defineCollection({
         description:
           'The URL path for this article (e.g. "why-motivation-keeps-ghosting-you"). Set carefully — changing it after publishing will break existing links.',
         hooks: {
-          onChange: ({
-            value,
-            siblingData,
-          }: {
-            value: string;
-            siblingData: Record<string, unknown>;
-          }) => {
+          onChange: ({ value, siblingData }: { value: string; siblingData: Record<string, unknown> }) => {
             if (value) return value;
             return ((siblingData?.title as string) || "")
               .toLowerCase()
@@ -911,8 +883,7 @@ const Articles = defineCollection({
       label: "Category",
       required: true,
       admin: {
-        description:
-          "e.g. Productivity, Habits, Decision Making, Future Thinking",
+        description: "e.g. Productivity, Habits, Decision Making, Future Thinking",
       },
     },
     {
@@ -939,9 +910,7 @@ const Articles = defineCollection({
       type: "array",
       label: "Article Body",
       admin: { description: "Each item is one paragraph of the article." },
-      fields: [
-        { name: "paragraph", type: "textarea", label: "Paragraph", required: true },
-      ],
+      fields: [{ name: "paragraph", type: "textarea", label: "Paragraph", required: true }],
     },
   ],
 });
@@ -1063,8 +1032,7 @@ const ContactPageGlobal = defineGlobal({
       type: "array",
       label: "Contact Channels",
       admin: {
-        description:
-          "Keep exactly 3 contact channels. Each channel has a title and detail text.",
+        description: "Keep exactly 3 contact channels. Each channel has a title and detail text.",
       },
       fields: [
         {
@@ -1122,14 +1090,7 @@ export {
 };
 
 export default defineConfig({
-  collections: [
-    Users,
-    Testimonials,
-    Values,
-    FaqEntries,
-    ServicesCollection,
-    Articles,
-  ],
+  collections: [Users, Testimonials, Values, FaqEntries, ServicesCollection, Articles],
   globals: [
     Nav,
     FooterGlobal,
