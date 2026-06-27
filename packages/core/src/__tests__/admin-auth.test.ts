@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { SignJWT } from "jose";
 import { TextEncoder } from "node:util";
+import { Hono } from "hono";
 import { createDyrectedApp } from "../app.js";
 import { defineCollection, defineConfig } from "../index.js";
 import { InMemoryAdapter } from "./mocks.js";
@@ -131,6 +132,118 @@ describe("external admin auth", () => {
     const allAdmins = await db.find({ collection: "__admins", limit: 10 });
     expect(allAdmins.total).toBe(1);
     expect(allAdmins.docs[0].password).toBeTruthy();
+  });
+
+  it("starts a provider from dynamic site admin auth config", async () => {
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [],
+        globals: [],
+        db: new InMemoryAdapter(),
+        onSchemaFetch: async (siteId) => ({
+          collections: [
+            defineCollection({
+              slug: "__admins",
+              auth: true,
+              siteId,
+              fields: [{ name: "name", type: "text", label: "Name" }],
+            }),
+          ],
+          adminAuth: {
+            mode: "external",
+            providers: [
+              {
+                id: "cloud",
+                type: "cloud",
+                displayName: "Dyrected Cloud",
+                startUrl: "https://cloud.dyrected.com/cloud/auth/admin/start",
+                secret: "provider-secret",
+              },
+            ],
+          },
+        }),
+      }),
+    );
+
+    const host = new Hono();
+    host.use("/sites/:siteId/*", async (c, next) => {
+      c.set("siteId", c.req.param("siteId"));
+      await next();
+    });
+    host.route("/sites/:siteId", app);
+
+    const res = await host.request(
+      "/sites/site-a/api/admin/auth/cloud/start?returnTo=http%3A%2F%2Flocalhost%3A3000%2Fadmin",
+    );
+
+    expect(res.status).toBe(302);
+    const location = new URL(res.headers.get("location")!);
+    expect(location.origin).toBe("https://cloud.dyrected.com");
+    expect(location.pathname).toBe("/cloud/auth/admin/start");
+    expect(location.searchParams.get("siteId")).toBe("site-a");
+    expect(location.searchParams.get("provider")).toBe("cloud");
+    expect(location.searchParams.get("returnTo")).toBe("http://localhost:3000/admin");
+  });
+
+  it("exchanges a token against dynamic site admin auth config", async () => {
+    const db = new InMemoryAdapter();
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [],
+        globals: [],
+        db,
+        onSchemaFetch: async (siteId) => ({
+          collections: [
+            defineCollection({
+              slug: "__admins",
+              auth: true,
+              siteId,
+              fields: [{ name: "name", type: "text", label: "Name" }],
+            }),
+          ],
+          adminAuth: {
+            mode: "external",
+            providers: [
+              {
+                id: "cloud",
+                type: "cloud",
+                displayName: "Dyrected Cloud",
+                secret: "provider-secret",
+              },
+            ],
+            resolveAccess: ({ siteId: resolvedSiteId }) => ({
+              allowed: resolvedSiteId === "site-a",
+              roles: ["admin"],
+            }),
+          },
+        }),
+      }),
+    );
+
+    const providerToken = await signProviderToken({
+      sub: "acct_123",
+      email: "owner@example.com",
+      name: "Owner",
+    });
+
+    const loginRes = await app.request("/api/admin/auth/cloud/exchange", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-site-id": "site-a",
+      },
+      body: JSON.stringify({ token: providerToken }),
+    });
+
+    expect(loginRes.status).toBe(200);
+    const loginData = await loginRes.json();
+    expect(loginData.collectionSlug).toBe("__admins");
+    expect(loginData.providerId).toBe("cloud");
+
+    const allAdmins = await db.find({ collection: "__admins", limit: 10 });
+    expect(allAdmins.total).toBe(1);
+    expect(allAdmins.docs[0].email).toBe("owner@example.com");
+    expect(allAdmins.docs[0].authProvider).toBe("cloud");
   });
 
   it("rejects unknown external users when provisioning is preprovisioned-only", async () => {

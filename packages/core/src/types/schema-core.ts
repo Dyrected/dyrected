@@ -1,5 +1,6 @@
 import type { AuthenticatedUser, HookRequestContext } from "./request.js";
-import type { AccessFunction, DatabaseAdapter, ReadonlyDatabaseAdapter } from "./index.js";
+import type { AccessFunction } from "./access.js";
+import type { DatabaseAdapter, ReadonlyDatabaseAdapter } from "./adapters.js";
 
 export type FieldType =
   | "text"

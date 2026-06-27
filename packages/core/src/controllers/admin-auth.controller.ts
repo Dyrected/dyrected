@@ -14,7 +14,6 @@ import { hashPassword } from "../auth/password.js";
 import type {
   AdminAuthProvider,
   AdminAuthResolvedIdentity,
-  CollectionConfig,
   CustomAdminAuthProvider,
   DyrectedConfig,
   OIDCAdminAuthProvider,
@@ -36,12 +35,13 @@ export class AdminAuthController {
   }
 
   async start(c: Context<DyrectedContext>) {
-    const provider = this.getProvider(c.req.param("provider"));
+    const requestConfig = await this.getRequestConfig(c);
+    const provider = this.getProvider(requestConfig, c.req.param("provider"));
     if (!provider) {
       return c.json({ error: true, message: "Admin auth provider not found." }, 404);
     }
 
-    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const siteId = this.getSiteId(c);
     const returnTo = this.normalizeReturnTo(c.req.query("returnTo"), c);
 
     if (provider.type === "oidc") {
@@ -66,13 +66,14 @@ export class AdminAuthController {
   }
 
   async callback(c: Context<DyrectedContext>) {
-    const provider = this.getProvider(c.req.param("provider"));
+    const requestConfig = await this.getRequestConfig(c);
+    const provider = this.getProvider(requestConfig, c.req.param("provider"));
     if (!provider) {
       return c.json({ error: true, message: "Admin auth provider not found." }, 404);
     }
 
     try {
-      const exchange = await this.completeProviderAuth(provider, c);
+      const exchange = await this.completeProviderAuth(requestConfig, provider, c);
       const redirectUrl = new URL(exchange.returnTo);
       redirectUrl.searchParams.set("dyrectedExternalToken", exchange.token);
       redirectUrl.searchParams.set("dyrectedAdminCollection", exchange.collectionSlug);
@@ -87,13 +88,14 @@ export class AdminAuthController {
   }
 
   async exchange(c: Context<DyrectedContext>) {
-    const provider = this.getProvider(c.req.param("provider"));
+    const requestConfig = await this.getRequestConfig(c);
+    const provider = this.getProvider(requestConfig, c.req.param("provider"));
     if (!provider) {
       return c.json({ error: true, message: "Admin auth provider not found." }, 404);
     }
 
     try {
-      const exchange = await this.completeProviderAuth(provider, c);
+      const exchange = await this.completeProviderAuth(requestConfig, provider, c);
       return c.json({
         token: exchange.token,
         collectionSlug: exchange.collectionSlug,
@@ -110,20 +112,24 @@ export class AdminAuthController {
     return c.json({ success: true, message: "Logged out. Discard your token." });
   }
 
-  private getProvider(id: string): AdminAuthProvider | undefined {
-    if (this.config.adminAuth?.mode !== "external") return undefined;
-    return this.config.adminAuth.providers.find((provider) => provider.id === id);
+  private getProvider(config: DyrectedConfig, id: string): AdminAuthProvider | undefined {
+    if (config.adminAuth?.mode !== "external") return undefined;
+    return config.adminAuth.providers.find((provider) => provider.id === id);
   }
 
-  private async completeProviderAuth(provider: AdminAuthProvider, c: Context<DyrectedContext>) {
+  private async completeProviderAuth(
+    requestConfig: DyrectedConfig,
+    provider: AdminAuthProvider,
+    c: Context<DyrectedContext>,
+  ) {
     const resolved =
       provider.type === "oidc"
         ? await this.resolveOidcIdentity(provider, c)
         : await this.resolveCustomIdentity(provider, c);
     const identity = resolved.identity;
 
-    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
-    const adminCollection = getAdminAuthCollection(this.config);
+    const siteId = this.getSiteId(c);
+    const adminCollection = getAdminAuthCollection(requestConfig);
     if (!adminCollection?.auth) {
       throw new Error("Admin auth collection is not configured.");
     }
@@ -134,14 +140,16 @@ export class AdminAuthController {
     let user =
       (await this.findUserByExternalIdentity(db, adminCollection.slug, provider.id, identity.sub)) ??
       (identity.email
-        ? (await db.find({
-            collection: adminCollection.slug,
-            where: { email: identity.email },
-            limit: 1,
-          })).docs[0]
+        ? (
+            await db.find({
+              collection: adminCollection.slug,
+              where: { email: identity.email },
+              limit: 1,
+            })
+          ).docs[0]
         : null);
 
-    const provisioningMode = this.config.adminAuth?.provisioningMode ?? "jit_plus_membership_management";
+    const provisioningMode = requestConfig.adminAuth?.provisioningMode ?? "jit_plus_membership_management";
     const allowJitProvisioning =
       provisioningMode !== "preprovisioned_only" && provider.allowJitProvisioning !== false;
 
@@ -149,7 +157,7 @@ export class AdminAuthController {
       throw new Error("This account has not been provisioned for admin access.");
     }
 
-    const access = await this.resolveAccess(identity, provider.id, siteId, c, user);
+    const access = await this.resolveAccess(requestConfig, identity, provider.id, siteId, c, user);
     if (!access.allowed) {
       throw new Error("Access denied for this site.");
     }
@@ -190,13 +198,14 @@ export class AdminAuthController {
   }
 
   private async resolveAccess(
+    requestConfig: DyrectedConfig,
     identity: AdminAuthResolvedIdentity,
     providerId: string,
     siteId: string | undefined,
     c: Context<DyrectedContext>,
     user: any,
   ) {
-    const resolved = await this.config.adminAuth?.resolveAccess?.({
+    const resolved = await requestConfig.adminAuth?.resolveAccess?.({
       identity,
       providerId,
       siteId,
@@ -247,6 +256,26 @@ export class AdminAuthController {
       limit: 1,
     });
     return result.docs[0] ?? null;
+  }
+
+  private getSiteId(c: Context<DyrectedContext>): string | undefined {
+    return c.req.header("X-Site-Id") || c.get("siteId");
+  }
+
+  private async getRequestConfig(c: Context<DyrectedContext>): Promise<DyrectedConfig> {
+    const siteId = this.getSiteId(c);
+    if (!siteId || !this.config.onSchemaFetch) return this.config;
+
+    const dynamic = await this.config.onSchemaFetch(siteId);
+    return {
+      ...this.config,
+      ...(dynamic.admin ? { admin: { ...this.config.admin, ...dynamic.admin } } : {}),
+      ...(dynamic.adminAuth
+        ? { adminAuth: { ...this.config.adminAuth, ...dynamic.adminAuth } }
+        : {}),
+      collections: dynamic.collections ? [...this.config.collections, ...dynamic.collections] : this.config.collections,
+      globals: dynamic.globals ? [...this.config.globals, ...dynamic.globals] : this.config.globals,
+    };
   }
 
   private async buildOidcStartUrl(

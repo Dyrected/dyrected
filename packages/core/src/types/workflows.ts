@@ -1,4 +1,4 @@
-import type { DatabaseAdapter } from "./index.js";
+import type { DatabaseAdapter } from "./adapters.js";
 import type { AuthenticatedUser, HookRequestContext } from "./request.js";
 
 export const LIFECYCLE_EVENT_NAMES = [
