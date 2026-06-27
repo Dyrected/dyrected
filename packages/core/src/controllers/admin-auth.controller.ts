@@ -5,6 +5,7 @@ import {
   SignJWT,
   createRemoteJWKSet,
   jwtVerify,
+  decodeJwt,
   type JWTPayload,
 } from "jose";
 import type { DyrectedContext } from "../app.js";
