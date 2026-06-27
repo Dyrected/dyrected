@@ -49,6 +49,23 @@ Use `findOne(id)` when the ID is known. Use `depth: 0` for lightweight lists and
 
 Common filter operators include `equals`, `not_equals`, `in`, `not_in`, `exists`, `gt`, `gte`, `lt`, `lte`, `contains`, and `starts_with`. Multiple sibling field conditions are combined with AND.
 
+#### Auto-Seeding and Fallbacks (`initialData`)
+
+When retrieving collections or individual documents, you can pass `initialData` to provide immediate fallback content (e.g., loaded from a local JSON file) if the database is empty or the document does not exist:
+
+```ts
+import blogFallback from './blog-content.json'
+
+const result = await client.collection('articles').find({
+  sort: '-date',
+  initialData: blogFallback.articles,
+})
+```
+
+* **Instant Rendering**: The SDK immediately returns the fallback data to the caller so the application renders without delay.
+* **Background Auto-Seed**: In the background, the SDK automatically calls the database seed endpoint to save the fallback data into the CMS database, making it available for editing in the Admin UI.
+
+
 ### Creating, updating, and deleting
 
 ```ts
@@ -102,6 +119,18 @@ await client.global('site-settings').update({ siteName: 'Example' })
 ```
 
 Globals are singleton values and do not have collection pagination.
+
+Like collections, globals support the `initialData` fallback parameter. If the global has not been configured or is empty, the SDK immediately returns the fallback data and triggers a background seed operation to save it to the database:
+
+```ts
+const settings = await client.global('site-settings').get({
+  initialData: {
+    siteName: 'My Default Site',
+    maintenanceMode: false,
+  }
+})
+```
+
 
 ## Authentication
 

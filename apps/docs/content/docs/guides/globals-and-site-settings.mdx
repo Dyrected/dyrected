@@ -63,11 +63,18 @@ const client = createClient({
 })
 
 async function getSiteSettings() {
-  return client.global('site-settings').get({ depth: 1 })
+  return client.global('site-settings').get({
+    depth: 1,
+    initialData: {
+      siteName: 'My Default Site',
+      tagline: 'A headless CMS site',
+    }
+  })
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSiteSettings()
+
 
   return (
     <html lang="en">
