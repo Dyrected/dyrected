@@ -1,5 +1,13 @@
 # @dyrected/core
 
+## 2.5.42
+
+### Patch Changes
+
+- afa1ae0: feat: enable dynamic site admin authentication by supporting schema-derived config in the auth controller
+
+  refactor: modularize type definitions by extracting schemas, access, adapters, and configuration interfaces into separate files
+
 ## 2.5.41
 
 ### Patch Changes
