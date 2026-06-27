@@ -1,5 +1,13 @@
 # @dyrected/db-postgres
 
+## 2.5.45
+
+### Patch Changes
+
+- e94ec78: feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks
+- Updated dependencies [e94ec78]
+  - @dyrected/core@2.5.45
+
 ## 2.5.44
 
 ### Patch Changes

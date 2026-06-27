@@ -1,5 +1,11 @@
 # @dyrected/docs
 
+## 0.1.17
+
+### Patch Changes
+
+- e94ec78: feat: add enterprise guide and implement table auto-initialization with improved admin authentication checks
+
 ## 0.1.16
 
 ### Patch Changes
