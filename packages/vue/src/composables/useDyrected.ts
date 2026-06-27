@@ -11,7 +11,7 @@ export function useDyrectedClient<TSchema extends BaseSchema = any>(): DyrectedC
   if (!client) {
     throw new Error('Dyrected client not found. Use provideDyrectedClient() or the DyrectedVue plugin.');
   }
-  return client as DyrectedClient<TSchema>;
+  return client as unknown as DyrectedClient<TSchema>;
 }
 
 /**

@@ -164,7 +164,7 @@ function SubFieldRow({ subField, value, onChange, collection }: { subField: Fiel
         collection={collection}
         context={{
           user: user ?? null,
-          schemas: schemas as unknown as { collections: { slug: string; upload?: boolean }[]; globals: unknown[] },
+          schemas,
           siblingData: {},
         }}
       />
