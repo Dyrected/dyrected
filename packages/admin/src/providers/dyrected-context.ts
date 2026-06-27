@@ -16,7 +16,7 @@ export interface DyrectedContextType {
   isAuthenticated: boolean;
   schemas: AdminSchemas | null;
   user: AdminUser | null;
-  setToken: (token: string) => void;
+  setToken: (token: string, collectionSlug?: string | null) => void;
   initialToken?: string;
   components?: AdminComponents;
 }

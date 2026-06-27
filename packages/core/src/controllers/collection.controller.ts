@@ -25,10 +25,56 @@ export class CollectionController {
     this.collection = collection;
   }
 
+  private getDelegatedProvider(c: Context<DyrectedContext>) {
+    const config = c.get('config');
+    const authCollectionSlug = config.adminAuth?.collectionSlug || '__admins';
+    if (this.collection.slug !== authCollectionSlug) {
+      return null;
+    }
+    return config.adminAuth?.providers?.find((p: any) => p.members) || null;
+  }
+
   async find(c: Context<DyrectedContext>) {
     const config = c.get('config');
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const provider = this.getDelegatedProvider(c);
+    if (provider && provider.members?.list) {
+      const limit = Number(c.req.query('limit')) || 10;
+      const page = Number(c.req.query('page')) || 1;
+      const sort = c.req.query('sort') || undefined;
+      let where: any = undefined;
+      const whereRaw = c.req.query('where');
+      if (whereRaw) {
+        try {
+          where = JSON.parse(decodeURIComponent(whereRaw));
+        } catch {}
+      }
+
+      const paginatedResult = await provider.members.list({ limit, page, sort, where, req: c.req as any });
+      const mappedDocs = [];
+      for (const m of paginatedResult.docs) {
+        let localId = m.id;
+        const localDoc = await db.find({
+          collection: this.collection.slug,
+          where: m.id ? { externalSubject: { equals: m.id } } : { email: { equals: m.email } },
+          limit: 1,
+        });
+        if (localDoc.docs[0]) {
+          localId = localDoc.docs[0].id;
+        }
+        mappedDocs.push({
+          ...m,
+          id: localId,
+          externalSubject: m.id,
+        });
+      }
+      return c.json({
+        ...paginatedResult,
+        docs: mappedDocs,
+      });
+    }
 
     const readonlyDb = createReadonlyDb(db);
     const limit = Number(c.req.query('limit')) || 10;
@@ -105,14 +151,15 @@ export class CollectionController {
 
     result.docs = result.docs
       .map((doc) => this.collection.workflow ? materializeWorkflowDocument(doc as any, this.collection.workflow, user) : doc)
-      .filter((doc): doc is NonNullable<typeof doc> => doc !== null)
-      .map(doc => DefaultsService.apply(this.collection.fields, doc));
+      .filter((doc): doc is NonNullable<typeof doc> => doc !== null);
 
     // Run afterRead hooks (both collection and field levels)
     const processedDocs = [];
+    const readonlyDbForHooks = createReadonlyDb(db!);
     for (const doc of result.docs) {
+      const docWithDefaults = DefaultsService.apply(this.collection.fields, doc);
       const docWithCollectionHooks = await runCollectionHooks(this.collection.hooks?.afterRead, {
-        doc,
+        doc: docWithDefaults,
         req: c.req,
         user,
         db: readonlyDb,
@@ -134,6 +181,30 @@ export class CollectionController {
     const config = c.get('config');
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const provider = this.getDelegatedProvider(c);
+    if (provider && (provider.members?.get || provider.members?.list)) {
+      const id = c.req.param('id');
+      if (!id) return c.json({ message: 'Missing ID' }, 400);
+
+      const localDoc = await db.findOne({ collection: this.collection.slug, id });
+      const externalSubject = localDoc?.externalSubject || id;
+
+      let member: any = null;
+      if (provider.members.get) {
+        member = await provider.members.get({ externalSubject, req: c.req as any });
+      } else if (provider.members.list) {
+        const listResult = await provider.members.list({ req: c.req as any });
+        member = listResult.docs.find((m) => m.id === externalSubject) || null;
+      }
+
+      if (!member) return c.json({ message: 'Not Found' }, 404);
+      return c.json({
+        ...member,
+        id: localDoc ? localDoc.id : member.id,
+        externalSubject: member.id,
+      });
+    }
 
     const readonlyDb = createReadonlyDb(db);
     const id = c.req.param('id');
@@ -178,6 +249,21 @@ export class CollectionController {
     const config = c.get('config');
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const provider = this.getDelegatedProvider(c);
+    if (provider && provider.members?.create) {
+      const contentType = c.req.header('Content-Type') || '';
+      if (contentType.toLowerCase().includes('multipart/form-data')) {
+        return this.upload(c);
+      }
+      const body = await c.req.json();
+      const member = await provider.members.create({ data: body, req: c.req as any });
+      return c.json({
+        ...member,
+        id: member.id,
+        externalSubject: member.id,
+      }, 201);
+    }
 
     const readonlyDb = createReadonlyDb(db);
     const contentType = c.req.header('Content-Type') || '';
@@ -342,6 +428,23 @@ export class CollectionController {
     const config = c.get('config');
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const provider = this.getDelegatedProvider(c);
+    if (provider && provider.members?.update) {
+      const id = c.req.param('id');
+      if (!id) return c.json({ message: 'Missing ID' }, 400);
+      const body = await c.req.json();
+
+      const localDoc = await db.findOne({ collection: this.collection.slug, id });
+      const externalSubject = localDoc?.externalSubject || id;
+
+      const member = await provider.members.update({ externalSubject, data: body, req: c.req as any });
+      return c.json({
+        ...member,
+        id: localDoc ? localDoc.id : member.id,
+        externalSubject: member.id,
+      });
+    }
 
     const readonlyDb = createReadonlyDb(db);
     const id = c.req.param('id');
@@ -571,6 +674,18 @@ export class CollectionController {
     const config = c.get('config');
     const db = config.db;
     if (!db) return c.json({ message: 'Database not configured' }, 500);
+
+    const provider = this.getDelegatedProvider(c);
+    if (provider && provider.members?.delete) {
+      const id = c.req.param('id');
+      if (!id) return c.json({ message: 'Missing ID' }, 400);
+
+      const localDoc = await db.findOne({ collection: this.collection.slug, id });
+      const externalSubject = localDoc?.externalSubject || id;
+
+      await provider.members.delete({ externalSubject, req: c.req as any });
+      return c.json({ message: 'Deleted' });
+    }
 
     const readonlyDb = createReadonlyDb(db);
     const id = c.req.param('id');

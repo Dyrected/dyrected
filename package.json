@@ -17,6 +17,7 @@
   "packageManager": "pnpm@8.15.4",
   "pnpm": {
     "overrides": {
+      "hono": "4.12.27",
       "@types/react": "^19.2.14",
       "@types/react-dom": "^19.2.3"
     }

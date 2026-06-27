@@ -30,6 +30,9 @@ export function DyrectedProvider({
   const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
   const [schemas, setSchemas] = useState<AdminSchemas | null>(null);
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [authCollectionSlug, setAuthCollectionSlug] = useState<string | null>(
+    () => (typeof window !== "undefined" ? localStorage.getItem("dyrected_admin_auth_collection") : null) || null,
+  );
 
   const client = useMemo<DyrectedClient | null>(() => {
     if (!baseUrl) return null;
@@ -85,48 +88,57 @@ export function DyrectedProvider({
     setSiteId(newSiteId);
   }, []);
 
-  const setToken = useCallback((token: string) => {
+  const setToken = useCallback((token: string, collectionSlug?: string | null) => {
     if (!token) {
       localStorage.removeItem("dyrected_token");
+      localStorage.removeItem("dyrected_admin_auth_collection");
       if (client) client.clearToken();
+      setAuthCollectionSlug(null);
       setUser(null);
       return;
     }
+
+    const resolvedCollectionSlug = collectionSlug || authCollectionSlug || getAdminCollectionSlug(schemas);
     localStorage.setItem("dyrected_token", token);
+    if (resolvedCollectionSlug) {
+      localStorage.setItem("dyrected_admin_auth_collection", resolvedCollectionSlug);
+      setAuthCollectionSlug((prev) => (prev === resolvedCollectionSlug ? prev : resolvedCollectionSlug));
+    }
     if (client) {
       client.setToken(token);
-      const authCollection = getAdminCollectionSlug(schemas);
-      if (authCollection) {
-        client.collection(authCollection).me().then(
+      if (resolvedCollectionSlug) {
+        client.collection(resolvedCollectionSlug).me().then(
           (nextUser) => setUser(nextUser as AdminUser),
           () => setUser(null),
         );
       }
     }
-  }, [client, schemas]);
+  }, [authCollectionSlug, client, schemas]);
 
   useEffect(() => {
     if (initialToken || !client || !schemas || user) return;
     const token = localStorage.getItem("dyrected_token");
-    const authCollection = getAdminCollectionSlug(schemas);
+    const resolvedCollectionSlug = authCollectionSlug || getAdminCollectionSlug(schemas);
 
-    if (!token || !authCollection) return;
+    if (!token || !resolvedCollectionSlug) return;
 
     client.setToken(token);
-    client.collection(authCollection).me().then(
+    client.collection(resolvedCollectionSlug).me().then(
       (nextUser) => setUser(nextUser as AdminUser),
       () => setUser(null),
     );
-  }, [client, initialToken, schemas, user]);
+  }, [authCollectionSlug, client, initialToken, schemas, user]);
 
   const logout = useCallback(() => {
     localStorage.removeItem("dyrected_url");
     localStorage.removeItem("dyrected_key");
     localStorage.removeItem("dyrected_site_id");
     localStorage.removeItem("dyrected_token");
+    localStorage.removeItem("dyrected_admin_auth_collection");
     setBaseUrl("");
     setApiKey(undefined);
     setSiteId(undefined);
+    setAuthCollectionSlug(null);
     setUser(null);
     setSchemas(null);
   }, []);

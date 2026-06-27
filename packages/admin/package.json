@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/admin",
-  "version": "2.5.43",
+  "version": "2.5.44",
   "type": "module",
   "files": [
     "dist"

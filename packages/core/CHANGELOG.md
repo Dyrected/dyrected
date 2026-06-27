@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.5.44
+
+### Patch Changes
+
+- Add provider membership hooks type definitions and collection controller delegation logic to redirect authentication collection CRUD requests.
+
 ## 2.5.43
 
 ### Patch Changes

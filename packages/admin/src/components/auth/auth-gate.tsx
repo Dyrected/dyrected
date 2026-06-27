@@ -31,6 +31,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return {
       token: params.get("dyrectedExternalToken"),
       provider: params.get("dyrectedExternalProvider"),
+      collection: params.get("dyrectedAdminCollection"),
       error: params.get("dyrectedExternalError"),
     };
   }, []);
@@ -61,10 +62,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           });
           if (cancelled) return;
           setExternalExchangeError(null);
-          setToken(exchanged.token);
+          setToken(exchanged.token, exchanged.collectionSlug);
         } else {
           setExternalExchangeError(null);
-          setToken(externalParams.token);
+          setToken(externalParams.token, externalParams.collection);
         }
       } catch (error) {
         if (cancelled) return;
@@ -90,7 +91,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     }
-  }, [client, externalParams.provider, externalParams.token, isExternalAdminAuth, setToken]);
+  }, [client, externalParams.collection, externalParams.provider, externalParams.token, isExternalAdminAuth, setToken]);
 
   useEffect(() => {
     if (!isExternalAdminAuth || user || !client) return;

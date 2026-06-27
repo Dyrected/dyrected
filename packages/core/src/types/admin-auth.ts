@@ -1,3 +1,15 @@
+import type { HookRequestContext } from "./request.js";
+
+export interface AdminAuthMember {
+  id: string;
+  email: string;
+  name?: string;
+  roles: string[];
+  siteAccess?: string[];
+  status?: "active" | "pending";
+  [key: string]: any;
+}
+
 export type AdminAuthProvisioningMode =
   | "jit_only"
   | "jit_plus_membership_management"
@@ -44,6 +56,28 @@ export interface AdminAuthResolveAccessArgs {
   user: Record<string, unknown> | null;
 }
 
+export interface AdminAuthProviderMembersConfig {
+  list?: (args: {
+    limit?: number;
+    page?: number;
+    sort?: string;
+    where?: Record<string, any>;
+    req: HookRequestContext;
+  }) => Promise<{
+    docs: AdminAuthMember[];
+    totalDocs: number;
+    limit: number;
+    page: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  }>;
+  get?: (args: { externalSubject: string; req: HookRequestContext }) => Promise<AdminAuthMember | null>;
+  create?: (args: { data: Record<string, any>; req: HookRequestContext }) => Promise<AdminAuthMember>;
+  update?: (args: { externalSubject: string; data: Record<string, any>; req: HookRequestContext }) => Promise<AdminAuthMember>;
+  delete?: (args: { externalSubject: string; req: HookRequestContext }) => Promise<void>;
+}
+
 export interface BaseAdminAuthProvider {
   id: string;
   type: "oidc" | "custom" | "cloud";
@@ -51,6 +85,7 @@ export interface BaseAdminAuthProvider {
   autoRedirect?: boolean;
   allowJitProvisioning?: boolean;
   claimMapping?: AdminAuthClaimMapping;
+  members?: AdminAuthProviderMembersConfig;
 }
 
 export interface OIDCAdminAuthProvider extends BaseAdminAuthProvider {
