@@ -205,7 +205,7 @@ export async function getArticleBySlug(slug: string): Promise<DyrectedArticle | 
       where: { slug: { equals: slug } },
       limit: 1,
     });
-    const docs = (result as { docs?: DyrectedArticle[] }).docs ?? [];
+    const docs = (result as unknown as { docs?: DyrectedArticle[] }).docs ?? [];
     return docs[0] ?? null;
   } catch {
     return null;
