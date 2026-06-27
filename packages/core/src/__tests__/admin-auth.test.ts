@@ -185,6 +185,69 @@ describe("external admin auth", () => {
     expect(location.searchParams.get("returnTo")).toBe("http://localhost:3000/admin");
   });
 
+  it("starts a provider with a relative start URL", async () => {
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [],
+        globals: [],
+        db: new InMemoryAdapter(),
+        adminAuth: {
+          mode: "external",
+          providers: [
+            {
+              id: "cloud",
+              type: "cloud",
+              displayName: "Dyrected Cloud",
+              startUrl: "/cloud/auth/admin/start",
+              secret: "provider-secret",
+            },
+          ],
+        },
+      }),
+    );
+
+    const res = await app.request(
+      "https://cloud.dyrected.com/api/admin/auth/cloud/start?returnTo=http%3A%2F%2Flocalhost%3A3000%2Fadmin",
+    );
+
+    expect(res.status).toBe(302);
+    const location = new URL(res.headers.get("location")!);
+    expect(location.origin).toBe("https://cloud.dyrected.com");
+    expect(location.pathname).toBe("/cloud/auth/admin/start");
+    expect(location.searchParams.get("provider")).toBe("cloud");
+    expect(location.searchParams.get("returnTo")).toBe("http://localhost:3000/admin");
+  });
+
+  it("returns a configuration error for unresolved provider start URLs", async () => {
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [],
+        globals: [],
+        db: new InMemoryAdapter(),
+        adminAuth: {
+          mode: "external",
+          providers: [
+            {
+              id: "cloud",
+              type: "cloud",
+              displayName: "Dyrected Cloud",
+              startUrl: "undefined/cloud/auth/admin/start",
+              secret: "provider-secret",
+            },
+          ],
+        },
+      }),
+    );
+
+    const res = await app.request("/api/admin/auth/cloud/start");
+
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({
+      error: true,
+      message: 'Admin auth provider "cloud" has an invalid start URL.',
+    });
+  });
+
   it("exchanges a token against dynamic site admin auth config", async () => {
     const db = new InMemoryAdapter();
     const app = await createDyrectedApp(

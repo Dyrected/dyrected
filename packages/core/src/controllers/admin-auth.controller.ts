@@ -58,7 +58,16 @@ export class AdminAuthController {
       return c.json({ error: true, message: "This provider does not expose a start URL." }, 400);
     }
 
-    const url = new URL(provider.startUrl);
+    const url = this.buildCustomProviderStartUrl(provider.startUrl, new URL(c.req.url).origin);
+    if (!url) {
+      return c.json(
+        {
+          error: true,
+          message: `Admin auth provider "${provider.id}" has an invalid start URL.`,
+        },
+        500,
+      );
+    }
     url.searchParams.set("returnTo", returnTo);
     if (siteId) url.searchParams.set("siteId", siteId);
     url.searchParams.set("provider", provider.id);
@@ -459,6 +468,19 @@ export class AdminAuthController {
 
   private defaultCallbackPath(providerId: string, origin = "") {
     return `${origin}/api/admin/auth/${providerId}/callback`;
+  }
+
+  private buildCustomProviderStartUrl(startUrl: string, origin: string): URL | null {
+    const value = startUrl.trim();
+    if (!value || /^(undefined|null)(\/|$)/i.test(value)) return null;
+
+    try {
+      const url = new URL(value, origin);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+      return url;
+    } catch {
+      return null;
+    }
   }
 
   private async signState(payload: Omit<AdminAuthStatePayload, "iat" | "exp">) {
