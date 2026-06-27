@@ -124,10 +124,18 @@ export class PostgresAdapter implements DatabaseAdapter {
     `;
 
     // Handle Promoted Fields
+    let tableNameOnly = slug;
+    if (slug.includes(".")) {
+      const parts = slug.split(".");
+      tableNameOnly = parts[parts.length - 1].replace(/"/g, "");
+    } else {
+      tableNameOnly = `collection_${slug}`;
+    }
+
     const cols = await this.sql`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = ${`collection_${slug}`}
+      WHERE table_name = ${tableNameOnly}
     `;
     const existingCols = cols.map((c) => c.column_name);
 
@@ -155,6 +163,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     sort?: string;
   }): Promise<PaginatedResult> {
     await this.ensureInitialized();
+    await this.ensureTable(args.collection);
     const tableSlug = args.collection;
     const tableName = tableSlug.includes(".")
       ? tableSlug
@@ -220,6 +229,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async findOne(params: { collection: string; id: string }) {
     await this.ensureInitialized();
+    await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
     const rows = this.inTransaction
       ? await this
@@ -232,6 +242,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async create(params: { collection: string; data: any }) {
     await this.ensureInitialized();
+    await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
 
     // Inspect columns for promoted fields
@@ -267,8 +278,9 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async update(params: { collection: string; id: string; data: any }) {
     await this.ensureInitialized();
+    await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
-
+    
     // Inspect columns for promoted fields
     const cols = await this.sql`
       SELECT column_name 
@@ -314,6 +326,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   async delete(params: { collection: string; id: string }) {
     await this.ensureInitialized();
+    await this.ensureTable(params.collection);
     const table = this.getTableIdentifier(params.collection);
     await this.sql`DELETE FROM ${table} WHERE id = ${params.id}`;
   }

@@ -4,7 +4,7 @@ Parameters
 
 Licensor: Dyrected
 Licensed Work: Dyrected
-Additional Use Grant: Commercial use is permitted as long as it is not used to provide a hosted or managed service that competes with Dyrected.
+Additional Use Grant: Production use and commercial use of the Licensed Work are permitted for your own internal business operations, your own websites and applications, and client websites or applications that you build or deploy on behalf of a client, provided that you do not, without a separate commercial license from the Licensor, (a) provide the Licensed Work as a hosted or managed service to third parties, (b) embed, white-label, sublicense, or otherwise redistribute the Licensed Work as part of a multi-tenant or customer-facing SaaS, platform, or developer service, or (c) enable third parties to create, manage, or operate independent projects, sites, workspaces, or environments using the Licensed Work as a material part of the service you provide.
 Change Date: 2030-05-18
 Change License: Apache License 2.0
 

@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from '../auth/password.js';
 import { runCollectionHooks, executeFieldBeforeChange, executeFieldAfterRead } from '../utils/hooks.js';
 import { createReadonlyDb } from '../utils/readonly-db.js';
 import { evaluateAccess } from '../auth/jexl.js';
+import { getAdminAuthCollection } from '../utils/admin-auth.js';
 import {
   WORKFLOW_HISTORY_COLLECTION,
   createWorkflowDocument,
@@ -27,8 +28,8 @@ export class CollectionController {
 
   private getDelegatedProvider(c: Context<DyrectedContext>) {
     const config = c.get('config');
-    const authCollectionSlug = config.adminAuth?.collectionSlug || '__admins';
-    if (this.collection.slug !== authCollectionSlug) {
+    const authCollection = getAdminAuthCollection(config);
+    if (!authCollection || this.collection.slug !== authCollection.slug) {
       return null;
     }
     return config.adminAuth?.providers?.find((p: any) => p.members) || null;

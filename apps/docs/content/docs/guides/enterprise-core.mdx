@@ -1,0 +1,304 @@
+---
+title: Using Core in Enterprise Environments
+description: A practical guide to running @dyrected/core in larger teams, regulated environments, and multi-tenant deployments.
+---
+
+`@dyrected/core` is already structured for enterprise use, but enterprise projects usually fail on operating model, auth boundaries, and schema governance rather than on raw CRUD.
+
+This guide focuses on the parts of `core` that matter when multiple teams, environments, and tenants are involved.
+
+---
+
+## When to use `@dyrected/core` directly
+
+Use `@dyrected/core` directly when you need one or more of these:
+
+- Full control over deployment, networking, and data residency
+- Existing database, storage, email, or identity infrastructure
+- Tenant-aware schema resolution at request time
+- Strong separation between application auth and Admin auth
+- Custom hooks, workflows, and lifecycle-event handlers under your own review process
+
+If your organization wants a managed control plane instead, start with [Dyrected Cloud](/docs/deployment/cloud). If the requirement is infrastructure ownership and deeper integration into an existing platform, `core` is the right layer.
+
+---
+
+## Recommended architecture
+
+For enterprise teams, treat `dyrected.config.ts` as a reviewed application contract, not as local setup glue.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { PostgresAdapter } from '@dyrected/db-postgres'
+import { S3StorageAdapter } from '@dyrected/storage-s3'
+
+export default defineConfig({
+  db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
+  storage: new S3StorageAdapter({
+    bucket: process.env.S3_BUCKET!,
+    region: process.env.S3_REGION!,
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+    },
+  }),
+  collections: [],
+  globals: [],
+  cors: {
+    origins: [
+      'https://admin.example.com',
+      'https://www.example.com',
+    ],
+  },
+  redis: {
+    url: process.env.REDIS_URL!,
+  },
+})
+```
+
+Recommended boundaries:
+
+1. Keep config, hooks, and access rules in source control.
+2. Keep secrets only in environment variables.
+3. Treat slug changes and field renames like data migrations.
+4. Run the Admin UI behind a dedicated domain or route boundary.
+
+---
+
+## Separate Admin auth from application auth
+
+This is the first enterprise requirement to get right.
+
+Collection-level `auth: true` is for application users. Admin access should use `adminAuth`, so dashboard access is governed independently from customer/member login.
+
+```ts
+export default defineConfig({
+  collections: [
+    Customers,
+    Orders,
+  ],
+  globals: [],
+  adminAuth: {
+    mode: 'external',
+    collectionSlug: 'accounts',
+    provisioningMode: 'jit_plus_membership_management',
+    providers: [
+      {
+        id: 'okta',
+        type: 'oidc',
+        displayName: 'Okta',
+        issuer: process.env.OKTA_ISSUER!,
+        clientId: process.env.OKTA_CLIENT_ID!,
+        clientSecret: process.env.OKTA_CLIENT_SECRET!,
+        autoRedirect: true,
+      },
+    ],
+    resolveAccess: ({ identity, siteId }) => {
+      const roles = identity.roles ?? []
+      const allowed = roles.includes('cms-admin') || roles.includes('cms-editor')
+      return {
+        allowed,
+        roles,
+        data: { siteId },
+      }
+    },
+  },
+})
+```
+
+Why this matters:
+
+- Compromising a frontend user account does not grant Admin access.
+- Enterprise SSO can govern Admin login without reshaping customer auth.
+- Provisioning and de-provisioning can follow the identity provider lifecycle.
+
+See [Separating Admin Auth](/docs/guides/separating-admin-auth) for the local-collection pattern and [Admin Configuration](/docs/admin/configuration) for Admin UI concerns.
+
+---
+
+## Choose a provisioning model deliberately
+
+`adminAuth.provisioningMode` is not a cosmetic setting. It changes how identity is admitted into the Admin layer.
+
+| Mode | Use when | Tradeoff |
+| --- | --- | --- |
+| `jit_only` | Access is decided entirely at login time from external claims | Fastest to adopt, but membership is mostly owned by the identity provider |
+| `jit_plus_membership_management` | You want external login plus managed membership records in Dyrected | Better auditability and site-level control |
+| `preprovisioned_only` | Access must exist before first login | Strongest control, more operational overhead |
+
+For larger organizations, `jit_plus_membership_management` is usually the practical middle ground.
+
+---
+
+## Use tenant-aware schema loading for multi-tenant platforms
+
+If different sites or business units carry different collections, globals, or Admin auth rules, use `onSchemaFetch`.
+
+```ts
+export default defineConfig({
+  db,
+  collections: [],
+  globals: [],
+  onSchemaFetch: async (siteId) => {
+    const site = await siteRegistry.lookup(siteId)
+    if (!site) return {}
+
+    return {
+      collections: buildCollectionsForSite(site),
+      globals: buildGlobalsForSite(site),
+      adminAuth: buildAdminAuthForSite(site),
+    }
+  },
+})
+```
+
+Use this when:
+
+- Each tenant has distinct content models
+- Tenant-specific Admin auth providers must be resolved dynamically
+- A central platform team serves many business-owned sites
+
+Do not use it to avoid source control. Even when schemas are loaded dynamically, the schema builder code should still be versioned and reviewed.
+
+---
+
+## Lock down content governance
+
+Enterprise teams usually need more than "who can log in."
+
+Use these controls together:
+
+- Collection and field `access` rules for authorization
+- `workflow` for draft/review/publish state transitions
+- `audit: true` for document-level change history
+- `hooks` for validation, enrichment, and downstream side effects
+
+```ts
+import { defineCollection, publishingWorkflow } from '@dyrected/core'
+
+export const Policies = defineCollection({
+  slug: 'policies',
+  audit: true,
+  workflow: publishingWorkflow(),
+  access: {
+    read: ({ user }) => !!user,
+    create: ({ user }) => user?.roles?.includes('policy-author') ?? false,
+    update: ({ user }) => user?.roles?.some((role) => ['policy-author', 'publisher'].includes(role)) ?? false,
+    delete: ({ user }) => user?.roles?.includes('admin') ?? false,
+  },
+  fields: [
+    { name: 'title', label: 'Title', type: 'text', required: true },
+    { name: 'body', label: 'Body', type: 'richText', required: true },
+  ],
+})
+```
+
+Recommended discipline:
+
+1. Use access rules for authorization, not hidden UI controls.
+2. Enable audit on regulated or operationally sensitive collections.
+3. Use workflows where publishing must be reviewed separately from editing.
+4. Keep `afterChange` and `afterDelete` hooks idempotent and failure-tolerant.
+
+Relevant docs:
+
+- [Access Control](/docs/concepts/access-control)
+- [Workflows](/docs/concepts/workflows)
+- [Audit Trail](/docs/guides/audit-trail)
+- [Using Hooks](/docs/guides/using-hooks)
+
+---
+
+## Treat lifecycle events as operational integration points
+
+Enterprise systems usually need webhooks, downstream indexing, search sync, analytics, or ERP/CRM fan-out. That work should not be embedded loosely across request handlers.
+
+Use `events.handlers` for durable lifecycle delivery:
+
+```ts
+export default defineConfig({
+  db,
+  collections: [Policies],
+  globals: [],
+  events: {
+    handlers: [
+      async (event) => {
+        await enterpriseEventBus.publish(event)
+      },
+    ],
+    maxAttempts: 8,
+    retryDelayMs: 1000,
+  },
+})
+```
+
+This gives you:
+
+- Retryable delivery state persisted in Dyrected
+- A cleaner boundary between content writes and downstream processing
+- Better visibility than ad hoc webhook calls in unrelated code paths
+
+If you run multiple instances, configure `redis` and make event processing an explicit part of your runtime model.
+
+---
+
+## Plan storage, email, and network controls up front
+
+Enterprise adoption is often blocked by non-CMS requirements:
+
+- Object storage must align with the company cloud account
+- Email must use the approved provider and sender domains
+- CORS must be explicit
+- JWT secrets and provider credentials must rotate cleanly
+
+Minimum checklist:
+
+- Configure `storage` if any collection uses uploads
+- Configure `email` for invites, welcome mail, and password reset flows
+- Set `cors.origins` to known frontend/Admin origins
+- Set `DYRECTED_JWT_SECRET` in every environment
+- Keep per-environment values outside `dyrected.config.ts`
+
+For upload-heavy systems, also review [Configuring Storage](/docs/guides/configuring-storage).
+
+---
+
+## Roll out changes like platform changes
+
+The highest-risk mistakes in enterprise deployments are usually schema drift and auth drift.
+
+Operational rules that help:
+
+1. Review config changes like database migrations.
+2. Promote config through environments in the same order as application code.
+3. Smoke-test auth, `/me`, uploads, and the highest-value list filters before each release.
+4. Avoid direct field renames on live collections; use compatibility steps first.
+5. Keep generated API and schema docs close to the current build.
+
+Use [Production Checklist](/docs/getting-started/production-checklist) as the baseline, then add your environment-specific controls on top.
+
+---
+
+## A practical enterprise baseline
+
+If you need a conservative starting point, use this stack:
+
+- PostgreSQL adapter for primary data
+- S3-compatible storage adapter for media
+- External `adminAuth` with OIDC
+- Dedicated Admin route or domain
+- `audit: true` on critical collections
+- `workflow` on published content
+- `events.handlers` for downstream sync
+- `onSchemaFetch` only when tenant-specific schemas are real, not hypothetical
+
+That baseline keeps the system understandable while still covering the requirements that usually appear first in enterprise delivery.
+
+---
+
+## Next steps
+
+- [Configuration Reference](/docs/reference/configuration)
+- [Separating Admin Auth](/docs/guides/separating-admin-auth)
+- [Access Control](/docs/concepts/access-control)
+- [Dyrected Cloud](/docs/deployment/cloud)

@@ -1,6 +1,7 @@
 {
   "title": "Guides",
   "pages": [
+    "enterprise-core",
     "building-a-blog",
     "adding-authentication",
     "file-uploads",
