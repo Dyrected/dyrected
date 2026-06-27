@@ -1,5 +1,6 @@
 import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
 import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION } from "../workflows.js";
+import { getAdminAuthCollection } from "./admin-auth.js";
 
 const AUDIT_COLLECTION_SLUG = "__audit";
 
@@ -92,6 +93,10 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   const globals = config?.globals || [];
   const needsAudit = collections.some((col) => col.audit);
   const needsWorkflow = collections.some((col) => col.workflow);
+  const adminAuthCollectionSlug = getAdminAuthCollection({
+    collections,
+    adminAuth: config.adminAuth,
+  })?.slug;
 
   const normalizedCollections = collections.map((col) => {
     let fields = col.fields || [];
@@ -183,6 +188,41 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
         return field;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }) as any) as Field[];
+    }
+
+    if (adminAuthCollectionSlug && col.slug === adminAuthCollectionSlug && config.adminAuth?.mode === "external") {
+      const externalAdminFields: Field[] = [
+        {
+          name: "authProvider",
+          type: "text",
+          label: "Auth Provider",
+          admin: { readOnly: true, hidden: true },
+        },
+        {
+          name: "externalSubject",
+          type: "text",
+          label: "External Subject",
+          admin: { readOnly: true, hidden: true },
+        },
+        {
+          name: "authSource",
+          type: "text",
+          label: "Auth Source",
+          admin: { readOnly: true, hidden: true },
+        },
+        {
+          name: "lastLoginAt",
+          type: "date",
+          label: "Last Login At",
+          admin: { readOnly: true, hidden: true },
+        },
+      ];
+
+      for (const field of externalAdminFields) {
+        if (!existingFieldNames.has(field.name)) {
+          fields = [...fields, field];
+        }
+      }
     }
 
     const updatedFieldNames = new Set(fields.map((f) => f.name));

@@ -11,7 +11,8 @@ import {
   useLocation,
 } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { DyrectedProvider, useDyrected, type DyrectedProviderProps } from "./providers/dyrected-provider";
+import { DyrectedProvider, type DyrectedProviderProps } from "./providers/dyrected-provider";
+import { useDyrected } from "./providers/dyrected-context";
 import { QueryProvider } from "./providers/query-provider";
 import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";

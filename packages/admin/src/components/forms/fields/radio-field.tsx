@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../../providers/dyrected-provider"
+import { useDyrected } from "../../../providers/dyrected-context"
 import { RadioGroup, RadioGroupItem } from "../../ui/radio-group"
 import { Label } from "../../ui/label"
 import { cn } from "../../../lib/utils"
@@ -8,10 +8,15 @@ import type { Field as FieldSchema } from "@dyrected/sdk"
 
 interface RadioFieldProps {
   schema: FieldSchema
-  field: any
+  field: {
+    value: string | number | null | undefined
+    onChange: (value: string) => void
+    onBlur?: () => void
+    name: string
+  }
   disabled?: boolean
   collection?: string
-  siblingValues?: Record<string, any>
+  siblingValues?: Record<string, unknown>
 }
 
 export function RadioField({ schema, field, disabled, collection, siblingValues }: RadioFieldProps) {
@@ -43,7 +48,7 @@ export function RadioField({ schema, field, disabled, collection, siblingValues 
 
   const rawOptions = isDynamic ? (dynamicOptions || []) : (Array.isArray(schema.options) ? schema.options : [])
   const options = normalizeOptions(rawOptions)
-  const isHorizontal = schema.admin?.direction === "horizontal"
+  const isHorizontal = (schema.admin as { direction?: string })?.direction === "horizontal"
 
   if (isDynamic && isLoading) {
     return (
@@ -58,7 +63,7 @@ export function RadioField({ schema, field, disabled, collection, siblingValues 
   return (
     <RadioGroup
       onValueChange={field.onChange}
-      value={field.value ?? ""}
+      value={field.value !== undefined && field.value !== null ? String(field.value) : ""}
       disabled={disabled}
       className={cn(
         "dy-gap-4",

@@ -1,9 +1,17 @@
 import { stringify, stringifyQuery } from "./utils/stringify.js";
 import type {
+  AdminConfig,
+  PublicAdminAuthConfig,
   PaginatedResult,
   FileData as Media,
   Field,
   Block,
+  TextField,
+  TextareaField,
+  EmailField,
+  UrlField,
+  IconField,
+  NumberField,
   CollectionConfig,
   GlobalConfig,
   FieldType,
@@ -13,11 +21,25 @@ import type {
 } from "@dyrected/core";
 import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
+type UnknownRecord = Record<string, unknown>;
+type SchemaResponse = {
+  collections: CollectionConfig[];
+  globals: GlobalConfig[];
+  admin?: AdminConfig;
+  adminAuth?: PublicAdminAuthConfig;
+};
+
 export type {
   PaginatedResult,
   Media,
   Field,
   Block,
+  TextField,
+  TextareaField,
+  EmailField,
+  UrlField,
+  IconField,
+  NumberField,
   CollectionConfig,
   GlobalConfig,
   FieldType,
@@ -89,8 +111,8 @@ type ExtractDoc<T> = T extends CollectionConfig<infer TDoc> ? TDoc : T extends G
  * ```
  */
 export type InferSchema<
-  TCollections extends Record<string, CollectionConfig<any>>,
-  TGlobals extends Record<string, GlobalConfig<any>> = Record<never, never>,
+  TCollections extends Record<string, CollectionConfig<UnknownRecord>>,
+  TGlobals extends Record<string, GlobalConfig<UnknownRecord>> = Record<never, never>,
 > = {
   collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
@@ -122,11 +144,11 @@ export interface DyrectedClientConfig {
 }
 
 export interface BaseSchema {
-  collections: Record<string, any>;
-  globals: Record<string, any>;
+  collections: Record<string, UnknownRecord>;
+  globals: Record<string, UnknownRecord>;
 }
 
-export class DyrectedClient<TSchema extends BaseSchema = any> {
+export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
   private baseUrl: string;
   private headers: Record<string, string>;
   private fetch: typeof fetch;
@@ -178,8 +200,22 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     return this.baseUrl;
   }
 
-  async getSchemas(): Promise<{ collections: any[]; globals: any[] }> {
+  async getSchemas(): Promise<SchemaResponse> {
     return this.request("/api/schemas");
+  }
+
+  async getAdminAuthConfig(): Promise<PublicAdminAuthConfig> {
+    return this.request("/api/admin/auth/providers");
+  }
+
+  async exchangeAdminAuth(
+    providerId: string,
+    body: Record<string, unknown>,
+  ): Promise<{ token: string; collectionSlug: string; providerId: string }> {
+    return this.request(`/api/admin/auth/${providerId}/exchange`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
   }
 
   async getPreference<T = unknown>(
@@ -213,20 +249,20 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
    * Fetch draft data for a specific preview token.
    * Used in "token" preview mode.
    */
-  async getPreviewData(token: string): Promise<any> {
+  async getPreviewData<T = unknown>(token: string): Promise<T> {
     return this.request(`/api/preview-data?token=${token}`);
   }
 
   async find<K extends keyof TSchema["collections"]>(
     collection: K & string,
-    args: QueryArgs = {},
+    args: QueryArgs<TSchema["collections"][K]> = {},
   ): Promise<PaginatedResult<TSchema["collections"][K]>> {
     const { initialData, ...queryArgs } = args;
 
     // Normalize where clause for the server (expects JSON string)
-    const normalizedArgs = { ...queryArgs };
-    if (normalizedArgs.where && typeof normalizedArgs.where === "object") {
-      normalizedArgs.where = JSON.stringify(normalizedArgs.where);
+    const normalizedArgs: Record<string, unknown> = { ...queryArgs };
+    if (queryArgs.where && typeof queryArgs.where === "object") {
+      normalizedArgs.where = JSON.stringify(queryArgs.where);
     }
 
     const query = stringifyQuery(normalizedArgs, { addQueryPrefix: true });
@@ -260,10 +296,12 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
    */
   collection<K extends keyof TSchema["collections"]>(slug: K & string) {
     return {
-      find: (args?: QueryArgs) => {
-        const qb = new QueryBuilder<TSchema["collections"][K]>(slug, (c, a) => this.find(c as any, a));
+      find: (args?: QueryArgs<TSchema["collections"][K]>) => {
+        const qb = new QueryBuilder<TSchema["collections"][K]>(slug, (collectionName, queryArgs) =>
+          this.find(collectionName as K & string, queryArgs),
+        );
         if (args) {
-          if (args.where) qb.where(args.where);
+          if (args.where && typeof args.where === "object") qb.where(args.where);
           if (args.sort) qb.sort(args.sort);
           if (args.limit) qb.limit(args.limit);
           if (args.page) qb.page(args.page);
@@ -274,8 +312,9 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
       },
       findOne: (id: string, args: { depth?: number; initialData?: TSchema["collections"][K] } = {}) =>
         this.findOne<TSchema["collections"][K]>(slug, id, args),
-      create: (data: any) => this.create<TSchema["collections"][K]>(slug, data),
-      update: (id: string, data: any) => this.update<TSchema["collections"][K]>(slug, id, data),
+      create: (data: Partial<TSchema["collections"][K]>) => this.create<TSchema["collections"][K]>(slug, data),
+      update: (id: string, data: Partial<TSchema["collections"][K]>) =>
+        this.update<TSchema["collections"][K]>(slug, id, data),
       delete: (id: string) => this.delete(slug, id),
       deleteMany: (ids: string[]) => this.deleteMany(slug, ids),
       /**
@@ -306,7 +345,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
       /** Check if this auth collection has any users (initialized). */
       isInitialized: (): Promise<{ initialized: boolean }> => this.request(`/api/collections/${slug}/init`),
       /** Register the very first user in an empty auth collection. */
-      registerFirstUser: (data: any): Promise<{ token: string; user: TSchema["collections"][K] }> =>
+      registerFirstUser: (data: UnknownRecord): Promise<{ token: string; user: TSchema["collections"][K] }> =>
         this.request(`/api/collections/${slug}/first-user`, {
           method: "POST",
           body: JSON.stringify(data),
@@ -321,7 +360,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
       acceptInvite: (
         token: string,
         password: string,
-        extraFields?: Record<string, any>,
+        extraFields?: UnknownRecord,
       ): Promise<{ token: string; user: TSchema["collections"][K] }> =>
         this.request(`/api/collections/${slug}/accept-invite`, {
           method: "POST",
@@ -401,11 +440,15 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     return {
       get: (args: { depth?: number; initialData?: TSchema["globals"][K] } = {}) =>
         this.getGlobal<TSchema["globals"][K]>(slug, args),
-      update: (data: any) => this.updateGlobal<TSchema["globals"][K]>(slug, data),
+      update: (data: Partial<TSchema["globals"][K]>) => this.updateGlobal<TSchema["globals"][K]>(slug, data),
     };
   }
 
-  async findOne<T = any>(collection: string, id: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
+  async findOne<T = UnknownRecord>(
+    collection: string,
+    id: string,
+    args: { depth?: number; initialData?: T } = {},
+  ): Promise<T> {
     const { initialData, ...queryArgs } = args;
     const query = stringifyQuery(queryArgs, { addQueryPrefix: true });
 
@@ -427,14 +470,14 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     }
   }
 
-  async create<T = any>(collection: string, data: any): Promise<T> {
+  async create<T = UnknownRecord>(collection: string, data: Partial<T>): Promise<T> {
     return this.request(`/api/collections/${collection}`, {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async update<T = any>(collection: string, id: string, data: any): Promise<T> {
+  async update<T = UnknownRecord>(collection: string, id: string, data: Partial<T>): Promise<T> {
     return this.request(`/api/collections/${collection}/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),
@@ -498,7 +541,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     });
   }
 
-  async getGlobal<T = any>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
+  async getGlobal<T = UnknownRecord>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
     const { initialData, ...queryArgs } = args;
     const query = stringifyQuery(queryArgs, { addQueryPrefix: true });
 
@@ -526,15 +569,16 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     }
   }
 
-  async updateGlobal<T = any>(slug: string, data: any): Promise<T> {
+  async updateGlobal<T = UnknownRecord>(slug: string, data: Partial<T>): Promise<T> {
     return this.request(`/api/globals/${slug}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
-  async listMedia(args: QueryArgs = {}, collection: string = "media"): Promise<PaginatedResult<Media>> {
-    return this.find(collection as any, args) as any;
+  async listMedia(args: QueryArgs<Media> = {}, collection: string = "media"): Promise<PaginatedResult<Media>> {
+    const query = stringifyQuery(normalizeQueryArgs(args), { addQueryPrefix: true });
+    return this.request<PaginatedResult<Media>>(`/api/collections/${collection}${query}`);
   }
 
   /** @deprecated Use client.collection('media').upload(file, data) instead */
@@ -545,7 +589,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
   /**
    * Internal upload implementation shared by collection().upload() and uploadMedia().
    */
-  private async _upload(collection: string, file: File | Blob, data?: Record<string, string>): Promise<any> {
+  private async _upload(collection: string, file: File | Blob, data?: Record<string, string>): Promise<Media> {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -561,10 +605,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 
     return this.request(`/api/collections/${collection}`, {
       method: "POST",
-      headers: {
-        ...headers,
-        "Content-Type": undefined as any,
-      },
+      headers,
       body: formData,
     });
   }
@@ -573,20 +614,10 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     return this.delete(collection, id);
   }
 
-  private async request(path: string, init?: RequestInit): Promise<any> {
+  private async request<T = unknown>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.baseUrl}${path}`;
 
-    const allHeaders: any = {
-      ...this.headers,
-      ...init?.headers,
-    };
-
-    // Remove undefined headers (allows overriding and removing defaults)
-    Object.keys(allHeaders).forEach((key) => {
-      if (allHeaders[key] === undefined) {
-        delete allHeaders[key];
-      }
-    });
+    const allHeaders = mergeHeaders(this.headers, init?.headers);
 
     const res = await this.fetch(url, {
       ...init,
@@ -596,7 +627,7 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
     // Support both standard fetch (Response object) and Nuxt $fetch (parsed data)
     if (res && typeof res.ok === "boolean") {
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: "Unknown error" }));
+        const body = await res.json().catch((): { message: string; code?: string } => ({ message: "Unknown error" }));
         if (res.status === 429 && typeof window !== "undefined") {
           window.dispatchEvent(
             new CustomEvent("dyrected:rate-limit", {
@@ -607,20 +638,20 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
         console.log("[DyrectedError]", body, res.status);
         throw new DyrectedError(body.message || `Request failed with status ${res.status}`, res.status, body.code);
       }
-      return res.json();
+      return res.json() as Promise<T>;
     }
 
-    return res;
+    return res as T;
   }
 }
 
-export function createClient<TSchema extends { collections: any; globals: any } = any>(
+export function createClient<TSchema extends BaseSchema = BaseSchema>(
   config: DyrectedClientConfig,
 ): DyrectedClient<TSchema> {
   return new DyrectedClient<TSchema>(config);
 }
 
-function isFunctionallyEmpty(obj: any): boolean {
+function isFunctionallyEmpty(obj: unknown): boolean {
   if (obj === null || obj === undefined || obj === "") return true;
   if (Array.isArray(obj)) {
     if (obj.length === 0) return true;
@@ -629,7 +660,40 @@ function isFunctionallyEmpty(obj: any): boolean {
   if (typeof obj === "object") {
     const keys = Object.keys(obj);
     if (keys.length === 0) return true;
-    return keys.every((key) => isFunctionallyEmpty(obj[key]));
+    return keys.every((key) => isFunctionallyEmpty((obj as UnknownRecord)[key]));
   }
   return false;
+}
+
+function mergeHeaders(
+  baseHeaders: Record<string, string>,
+  overrideHeaders?: HeadersInit,
+): Record<string, string> {
+  const merged = new Headers(baseHeaders);
+
+  if (overrideHeaders instanceof Headers) {
+    overrideHeaders.forEach((value, key) => merged.set(key, value));
+  } else if (Array.isArray(overrideHeaders)) {
+    for (const [key, value] of overrideHeaders) {
+      merged.set(key, value);
+    }
+  } else if (overrideHeaders) {
+    for (const [key, value] of Object.entries(overrideHeaders)) {
+      if (value === undefined) {
+        merged.delete(key);
+      } else {
+        merged.set(key, String(value));
+      }
+    }
+  }
+
+  return Object.fromEntries(merged.entries());
+}
+
+function normalizeQueryArgs<TDoc>(args: QueryArgs<TDoc>): Record<string, unknown> {
+  const normalizedArgs: Record<string, unknown> = { ...args };
+  if (args.where && typeof args.where === "object") {
+    normalizedArgs.where = JSON.stringify(args.where);
+  }
+  return normalizedArgs;
 }

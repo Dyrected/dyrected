@@ -5,11 +5,13 @@ import { CollectionController } from "./controllers/collection.controller.js";
 import { GlobalController } from "./controllers/global.controller.js";
 import { MediaController } from "./controllers/media.controller.js";
 import { AuthController } from "./controllers/auth.controller.js";
+import { AdminAuthController } from "./controllers/admin-auth.controller.js";
 import { PreviewController } from "./controllers/preview.controller.js";
 import { requireAuth, optionalAuth } from "./middleware/auth.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { evaluateAccess } from "./auth/jexl.js";
+import { getPublicAdminAuthConfig } from "./utils/admin-auth.js";
 
 /**
  * Access gate middleware for granular permissions using Jexl.
@@ -100,6 +102,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       // Merge dynamic admin config if provided
       if ((dynamic as any).admin) {
         config.admin = { ...config.admin, ...(dynamic as any).admin };
+      }
+      if ((dynamic as any).adminAuth) {
+        config.adminAuth = { ...config.adminAuth, ...(dynamic as any).adminAuth };
       }
     }
 
@@ -201,6 +206,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       collections: filteredCollections,
       globals: filteredGlobals,
       admin: config.admin || {},
+      adminAuth: getPublicAdminAuthConfig(config.adminAuth),
     });
   });
 
@@ -449,6 +455,14 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       app.delete(`${prefix}/media/:id`, accessGate(col, 'delete'), (c) => mediaController.delete(c));
     }
   }
+
+  // 2b. Admin Auth Routes
+  const adminAuthController = new AdminAuthController(config);
+  app.get("/api/admin/auth/providers", (c) => adminAuthController.providers(c));
+  app.get("/api/admin/auth/:provider/start", (c) => adminAuthController.start(c));
+  app.get("/api/admin/auth/:provider/callback", (c) => adminAuthController.callback(c));
+  app.post("/api/admin/auth/:provider/exchange", (c) => adminAuthController.exchange(c));
+  app.post("/api/admin/logout", (c) => adminAuthController.logout(c));
 
   // 3. Auth Routes — for collections with auth: true
   for (const collection of config.collections) {

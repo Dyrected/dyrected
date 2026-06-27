@@ -1,4 +1,12 @@
-import type { Field } from "../types/index.js";
+import type {
+  AuthenticatedUser,
+  Field,
+  FieldAfterReadHook,
+  FieldAfterReadHookArgs,
+  FieldBeforeChangeHook,
+  FieldBeforeChangeHookArgs,
+  ReadonlyDatabaseAdapter,
+} from "../types/index.js";
 
 // Internal loose type used by the hook runner.
 // Using `any` for the parameter type is intentional — TypeScript's function
@@ -6,6 +14,9 @@ import type { Field } from "../types/index.js";
 // (CollectionBeforeChangeHook, etc.) from being assigned here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyHookFn = (args: any) => any;
+
+type AnyFieldBeforeChangeHook = FieldBeforeChangeHook<unknown, Record<string, unknown>>;
+type AnyFieldAfterReadHook = FieldAfterReadHook<unknown, Record<string, unknown>>;
 
 /**
  * Run a list of hook functions sequentially.
@@ -88,13 +99,15 @@ export async function executeFieldBeforeChange(
     let updatedValue = value;
     if (field.hooks?.beforeChange) {
       for (const hook of field.hooks.beforeChange) {
-        updatedValue = await (hook as (args: Record<string, unknown>) => unknown)({
+        const typedHook = hook as unknown as AnyFieldBeforeChangeHook;
+        const hookArgs: FieldBeforeChangeHookArgs<unknown, Record<string, unknown>> = {
           value: updatedValue,
           originalDoc: originalDoc ?? undefined,
           data: result,
-          user,
-          db,
-        });
+          user: user as AuthenticatedUser | undefined,
+          db: db as ReadonlyDatabaseAdapter,
+        };
+        updatedValue = await typedHook(hookArgs);
       }
       result[field.name] = updatedValue;
     }
@@ -185,12 +198,14 @@ export async function executeFieldAfterRead(
     let updatedValue = value;
     if (field.hooks?.afterRead) {
       for (const hook of field.hooks.afterRead) {
-        updatedValue = await (hook as (args: Record<string, unknown>) => unknown)({
+        const typedHook = hook as unknown as AnyFieldAfterReadHook;
+        const hookArgs: FieldAfterReadHookArgs<unknown, Record<string, unknown>> = {
           value: updatedValue,
           doc: result,
-          user,
-          db,
-        });
+          user: user as AuthenticatedUser | undefined,
+          db: db as ReadonlyDatabaseAdapter,
+        };
+        updatedValue = await typedHook(hookArgs);
       }
       result[field.name] = updatedValue;
     }

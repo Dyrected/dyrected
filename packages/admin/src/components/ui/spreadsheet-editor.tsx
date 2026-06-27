@@ -9,7 +9,7 @@ import {
 } from "react-datasheet-grid"
 import "react-datasheet-grid/dist/style.css"
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import type { CollectionConfig, Field } from "@dyrected/core"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 import { Button } from "./button"

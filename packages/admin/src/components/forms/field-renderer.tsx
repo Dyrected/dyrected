@@ -1,4 +1,15 @@
-import type { Field as FieldSchema } from "@dyrected/sdk"
+import type {
+  EmailField,
+  Field as FieldSchema,
+  IconField,
+  NumberField,
+  TextField as TextFieldSchema,
+  TextareaField as TextareaFieldSchema,
+  UrlField as UrlFieldSchema,
+  RelationshipField as RelationFieldSchema,
+  CollectionConfig,
+  GlobalConfig,
+} from "@dyrected/core"
 import { TextField } from "./fields/text-field"
 import { TextAreaField } from "./fields/text-area-field"
 import { SwitchField } from "./fields/switch-field"
@@ -13,21 +24,15 @@ import { DatePicker, DateRangePicker } from "./fields/date-picker"
 import { TimePicker } from "./fields/time-picker"
 import { RelationshipPicker } from "./fields/relationship-picker"
 import { IconPicker } from "./fields/icon-picker"
-import { UrlField } from "./fields/url-field"
+import { UrlField as UrlFieldComponent } from "./fields/url-field"
 import jexl from 'jexl'
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { ErrorBoundary } from "../error-boundary"
 
-interface CollectionSchema {
-  slug: string
-  upload?: boolean
-}
-
-type RelationFieldSchema = FieldSchema & {
-  relationTo?: string
-  collection?: string
-  hasMany?: boolean
-}
+type DefaultTextInputSchema = TextFieldSchema | EmailField | NumberField
+type TextAreaSchema = TextareaFieldSchema
+type AdminUrlFieldSchema = UrlFieldSchema
+type AdminIconFieldSchema = IconField
 
 interface FieldRendererProps {
   schema: FieldSchema
@@ -44,9 +49,8 @@ interface FieldRendererProps {
   context?: {
     user: Record<string, unknown> | null
     schemas?: {
-      collections: CollectionSchema[]
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      globals: any[]
+      collections: CollectionConfig[]
+      globals: GlobalConfig[]
     }
     siblingData: Record<string, unknown>
   }
@@ -102,9 +106,9 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
 
   switch (schema.type as string) {
     case "textarea":
-      return <TextAreaField schema={schema} field={field} disabled={disabled} />
+      return <TextAreaField schema={schema as TextAreaSchema} field={field} disabled={disabled} />
     case "boolean":
-      return schema.admin?.layout === "switch"
+      return (schema.admin as { layout?: string })?.layout === "switch"
         ? <SwitchField field={field} disabled={disabled} />
         : <CheckboxField field={field} disabled={disabled} />
     case "select":
@@ -150,9 +154,9 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "time":
       return <TimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "icon":
-      return <IconPicker schema={schema} field={field} disabled={disabled} />
+      return <IconPicker schema={schema as AdminIconFieldSchema} field={field} disabled={disabled} />
     case "url":
-      return <UrlField schema={schema} field={field} disabled={disabled} context={context} />
+      return <UrlFieldComponent schema={schema as AdminUrlFieldSchema} field={field} disabled={disabled} context={context} />
     case "relationship": {
       const defaultMediaColl = (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
       const isMediaRel = relSchema.relationTo === "media" ||
@@ -181,6 +185,6 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       )
     }
     default:
-      return <TextField schema={schema} field={field} disabled={disabled} />
+      return <TextField schema={schema as DefaultTextInputSchema} field={field} disabled={disabled} />
   }
 }

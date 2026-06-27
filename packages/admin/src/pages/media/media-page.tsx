@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { cn, getMediaUrl } from "../../lib/utils"
@@ -161,7 +161,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
   })
 
   const updateMutation = useMutation({
-    mutationFn: (args: { id: string, data: Record<string, unknown> }) => client!.update(collectionSlug || "media", args.id, args.data),
+    mutationFn: (args: { id: string, data: Record<string, unknown> }) => client!.update<Media>(collectionSlug || "media", args.id, args.data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["media"] })
       setSelectedItem(data)

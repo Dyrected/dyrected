@@ -19,7 +19,7 @@ if (typeof window !== "undefined") {
 }
 
 // Mock useDyrected
-vi.mock("../../../providers/dyrected-provider", () => ({
+vi.mock("../../../providers/dyrected-context", () => ({
   useDyrected: () => ({
     client: null,
     config: { baseUrl: "", apiKey: "", siteId: "" },

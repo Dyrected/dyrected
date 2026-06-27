@@ -67,7 +67,7 @@ Use `allowedMimeTypes` and `maxFileSize` for upload collections, consume returne
 ## Supported field types
 
 <!-- GENERATED:FIELD_TYPES:START -->
-`text`, `textarea`, `richText`, `number`, `boolean`, `date`, `datetime`, `time`, `select`, `multiSelect`, `radio`, `relationship`, `array`, `object`, `json`, `blocks`, `image`, `email`, `url`, `icon`, `join`, `row`
+
 <!-- GENERATED:FIELD_TYPES:END -->
 
 ## Compiled recipes

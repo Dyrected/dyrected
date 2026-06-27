@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useDyrected } from "../providers/dyrected-provider"
+import { useDyrected } from "../providers/dyrected-context"
 
 export interface LayoutItem {
   name: string

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useDyrected } from "../providers/dyrected-provider"
+import { useDyrected } from "../providers/dyrected-context"
 
 export type Updater<T> = T | ((old: T) => T);
 

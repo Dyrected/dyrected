@@ -31,7 +31,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import type { FieldSchema } from "../form-engine"
 import { buildDefaultValues } from "../utils"
-import { useDyrected } from "../../../providers/dyrected-provider"
+import { useDyrected } from "../../../providers/dyrected-context"
 import { cn } from "../../../lib/utils"
 import { Button } from "../../ui/button"
 import {

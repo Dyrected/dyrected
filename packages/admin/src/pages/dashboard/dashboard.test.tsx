@@ -6,7 +6,7 @@ import { Dashboard } from "./dashboard"
 const useDyrectedMock = vi.fn()
 const useQueryMock = vi.fn()
 
-vi.mock("../../providers/dyrected-provider", () => ({
+vi.mock("../../providers/dyrected-context", () => ({
   useDyrected: () => useDyrectedMock(),
 }))
 

@@ -1,5 +1,5 @@
 import { useWatch } from "react-hook-form"
-import { useDyrected } from "../../../providers/dyrected-provider"
+import { useDyrected } from "../../../providers/dyrected-context"
 import { useNavigate, useParams } from "react-router-dom"
 import { ExternalLink, FileText, Plus } from "lucide-react"
 import { Button } from "../../ui/button"

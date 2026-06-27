@@ -1,27 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, DyrectedClient } from "@dyrected/sdk";
-import type { AdminComponents, AdminSchemas } from "../types/admin-components";
-
-interface DyrectedContextType {
-  client: DyrectedClient | null;
-  config: {
-    baseUrl: string;
-    apiKey: string | undefined;
-    siteId: string | undefined;
-    defaultTechStack?: string;
-  };
-  setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
-  logout: () => void;
-  isAuthenticated: boolean;
-  schemas: AdminSchemas | null;
-  user: any | null;
-  setToken: (token: string) => void;
-  // @internal – set by Dyrected Cloud to bypass admin-level auth
-  initialToken?: string;
-  components?: AdminComponents;
-}
-
-const DyrectedContext = createContext<DyrectedContextType | undefined>(undefined);
+import type { AdminSchemas } from "../types/admin-components";
+import { getAdminCollectionSlug, type AdminUser } from "./admin-auth";
+import { DyrectedContext, type DyrectedContextType } from "./dyrected-context";
 
 export interface DyrectedProviderProps {
   children: React.ReactNode;
@@ -47,26 +28,43 @@ export function DyrectedProvider({
   const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_url") : null) || "");
   const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_key") : null) || undefined);
   const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
-  const [client, setClient] = useState<DyrectedClient | null>(null);
   const [schemas, setSchemas] = useState<AdminSchemas | null>(null);
-  const [user, setUser] = useState<any | null>(null);
+  const [user, setUser] = useState<AdminUser | null>(null);
+
+  const client = useMemo<DyrectedClient | null>(() => {
+    if (!baseUrl) return null;
+    return createClient({
+      baseUrl,
+      apiKey: apiKey || undefined,
+      siteId: siteId || undefined,
+    });
+  }, [apiKey, baseUrl, siteId]);
 
   useEffect(() => {
-    if (baseUrl) {
-      const newClient = createClient({
-        baseUrl,
-        apiKey: apiKey || undefined,
-        siteId: siteId || undefined,
-      });
-      setClient(newClient);
-      
-      // Fetch schemas
-      newClient.getSchemas().then(setSchemas).catch(err => {
-        console.error("Failed to fetch schemas:", err);
-        setSchemas(null);
-      });
+    let cancelled = false;
+
+    if (!client) {
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [baseUrl, apiKey, siteId]);
+
+    client.getSchemas().then(
+      (nextSchemas) => {
+        if (cancelled) return;
+        setSchemas((prev) => (prev === nextSchemas ? prev : nextSchemas));
+      },
+      (err) => {
+        if (cancelled) return;
+        console.error("Failed to fetch schemas:", err);
+        setSchemas((prev) => (prev === null ? prev : null));
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [client]);
 
   // Apply the cloud-issued token to the SDK client so API calls include it.
   // Does not call me() — AuthGate skips auth entirely when initialToken is present.
@@ -76,15 +74,7 @@ export function DyrectedProvider({
     }
   }, [initialToken, client]);
 
-  useEffect(() => {
-    if (initialToken) return; // cloud-managed: localStorage auth is not used
-    const token = localStorage.getItem("dyrected_token");
-    if (token && client && schemas && !user) {
-      setToken(token);
-    }
-  }, [initialToken, client, schemas, user]);
-
-  const setAuth = (newUrl: string, newKey: string, newSiteId?: string) => {
+  const setAuth = useCallback((newUrl: string, newKey: string, newSiteId?: string) => {
     localStorage.setItem("dyrected_url", newUrl);
     localStorage.setItem("dyrected_key", newKey);
     if (newSiteId) localStorage.setItem("dyrected_site_id", newSiteId);
@@ -93,23 +83,43 @@ export function DyrectedProvider({
     setBaseUrl(newUrl);
     setApiKey(newKey);
     setSiteId(newSiteId);
-  };
+  }, []);
 
-  const setToken = (token: string) => {
+  const setToken = useCallback((token: string) => {
+    if (!token) {
+      localStorage.removeItem("dyrected_token");
+      if (client) client.clearToken();
+      setUser(null);
+      return;
+    }
     localStorage.setItem("dyrected_token", token);
     if (client) {
       client.setToken(token);
-      // Prefer __admins for the dashboard session; fall back to the first auth collection.
-      const authCollection =
-        schemas?.collections.find((c: any) => c.slug === '__admins') ??
-        schemas?.collections.find((c: any) => c.auth);
+      const authCollection = getAdminCollectionSlug(schemas);
       if (authCollection) {
-        client.collection(authCollection.slug).me().then(setUser).catch(() => setUser(null));
+        client.collection(authCollection).me().then(
+          (nextUser) => setUser(nextUser as AdminUser),
+          () => setUser(null),
+        );
       }
     }
-  };
+  }, [client, schemas]);
 
-  const logout = () => {
+  useEffect(() => {
+    if (initialToken || !client || !schemas || user) return;
+    const token = localStorage.getItem("dyrected_token");
+    const authCollection = getAdminCollectionSlug(schemas);
+
+    if (!token || !authCollection) return;
+
+    client.setToken(token);
+    client.collection(authCollection).me().then(
+      (nextUser) => setUser(nextUser as AdminUser),
+      () => setUser(null),
+    );
+  }, [client, initialToken, schemas, user]);
+
+  const logout = useCallback(() => {
     localStorage.removeItem("dyrected_url");
     localStorage.removeItem("dyrected_key");
     localStorage.removeItem("dyrected_site_id");
@@ -117,9 +127,9 @@ export function DyrectedProvider({
     setBaseUrl("");
     setApiKey(undefined);
     setSiteId(undefined);
-    setClient(null);
     setUser(null);
-  };
+    setSchemas(null);
+  }, []);
 
   return (
     <DyrectedContext.Provider value={{
@@ -138,16 +148,3 @@ export function DyrectedProvider({
     </DyrectedContext.Provider>
   );
 }
-
-/**
- * Returns the Dyrected admin context: the SDK client, current user, loaded
- * schemas, auth helpers, and registered component overrides.
- *
- * Must be called within a component tree wrapped by `DyrectedProvider`.
- * Throws if called outside of that context.
- */
-export const useDyrected = () => {
-  const context = useContext(DyrectedContext);
-  if (!context) throw new Error("useDyrected must be used within a DyrectedProvider");
-  return context;
-};

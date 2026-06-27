@@ -1,7 +1,7 @@
 import { AlertCircle, ArrowRight, ChevronDown, Clock3, FileText, Globe, Plus, Settings, Upload } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useQueries, useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { AdminComponentSlot } from "../../components/admin-component-slot"

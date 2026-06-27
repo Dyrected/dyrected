@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useWatch } from "react-hook-form"
 import type { Control, FieldValues, ControllerRenderProps } from "react-hook-form"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import {
   FormControl,
   FormField,
@@ -322,7 +322,7 @@ function FormFieldRendererInner({
               ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
               : isBoolean
                 ? "dy-flex dy-flex-row-reverse dy-items-start dy-justify-end dy-gap-3 dy-space-y-0"
-              : "dy-space-y-3"
+                : "dy-space-y-3"
           )}
         >
           <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-flex-wrap dy-gap-2 dy-mb-1")}>
@@ -351,7 +351,7 @@ function FormFieldRendererInner({
               collection={collection}
               context={{
                 user,
-                schemas: schemas as unknown as { collections: { slug: string; upload?: boolean }[]; globals: unknown[] },
+                schemas,
                 siblingData: conditionData
               }}
             />

@@ -1,322 +1,18 @@
-import type { icons as lucideIcons } from "lucide-react";
+import type { AdminAuthConfig } from "./admin-auth.js";
+import type { AdminConfig, AdminIconName, CollectionListComponentSlots } from "./admin.js";
+import type { BaseDocument, FileData, PaginatedResult } from "./documents.js";
+import type { AuthenticatedUser, HookRequestContext } from "./request.js";
+import type { Block, DynamicOptionsConfig, DynamicOptionsResolver, Field, UploadConfig } from "./schema-core.js";
+import type { AuthDocFields, InferDocShape, Prettify, SystemDocFields, UploadDocFields } from "./schema-inference.js";
+import type { LifecycleEventHandler, WorkflowConfig } from "./workflows.js";
 
-/** A valid icon component name from the Lucide icon set bundled with Dyrected Admin. */
-export type AdminIconName = keyof typeof lucideIcons;
-
-/** Ordered custom component keys rendered around the built-in Admin dashboard. */
-export interface AdminDashboardComponentSlots {
-  beforeDashboard?: string[];
-  afterDashboard?: string[];
-}
-
-/** Ordered custom component keys rendered around a collection's list content. */
-export interface CollectionListComponentSlots {
-  beforeList?: string[];
-  beforeListTable?: string[];
-  afterListTable?: string[];
-  afterList?: string[];
-}
-
-// ─── Shared request context ───────────────────────────────────────────────────
-
-/**
- * Minimum HTTP request context passed to every server-side hook and resolver.
- *
- * The full Web Standard `Request` is available as `raw` when you need it, but
- * most hooks only need `query` (URL search parameters).
- */
-export interface HookRequestContext {
-  /** Parsed URL query-string parameters, e.g. `{ page: '2', search: 'hello' }`. */
-  query: Record<string, string>;
-  /** Incoming HTTP headers, lowercased. */
-  headers: Record<string, string>;
-  /** The raw Web Standard `Request` object. Useful for streaming or advanced header inspection. */
-  raw?: Request;
-}
-
-/**
- * Base shape of an authenticated user as decoded from the JWT.
- *
- * The actual shape will include every field on your auth collection — this
- * interface only guarantees the properties that Dyrected always stamps on the
- * token. Extend it in your own codebase for stronger typing:
- *
- * @example
- * declare module '@dyrected/core' {
- *   interface AuthenticatedUser {
- *     role: 'admin' | 'editor'
- *     organizationId: string
- *   }
- * }
- */
-export interface AuthenticatedUser {
-  /** The user's document ID in the database. */
-  sub: string;
-  /** The user's email address. */
-  email?: string;
-  /** Slug of the collection this user was authenticated against. */
-  collection: string;
-  /** Array of role strings, if your auth collection has a `roles` field. */
-  roles?: string[];
-  /** Any additional fields from the auth collection document. */
-  [key: string]: unknown;
-}
-
-// ─── Workflows and lifecycle events ───────────────────────────────────────
-
-export const LIFECYCLE_EVENT_NAMES = [
-  "revision.created",
-  "workflow.transitioned",
-  "entry.published",
-  "entry.unpublished",
-] as const;
-
-export type LifecycleEventName = (typeof LIFECYCLE_EVENT_NAMES)[number];
-
-export interface WorkflowState {
-  /** Stable machine-readable state key. */
-  name: string;
-  /** Label rendered in the Admin UI. */
-  label: string;
-  /** Marks the state whose revision is visible to public readers. */
-  published?: boolean;
-  /** Optional visual tone used by the Admin UI. */
-  color?: "neutral" | "warning" | "success" | "danger" | "info";
-}
-
-export interface WorkflowTransition {
-  /** Stable transition key used by the REST and SDK APIs. */
-  name: string;
-  label: string;
-  from: string | string[];
-  to: string;
-  /** Every listed capability is required. */
-  requiredCapabilities?: string[];
-  /** Require a non-empty comment when performing the transition. */
-  requireComment?: boolean;
-  /** Remove the public snapshot after this transition commits. */
-  unpublish?: boolean;
-}
-
-export interface WorkflowRole {
-  /** Existing user role value, for example `editor` or `publisher`. */
-  role: string;
-  capabilities: string[];
-}
-
-export interface WorkflowConfig<TDoc extends object = Record<string, unknown>> {
-  initialState: string;
-  /** State used for a new working revision created from published content. */
-  draftState?: string;
-  states: WorkflowState[];
-  transitions: WorkflowTransition[];
-  /** Maps values in `user.roles` to workflow capabilities. */
-  roles?: WorkflowRole[];
-  hooks?: {
-    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];
-    afterTransition?: CollectionAfterTransitionHook<TDoc>[];
-  };
-}
-
-export interface WorkflowMetadata {
-  state: string;
-  revision: number;
-  publishedRevision?: number;
-  publishedAt?: string;
-  publishedBy?: string;
-  /** Transitions currently allowed for the requesting user. Response-only. */
-  availableTransitions?: string[];
-}
-
-export interface WorkflowTransitionContext<
-  TDoc extends object = Record<string, unknown>,
-> {
-  transition: WorkflowTransition;
-  from: string;
-  to: string;
-  doc: TDoc;
-  user?: AuthenticatedUser;
-  comment?: string;
-  req: HookRequestContext;
-  db: DatabaseAdapter;
-}
-
-export type CollectionBeforeTransitionHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: WorkflowTransitionContext<TDoc>) => void | Promise<void>;
-
-export type CollectionAfterTransitionHook<
-  TDoc extends object = Record<string, unknown>,
-> = (
-  args: WorkflowTransitionContext<TDoc> & { event: LifecycleEvent },
-) => void | Promise<void>;
-
-export interface LifecycleEvent<TPayload = Record<string, unknown>> {
-  id: string;
-  name: LifecycleEventName;
-  collection: string;
-  documentId: string;
-  occurredAt: string;
-  actorId?: string;
-  payload: TPayload;
-  attempts: number;
-  status: "pending" | "processing" | "delivered" | "failed";
-  nextAttemptAt?: string;
-  deliveredAt?: string;
-  lastError?: string;
-}
-
-export type LifecycleEventHandler = (
-  event: LifecycleEvent,
-) => void | Promise<void>;
-
-// ─── Field type literals ─────────────────────────────────────────────────────
-
-/**
- * Every field type supported by Dyrected.
- *
- * - Text group:    `text`, `textarea`, `richText`, `email`, `url`, `icon`
- * - Number/Bool:   `number`, `boolean`
- * - Date:          `date`, `datetime`, `time`
- * - Selection:     `select`, `multiSelect`, `radio`
- * - Relationship:  `relationship`, `join`
- * - Structural:    `array`, `object`, `blocks`, `json`
- * - Layout:        `row`
- * - Media:         `image`
- */
-export type FieldType =
-  | "text"
-  | "textarea"
-  | "richText"
-  | "number"
-  | "boolean"
-  | "date"
-  | "datetime"
-  | "time"
-  | "select"
-  | "multiSelect"
-  | "radio"
-  | "relationship"
-  | "array"
-  | "object"
-  | "json"
-  | "blocks"
-  | "image"
-  | "email"
-  | "url"
-  | "icon"
-  | "join"
-  | "row";
-
-// ─── Dynamic options ──────────────────────────────────────────────────────────
-
-/**
- * Arguments passed to a server-side dynamic options resolver.
- *
- * All properties are optional so simple resolvers that fetch from an external
- * API without needing any context (`async () => fetch(...)`) still compile
- * without errors.
- */
-export interface DynamicOptionsResolverArgs {
-  /**
-   * The configured database adapter. Use it to query any collection.
-   *
-   * @example
-   * options: async ({ db }) => {
-   *   const result = await db.find({ collection: 'categories' })
-   *   return result.docs.map(c => ({ label: c.name, value: c.id }))
-   * }
-   */
-  db?: DatabaseAdapter;
-  /**
-   * The authenticated user making the request, or `undefined` for
-   * unauthenticated requests. Use it to filter options per user.
-   *
-   * @example
-   * options: async ({ user, db }) => {
-   *   if (!user) return []
-   *   const teams = await db.find({ collection: 'teams', where: { owner: { equals: user.sub } } })
-   *   return teams.docs.map(t => ({ label: t.name, value: t.id }))
-   * }
-   */
-  user?: AuthenticatedUser;
-  /**
-   * HTTP request context. Sibling field values selected in the Admin UI are
-   * forwarded as query parameters and accessible via `req.query`.
-   *
-   * @example
-   * // Cascading dropdown: the Admin UI appends ?country=ca
-   * options: async ({ req }) => {
-   *   const country = req.query.country ?? 'us'
-   *   const regions = await fetch(`/api/regions?country=${country}`)
-   *   return regions.json()
-   * }
-   */
-  req: HookRequestContext;
-}
-
-/** A function that returns option items for a `select`, `multiSelect`, or `radio` field. */
-export type DynamicOptionsResolver = (
-  args: DynamicOptionsResolverArgs,
-) => Promise<DynamicOptionItem[]> | DynamicOptionItem[];
-
-/**
- * Config-object form for a dynamic options resolver. Use this when you also
- * want server-side caching via `cacheTTL`.
- *
- * @example
- * options: {
- *   resolve: async () => fetchCountriesFromApi(),
- *   cacheTTL: 300, // cache for 5 minutes
- * }
- */
-export interface DynamicOptionsConfig {
-  /** The resolver function. Receives the same args as a bare function resolver. */
-  resolve: DynamicOptionsResolver;
-  /**
-   * Time-to-live in **seconds** for caching the resolver result on the server.
-   *
-   * Useful for resolvers that call rate-limited external APIs. When set, the
-   * result is reused for all identical requests within the TTL window.
-   *
-   * Not applied when the resolver uses query parameters (`req.query`), since
-   * parameterised results are request-specific.
-   */
-  cacheTTL?: number;
-}
-
-/** A single option item — either a plain string or a label/value pair. */
-export type DynamicOptionItem = string | { label: string; value: unknown };
-
-// ─── Block (for blocks fields) ───────────────────────────────────────────────
-
-/**
- * A single block type for use inside a `blocks` field.
- *
- * Each block has its own field schema. At runtime, every block item in the
- * array carries a `blockType` property that matches the block's `slug`.
- *
- * @example
- * const HeroBlock: Block = {
- *   slug: 'hero',
- *   labels: { singular: 'Hero', plural: 'Heroes' },
- *   fields: [
- *     { name: 'heading', type: 'text', required: true },
- *     { name: 'image', type: 'relationship', relationTo: 'media' },
- *   ],
- * }
- */
-export interface Block {
-  /** Unique identifier for this block type. Stored as `blockType` on each item. */
-  slug: string;
-  /** Human-readable labels shown in the Admin UI block picker. */
-  labels?: {
-    singular: string;
-    plural: string;
-  };
-  /** Fields that make up this block's data shape. */
-  fields: Field[];
-}
+export * from "./admin.js";
+export * from "./admin-auth.js";
+export * from "./documents.js";
+export * from "./request.js";
+export * from "./schema-core.js";
+export * from "./schema-inference.js";
+export * from "./workflows.js";
 
 // ─── Field-level hook types ───────────────────────────────────────────────────
 
@@ -342,10 +38,7 @@ export interface Block {
  * const hashPassword: FieldBeforeChangeHook<string> = async ({ value }) =>
  *   value ? bcrypt.hash(value, 10) : value
  */
-export type FieldBeforeChangeHook<
-  TValue = unknown,
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {
   /** The current value of this field (after any previous hooks in the chain). */
   value: TValue;
   /** The full document as it existed before this update. `undefined` on create. */
@@ -376,10 +69,7 @@ export type FieldBeforeChangeHook<
  * const maskForPublic: FieldAfterReadHook<string> = ({ value, user }) =>
  *   user?.role === 'admin' ? value : '••••••••'
  */
-export type FieldAfterReadHook<
-  TValue = unknown,
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {
   /** The raw field value as stored in the database. */
   value: TValue;
   /** The full document being returned (with defaults applied). */
@@ -397,10 +87,10 @@ export type FieldAfterReadHook<
  * @deprecated Use {@link FieldBeforeChangeHook} or {@link FieldAfterReadHook} instead.
  * This alias remains for backwards compatibility.
  */
-export type FieldHook<
-  TDoc extends object = Record<string, unknown>,
-  TValue = unknown,
-> = FieldBeforeChangeHook<TValue, TDoc>;
+export type FieldHook<TDoc extends object = Record<string, unknown>, TValue = unknown> = FieldBeforeChangeHook<
+  TValue,
+  TDoc
+>;
 
 // ─── Collection-level hook types ──────────────────────────────────────────────
 
@@ -447,9 +137,7 @@ export type CollectionBeforeReadHook = (args: {
  *   fullName: `${doc.firstName} ${doc.lastName}`.trim(),
  * })
  */
-export type CollectionAfterReadHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The document as fetched from the database (with defaults applied). */
   doc: TDoc;
   /** The HTTP request context. */
@@ -488,9 +176,7 @@ export type CollectionAfterReadHook<
  *   return data
  * }
  */
-export type CollectionBeforeChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The incoming data payload being written. */
   data: Partial<TDoc>;
   /**
@@ -558,9 +244,7 @@ export type CollectionBeforeChangeHook<
  *   }
  * }
  */
-export type CollectionAfterChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The document as it was written to the database. */
   doc: TDoc;
   /**
@@ -596,9 +280,7 @@ export type CollectionAfterChangeHook<
  *   if (refs.total > 0) throw new Error(`${refs.total} post(s) still reference this category.`)
  * }
  */
-export type CollectionBeforeDeleteHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The ID of the document about to be deleted. */
   id: string;
   /** The full document about to be deleted. */
@@ -627,9 +309,7 @@ export type CollectionBeforeDeleteHook<
  *
  * @template TDoc  The shape of the collection's document.
  */
-export type CollectionAfterDeleteHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The ID of the deleted document. */
   id: string;
   /** The document as it was just before deletion. */
@@ -654,26 +334,23 @@ export type GlobalBeforeReadHook = CollectionBeforeReadHook;
  * Runs after the global document is fetched, before the response is sent.
  * @see {@link CollectionAfterReadHook}
  */
-export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> =
-  (args: {
-    doc: TDoc;
-    req: HookRequestContext;
-    user?: AuthenticatedUser;
-    /**
-     * Database adapter for cross-collection reads. Write operations (create,
-     * update, delete) will throw — use `afterChange` for writes.
-     */
-    db: ReadonlyDatabaseAdapter;
-  }) => TDoc | Promise<TDoc>;
+export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
+}) => TDoc | Promise<TDoc>;
 
 /**
  * Runs before the global document is updated.
  * Operation is always `'update'` (globals cannot be created or deleted).
  * @see {@link CollectionBeforeChangeHook}
  */
-export type GlobalBeforeChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type GlobalBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   data: Partial<TDoc>;
   doc?: TDoc;
   req: HookRequestContext;
@@ -694,9 +371,7 @@ export type GlobalBeforeChangeHook<
  *
  * @see {@link CollectionAfterChangeHook}
  */
-export type GlobalAfterChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type GlobalAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   doc: TDoc;
   previousDoc?: TDoc;
   req: HookRequestContext;
@@ -715,16 +390,15 @@ export type GlobalAfterChangeHook<
  *
  * This broad type remains for backwards compatibility with the internal hook runner.
  */
-export type HookFunction<TDoc extends object = Record<string, unknown>> =
-  (args: {
-    data?: Partial<TDoc>;
-    doc?: TDoc;
-    user?: AuthenticatedUser;
-    req?: HookRequestContext;
-    operation?: "create" | "update" | "delete";
-    db?: DatabaseAdapter;
-    [key: string]: unknown;
-  }) => unknown | Promise<unknown>;
+export type HookFunction<TDoc extends object = Record<string, unknown>> = (args: {
+  data?: Partial<TDoc>;
+  doc?: TDoc;
+  user?: AuthenticatedUser;
+  req?: HookRequestContext;
+  operation?: "create" | "update" | "delete";
+  db?: DatabaseAdapter;
+  [key: string]: unknown;
+}) => unknown | Promise<unknown>;
 
 // ─── Access control ───────────────────────────────────────────────────────────
 
@@ -758,435 +432,12 @@ export type HookFunction<TDoc extends object = Record<string, unknown>> =
  *   update: "user.roles contains 'editor'",
  * }
  */
-export type AccessFunction<TDoc extends object = Record<string, unknown>> =
-  (args: {
-    user: AuthenticatedUser | undefined;
-    doc?: TDoc;
-    data?: Partial<TDoc>;
-    req: HookRequestContext;
-  }) =>
-    | boolean
-    | Record<string, unknown>
-    | Promise<boolean | Record<string, unknown>>;
-
-// ─── Field definition ─────────────────────────────────────────────────────────
-
-/**
- * Shared base properties present on every field type.
- * The exported `Field` union type extends this with a typed `hooks` block.
- */
-interface FieldBase {
-  /**
-   * The database column / JSON key for this field.
-   * Use camelCase. Omit for layout-only fields (`row`, `join`).
-   */
-  name?: string;
-
-  /**
-   * Human-readable label shown next to the field in the Admin UI.
-   * Defaults to a title-cased version of `name` if omitted.
-   */
-  label?: string;
-
-  /**
-   * If `true`, the field must have a non-empty value.
-   * Enforced on both client (Admin UI) and server (API).
-   */
-  required?: boolean;
-
-  /**
-   * If `true`, the database adapter enforces a unique constraint for this
-   * field across the collection.
-   */
-  unique?: boolean;
-
-  /**
-   * The initial value written to new documents when no value is provided.
-   * The type should match the field type.
-   */
-  defaultValue?: unknown;
-
-  /**
-   * Available choices for `select`, `multiSelect`, and `radio` fields.
-   *
-   * Three forms are accepted:
-   *
-   * **1. Static array** — fixed list known at build time:
-   * ```ts
-   * options: [{ label: 'Draft', value: 'draft' }, { label: 'Published', value: 'published' }]
-   * ```
-   *
-   * **2. Server-side resolver** — runs on the server (never in the browser).
-   * Use for DB queries, secret API keys, or user-filtered lists.
-   * The Admin UI fetches results from `GET /api/dyrected/options/:slug/:field`.
-   * ```ts
-   * options: async ({ db, user }) => {
-   *   const cats = await db.find({ collection: 'categories' })
-   *   return cats.docs.map(c => ({ label: c.name, value: c.id }))
-   * }
-   * ```
-   *
-   * **3. With caching** (`{ resolve, cacheTTL }`) — same as above but the
-   * result is cached on the server for `cacheTTL` seconds:
-   * ```ts
-   * options: { resolve: async () => fetchFromSlowApi(), cacheTTL: 300 }
-   * ```
-   *
-   * For **instant client-side cascading dropdowns** driven by another field's
-   * value, use `admin.hooks.options` instead (no network round-trip).
-   */
-  options?:
-    | string[]
-    | { label: string; value: unknown }[]
-    | DynamicOptionsResolver
-    | DynamicOptionsConfig;
-
-  /** For `relationship` fields — the slug of the collection to link to. */
-  relationTo?: string;
-
-  /**
-   * For `relationship` and `image` fields — if `true`, stores an array of
-   * IDs instead of a single ID.
-   */
-  hasMany?: boolean;
-
-  /** Sub-fields for `array` and `object` field types. */
-  fields?: Field[];
-
-  /** Block type definitions for `blocks` fields. */
-  blocks?: Block[];
-
-  /**
-   * For `join` fields — the slug of the target collection to show linked
-   * documents from. Paired with `on`.
-   */
-  collection?: string;
-
-  /**
-   * For `join` fields — the name of the `relationship` field on the target
-   * collection that points back to this collection.
-   */
-  on?: string;
-
-  /**
-   * For `join` fields — maximum number of related documents to return.
-   * Defaults to 10. Set to 0 to return all.
-   */
-  limit?: number;
-
-  /**
-   * Field-level read/update access control.
-   *
-   * - `read`: if it returns `false`, the field is stripped from API responses.
-   * - `update`: if it returns `false`, incoming values for this field are silently ignored.
-   */
-  access?: {
-    read?: AccessFunction | string;
-    update?: AccessFunction | string;
-  };
-
-  /**
-   * Admin UI options for this field. None of these properties affect the API
-   * or the database — they are purely presentational.
-   */
-  admin?: {
-    /** Placeholder text shown when the input is empty. */
-    placeholder?: string;
-
-    /** String key referencing a custom React component to render this input field. */
-    component?: string;
-
-    /** Help text rendered below the field in the Admin UI. */
-    description?: string;
-
-    /**
-     * If `true`, the field is hidden from the Admin form entirely.
-     * Its value is preserved in the database and still returned by the API.
-     */
-    hidden?: boolean;
-
-    /**
-     * If `false`, this field cannot be used in list filters and will be stripped from incoming `where` queries.
-     * Defaults to `true` for supported field types.
-     */
-    filterable?: boolean;
-
-    /**
-     * If `true`, the field is rendered as non-editable in the Admin UI.
-     * The value is still included in form submissions.
-     */
-    readOnly?: boolean;
-
-    /**
-     * A function (or Jexl expression string) evaluated reactively as the
-     * editor types. Return `true` to show the field, `false` to hide it.
-     *
-     * Receives the current form values as `data` and sibling-level values
-     * as `siblingData`.
-     *
-     * @example
-     * // Only show the discount field when a coupon code is entered
-     * condition: (data) => !!data.couponCode
-     */
-    condition?:
-      | ((
-          data: Record<string, unknown>,
-          siblingData: Record<string, unknown>,
-        ) => boolean)
-      | string;
-
-    /**
-     * Presentation style for fields with multiple built-in admin renderers.
-     * - `select`: use `radio` for 2–5 options, otherwise defaults to `select`
-     * - `boolean`: use `checkbox` (default) or `switch`
-     */
-    layout?: "checkbox" | "switch" | "radio" | "select" | string;
-
-    /**
-     * For `select` fields with `layout: 'radio'` — orientation of the radio buttons.
-     * @default 'vertical'
-     */
-    direction?: "horizontal" | "vertical";
-
-    /**
-     * Assigns this field to a named tab in the Admin form.
-     * When any field in the collection has a `tab`, the form switches to a
-     * tabbed layout. Fields without a `tab` are grouped under "General".
-     */
-    tab?: string;
-
-    /**
-     * CSS width of this field when it is a child of a `row` field.
-     * Accepts any CSS length value, e.g. `'50%'`, `'200px'`, `'1fr'`.
-     */
-    width?: string;
-
-    /**
-     * Client-side Admin UI hooks for this field.
-     *
-     * These run **in the browser** every time any sibling field value changes.
-     * They are completely separate from the server-side `hooks` property.
-     *
-     * `onChange` is typed per-field via the discriminated `Field` union —
-     * see `FieldAdminHooks<TValue>` below.
-     */
-    hooks?: {
-      /**
-       * For `select`, `multiSelect`, and `radio` fields only.
-       *
-       * Computes the **available choices** for this field based on other
-       * field values — instant, zero-latency cascading dropdowns.
-       *
-       * Runs in the browser every time any sibling field changes. When the
-       * returned list changes, the field's current value is automatically
-       * cleared if it is no longer a valid choice.
-       *
-       * Use the top-level `options` resolver (server-side) when:
-       * - Your option list requires a DB query or a secret API key
-       * - You want server-side caching (`cacheTTL`)
-       *
-       * @example
-       * // Country → State/Province cascading dropdown
-       * options: ({ siblingData }) => {
-       *   if (siblingData.country === 'us') {
-       *     return [{ label: 'California', value: 'CA' }, { label: 'New York', value: 'NY' }]
-       *   }
-       *   return []
-       * }
-       */
-      options?: (args: {
-        /** Current values of all fields at the same nesting level. */
-        siblingData: Record<string, unknown>;
-        /** Current values of the entire form. */
-        data: Record<string, unknown>;
-      }) =>
-        | Array<string | { label: string; value: unknown }>
-        | Promise<Array<string | { label: string; value: unknown }>>;
-    };
-  };
-
-  /**
-   * For database migrations: if set, data stored under this key in the database
-   * will be migrated to the current field `name` on next schema sync.
-   */
-  renameTo?: string;
-
-  /**
-   * For SQL adapters: if `true`, this field is extracted to a real column
-   * instead of being stored inside a JSON blob. Improves query performance
-   * for frequently-filtered fields.
-   */
-  promoted?: boolean;
-}
-
-/**
- * Typed hooks block for a field whose stored value is `TValue`.
- *
- * The return type of the callbacks is kept as `unknown` here so that TypeScript
- * can narrow the contextual type from the discriminated `Field` union without
- * bidirectional inference conflicts. Use the explicit `FieldBeforeChangeHook<T>`
- * and `FieldAfterReadHook<T>` types when you need checked return types.
- */
-type FieldHooks<TValue> = {
-  /**
-   * Field-level lifecycle hooks.
-   *
-   * - `beforeChange` — transform or validate the value before it is saved.
-   *   `value` is typed to the field's own value type (e.g. `string` for
-   *   `text`, `number` for `number`, `boolean` for `boolean`).
-   * - `afterRead` — transform the value after it is read, before the API response.
-   *
-   * Both hook types run **recursively** inside `array`, `object`, and `blocks` fields.
-   *
-   * @example
-   * hooks: {
-   *   beforeChange: [({ value }) => value.trim()],          // value: string ✓
-   *   afterRead:    [({ value, user }) => user?.role === 'admin' ? value : '****'],
-   * }
-   */
-  hooks?: {
-    beforeChange?: Array<
-      (args: {
-        value: TValue;
-        originalDoc?: Record<string, unknown>;
-        data: Record<string, unknown>;
-        user?: AuthenticatedUser;
-      }) => unknown
-    >;
-    afterRead?: Array<
-      (args: {
-        value: TValue;
-        doc: Record<string, unknown>;
-        user?: AuthenticatedUser;
-      }) => unknown
-    >;
-  };
-};
-
-/**
- * Typed client-side admin hook block for a field whose value type is `TValue`.
- *
- * Intersected into each discriminated `Field` union member so that
- * `admin.hooks.onChange` receives a `value` typed to the field's own type.
- * The return type is `unknown` for the same reason as `FieldHooks` — to
- * prevent bidirectional inference from conflicting with union discrimination.
- */
-type FieldAdminHooks<TValue> = {
-  admin?: {
-    hooks?: {
-      /**
-       * Derives or computes this field's **value** from other field values in
-       * real time — without any network request.
-       *
-       * Return a new value to update this field. Return `undefined` to leave
-       * it unchanged.
-       *
-       * Use `setValue` for imperative updates inside async callbacks.
-       *
-       * ⚠️ Never return an options array here — use `admin.hooks.options` for that.
-       *
-       * @example
-       * // Auto-generate a URL slug from the title field
-       * onChange: ({ value, siblingData }) => {
-       *   const base = (siblingData.title ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-       *   return base.includes(value) ? base : value;
-       * }
-       */
-      onChange?: (args: {
-        /** The current value of this field — typed to match the field's `type`. */
-        value: TValue;
-        /** Current values of all fields at the same nesting level. */
-        siblingData: Record<string, unknown>;
-        /** Current values of the entire form. */
-        data: Record<string, unknown>;
-        /** Imperative setter — use inside async callbacks when you can't return a value. */
-        setValue: (value: unknown) => void;
-      }) => unknown;
-    };
-  };
-};
-
-/**
- * Defines a single field on a collection or global.
- *
- * ## Typed `value` in hook callbacks
- *
- * Three hook callbacks automatically receive a `value` typed to the field's
- * own value type — no manual annotations needed:
- *
- * | Hook | When it runs |
- * |------|-------------|
- * | `hooks.beforeChange` | Server — before the value is written to the DB |
- * | `hooks.afterRead`    | Server — after the value is read, before the API response |
- * | `admin.hooks.onChange` | Browser — whenever a sibling field changes in the Admin UI |
- *
- * Type mapping by `type` property:
- * - `text / textarea / email / url / icon / date / select / radio` → `string`
- * - `number` → `number`
- * - `boolean` → `boolean`
- * - `multiSelect` → `string[]`
- * - `relationship / image` → `string | string[]`
- * - `richText / json` → `Record<string, unknown>`
- * - `object / array / blocks` → `unknown`
- *
- * ```ts
- * {
- *   name: 'slug', type: 'text',
- *   hooks: {
- *     beforeChange: [({ value }) => value.toLowerCase()],  // value: string ✓
- *     afterRead:    [({ value }) => value.trim()],         // value: string ✓
- *   },
- *   admin: {
- *     hooks: {
- *       onChange: ({ value, siblingData }) =>              // value: string ✓
- *         (siblingData.title as string ?? '').toLowerCase().replace(/\s+/g, '-'),
- *     },
- *   },
- * }
- * ```
- *
- * **Important**: write `type` as a plain string literal — do **not** use `as const`.
- * TypeScript's `const` generic inference already preserves literal types, and
- * adding `as const` to the discriminant property prevents the contextual type
- * from flowing into the hook callbacks.
- *
- * ```ts
- * // ✓ correct
- * { name: 'slug', type: 'text', hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
- *
- * // ✗ breaks value typing
- * { name: 'slug', type: 'text' as const, hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
- * ```
- */
-export type Field = FieldBase &
-  (
-    | ({
-        type:
-          | "text"
-          | "textarea"
-          | "email"
-          | "url"
-          | "icon"
-          | "date"
-          | "datetime"
-          | "time"
-          | "select"
-          | "radio";
-      } & FieldHooks<string> &
-        FieldAdminHooks<string>)
-    | ({ type: "number" } & FieldHooks<number> & FieldAdminHooks<number>)
-    | ({ type: "boolean" } & FieldHooks<boolean> & FieldAdminHooks<boolean>)
-    | ({ type: "multiSelect" } & FieldHooks<string[]> &
-        FieldAdminHooks<string[]>)
-    | ({ type: "relationship" | "image" } & FieldHooks<string | string[]> &
-        FieldAdminHooks<string | string[]>)
-    | ({ type: "richText" | "json" } & FieldHooks<Record<string, unknown>> &
-        FieldAdminHooks<Record<string, unknown>>)
-    | ({
-        type: "object" | "array" | "blocks" | "join" | "row";
-      } & FieldHooks<unknown> &
-        FieldAdminHooks<unknown>)
-  );
+export type AccessFunction<TDoc extends object = Record<string, unknown>> = (args: {
+  user: AuthenticatedUser | undefined;
+  doc?: TDoc;
+  data?: Partial<TDoc>;
+  req: HookRequestContext;
+}) => boolean | Record<string, unknown> | Promise<boolean | Record<string, unknown>>;
 
 // ─── Collection config ────────────────────────────────────────────────────────
 
@@ -1225,9 +476,7 @@ export type Field = FieldBase &
  * @template TDoc  The TypeScript shape of a document in this collection.
  *                 Defaults to `Record<string, unknown>` for untyped usage.
  */
-export interface CollectionConfig<
-  TDoc extends object = Record<string, unknown>,
-> {
+export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
   /**
    * Unique identifier for this collection.
    * Used as the URL segment (`/api/collections/:slug`) and the database table/collection name.
@@ -1412,9 +661,7 @@ export interface CollectionConfig<
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?:
-      | string
-      | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.
@@ -1433,79 +680,6 @@ export interface CollectionConfig<
      */
     urlPattern?: string;
   };
-}
-
-// ─── Upload config ────────────────────────────────────────────────────────────
-
-/**
- * Upload configuration for collections that store files.
- * Set `upload: true` on the collection to use all defaults, or pass this
- * object to customise allowed types, size limits, and image processing.
- */
-export interface UploadConfig {
-  /**
-   * Allowed MIME types. Requests with other MIME types are rejected with `400`.
-   * @example ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-   */
-  allowedMimeTypes?: string[];
-
-  /**
-   * Maximum file size in **bytes**.
-   * @example 10 * 1024 * 1024  // 10 MB
-   */
-  maxFileSize?: number;
-
-  /**
-   * Local filesystem path where files are stored.
-   * Only used by the `LocalStorage` adapter.
-   */
-  staticDir?: string;
-
-  /**
-   * Public URL prefix prepended to filenames when generating download URLs.
-   * Only used by the `LocalStorage` adapter.
-   * @example '/uploads'
-   */
-  staticURL?: string;
-
-  /**
-   * The `imageSizes` entry name to use as the thumbnail in the Admin media grid.
-   * @example 'thumbnail'
-   */
-  adminThumbnail?: string;
-
-  /**
-   * Additional image sizes to generate when an image is uploaded.
-   * Requires an `ImageService` to be configured (e.g. `@dyrected/image-sharp`).
-   *
-   * @example
-   * imageSizes: [
-   *   { name: 'thumbnail', width: 300, height: 300, fit: 'cover' },
-   *   { name: 'card', width: 800 },
-   * ]
-   */
-  imageSizes?: {
-    /** Identifier used to access this size, e.g. `doc.sizes.thumbnail`. */
-    name: string;
-    /** Target width in pixels. */
-    width?: number;
-    /** Target height in pixels. */
-    height?: number;
-    /** sharp crop strategy (`'entropy'`, `'attention'`, etc.). */
-    crop?: string;
-    /**
-     * sharp fit strategy.
-     * @see https://sharp.pixelplumbing.com/api-resize#parameters
-     */
-    fit?: string;
-    /**
-     * If `true`, images smaller than the target size are not upscaled.
-     * @default true
-     */
-    withoutEnlargement?: boolean;
-    /** Additional sharp format options forwarded to the output pipeline. */
-    formatOptions?: Record<string, unknown>;
-  }[];
 }
 
 // ─── Global config ────────────────────────────────────────────────────────────
@@ -1600,52 +774,6 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   initialData?: Partial<TDoc>;
 }
 
-// ─── Base document ────────────────────────────────────────────────────────────
-
-/**
- * The minimum shape of every document returned by the database layer.
- *
- * All documents have an `id` field assigned by the adapter. Additional fields
- * are stored as `unknown` until you narrow them with your own interface.
- *
- * Use this as the base when declaring your collection document types:
- * ```ts
- * interface Post extends BaseDocument {
- *   title: string
- *   slug: string
- * }
- * ```
- */
-export interface BaseDocument {
-  /** The document's unique identifier, assigned by the database adapter. */
-  id: string;
-  [key: string]: any;
-}
-
-// ─── Paginated result ─────────────────────────────────────────────────────────
-
-/**
- * The envelope returned by collection list endpoints (`GET /api/collections/:slug`).
- *
- * @template T  The document type.
- */
-export interface PaginatedResult<T = Record<string, any>> {
-  /** The documents on the current page. */
-  docs: T[];
-  /** Total number of documents matching the query (across all pages). */
-  total: number;
-  /** Maximum number of documents per page as requested. */
-  limit: number;
-  /** The current page number (1-indexed). */
-  page: number;
-  /** Total number of pages given the current `limit`. */
-  totalPages: number;
-  /** Whether a next page exists. */
-  hasNextPage: boolean;
-  /** Whether a previous page exists. */
-  hasPrevPage: boolean;
-}
-
 // ─── Database adapter ─────────────────────────────────────────────────────────
 
 /**
@@ -1665,23 +793,13 @@ export interface DatabaseAdapter {
   }): Promise<PaginatedResult>;
 
   /** Find a single document by its ID. Returns `null` if not found. */
-  findOne(args: {
-    collection: string;
-    id: string;
-  }): Promise<BaseDocument | null>;
+  findOne(args: { collection: string; id: string }): Promise<BaseDocument | null>;
 
   /** Insert a new document and return it with its generated `id`. */
-  create(args: {
-    collection: string;
-    data: Record<string, unknown>;
-  }): Promise<BaseDocument>;
+  create(args: { collection: string; data: Record<string, unknown> }): Promise<BaseDocument>;
 
   /** Update a document by ID and return the updated document. */
-  update(args: {
-    collection: string;
-    id: string;
-    data: Record<string, unknown>;
-  }): Promise<BaseDocument>;
+  update(args: { collection: string; id: string; data: Record<string, unknown> }): Promise<BaseDocument>;
 
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
@@ -1690,20 +808,14 @@ export interface DatabaseAdapter {
   getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 
   /** Create or replace the singleton document for a global. */
-  updateGlobal(args: {
-    slug: string;
-    data: Record<string, unknown>;
-  }): Promise<Record<string, unknown>>;
+  updateGlobal(args: { slug: string; data: Record<string, unknown> }): Promise<Record<string, unknown>>;
 
   /**
    * Sync the database schema with the current collection and global configs.
    * Called on startup to create tables/collections that don't exist yet.
    * Not all adapters implement this (e.g. MongoDB is schema-less).
    */
-  sync?(
-    collections: CollectionConfig[],
-    globals: GlobalConfig[],
-  ): Promise<void>;
+  sync?(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;
 
   /**
    * Execute a raw SQL query or database command.
@@ -1726,34 +838,7 @@ export interface DatabaseAdapter {
  * and field-level hooks. Write operations are available in `afterChange`
  * and `afterDelete` hooks where the full {@link DatabaseAdapter} is provided.
  */
-export type ReadonlyDatabaseAdapter = Pick<
-  DatabaseAdapter,
-  "find" | "findOne" | "getGlobal"
->;
-
-// ─── File / storage ───────────────────────────────────────────────────────────
-
-/**
- * Metadata returned after a file is uploaded and stored.
- * Stored on the document in upload collections.
- */
-export interface FileData {
-  filename: string;
-  filesize?: number;
-  mimeType: string;
-  /** Public URL of the stored file. */
-  url: string;
-  width?: number;
-  height?: number;
-  focalPoint?: { x: number; y: number };
-  /** Base64-encoded BlurHash string for progressive image loading. */
-  blurhash?: string;
-  /** `'upload'` for server-stored files; `'external'` for provider-managed files. */
-  type?: "upload" | "external";
-  provider?: string;
-  provider_metadata?: unknown;
-  [key: string]: unknown;
-}
+export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal">;
 
 /**
  * The interface every storage adapter must implement.
@@ -1766,12 +851,7 @@ export interface StorageAdapter {
    * Upload a file and return its metadata (URL, dimensions, etc.).
    * The `prefix` is a path prefix used for multi-tenant setups.
    */
-  upload(args: {
-    filename: string;
-    buffer: Uint8Array;
-    mimeType: string;
-    prefix?: string;
-  }): Promise<FileData>;
+  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;
 
   /** Delete a file by its stored filename. */
   delete(args: { filename: string }): Promise<void>;
@@ -1785,9 +865,7 @@ export interface StorageAdapter {
    * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on
    * direct CDN URLs instead.
    */
-  resolve?(args: {
-    filename: string;
-  }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;
+  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;
 }
 
 // ─── Image service ────────────────────────────────────────────────────────────
@@ -1804,7 +882,7 @@ export interface ImageService {
   process(args: {
     buffer: Uint8Array;
     mimeType: string;
-    config?: CollectionConfig["upload"];
+    config?: boolean | UploadConfig;
     focalPoint?: { x: number; y: number };
   }): Promise<{
     metadata: {
@@ -1814,219 +892,9 @@ export interface ImageService {
       blurhash?: string;
     };
     /** Generated image sizes keyed by their `name`. */
-    sizes?: Record<
-      string,
-      { buffer: Uint8Array; width: number; height: number; filename: string }
-    >;
+    sizes?: Record<string, { buffer: Uint8Array; width: number; height: number; filename: string }>;
   }>;
 }
-
-// ─── Admin branding ───────────────────────────────────────────────────────────
-
-/**
- * Branding and metadata options for the Dyrected Admin UI.
- *
- * @example
- * admin: {
- *   branding: {
- *     logo: '/logo.svg',
- *     primaryColor: '#6366f1',
- *   },
- *   meta: {
- *     titleSuffix: '- My App',
- *   },
- * }
- */
-export interface AdminConfig {
-  /** Custom component slots around the built-in dashboard. */
-  components?: AdminDashboardComponentSlots;
-  branding?: {
-    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
-    logo?: string;
-    /** Compact logo mark used in the collapsed sidebar state. */
-    logoMark?: string;
-    /** Text alternative or addition to the logo image. */
-    logoText?: string;
-    /**
-     * Primary accent colour as any CSS colour value.
-     * @example '#6366f1'
-     * @example 'hsl(240 50% 60%)'
-     */
-    primaryColor?: string;
-    /** Browser tab favicon URL. */
-    favicon?: string;
-    /** Font family for body and UI text. Must be loaded separately. */
-    fontSans?: string;
-    /** Font family for headings. Must be loaded separately. */
-    fontSerif?: string;
-  };
-  meta?: {
-    /**
-     * String appended to every Admin page's `<title>`.
-     * @default '- Dyrected'
-     */
-    titleSuffix?: string;
-  };
-}
-
-// ─── Field inference helpers ──────────────────────────────────────────────────
-
-/**
- * Collapses intersection types into a flat object type for readable IDE tooltips.
- *
- * @example
- * type T = Prettify<{ a: string } & { b: number }>
- * // → { a: string; b: number }
- */
-export type Prettify<T> = { [K in keyof T]: T[K] };
-
-/** Maps a field's runtime type tag to its TypeScript value type. @internal */
-type FieldValueType<F extends Field> = F["type"] extends
-  | "text"
-  | "textarea"
-  | "email"
-  | "url"
-  | "icon"
-  | "date"
-  | "datetime"
-  | "time"
-  | "select"
-  | "radio"
-  ? string
-  : F["type"] extends "number"
-    ? number
-    : F["type"] extends "boolean"
-      ? boolean
-      : F["type"] extends "multiSelect"
-        ? string[]
-        : F["type"] extends "relationship"
-          ? F extends { hasMany: true }
-            ? string[]
-            : string
-          : F["type"] extends "image"
-            ? F extends { hasMany: true }
-              ? string[]
-              : string
-            : F["type"] extends "richText" | "json"
-              ? Record<string, unknown>
-              : F["type"] extends "object"
-                ? F extends { fields: infer SF extends readonly Field[] }
-                  ? Prettify<InferDocShape<SF>>
-                  : Record<string, unknown>
-                : F["type"] extends "array"
-                  ? F extends { fields: infer SF extends readonly Field[] }
-                    ? Array<Prettify<InferDocShape<SF>>>
-                    : unknown[]
-                  : F["type"] extends "blocks"
-                    ? F extends { blocks: infer B extends readonly Block[] }
-                      ? Array<InferBlocksUnion<B>>
-                      : Array<{ blockType: string } & Record<string, unknown>>
-                    : unknown;
-
-/** Build a discriminated-union type covering all possible block shapes. @internal */
-type InferBlocksUnion<Blocks extends readonly Block[]> =
-  Blocks extends readonly [
-    infer B extends Block,
-    ...infer Rest extends readonly Block[],
-  ]
-    ? B["fields"] extends readonly Field[]
-      ?
-          | ({ blockType: B["slug"] } & Prettify<InferDocShape<B["fields"]>>)
-          | InferBlocksUnion<Rest>
-      :
-          | ({ blockType: B["slug"] } & Record<string, unknown>)
-          | InferBlocksUnion<Rest>
-    : never;
-
-/** Converts one field definition to its corresponding document key/value pair. @internal */
-type InferFieldEntry<F extends Field> = F extends {
-  type: "row";
-  fields: infer SF extends readonly Field[];
-}
-  ? InferDocShape<SF>
-  : F extends { type: "join" }
-    ? Record<never, never>
-    : F extends { name: infer N extends string; required: true }
-      ? { [K in N]: FieldValueType<F> }
-      : F extends { name: infer N extends string }
-        ? { [K in N]?: FieldValueType<F> }
-        : Record<never, never>;
-
-/**
- * Infer a document shape from a literal fields tuple.
- *
- * This is used automatically by {@link defineCollection} and {@link defineGlobal}
- * when no explicit `TDoc` type argument is provided — TypeScript derives the
- * document type straight from the `fields` array you write inline.
- *
- * For collections, the inferred type is wrapped with `{ id: string }` (the
- * database adapter always stamps an `id` on created documents). Globals don't
- * get an `id`.
- *
- * @example
- * const fields = [
- *   { name: 'title', type: 'text', required: true },
- *   { name: 'published', type: 'boolean' },
- * ] as const satisfies Field[];
- *
- * type Doc = InferDocShape<typeof fields>;
- * // → { title: string; published?: boolean }
- */
-export type InferDocShape<Fields extends readonly Field[]> =
-  Fields extends readonly []
-    ? Record<never, never>
-    : Fields extends readonly [
-          infer Head extends Field,
-          ...infer Tail extends readonly Field[],
-        ]
-      ? InferFieldEntry<Head> & InferDocShape<Tail>
-      : Record<string, unknown>;
-
-// ─── Automatic system / collection-kind doc fields ───────────────────────────
-
-/**
- * Audit fields automatically injected into every collection document at runtime.
- * They are always present in API responses but hidden in the Admin UI by default.
- */
-export type SystemDocFields = {
-  createdAt?: string;
-  updatedAt?: string;
-  /** ID of the user who created the document. */
-  createdBy?: string;
-  /** ID of the user who last updated the document. */
-  updatedBy?: string;
-};
-
-/**
- * Fields automatically injected into collections with `auth: true`.
- * `password` is part of the schema but is stripped from API read responses.
- */
-export type AuthDocFields = {
-  email: string;
-  password?: string;
-  roles?: string[];
-};
-
-/**
- * Fields automatically added to upload/media collection documents.
- * These mirror the `FileData` interface returned by storage adapters.
- */
-export type UploadDocFields = {
-  filename: string;
-  filesize?: number;
-  mimeType: string;
-  /** Public URL of the stored file. */
-  url: string;
-  width?: number;
-  height?: number;
-  focalPoint?: { x: number; y: number };
-  /** Base64 BlurHash for progressive image loading. */
-  blurhash?: string;
-  sizes?: Record<
-    string,
-    { filename?: string; url?: string; width?: number; height?: number }
-  >;
-};
 
 // ─── Root config ──────────────────────────────────────────────────────────────
 
@@ -2079,6 +947,13 @@ export interface DyrectedConfig {
   admin?: AdminConfig;
 
   /**
+   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).
+   * This is separate from collection-level `auth: true`, which continues to
+   * power application/customer auth independently.
+   */
+  adminAuth?: AdminAuthConfig;
+
+  /**
    * Email transport configuration. Required for welcome emails, password
    * resets, and invite links.
    *
@@ -2094,11 +969,7 @@ export interface DyrectedConfig {
     /** The `From` address for all outbound emails. */
     from: string;
     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
-    send: (args: {
-      to: string;
-      subject: string;
-      html: string;
-    }) => Promise<void>;
+    send: (args: { to: string; subject: string; html: string }) => Promise<void>;
     /** Override the default email templates. */
     templates?: {
       welcome?: (args: { email: string }) => { subject?: string; html: string };
@@ -2168,5 +1039,7 @@ export interface DyrectedConfig {
   ) => Promise<{
     collections?: CollectionConfig<any>[];
     globals?: GlobalConfig<any>[];
+    admin?: AdminConfig;
+    adminAuth?: AdminAuthConfig;
   }>;
 }

@@ -138,51 +138,6 @@ Keep provider credentials in environment variables, never in the configuration s
 The following region is generated from current public exports. Do not edit it manually.
 
 {/* GENERATED:REFERENCE-CONFIGURATION:START */}
-## AdminConfig
-
-Branding and metadata options for the Dyrected Admin UI.
-
-```ts
-export interface AdminConfig {
-  /** Custom component slots around the built-in dashboard. */
-  components?: AdminDashboardComponentSlots;
-  branding?: {
-    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
-    logo?: string;
-    /** Compact logo mark used in the collapsed sidebar state. */
-    logoMark?: string;
-    /** Text alternative or addition to the logo image. */
-    logoText?: string;
-    /**
-     * Primary accent colour as any CSS colour value.
-     * @example '#6366f1'
-     * @example 'hsl(240 50% 60%)'
-     */
-    primaryColor?: string;
-    /** Browser tab favicon URL. */
-    favicon?: string;
-    /** Font family for body and UI text. Must be loaded separately. */
-    fontSans?: string;
-    /** Font family for headings. Must be loaded separately. */
-    fontSerif?: string;
-  };
-  meta?: {
-    /**
-     * String appended to every Admin page's `<title>`.
-     * @default '- Dyrected'
-     */
-    titleSuffix?: string;
-  };
-}
-```
-
-| Member | Signature | Description |
-| --- | --- | --- |
-| <code>components</code> | <code>components?: AdminDashboardComponentSlots</code> | Custom component slots around the built-in dashboard. |
-| <code>branding</code> | <code>branding?: &#123;     /** Full logo image shown in the expanded sidebar. URL or imported image asset. */     logo?: string;     /** Compact logo mark used in the collapsed sidebar state. */     logoMark?: string;     /** Text alternative or addition to the logo image. */     logoText?: string;     /**      * Primary accent colour as any CSS colour value.      * @example '#6366f1'      * @example 'hsl(240 50% 60%)'      */     primaryColor?: string;     /** Browser tab favicon URL. */     favicon?: string;     /** Font family for body and UI text. Must be loaded separately. */     fontSans?: string;     /** Font family for headings. Must be loaded separately. */     fontSerif?: string;   &#125;</code> |  |
-| <code>meta</code> | <code>meta?: &#123;     /**      * String appended to every Admin page's &#96;&lt;title&gt;&#96;.      * @default '- Dyrected'      */     titleSuffix?: string;   &#125;</code> |  |
-
-
 ## CollectionConfig
 
 Defines a Dyrected collection — a named set of documents with a shared schema.
@@ -217,9 +172,7 @@ export const Posts = defineCollection<Post>({
 ```
 
 ```ts
-export interface CollectionConfig<
-  TDoc extends object = Record<string, unknown>,
-> {
+export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
   /**
    * Unique identifier for this collection.
    * Used as the URL segment (`/api/collections/:slug`) and the database table/collection name.
@@ -404,9 +357,7 @@ export interface CollectionConfig<
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?:
-      | string
-      | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.
@@ -443,7 +394,7 @@ export interface CollectionConfig<
 | <code>workflow</code> | <code>workflow?: WorkflowConfig&lt;TDoc&gt;</code> | Optional state-machine workflow for this collection. Workflow-enabled entries keep an editable working revision and an independent public snapshot, so editing published content never changes the live response. |
 | <code>access</code> | <code>access?: &#123;     read?: AccessFunction&lt;TDoc&gt; &#124; string;     create?: AccessFunction&lt;TDoc&gt; &#124; string;     update?: AccessFunction&lt;TDoc&gt; &#124; string;     delete?: AccessFunction&lt;TDoc&gt; &#124; string;   &#125;</code> | Collection-level access control.  Each key is an operation; the value is a function (or Jexl string) that returns &#96;true&#96; to allow or &#96;false&#96; to deny. Returning a &#96;where&#96;-style object grants access only to matching documents. |
 | <code>hooks</code> | <code>hooks?: &#123;     /**      * Runs before the database is queried. Return a modified &#96;where&#96; object      * to override the query filter.      */     beforeRead?: CollectionBeforeReadHook[];      /**      * Runs after documents are fetched. Return a modified doc to change what      * the client receives. Runs on every document in a list response.      */     afterRead?: CollectionAfterReadHook&lt;TDoc&gt;[];      /**      * Runs before create or update. Return modified data to change what is      * written to the database. Throw to abort the write entirely.      */     beforeChange?: CollectionBeforeChangeHook&lt;TDoc&gt;[];      /**      * Runs after create or update is committed. For side-effects only —      * webhooks, cache busting, notifications. Return value is ignored.      *      * Errors are **isolated**: caught, logged, and discarded so a failing      * side-effect never turns a successful write into an HTTP 500.      * See &#123;@link CollectionAfterChangeHook&#125; for the await-vs-fire-and-forget guidance.      */     afterChange?: CollectionAfterChangeHook&lt;TDoc&gt;[];      /**      * Runs before a document is deleted. Throw to cancel the deletion.      */     beforeDelete?: CollectionBeforeDeleteHook&lt;TDoc&gt;[];      /**      * Runs after a document has been deleted. For cleanup side-effects only.      *      * Errors are **isolated**: caught, logged, and discarded — the deletion is      * already committed and will not be undone.      */     afterDelete?: CollectionAfterDeleteHook&lt;TDoc&gt;[];   &#125;</code> | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the [Hooks reference](/docs/concepts/hooks) for the full lifecycle diagram. |
-| <code>admin</code> | <code>admin?: &#123;     /**      * Lucide icon displayed beside this collection in the Admin sidebar.      * Uses Lucide component names, e.g. &#96;'Newspaper'&#96; or &#96;'ShoppingBag'&#96;.      */     icon?: AdminIconName;      /** Custom component slots for this collection's list view. */     components?: CollectionListComponentSlots;      /**      * The field name used as the document's display title in the Admin list      * view and breadcrumbs. Defaults to &#96;'title'&#96; if the field exists.      */     useAsTitle?: string;      /**      * Field names to show as columns in the Admin list view.      * Defaults to a sensible set of the first few non-structural fields.      */     defaultColumns?: string[];      /**      * Groups this collection under a named section in the Admin sidebar.      * Collections with the same &#96;group&#96; are visually grouped together.      */     group?: string;      /** If &#96;true&#96;, this collection is not shown in the Admin UI sidebar. */     hidden?: boolean;      /** If &#96;false&#96;, disables the filter UI entirely for this collection. Defaults to &#96;true&#96;. */     filterable?: boolean;      /**      * URL to open in the Live Preview pane when editing a document.      * Pass a function to derive the URL from the document's fields.      *      * @example      * previewUrl: (doc) =&gt; &#96;https://mysite.com/blog/$&#123;doc.slug&#125;&#96;      */     previewUrl?:       &#124; string       &#124; ((doc: TDoc, opts: &#123; locale?: string &#125;) =&gt; string &#124; null);      /**      * How the Live Preview pane communicates with the frontend.      * - &#96;'postMessage'&#96; (default) — sends a &#96;postMessage&#96; with the current doc data.      * - &#96;'token'&#96; — passes a short-lived preview token as a query parameter.      */     previewMode?: "postMessage" &#124; "token";      /**      * Frontend URL pattern for this collection, used by &#96;url&#96; fields to      * resolve internal links. Use &#96;&#123;fieldName&#125;&#96; placeholders.      *      * @example      * urlPattern: '/blog/&#123;slug&#125;'   // → /blog/my-post      * urlPattern: '/&#123;slug&#125;'        // → /about      */     urlPattern?: string;   &#125;</code> | Admin UI configuration for this collection. |
+| <code>admin</code> | <code>admin?: &#123;     /**      * Lucide icon displayed beside this collection in the Admin sidebar.      * Uses Lucide component names, e.g. &#96;'Newspaper'&#96; or &#96;'ShoppingBag'&#96;.      */     icon?: AdminIconName;      /** Custom component slots for this collection's list view. */     components?: CollectionListComponentSlots;      /**      * The field name used as the document's display title in the Admin list      * view and breadcrumbs. Defaults to &#96;'title'&#96; if the field exists.      */     useAsTitle?: string;      /**      * Field names to show as columns in the Admin list view.      * Defaults to a sensible set of the first few non-structural fields.      */     defaultColumns?: string[];      /**      * Groups this collection under a named section in the Admin sidebar.      * Collections with the same &#96;group&#96; are visually grouped together.      */     group?: string;      /** If &#96;true&#96;, this collection is not shown in the Admin UI sidebar. */     hidden?: boolean;      /** If &#96;false&#96;, disables the filter UI entirely for this collection. Defaults to &#96;true&#96;. */     filterable?: boolean;      /**      * URL to open in the Live Preview pane when editing a document.      * Pass a function to derive the URL from the document's fields.      *      * @example      * previewUrl: (doc) =&gt; &#96;https://mysite.com/blog/$&#123;doc.slug&#125;&#96;      */     previewUrl?: string &#124; ((doc: TDoc, opts: &#123; locale?: string &#125;) =&gt; string &#124; null);      /**      * How the Live Preview pane communicates with the frontend.      * - &#96;'postMessage'&#96; (default) — sends a &#96;postMessage&#96; with the current doc data.      * - &#96;'token'&#96; — passes a short-lived preview token as a query parameter.      */     previewMode?: "postMessage" &#124; "token";      /**      * Frontend URL pattern for this collection, used by &#96;url&#96; fields to      * resolve internal links. Use &#96;&#123;fieldName&#125;&#96; placeholders.      *      * @example      * urlPattern: '/blog/&#123;slug&#125;'   // → /blog/my-post      * urlPattern: '/&#123;slug&#125;'        // → /about      */     urlPattern?: string;   &#125;</code> | Admin UI configuration for this collection. |
 
 
 ## DyrectedConfig
@@ -487,6 +438,13 @@ export interface DyrectedConfig {
   admin?: AdminConfig;
 
   /**
+   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).
+   * This is separate from collection-level `auth: true`, which continues to
+   * power application/customer auth independently.
+   */
+  adminAuth?: AdminAuthConfig;
+
+  /**
    * Email transport configuration. Required for welcome emails, password
    * resets, and invite links.
    *
@@ -502,11 +460,7 @@ export interface DyrectedConfig {
     /** The `From` address for all outbound emails. */
     from: string;
     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
-    send: (args: {
-      to: string;
-      subject: string;
-      html: string;
-    }) => Promise<void>;
+    send: (args: { to: string; subject: string; html: string }) => Promise<void>;
     /** Override the default email templates. */
     templates?: {
       welcome?: (args: { email: string }) => { subject?: string; html: string };
@@ -576,6 +530,8 @@ export interface DyrectedConfig {
   ) => Promise<{
     collections?: CollectionConfig<any>[];
     globals?: GlobalConfig<any>[];
+    admin?: AdminConfig;
+    adminAuth?: AdminAuthConfig;
   }>;
 }
 ```
@@ -588,11 +544,12 @@ export interface DyrectedConfig {
 | <code>storage</code> | <code>storage?: StorageAdapter</code> | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;. |
 | <code>image</code> | <code>image?: ImageService</code> | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;. |
 | <code>admin</code> | <code>admin?: AdminConfig</code> | Admin UI branding and metadata. |
-| <code>email</code> | <code>email?: &#123;     /** The &#96;From&#96; address for all outbound emails. */     from: string;     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */     send: (args: &#123;       to: string;       subject: string;       html: string;     &#125;) =&gt; Promise&lt;void&gt;;     /** Override the default email templates. */     templates?: &#123;       welcome?: (args: &#123; email: string &#125;) =&gt; &#123; subject?: string; html: string &#125;;       invite?: (args: &#123; token: string; invitedByEmail?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       resetPassword?: (args: &#123; token: string; url?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       passwordChanged?: (args: &#123; email: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;     &#125;;   &#125;</code> | Email transport configuration. Required for welcome emails, password resets, and invite links. |
+| <code>adminAuth</code> | <code>adminAuth?: AdminAuthConfig</code> | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
+| <code>email</code> | <code>email?: &#123;     /** The &#96;From&#96; address for all outbound emails. */     from: string;     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */     send: (args: &#123; to: string; subject: string; html: string &#125;) =&gt; Promise&lt;void&gt;;     /** Override the default email templates. */     templates?: &#123;       welcome?: (args: &#123; email: string &#125;) =&gt; &#123; subject?: string; html: string &#125;;       invite?: (args: &#123; token: string; invitedByEmail?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       resetPassword?: (args: &#123; token: string; url?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       passwordChanged?: (args: &#123; email: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;     &#125;;   &#125;</code> | Email transport configuration. Required for welcome emails, password resets, and invite links. |
 | <code>redis</code> | <code>redis?: &#123;     url: string;   &#125;</code> | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
 | <code>events</code> | <code>events?: &#123;     handlers: LifecycleEventHandler[];     /** Maximum delivery attempts before an event remains failed. Defaults to 8. */     maxAttempts?: number;     /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */     retryDelayMs?: number;   &#125;</code> | Durable lifecycle-event delivery configuration. |
 | <code>cors</code> | <code>cors?: &#123;     origins: string[];   &#125;</code> | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
-| <code>onSchemaFetch</code> | <code>onSchemaFetch?: (     siteId: string,     // eslint-disable-next-line @typescript-eslint/no-explicit-any   ) =&gt; Promise&lt;&#123;     collections?: CollectionConfig&lt;any&gt;[];     globals?: GlobalConfig&lt;any&gt;[];   &#125;&gt;</code> | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
+| <code>onSchemaFetch</code> | <code>onSchemaFetch?: (     siteId: string,     // eslint-disable-next-line @typescript-eslint/no-explicit-any   ) =&gt; Promise&lt;&#123;     collections?: CollectionConfig&lt;any&gt;[];     globals?: GlobalConfig&lt;any&gt;[];     admin?: AdminConfig;     adminAuth?: AdminAuthConfig;   &#125;&gt;</code> | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
 
 
 ## GlobalConfig
@@ -697,88 +654,4 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>hooks</code> | <code>hooks?: &#123;     beforeRead?: GlobalBeforeReadHook[];     afterRead?: GlobalAfterReadHook&lt;TDoc&gt;[];     beforeChange?: GlobalBeforeChangeHook&lt;TDoc&gt;[];     afterChange?: GlobalAfterChangeHook&lt;TDoc&gt;[];   &#125;</code> | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> | <code>admin?: &#123;     /**      * Lucide icon displayed beside this global in the Admin sidebar.      * Uses Lucide component names, e.g. &#96;'Settings2'&#96; or &#96;'Palette'&#96;.      */     icon?: AdminIconName;     /** Groups this global under a named section in the Admin sidebar. */     group?: string;     /** If &#96;true&#96;, this global is not shown in the Admin UI sidebar. */     hidden?: boolean;   &#125;</code> | Admin UI configuration for this global. |
 | <code>initialData</code> | <code>initialData?: Partial&lt;TDoc&gt;</code> | Initial data to seed this global with the first time it is fetched and found to be empty. |
-
-
-## UploadConfig
-
-Upload configuration for collections that store files.
-Set `upload: true` on the collection to use all defaults, or pass this
-object to customise allowed types, size limits, and image processing.
-
-```ts
-export interface UploadConfig {
-  /**
-   * Allowed MIME types. Requests with other MIME types are rejected with `400`.
-   * @example ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-   */
-  allowedMimeTypes?: string[];
-
-  /**
-   * Maximum file size in **bytes**.
-   * @example 10 * 1024 * 1024  // 10 MB
-   */
-  maxFileSize?: number;
-
-  /**
-   * Local filesystem path where files are stored.
-   * Only used by the `LocalStorage` adapter.
-   */
-  staticDir?: string;
-
-  /**
-   * Public URL prefix prepended to filenames when generating download URLs.
-   * Only used by the `LocalStorage` adapter.
-   * @example '/uploads'
-   */
-  staticURL?: string;
-
-  /**
-   * The `imageSizes` entry name to use as the thumbnail in the Admin media grid.
-   * @example 'thumbnail'
-   */
-  adminThumbnail?: string;
-
-  /**
-   * Additional image sizes to generate when an image is uploaded.
-   * Requires an `ImageService` to be configured (e.g. `@dyrected/image-sharp`).
-   *
-   * @example
-   * imageSizes: [
-   *   { name: 'thumbnail', width: 300, height: 300, fit: 'cover' },
-   *   { name: 'card', width: 800 },
-   * ]
-   */
-  imageSizes?: {
-    /** Identifier used to access this size, e.g. `doc.sizes.thumbnail`. */
-    name: string;
-    /** Target width in pixels. */
-    width?: number;
-    /** Target height in pixels. */
-    height?: number;
-    /** sharp crop strategy (`'entropy'`, `'attention'`, etc.). */
-    crop?: string;
-    /**
-     * sharp fit strategy.
-     * @see https://sharp.pixelplumbing.com/api-resize#parameters
-     */
-    fit?: string;
-    /**
-     * If `true`, images smaller than the target size are not upscaled.
-     * @default true
-     */
-    withoutEnlargement?: boolean;
-    /** Additional sharp format options forwarded to the output pipeline. */
-    formatOptions?: Record<string, unknown>;
-  }[];
-}
-```
-
-| Member | Signature | Description |
-| --- | --- | --- |
-| <code>allowedMimeTypes</code> | <code>allowedMimeTypes?: string[]</code> | Allowed MIME types. Requests with other MIME types are rejected with &#96;400&#96;. |
-| <code>maxFileSize</code> | <code>maxFileSize?: number</code> | Maximum file size in **bytes**. |
-| <code>staticDir</code> | <code>staticDir?: string</code> | Local filesystem path where files are stored. Only used by the &#96;LocalStorage&#96; adapter. |
-| <code>staticURL</code> | <code>staticURL?: string</code> | Public URL prefix prepended to filenames when generating download URLs. Only used by the &#96;LocalStorage&#96; adapter. |
-| <code>adminThumbnail</code> | <code>adminThumbnail?: string</code> | The &#96;imageSizes&#96; entry name to use as the thumbnail in the Admin media grid. |
-| <code>imageSizes</code> | <code>imageSizes?: &#123;     /** Identifier used to access this size, e.g. &#96;doc.sizes.thumbnail&#96;. */     name: string;     /** Target width in pixels. */     width?: number;     /** Target height in pixels. */     height?: number;     /** sharp crop strategy (&#96;'entropy'&#96;, &#96;'attention'&#96;, etc.). */     crop?: string;     /**      * sharp fit strategy.      * @see https://sharp.pixelplumbing.com/api-resize#parameters      */     fit?: string;     /**      * If &#96;true&#96;, images smaller than the target size are not upscaled.      * @default true      */     withoutEnlargement?: boolean;     /** Additional sharp format options forwarded to the output pipeline. */     formatOptions?: Record&lt;string, unknown&gt;;   &#125;[]</code> | Additional image sizes to generate when an image is uploaded. Requires an &#96;ImageService&#96; to be configured (e.g. &#96;@dyrected/image-sharp&#96;). |
 {/* GENERATED:REFERENCE-CONFIGURATION:END */}

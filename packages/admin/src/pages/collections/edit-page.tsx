@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { FormEngine } from "../../components/forms/form-engine"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ChevronLeft, Plus } from "lucide-react"
@@ -107,8 +107,8 @@ export function EditEntryPage() {
     if (!schema) return []
     let fields = [...schema.fields]
     if (schema.upload) {
-      const hasAlt = fields.some((f: { name: string }) => f.name === "alt")
-      const hasCaption = fields.some((f: { name: string }) => f.name === "caption")
+      const hasAlt = fields.some((f: { name?: string }) => f.name === "alt")
+      const hasCaption = fields.some((f: { name?: string }) => f.name === "caption")
       const mediaFields = []
       if (!hasAlt) {
         mediaFields.push({
@@ -137,9 +137,9 @@ export function EditEntryPage() {
 
   const defaultKeys = useMemo((): LayoutItem[] => {
     return fieldsList
-      .filter((f: { name: string }) => !!f.name)
-      .map((f: any) => ({
-        name: f.name,
+      .filter((f: { name?: string }) => !!f.name)
+      .map((f: { name?: string; admin?: { width?: string } }) => ({
+        name: f.name!,
         width: f.admin?.width || "100%"
       }))
   }, [fieldsList])
@@ -233,7 +233,7 @@ export function EditEntryPage() {
   // Fetch entry data if in edit mode
   const { data: entry, isLoading: isEntryLoading } = useQuery({
     queryKey: ["entry", slug, id],
-    queryFn: () => client!.collection(slug!).findOne(id!),
+    queryFn: () => client!.collection(slug!).findOne(id!) as Promise<Record<string, any> | null>,
     enabled: !!client && isEdit,
   })
 
@@ -301,7 +301,7 @@ export function EditEntryPage() {
       }
 
       toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
-        description: `${schema.label || schema.slug} has been saved.`,
+        description: `${schema?.labels?.singular || schema?.slug} has been saved.`,
       })
 
       if (results.passwordChanged) {
@@ -347,7 +347,7 @@ export function EditEntryPage() {
   const workflowConfig = (schema as any).workflow ?? null
   const workflowMeta = isEdit && entry ? (entry as any)._workflow ?? null : null
 
-  const hasStatus = schema?.fields.some((f: { name: string }) => f.name === "status")
+  const hasStatus = schema?.fields.some((f: { name?: string }) => f.name === "status")
   const currentStatus = entry?.status || "draft"
 
   let previewUrl = typeof schema.admin?.previewUrl === 'function'
@@ -455,7 +455,7 @@ export function EditEntryPage() {
               <div>
                 <div className="dy-flex dy-items-center dy-gap-3">
                   <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
-                    {isEdit ? `Edit ${schema.labels?.plural || schema.label || schema.slug}` : `New ${schema.label || schema.slug}`}
+                    {isEdit ? `Edit ${schema?.labels?.plural || schema?.slug}` : `New ${schema?.labels?.singular || schema?.slug}`}
                   </h1>
                   {/* Legacy status field badge (non-workflow) */}
                   {hasStatus && !workflowConfig && (
@@ -728,7 +728,7 @@ export function EditEntryPage() {
                 <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
                   <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
                     <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
-                      {isEdit ? "You have unsaved changes" : `Create a new ${schema.label || schema.slug}`}
+                      {isEdit ? "You have unsaved changes" : `Create a new ${schema?.labels?.singular || schema?.slug}`}
                     </p>
                     <Button
                       size="sm"

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useDyrected } from "../../providers/dyrected-provider";
+import { useDyrected } from "../../providers/dyrected-context";
 
 /**
  * Converts a color value (hex, named, or raw HSL string) to the raw HSL

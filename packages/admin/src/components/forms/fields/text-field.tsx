@@ -1,22 +1,11 @@
 import { Input } from "../../ui/input"
-import type { Field as FieldSchema } from "@dyrected/sdk"
+import type { EmailField, IconField, NumberField, TextField as TextFieldSchema, UrlField } from "@dyrected/core"
 
-type ExtendedFieldSchema = FieldSchema & {
-  maxLength?: number
-  max?: number
-  validate?: {
-    max?: number
-    maxLength?: number
-  }
-  maxWords?: number
-  admin?: FieldSchema["admin"] & {
-    maxLength?: number
-    maxWords?: number
-  }
-}
+type CharacterLimitedFieldSchema = TextFieldSchema | EmailField | UrlField | IconField
+type TextInputSchema = CharacterLimitedFieldSchema | NumberField
 
 interface TextFieldProps {
-  schema: FieldSchema
+  schema: TextInputSchema
   field: {
     value: string | number | null | undefined
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -31,9 +20,8 @@ export function TextField({ schema, field, disabled }: TextFieldProps) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
 
-  const extSchema = schema as ExtendedFieldSchema
-  const maxLength = schema.type !== "number" ? (extSchema.maxLength || extSchema.max || extSchema.admin?.maxLength || extSchema.validate?.max || extSchema.validate?.maxLength) : undefined
-  const maxWords = schema.type !== "number" ? (extSchema.maxWords || extSchema.admin?.maxWords) : undefined
+  const maxLength = getMaxLength(schema)
+  const maxWords = getMaxWords(schema)
 
   const textValue = String(field.value ?? "")
   const currentLength = textValue.length
@@ -85,4 +73,20 @@ export function TextField({ schema, field, disabled }: TextFieldProps) {
   }
 
   return inputEl
+}
+
+function getMaxLength(schema: TextInputSchema): number | undefined {
+  if (schema.type === "number") {
+    return undefined
+  }
+
+  return schema.maxLength ?? schema.admin?.maxLength
+}
+
+function getMaxWords(schema: TextInputSchema): number | undefined {
+  if (schema.type !== "text") {
+    return undefined
+  }
+
+  return schema.maxWords ?? schema.admin?.maxWords
 }

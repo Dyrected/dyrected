@@ -56,13 +56,6 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/adapters/databases#example-9",
-    "page": "/adapters/databases",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
     "id": "/adapters/storage#example-1",
     "page": "/adapters/storage",
     "language": "ts",
@@ -99,13 +92,6 @@
   },
   {
     "id": "/adapters/storage#example-6",
-    "page": "/adapters/storage",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/adapters/storage#example-7",
     "page": "/adapters/storage",
     "language": "ts",
     "classification": "syntax-checked",
@@ -233,23 +219,23 @@
   {
     "id": "/admin/configuration#example-18",
     "page": "/admin/configuration",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/admin/configuration#example-19",
+    "page": "/admin/configuration",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/admin/configuration#example-19",
+    "id": "/admin/configuration#example-20",
     "page": "/admin/configuration",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
-  },
-  {
-    "id": "/admin/configuration#example-20",
-    "page": "/admin/configuration",
-    "language": "css",
-    "classification": "syntax-checked",
-    "validation": "Inventoried css example"
   },
   {
     "id": "/admin/configuration#example-21",
@@ -282,19 +268,26 @@
   {
     "id": "/admin/configuration#example-25",
     "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-26",
+    "page": "/admin/configuration",
     "language": "html",
     "classification": "syntax-checked",
     "validation": "Inventoried html example"
   },
   {
-    "id": "/admin/configuration#example-26",
+    "id": "/admin/configuration#example-27",
     "page": "/admin/configuration",
     "language": "css",
     "classification": "syntax-checked",
     "validation": "Inventoried css example"
   },
   {
-    "id": "/admin/configuration#example-27",
+    "id": "/admin/configuration#example-28",
     "page": "/admin/configuration",
     "language": "ts",
     "classification": "illustrative",
@@ -2831,15 +2824,15 @@
     "id": "/reference/configuration#example-5",
     "page": "/reference/configuration",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/reference/configuration#example-6",
     "page": "/reference/configuration",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/reference/configuration#example-7",
@@ -2852,25 +2845,11 @@
     "id": "/reference/configuration#example-8",
     "page": "/reference/configuration",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/configuration#example-9",
-    "page": "/reference/configuration",
-    "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/reference/configuration#example-10",
-    "page": "/reference/configuration",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/configuration#example-11",
+    "id": "/reference/configuration#example-9",
     "page": "/reference/configuration",
     "language": "ts",
     "classification": "syntax-checked",
@@ -3055,8 +3034,8 @@
     "id": "/reference/fields#example-26",
     "page": "/reference/fields",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/reference/fields#example-27",
@@ -3069,8 +3048,8 @@
     "id": "/reference/fields#example-28",
     "page": "/reference/fields",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/reference/fields#example-29",
@@ -3132,15 +3111,15 @@
     "id": "/reference/fields#example-37",
     "page": "/reference/fields",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/reference/fields#example-38",
     "page": "/reference/fields",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/reference/fields#example-39",
@@ -3151,90 +3130,6 @@
   },
   {
     "id": "/reference/fields#example-40",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-41",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-42",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-43",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-44",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-45",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-46",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-47",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-48",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-49",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-50",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/reference/fields#example-51",
-    "page": "/reference/fields",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/fields#example-52",
     "page": "/reference/fields",
     "language": "ts",
     "classification": "syntax-checked",
@@ -3340,69 +3235,6 @@
   },
   {
     "id": "/reference/generated-workflows#example-15",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-16",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-17",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-18",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-19",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-20",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-21",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-22",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-23",
-    "page": "/reference/generated-workflows",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/reference/generated-workflows#example-24",
     "page": "/reference/generated-workflows",
     "language": "ts",
     "classification": "syntax-checked",
@@ -3592,6 +3424,20 @@
   },
   {
     "id": "/reference/sdk#example-19",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-20",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-21",
     "page": "/reference/sdk",
     "language": "ts",
     "classification": "syntax-checked",

@@ -6,7 +6,7 @@ import { MediaPage } from "./media-page"
 
 const useDyrectedMock = vi.fn()
 
-vi.mock("../../providers/dyrected-provider", () => ({
+vi.mock("../../providers/dyrected-context", () => ({
   useDyrected: () => useDyrectedMock(),
 }))
 

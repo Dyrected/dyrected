@@ -136,24 +136,6 @@
   ],
   "references": [
     {
-      "id": "@dyrected/core:AdminConfig",
-      "name": "AdminConfig",
-      "category": "configuration",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:AuthDocFields",
-      "name": "AuthDocFields",
-      "category": "fields",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:AuthenticatedUser",
-      "name": "AuthenticatedUser",
-      "category": "hooks",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
       "id": "@dyrected/core:availableWorkflowTransitions",
       "name": "availableWorkflowTransitions",
       "category": "workflows",
@@ -184,12 +166,6 @@
       "sourcePackage": "@dyrected/core"
     },
     {
-      "id": "@dyrected/core:CollectionAfterTransitionHook",
-      "name": "CollectionAfterTransitionHook",
-      "category": "hooks",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
       "id": "@dyrected/core:CollectionBeforeChangeHook",
       "name": "CollectionBeforeChangeHook",
       "category": "hooks",
@@ -204,12 +180,6 @@
     {
       "id": "@dyrected/core:CollectionBeforeReadHook",
       "name": "CollectionBeforeReadHook",
-      "category": "hooks",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:CollectionBeforeTransitionHook",
-      "name": "CollectionBeforeTransitionHook",
       "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
@@ -256,12 +226,6 @@
       "sourcePackage": "@dyrected/core"
     },
     {
-      "id": "@dyrected/core:Field",
-      "name": "Field",
-      "category": "fields",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
       "id": "@dyrected/core:FieldAfterReadHook",
       "name": "FieldAfterReadHook",
       "category": "hooks",
@@ -277,18 +241,6 @@
       "id": "@dyrected/core:FieldHook",
       "name": "FieldHook",
       "category": "hooks",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:FieldType",
-      "name": "FieldType",
-      "category": "fields",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:FileData",
-      "name": "FileData",
-      "category": "adapters",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -328,21 +280,9 @@
       "sourcePackage": "@dyrected/core"
     },
     {
-      "id": "@dyrected/core:HookRequestContext",
-      "name": "HookRequestContext",
-      "category": "hooks",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
       "id": "@dyrected/core:ImageService",
       "name": "ImageService",
       "category": "adapters",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:InferDocShape",
-      "name": "InferDocShape",
-      "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -358,33 +298,9 @@
       "sourcePackage": "@dyrected/core"
     },
     {
-      "id": "@dyrected/core:LifecycleEvent",
-      "name": "LifecycleEvent",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:LifecycleEventHandler",
-      "name": "LifecycleEventHandler",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:LifecycleEventName",
-      "name": "LifecycleEventName",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
       "id": "@dyrected/core:materializeWorkflowDocument",
       "name": "materializeWorkflowDocument",
       "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:PaginatedResult",
-      "name": "PaginatedResult",
-      "category": "adapters",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -412,27 +328,9 @@
       "sourcePackage": "@dyrected/core"
     },
     {
-      "id": "@dyrected/core:SystemDocFields",
-      "name": "SystemDocFields",
-      "category": "fields",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
       "id": "@dyrected/core:transitionWorkflow",
       "name": "transitionWorkflow",
       "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:UploadConfig",
-      "name": "UploadConfig",
-      "category": "configuration",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:UploadDocFields",
-      "name": "UploadDocFields",
-      "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -444,42 +342,6 @@
     {
       "id": "@dyrected/core:workflowCapabilities",
       "name": "workflowCapabilities",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:WorkflowConfig",
-      "name": "WorkflowConfig",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:WorkflowMetadata",
-      "name": "WorkflowMetadata",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:WorkflowRole",
-      "name": "WorkflowRole",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:WorkflowState",
-      "name": "WorkflowState",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:WorkflowTransition",
-      "name": "WorkflowTransition",
-      "category": "workflows",
-      "sourcePackage": "@dyrected/core"
-    },
-    {
-      "id": "@dyrected/core:WorkflowTransitionContext",
-      "name": "WorkflowTransitionContext",
       "category": "workflows",
       "sourcePackage": "@dyrected/core"
     },
@@ -785,28 +647,5 @@
       "summary": "Get the serialized Dyrected schema"
     }
   ],
-  "fieldTypes": [
-    "text",
-    "textarea",
-    "richText",
-    "number",
-    "boolean",
-    "date",
-    "datetime",
-    "time",
-    "select",
-    "multiSelect",
-    "radio",
-    "relationship",
-    "array",
-    "object",
-    "json",
-    "blocks",
-    "image",
-    "email",
-    "url",
-    "icon",
-    "join",
-    "row"
-  ]
+  "fieldTypes": []
 }

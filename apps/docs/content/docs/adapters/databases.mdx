@@ -139,23 +139,13 @@ export interface DatabaseAdapter {
   }): Promise<PaginatedResult>;
 
   /** Find a single document by its ID. Returns `null` if not found. */
-  findOne(args: {
-    collection: string;
-    id: string;
-  }): Promise<BaseDocument | null>;
+  findOne(args: { collection: string; id: string }): Promise<BaseDocument | null>;
 
   /** Insert a new document and return it with its generated `id`. */
-  create(args: {
-    collection: string;
-    data: Record<string, unknown>;
-  }): Promise<BaseDocument>;
+  create(args: { collection: string; data: Record<string, unknown> }): Promise<BaseDocument>;
 
   /** Update a document by ID and return the updated document. */
-  update(args: {
-    collection: string;
-    id: string;
-    data: Record<string, unknown>;
-  }): Promise<BaseDocument>;
+  update(args: { collection: string; id: string; data: Record<string, unknown> }): Promise<BaseDocument>;
 
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
@@ -164,20 +154,14 @@ export interface DatabaseAdapter {
   getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 
   /** Create or replace the singleton document for a global. */
-  updateGlobal(args: {
-    slug: string;
-    data: Record<string, unknown>;
-  }): Promise<Record<string, unknown>>;
+  updateGlobal(args: { slug: string; data: Record<string, unknown> }): Promise<Record<string, unknown>>;
 
   /**
    * Sync the database schema with the current collection and global configs.
    * Called on startup to create tables/collections that don't exist yet.
    * Not all adapters implement this (e.g. MongoDB is schema-less).
    */
-  sync?(
-    collections: CollectionConfig[],
-    globals: GlobalConfig[],
-  ): Promise<void>;
+  sync?(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;
 
   /**
    * Execute a raw SQL query or database command.
@@ -196,49 +180,15 @@ export interface DatabaseAdapter {
 | Member | Signature | Description |
 | --- | --- | --- |
 | <code>find</code> | <code>find(args: &#123;     collection: string;     where?: Record&lt;string, unknown&gt;;     limit?: number;     page?: number;     sort?: string;   &#125;): Promise&lt;PaginatedResult&gt;</code> | Find a paginated list of documents in a collection. |
-| <code>findOne</code> | <code>findOne(args: &#123;     collection: string;     id: string;   &#125;): Promise&lt;BaseDocument &#124; null&gt;</code> | Find a single document by its ID. Returns &#96;null&#96; if not found. |
-| <code>create</code> | <code>create(args: &#123;     collection: string;     data: Record&lt;string, unknown&gt;;   &#125;): Promise&lt;BaseDocument&gt;</code> | Insert a new document and return it with its generated &#96;id&#96;. |
-| <code>update</code> | <code>update(args: &#123;     collection: string;     id: string;     data: Record&lt;string, unknown&gt;;   &#125;): Promise&lt;BaseDocument&gt;</code> | Update a document by ID and return the updated document. |
+| <code>findOne</code> | <code>findOne(args: &#123; collection: string; id: string &#125;): Promise&lt;BaseDocument &#124; null&gt;</code> | Find a single document by its ID. Returns &#96;null&#96; if not found. |
+| <code>create</code> | <code>create(args: &#123; collection: string; data: Record&lt;string, unknown&gt; &#125;): Promise&lt;BaseDocument&gt;</code> | Insert a new document and return it with its generated &#96;id&#96;. |
+| <code>update</code> | <code>update(args: &#123; collection: string; id: string; data: Record&lt;string, unknown&gt; &#125;): Promise&lt;BaseDocument&gt;</code> | Update a document by ID and return the updated document. |
 | <code>delete</code> | <code>delete(args: &#123; collection: string; id: string &#125;): Promise&lt;unknown&gt;</code> | Delete a document by ID. Return value is intentionally untyped — callers do not use it. |
 | <code>getGlobal</code> | <code>getGlobal(args: &#123; slug: string &#125;): Promise&lt;Record&lt;string, unknown&gt;&gt;</code> | Fetch the singleton document for a global. Returns an empty object if not yet initialised. |
-| <code>updateGlobal</code> | <code>updateGlobal(args: &#123;     slug: string;     data: Record&lt;string, unknown&gt;;   &#125;): Promise&lt;Record&lt;string, unknown&gt;&gt;</code> | Create or replace the singleton document for a global. |
+| <code>updateGlobal</code> | <code>updateGlobal(args: &#123; slug: string; data: Record&lt;string, unknown&gt; &#125;): Promise&lt;Record&lt;string, unknown&gt;&gt;</code> | Create or replace the singleton document for a global. |
 | <code>sync</code> | <code>sync(collections: CollectionConfig[], globals: GlobalConfig[]): Promise&lt;void&gt;</code> | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
 | <code>execute</code> | <code>execute(query: string, params?: unknown[]): Promise&lt;unknown&gt;</code> | Execute a raw SQL query or database command. Optional — not all adapters support raw access. |
 | <code>transaction</code> | <code>transaction&lt;T&gt;(callback: (db: DatabaseAdapter) =&gt; Promise&lt;T&gt;): Promise&lt;T&gt;</code> | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it. |
-
-
-## PaginatedResult
-
-The envelope returned by collection list endpoints (`GET /api/collections/:slug`).
-
-```ts
-export interface PaginatedResult<T = Record<string, any>> {
-  /** The documents on the current page. */
-  docs: T[];
-  /** Total number of documents matching the query (across all pages). */
-  total: number;
-  /** Maximum number of documents per page as requested. */
-  limit: number;
-  /** The current page number (1-indexed). */
-  page: number;
-  /** Total number of pages given the current `limit`. */
-  totalPages: number;
-  /** Whether a next page exists. */
-  hasNextPage: boolean;
-  /** Whether a previous page exists. */
-  hasPrevPage: boolean;
-}
-```
-
-| Member | Signature | Description |
-| --- | --- | --- |
-| <code>docs</code> | <code>docs: T[]</code> | The documents on the current page. |
-| <code>total</code> | <code>total: number</code> | Total number of documents matching the query (across all pages). |
-| <code>limit</code> | <code>limit: number</code> | Maximum number of documents per page as requested. |
-| <code>page</code> | <code>page: number</code> | The current page number (1-indexed). |
-| <code>totalPages</code> | <code>totalPages: number</code> | Total number of pages given the current &#96;limit&#96;. |
-| <code>hasNextPage</code> | <code>hasNextPage: boolean</code> | Whether a next page exists. |
-| <code>hasPrevPage</code> | <code>hasPrevPage: boolean</code> | Whether a previous page exists. |
 
 
 ## ReadonlyDatabaseAdapter
@@ -246,9 +196,6 @@ export interface PaginatedResult<T = Record<string, any>> {
 Exported type from @dyrected/core.
 
 ```ts
-export type ReadonlyDatabaseAdapter = Pick<
-  DatabaseAdapter,
-  "find" | "findOne" | "getGlobal"
->;
+export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal">;
 ```
 {/* GENERATED:ADAPTERS-DATABASES:END */}

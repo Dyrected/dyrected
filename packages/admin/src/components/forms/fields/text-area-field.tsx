@@ -1,22 +1,8 @@
 import { Textarea } from "../../ui/textarea"
-import type { Field as FieldSchema } from "@dyrected/sdk"
-
-type ExtendedFieldSchema = FieldSchema & {
-  maxLength?: number
-  max?: number
-  validate?: {
-    max?: number
-    maxLength?: number
-  }
-  maxWords?: number
-  admin?: FieldSchema["admin"] & {
-    maxLength?: number
-    maxWords?: number
-  }
-}
+import type { TextareaField as TextareaFieldSchema } from "@dyrected/core"
 
 interface TextAreaFieldProps {
-  schema: FieldSchema
+  schema: TextareaFieldSchema
   field: {
     value: string | null | undefined
     onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
@@ -33,9 +19,8 @@ export function TextAreaField({ schema, field, disabled }: TextAreaFieldProps) {
   const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
   const placeholder = schema.admin?.placeholder || `Enter ${label.toLowerCase()}...`
 
-  const extSchema = schema as ExtendedFieldSchema
-  const maxLength = extSchema.maxLength || extSchema.max || extSchema.admin?.maxLength || extSchema.validate?.max || extSchema.validate?.maxLength
-  const maxWords = extSchema.maxWords || extSchema.admin?.maxWords
+  const maxLength = schema.maxLength ?? schema.admin?.maxLength
+  const maxWords = schema.maxWords ?? schema.admin?.maxWords
 
   const textValue = String(field.value ?? "")
   const currentLength = textValue.length

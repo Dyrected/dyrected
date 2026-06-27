@@ -20,7 +20,7 @@ import {
   LayoutDashboard,
   Users,
 } from "lucide-react"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { cn, getMediaUrl } from "../../lib/utils"
 import { resolveAdminIcon } from "../../lib/admin-icons"
 import { BrandingProvider } from "./branding-provider"
@@ -33,6 +33,19 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import logo from "@/assets/dyrected.svg"
+
+function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
+  const value = user?.[key]
+  return typeof value === "string" && value.length > 0 ? value : null
+}
+
+function getUserLabel(user: Record<string, unknown> | null | undefined) {
+  return getUserString(user, "name") ?? getUserString(user, "email") ?? "?"
+}
+
+function getUserInitial(user: Record<string, unknown> | null | undefined) {
+  return getUserLabel(user).charAt(0).toUpperCase()
+}
 
 // ---------------------------------------------------------------------------
 // Single nav item
@@ -367,25 +380,25 @@ function SidebarInner({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                title={collapsed ? user.name || user.email : undefined}
-                aria-label={`Open account menu for ${user.name || user.email}`}
+                title={collapsed ? getUserLabel(user) : undefined}
+                aria-label={`Open account menu for ${getUserLabel(user)}`}
                 className={cn(
                   "dy-group dy-flex dy-w-full dy-items-center dy-gap-2.5 dy-rounded-md dy-px-2.5 dy-py-2 dy-text-left dy-transition-colors hover:dy-bg-accent/70 focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
                   collapsed ? "dy-justify-center dy-px-2" : ""
                 )}
               >
                 <div className="dy-flex dy-h-7 dy-w-7 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/15 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-                  {(user.name || user.email || "?")[0].toUpperCase()}
+                  {getUserInitial(user)}
                 </div>
                 {!collapsed && (
                   <>
                     <div className="dy-flex dy-min-w-0 dy-flex-1 dy-flex-col">
                       <span className="dy-truncate dy-text-[12px] dy-font-medium dy-text-foreground">
-                        {user.name || user.email}
+                        {getUserLabel(user)}
                       </span>
-                      {user.name && user.email && (
+                      {getUserString(user, "name") && getUserString(user, "email") && (
                         <span className="dy-truncate dy-text-[10px] dy-text-muted-foreground">
-                          {user.email}
+                          {getUserString(user, "email")}
                         </span>
                       )}
                     </div>
@@ -402,11 +415,11 @@ function SidebarInner({
             >
               <DropdownMenuLabel className="dy-px-2 dy-py-2 dy-font-normal">
                 <span className="dy-block dy-truncate dy-text-xs dy-font-medium dy-text-foreground">
-                  {user.name || user.email}
+                  {getUserLabel(user)}
                 </span>
-                {user.name && user.email && (
+                {getUserString(user, "name") && getUserString(user, "email") && (
                   <span className="dy-mt-0.5 dy-block dy-truncate dy-text-[11px] dy-text-muted-foreground">
-                    {user.email}
+                    {getUserString(user, "email")}
                   </span>
                 )}
               </DropdownMenuLabel>

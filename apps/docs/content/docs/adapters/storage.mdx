@@ -111,46 +111,6 @@ Test key normalization, deletion, Unicode filenames, missing files, MIME metadat
 ## Generated storage contracts
 
 {/* GENERATED:ADAPTERS-STORAGE:START */}
-## FileData
-
-Metadata returned after a file is uploaded and stored.
-Stored on the document in upload collections.
-
-```ts
-export interface FileData {
-  filename: string;
-  filesize?: number;
-  mimeType: string;
-  /** Public URL of the stored file. */
-  url: string;
-  width?: number;
-  height?: number;
-  focalPoint?: { x: number; y: number };
-  /** Base64-encoded BlurHash string for progressive image loading. */
-  blurhash?: string;
-  /** `'upload'` for server-stored files; `'external'` for provider-managed files. */
-  type?: "upload" | "external";
-  provider?: string;
-  provider_metadata?: unknown;
-  [key: string]: unknown;
-}
-```
-
-| Member | Signature | Description |
-| --- | --- | --- |
-| <code>filename</code> | <code>filename: string</code> |  |
-| <code>filesize</code> | <code>filesize?: number</code> |  |
-| <code>mimeType</code> | <code>mimeType: string</code> |  |
-| <code>url</code> | <code>url: string</code> | Public URL of the stored file. |
-| <code>width</code> | <code>width?: number</code> |  |
-| <code>height</code> | <code>height?: number</code> |  |
-| <code>focalPoint</code> | <code>focalPoint?: &#123; x: number; y: number &#125;</code> |  |
-| <code>blurhash</code> | <code>blurhash?: string</code> | Base64-encoded BlurHash string for progressive image loading. |
-| <code>type</code> | <code>type?: "upload" &#124; "external"</code> | &#96;'upload'&#96; for server-stored files; &#96;'external'&#96; for provider-managed files. |
-| <code>provider</code> | <code>provider?: string</code> |  |
-| <code>provider_metadata</code> | <code>provider_metadata?: unknown</code> |  |
-
-
 ## ImageService
 
 Processes uploaded images — generates metadata (dimensions, BlurHash) and
@@ -161,7 +121,7 @@ export interface ImageService {
   process(args: {
     buffer: Uint8Array;
     mimeType: string;
-    config?: CollectionConfig["upload"];
+    config?: boolean | UploadConfig;
     focalPoint?: { x: number; y: number };
   }): Promise<{
     metadata: {
@@ -171,17 +131,14 @@ export interface ImageService {
       blurhash?: string;
     };
     /** Generated image sizes keyed by their `name`. */
-    sizes?: Record<
-      string,
-      { buffer: Uint8Array; width: number; height: number; filename: string }
-    >;
+    sizes?: Record<string, { buffer: Uint8Array; width: number; height: number; filename: string }>;
   }>;
 }
 ```
 
 | Member | Signature | Description |
 | --- | --- | --- |
-| <code>process</code> | <code>process(args: &#123;     buffer: Uint8Array;     mimeType: string;     config?: CollectionConfig["upload"];     focalPoint?: &#123; x: number; y: number &#125;;   &#125;): Promise&lt;&#123;     metadata: &#123;       width?: number;       height?: number;       /** Base64-encoded BlurHash for progressive loading. */       blurhash?: string;     &#125;;     /** Generated image sizes keyed by their &#96;name&#96;. */     sizes?: Record&lt;       string,       &#123; buffer: Uint8Array; width: number; height: number; filename: string &#125;     &gt;;   &#125;&gt;</code> |  |
+| <code>process</code> | <code>process(args: &#123;     buffer: Uint8Array;     mimeType: string;     config?: boolean &#124; UploadConfig;     focalPoint?: &#123; x: number; y: number &#125;;   &#125;): Promise&lt;&#123;     metadata: &#123;       width?: number;       height?: number;       /** Base64-encoded BlurHash for progressive loading. */       blurhash?: string;     &#125;;     /** Generated image sizes keyed by their &#96;name&#96;. */     sizes?: Record&lt;string, &#123; buffer: Uint8Array; width: number; height: number; filename: string &#125;&gt;;   &#125;&gt;</code> |  |
 
 
 ## StorageAdapter
@@ -197,12 +154,7 @@ export interface StorageAdapter {
    * Upload a file and return its metadata (URL, dimensions, etc.).
    * The `prefix` is a path prefix used for multi-tenant setups.
    */
-  upload(args: {
-    filename: string;
-    buffer: Uint8Array;
-    mimeType: string;
-    prefix?: string;
-  }): Promise<FileData>;
+  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;
 
   /** Delete a file by its stored filename. */
   delete(args: { filename: string }): Promise<void>;
@@ -216,16 +168,14 @@ export interface StorageAdapter {
    * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on
    * direct CDN URLs instead.
    */
-  resolve?(args: {
-    filename: string;
-  }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;
+  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;
 }
 ```
 
 | Member | Signature | Description |
 | --- | --- | --- |
-| <code>upload</code> | <code>upload(args: &#123;     filename: string;     buffer: Uint8Array;     mimeType: string;     prefix?: string;   &#125;): Promise&lt;FileData&gt;</code> | Upload a file and return its metadata (URL, dimensions, etc.). The &#96;prefix&#96; is a path prefix used for multi-tenant setups. |
+| <code>upload</code> | <code>upload(args: &#123; filename: string; buffer: Uint8Array; mimeType: string; prefix?: string &#125;): Promise&lt;FileData&gt;</code> | Upload a file and return its metadata (URL, dimensions, etc.). The &#96;prefix&#96; is a path prefix used for multi-tenant setups. |
 | <code>delete</code> | <code>delete(args: &#123; filename: string &#125;): Promise&lt;void&gt;</code> | Delete a file by its stored filename. |
 | <code>getURL</code> | <code>getURL(args: &#123; filename: string &#125;): string</code> | Return the public URL for a stored file. |
-| <code>resolve</code> | <code>resolve(args: &#123;     filename: string;   &#125;): Promise&lt;&#123; buffer: Uint8Array; mimeType: string &#125; &#124; null&gt;</code> | Retrieve the file's raw bytes and MIME type for serving via the API. Only needed by adapters that serve files through the Dyrected API (e.g. &#96;LocalStorage&#96;). Cloud adapters return &#96;null&#96; here and rely on direct CDN URLs instead. |
+| <code>resolve</code> | <code>resolve(args: &#123; filename: string &#125;): Promise&lt;&#123; buffer: Uint8Array; mimeType: string &#125; &#124; null&gt;</code> | Retrieve the file's raw bytes and MIME type for serving via the API. Only needed by adapters that serve files through the Dyrected API (e.g. &#96;LocalStorage&#96;). Cloud adapters return &#96;null&#96; here and rely on direct CDN URLs instead. |
 {/* GENERATED:ADAPTERS-STORAGE:END */}

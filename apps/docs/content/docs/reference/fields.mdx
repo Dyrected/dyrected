@@ -22,6 +22,8 @@ Named fields use `name` as their stored key and should always have an explicit h
 
 Required and unique indicators help editors understand constraints, but the server remains authoritative.
 
+Internally, the public `Field` union is now composed of named variants such as `TextField`, `BooleanField`, `SelectField`, and `RelationshipField`. Most projects continue to use the `Field` union indirectly through `defineCollection()` and `defineGlobal()`, but the named variants matter for generated docs, SDK tooling, and custom type-level utilities.
+
 ## Text fields
 
 ### `text`
@@ -40,7 +42,7 @@ Use `text` for a single line such as a title, slug, short label, or identifier.
 
 #### Size and word limits
 
-`maxLength` and `maxWords` communicate editorial limits and can be enforced by current field validation. Use them for requirements such as search snippets; do not silently truncate user input.
+`maxLength` and `maxWords` are first-class field properties for supported text inputs. The Admin UI uses them to show live character and word counters. If a write must be rejected when a limit is exceeded, enforce that in a collection or field hook for now.
 
 ```ts
 {
@@ -157,6 +159,8 @@ Use a collection hook when monetary rounding, cross-field totals, or domain-spec
 
 Checkbox and switch layouts store the same boolean value.
 
+`admin.layout` is intentionally scoped here. Only boolean fields support `layout: 'checkbox' | 'switch'`.
+
 ## Date and time fields
 
 ### `date`
@@ -205,9 +209,13 @@ Use `time` for a local time-of-day whose date is modeled elsewhere.
 
 Set `admin.layout: 'radio'` when a small option set benefits from being visible at once.
 
+`admin.hooks.options` is also scoped here. Use it for instant client-side dependent options when the available values depend on other form fields.
+
 ### `radio`
 
 `radio` is also a supported field type. Prefer it when radio-button semantics are intrinsic to the content model; use a select with radio layout when only the presentation should vary.
+
+`radio` fields support `admin.direction` and `admin.hooks.options`.
 
 ### `multiSelect`
 
@@ -221,6 +229,8 @@ Set `admin.layout: 'radio'` when a small option set benefits from being visible 
   options: ['engineering', 'design', 'business'],
 }
 ```
+
+`multiSelect` also supports `admin.hooks.options` for dependent option lists.
 
 ## Relationship and media fields
 
@@ -361,51 +371,6 @@ See [Hooks](/docs/concepts/hooks) and [Using Hooks](/docs/guides/using-hooks).
 ## Generated field and hook contracts
 
 {/* GENERATED:REFERENCE-FIELDS:START */}
-## AuthDocFields
-
-Fields automatically injected into collections with `auth: true`.
-`password` is part of the schema but is stripped from API read responses.
-
-```ts
-export type AuthDocFields = {
-  email: string;
-  password?: string;
-  roles?: string[];
-};
-```
-
-
-## AuthenticatedUser
-
-Base shape of an authenticated user as decoded from the JWT.
-
-The actual shape will include every field on your auth collection — this
-interface only guarantees the properties that Dyrected always stamps on the
-token. Extend it in your own codebase for stronger typing:
-
-```ts
-export interface AuthenticatedUser {
-  /** The user's document ID in the database. */
-  sub: string;
-  /** The user's email address. */
-  email?: string;
-  /** Slug of the collection this user was authenticated against. */
-  collection: string;
-  /** Array of role strings, if your auth collection has a `roles` field. */
-  roles?: string[];
-  /** Any additional fields from the auth collection document. */
-  [key: string]: unknown;
-}
-```
-
-| Member | Signature | Description |
-| --- | --- | --- |
-| <code>sub</code> | <code>sub: string</code> | The user's document ID in the database. |
-| <code>email</code> | <code>email?: string</code> | The user's email address. |
-| <code>collection</code> | <code>collection: string</code> | Slug of the collection this user was authenticated against. |
-| <code>roles</code> | <code>roles?: string[]</code> | Array of role strings, if your auth collection has a &#96;roles&#96; field. |
-
-
 ## CollectionAfterChangeHook
 
 Runs **after** a document is created or updated in the database.
@@ -436,9 +401,7 @@ afterChange: [({ doc }) => {
 ```
 
 ```ts
-export type CollectionAfterChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The document as it was written to the database. */
   doc: TDoc;
   /**
@@ -466,9 +429,7 @@ export type CollectionAfterChangeHook<
 Exported type from @dyrected/core.
 
 ```ts
-export type CollectionAfterDeleteHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The ID of the deleted document. */
   id: string;
   /** The document as it was just before deletion. */
@@ -495,9 +456,7 @@ Return a modified document to send instead. Useful for adding computed
 virtual fields or transforming the shape of the response.
 
 ```ts
-export type CollectionAfterReadHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The document as fetched from the database (with defaults applied). */
   doc: TDoc;
   /** The HTTP request context. */
@@ -513,19 +472,6 @@ export type CollectionAfterReadHook<
 ```
 
 
-## CollectionAfterTransitionHook
-
-Exported type from @dyrected/core.
-
-```ts
-export type CollectionAfterTransitionHook<
-  TDoc extends object = Record<string, unknown>,
-> = (
-  args: WorkflowTransitionContext<TDoc> & { event: LifecycleEvent },
-) => void | Promise<void>;
-```
-
-
 ## CollectionBeforeChangeHook
 
 Runs **before** a document is created or updated in the database.
@@ -535,9 +481,7 @@ right place for data transformation, normalisation, slug generation, and
 validation (throw to abort the write).
 
 ```ts
-export type CollectionBeforeChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The incoming data payload being written. */
   data: Partial<TDoc>;
   /**
@@ -568,9 +512,7 @@ Throw an error to cancel the deletion — the document will not be removed
 and the API will return a `500` with your error message.
 
 ```ts
-export type CollectionBeforeDeleteHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
   /** The ID of the document about to be deleted. */
   id: string;
   /** The full document about to be deleted. */
@@ -612,103 +554,6 @@ export type CollectionBeforeReadHook = (args: {
 ```
 
 
-## CollectionBeforeTransitionHook
-
-Exported type from @dyrected/core.
-
-```ts
-export type CollectionBeforeTransitionHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: WorkflowTransitionContext<TDoc>) => void | Promise<void>;
-```
-
-
-## Field
-
-Defines a single field on a collection or global.
-
-## Typed `value` in hook callbacks
-
-Three hook callbacks automatically receive a `value` typed to the field's
-own value type — no manual annotations needed:
-
-| Hook | When it runs |
-|------|-------------|
-| `hooks.beforeChange` | Server — before the value is written to the DB |
-| `hooks.afterRead`    | Server — after the value is read, before the API response |
-| `admin.hooks.onChange` | Browser — whenever a sibling field changes in the Admin UI |
-
-Type mapping by `type` property:
-- `text / textarea / email / url / icon / date / select / radio` → `string`
-- `number` → `number`
-- `boolean` → `boolean`
-- `multiSelect` → `string[]`
-- `relationship / image` → `string | string[]`
-- `richText / json` → `Record<string, unknown>`
-- `object / array / blocks` → `unknown`
-
-```ts
-{
-  name: 'slug', type: 'text',
-  hooks: {
-    beforeChange: [({ value }) => value.toLowerCase()],  // value: string ✓
-    afterRead:    [({ value }) => value.trim()],         // value: string ✓
-  },
-  admin: {
-    hooks: {
-      onChange: ({ value, siblingData }) =>              // value: string ✓
-        (siblingData.title as string ?? '').toLowerCase().replace(/\s+/g, '-'),
-    },
-  },
-}
-```
-
-**Important**: write `type` as a plain string literal — do **not** use `as const`.
-TypeScript's `const` generic inference already preserves literal types, and
-adding `as const` to the discriminant property prevents the contextual type
-from flowing into the hook callbacks.
-
-```ts
-// ✓ correct
-{ name: 'slug', type: 'text', hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
-
-// ✗ breaks value typing
-{ name: 'slug', type: 'text' as const, hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }
-```
-
-```ts
-export type Field = FieldBase &
-  (
-    | ({
-        type:
-          | "text"
-          | "textarea"
-          | "email"
-          | "url"
-          | "icon"
-          | "date"
-          | "datetime"
-          | "time"
-          | "select"
-          | "radio";
-      } & FieldHooks<string> &
-        FieldAdminHooks<string>)
-    | ({ type: "number" } & FieldHooks<number> & FieldAdminHooks<number>)
-    | ({ type: "boolean" } & FieldHooks<boolean> & FieldAdminHooks<boolean>)
-    | ({ type: "multiSelect" } & FieldHooks<string[]> &
-        FieldAdminHooks<string[]>)
-    | ({ type: "relationship" | "image" } & FieldHooks<string | string[]> &
-        FieldAdminHooks<string | string[]>)
-    | ({ type: "richText" | "json" } & FieldHooks<Record<string, unknown>> &
-        FieldAdminHooks<Record<string, unknown>>)
-    | ({
-        type: "object" | "array" | "blocks" | "join" | "row";
-      } & FieldHooks<unknown> &
-        FieldAdminHooks<unknown>)
-  );
-```
-
-
 ## FieldAfterReadHook
 
 A hook that runs **after a field value is read** from the database, before
@@ -718,10 +563,7 @@ Return the transformed value to return to the client. Use this for masking,
 formatting, or adding computed properties.
 
 ```ts
-export type FieldAfterReadHook<
-  TValue = unknown,
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {
   /** The raw field value as stored in the database. */
   value: TValue;
   /** The full document being returned (with defaults applied). */
@@ -748,10 +590,7 @@ Field `beforeChange` hooks run recursively inside `array`, `object`, and
 `blocks` fields — every nested item is processed automatically.
 
 ```ts
-export type FieldBeforeChangeHook<
-  TValue = unknown,
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {
   /** The current value of this field (after any previous hooks in the chain). */
   value: TValue;
   /** The full document as it existed before this update. `undefined` on create. */
@@ -774,50 +613,10 @@ export type FieldBeforeChangeHook<
 Exported type from @dyrected/core.
 
 ```ts
-export type FieldHook<
-  TDoc extends object = Record<string, unknown>,
-  TValue = unknown,
-> = FieldBeforeChangeHook<TValue, TDoc>;
-```
-
-
-## FieldType
-
-Every field type supported by Dyrected.
-
-- Text group:    `text`, `textarea`, `richText`, `email`, `url`, `icon`
-- Number/Bool:   `number`, `boolean`
-- Date:          `date`, `datetime`, `time`
-- Selection:     `select`, `multiSelect`, `radio`
-- Relationship:  `relationship`, `join`
-- Structural:    `array`, `object`, `blocks`, `json`
-- Layout:        `row`
-- Media:         `image`
-
-```ts
-export type FieldType =
-  | "text"
-  | "textarea"
-  | "richText"
-  | "number"
-  | "boolean"
-  | "date"
-  | "datetime"
-  | "time"
-  | "select"
-  | "multiSelect"
-  | "radio"
-  | "relationship"
-  | "array"
-  | "object"
-  | "json"
-  | "blocks"
-  | "image"
-  | "email"
-  | "url"
-  | "icon"
-  | "join"
-  | "row";
+export type FieldHook<TDoc extends object = Record<string, unknown>, TValue = unknown> = FieldBeforeChangeHook<
+  TValue,
+  TDoc
+>;
 ```
 
 
@@ -826,9 +625,7 @@ export type FieldType =
 Exported type from @dyrected/core.
 
 ```ts
-export type GlobalAfterChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type GlobalAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   doc: TDoc;
   previousDoc?: TDoc;
   req: HookRequestContext;
@@ -848,17 +645,16 @@ export type GlobalAfterChangeHook<
 Runs after the global document is fetched, before the response is sent.
 
 ```ts
-export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> =
-  (args: {
-    doc: TDoc;
-    req: HookRequestContext;
-    user?: AuthenticatedUser;
-    /**
-     * Database adapter for cross-collection reads. Write operations (create,
-     * update, delete) will throw — use `afterChange` for writes.
-     */
-    db: ReadonlyDatabaseAdapter;
-  }) => TDoc | Promise<TDoc>;
+export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  /**
+   * Database adapter for cross-collection reads. Write operations (create,
+   * update, delete) will throw — use `afterChange` for writes.
+   */
+  db: ReadonlyDatabaseAdapter;
+}) => TDoc | Promise<TDoc>;
 ```
 
 
@@ -868,9 +664,7 @@ Runs before the global document is updated.
 Operation is always `'update'` (globals cannot be created or deleted).
 
 ```ts
-export type GlobalBeforeChangeHook<
-  TDoc extends object = Record<string, unknown>,
-> = (args: {
+export type GlobalBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
   data: Partial<TDoc>;
   doc?: TDoc;
   req: HookRequestContext;
@@ -899,99 +693,14 @@ export type GlobalBeforeReadHook = CollectionBeforeReadHook;
 Exported type from @dyrected/core.
 
 ```ts
-export type HookFunction<TDoc extends object = Record<string, unknown>> =
-  (args: {
-    data?: Partial<TDoc>;
-    doc?: TDoc;
-    user?: AuthenticatedUser;
-    req?: HookRequestContext;
-    operation?: "create" | "update" | "delete";
-    db?: DatabaseAdapter;
-    [key: string]: unknown;
-  }) => unknown | Promise<unknown>;
-```
-
-
-## HookRequestContext
-
-Minimum HTTP request context passed to every server-side hook and resolver.
-
-The full Web Standard `Request` is available as `raw` when you need it, but
-most hooks only need `query` (URL search parameters).
-
-```ts
-export interface HookRequestContext {
-  /** Parsed URL query-string parameters, e.g. `{ page: '2', search: 'hello' }`. */
-  query: Record<string, string>;
-  /** Incoming HTTP headers, lowercased. */
-  headers: Record<string, string>;
-  /** The raw Web Standard `Request` object. Useful for streaming or advanced header inspection. */
-  raw?: Request;
-}
-```
-
-| Member | Signature | Description |
-| --- | --- | --- |
-| <code>query</code> | <code>query: Record&lt;string, string&gt;</code> | Parsed URL query-string parameters, e.g. &#96;&#123; page: '2', search: 'hello' &#125;&#96;. |
-| <code>headers</code> | <code>headers: Record&lt;string, string&gt;</code> | Incoming HTTP headers, lowercased. |
-| <code>raw</code> | <code>raw?: Request</code> | The raw Web Standard &#96;Request&#96; object. Useful for streaming or advanced header inspection. |
-
-
-## InferDocShape
-
-Exported type from @dyrected/core.
-
-```ts
-export type InferDocShape<Fields extends readonly Field[]> =
-  Fields extends readonly []
-    ? Record<never, never>
-    : Fields extends readonly [
-          infer Head extends Field,
-          ...infer Tail extends readonly Field[],
-        ]
-      ? InferFieldEntry<Head> & InferDocShape<Tail>
-      : Record<string, unknown>;
-```
-
-
-## SystemDocFields
-
-Audit fields automatically injected into every collection document at runtime.
-They are always present in API responses but hidden in the Admin UI by default.
-
-```ts
-export type SystemDocFields = {
-  createdAt?: string;
-  updatedAt?: string;
-  /** ID of the user who created the document. */
-  createdBy?: string;
-  /** ID of the user who last updated the document. */
-  updatedBy?: string;
-};
-```
-
-
-## UploadDocFields
-
-Fields automatically added to upload/media collection documents.
-These mirror the `FileData` interface returned by storage adapters.
-
-```ts
-export type UploadDocFields = {
-  filename: string;
-  filesize?: number;
-  mimeType: string;
-  /** Public URL of the stored file. */
-  url: string;
-  width?: number;
-  height?: number;
-  focalPoint?: { x: number; y: number };
-  /** Base64 BlurHash for progressive image loading. */
-  blurhash?: string;
-  sizes?: Record<
-    string,
-    { filename?: string; url?: string; width?: number; height?: number }
-  >;
-};
+export type HookFunction<TDoc extends object = Record<string, unknown>> = (args: {
+  data?: Partial<TDoc>;
+  doc?: TDoc;
+  user?: AuthenticatedUser;
+  req?: HookRequestContext;
+  operation?: "create" | "update" | "delete";
+  db?: DatabaseAdapter;
+  [key: string]: unknown;
+}) => unknown | Promise<unknown>;
 ```
 {/* GENERATED:REFERENCE-FIELDS:END */}

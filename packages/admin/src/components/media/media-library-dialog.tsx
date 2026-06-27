@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useInfiniteQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -28,15 +28,16 @@ import {
 import { ScrollArea } from "../ui/scroll-area"
 import { Input } from "../ui/input"
 import { getMediaUrl, cn } from "../../lib/utils"
+import type { Media } from "@dyrected/sdk"
 
 interface MediaLibraryDialogProps {
   collection: string
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  selectedValues: any[]
-  onSelect: (id: string, item?: any) => void
+  selectedValues: (string | Media)[]
+  onSelect: (id: string, item?: Media) => void
   multiple?: boolean
-  onConfirm?: (selectedIds: string[], selectedItems?: any[]) => void
+  onConfirm?: (selectedIds: string[], selectedItems?: Media[]) => void
 }
 
 export function MediaLibraryDialog({
@@ -49,12 +50,12 @@ export function MediaLibraryDialog({
   onConfirm
 }: MediaLibraryDialogProps) {
   const { client, schemas } = useDyrected()
-  const schema = React.useMemo(() => schemas?.collections?.find((c: any) => c.slug === collection), [schemas, collection])
+  const schema = React.useMemo(() => schemas?.collections?.find((c: { slug: string }) => c.slug === collection), [schemas, collection])
   const collectionLabel = React.useMemo(() => schema?.labels?.plural ?? schema?.labels?.singular ?? (collection && collection !== 'media' ? (collection.charAt(0).toUpperCase() + collection.slice(1)) : "Media Library"), [schema, collection])
   const [searchQuery, setSearchQuery] = React.useState("")
   const [externalUrl, setExternalUrl] = React.useState("")
   const [activeTab, setActiveTab] = React.useState("library")
-  const [selectedItem, setSelectedItem] = React.useState<any>(null)
+  const [selectedItem, setSelectedItem] = React.useState<(Media & { id?: string }) | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
 
   const {
@@ -111,7 +112,7 @@ export function MediaLibraryDialog({
 
     setIsUploading(true)
     try {
-      const result = await client.collection(collection).upload(file, {})
+      const result = await client.collection(collection).upload(file, {}) as Media & { id: string }
       await refetch()
       onSelect(result.id, result)
       if (!multiple) onOpenChange(false)
@@ -133,7 +134,7 @@ export function MediaLibraryDialog({
       let idPrefix = 'ext'
 
       // YouTube Detection
-      const ytMatch = externalUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#\&\?]*)/)
+      const ytMatch = externalUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#&?]*)/)
       if (ytMatch && ytMatch[1]) {
         mimeType = 'video/youtube'
         filename = `YouTube: ${ytMatch[1]}`
@@ -163,7 +164,7 @@ export function MediaLibraryDialog({
         mimeType,
         filesize: 0,
         id: idPrefix
-      })
+      }) as unknown as Media & { id: string }
 
       await refetch()
       onSelect(result.id, result)
@@ -177,10 +178,10 @@ export function MediaLibraryDialog({
     }
   }
 
-  const getPreviewUrl = (item: any) => {
+  const getPreviewUrl = (item: { url?: string; mimeType?: string;[key: string]: unknown }) => {
     if (!item) return ""
     if (item.mimeType === 'video/youtube') {
-      const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#\&\?]*)/)
+      const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#&?]*)/)
       const videoId = match && match[1]
       return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
     }
@@ -193,10 +194,11 @@ export function MediaLibraryDialog({
     return getMediaUrl(item, client?.getBaseUrl() || "");
   }
 
-  const getIdentifier = React.useCallback((v: any): string => {
+  const getIdentifier = React.useCallback((v: unknown): string => {
     if (!v) return ""
     if (typeof v === "object" && v !== null) {
-      return v.id || v._id || v.filename || ""
+      const obj = v as Record<string, unknown>
+      return String(obj.id || obj._id || obj.filename || "")
     }
     const strVal = String(v)
     if (strVal.includes("/")) {
@@ -212,8 +214,8 @@ export function MediaLibraryDialog({
   const handleConfirm = () => {
     if (onConfirm) {
       const selectedItems = sVals.map(val => {
-        return media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
-      }).filter(Boolean)
+        return media?.find((m: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
+      }).filter(Boolean) as Media[]
       onConfirm(sVals, selectedItems)
     }
     onOpenChange(false)
@@ -269,25 +271,25 @@ export function MediaLibraryDialog({
                           size="sm"
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 hover:dy-bg-background dy-rounded-md"
                           onClick={() => {
-                            media?.forEach((item: any) => {
-                              if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
-                                onSelect(item.id, item)
-                              }
-                            })
-                          }}
-                        >
-                          Select All
-                        </Button>
-                        <div className="dy-hidden dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1 sm:dy-block" />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
-                          onClick={() => {
-                            sVals.forEach(val => {
-                              const item = media?.find((m: any) => m.id === val || m.filename === val || m.url === val)
-                              onSelect(val, item)
-                            })
+                            media?.forEach((item: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => {
+              if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
+                onSelect(item.id!, item as unknown as Media)
+              }
+            })
+          }}
+        >
+          Select All
+        </Button>
+        <div className="dy-hidden dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1 sm:dy-block" />
+        <Button
+          variant="ghost"
+          size="sm"
+          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
+          onClick={() => {
+            sVals.forEach(val => {
+              const item = media?.find((m: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
+              onSelect(val, item as unknown as Media)
+            })                
                           }}
                         >
                           Clear
@@ -297,22 +299,22 @@ export function MediaLibraryDialog({
                   </div>
                   <ScrollArea className="dy-min-h-0 dy-flex-1 dy--mx-2 dy-px-2">
                     <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-4 sm:dy-grid-cols-3 md:dy-grid-cols-4 lg:dy-grid-cols-5 lg:dy-gap-4">
-                      {media?.map((item: any) => (
+                      {media?.map((item: { id?: string; filename?: string; url?: string; mimeType?: string;[key: string]: unknown }) => (
                         <button
                           key={item.id}
                           type="button"
                           onClick={() => {
-                            if (multiple) {
-                              onSelect(item.id, item)
-                              setSelectedItem(item)
-                            } else {
-                              if (selectedItem?.id === item.id) {
-                                onSelect(item.id, item)
-                                onOpenChange(false)
-                              } else {
-                                setSelectedItem(item)
-                              }
-                            }
+                             if (multiple) {
+                               onSelect(item.id!, item as unknown as Media)
+                               setSelectedItem(item as Media & { id?: string })
+                             } else {
+                               if (selectedItem?.id === item.id) {
+                                 onSelect(item.id!, item as unknown as Media)
+                                 onOpenChange(false)
+                               } else {
+                                 setSelectedItem(item as Media & { id?: string })
+                               }
+                             }
                           }}
                           className={cn(
                             "dy-relative dy-group dy-rounded-2xl dy-overflow-hidden dy-border-2 dy-aspect-square dy-transition-all hover:dy-scale-[1.02] active:dy-scale-95 dy-shadow-sm dy-bg-muted/5",

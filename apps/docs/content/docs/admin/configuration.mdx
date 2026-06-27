@@ -190,10 +190,10 @@ Every field accepts an `admin` object that controls how it renders inside the ed
 | `hidden` | `boolean` | `false` | Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI. |
 | `filterable` | `boolean` | `true` for supported field types | If `false`, the field is excluded from the list filter builder and stripped from incoming `where` queries. |
 | `condition` | `string \| (data: any) => boolean` | always shown | A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
-| `layout` | `'checkbox' \| 'switch' \| 'radio' \| 'select'` | field default | Presentation style for supported field types. Boolean fields default to `checkbox`; use `switch` for a toggle. Select fields default to `select`; use `radio` for 2–5 visible choices. |
-| `maxLength` | `number` | none | Maximum character limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
-| `maxWords` | `number` | none | Maximum word limit for text/textarea inputs. Displays a warning counter that turns amber at 80% limit and red/bold at 100% limit. |
+| `layout` | field-specific | field default | Presentation style only on fields that support alternate renderers. Boolean fields accept `checkbox` or `switch`. Select fields accept `select` or `radio`. |
 | `component` | `string` | none | Key of a custom UI component to render in place of the default field input. The component must be registered under the same key in the `components.fields` prop of `<DyrectedAdmin>`. See [Custom Field Components](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs). |
+
+Character and word counters are configured on the field itself with `maxLength` and `maxWords`, not through generic `admin` options. The Admin UI still reads `admin.maxLength` and `admin.maxWords` as compatibility aliases for supported text inputs, but new schemas should prefer the top-level field properties.
 
 ### `component` — Custom Field UI
 
@@ -254,6 +254,37 @@ Boolean fields render as a checkbox by default. Set `layout: 'switch'` when a sw
 ```
 
 Select fields render as dropdowns by default. Set `layout: 'radio'` for short option lists where all choices should be visible at once.
+
+`layout` is not a universal field option. Dyrected now types it only on field variants that actually support alternate built-in renderers.
+
+### `admin.hooks.options` — Client-side Dependent Options
+
+This hook is only available on option-bearing fields:
+
+- `select`
+- `radio`
+- `multiSelect`
+
+Use it when the available choices depend on other values already present in the form and you want the options to update instantly without a network request.
+
+```ts
+{
+  name: 'state',
+  type: 'select',
+  admin: {
+    hooks: {
+      options: ({ siblingData }) => {
+        if (siblingData.country === 'us') {
+          return ['CA', 'NY', 'TX']
+        }
+        return []
+      },
+    },
+  },
+}
+```
+
+If the options require a database query, secret API key, or server-side cache, use the top-level field `options` resolver instead of `admin.hooks.options`.
 
 ### `condition` — Conditional Fields
 

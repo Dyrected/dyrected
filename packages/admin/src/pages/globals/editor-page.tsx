@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { FormEngine } from "../../components/forms/form-engine"
 import { useParams } from "react-router-dom"
 import { Globe, Save } from "lucide-react"

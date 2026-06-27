@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../../providers/dyrected-provider"
+import { useDyrected } from "../../../providers/dyrected-context"
 import { Button } from "../../ui/button"
 import {
   Image as ImageIcon,
@@ -359,7 +359,7 @@ export function MediaPicker({
     const file = new File([blob], cropFilename, { type: blob.type })
     const toastId = toast.loading("Uploading cropped image…")
     try {
-      const uploaded = await client.collection(activeMediaCollection).upload(file)
+      const uploaded = await client.collection(activeMediaCollection).upload(file) as CachedMedia
       setLocalMediaCache(prev => {
         if (prev.some(m => m.id === uploaded.id)) return prev
         return [...prev, uploaded]

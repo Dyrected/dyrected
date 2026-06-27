@@ -3,7 +3,7 @@ import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Link, useSearchParams } from "react-router-dom"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import { FilterBuilder } from "../../components/ui/filter-builder"
 import type { CollectionConfig, Field } from "@dyrected/core"
 import { type FilterRule, rulesToWhere, whereToRules } from "../../lib/filter-rules"
@@ -794,8 +794,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         componentProps={collectionComponentProps}
       />
       <PageHeader
-        title={schema.labels?.plural || schema.label || schema.slug}
-        description={`Manage your ${schema.labels?.plural || schema.label || schema.slug} entries and update content.`}
+        title={schema.labels?.plural || schema.slug}
+        description={`Manage your ${schema.labels?.plural || schema.slug} entries and update content.`}
         icon={Database}
       >
         <div className="dy-flex dy-items-center dy-gap-2 dy-w-full sm:dy-w-auto">
@@ -929,7 +929,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
                 <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
                   <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
                   <span className="sm:dy-hidden">Add</span>
-                  <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.label || schema.slug}</span>
+                  <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.slug}</span>
                 </Button>
               </Link>
             </>

@@ -18,7 +18,7 @@ import {
 } from "../../ui/popover"
 import { Badge } from "../../ui/badge"
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../../providers/dyrected-provider"
+import { useDyrected } from "../../../providers/dyrected-context"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 
 interface Option {

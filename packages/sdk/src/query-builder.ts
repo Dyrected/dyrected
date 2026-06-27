@@ -1,24 +1,30 @@
 import type { PaginatedResult } from '@dyrected/core';
 
-export interface QueryArgs {
+type UnknownRecord = Record<string, unknown>;
+
+export interface QueryArgs<TDoc = UnknownRecord> {
   limit?: number;
   page?: number;
   depth?: number;
-  where?: any;
+  where?: UnknownRecord | string;
   sort?: string;
-  initialData?: any[];
+  initialData?: TDoc[];
 }
 
-export class QueryBuilder<T = any> {
-  private args: QueryArgs = {};
+export class QueryBuilder<T = UnknownRecord> {
+  private args: QueryArgs<T> = {};
 
   constructor(
     private collection: string,
-    private executor: (collection: string, args: QueryArgs) => Promise<PaginatedResult<T>>
+    private executor: (collection: string, args: QueryArgs<T>) => Promise<PaginatedResult<T>>
   ) {}
 
-  where(where: any): this {
-    this.args.where = { ...this.args.where, ...where };
+  where(where: UnknownRecord): this {
+    const currentWhere = this.args.where;
+    this.args.where =
+      currentWhere && typeof currentWhere === "object"
+        ? { ...currentWhere, ...where }
+        : { ...where };
     return this;
   }
 
@@ -54,7 +60,7 @@ export class QueryBuilder<T = any> {
   // Thenable support for convenience
   then<TResult1 = PaginatedResult<T>, TResult2 = never>(
     onfulfilled?: ((value: PaginatedResult<T>) => TResult1 | PromiseLike<TResult1>) | null,
-    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
   ): Promise<TResult1 | TResult2> {
     return this.exec().then(onfulfilled, onrejected);
   }

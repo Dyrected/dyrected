@@ -1,8 +1,10 @@
-import React from "react";
-import { useDyrected } from "../../providers/dyrected-provider";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useDyrected } from "../../providers/dyrected-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoginPage } from "../../pages/auth/login-page";
 import { FirstUserPage } from "../../pages/auth/first-user-page";
+import { ExternalLoginPage } from "../../pages/auth/external-login-page";
+import type { CollectionConfig } from "@dyrected/core";
 
 /**
  * AuthGate protects the admin dashboard and handles the initial bootstrap flow.
@@ -15,25 +17,64 @@ import { FirstUserPage } from "../../pages/auth/first-user-page";
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { client, user, setToken, schemas, initialToken } = useDyrected();
+  const queryClient = useQueryClient();
+  const handledExternalTokenRef = useRef<string | null>(null);
+
+  const adminAuth = schemas?.adminAuth;
+  const isExternalAdminAuth = adminAuth?.mode === "external" && (adminAuth.providers?.length ?? 0) > 0;
+  const externalParams = useMemo(() => {
+    if (typeof window === "undefined") {
+      return { token: null, error: null };
+    }
+    const params = new URLSearchParams(window.location.search);
+    return {
+      token: params.get("dyrectedExternalToken"),
+      error: params.get("dyrectedExternalError"),
+    };
+  }, []);
+  const pendingExternalToken = !!externalParams.token;
+  const externalError = externalParams.error;
+
+  const authCollection = resolveAdminAuthCollection(schemas?.collections, adminAuth?.collectionSlug);
+
+  useEffect(() => {
+    if (!isExternalAdminAuth || !externalParams.token || handledExternalTokenRef.current === externalParams.token) {
+      return;
+    }
+
+    handledExternalTokenRef.current = externalParams.token;
+    setToken(externalParams.token);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("dyrectedExternalToken");
+      params.delete("dyrectedAdminCollection");
+      params.delete("dyrectedExternalError");
+      const nextSearch = params.toString();
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, document.title, nextUrl);
+    }
+  }, [externalParams.token, isExternalAdminAuth, setToken]);
+
+  useEffect(() => {
+    if (!isExternalAdminAuth || user || !client) return;
+    const providers = adminAuth?.providers || [];
+    if (!pendingExternalToken && !externalError && providers.length === 1 && providers[0].autoRedirect !== false) {
+      window.location.assign(buildProviderStartUrl(client.getBaseUrl(), providers[0].id));
+    }
+  }, [adminAuth?.providers, client, externalError, isExternalAdminAuth, pendingExternalToken, user]);
+
+  // 1. Check if the collection is initialized for local auth only
+  const { data: initData, isLoading: isLoadingInit } = useQuery({
+    queryKey: ["auth-init", authCollection?.slug],
+    queryFn: () => client!.collection(authCollection!.slug).isInitialized(),
+    enabled: !!client && !!authCollection && !isExternalAdminAuth,
+  });
+
+  const isLoading = !schemas || (!isExternalAdminAuth && authCollection && isLoadingInit);
 
   // Cloud-managed: host application has already authenticated the user.
   // Skip setup and login flow — render the admin shell directly.
   if (initialToken) return <>{children}</>;
-  const queryClient = useQueryClient();
-
-  // 1. Prefer __admins as the sole dashboard auth collection; fall back to the first auth collection.
-  const authCollection =
-    schemas?.collections.find((c: any) => c.slug === '__admins') ??
-    schemas?.collections.find((c: any) => c.auth);
-
-  // 2. Check if the collection is initialized
-  const { data: initData, isLoading: isLoadingInit } = useQuery({
-    queryKey: ["auth-init", authCollection?.slug],
-    queryFn: () => client!.collection(authCollection!.slug).isInitialized(),
-    enabled: !!client && !!authCollection,
-  });
-
-  const isLoading = !schemas || (authCollection && isLoadingInit);
 
   if (isLoading) {
     return (
@@ -51,20 +92,78 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  if (isExternalAdminAuth) {
+    if (!user) {
+      const providers = adminAuth.providers || [];
+      if (!pendingExternalToken && !externalError && providers.length === 1 && providers[0].autoRedirect !== false) return null;
+
+      return (
+        <ExternalLoginPage
+          providers={providers}
+          error={externalError}
+          onStart={(providerId) => {
+            window.location.assign(buildProviderStartUrl(client!.getBaseUrl(), providerId));
+          }}
+        />
+      );
+    }
+
+    return <>{children}</>;
+  }
+
   // If not initialized, show first user registration
   if (initData && !initData.initialized) {
-    return <FirstUserPage collectionSlug={authCollection.slug} onComplete={(data: any) => {
-      setToken(data.token);
-      queryClient.invalidateQueries({ queryKey: ["auth-init", authCollection.slug] });
-    }} />;
+    return (
+      <FirstUserPage
+        collectionSlug={authCollection.slug}
+        onComplete={(data: unknown) => {
+          const token = readToken(data);
+          if (!token) return;
+          setToken(token);
+          queryClient.invalidateQueries({ queryKey: ["auth-init", authCollection.slug] });
+        }}
+      />
+    );
   }
 
   // If not logged in, show login page
   if (!user) {
-    return <LoginPage collectionSlug={authCollection.slug} onLogin={(data: any) => {
-      setToken(data.token);
-    }} />;
+    return (
+      <LoginPage
+        collectionSlug={authCollection.slug}
+        onLogin={(data: unknown) => {
+          const token = readToken(data);
+          if (token) setToken(token);
+        }}
+      />
+    );
   }
 
   return <>{children}</>;
+}
+
+function buildProviderStartUrl(baseUrl: string, providerId: string) {
+  const startUrl = new URL(`${baseUrl.replace(/\/$/, "")}/api/admin/auth/${providerId}/start`);
+  startUrl.searchParams.set("returnTo", window.location.href);
+  return startUrl.toString();
+}
+
+function resolveAdminAuthCollection(
+  collections: CollectionConfig[] | undefined,
+  collectionSlug?: string,
+) {
+  if (!collections) return undefined;
+  if (collectionSlug) {
+    return collections.find((collection) => collection.slug === collectionSlug);
+  }
+  return (
+    collections.find((collection) => collection.slug === "__admins") ??
+    collections.find((collection) => collection.auth)
+  );
+}
+
+function readToken(value: unknown): string | null {
+  if (!value || typeof value !== "object" || !("token" in value)) return null;
+  const token = (value as { token?: unknown }).token;
+  return typeof token === "string" ? token : null;
 }

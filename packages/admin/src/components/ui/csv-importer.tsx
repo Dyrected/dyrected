@@ -11,7 +11,7 @@ import {
   Download,
   AlertTriangle
 } from "lucide-react"
-import { useDyrected } from "../../providers/dyrected-provider"
+import { useDyrected } from "../../providers/dyrected-context"
 import type { CollectionConfig, Field } from "@dyrected/core"
 import { Button } from "./button"
 import { Progress } from "./progress"

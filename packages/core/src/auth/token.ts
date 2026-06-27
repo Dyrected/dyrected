@@ -6,6 +6,8 @@ export interface CollectionTokenPayload extends JWTPayload {
   email: string;
   collection: string; // which auth collection this token is for
   purpose?: 'invite' | 'reset';
+  providerId?: string;
+  authSource?: 'local' | 'external';
 }
 
 function getSecret(): Uint8Array {

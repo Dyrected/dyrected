@@ -19,7 +19,7 @@ import {
 import { normalizeOptions } from "../utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 import { useQuery } from "@tanstack/react-query"
-import { useDyrected } from "../../../providers/dyrected-provider"
+import { useDyrected } from "../../../providers/dyrected-context"
 
 interface SelectFieldProps {
   schema: FieldSchema

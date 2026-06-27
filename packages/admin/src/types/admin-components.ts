@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { AdminConfig, CollectionConfig, GlobalConfig } from "@dyrected/core";
+import type { AdminConfig, CollectionConfig, GlobalConfig, PublicAdminAuthConfig } from "@dyrected/core";
 import type { DyrectedClient, PaginatedResult } from "@dyrected/sdk";
 
 /** All collection and global schemas returned by the backend, plus optional admin config. */
@@ -7,6 +7,7 @@ export interface AdminSchemas {
   collections: CollectionConfig[];
   globals: GlobalConfig[];
   admin?: AdminConfig;
+  adminAuth?: PublicAdminAuthConfig;
 }
 
 /** Props injected into custom dashboard slot components. */

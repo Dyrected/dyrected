@@ -3,73 +3,6 @@ import type { EndpointReference, ReferenceEntry } from "../types.js";
 
 export const references: readonly ReferenceEntry[] = [
   {
-    "id": "@dyrected/core:AdminConfig",
-    "name": "AdminConfig",
-    "kind": "interface",
-    "category": "configuration",
-    "sourcePackage": "@dyrected/core",
-    "description": "Branding and metadata options for the Dyrected Admin UI.",
-    "signature": "export interface AdminConfig {\n  /** Custom component slots around the built-in dashboard. */\n  components?: AdminDashboardComponentSlots;\n  branding?: {\n    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */\n    logo?: string;\n    /** Compact logo mark used in the collapsed sidebar state. */\n    logoMark?: string;\n    /** Text alternative or addition to the logo image. */\n    logoText?: string;\n    /**\n     * Primary accent colour as any CSS colour value.\n     * @example '#6366f1'\n     * @example 'hsl(240 50% 60%)'\n     */\n    primaryColor?: string;\n    /** Browser tab favicon URL. */\n    favicon?: string;\n    /** Font family for body and UI text. Must be loaded separately. */\n    fontSans?: string;\n    /** Font family for headings. Must be loaded separately. */\n    fontSerif?: string;\n  };\n  meta?: {\n    /**\n     * String appended to every Admin page's `<title>`.\n     * @default '- Dyrected'\n     */\n    titleSuffix?: string;\n  };\n}",
-    "members": [
-      {
-        "name": "components",
-        "signature": "components?: AdminDashboardComponentSlots",
-        "description": "Custom component slots around the built-in dashboard."
-      },
-      {
-        "name": "branding",
-        "signature": "branding?: {\n    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */\n    logo?: string;\n    /** Compact logo mark used in the collapsed sidebar state. */\n    logoMark?: string;\n    /** Text alternative or addition to the logo image. */\n    logoText?: string;\n    /**\n     * Primary accent colour as any CSS colour value.\n     * @example '#6366f1'\n     * @example 'hsl(240 50% 60%)'\n     */\n    primaryColor?: string;\n    /** Browser tab favicon URL. */\n    favicon?: string;\n    /** Font family for body and UI text. Must be loaded separately. */\n    fontSans?: string;\n    /** Font family for headings. Must be loaded separately. */\n    fontSerif?: string;\n  }",
-        "description": ""
-      },
-      {
-        "name": "meta",
-        "signature": "meta?: {\n    /**\n     * String appended to every Admin page's `<title>`.\n     * @default '- Dyrected'\n     */\n    titleSuffix?: string;\n  }",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:AuthDocFields",
-    "name": "AuthDocFields",
-    "kind": "type",
-    "category": "fields",
-    "sourcePackage": "@dyrected/core",
-    "description": "Fields automatically injected into collections with `auth: true`.\n`password` is part of the schema but is stripped from API read responses.",
-    "signature": "export type AuthDocFields = {\n  email: string;\n  password?: string;\n  roles?: string[];\n};",
-    "members": []
-  },
-  {
-    "id": "@dyrected/core:AuthenticatedUser",
-    "name": "AuthenticatedUser",
-    "kind": "interface",
-    "category": "hooks",
-    "sourcePackage": "@dyrected/core",
-    "description": "Base shape of an authenticated user as decoded from the JWT.\n\nThe actual shape will include every field on your auth collection — this\ninterface only guarantees the properties that Dyrected always stamps on the\ntoken. Extend it in your own codebase for stronger typing:",
-    "signature": "export interface AuthenticatedUser {\n  /** The user's document ID in the database. */\n  sub: string;\n  /** The user's email address. */\n  email?: string;\n  /** Slug of the collection this user was authenticated against. */\n  collection: string;\n  /** Array of role strings, if your auth collection has a `roles` field. */\n  roles?: string[];\n  /** Any additional fields from the auth collection document. */\n  [key: string]: unknown;\n}",
-    "members": [
-      {
-        "name": "sub",
-        "signature": "sub: string",
-        "description": "The user's document ID in the database."
-      },
-      {
-        "name": "email",
-        "signature": "email?: string",
-        "description": "The user's email address."
-      },
-      {
-        "name": "collection",
-        "signature": "collection: string",
-        "description": "Slug of the collection this user was authenticated against."
-      },
-      {
-        "name": "roles",
-        "signature": "roles?: string[]",
-        "description": "Array of role strings, if your auth collection has a `roles` field."
-      }
-    ]
-  },
-  {
     "id": "@dyrected/core:availableWorkflowTransitions",
     "name": "availableWorkflowTransitions",
     "kind": "function",
@@ -96,7 +29,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "Runs **after** a document is created or updated in the database.\n\n**Isolation**: errors thrown inside this hook are caught by the framework,\nlogged to the console, and then discarded. The HTTP response returns the\nsaved document as if nothing went wrong — because from the database's\nperspective, nothing did. This means a transient email failure or webhook\ntimeout will never turn a successful write into a 500 for the caller.\n\nThe return value is ignored — this hook is for side-effects only (emails,\nwebhooks, cache revalidation, search index updates, etc.).\n\n**Awaiting vs fire-and-forget**: `await`ing inside this hook is fine for\nfast, reliable calls. For slow or unreliable external services prefer\nfire-and-forget with your own `.catch()` so the response doesn't block:\n\n```ts\n// ✓ fast & reliable — safe to await\nafterChange: [async ({ doc }) => {\n  await revalidatePath(`/posts/${doc.slug}`)\n}]\n\n// ✓ slow or unreliable — fire-and-forget\nafterChange: [({ doc }) => {\n  sendEmail({ to: doc.email, ... }).catch(console.error)\n}]\n```",
-    "signature": "export type CollectionAfterChangeHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  /** The document as it was written to the database. */\n  doc: TDoc;\n  /**\n   * Snapshot of the document before the write. Only present on `'update'`\n   * operations; `undefined` on `'create'`.\n   */\n  previousDoc?: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /** Whether this was a new document or an update. */\n  operation: \"create\" | \"update\";\n  /**\n   * Database adapter with full read/write access. The DB write for this\n   * operation has already committed — safe for side-effect writes.\n   */\n  db: DatabaseAdapter;\n}) => void | Promise<void>;",
+    "signature": "export type CollectionAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {\n  /** The document as it was written to the database. */\n  doc: TDoc;\n  /**\n   * Snapshot of the document before the write. Only present on `'update'`\n   * operations; `undefined` on `'create'`.\n   */\n  previousDoc?: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /** Whether this was a new document or an update. */\n  operation: \"create\" | \"update\";\n  /**\n   * Database adapter with full read/write access. The DB write for this\n   * operation has already committed — safe for side-effect writes.\n   */\n  db: DatabaseAdapter;\n}) => void | Promise<void>;",
     "members": []
   },
   {
@@ -106,7 +39,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type CollectionAfterDeleteHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  /** The ID of the deleted document. */\n  id: string;\n  /** The document as it was just before deletion. */\n  doc: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter with full read/write access. The deletion has already\n   * committed — safe for cascade deletes or cleanup writes.\n   */\n  db: DatabaseAdapter;\n}) => void | Promise<void>;",
+    "signature": "export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {\n  /** The ID of the deleted document. */\n  id: string;\n  /** The document as it was just before deletion. */\n  doc: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter with full read/write access. The deletion has already\n   * committed — safe for cascade deletes or cleanup writes.\n   */\n  db: DatabaseAdapter;\n}) => void | Promise<void>;",
     "members": []
   },
   {
@@ -116,17 +49,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "Runs after a document (or list of documents) is fetched from the database,\nbefore the response is sent to the client.\n\nReturn a modified document to send instead. Useful for adding computed\nvirtual fields or transforming the shape of the response.",
-    "signature": "export type CollectionAfterReadHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  /** The document as fetched from the database (with defaults applied). */\n  doc: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => TDoc | Promise<TDoc>;",
-    "members": []
-  },
-  {
-    "id": "@dyrected/core:CollectionAfterTransitionHook",
-    "name": "CollectionAfterTransitionHook",
-    "kind": "type",
-    "category": "hooks",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export type CollectionAfterTransitionHook<\n  TDoc extends object = Record<string, unknown>,\n> = (\n  args: WorkflowTransitionContext<TDoc> & { event: LifecycleEvent },\n) => void | Promise<void>;",
+    "signature": "export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {\n  /** The document as fetched from the database (with defaults applied). */\n  doc: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => TDoc | Promise<TDoc>;",
     "members": []
   },
   {
@@ -136,7 +59,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "Runs **before** a document is created or updated in the database.\n\nReturn a modified data object to write instead of the original. This is the\nright place for data transformation, normalisation, slug generation, and\nvalidation (throw to abort the write).",
-    "signature": "export type CollectionBeforeChangeHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  /** The incoming data payload being written. */\n  data: Partial<TDoc>;\n  /**\n   * The existing document before this update. Only present on `'update'`\n   * operations; `undefined` on `'create'`.\n   */\n  doc?: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /** Whether this is a new document or an update to an existing one. */\n  operation: \"create\" | \"update\";\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;",
+    "signature": "export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {\n  /** The incoming data payload being written. */\n  data: Partial<TDoc>;\n  /**\n   * The existing document before this update. Only present on `'update'`\n   * operations; `undefined` on `'create'`.\n   */\n  doc?: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /** Whether this is a new document or an update to an existing one. */\n  operation: \"create\" | \"update\";\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;",
     "members": []
   },
   {
@@ -146,7 +69,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "Runs **before** a document is deleted from the database.\n\nThrow an error to cancel the deletion — the document will not be removed\nand the API will return a `500` with your error message.",
-    "signature": "export type CollectionBeforeDeleteHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  /** The ID of the document about to be deleted. */\n  id: string;\n  /** The full document about to be deleted. */\n  doc: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterDelete` for post-deletion writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => void | Promise<void>;",
+    "signature": "export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {\n  /** The ID of the document about to be deleted. */\n  id: string;\n  /** The full document about to be deleted. */\n  doc: TDoc;\n  /** The HTTP request context. */\n  req: HookRequestContext;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterDelete` for post-deletion writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => void | Promise<void>;",
     "members": []
   },
   {
@@ -160,23 +83,13 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
-    "id": "@dyrected/core:CollectionBeforeTransitionHook",
-    "name": "CollectionBeforeTransitionHook",
-    "kind": "type",
-    "category": "hooks",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export type CollectionBeforeTransitionHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: WorkflowTransitionContext<TDoc>) => void | Promise<void>;",
-    "members": []
-  },
-  {
     "id": "@dyrected/core:CollectionConfig",
     "name": "CollectionConfig",
     "kind": "interface",
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "Defines a Dyrected collection — a named set of documents with a shared schema.\n\nPass your document's TypeScript type as the generic parameter `TDoc` to get\nfully typed hooks and access functions:\n\n```ts\ninterface Post {\n  id: string\n  title: string\n  slug: string\n  status: 'draft' | 'published'\n  publishedAt?: string\n}\n\nexport const Posts = defineCollection<Post>({\n  slug: 'posts',\n  hooks: {\n    beforeChange: [({ data, operation }) => {\n      // `data` is typed as Partial<Post>\n      if (operation === 'create') return { ...data, status: 'draft' }\n      return data\n    }],\n    afterChange: [({ doc, previousDoc }) => {\n      // `doc` and `previousDoc` are typed as Post\n      if (doc.status !== previousDoc?.status) notifySubscribers(doc)\n    }],\n  },\n  fields: [...],\n})\n```",
-    "signature": "export interface CollectionConfig<\n  TDoc extends object = Record<string, unknown>,\n> {\n  /**\n   * Unique identifier for this collection.\n   * Used as the URL segment (`/api/collections/:slug`) and the database table/collection name.\n   * Use kebab-case, e.g. `'blog-posts'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to a specific site in a multi-tenant deployment.\n   * When set, only requests bearing a matching `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * deployment and accessible regardless of the `X-Site-Id` header.\n   */\n  shared?: boolean;\n\n  /** Human-readable names for documents in this collection, shown in the Admin UI. */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true`, this collection is an **auth collection** — it gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   */\n  auth?: boolean;\n\n  /**\n   * If `true` (or a config object), this collection supports **file uploads**.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   */\n  upload?: boolean | UploadConfig;\n\n  /** Field definitions that make up the document schema for this collection. */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds `createdAt` and `updatedAt`\n   * timestamp fields to every document. Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty (e.g. for demo data or defaults).\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value is a function (or Jexl string) that\n   * returns `true` to allow or `false` to deny. Returning a `where`-style\n   * object grants access only to matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,               // public read\n   *   create: ({ user }) => !!user,   // logged-in users only\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   */\n  access?: {\n    read?: AccessFunction<TDoc> | string;\n    create?: AccessFunction<TDoc> | string;\n    update?: AccessFunction<TDoc> | string;\n    delete?: AccessFunction<TDoc> | string;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the [Hooks reference](/docs/concepts/hooks) for the full lifecycle diagram.\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHook[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHook<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHook<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only —\n     * webhooks, cache busting, notifications. Return value is ignored.\n     *\n     * Errors are **isolated**: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See {@link CollectionAfterChangeHook} for the await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /**\n     * Runs before a document is deleted. Throw to cancel the deletion.\n     */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are **isolated**: caught, logged, and discarded — the deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /** Admin UI configuration for this collection. */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     * Pass a function to derive the URL from the document's fields.\n     *\n     * @example\n     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`\n     */\n    previewUrl?:\n      | string\n      | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `'postMessage'` (default) — sends a `postMessage` with the current doc data.\n     * - `'token'` — passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}'   // → /blog/my-post\n     * urlPattern: '/{slug}'        // → /about\n     */\n    urlPattern?: string;\n  };\n}",
+    "signature": "export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this collection.\n   * Used as the URL segment (`/api/collections/:slug`) and the database table/collection name.\n   * Use kebab-case, e.g. `'blog-posts'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to a specific site in a multi-tenant deployment.\n   * When set, only requests bearing a matching `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * deployment and accessible regardless of the `X-Site-Id` header.\n   */\n  shared?: boolean;\n\n  /** Human-readable names for documents in this collection, shown in the Admin UI. */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true`, this collection is an **auth collection** — it gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   */\n  auth?: boolean;\n\n  /**\n   * If `true` (or a config object), this collection supports **file uploads**.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   */\n  upload?: boolean | UploadConfig;\n\n  /** Field definitions that make up the document schema for this collection. */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds `createdAt` and `updatedAt`\n   * timestamp fields to every document. Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty (e.g. for demo data or defaults).\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value is a function (or Jexl string) that\n   * returns `true` to allow or `false` to deny. Returning a `where`-style\n   * object grants access only to matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,               // public read\n   *   create: ({ user }) => !!user,   // logged-in users only\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   */\n  access?: {\n    read?: AccessFunction<TDoc> | string;\n    create?: AccessFunction<TDoc> | string;\n    update?: AccessFunction<TDoc> | string;\n    delete?: AccessFunction<TDoc> | string;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the [Hooks reference](/docs/concepts/hooks) for the full lifecycle diagram.\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHook[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHook<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHook<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only —\n     * webhooks, cache busting, notifications. Return value is ignored.\n     *\n     * Errors are **isolated**: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See {@link CollectionAfterChangeHook} for the await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /**\n     * Runs before a document is deleted. Throw to cancel the deletion.\n     */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are **isolated**: caught, logged, and discarded — the deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /** Admin UI configuration for this collection. */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     * Pass a function to derive the URL from the document's fields.\n     *\n     * @example\n     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `'postMessage'` (default) — sends a `postMessage` with the current doc data.\n     * - `'token'` — passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}'   // → /blog/my-post\n     * urlPattern: '/{slug}'        // → /about\n     */\n    urlPattern?: string;\n  };\n}",
     "members": [
       {
         "name": "slug",
@@ -245,7 +158,7 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "admin",
-        "signature": "admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     * Pass a function to derive the URL from the document's fields.\n     *\n     * @example\n     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`\n     */\n    previewUrl?:\n      | string\n      | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `'postMessage'` (default) — sends a `postMessage` with the current doc data.\n     * - `'token'` — passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}'   // → /blog/my-post\n     * urlPattern: '/{slug}'        // → /about\n     */\n    urlPattern?: string;\n  }",
+        "signature": "admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     * Pass a function to derive the URL from the document's fields.\n     *\n     * @example\n     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `'postMessage'` (default) — sends a `postMessage` with the current doc data.\n     * - `'token'` — passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}'   // → /blog/my-post\n     * urlPattern: '/{slug}'        // → /about\n     */\n    urlPattern?: string;\n  }",
         "description": "Admin UI configuration for this collection."
       }
     ]
@@ -277,7 +190,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "adapters",
     "sourcePackage": "@dyrected/core",
     "description": "The interface every database adapter must implement.\n\nDyrected ships adapters for PostgreSQL, MySQL, SQLite, and MongoDB.\nImplement this interface to connect any other database.",
-    "signature": "export interface DatabaseAdapter {\n  /** Find a paginated list of documents in a collection. */\n  find(args: {\n    collection: string;\n    where?: Record<string, unknown>;\n    limit?: number;\n    page?: number;\n    sort?: string;\n  }): Promise<PaginatedResult>;\n\n  /** Find a single document by its ID. Returns `null` if not found. */\n  findOne(args: {\n    collection: string;\n    id: string;\n  }): Promise<BaseDocument | null>;\n\n  /** Insert a new document and return it with its generated `id`. */\n  create(args: {\n    collection: string;\n    data: Record<string, unknown>;\n  }): Promise<BaseDocument>;\n\n  /** Update a document by ID and return the updated document. */\n  update(args: {\n    collection: string;\n    id: string;\n    data: Record<string, unknown>;\n  }): Promise<BaseDocument>;\n\n  /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */\n  delete(args: { collection: string; id: string }): Promise<unknown>;\n\n  /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */\n  getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;\n\n  /** Create or replace the singleton document for a global. */\n  updateGlobal(args: {\n    slug: string;\n    data: Record<string, unknown>;\n  }): Promise<Record<string, unknown>>;\n\n  /**\n   * Sync the database schema with the current collection and global configs.\n   * Called on startup to create tables/collections that don't exist yet.\n   * Not all adapters implement this (e.g. MongoDB is schema-less).\n   */\n  sync?(\n    collections: CollectionConfig[],\n    globals: GlobalConfig[],\n  ): Promise<void>;\n\n  /**\n   * Execute a raw SQL query or database command.\n   * Optional — not all adapters support raw access.\n   */\n  execute?(query: string, params?: unknown[]): Promise<unknown>;\n\n  /**\n   * Run all adapter operations in `callback` as one atomic transaction.\n   * Shipped adapters implement this; workflow transitions require it.\n   */\n  transaction?<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T>;\n}",
+    "signature": "export interface DatabaseAdapter {\n  /** Find a paginated list of documents in a collection. */\n  find(args: {\n    collection: string;\n    where?: Record<string, unknown>;\n    limit?: number;\n    page?: number;\n    sort?: string;\n  }): Promise<PaginatedResult>;\n\n  /** Find a single document by its ID. Returns `null` if not found. */\n  findOne(args: { collection: string; id: string }): Promise<BaseDocument | null>;\n\n  /** Insert a new document and return it with its generated `id`. */\n  create(args: { collection: string; data: Record<string, unknown> }): Promise<BaseDocument>;\n\n  /** Update a document by ID and return the updated document. */\n  update(args: { collection: string; id: string; data: Record<string, unknown> }): Promise<BaseDocument>;\n\n  /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */\n  delete(args: { collection: string; id: string }): Promise<unknown>;\n\n  /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */\n  getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;\n\n  /** Create or replace the singleton document for a global. */\n  updateGlobal(args: { slug: string; data: Record<string, unknown> }): Promise<Record<string, unknown>>;\n\n  /**\n   * Sync the database schema with the current collection and global configs.\n   * Called on startup to create tables/collections that don't exist yet.\n   * Not all adapters implement this (e.g. MongoDB is schema-less).\n   */\n  sync?(collections: CollectionConfig[], globals: GlobalConfig[]): Promise<void>;\n\n  /**\n   * Execute a raw SQL query or database command.\n   * Optional — not all adapters support raw access.\n   */\n  execute?(query: string, params?: unknown[]): Promise<unknown>;\n\n  /**\n   * Run all adapter operations in `callback` as one atomic transaction.\n   * Shipped adapters implement this; workflow transitions require it.\n   */\n  transaction?<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T>;\n}",
     "members": [
       {
         "name": "find",
@@ -286,17 +199,17 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "findOne",
-        "signature": "findOne(args: {\n    collection: string;\n    id: string;\n  }): Promise<BaseDocument | null>",
+        "signature": "findOne(args: { collection: string; id: string }): Promise<BaseDocument | null>",
         "description": "Find a single document by its ID. Returns `null` if not found."
       },
       {
         "name": "create",
-        "signature": "create(args: {\n    collection: string;\n    data: Record<string, unknown>;\n  }): Promise<BaseDocument>",
+        "signature": "create(args: { collection: string; data: Record<string, unknown> }): Promise<BaseDocument>",
         "description": "Insert a new document and return it with its generated `id`."
       },
       {
         "name": "update",
-        "signature": "update(args: {\n    collection: string;\n    id: string;\n    data: Record<string, unknown>;\n  }): Promise<BaseDocument>",
+        "signature": "update(args: { collection: string; id: string; data: Record<string, unknown> }): Promise<BaseDocument>",
         "description": "Update a document by ID and return the updated document."
       },
       {
@@ -311,7 +224,7 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "updateGlobal",
-        "signature": "updateGlobal(args: {\n    slug: string;\n    data: Record<string, unknown>;\n  }): Promise<Record<string, unknown>>",
+        "signature": "updateGlobal(args: { slug: string; data: Record<string, unknown> }): Promise<Record<string, unknown>>",
         "description": "Create or replace the singleton document for a global."
       },
       {
@@ -358,7 +271,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "The root configuration object passed to `createDyrectedApp`.\n\nThis is the single source of truth for your entire Dyrected instance —\ncollections, globals, database adapter, storage, email, and more.",
-    "signature": "export interface DyrectedConfig {\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see {@link DatabaseAdapter}\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see {@link StorageAdapter}\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see {@link ImageService}\n   */\n  image?: ImageService;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   *\n   * @param siteId  The `X-Site-Id` header value from the incoming request.\n   * @returns       Extra collections and globals to merge into the config for this request.\n   *\n   * @example\n   * onSchemaFetch: async (siteId) => {\n   *   const site = await db.findOne({ collection: 'sites', id: siteId })\n   *   return buildSchemaFromSiteConfig(site)\n   * }\n   */\n  onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n  }>;\n}",
+    "signature": "export interface DyrectedConfig {\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see {@link DatabaseAdapter}\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see {@link StorageAdapter}\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see {@link ImageService}\n   */\n  image?: ImageService;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: { to: string; subject: string; html: string }) => Promise<void>;\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   *\n   * @param siteId  The `X-Site-Id` header value from the incoming request.\n   * @returns       Extra collections and globals to merge into the config for this request.\n   *\n   * @example\n   * onSchemaFetch: async (siteId) => {\n   *   const site = await db.findOne({ collection: 'sites', id: siteId })\n   *   return buildSchemaFromSiteConfig(site)\n   * }\n   */\n  onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
     "members": [
       {
         "name": "collections",
@@ -391,8 +304,13 @@ export const references: readonly ReferenceEntry[] = [
         "description": "Admin UI branding and metadata."
       },
       {
+        "name": "adminAuth",
+        "signature": "adminAuth?: AdminAuthConfig",
+        "description": "Deployment-level authentication strategy for the CMS dashboard (`/admin`).\nThis is separate from collection-level `auth: true`, which continues to\npower application/customer auth independently."
+      },
+      {
         "name": "email",
-        "signature": "email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  }",
+        "signature": "email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: { to: string; subject: string; html: string }) => Promise<void>;\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  }",
         "description": "Email transport configuration. Required for welcome emails, password\nresets, and invite links."
       },
       {
@@ -412,20 +330,10 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "onSchemaFetch",
-        "signature": "onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n  }>",
+        "signature": "onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>",
         "description": "Callback to dynamically fetch additional collections and globals for a\ngiven site ID at request time. Used in multi-tenant deployments where each\nsite has its own schema stored in the database."
       }
     ]
-  },
-  {
-    "id": "@dyrected/core:Field",
-    "name": "Field",
-    "kind": "type",
-    "category": "fields",
-    "sourcePackage": "@dyrected/core",
-    "description": "Defines a single field on a collection or global.\n\n## Typed `value` in hook callbacks\n\nThree hook callbacks automatically receive a `value` typed to the field's\nown value type — no manual annotations needed:\n\n| Hook | When it runs |\n|------|-------------|\n| `hooks.beforeChange` | Server — before the value is written to the DB |\n| `hooks.afterRead`    | Server — after the value is read, before the API response |\n| `admin.hooks.onChange` | Browser — whenever a sibling field changes in the Admin UI |\n\nType mapping by `type` property:\n- `text / textarea / email / url / icon / date / select / radio` → `string`\n- `number` → `number`\n- `boolean` → `boolean`\n- `multiSelect` → `string[]`\n- `relationship / image` → `string | string[]`\n- `richText / json` → `Record<string, unknown>`\n- `object / array / blocks` → `unknown`\n\n```ts\n{\n  name: 'slug', type: 'text',\n  hooks: {\n    beforeChange: [({ value }) => value.toLowerCase()],  // value: string ✓\n    afterRead:    [({ value }) => value.trim()],         // value: string ✓\n  },\n  admin: {\n    hooks: {\n      onChange: ({ value, siblingData }) =>              // value: string ✓\n        (siblingData.title as string ?? '').toLowerCase().replace(/\\s+/g, '-'),\n    },\n  },\n}\n```\n\n**Important**: write `type` as a plain string literal — do **not** use `as const`.\nTypeScript's `const` generic inference already preserves literal types, and\nadding `as const` to the discriminant property prevents the contextual type\nfrom flowing into the hook callbacks.\n\n```ts\n// ✓ correct\n{ name: 'slug', type: 'text', hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }\n\n// ✗ breaks value typing\n{ name: 'slug', type: 'text' as const, hooks: { beforeChange: [({ value }) => value.toLowerCase()] } }\n```",
-    "signature": "export type Field = FieldBase &\n  (\n    | ({\n        type:\n          | \"text\"\n          | \"textarea\"\n          | \"email\"\n          | \"url\"\n          | \"icon\"\n          | \"date\"\n          | \"datetime\"\n          | \"time\"\n          | \"select\"\n          | \"radio\";\n      } & FieldHooks<string> &\n        FieldAdminHooks<string>)\n    | ({ type: \"number\" } & FieldHooks<number> & FieldAdminHooks<number>)\n    | ({ type: \"boolean\" } & FieldHooks<boolean> & FieldAdminHooks<boolean>)\n    | ({ type: \"multiSelect\" } & FieldHooks<string[]> &\n        FieldAdminHooks<string[]>)\n    | ({ type: \"relationship\" | \"image\" } & FieldHooks<string | string[]> &\n        FieldAdminHooks<string | string[]>)\n    | ({ type: \"richText\" | \"json\" } & FieldHooks<Record<string, unknown>> &\n        FieldAdminHooks<Record<string, unknown>>)\n    | ({\n        type: \"object\" | \"array\" | \"blocks\" | \"join\" | \"row\";\n      } & FieldHooks<unknown> &\n        FieldAdminHooks<unknown>)\n  );",
-    "members": []
   },
   {
     "id": "@dyrected/core:FieldAfterReadHook",
@@ -434,7 +342,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "A hook that runs **after a field value is read** from the database, before\nthe response is sent to the client.\n\nReturn the transformed value to return to the client. Use this for masking,\nformatting, or adding computed properties.",
-    "signature": "export type FieldAfterReadHook<\n  TValue = unknown,\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  /** The raw field value as stored in the database. */\n  value: TValue;\n  /** The full document being returned (with defaults applied). */\n  doc: TDoc;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => TValue | undefined | Promise<TValue | undefined>;",
+    "signature": "export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {\n  /** The raw field value as stored in the database. */\n  value: TValue;\n  /** The full document being returned (with defaults applied). */\n  doc: TDoc;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => TValue | undefined | Promise<TValue | undefined>;",
     "members": []
   },
   {
@@ -444,7 +352,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "A hook that runs **before a field value is saved** to the database.\n\nReturn the transformed value to persist. Return `undefined` to leave the\nvalue unchanged (same as returning the original `value`).\n\nField `beforeChange` hooks run recursively inside `array`, `object`, and\n`blocks` fields — every nested item is processed automatically.",
-    "signature": "export type FieldBeforeChangeHook<\n  TValue = unknown,\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  /** The current value of this field (after any previous hooks in the chain). */\n  value: TValue;\n  /** The full document as it existed before this update. `undefined` on create. */\n  originalDoc?: TDoc;\n  /** The full incoming data payload being written. */\n  data: Partial<TDoc>;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => TValue | undefined | Promise<TValue | undefined>;",
+    "signature": "export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {\n  /** The current value of this field (after any previous hooks in the chain). */\n  value: TValue;\n  /** The full document as it existed before this update. `undefined` on create. */\n  originalDoc?: TDoc;\n  /** The full incoming data payload being written. */\n  data: Partial<TDoc>;\n  /** The authenticated user, or `undefined` for unauthenticated requests. */\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => TValue | undefined | Promise<TValue | undefined>;",
     "members": []
   },
   {
@@ -454,84 +362,8 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type FieldHook<\n  TDoc extends object = Record<string, unknown>,\n  TValue = unknown,\n> = FieldBeforeChangeHook<TValue, TDoc>;",
+    "signature": "export type FieldHook<TDoc extends object = Record<string, unknown>, TValue = unknown> = FieldBeforeChangeHook<\n  TValue,\n  TDoc\n>;",
     "members": []
-  },
-  {
-    "id": "@dyrected/core:FieldType",
-    "name": "FieldType",
-    "kind": "type",
-    "category": "fields",
-    "sourcePackage": "@dyrected/core",
-    "description": "Every field type supported by Dyrected.\n\n- Text group:    `text`, `textarea`, `richText`, `email`, `url`, `icon`\n- Number/Bool:   `number`, `boolean`\n- Date:          `date`, `datetime`, `time`\n- Selection:     `select`, `multiSelect`, `radio`\n- Relationship:  `relationship`, `join`\n- Structural:    `array`, `object`, `blocks`, `json`\n- Layout:        `row`\n- Media:         `image`",
-    "signature": "export type FieldType =\n  | \"text\"\n  | \"textarea\"\n  | \"richText\"\n  | \"number\"\n  | \"boolean\"\n  | \"date\"\n  | \"datetime\"\n  | \"time\"\n  | \"select\"\n  | \"multiSelect\"\n  | \"radio\"\n  | \"relationship\"\n  | \"array\"\n  | \"object\"\n  | \"json\"\n  | \"blocks\"\n  | \"image\"\n  | \"email\"\n  | \"url\"\n  | \"icon\"\n  | \"join\"\n  | \"row\";",
-    "members": []
-  },
-  {
-    "id": "@dyrected/core:FileData",
-    "name": "FileData",
-    "kind": "interface",
-    "category": "adapters",
-    "sourcePackage": "@dyrected/core",
-    "description": "Metadata returned after a file is uploaded and stored.\nStored on the document in upload collections.",
-    "signature": "export interface FileData {\n  filename: string;\n  filesize?: number;\n  mimeType: string;\n  /** Public URL of the stored file. */\n  url: string;\n  width?: number;\n  height?: number;\n  focalPoint?: { x: number; y: number };\n  /** Base64-encoded BlurHash string for progressive image loading. */\n  blurhash?: string;\n  /** `'upload'` for server-stored files; `'external'` for provider-managed files. */\n  type?: \"upload\" | \"external\";\n  provider?: string;\n  provider_metadata?: unknown;\n  [key: string]: unknown;\n}",
-    "members": [
-      {
-        "name": "filename",
-        "signature": "filename: string",
-        "description": ""
-      },
-      {
-        "name": "filesize",
-        "signature": "filesize?: number",
-        "description": ""
-      },
-      {
-        "name": "mimeType",
-        "signature": "mimeType: string",
-        "description": ""
-      },
-      {
-        "name": "url",
-        "signature": "url: string",
-        "description": "Public URL of the stored file."
-      },
-      {
-        "name": "width",
-        "signature": "width?: number",
-        "description": ""
-      },
-      {
-        "name": "height",
-        "signature": "height?: number",
-        "description": ""
-      },
-      {
-        "name": "focalPoint",
-        "signature": "focalPoint?: { x: number; y: number }",
-        "description": ""
-      },
-      {
-        "name": "blurhash",
-        "signature": "blurhash?: string",
-        "description": "Base64-encoded BlurHash string for progressive image loading."
-      },
-      {
-        "name": "type",
-        "signature": "type?: \"upload\" | \"external\"",
-        "description": "`'upload'` for server-stored files; `'external'` for provider-managed files."
-      },
-      {
-        "name": "provider",
-        "signature": "provider?: string",
-        "description": ""
-      },
-      {
-        "name": "provider_metadata",
-        "signature": "provider_metadata?: unknown",
-        "description": ""
-      }
-    ]
   },
   {
     "id": "@dyrected/core:GlobalAfterChangeHook",
@@ -540,7 +372,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type GlobalAfterChangeHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  doc: TDoc;\n  previousDoc?: TDoc;\n  req: HookRequestContext;\n  user?: AuthenticatedUser;\n  operation: \"update\";\n  /**\n   * Database adapter with full read/write access. The DB write for this\n   * operation has already committed — safe for side-effect writes.\n   */\n  db: DatabaseAdapter;\n}) => void | Promise<void>;",
+    "signature": "export type GlobalAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {\n  doc: TDoc;\n  previousDoc?: TDoc;\n  req: HookRequestContext;\n  user?: AuthenticatedUser;\n  operation: \"update\";\n  /**\n   * Database adapter with full read/write access. The DB write for this\n   * operation has already committed — safe for side-effect writes.\n   */\n  db: DatabaseAdapter;\n}) => void | Promise<void>;",
     "members": []
   },
   {
@@ -550,7 +382,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "Runs after the global document is fetched, before the response is sent.",
-    "signature": "export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> =\n  (args: {\n    doc: TDoc;\n    req: HookRequestContext;\n    user?: AuthenticatedUser;\n    /**\n     * Database adapter for cross-collection reads. Write operations (create,\n     * update, delete) will throw — use `afterChange` for writes.\n     */\n    db: ReadonlyDatabaseAdapter;\n  }) => TDoc | Promise<TDoc>;",
+    "signature": "export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {\n  doc: TDoc;\n  req: HookRequestContext;\n  user?: AuthenticatedUser;\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => TDoc | Promise<TDoc>;",
     "members": []
   },
   {
@@ -560,7 +392,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "Runs before the global document is updated.\nOperation is always `'update'` (globals cannot be created or deleted).",
-    "signature": "export type GlobalBeforeChangeHook<\n  TDoc extends object = Record<string, unknown>,\n> = (args: {\n  data: Partial<TDoc>;\n  doc?: TDoc;\n  req: HookRequestContext;\n  user?: AuthenticatedUser;\n  operation: \"update\";\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;",
+    "signature": "export type GlobalBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {\n  data: Partial<TDoc>;\n  doc?: TDoc;\n  req: HookRequestContext;\n  user?: AuthenticatedUser;\n  operation: \"update\";\n  /**\n   * Database adapter for cross-collection reads. Write operations (create,\n   * update, delete) will throw — use `afterChange` for writes.\n   */\n  db: ReadonlyDatabaseAdapter;\n}) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;",
     "members": []
   },
   {
@@ -636,34 +468,8 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type HookFunction<TDoc extends object = Record<string, unknown>> =\n  (args: {\n    data?: Partial<TDoc>;\n    doc?: TDoc;\n    user?: AuthenticatedUser;\n    req?: HookRequestContext;\n    operation?: \"create\" | \"update\" | \"delete\";\n    db?: DatabaseAdapter;\n    [key: string]: unknown;\n  }) => unknown | Promise<unknown>;",
+    "signature": "export type HookFunction<TDoc extends object = Record<string, unknown>> = (args: {\n  data?: Partial<TDoc>;\n  doc?: TDoc;\n  user?: AuthenticatedUser;\n  req?: HookRequestContext;\n  operation?: \"create\" | \"update\" | \"delete\";\n  db?: DatabaseAdapter;\n  [key: string]: unknown;\n}) => unknown | Promise<unknown>;",
     "members": []
-  },
-  {
-    "id": "@dyrected/core:HookRequestContext",
-    "name": "HookRequestContext",
-    "kind": "interface",
-    "category": "hooks",
-    "sourcePackage": "@dyrected/core",
-    "description": "Minimum HTTP request context passed to every server-side hook and resolver.\n\nThe full Web Standard `Request` is available as `raw` when you need it, but\nmost hooks only need `query` (URL search parameters).",
-    "signature": "export interface HookRequestContext {\n  /** Parsed URL query-string parameters, e.g. `{ page: '2', search: 'hello' }`. */\n  query: Record<string, string>;\n  /** Incoming HTTP headers, lowercased. */\n  headers: Record<string, string>;\n  /** The raw Web Standard `Request` object. Useful for streaming or advanced header inspection. */\n  raw?: Request;\n}",
-    "members": [
-      {
-        "name": "query",
-        "signature": "query: Record<string, string>",
-        "description": "Parsed URL query-string parameters, e.g. `{ page: '2', search: 'hello' }`."
-      },
-      {
-        "name": "headers",
-        "signature": "headers: Record<string, string>",
-        "description": "Incoming HTTP headers, lowercased."
-      },
-      {
-        "name": "raw",
-        "signature": "raw?: Request",
-        "description": "The raw Web Standard `Request` object. Useful for streaming or advanced header inspection."
-      }
-    ]
   },
   {
     "id": "@dyrected/core:ImageService",
@@ -672,24 +478,14 @@ export const references: readonly ReferenceEntry[] = [
     "category": "adapters",
     "sourcePackage": "@dyrected/core",
     "description": "Processes uploaded images — generates metadata (dimensions, BlurHash) and\nproduces resized variants defined in `UploadConfig.imageSizes`.",
-    "signature": "export interface ImageService {\n  process(args: {\n    buffer: Uint8Array;\n    mimeType: string;\n    config?: CollectionConfig[\"upload\"];\n    focalPoint?: { x: number; y: number };\n  }): Promise<{\n    metadata: {\n      width?: number;\n      height?: number;\n      /** Base64-encoded BlurHash for progressive loading. */\n      blurhash?: string;\n    };\n    /** Generated image sizes keyed by their `name`. */\n    sizes?: Record<\n      string,\n      { buffer: Uint8Array; width: number; height: number; filename: string }\n    >;\n  }>;\n}",
+    "signature": "export interface ImageService {\n  process(args: {\n    buffer: Uint8Array;\n    mimeType: string;\n    config?: boolean | UploadConfig;\n    focalPoint?: { x: number; y: number };\n  }): Promise<{\n    metadata: {\n      width?: number;\n      height?: number;\n      /** Base64-encoded BlurHash for progressive loading. */\n      blurhash?: string;\n    };\n    /** Generated image sizes keyed by their `name`. */\n    sizes?: Record<string, { buffer: Uint8Array; width: number; height: number; filename: string }>;\n  }>;\n}",
     "members": [
       {
         "name": "process",
-        "signature": "process(args: {\n    buffer: Uint8Array;\n    mimeType: string;\n    config?: CollectionConfig[\"upload\"];\n    focalPoint?: { x: number; y: number };\n  }): Promise<{\n    metadata: {\n      width?: number;\n      height?: number;\n      /** Base64-encoded BlurHash for progressive loading. */\n      blurhash?: string;\n    };\n    /** Generated image sizes keyed by their `name`. */\n    sizes?: Record<\n      string,\n      { buffer: Uint8Array; width: number; height: number; filename: string }\n    >;\n  }>",
+        "signature": "process(args: {\n    buffer: Uint8Array;\n    mimeType: string;\n    config?: boolean | UploadConfig;\n    focalPoint?: { x: number; y: number };\n  }): Promise<{\n    metadata: {\n      width?: number;\n      height?: number;\n      /** Base64-encoded BlurHash for progressive loading. */\n      blurhash?: string;\n    };\n    /** Generated image sizes keyed by their `name`. */\n    sizes?: Record<string, { buffer: Uint8Array; width: number; height: number; filename: string }>;\n  }>",
         "description": ""
       }
     ]
-  },
-  {
-    "id": "@dyrected/core:InferDocShape",
-    "name": "InferDocShape",
-    "kind": "type",
-    "category": "fields",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export type InferDocShape<Fields extends readonly Field[]> =\n  Fields extends readonly []\n    ? Record<never, never>\n    : Fields extends readonly [\n          infer Head extends Field,\n          ...infer Tail extends readonly Field[],\n        ]\n      ? InferFieldEntry<Head> & InferDocShape<Tail>\n      : Record<string, unknown>;",
-    "members": []
   },
   {
     "id": "@dyrected/core:initializeWorkflowDocument",
@@ -712,97 +508,6 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
-    "id": "@dyrected/core:LifecycleEvent",
-    "name": "LifecycleEvent",
-    "kind": "interface",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface LifecycleEvent<TPayload = Record<string, unknown>> {\n  id: string;\n  name: LifecycleEventName;\n  collection: string;\n  documentId: string;\n  occurredAt: string;\n  actorId?: string;\n  payload: TPayload;\n  attempts: number;\n  status: \"pending\" | \"processing\" | \"delivered\" | \"failed\";\n  nextAttemptAt?: string;\n  deliveredAt?: string;\n  lastError?: string;\n}",
-    "members": [
-      {
-        "name": "id",
-        "signature": "id: string",
-        "description": ""
-      },
-      {
-        "name": "name",
-        "signature": "name: LifecycleEventName",
-        "description": ""
-      },
-      {
-        "name": "collection",
-        "signature": "collection: string",
-        "description": ""
-      },
-      {
-        "name": "documentId",
-        "signature": "documentId: string",
-        "description": ""
-      },
-      {
-        "name": "occurredAt",
-        "signature": "occurredAt: string",
-        "description": ""
-      },
-      {
-        "name": "actorId",
-        "signature": "actorId?: string",
-        "description": ""
-      },
-      {
-        "name": "payload",
-        "signature": "payload: TPayload",
-        "description": ""
-      },
-      {
-        "name": "attempts",
-        "signature": "attempts: number",
-        "description": ""
-      },
-      {
-        "name": "status",
-        "signature": "status: \"pending\" | \"processing\" | \"delivered\" | \"failed\"",
-        "description": ""
-      },
-      {
-        "name": "nextAttemptAt",
-        "signature": "nextAttemptAt?: string",
-        "description": ""
-      },
-      {
-        "name": "deliveredAt",
-        "signature": "deliveredAt?: string",
-        "description": ""
-      },
-      {
-        "name": "lastError",
-        "signature": "lastError?: string",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:LifecycleEventHandler",
-    "name": "LifecycleEventHandler",
-    "kind": "type",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export type LifecycleEventHandler = (\n  event: LifecycleEvent,\n) => void | Promise<void>;",
-    "members": []
-  },
-  {
-    "id": "@dyrected/core:LifecycleEventName",
-    "name": "LifecycleEventName",
-    "kind": "type",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export type LifecycleEventName = (typeof LIFECYCLE_EVENT_NAMES)[number];",
-    "members": []
-  },
-  {
     "id": "@dyrected/core:materializeWorkflowDocument",
     "name": "materializeWorkflowDocument",
     "kind": "function",
@@ -811,52 +516,6 @@ export const references: readonly ReferenceEntry[] = [
     "description": "",
     "signature": "export function materializeWorkflowDocument(\n  doc: BaseDocument,\n  workflow: WorkflowConfig,\n  user?: AuthenticatedUser,\n): BaseDocument | null",
     "members": []
-  },
-  {
-    "id": "@dyrected/core:PaginatedResult",
-    "name": "PaginatedResult",
-    "kind": "interface",
-    "category": "adapters",
-    "sourcePackage": "@dyrected/core",
-    "description": "The envelope returned by collection list endpoints (`GET /api/collections/:slug`).",
-    "signature": "export interface PaginatedResult<T = Record<string, any>> {\n  /** The documents on the current page. */\n  docs: T[];\n  /** Total number of documents matching the query (across all pages). */\n  total: number;\n  /** Maximum number of documents per page as requested. */\n  limit: number;\n  /** The current page number (1-indexed). */\n  page: number;\n  /** Total number of pages given the current `limit`. */\n  totalPages: number;\n  /** Whether a next page exists. */\n  hasNextPage: boolean;\n  /** Whether a previous page exists. */\n  hasPrevPage: boolean;\n}",
-    "members": [
-      {
-        "name": "docs",
-        "signature": "docs: T[]",
-        "description": "The documents on the current page."
-      },
-      {
-        "name": "total",
-        "signature": "total: number",
-        "description": "Total number of documents matching the query (across all pages)."
-      },
-      {
-        "name": "limit",
-        "signature": "limit: number",
-        "description": "Maximum number of documents per page as requested."
-      },
-      {
-        "name": "page",
-        "signature": "page: number",
-        "description": "The current page number (1-indexed)."
-      },
-      {
-        "name": "totalPages",
-        "signature": "totalPages: number",
-        "description": "Total number of pages given the current `limit`."
-      },
-      {
-        "name": "hasNextPage",
-        "signature": "hasNextPage: boolean",
-        "description": "Whether a next page exists."
-      },
-      {
-        "name": "hasPrevPage",
-        "signature": "hasPrevPage: boolean",
-        "description": "Whether a previous page exists."
-      }
-    ]
   },
   {
     "id": "@dyrected/core:publishingWorkflow",
@@ -875,7 +534,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "adapters",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type ReadonlyDatabaseAdapter = Pick<\n  DatabaseAdapter,\n  \"find\" | \"findOne\" | \"getGlobal\"\n>;",
+    "signature": "export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, \"find\" | \"findOne\" | \"getGlobal\">;",
     "members": []
   },
   {
@@ -895,11 +554,11 @@ export const references: readonly ReferenceEntry[] = [
     "category": "adapters",
     "sourcePackage": "@dyrected/core",
     "description": "The interface every storage adapter must implement.\n\nDyrected ships adapters for local disk, S3, Cloudflare R2, Cloudinary, and\nBackblaze B2. Implement this interface to use any other storage provider.",
-    "signature": "export interface StorageAdapter {\n  /**\n   * Upload a file and return its metadata (URL, dimensions, etc.).\n   * The `prefix` is a path prefix used for multi-tenant setups.\n   */\n  upload(args: {\n    filename: string;\n    buffer: Uint8Array;\n    mimeType: string;\n    prefix?: string;\n  }): Promise<FileData>;\n\n  /** Delete a file by its stored filename. */\n  delete(args: { filename: string }): Promise<void>;\n\n  /** Return the public URL for a stored file. */\n  getURL(args: { filename: string }): string;\n\n  /**\n   * Retrieve the file's raw bytes and MIME type for serving via the API.\n   * Only needed by adapters that serve files through the Dyrected API\n   * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on\n   * direct CDN URLs instead.\n   */\n  resolve?(args: {\n    filename: string;\n  }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;\n}",
+    "signature": "export interface StorageAdapter {\n  /**\n   * Upload a file and return its metadata (URL, dimensions, etc.).\n   * The `prefix` is a path prefix used for multi-tenant setups.\n   */\n  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;\n\n  /** Delete a file by its stored filename. */\n  delete(args: { filename: string }): Promise<void>;\n\n  /** Return the public URL for a stored file. */\n  getURL(args: { filename: string }): string;\n\n  /**\n   * Retrieve the file's raw bytes and MIME type for serving via the API.\n   * Only needed by adapters that serve files through the Dyrected API\n   * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on\n   * direct CDN URLs instead.\n   */\n  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;\n}",
     "members": [
       {
         "name": "upload",
-        "signature": "upload(args: {\n    filename: string;\n    buffer: Uint8Array;\n    mimeType: string;\n    prefix?: string;\n  }): Promise<FileData>",
+        "signature": "upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>",
         "description": "Upload a file and return its metadata (URL, dimensions, etc.).\nThe `prefix` is a path prefix used for multi-tenant setups."
       },
       {
@@ -914,20 +573,10 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "resolve",
-        "signature": "resolve(args: {\n    filename: string;\n  }): Promise<{ buffer: Uint8Array; mimeType: string } | null>",
+        "signature": "resolve(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>",
         "description": "Retrieve the file's raw bytes and MIME type for serving via the API.\nOnly needed by adapters that serve files through the Dyrected API\n(e.g. `LocalStorage`). Cloud adapters return `null` here and rely on\ndirect CDN URLs instead."
       }
     ]
-  },
-  {
-    "id": "@dyrected/core:SystemDocFields",
-    "name": "SystemDocFields",
-    "kind": "type",
-    "category": "fields",
-    "sourcePackage": "@dyrected/core",
-    "description": "Audit fields automatically injected into every collection document at runtime.\nThey are always present in API responses but hidden in the Admin UI by default.",
-    "signature": "export type SystemDocFields = {\n  createdAt?: string;\n  updatedAt?: string;\n  /** ID of the user who created the document. */\n  createdBy?: string;\n  /** ID of the user who last updated the document. */\n  updatedBy?: string;\n};",
-    "members": []
   },
   {
     "id": "@dyrected/core:transitionWorkflow",
@@ -937,57 +586,6 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export async function transitionWorkflow(args: {\n  config: DyrectedConfig;\n  collection: CollectionConfig;\n  id: string;\n  transitionName: string;\n  expectedRevision?: number;\n  comment?: string;\n  user?: AuthenticatedUser;\n  req: HookRequestContext;\n}): Promise<BaseDocument>",
-    "members": []
-  },
-  {
-    "id": "@dyrected/core:UploadConfig",
-    "name": "UploadConfig",
-    "kind": "interface",
-    "category": "configuration",
-    "sourcePackage": "@dyrected/core",
-    "description": "Upload configuration for collections that store files.\nSet `upload: true` on the collection to use all defaults, or pass this\nobject to customise allowed types, size limits, and image processing.",
-    "signature": "export interface UploadConfig {\n  /**\n   * Allowed MIME types. Requests with other MIME types are rejected with `400`.\n   * @example ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']\n   */\n  allowedMimeTypes?: string[];\n\n  /**\n   * Maximum file size in **bytes**.\n   * @example 10 * 1024 * 1024  // 10 MB\n   */\n  maxFileSize?: number;\n\n  /**\n   * Local filesystem path where files are stored.\n   * Only used by the `LocalStorage` adapter.\n   */\n  staticDir?: string;\n\n  /**\n   * Public URL prefix prepended to filenames when generating download URLs.\n   * Only used by the `LocalStorage` adapter.\n   * @example '/uploads'\n   */\n  staticURL?: string;\n\n  /**\n   * The `imageSizes` entry name to use as the thumbnail in the Admin media grid.\n   * @example 'thumbnail'\n   */\n  adminThumbnail?: string;\n\n  /**\n   * Additional image sizes to generate when an image is uploaded.\n   * Requires an `ImageService` to be configured (e.g. `@dyrected/image-sharp`).\n   *\n   * @example\n   * imageSizes: [\n   *   { name: 'thumbnail', width: 300, height: 300, fit: 'cover' },\n   *   { name: 'card', width: 800 },\n   * ]\n   */\n  imageSizes?: {\n    /** Identifier used to access this size, e.g. `doc.sizes.thumbnail`. */\n    name: string;\n    /** Target width in pixels. */\n    width?: number;\n    /** Target height in pixels. */\n    height?: number;\n    /** sharp crop strategy (`'entropy'`, `'attention'`, etc.). */\n    crop?: string;\n    /**\n     * sharp fit strategy.\n     * @see https://sharp.pixelplumbing.com/api-resize#parameters\n     */\n    fit?: string;\n    /**\n     * If `true`, images smaller than the target size are not upscaled.\n     * @default true\n     */\n    withoutEnlargement?: boolean;\n    /** Additional sharp format options forwarded to the output pipeline. */\n    formatOptions?: Record<string, unknown>;\n  }[];\n}",
-    "members": [
-      {
-        "name": "allowedMimeTypes",
-        "signature": "allowedMimeTypes?: string[]",
-        "description": "Allowed MIME types. Requests with other MIME types are rejected with `400`."
-      },
-      {
-        "name": "maxFileSize",
-        "signature": "maxFileSize?: number",
-        "description": "Maximum file size in **bytes**."
-      },
-      {
-        "name": "staticDir",
-        "signature": "staticDir?: string",
-        "description": "Local filesystem path where files are stored.\nOnly used by the `LocalStorage` adapter."
-      },
-      {
-        "name": "staticURL",
-        "signature": "staticURL?: string",
-        "description": "Public URL prefix prepended to filenames when generating download URLs.\nOnly used by the `LocalStorage` adapter."
-      },
-      {
-        "name": "adminThumbnail",
-        "signature": "adminThumbnail?: string",
-        "description": "The `imageSizes` entry name to use as the thumbnail in the Admin media grid."
-      },
-      {
-        "name": "imageSizes",
-        "signature": "imageSizes?: {\n    /** Identifier used to access this size, e.g. `doc.sizes.thumbnail`. */\n    name: string;\n    /** Target width in pixels. */\n    width?: number;\n    /** Target height in pixels. */\n    height?: number;\n    /** sharp crop strategy (`'entropy'`, `'attention'`, etc.). */\n    crop?: string;\n    /**\n     * sharp fit strategy.\n     * @see https://sharp.pixelplumbing.com/api-resize#parameters\n     */\n    fit?: string;\n    /**\n     * If `true`, images smaller than the target size are not upscaled.\n     * @default true\n     */\n    withoutEnlargement?: boolean;\n    /** Additional sharp format options forwarded to the output pipeline. */\n    formatOptions?: Record<string, unknown>;\n  }[]",
-        "description": "Additional image sizes to generate when an image is uploaded.\nRequires an `ImageService` to be configured (e.g. `@dyrected/image-sharp`)."
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:UploadDocFields",
-    "name": "UploadDocFields",
-    "kind": "type",
-    "category": "fields",
-    "sourcePackage": "@dyrected/core",
-    "description": "Fields automatically added to upload/media collection documents.\nThese mirror the `FileData` interface returned by storage adapters.",
-    "signature": "export type UploadDocFields = {\n  filename: string;\n  filesize?: number;\n  mimeType: string;\n  /** Public URL of the stored file. */\n  url: string;\n  width?: number;\n  height?: number;\n  focalPoint?: { x: number; y: number };\n  /** Base64 BlurHash for progressive image loading. */\n  blurhash?: string;\n  sizes?: Record<\n    string,\n    { filename?: string; url?: string; width?: number; height?: number }\n  >;\n};",
     "members": []
   },
   {
@@ -1011,253 +609,22 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
-    "id": "@dyrected/core:WorkflowConfig",
-    "name": "WorkflowConfig",
-    "kind": "interface",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface WorkflowConfig<TDoc extends object = Record<string, unknown>> {\n  initialState: string;\n  /** State used for a new working revision created from published content. */\n  draftState?: string;\n  states: WorkflowState[];\n  transitions: WorkflowTransition[];\n  /** Maps values in `user.roles` to workflow capabilities. */\n  roles?: WorkflowRole[];\n  hooks?: {\n    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];\n    afterTransition?: CollectionAfterTransitionHook<TDoc>[];\n  };\n}",
-    "members": [
-      {
-        "name": "initialState",
-        "signature": "initialState: string",
-        "description": ""
-      },
-      {
-        "name": "draftState",
-        "signature": "draftState?: string",
-        "description": "State used for a new working revision created from published content."
-      },
-      {
-        "name": "states",
-        "signature": "states: WorkflowState[]",
-        "description": ""
-      },
-      {
-        "name": "transitions",
-        "signature": "transitions: WorkflowTransition[]",
-        "description": ""
-      },
-      {
-        "name": "roles",
-        "signature": "roles?: WorkflowRole[]",
-        "description": "Maps values in `user.roles` to workflow capabilities."
-      },
-      {
-        "name": "hooks",
-        "signature": "hooks?: {\n    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];\n    afterTransition?: CollectionAfterTransitionHook<TDoc>[];\n  }",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:WorkflowMetadata",
-    "name": "WorkflowMetadata",
-    "kind": "interface",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface WorkflowMetadata {\n  state: string;\n  revision: number;\n  publishedRevision?: number;\n  publishedAt?: string;\n  publishedBy?: string;\n  /** Transitions currently allowed for the requesting user. Response-only. */\n  availableTransitions?: string[];\n}",
-    "members": [
-      {
-        "name": "state",
-        "signature": "state: string",
-        "description": ""
-      },
-      {
-        "name": "revision",
-        "signature": "revision: number",
-        "description": ""
-      },
-      {
-        "name": "publishedRevision",
-        "signature": "publishedRevision?: number",
-        "description": ""
-      },
-      {
-        "name": "publishedAt",
-        "signature": "publishedAt?: string",
-        "description": ""
-      },
-      {
-        "name": "publishedBy",
-        "signature": "publishedBy?: string",
-        "description": ""
-      },
-      {
-        "name": "availableTransitions",
-        "signature": "availableTransitions?: string[]",
-        "description": "Transitions currently allowed for the requesting user. Response-only."
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:WorkflowRole",
-    "name": "WorkflowRole",
-    "kind": "interface",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface WorkflowRole {\n  /** Existing user role value, for example `editor` or `publisher`. */\n  role: string;\n  capabilities: string[];\n}",
-    "members": [
-      {
-        "name": "role",
-        "signature": "role: string",
-        "description": "Existing user role value, for example `editor` or `publisher`."
-      },
-      {
-        "name": "capabilities",
-        "signature": "capabilities: string[]",
-        "description": ""
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:WorkflowState",
-    "name": "WorkflowState",
-    "kind": "interface",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface WorkflowState {\n  /** Stable machine-readable state key. */\n  name: string;\n  /** Label rendered in the Admin UI. */\n  label: string;\n  /** Marks the state whose revision is visible to public readers. */\n  published?: boolean;\n  /** Optional visual tone used by the Admin UI. */\n  color?: \"neutral\" | \"warning\" | \"success\" | \"danger\" | \"info\";\n}",
-    "members": [
-      {
-        "name": "name",
-        "signature": "name: string",
-        "description": "Stable machine-readable state key."
-      },
-      {
-        "name": "label",
-        "signature": "label: string",
-        "description": "Label rendered in the Admin UI."
-      },
-      {
-        "name": "published",
-        "signature": "published?: boolean",
-        "description": "Marks the state whose revision is visible to public readers."
-      },
-      {
-        "name": "color",
-        "signature": "color?: \"neutral\" | \"warning\" | \"success\" | \"danger\" | \"info\"",
-        "description": "Optional visual tone used by the Admin UI."
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:WorkflowTransition",
-    "name": "WorkflowTransition",
-    "kind": "interface",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface WorkflowTransition {\n  /** Stable transition key used by the REST and SDK APIs. */\n  name: string;\n  label: string;\n  from: string | string[];\n  to: string;\n  /** Every listed capability is required. */\n  requiredCapabilities?: string[];\n  /** Require a non-empty comment when performing the transition. */\n  requireComment?: boolean;\n  /** Remove the public snapshot after this transition commits. */\n  unpublish?: boolean;\n}",
-    "members": [
-      {
-        "name": "name",
-        "signature": "name: string",
-        "description": "Stable transition key used by the REST and SDK APIs."
-      },
-      {
-        "name": "label",
-        "signature": "label: string",
-        "description": ""
-      },
-      {
-        "name": "from",
-        "signature": "from: string | string[]",
-        "description": ""
-      },
-      {
-        "name": "to",
-        "signature": "to: string",
-        "description": ""
-      },
-      {
-        "name": "requiredCapabilities",
-        "signature": "requiredCapabilities?: string[]",
-        "description": "Every listed capability is required."
-      },
-      {
-        "name": "requireComment",
-        "signature": "requireComment?: boolean",
-        "description": "Require a non-empty comment when performing the transition."
-      },
-      {
-        "name": "unpublish",
-        "signature": "unpublish?: boolean",
-        "description": "Remove the public snapshot after this transition commits."
-      }
-    ]
-  },
-  {
-    "id": "@dyrected/core:WorkflowTransitionContext",
-    "name": "WorkflowTransitionContext",
-    "kind": "interface",
-    "category": "workflows",
-    "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface WorkflowTransitionContext<\n  TDoc extends object = Record<string, unknown>,\n> {\n  transition: WorkflowTransition;\n  from: string;\n  to: string;\n  doc: TDoc;\n  user?: AuthenticatedUser;\n  comment?: string;\n  req: HookRequestContext;\n  db: DatabaseAdapter;\n}",
-    "members": [
-      {
-        "name": "transition",
-        "signature": "transition: WorkflowTransition",
-        "description": ""
-      },
-      {
-        "name": "from",
-        "signature": "from: string",
-        "description": ""
-      },
-      {
-        "name": "to",
-        "signature": "to: string",
-        "description": ""
-      },
-      {
-        "name": "doc",
-        "signature": "doc: TDoc",
-        "description": ""
-      },
-      {
-        "name": "user",
-        "signature": "user?: AuthenticatedUser",
-        "description": ""
-      },
-      {
-        "name": "comment",
-        "signature": "comment?: string",
-        "description": ""
-      },
-      {
-        "name": "req",
-        "signature": "req: HookRequestContext",
-        "description": ""
-      },
-      {
-        "name": "db",
-        "signature": "db: DatabaseAdapter",
-        "description": ""
-      }
-    ]
-  },
-  {
     "id": "@dyrected/sdk:BaseSchema",
     "name": "BaseSchema",
     "kind": "interface",
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "",
-    "signature": "export interface BaseSchema {\n  collections: Record<string, any>;\n  globals: Record<string, any>;\n}",
+    "signature": "export interface BaseSchema {\n  collections: Record<string, UnknownRecord>;\n  globals: Record<string, UnknownRecord>;\n}",
     "members": [
       {
         "name": "collections",
-        "signature": "collections: Record<string, any>",
+        "signature": "collections: Record<string, UnknownRecord>",
         "description": ""
       },
       {
         "name": "globals",
-        "signature": "globals: Record<string, any>",
+        "signature": "globals: Record<string, UnknownRecord>",
         "description": ""
       }
     ]
@@ -1269,7 +636,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "",
-    "signature": "export function createClient<TSchema extends { collections: any; globals: any } = any>(\n  config: DyrectedClientConfig,\n): DyrectedClient<TSchema>",
+    "signature": "export function createClient<TSchema extends BaseSchema = BaseSchema>(\n  config: DyrectedClientConfig,\n): DyrectedClient<TSchema>",
     "members": []
   },
   {
@@ -1279,7 +646,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "",
-    "signature": "export class DyrectedClient<TSchema extends BaseSchema = any> {\n}",
+    "signature": "export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {\n}",
     "members": [
       {
         "name": "setToken",
@@ -1303,7 +670,17 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "getSchemas",
-        "signature": "getSchemas(): Promise<{ collections: any[]; globals: any[] }>",
+        "signature": "getSchemas(): Promise<SchemaResponse>",
+        "description": ""
+      },
+      {
+        "name": "getAdminAuthConfig",
+        "signature": "getAdminAuthConfig(): Promise<PublicAdminAuthConfig>",
+        "description": ""
+      },
+      {
+        "name": "exchangeAdminAuth",
+        "signature": "exchangeAdminAuth(providerId: string, body: Record<string, unknown>): Promise<{ token: string; collectionSlug: string; providerId: string }>",
         "description": ""
       },
       {
@@ -1323,12 +700,12 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "getPreviewData",
-        "signature": "getPreviewData(token: string): Promise<any>",
+        "signature": "getPreviewData<T = unknown>(token: string): Promise<T>",
         "description": "Fetch draft data for a specific preview token.\nUsed in \"token\" preview mode."
       },
       {
         "name": "find",
-        "signature": "find<K extends keyof TSchema[\"collections\"]>(collection: K & string, args: QueryArgs = {}): Promise<PaginatedResult<TSchema[\"collections\"][K]>>",
+        "signature": "find<K extends keyof TSchema[\"collections\"]>(collection: K & string, args: QueryArgs<TSchema[\"collections\"][K]> = {}): Promise<PaginatedResult<TSchema[\"collections\"][K]>>",
         "description": ""
       },
       {
@@ -1343,17 +720,17 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "findOne",
-        "signature": "findOne<T = any>(collection: string, id: string, args: { depth?: number; initialData?: T } = {}): Promise<T>",
+        "signature": "findOne<T = UnknownRecord>(collection: string, id: string, args: { depth?: number; initialData?: T } = {}): Promise<T>",
         "description": ""
       },
       {
         "name": "create",
-        "signature": "create<T = any>(collection: string, data: any): Promise<T>",
+        "signature": "create<T = UnknownRecord>(collection: string, data: Partial<T>): Promise<T>",
         "description": ""
       },
       {
         "name": "update",
-        "signature": "update<T = any>(collection: string, id: string, data: any): Promise<T>",
+        "signature": "update<T = UnknownRecord>(collection: string, id: string, data: Partial<T>): Promise<T>",
         "description": ""
       },
       {
@@ -1378,17 +755,17 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "getGlobal",
-        "signature": "getGlobal<T = any>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T>",
+        "signature": "getGlobal<T = UnknownRecord>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T>",
         "description": ""
       },
       {
         "name": "updateGlobal",
-        "signature": "updateGlobal<T = any>(slug: string, data: any): Promise<T>",
+        "signature": "updateGlobal<T = UnknownRecord>(slug: string, data: Partial<T>): Promise<T>",
         "description": ""
       },
       {
         "name": "listMedia",
-        "signature": "listMedia(args: QueryArgs = {}, collection: string = \"media\"): Promise<PaginatedResult<Media>>",
+        "signature": "listMedia(args: QueryArgs<Media> = {}, collection: string = \"media\"): Promise<PaginatedResult<Media>>",
         "description": ""
       },
       {
@@ -1472,7 +849,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "Derives a typed `TSchema` from your exported collection and global config constants.\n\nPass it to `createClient<Schema>()` so every `find`, `findOne`, `create`,\n`update`, `global().get()` call returns the inferred document shape — no\nmanual interfaces required.",
-    "signature": "export type InferSchema<\n  TCollections extends Record<string, CollectionConfig<any>>,\n  TGlobals extends Record<string, GlobalConfig<any>> = Record<never, never>,\n> = {\n  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };\n  globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };\n};",
+    "signature": "export type InferSchema<\n  TCollections extends Record<string, CollectionConfig<UnknownRecord>>,\n  TGlobals extends Record<string, GlobalConfig<UnknownRecord>> = Record<never, never>,\n> = {\n  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };\n  globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };\n};",
     "members": []
   },
   {

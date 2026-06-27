@@ -209,15 +209,15 @@ Exported interface from @dyrected/sdk.
 
 ```ts
 export interface BaseSchema {
-  collections: Record<string, any>;
-  globals: Record<string, any>;
+  collections: Record<string, UnknownRecord>;
+  globals: Record<string, UnknownRecord>;
 }
 ```
 
 | Member | Signature | Description |
 | --- | --- | --- |
-| <code>collections</code> | <code>collections: Record&lt;string, any&gt;</code> |  |
-| <code>globals</code> | <code>globals: Record&lt;string, any&gt;</code> |  |
+| <code>collections</code> | <code>collections: Record&lt;string, UnknownRecord&gt;</code> |  |
+| <code>globals</code> | <code>globals: Record&lt;string, UnknownRecord&gt;</code> |  |
 
 
 ## createClient
@@ -225,7 +225,7 @@ export interface BaseSchema {
 Exported function from @dyrected/sdk.
 
 ```ts
-export function createClient<TSchema extends { collections: any; globals: any } = any>(
+export function createClient<TSchema extends BaseSchema = BaseSchema>(
   config: DyrectedClientConfig,
 ): DyrectedClient<TSchema>
 ```
@@ -236,7 +236,7 @@ export function createClient<TSchema extends { collections: any; globals: any } 
 Exported class from @dyrected/sdk.
 
 ```ts
-export class DyrectedClient<TSchema extends BaseSchema = any> {
+export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
 }
 ```
 
@@ -246,24 +246,26 @@ export class DyrectedClient<TSchema extends BaseSchema = any> {
 | <code>clearToken</code> | <code>clearToken(): void</code> | Remove the Authorization header. Call this after logout. |
 | <code>getAuthHeaders</code> | <code>getAuthHeaders(): Record&lt;string, string&gt;</code> | Returns the headers needed to authenticate raw &#96;fetch()&#96; calls made outside the SDK client (e.g. streaming endpoints, dynamic options).  Includes the Authorization bearer token (if set), x-api-key, and x-site-id. |
 | <code>getBaseUrl</code> | <code>getBaseUrl()</code> |  |
-| <code>getSchemas</code> | <code>getSchemas(): Promise&lt;&#123; collections: any[]; globals: any[] &#125;&gt;</code> |  |
+| <code>getSchemas</code> | <code>getSchemas(): Promise&lt;SchemaResponse&gt;</code> |  |
+| <code>getAdminAuthConfig</code> | <code>getAdminAuthConfig(): Promise&lt;PublicAdminAuthConfig&gt;</code> |  |
+| <code>exchangeAdminAuth</code> | <code>exchangeAdminAuth(providerId: string, body: Record&lt;string, unknown&gt;): Promise&lt;&#123; token: string; collectionSlug: string; providerId: string &#125;&gt;</code> |  |
 | <code>getPreference</code> | <code>getPreference&lt;T = unknown&gt;(key: string, options?: &#123; scope?: "personal" &#124; "global" &#125;): Promise&lt;&#123; key: string; value: T &#124; null &#125;&gt;</code> |  |
 | <code>setPreference</code> | <code>setPreference&lt;T = unknown&gt;(key: string, value: T, options?: &#123; scope?: "personal" &#124; "global" &#125;): Promise&lt;&#123; key: string; value: T &#125;&gt;</code> |  |
 | <code>deletePreference</code> | <code>deletePreference(key: string, options?: &#123; scope?: "personal" &#124; "global" &#125;): Promise&lt;&#123; success: boolean &#125;&gt;</code> |  |
-| <code>getPreviewData</code> | <code>getPreviewData(token: string): Promise&lt;any&gt;</code> | Fetch draft data for a specific preview token. Used in "token" preview mode. |
-| <code>find</code> | <code>find&lt;K extends keyof TSchema["collections"]&gt;(collection: K &amp; string, args: QueryArgs = &#123;&#125;): Promise&lt;PaginatedResult&lt;TSchema["collections"][K]&gt;&gt;</code> |  |
+| <code>getPreviewData</code> | <code>getPreviewData&lt;T = unknown&gt;(token: string): Promise&lt;T&gt;</code> | Fetch draft data for a specific preview token. Used in "token" preview mode. |
+| <code>find</code> | <code>find&lt;K extends keyof TSchema["collections"]&gt;(collection: K &amp; string, args: QueryArgs&lt;TSchema["collections"][K]&gt; = &#123;&#125;): Promise&lt;PaginatedResult&lt;TSchema["collections"][K]&gt;&gt;</code> |  |
 | <code>collection</code> | <code>collection&lt;K extends keyof TSchema["collections"]&gt;(slug: K &amp; string)</code> | Returns a fluent query builder for a collection. |
 | <code>global</code> | <code>global&lt;K extends keyof TSchema["globals"]&gt;(slug: K &amp; string)</code> | Access a global by its slug with a fluent builder. |
-| <code>findOne</code> | <code>findOne&lt;T = any&gt;(collection: string, id: string, args: &#123; depth?: number; initialData?: T &#125; = &#123;&#125;): Promise&lt;T&gt;</code> |  |
-| <code>create</code> | <code>create&lt;T = any&gt;(collection: string, data: any): Promise&lt;T&gt;</code> |  |
-| <code>update</code> | <code>update&lt;T = any&gt;(collection: string, id: string, data: any): Promise&lt;T&gt;</code> |  |
+| <code>findOne</code> | <code>findOne&lt;T = UnknownRecord&gt;(collection: string, id: string, args: &#123; depth?: number; initialData?: T &#125; = &#123;&#125;): Promise&lt;T&gt;</code> |  |
+| <code>create</code> | <code>create&lt;T = UnknownRecord&gt;(collection: string, data: Partial&lt;T&gt;): Promise&lt;T&gt;</code> |  |
+| <code>update</code> | <code>update&lt;T = UnknownRecord&gt;(collection: string, id: string, data: Partial&lt;T&gt;): Promise&lt;T&gt;</code> |  |
 | <code>delete</code> | <code>delete(collection: string, id: string): Promise&lt;&#123; message: string &#125;&gt;</code> |  |
 | <code>transition</code> | <code>transition&lt;T = WorkflowDocument&gt;(collection: string, id: string, transitionName: string, opts: TransitionOptions = &#123;&#125;): Promise&lt;T&gt;</code> | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
 | <code>workflowHistory</code> | <code>workflowHistory(collection: string, id: string, args: &#123; limit?: number &#125; = &#123;&#125;): Promise&lt;PaginatedResult&lt;WorkflowHistoryEntry&gt;&gt;</code> | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
 | <code>deleteMany</code> | <code>deleteMany(collection: string, ids: string[]): Promise&lt;&#123; message: string &#125;&gt;</code> |  |
-| <code>getGlobal</code> | <code>getGlobal&lt;T = any&gt;(slug: string, args: &#123; depth?: number; initialData?: T &#125; = &#123;&#125;): Promise&lt;T&gt;</code> |  |
-| <code>updateGlobal</code> | <code>updateGlobal&lt;T = any&gt;(slug: string, data: any): Promise&lt;T&gt;</code> |  |
-| <code>listMedia</code> | <code>listMedia(args: QueryArgs = &#123;&#125;, collection: string = "media"): Promise&lt;PaginatedResult&lt;Media&gt;&gt;</code> |  |
+| <code>getGlobal</code> | <code>getGlobal&lt;T = UnknownRecord&gt;(slug: string, args: &#123; depth?: number; initialData?: T &#125; = &#123;&#125;): Promise&lt;T&gt;</code> |  |
+| <code>updateGlobal</code> | <code>updateGlobal&lt;T = UnknownRecord&gt;(slug: string, data: Partial&lt;T&gt;): Promise&lt;T&gt;</code> |  |
+| <code>listMedia</code> | <code>listMedia(args: QueryArgs&lt;Media&gt; = &#123;&#125;, collection: string = "media"): Promise&lt;PaginatedResult&lt;Media&gt;&gt;</code> |  |
 | <code>uploadMedia</code> | <code>uploadMedia(file: File, collection: string = "media"): Promise&lt;Media&gt;</code> |  |
 | <code>deleteMedia</code> | <code>deleteMedia(id: string, collection: string = "media"): Promise&lt;&#123; message: string &#125;&gt;</code> |  |
 
@@ -319,8 +321,8 @@ manual interfaces required.
 
 ```ts
 export type InferSchema<
-  TCollections extends Record<string, CollectionConfig<any>>,
-  TGlobals extends Record<string, GlobalConfig<any>> = Record<never, never>,
+  TCollections extends Record<string, CollectionConfig<UnknownRecord>>,
+  TGlobals extends Record<string, GlobalConfig<UnknownRecord>> = Record<never, never>,
 > = {
   collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };

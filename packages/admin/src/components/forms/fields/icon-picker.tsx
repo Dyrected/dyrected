@@ -1,5 +1,5 @@
 import * as React from "react"
-import { icons, type LucideIcon } from "lucide-react"
+import { icons } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
@@ -7,39 +7,8 @@ import { ScrollArea } from "../../ui/scroll-area"
 import { cn } from "../../../lib/utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 
-const CATEGORIES = [
-  { id: "all", label: "All" },
-  { id: "actions", label: "Actions", keywords: ["save", "edit", "trash", "delete", "check", "close", "x", "plus", "minus", "ban", "play", "pause", "stop", "power", "add", "remove", "clear"] },
-  { id: "navigation", label: "Navigation", keywords: ["chevron", "arrow", "align", "move", "scroll", "map", "pin", "compass", "globe", "search", "home", "menu"] },
-  { id: "communication", label: "Communication", keywords: ["mail", "message", "chat", "send", "phone", "share", "user", "users", "heart", "star", "bell", "gift", "hash"] },
-  { id: "files", label: "Files & Folders", keywords: ["file", "folder", "doc", "archive", "book", "copy", "clip", "database", "sheet", "table"] },
-  { id: "devices", label: "Devices & Media", keywords: ["monitor", "phone", "tablet", "laptop", "watch", "server", "drive", "wifi", "bluetooth", "battery", "camera", "image", "video", "music", "play"] },
-  { id: "editors", label: "Editors", keywords: ["bold", "italic", "underline", "link", "code", "quote", "type", "text", "scissors", "pen", "brush", "crop"] },
-  { id: "finance", label: "Finance & Shop", keywords: ["credit", "card", "dollar", "bank", "shop", "cart", "tag", "coin", "wallet"] },
-  { id: "utilities", label: "Utilities", keywords: ["settings", "cog", "slider", "eye", "lock", "key", "info", "help", "shield", "sun", "moon", "cloud", "bell", "clock", "calendar"] },
-  { id: "others", label: "Others", keywords: [] }
-]
+import { CATEGORIES, getIconCategory, availableIconNames, getIcon } from "./icon-utils"
 
-const getIconCategory = (name: string): string => {
-  const lowercaseName = name.toLowerCase()
-  for (const cat of CATEGORIES) {
-    if (cat.id === "all" || cat.id === "others") continue
-    if (cat.keywords.some(keyword => lowercaseName.includes(keyword))) {
-      return cat.id
-    }
-  }
-  return "others"
-}
-
-type IconName = keyof typeof icons
-
-// Lucide icons are React forwardRef objects, not functions. Use the package's
-// supported dynamic registry rather than inferring icons from namespace exports.
-export const availableIconNames = Object.keys(icons) as IconName[]
-
-function getIcon(name: string): LucideIcon | undefined {
-  return icons[name as IconName]
-}
 
 interface IconPickerProps {
   schema: FieldSchema
@@ -80,7 +49,7 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
           >
             {SelectedIcon ? (
               <>
-                <SelectedIcon className="dy-h-5 dy-w-5 dy-text-primary dy-shrink-0" />
+                {React.createElement(SelectedIcon, { className: "dy-h-5 dy-w-5 dy-text-primary dy-shrink-0" })}
                 <span className="dy-text-sm dy-text-foreground/80">{selectedIconName}</span>
               </>
             ) : (
@@ -183,7 +152,7 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
 
       {SelectedIcon && (
         <div className="dy-flex dy-items-center dy-justify-center dy-h-12 dy-w-12 dy-rounded-xl dy-border dy-border-border/40 dy-bg-background/50 dy-shrink-0">
-          <SelectedIcon className="dy-h-6 dy-w-6 dy-text-foreground/70" />
+          {React.createElement(SelectedIcon, { className: "dy-h-6 dy-w-6 dy-text-foreground/70" })}
         </div>
       )}
     </div>

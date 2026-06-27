@@ -1,6 +1,6 @@
 import * as React from "react"
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query"
-import { useDyrected } from "../../../providers/dyrected-provider"
+import { useDyrected } from "../../../providers/dyrected-context"
 import { Button } from "../../ui/button"
 import { Badge } from "../../ui/badge"
 import {
@@ -98,7 +98,7 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
 
   const handleCreateSubmit = async (formData: Record<string, unknown>) => {
     try {
-      const created = await client!.collection(relationTo).create(formData)
+      const created = await client!.collection(relationTo).create(formData) as { id: string }
       setCreateDialogOpen(false)
       if (multiple) {
         onChange([...values, created.id])
