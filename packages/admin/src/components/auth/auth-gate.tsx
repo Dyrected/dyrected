@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDyrected } from "../../providers/dyrected-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoginPage } from "../../pages/auth/login-page";
@@ -19,6 +19,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const { client, user, setToken, schemas, initialToken } = useDyrected();
   const queryClient = useQueryClient();
   const handledExternalTokenRef = useRef<string | null>(null);
+  const [externalExchangeError, setExternalExchangeError] = useState<string | null>(null);
 
   const adminAuth = schemas?.adminAuth;
   const isExternalAdminAuth = adminAuth?.mode === "external" && (adminAuth.providers?.length ?? 0) > 0;
@@ -29,31 +30,67 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const params = new URLSearchParams(window.location.search);
     return {
       token: params.get("dyrectedExternalToken"),
+      provider: params.get("dyrectedExternalProvider"),
       error: params.get("dyrectedExternalError"),
     };
   }, []);
   const pendingExternalToken = !!externalParams.token;
-  const externalError = externalParams.error;
+  const externalError = externalExchangeError ?? externalParams.error;
 
   const authCollection = resolveAdminAuthCollection(schemas?.collections, adminAuth?.collectionSlug);
 
   useEffect(() => {
-    if (!isExternalAdminAuth || !externalParams.token || handledExternalTokenRef.current === externalParams.token) {
+    if (
+      !isExternalAdminAuth ||
+      !externalParams.token ||
+      handledExternalTokenRef.current === externalParams.token ||
+      (externalParams.provider && !client)
+    ) {
       return;
     }
 
     handledExternalTokenRef.current = externalParams.token;
-    setToken(externalParams.token);
-    if (typeof window !== "undefined") {
+    let cancelled = false;
+
+    const completeExternalAuth = async () => {
+      try {
+        if (externalParams.provider) {
+          if (!client) return;
+          const exchanged = await client.exchangeAdminAuth(externalParams.provider, {
+            token: externalParams.token,
+          });
+          if (cancelled) return;
+          setExternalExchangeError(null);
+          setToken(exchanged.token);
+        } else {
+          setExternalExchangeError(null);
+          setToken(externalParams.token);
+        }
+      } catch (error) {
+        if (cancelled) return;
+        handledExternalTokenRef.current = null;
+        setExternalExchangeError(
+          error instanceof Error ? error.message : "External authentication failed.",
+        );
+      }
+
+      if (cancelled || typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
       params.delete("dyrectedExternalToken");
+      params.delete("dyrectedExternalProvider");
       params.delete("dyrectedAdminCollection");
       params.delete("dyrectedExternalError");
       const nextSearch = params.toString();
       const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
       window.history.replaceState({}, document.title, nextUrl);
+    };
+
+    void completeExternalAuth();
+
+    return () => {
+      cancelled = true;
     }
-  }, [externalParams.token, isExternalAdminAuth, setToken]);
+  }, [client, externalParams.provider, externalParams.token, isExternalAdminAuth, setToken]);
 
   useEffect(() => {
     if (!isExternalAdminAuth || user || !client) return;

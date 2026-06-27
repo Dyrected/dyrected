@@ -180,14 +180,15 @@ function SidebarInner({
   return (
     <div className="dy-flex dy-flex-col dy-min-h-screen dy-admin-ui">
       {/* Logo */}
-      <div
-        className={cn(
-          "dy-flex dy-items-center dy-h-14 dy-shrink-0 dy-transition-all",
-          collapsed ? "dy-justify-center dy-px-2" : "dy-gap-2.5 dy-px-4"
-        )}
-      >
-        <div>
-          {!isEmbedded && (
+      {!isEmbedded && (
+
+        < div
+          className={cn(
+            "dy-flex dy-items-center dy-h-14 dy-shrink-0 dy-transition-all",
+            collapsed ? "dy-justify-center dy-px-2" : "dy-gap-2.5 dy-px-4"
+          )}
+        >
+          <div>
             <>
               {branding?.logoText ? (
                 collapsed ? (
@@ -231,11 +232,11 @@ function SidebarInner({
                 </span>
               )}
             </>
-          )}
-        </div>
-        {/* Desktop Toggle - Only visible on desktop since mobile uses overlay */}
+          </div>
+          {/* Desktop Toggle - Only visible on desktop since mobile uses overlay */}
 
-      </div>
+        </div>
+      )}
 
 
       {/* Nav */}
@@ -456,7 +457,7 @@ function SidebarInner({
           </button>
         )}
       </div>
-    </div>
+    </div >
   )
 }
 
@@ -569,22 +570,23 @@ export function AdminShell({
             </button>
 
             {/* Brand — centered */}
-            <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
-              {mobileBranding?.logoText ? (
-                <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
-                  {mobileBranding.logoText}
-                </span>
-              ) : mobileBranding?.logo ? (
-                <img
-                  src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
-                  alt="Logo"
-                  className="dy-h-7 dy-w-auto dy-object-contain"
-                />
-              ) : (
-                <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
-              )}
-            </div>
-
+            {!isEmbedded && (
+              <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
+                {mobileBranding?.logoText ? (
+                  <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
+                    {mobileBranding.logoText}
+                  </span>
+                ) : mobileBranding?.logo ? (
+                  <img
+                    src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
+                    alt="Logo"
+                    className="dy-h-7 dy-w-auto dy-object-contain"
+                  />
+                ) : (
+                  <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
+                )}
+              </div>
+            )}
             {/* User avatar — right side */}
             {user && (
               <div className="dy-ml-auto dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">

@@ -4563,7 +4563,7 @@ Canonical URL: https://docs.dyrected.com/docs/getting-started/quickstart
 
 Before you start, ensure you have:
 
-- [Node.js 18+](https://nodejs.org) installed
+- [Node.js 22+](https://nodejs.org) installed
 - A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
 
