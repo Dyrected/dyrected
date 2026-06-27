@@ -3,9 +3,19 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Brain, Sparkles, Send, CheckCircle2 } from "lucide-react";
-import footerContent from "./footer-content.json";
+import footerFallback from "./footer-content.json";
 
-export default function Footer() {
+type FooterContent = {
+  tagline?: string;
+  newsletter?: {
+    title?: string;
+    description?: string;
+    successMessage?: string;
+  };
+  disclaimer?: string;
+} | null;
+
+export default function Footer({ cmsContent }: { cmsContent?: FooterContent }) {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
   const [error, setError] = useState("");
@@ -22,8 +32,19 @@ export default function Footer() {
     setEmail("");
   };
 
-  // Safely split the success message to keep the bold title styling
-  const [successTitle, successBody] = footerContent.newsletter.successMessage.split("! ");
+  const tagline = cmsContent?.tagline ?? footerFallback.tagline;
+  const newsletter = {
+    title: cmsContent?.newsletter?.title ?? footerFallback.newsletter.title,
+    description:
+      cmsContent?.newsletter?.description ??
+      footerFallback.newsletter.description,
+    successMessage:
+      cmsContent?.newsletter?.successMessage ??
+      footerFallback.newsletter.successMessage,
+  };
+  const disclaimer = cmsContent?.disclaimer ?? footerFallback.disclaimer;
+
+  const [successTitle, successBody] = newsletter.successMessage.split("! ");
 
   return (
     <footer className="border-t border-white/5 bg-[#0b0b13] text-muted-foreground">
@@ -45,7 +66,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-sm max-w-xs text-muted-foreground leading-relaxed">
-              &ldquo;{footerContent.tagline}&rdquo;
+              &ldquo;{tagline}&rdquo;
             </p>
             <div className="flex gap-4">
               {["X", "GitHub", "YouTube", "Discord"].map((platform) => (
@@ -70,17 +91,26 @@ export default function Footer() {
                 </h3>
                 <ul role="list" className="mt-4 space-y-2.5">
                   <li>
-                    <Link href="/services" className="text-sm hover:text-white transition-colors">
+                    <Link
+                      href="/services"
+                      className="text-sm hover:text-white transition-colors"
+                    >
                       Services Catalog
                     </Link>
                   </li>
                   <li>
-                    <Link href="/booking" className="text-sm hover:text-white transition-colors">
+                    <Link
+                      href="/booking"
+                      className="text-sm hover:text-white transition-colors"
+                    >
                       Book Session
                     </Link>
                   </li>
                   <li>
-                    <Link href="/about#faq" className="text-sm hover:text-white transition-colors">
+                    <Link
+                      href="/about#faq"
+                      className="text-sm hover:text-white transition-colors"
+                    >
                       Frequently Asked Questions
                     </Link>
                   </li>
@@ -92,17 +122,26 @@ export default function Footer() {
                 </h3>
                 <ul role="list" className="mt-4 space-y-2.5">
                   <li>
-                    <Link href="/assessment" className="text-sm hover:text-white transition-colors">
+                    <Link
+                      href="/assessment"
+                      className="text-sm hover:text-white transition-colors"
+                    >
                       The Disappointment Test
                     </Link>
                   </li>
                   <li>
-                    <Link href="/dashboard" className="text-sm hover:text-white transition-colors">
+                    <Link
+                      href="/dashboard"
+                      className="text-sm hover:text-white transition-colors"
+                    >
                       Growth Dashboard
                     </Link>
                   </li>
                   <li>
-                    <Link href="/blog" className="text-sm hover:text-white transition-colors">
+                    <Link
+                      href="/blog"
+                      className="text-sm hover:text-white transition-colors"
+                    >
                       Timeline Articles
                     </Link>
                   </li>
@@ -113,17 +152,19 @@ export default function Footer() {
             {/* Newsletter */}
             <div>
               <h3 className="text-xs font-bold uppercase tracking-widest text-white flex items-center gap-1.5">
-                <span>{footerContent.newsletter.title}</span>
+                <span>{newsletter.title}</span>
                 <Sparkles className="h-3 w-3 text-secondary animate-pulse" />
               </h3>
               <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-                {footerContent.newsletter.description}
+                {newsletter.description}
               </p>
               {subscribed ? (
                 <div className="mt-4 flex items-start gap-2 rounded-xl bg-secondary/10 border border-secondary/20 p-3 text-sm text-secondary">
                   <CheckCircle2 className="h-5 w-5 shrink-0" />
                   <div>
-                    <span className="font-semibold block text-white">{successTitle}!</span>
+                    <span className="font-semibold block text-white">
+                      {successTitle}!
+                    </span>
                     {successBody}
                   </div>
                 </div>
@@ -148,7 +189,11 @@ export default function Footer() {
                       <Send className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  {error && <span className="text-xs text-accent font-medium">{error}</span>}
+                  {error && (
+                    <span className="text-xs text-accent font-medium">
+                      {error}
+                    </span>
+                  )}
                 </form>
               )}
             </div>
@@ -158,9 +203,7 @@ export default function Footer() {
         {/* Footer Bottom */}
         <div className="mt-12 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
           <p>© 2026 Future You Coaching. All rights reserved.</p>
-          <p className="text-muted-foreground/60 italic">
-            {footerContent.disclaimer}
-          </p>
+          <p className="text-muted-foreground/60 italic">{disclaimer}</p>
         </div>
       </div>
     </footer>

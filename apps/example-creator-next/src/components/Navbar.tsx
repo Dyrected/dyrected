@@ -6,21 +6,34 @@ import { useEffect, useState } from "react";
 import { Sparkles, Activity, Menu, X, ArrowRight, Brain } from "lucide-react";
 import { getStoredProfile, UserProfile } from "@/lib/storage";
 
-export default function Navbar() {
+type NavContent = {
+  brandName?: string;
+  brandSubtitle?: string;
+  links?: Array<{ name: string; href: string }>;
+  dashboardLabel?: string;
+  diagnosticLabel?: string;
+} | null;
+
+const DEFAULT_LINKS = [
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+  { name: "Services", href: "/services" },
+  { name: "Assessment", href: "/assessment" },
+  { name: "Blog", href: "/blog" },
+  { name: "Contact", href: "/contact" },
+];
+
+export default function Navbar({ cmsContent }: { cmsContent?: NavContent }) {
   const pathname = usePathname();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Initial fetch - delayed to avoid sync render warning
     const timeoutId = setTimeout(() => {
       const initial = getStoredProfile();
-      if (initial) {
-        setProfile(initial);
-      }
+      if (initial) setProfile(initial);
     }, 0);
 
-    // Sync state on custom profile updates
     const handleUpdate = () => {
       const next = getStoredProfile();
       setProfile((prev) => {
@@ -30,7 +43,6 @@ export default function Navbar() {
     };
 
     window.addEventListener("storage_profile_update", handleUpdate);
-    // Also sync on localstorage direct event (from other tabs if any)
     window.addEventListener("storage", handleUpdate);
 
     return () => {
@@ -40,14 +52,14 @@ export default function Navbar() {
     };
   }, []);
 
-  const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "About", href: "/about" },
-    { name: "Services", href: "/services" },
-    { name: "Assessment", href: "/assessment" },
-    { name: "Blog", href: "/blog" },
-    { name: "Contact", href: "/contact" },
-  ];
+  const brandName = cmsContent?.brandName ?? "Future You";
+  const brandSubtitle = cmsContent?.brandSubtitle ?? "Coaching";
+  const navLinks =
+    cmsContent?.links && cmsContent.links.length > 0
+      ? cmsContent.links
+      : DEFAULT_LINKS;
+  const dashboardLabel = cmsContent?.dashboardLabel ?? "Dashboard";
+  const diagnosticLabel = cmsContent?.diagnosticLabel ?? "Diagnostic";
 
   return (
     <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/5 bg-background/70 backdrop-blur-md">
@@ -60,10 +72,10 @@ export default function Navbar() {
           </div>
           <div className="flex flex-col">
             <span className="font-heading text-lg font-bold tracking-tight text-white leading-none">
-              Future You
+              {brandName}
             </span>
             <span className="text-[10px] text-secondary font-medium tracking-widest uppercase">
-              Coaching
+              {brandSubtitle}
             </span>
           </div>
         </Link>
@@ -77,7 +89,9 @@ export default function Navbar() {
                 key={link.name}
                 href={link.href}
                 className={`text-sm font-medium transition-colors hover:text-white ${
-                  isActive ? "text-primary glow-text-purple font-semibold" : "text-muted-foreground"
+                  isActive
+                    ? "text-primary glow-text-purple font-semibold"
+                    : "text-muted-foreground"
                 }`}
               >
                 {link.name}
@@ -94,7 +108,9 @@ export default function Navbar() {
               className="flex items-center gap-2 rounded-full bg-primary/10 border border-primary/30 px-4 py-2 text-sm font-semibold text-white hover:bg-primary/20 transition-all hover:scale-105"
             >
               <Activity className="h-4 w-4 text-secondary" />
-              <span>Dashboard ({profile.name.split(" ")[0]})</span>
+              <span>
+                {dashboardLabel} ({profile.name.split(" ")[0]})
+              </span>
             </Link>
           ) : (
             <>
@@ -102,13 +118,13 @@ export default function Navbar() {
                 href="/dashboard"
                 className="text-sm font-semibold text-muted-foreground hover:text-white transition-colors"
               >
-                Dashboard
+                {dashboardLabel}
               </Link>
               <Link
                 href="/assessment"
                 className="group flex items-center gap-1.5 rounded-full bg-linear-to-r from-primary to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-primary/20 hover:scale-105 transition-all"
               >
-                <span>Diagnostic</span>
+                <span>{diagnosticLabel}</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </>
@@ -155,7 +171,9 @@ export default function Navbar() {
                 className="flex items-center justify-center gap-2 rounded-xl bg-primary/10 border border-primary/30 py-3 text-base font-semibold text-white"
               >
                 <Activity className="h-5 w-5 text-secondary" />
-                <span>Dashboard ({profile.name})</span>
+                <span>
+                  {dashboardLabel} ({profile.name})
+                </span>
               </Link>
             ) : (
               <>
@@ -164,7 +182,7 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center rounded-xl border border-white/10 py-3 text-base font-semibold text-white"
                 >
-                  Dashboard
+                  {dashboardLabel}
                 </Link>
                 <Link
                   href="/assessment"
