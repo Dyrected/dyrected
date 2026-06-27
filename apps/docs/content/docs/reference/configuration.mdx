@@ -138,38 +138,57 @@ Keep provider credentials in environment variables, never in the configuration s
 The following region is generated from current public exports. Do not edit it manually.
 
 {/* GENERATED:REFERENCE-CONFIGURATION:START */}
+## AdminConfig
+
+Branding and metadata options for the Dyrected Admin UI.
+
+```ts
+export interface AdminConfig {
+  /** Custom component slots around the built-in dashboard. */
+  components?: AdminDashboardComponentSlots;
+  branding?: {
+    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
+    logo?: string;
+    /** Compact logo mark used in the collapsed sidebar state. */
+    logoMark?: string;
+    /** Text alternative or addition to the logo image. */
+    logoText?: string;
+    /**
+     * Primary accent colour as any CSS colour value.
+     * @example '#6366f1'
+     * @example 'hsl(240 50% 60%)'
+     */
+    primaryColor?: string;
+    /** Browser tab favicon URL. */
+    favicon?: string;
+    /** Font family for body and UI text. Must be loaded separately. */
+    fontSans?: string;
+    /** Font family for headings. Must be loaded separately. */
+    fontSerif?: string;
+  };
+  meta?: {
+    /**
+     * String appended to every Admin page's `<title>`.
+     * @default '- Dyrected'
+     */
+    titleSuffix?: string;
+  };
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>components</code> | <code>components?: AdminDashboardComponentSlots</code> | Custom component slots around the built-in dashboard. |
+| <code>branding</code> | <code>branding?: &#123;     /** Full logo image shown in the expanded sidebar. URL or imported image asset. */     logo?: string;     /** Compact logo mark used in the collapsed sidebar state. */     logoMark?: string;     /** Text alternative or addition to the logo image. */     logoText?: string;     /**      * Primary accent colour as any CSS colour value.      * @example '#6366f1'      * @example 'hsl(240 50% 60%)'      */     primaryColor?: string;     /** Browser tab favicon URL. */     favicon?: string;     /** Font family for body and UI text. Must be loaded separately. */     fontSans?: string;     /** Font family for headings. Must be loaded separately. */     fontSerif?: string;   &#125;</code> |  |
+| <code>meta</code> | <code>meta?: &#123;     /**      * String appended to every Admin page's &#96;&lt;title&gt;&#96;.      * @default '- Dyrected'      */     titleSuffix?: string;   &#125;</code> |  |
+
+
 ## CollectionConfig
 
 Defines a Dyrected collection — a named set of documents with a shared schema.
 
 Pass your document's TypeScript type as the generic parameter `TDoc` to get
-fully typed hooks and access functions:
-
-```ts
-interface Post {
-  id: string
-  title: string
-  slug: string
-  status: 'draft' | 'published'
-  publishedAt?: string
-}
-
-export const Posts = defineCollection<Post>({
-  slug: 'posts',
-  hooks: {
-    beforeChange: [({ data, operation }) => {
-      // `data` is typed as Partial<Post>
-      if (operation === 'create') return { ...data, status: 'draft' }
-      return data
-    }],
-    afterChange: [({ doc, previousDoc }) => {
-      // `doc` and `previousDoc` are typed as Post
-      if (doc.status !== previousDoc?.status) notifySubscribers(doc)
-    }],
-  },
-  fields: [...],
-})
-```
+fully typed hooks and access functions.
 
 ```ts
 export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
@@ -199,14 +218,14 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * If `true`, this collection is an **auth collection** — it gains
+   * If `true`, this collection is an auth collection. It gains
    * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`
    * endpoints, and documents are expected to have a `password` field.
    */
   auth?: boolean;
 
   /**
-   * If `true` (or a config object), this collection supports **file uploads**.
+   * If `true` or a config object, this collection supports file uploads.
    * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)
    * and the create endpoint accepts `multipart/form-data`.
    */
@@ -223,7 +242,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 
   /**
    * Initial documents to seed into this collection the first time it is
-   * fetched and found to be empty (e.g. for demo data or defaults).
+   * fetched and found to be empty, for example demo data or defaults.
    */
   initialData?: Partial<TDoc>[];
 
@@ -244,14 +263,14 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   /**
    * Collection-level access control.
    *
-   * Each key is an operation; the value is a function (or Jexl string) that
+   * Each key is an operation; the value is a function or Jexl string that
    * returns `true` to allow or `false` to deny. Returning a `where`-style
    * object grants access only to matching documents.
    *
    * @example
    * access: {
-   *   read: () => true,               // public read
-   *   create: ({ user }) => !!user,   // logged-in users only
+   *   read: () => true,
+   *   create: ({ user }) => !!user,
    *   update: ({ user }) => user?.roles?.includes('editor') ?? false,
    *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,
    * }
@@ -270,7 +289,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * hook is passed as the input to the next. Throwing inside any hook aborts
    * the operation and returns a `500` error.
    *
-   * See the [Hooks reference](/docs/concepts/hooks) for the full lifecycle diagram.
+   * See the Hooks reference for the full lifecycle diagram.
    */
   hooks?: {
     /**
@@ -292,24 +311,22 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     beforeChange?: CollectionBeforeChangeHook<TDoc>[];
 
     /**
-     * Runs after create or update is committed. For side-effects only —
-     * webhooks, cache busting, notifications. Return value is ignored.
+     * Runs after create or update is committed. For side-effects only:
+     * webhooks, cache busting, and notifications. Return value is ignored.
      *
-     * Errors are **isolated**: caught, logged, and discarded so a failing
+     * Errors are isolated: caught, logged, and discarded so a failing
      * side-effect never turns a successful write into an HTTP 500.
-     * See {@link CollectionAfterChangeHook} for the await-vs-fire-and-forget guidance.
+     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.
      */
     afterChange?: CollectionAfterChangeHook<TDoc>[];
 
-    /**
-     * Runs before a document is deleted. Throw to cancel the deletion.
-     */
+    /** Runs before a document is deleted. Throw to cancel the deletion. */
     beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];
 
     /**
      * Runs after a document has been deleted. For cleanup side-effects only.
      *
-     * Errors are **isolated**: caught, logged, and discarded — the deletion is
+     * Errors are isolated: caught, logged, and discarded. The deletion is
      * already committed and will not be undone.
      */
     afterDelete?: CollectionAfterDeleteHook<TDoc>[];
@@ -361,8 +378,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 
     /**
      * How the Live Preview pane communicates with the frontend.
-     * - `'postMessage'` (default) — sends a `postMessage` with the current doc data.
-     * - `'token'` — passes a short-lived preview token as a query parameter.
+     * - `postMessage` sends a `postMessage` with the current doc data.
+     * - `token` passes a short-lived preview token as a query parameter.
      */
     previewMode?: "postMessage" | "token";
 
@@ -371,8 +388,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * resolve internal links. Use `{fieldName}` placeholders.
      *
      * @example
-     * urlPattern: '/blog/{slug}'   // → /blog/my-post
-     * urlPattern: '/{slug}'        // → /about
+     * urlPattern: '/blog/{slug}' // /blog/my-post
+     * urlPattern: '/{slug}' // /about
      */
     urlPattern?: string;
   };
@@ -385,16 +402,16 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>siteId</code> | <code>siteId?: string</code> | Restricts this collection to a specific site in a multi-tenant deployment. When set, only requests bearing a matching &#96;X-Site-Id&#96; header can access it. |
 | <code>shared</code> | <code>shared?: boolean</code> | If &#96;true&#96;, this collection is shared across all sites in a multi-tenant deployment and accessible regardless of the &#96;X-Site-Id&#96; header. |
 | <code>labels</code> | <code>labels?: &#123;     singular: string;     plural: string;   &#125;</code> | Human-readable names for documents in this collection, shown in the Admin UI. |
-| <code>auth</code> | <code>auth?: boolean</code> | If &#96;true&#96;, this collection is an **auth collection** — it gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field. |
-| <code>upload</code> | <code>upload?: boolean &#124; UploadConfig</code> | If &#96;true&#96; (or a config object), this collection supports **file uploads**. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;. |
+| <code>auth</code> | <code>auth?: boolean</code> | If &#96;true&#96;, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field. |
+| <code>upload</code> | <code>upload?: boolean &#124; UploadConfig</code> | If &#96;true&#96; or a config object, this collection supports file uploads. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;. |
 | <code>fields</code> | <code>fields: Field[]</code> | Field definitions that make up the document schema for this collection. |
 | <code>timestamps</code> | <code>timestamps?: boolean</code> | If &#96;true&#96;, Dyrected automatically adds &#96;createdAt&#96; and &#96;updatedAt&#96; timestamp fields to every document. Defaults to &#96;true&#96;. |
-| <code>initialData</code> | <code>initialData?: Partial&lt;TDoc&gt;[]</code> | Initial documents to seed into this collection the first time it is fetched and found to be empty (e.g. for demo data or defaults). |
+| <code>initialData</code> | <code>initialData?: Partial&lt;TDoc&gt;[]</code> | Initial documents to seed into this collection the first time it is fetched and found to be empty, for example demo data or defaults. |
 | <code>audit</code> | <code>audit?: boolean</code> | If &#96;true&#96;, every create, update, and delete operation on this collection is logged to the &#96;__audit&#96; collection with before/after snapshots and the acting user's identity. |
 | <code>workflow</code> | <code>workflow?: WorkflowConfig&lt;TDoc&gt;</code> | Optional state-machine workflow for this collection. Workflow-enabled entries keep an editable working revision and an independent public snapshot, so editing published content never changes the live response. |
-| <code>access</code> | <code>access?: &#123;     read?: AccessFunction&lt;TDoc&gt; &#124; string;     create?: AccessFunction&lt;TDoc&gt; &#124; string;     update?: AccessFunction&lt;TDoc&gt; &#124; string;     delete?: AccessFunction&lt;TDoc&gt; &#124; string;   &#125;</code> | Collection-level access control.  Each key is an operation; the value is a function (or Jexl string) that returns &#96;true&#96; to allow or &#96;false&#96; to deny. Returning a &#96;where&#96;-style object grants access only to matching documents. |
-| <code>hooks</code> | <code>hooks?: &#123;     /**      * Runs before the database is queried. Return a modified &#96;where&#96; object      * to override the query filter.      */     beforeRead?: CollectionBeforeReadHook[];      /**      * Runs after documents are fetched. Return a modified doc to change what      * the client receives. Runs on every document in a list response.      */     afterRead?: CollectionAfterReadHook&lt;TDoc&gt;[];      /**      * Runs before create or update. Return modified data to change what is      * written to the database. Throw to abort the write entirely.      */     beforeChange?: CollectionBeforeChangeHook&lt;TDoc&gt;[];      /**      * Runs after create or update is committed. For side-effects only —      * webhooks, cache busting, notifications. Return value is ignored.      *      * Errors are **isolated**: caught, logged, and discarded so a failing      * side-effect never turns a successful write into an HTTP 500.      * See &#123;@link CollectionAfterChangeHook&#125; for the await-vs-fire-and-forget guidance.      */     afterChange?: CollectionAfterChangeHook&lt;TDoc&gt;[];      /**      * Runs before a document is deleted. Throw to cancel the deletion.      */     beforeDelete?: CollectionBeforeDeleteHook&lt;TDoc&gt;[];      /**      * Runs after a document has been deleted. For cleanup side-effects only.      *      * Errors are **isolated**: caught, logged, and discarded — the deletion is      * already committed and will not be undone.      */     afterDelete?: CollectionAfterDeleteHook&lt;TDoc&gt;[];   &#125;</code> | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the [Hooks reference](/docs/concepts/hooks) for the full lifecycle diagram. |
-| <code>admin</code> | <code>admin?: &#123;     /**      * Lucide icon displayed beside this collection in the Admin sidebar.      * Uses Lucide component names, e.g. &#96;'Newspaper'&#96; or &#96;'ShoppingBag'&#96;.      */     icon?: AdminIconName;      /** Custom component slots for this collection's list view. */     components?: CollectionListComponentSlots;      /**      * The field name used as the document's display title in the Admin list      * view and breadcrumbs. Defaults to &#96;'title'&#96; if the field exists.      */     useAsTitle?: string;      /**      * Field names to show as columns in the Admin list view.      * Defaults to a sensible set of the first few non-structural fields.      */     defaultColumns?: string[];      /**      * Groups this collection under a named section in the Admin sidebar.      * Collections with the same &#96;group&#96; are visually grouped together.      */     group?: string;      /** If &#96;true&#96;, this collection is not shown in the Admin UI sidebar. */     hidden?: boolean;      /** If &#96;false&#96;, disables the filter UI entirely for this collection. Defaults to &#96;true&#96;. */     filterable?: boolean;      /**      * URL to open in the Live Preview pane when editing a document.      * Pass a function to derive the URL from the document's fields.      *      * @example      * previewUrl: (doc) =&gt; &#96;https://mysite.com/blog/$&#123;doc.slug&#125;&#96;      */     previewUrl?: string &#124; ((doc: TDoc, opts: &#123; locale?: string &#125;) =&gt; string &#124; null);      /**      * How the Live Preview pane communicates with the frontend.      * - &#96;'postMessage'&#96; (default) — sends a &#96;postMessage&#96; with the current doc data.      * - &#96;'token'&#96; — passes a short-lived preview token as a query parameter.      */     previewMode?: "postMessage" &#124; "token";      /**      * Frontend URL pattern for this collection, used by &#96;url&#96; fields to      * resolve internal links. Use &#96;&#123;fieldName&#125;&#96; placeholders.      *      * @example      * urlPattern: '/blog/&#123;slug&#125;'   // → /blog/my-post      * urlPattern: '/&#123;slug&#125;'        // → /about      */     urlPattern?: string;   &#125;</code> | Admin UI configuration for this collection. |
+| <code>access</code> | <code>access?: &#123;     read?: AccessFunction&lt;TDoc&gt; &#124; string;     create?: AccessFunction&lt;TDoc&gt; &#124; string;     update?: AccessFunction&lt;TDoc&gt; &#124; string;     delete?: AccessFunction&lt;TDoc&gt; &#124; string;   &#125;</code> | Collection-level access control.  Each key is an operation; the value is a function or Jexl string that returns &#96;true&#96; to allow or &#96;false&#96; to deny. Returning a &#96;where&#96;-style object grants access only to matching documents. |
+| <code>hooks</code> | <code>hooks?: &#123;     /**      * Runs before the database is queried. Return a modified &#96;where&#96; object      * to override the query filter.      */     beforeRead?: CollectionBeforeReadHook[];      /**      * Runs after documents are fetched. Return a modified doc to change what      * the client receives. Runs on every document in a list response.      */     afterRead?: CollectionAfterReadHook&lt;TDoc&gt;[];      /**      * Runs before create or update. Return modified data to change what is      * written to the database. Throw to abort the write entirely.      */     beforeChange?: CollectionBeforeChangeHook&lt;TDoc&gt;[];      /**      * Runs after create or update is committed. For side-effects only:      * webhooks, cache busting, and notifications. Return value is ignored.      *      * Errors are isolated: caught, logged, and discarded so a failing      * side-effect never turns a successful write into an HTTP 500.      * See &#96;CollectionAfterChangeHook&#96; for await-vs-fire-and-forget guidance.      */     afterChange?: CollectionAfterChangeHook&lt;TDoc&gt;[];      /** Runs before a document is deleted. Throw to cancel the deletion. */     beforeDelete?: CollectionBeforeDeleteHook&lt;TDoc&gt;[];      /**      * Runs after a document has been deleted. For cleanup side-effects only.      *      * Errors are isolated: caught, logged, and discarded. The deletion is      * already committed and will not be undone.      */     afterDelete?: CollectionAfterDeleteHook&lt;TDoc&gt;[];   &#125;</code> | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram. |
+| <code>admin</code> | <code>admin?: &#123;     /**      * Lucide icon displayed beside this collection in the Admin sidebar.      * Uses Lucide component names, e.g. &#96;'Newspaper'&#96; or &#96;'ShoppingBag'&#96;.      */     icon?: AdminIconName;      /** Custom component slots for this collection's list view. */     components?: CollectionListComponentSlots;      /**      * The field name used as the document's display title in the Admin list      * view and breadcrumbs. Defaults to &#96;'title'&#96; if the field exists.      */     useAsTitle?: string;      /**      * Field names to show as columns in the Admin list view.      * Defaults to a sensible set of the first few non-structural fields.      */     defaultColumns?: string[];      /**      * Groups this collection under a named section in the Admin sidebar.      * Collections with the same &#96;group&#96; are visually grouped together.      */     group?: string;      /** If &#96;true&#96;, this collection is not shown in the Admin UI sidebar. */     hidden?: boolean;      /** If &#96;false&#96;, disables the filter UI entirely for this collection. Defaults to &#96;true&#96;. */     filterable?: boolean;      /**      * URL to open in the Live Preview pane when editing a document.      * Pass a function to derive the URL from the document's fields.      *      * @example      * previewUrl: (doc) =&gt; &#96;https://mysite.com/blog/$&#123;doc.slug&#125;&#96;      */     previewUrl?: string &#124; ((doc: TDoc, opts: &#123; locale?: string &#125;) =&gt; string &#124; null);      /**      * How the Live Preview pane communicates with the frontend.      * - &#96;postMessage&#96; sends a &#96;postMessage&#96; with the current doc data.      * - &#96;token&#96; passes a short-lived preview token as a query parameter.      */     previewMode?: "postMessage" &#124; "token";      /**      * Frontend URL pattern for this collection, used by &#96;url&#96; fields to      * resolve internal links. Use &#96;&#123;fieldName&#125;&#96; placeholders.      *      * @example      * urlPattern: '/blog/&#123;slug&#125;' // /blog/my-post      * urlPattern: '/&#123;slug&#125;' // /about      */     urlPattern?: string;   &#125;</code> | Admin UI configuration for this collection. |
 
 
 ## DyrectedConfig
@@ -416,21 +433,21 @@ export interface DyrectedConfig {
 
   /**
    * The database adapter. Required for all data operations.
-   * @see {@link DatabaseAdapter}
+   * @see DatabaseAdapter
    */
   db?: DatabaseAdapter;
 
   /**
    * The storage adapter for file uploads.
    * Required when any collection has `upload: true`.
-   * @see {@link StorageAdapter}
+   * @see StorageAdapter
    */
   storage?: StorageAdapter;
 
   /**
    * The image processing service. Required when any upload collection
    * defines `imageSizes`.
-   * @see {@link ImageService}
+   * @see ImageService
    */
   image?: ImageService;
 
@@ -459,8 +476,10 @@ export interface DyrectedConfig {
   email?: {
     /** The `From` address for all outbound emails. */
     from: string;
+
     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
     send: (args: { to: string; subject: string; html: string }) => Promise<void>;
+
     /** Override the default email templates. */
     templates?: {
       welcome?: (args: { email: string }) => { subject?: string; html: string };
@@ -493,8 +512,10 @@ export interface DyrectedConfig {
   /** Durable lifecycle-event delivery configuration. */
   events?: {
     handlers: LifecycleEventHandler[];
+
     /** Maximum delivery attempts before an event remains failed. Defaults to 8. */
     maxAttempts?: number;
+
     /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */
     retryDelayMs?: number;
   };
@@ -514,15 +535,6 @@ export interface DyrectedConfig {
    * Callback to dynamically fetch additional collections and globals for a
    * given site ID at request time. Used in multi-tenant deployments where each
    * site has its own schema stored in the database.
-   *
-   * @param siteId  The `X-Site-Id` header value from the incoming request.
-   * @returns       Extra collections and globals to merge into the config for this request.
-   *
-   * @example
-   * onSchemaFetch: async (siteId) => {
-   *   const site = await db.findOne({ collection: 'sites', id: siteId })
-   *   return buildSchemaFromSiteConfig(site)
-   * }
    */
   onSchemaFetch?: (
     siteId: string,
@@ -545,9 +557,9 @@ export interface DyrectedConfig {
 | <code>image</code> | <code>image?: ImageService</code> | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;. |
 | <code>admin</code> | <code>admin?: AdminConfig</code> | Admin UI branding and metadata. |
 | <code>adminAuth</code> | <code>adminAuth?: AdminAuthConfig</code> | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
-| <code>email</code> | <code>email?: &#123;     /** The &#96;From&#96; address for all outbound emails. */     from: string;     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */     send: (args: &#123; to: string; subject: string; html: string &#125;) =&gt; Promise&lt;void&gt;;     /** Override the default email templates. */     templates?: &#123;       welcome?: (args: &#123; email: string &#125;) =&gt; &#123; subject?: string; html: string &#125;;       invite?: (args: &#123; token: string; invitedByEmail?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       resetPassword?: (args: &#123; token: string; url?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       passwordChanged?: (args: &#123; email: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;     &#125;;   &#125;</code> | Email transport configuration. Required for welcome emails, password resets, and invite links. |
+| <code>email</code> | <code>email?: &#123;     /** The &#96;From&#96; address for all outbound emails. */     from: string;      /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */     send: (args: &#123; to: string; subject: string; html: string &#125;) =&gt; Promise&lt;void&gt;;      /** Override the default email templates. */     templates?: &#123;       welcome?: (args: &#123; email: string &#125;) =&gt; &#123; subject?: string; html: string &#125;;       invite?: (args: &#123; token: string; invitedByEmail?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       resetPassword?: (args: &#123; token: string; url?: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;       passwordChanged?: (args: &#123; email: string &#125;) =&gt; &#123;         subject?: string;         html: string;       &#125;;     &#125;;   &#125;</code> | Email transport configuration. Required for welcome emails, password resets, and invite links. |
 | <code>redis</code> | <code>redis?: &#123;     url: string;   &#125;</code> | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
-| <code>events</code> | <code>events?: &#123;     handlers: LifecycleEventHandler[];     /** Maximum delivery attempts before an event remains failed. Defaults to 8. */     maxAttempts?: number;     /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */     retryDelayMs?: number;   &#125;</code> | Durable lifecycle-event delivery configuration. |
+| <code>events</code> | <code>events?: &#123;     handlers: LifecycleEventHandler[];      /** Maximum delivery attempts before an event remains failed. Defaults to 8. */     maxAttempts?: number;      /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */     retryDelayMs?: number;   &#125;</code> | Durable lifecycle-event delivery configuration. |
 | <code>cors</code> | <code>cors?: &#123;     origins: string[];   &#125;</code> | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
 | <code>onSchemaFetch</code> | <code>onSchemaFetch?: (     siteId: string,     // eslint-disable-next-line @typescript-eslint/no-explicit-any   ) =&gt; Promise&lt;&#123;     collections?: CollectionConfig&lt;any&gt;[];     globals?: GlobalConfig&lt;any&gt;[];     admin?: AdminConfig;     adminAuth?: AdminAuthConfig;   &#125;&gt;</code> | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
 
@@ -557,29 +569,11 @@ export interface DyrectedConfig {
 Defines a Dyrected global — a singleton document without pagination or IDs.
 
 Globals are ideal for site-wide settings, feature flags, or any data where
-there is always exactly one record (e.g. `site-settings`, `navigation`, `theme`).
+there is always exactly one record, such as `site-settings`, `navigation`,
+or `theme`.
 
 Pass your document's TypeScript type as the generic parameter `TDoc` to get
-fully typed hooks:
-
-```ts
-interface SiteSettings {
-  siteName: string
-  tagline: string
-  maintenanceMode: boolean
-}
-
-export const Settings = defineGlobal<SiteSettings>({
-  slug: 'site-settings',
-  hooks: {
-    afterChange: [({ doc }) => {
-      // `doc` is typed as SiteSettings
-      if (doc.maintenanceMode) alertOnCall()
-    }],
-  },
-  fields: [...],
-})
-```
+fully typed hooks.
 
 ```ts
 export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
@@ -629,8 +623,10 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
      * Uses Lucide component names, e.g. `'Settings2'` or `'Palette'`.
      */
     icon?: AdminIconName;
+
     /** Groups this global under a named section in the Admin sidebar. */
     group?: string;
+
     /** If `true`, this global is not shown in the Admin UI sidebar. */
     hidden?: boolean;
   };
@@ -652,6 +648,6 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>fields</code> | <code>fields: Field[]</code> | Field definitions for this global's document schema. |
 | <code>access</code> | <code>access?: &#123;     read?: AccessFunction&lt;TDoc&gt;;     update?: AccessFunction&lt;TDoc&gt;;   &#125;</code> | Access control for reading and updating this global. |
 | <code>hooks</code> | <code>hooks?: &#123;     beforeRead?: GlobalBeforeReadHook[];     afterRead?: GlobalAfterReadHook&lt;TDoc&gt;[];     beforeChange?: GlobalBeforeChangeHook&lt;TDoc&gt;[];     afterChange?: GlobalAfterChangeHook&lt;TDoc&gt;[];   &#125;</code> | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
-| <code>admin</code> | <code>admin?: &#123;     /**      * Lucide icon displayed beside this global in the Admin sidebar.      * Uses Lucide component names, e.g. &#96;'Settings2'&#96; or &#96;'Palette'&#96;.      */     icon?: AdminIconName;     /** Groups this global under a named section in the Admin sidebar. */     group?: string;     /** If &#96;true&#96;, this global is not shown in the Admin UI sidebar. */     hidden?: boolean;   &#125;</code> | Admin UI configuration for this global. |
+| <code>admin</code> | <code>admin?: &#123;     /**      * Lucide icon displayed beside this global in the Admin sidebar.      * Uses Lucide component names, e.g. &#96;'Settings2'&#96; or &#96;'Palette'&#96;.      */     icon?: AdminIconName;      /** Groups this global under a named section in the Admin sidebar. */     group?: string;      /** If &#96;true&#96;, this global is not shown in the Admin UI sidebar. */     hidden?: boolean;   &#125;</code> | Admin UI configuration for this global. |
 | <code>initialData</code> | <code>initialData?: Partial&lt;TDoc&gt;</code> | Initial data to seed this global with the first time it is fetched and found to be empty. |
 {/* GENERATED:REFERENCE-CONFIGURATION:END */}

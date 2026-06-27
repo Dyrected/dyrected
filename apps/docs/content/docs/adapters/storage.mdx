@@ -111,6 +111,46 @@ Test key normalization, deletion, Unicode filenames, missing files, MIME metadat
 ## Generated storage contracts
 
 {/* GENERATED:ADAPTERS-STORAGE:START */}
+## FileData
+
+Metadata returned after a file is uploaded and stored.
+Stored on the document in upload collections.
+
+```ts
+export interface FileData {
+  filename: string;
+  filesize?: number;
+  mimeType: string;
+  /** Public URL of the stored file. */
+  url: string;
+  width?: number;
+  height?: number;
+  focalPoint?: { x: number; y: number };
+  /** Base64-encoded BlurHash string for progressive image loading. */
+  blurhash?: string;
+  /** `'upload'` for server-stored files; `'external'` for provider-managed files. */
+  type?: "upload" | "external";
+  provider?: string;
+  provider_metadata?: unknown;
+  [key: string]: unknown;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>filename</code> | <code>filename: string</code> |  |
+| <code>filesize</code> | <code>filesize?: number</code> |  |
+| <code>mimeType</code> | <code>mimeType: string</code> |  |
+| <code>url</code> | <code>url: string</code> | Public URL of the stored file. |
+| <code>width</code> | <code>width?: number</code> |  |
+| <code>height</code> | <code>height?: number</code> |  |
+| <code>focalPoint</code> | <code>focalPoint?: &#123; x: number; y: number &#125;</code> |  |
+| <code>blurhash</code> | <code>blurhash?: string</code> | Base64-encoded BlurHash string for progressive image loading. |
+| <code>type</code> | <code>type?: "upload" &#124; "external"</code> | &#96;'upload'&#96; for server-stored files; &#96;'external'&#96; for provider-managed files. |
+| <code>provider</code> | <code>provider?: string</code> |  |
+| <code>provider_metadata</code> | <code>provider_metadata?: unknown</code> |  |
+
+
 ## ImageService
 
 Processes uploaded images — generates metadata (dimensions, BlurHash) and

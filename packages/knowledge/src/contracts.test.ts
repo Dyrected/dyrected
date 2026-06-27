@@ -38,6 +38,17 @@ describe("generated knowledge contracts", () => {
     }
   });
 
+  it("keeps key configuration member descriptions populated", () => {
+    for (const contractName of ["DyrectedConfig", "CollectionConfig", "GlobalConfig"]) {
+      const contract = references.find((reference) => reference.name === contractName);
+      expect(contract, `${contractName} is missing`).toBeDefined();
+      const blankMembers = contract?.members.filter(
+        (member) => member.description.trim() === "",
+      ) ?? [];
+      expect(blankMembers, `${contractName} members need JSDoc`).toEqual([]);
+    }
+  });
+
   it("covers every public route family in the representative OpenAPI document", () => {
     const paths = endpoints.map((endpoint) => endpoint.path);
     for (const fragment of [

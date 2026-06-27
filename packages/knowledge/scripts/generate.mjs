@@ -378,10 +378,19 @@ for (const category of categories) {
     ...categoryRecipes.map((recipe) => recipe.id),
   );
 }
-const coreTypesPath = path.join(
-  repositoryRoot,
-  "packages/core/src/types/index.ts",
-);
+const coreTypesRoot = path.join(repositoryRoot, "packages/core/src/types");
+const coreTypePaths = {
+  adapters: path.join(coreTypesRoot, "adapters.ts"),
+  admin: path.join(coreTypesRoot, "admin.ts"),
+  appConfig: path.join(coreTypesRoot, "app-config.ts"),
+  documents: path.join(coreTypesRoot, "documents.ts"),
+  hooks: path.join(coreTypesRoot, "hooks.ts"),
+  request: path.join(coreTypesRoot, "request.ts"),
+  schemaConfig: path.join(coreTypesRoot, "schema-config.ts"),
+  schemaCore: path.join(coreTypesRoot, "schema-core.ts"),
+  schemaInference: path.join(coreTypesRoot, "schema-inference.ts"),
+  workflows: path.join(coreTypesRoot, "workflows.ts"),
+};
 const workflowPath = path.join(
   repositoryRoot,
   "packages/core/src/workflows.ts",
@@ -413,27 +422,57 @@ const adapterNames = new Set([
 ]);
 
 const references = [
-  ...extractReferences(coreTypesPath, {
+  ...extractReferences(coreTypePaths.appConfig, {
     category: "configuration",
     sourcePackage: "@dyrected/core",
     names: configNames,
   }),
-  ...extractReferences(coreTypesPath, {
+  ...extractReferences(coreTypePaths.schemaConfig, {
+    category: "configuration",
+    sourcePackage: "@dyrected/core",
+    names: configNames,
+  }),
+  ...extractReferences(coreTypePaths.admin, {
+    category: "configuration",
+    sourcePackage: "@dyrected/core",
+    names: configNames,
+  }),
+  ...extractReferences(coreTypePaths.schemaCore, {
     category: "fields",
     sourcePackage: "@dyrected/core",
     names: fieldNames,
   }),
-  ...extractReferences(coreTypesPath, {
+  ...extractReferences(coreTypePaths.schemaInference, {
+    category: "fields",
+    sourcePackage: "@dyrected/core",
+    names: fieldNames,
+  }),
+  ...extractReferences(coreTypePaths.hooks, {
     category: "hooks",
     sourcePackage: "@dyrected/core",
     matches: (name) => name.includes("Hook") || name === "AuthenticatedUser",
   }),
-  ...extractReferences(coreTypesPath, {
+  ...extractReferences(coreTypePaths.request, {
+    category: "hooks",
+    sourcePackage: "@dyrected/core",
+    matches: (name) => name.includes("Hook") || name === "AuthenticatedUser",
+  }),
+  ...extractReferences(coreTypePaths.schemaCore, {
+    category: "hooks",
+    sourcePackage: "@dyrected/core",
+    matches: (name) => name.includes("Hook") || name === "AuthenticatedUser",
+  }),
+  ...extractReferences(coreTypePaths.adapters, {
     category: "adapters",
     sourcePackage: "@dyrected/core",
     names: adapterNames,
   }),
-  ...extractReferences(coreTypesPath, {
+  ...extractReferences(coreTypePaths.documents, {
+    category: "adapters",
+    sourcePackage: "@dyrected/core",
+    names: adapterNames,
+  }),
+  ...extractReferences(coreTypePaths.workflows, {
     category: "workflows",
     sourcePackage: "@dyrected/core",
     matches: (name) =>

@@ -191,6 +191,40 @@ export interface DatabaseAdapter {
 | <code>transaction</code> | <code>transaction&lt;T&gt;(callback: (db: DatabaseAdapter) =&gt; Promise&lt;T&gt;): Promise&lt;T&gt;</code> | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it. |
 
 
+## PaginatedResult
+
+The envelope returned by collection list endpoints (`GET /api/collections/:slug`).
+
+```ts
+export interface PaginatedResult<T = Record<string, any>> {
+  /** The documents on the current page. */
+  docs: T[];
+  /** Total number of documents matching the query (across all pages). */
+  total: number;
+  /** Maximum number of documents per page as requested. */
+  limit: number;
+  /** The current page number (1-indexed). */
+  page: number;
+  /** Total number of pages given the current `limit`. */
+  totalPages: number;
+  /** Whether a next page exists. */
+  hasNextPage: boolean;
+  /** Whether a previous page exists. */
+  hasPrevPage: boolean;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>docs</code> | <code>docs: T[]</code> | The documents on the current page. |
+| <code>total</code> | <code>total: number</code> | Total number of documents matching the query (across all pages). |
+| <code>limit</code> | <code>limit: number</code> | Maximum number of documents per page as requested. |
+| <code>page</code> | <code>page: number</code> | The current page number (1-indexed). |
+| <code>totalPages</code> | <code>totalPages: number</code> | Total number of pages given the current &#96;limit&#96;. |
+| <code>hasNextPage</code> | <code>hasNextPage: boolean</code> | Whether a next page exists. |
+| <code>hasPrevPage</code> | <code>hasPrevPage: boolean</code> | Whether a previous page exists. |
+
+
 ## ReadonlyDatabaseAdapter
 
 Exported type from @dyrected/core.

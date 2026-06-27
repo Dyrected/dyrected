@@ -371,54 +371,61 @@ See [Hooks](/docs/concepts/hooks) and [Using Hooks](/docs/guides/using-hooks).
 ## Generated field and hook contracts
 
 {/* GENERATED:REFERENCE-FIELDS:START */}
+## AuthDocFields
+
+Exported type from @dyrected/core.
+
+```ts
+export type AuthDocFields = {
+  email: string;
+  password?: string;
+  roles?: string[];
+};
+```
+
+
+## AuthenticatedUser
+
+Base shape of an authenticated user as decoded from the JWT.
+
+The actual shape will include every field on your auth collection — this
+interface only guarantees the properties that Dyrected always stamps on the
+token. Extend it in your own codebase for stronger typing:
+
+```ts
+export interface AuthenticatedUser {
+  /** The user's document ID in the database. */
+  sub: string;
+  /** The user's email address. */
+  email?: string;
+  /** Slug of the collection this user was authenticated against. */
+  collection: string;
+  /** Array of role strings, if your auth collection has a `roles` field. */
+  roles?: string[];
+  /** Any additional fields from the auth collection document. */
+  [key: string]: unknown;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>sub</code> | <code>sub: string</code> | The user's document ID in the database. |
+| <code>email</code> | <code>email?: string</code> | The user's email address. |
+| <code>collection</code> | <code>collection: string</code> | Slug of the collection this user was authenticated against. |
+| <code>roles</code> | <code>roles?: string[]</code> | Array of role strings, if your auth collection has a &#96;roles&#96; field. |
+
+
 ## CollectionAfterChangeHook
 
 Runs **after** a document is created or updated in the database.
 
-**Isolation**: errors thrown inside this hook are caught by the framework,
-logged to the console, and then discarded. The HTTP response returns the
-saved document as if nothing went wrong — because from the database's
-perspective, nothing did. This means a transient email failure or webhook
-timeout will never turn a successful write into a 500 for the caller.
-
-The return value is ignored — this hook is for side-effects only (emails,
-webhooks, cache revalidation, search index updates, etc.).
-
-**Awaiting vs fire-and-forget**: `await`ing inside this hook is fine for
-fast, reliable calls. For slow or unreliable external services prefer
-fire-and-forget with your own `.catch()` so the response doesn't block:
-
-```ts
-// ✓ fast & reliable — safe to await
-afterChange: [async ({ doc }) => {
-  await revalidatePath(`/posts/${doc.slug}`)
-}]
-
-// ✓ slow or unreliable — fire-and-forget
-afterChange: [({ doc }) => {
-  sendEmail({ to: doc.email, ... }).catch(console.error)
-}]
-```
-
 ```ts
 export type CollectionAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
-  /** The document as it was written to the database. */
   doc: TDoc;
-  /**
-   * Snapshot of the document before the write. Only present on `'update'`
-   * operations; `undefined` on `'create'`.
-   */
   previousDoc?: TDoc;
-  /** The HTTP request context. */
   req: HookRequestContext;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
-  /** Whether this was a new document or an update. */
   operation: "create" | "update";
-  /**
-   * Database adapter with full read/write access. The DB write for this
-   * operation has already committed — safe for side-effect writes.
-   */
   db: DatabaseAdapter;
 }) => void | Promise<void>;
 ```
@@ -426,22 +433,14 @@ export type CollectionAfterChangeHook<TDoc extends object = Record<string, unkno
 
 ## CollectionAfterDeleteHook
 
-Exported type from @dyrected/core.
+Runs **after** a document has been deleted from the database.
 
 ```ts
 export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
-  /** The ID of the deleted document. */
   id: string;
-  /** The document as it was just before deletion. */
   doc: TDoc;
-  /** The HTTP request context. */
   req: HookRequestContext;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
-  /**
-   * Database adapter with full read/write access. The deletion has already
-   * committed — safe for cascade deletes or cleanup writes.
-   */
   db: DatabaseAdapter;
 }) => void | Promise<void>;
 ```
@@ -452,21 +451,11 @@ export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unkno
 Runs after a document (or list of documents) is fetched from the database,
 before the response is sent to the client.
 
-Return a modified document to send instead. Useful for adding computed
-virtual fields or transforming the shape of the response.
-
 ```ts
 export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {
-  /** The document as fetched from the database (with defaults applied). */
   doc: TDoc;
-  /** The HTTP request context. */
   req: HookRequestContext;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
-   */
   db: ReadonlyDatabaseAdapter;
 }) => TDoc | Promise<TDoc>;
 ```
@@ -476,29 +465,13 @@ export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown
 
 Runs **before** a document is created or updated in the database.
 
-Return a modified data object to write instead of the original. This is the
-right place for data transformation, normalisation, slug generation, and
-validation (throw to abort the write).
-
 ```ts
 export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
-  /** The incoming data payload being written. */
   data: Partial<TDoc>;
-  /**
-   * The existing document before this update. Only present on `'update'`
-   * operations; `undefined` on `'create'`.
-   */
   doc?: TDoc;
-  /** The HTTP request context. */
   req: HookRequestContext;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
-  /** Whether this is a new document or an update to an existing one. */
   operation: "create" | "update";
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
-   */
   db: ReadonlyDatabaseAdapter;
 }) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
 ```
@@ -508,23 +481,12 @@ export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unkn
 
 Runs **before** a document is deleted from the database.
 
-Throw an error to cancel the deletion — the document will not be removed
-and the API will return a `500` with your error message.
-
 ```ts
 export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
-  /** The ID of the document about to be deleted. */
   id: string;
-  /** The full document about to be deleted. */
   doc: TDoc;
-  /** The HTTP request context. */
   req: HookRequestContext;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterDelete` for post-deletion writes.
-   */
   db: ReadonlyDatabaseAdapter;
 }) => void | Promise<void>;
 ```
@@ -539,73 +501,191 @@ Return `undefined` (or nothing) to leave the query unchanged.
 
 ```ts
 export type CollectionBeforeReadHook = (args: {
-  /** The HTTP request context. */
   req: HookRequestContext;
-  /** The current `where` query filter. Modify and return to override. */
   query?: Record<string, unknown>;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
   user?: AuthenticatedUser;
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
-   */
   db: ReadonlyDatabaseAdapter;
 }) => Record<string, unknown> | void | Promise<Record<string, unknown> | void>;
 ```
 
 
-## FieldAfterReadHook
+## Field
 
-A hook that runs **after a field value is read** from the database, before
-the response is sent to the client.
-
-Return the transformed value to return to the client. Use this for masking,
-formatting, or adding computed properties.
+Exported type from @dyrected/core.
 
 ```ts
-export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {
-  /** The raw field value as stored in the database. */
-  value: TValue;
-  /** The full document being returned (with defaults applied). */
-  doc: TDoc;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
-  user?: AuthenticatedUser;
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
-   */
-  db: ReadonlyDatabaseAdapter;
-}) => TValue | undefined | Promise<TValue | undefined>;
+export type Field =
+  | TextField
+  | TextareaField
+  | EmailField
+  | UrlField
+  | IconField
+  | DateField
+  | DateTimeField
+  | TimeField
+  | SelectField
+  | RadioField
+  | NumberField
+  | BooleanField
+  | MultiSelectField
+  | RelationshipField
+  | ImageField
+  | RichTextField
+  | JsonField
+  | ObjectField
+  | ArrayField
+  | BlocksField
+  | JoinField
+  | RowField;
 ```
+
+
+## FieldAdminOnChangeHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAdminOnChangeHook<TValue = unknown> = (args: FieldAdminOnChangeHookArgs<TValue>) => unknown;
+```
+
+
+## FieldAdminOnChangeHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
+  /** Current field value in the form state. */
+  value: TValue;
+  /** Current values for sibling fields at the same nesting level. */
+  siblingData: Record<string, unknown>;
+  /** Current values for the entire form. */
+  data: Record<string, unknown>;
+  /** Imperative setter for async or derived updates. */
+  setValue: (value: unknown) => void;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>value</code> | <code>value: TValue</code> | Current field value in the form state. |
+| <code>siblingData</code> | <code>siblingData: Record&lt;string, unknown&gt;</code> | Current values for sibling fields at the same nesting level. |
+| <code>data</code> | <code>data: Record&lt;string, unknown&gt;</code> | Current values for the entire form. |
+| <code>setValue</code> | <code>setValue: (value: unknown) =&gt; void</code> | Imperative setter for async or derived updates. |
+
+
+## FieldAdminOptionsHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAdminOptionsHook = (
+  args: FieldAdminOptionsHookArgs,
+) => FieldAdminOptionsHookResult | Promise<FieldAdminOptionsHookResult>;
+```
+
+
+## FieldAdminOptionsHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldAdminOptionsHookArgs {
+  /** Current values for sibling fields at the same nesting level. */
+  siblingData: Record<string, unknown>;
+  /** Current values for the entire form. */
+  data: Record<string, unknown>;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>siblingData</code> | <code>siblingData: Record&lt;string, unknown&gt;</code> | Current values for sibling fields at the same nesting level. |
+| <code>data</code> | <code>data: Record&lt;string, unknown&gt;</code> | Current values for the entire form. |
+
+
+## FieldAdminOptionsHookResult
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAdminOptionsHookResult = Array<string | { label: string; value: unknown }>;
+```
+
+
+## FieldAfterReadHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
+  args: FieldAfterReadHookArgs<TValue, TDoc>,
+) => unknown;
+```
+
+
+## FieldAfterReadHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldAfterReadHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+  /** Raw stored field value before this hook transforms it. */
+  value: TValue;
+  /** Full document currently being returned to the caller. */
+  doc: TDoc;
+  /** Authenticated user requesting the document, if any. */
+  user?: AuthenticatedUser;
+  /** Read-only database adapter for related lookups. */
+  db: ReadonlyDatabaseAdapter;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>value</code> | <code>value: TValue</code> | Raw stored field value before this hook transforms it. |
+| <code>doc</code> | <code>doc: TDoc</code> | Full document currently being returned to the caller. |
+| <code>user</code> | <code>user?: AuthenticatedUser</code> | Authenticated user requesting the document, if any. |
+| <code>db</code> | <code>db: ReadonlyDatabaseAdapter</code> | Read-only database adapter for related lookups. |
 
 
 ## FieldBeforeChangeHook
 
-A hook that runs **before a field value is saved** to the database.
-
-Return the transformed value to persist. Return `undefined` to leave the
-value unchanged (same as returning the original `value`).
-
-Field `beforeChange` hooks run recursively inside `array`, `object`, and
-`blocks` fields — every nested item is processed automatically.
+Exported type from @dyrected/core.
 
 ```ts
-export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (args: {
-  /** The current value of this field (after any previous hooks in the chain). */
-  value: TValue;
-  /** The full document as it existed before this update. `undefined` on create. */
-  originalDoc?: TDoc;
-  /** The full incoming data payload being written. */
-  data: Partial<TDoc>;
-  /** The authenticated user, or `undefined` for unauthenticated requests. */
-  user?: AuthenticatedUser;
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange`/`afterDelete` for writes.
-   */
-  db: ReadonlyDatabaseAdapter;
-}) => TValue | undefined | Promise<TValue | undefined>;
+export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
+  args: FieldBeforeChangeHookArgs<TValue, TDoc>,
+) => unknown;
 ```
+
+
+## FieldBeforeChangeHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldBeforeChangeHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+  /** Current field value after previous hooks in the chain. */
+  value: TValue;
+  /** Existing stored document before the write, if this is an update. */
+  originalDoc?: TDoc;
+  /** Full incoming payload being written. */
+  data: Record<string, unknown>;
+  /** Authenticated user performing the write, if any. */
+  user?: AuthenticatedUser;
+  /** Read-only database adapter for related lookups. */
+  db: ReadonlyDatabaseAdapter;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>value</code> | <code>value: TValue</code> | Current field value after previous hooks in the chain. |
+| <code>originalDoc</code> | <code>originalDoc?: TDoc</code> | Existing stored document before the write, if this is an update. |
+| <code>data</code> | <code>data: Record&lt;string, unknown&gt;</code> | Full incoming payload being written. |
+| <code>user</code> | <code>user?: AuthenticatedUser</code> | Authenticated user performing the write, if any. |
+| <code>db</code> | <code>db: ReadonlyDatabaseAdapter</code> | Read-only database adapter for related lookups. |
 
 
 ## FieldHook
@@ -620,9 +700,40 @@ export type FieldHook<TDoc extends object = Record<string, unknown>, TValue = un
 ```
 
 
-## GlobalAfterChangeHook
+## FieldType
 
 Exported type from @dyrected/core.
+
+```ts
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "richText"
+  | "number"
+  | "boolean"
+  | "date"
+  | "datetime"
+  | "time"
+  | "select"
+  | "multiSelect"
+  | "radio"
+  | "relationship"
+  | "array"
+  | "object"
+  | "json"
+  | "blocks"
+  | "image"
+  | "email"
+  | "url"
+  | "icon"
+  | "join"
+  | "row";
+```
+
+
+## GlobalAfterChangeHook
+
+Runs after the global document is updated. Side-effects only.
 
 ```ts
 export type GlobalAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
@@ -631,10 +742,6 @@ export type GlobalAfterChangeHook<TDoc extends object = Record<string, unknown>>
   req: HookRequestContext;
   user?: AuthenticatedUser;
   operation: "update";
-  /**
-   * Database adapter with full read/write access. The DB write for this
-   * operation has already committed — safe for side-effect writes.
-   */
   db: DatabaseAdapter;
 }) => void | Promise<void>;
 ```
@@ -649,10 +756,6 @@ export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> =
   doc: TDoc;
   req: HookRequestContext;
   user?: AuthenticatedUser;
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange` for writes.
-   */
   db: ReadonlyDatabaseAdapter;
 }) => TDoc | Promise<TDoc>;
 ```
@@ -670,10 +773,6 @@ export type GlobalBeforeChangeHook<TDoc extends object = Record<string, unknown>
   req: HookRequestContext;
   user?: AuthenticatedUser;
   operation: "update";
-  /**
-   * Database adapter for cross-collection reads. Write operations (create,
-   * update, delete) will throw — use `afterChange` for writes.
-   */
   db: ReadonlyDatabaseAdapter;
 }) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
 ```
@@ -702,5 +801,76 @@ export type HookFunction<TDoc extends object = Record<string, unknown>> = (args:
   db?: DatabaseAdapter;
   [key: string]: unknown;
 }) => unknown | Promise<unknown>;
+```
+
+
+## HookRequestContext
+
+Minimum HTTP request context passed to every server-side hook and resolver.
+
+The full Web Standard `Request` is available as `raw` when you need it, but
+most hooks only need `query` (URL search parameters).
+
+```ts
+export interface HookRequestContext {
+  /** Parsed URL query-string parameters, e.g. `{ page: '2', search: 'hello' }`. */
+  query: Record<string, string>;
+  /** Incoming HTTP headers, lowercased. */
+  headers: Record<string, string>;
+  /** The raw Web Standard `Request` object. Useful for streaming or advanced header inspection. */
+  raw?: Request;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>query</code> | <code>query: Record&lt;string, string&gt;</code> | Parsed URL query-string parameters, e.g. &#96;&#123; page: '2', search: 'hello' &#125;&#96;. |
+| <code>headers</code> | <code>headers: Record&lt;string, string&gt;</code> | Incoming HTTP headers, lowercased. |
+| <code>raw</code> | <code>raw?: Request</code> | The raw Web Standard &#96;Request&#96; object. Useful for streaming or advanced header inspection. |
+
+
+## InferDocShape
+
+Exported type from @dyrected/core.
+
+```ts
+export type InferDocShape<Fields extends readonly Field[]> = Fields extends readonly []
+  ? Record<never, never>
+  : Fields extends readonly [infer Head extends Field, ...infer Tail extends readonly Field[]]
+    ? InferFieldEntry<Head> & InferDocShape<Tail>
+    : Record<string, unknown>;
+```
+
+
+## SystemDocFields
+
+Exported type from @dyrected/core.
+
+```ts
+export type SystemDocFields = {
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+};
+```
+
+
+## UploadDocFields
+
+Exported type from @dyrected/core.
+
+```ts
+export type UploadDocFields = {
+  filename: string;
+  filesize?: number;
+  mimeType: string;
+  url: string;
+  width?: number;
+  height?: number;
+  focalPoint?: { x: number; y: number };
+  blurhash?: string;
+  sizes?: Record<string, { filename?: string; url?: string; width?: number; height?: number }>;
+};
 ```
 {/* GENERATED:REFERENCE-FIELDS:END */}
