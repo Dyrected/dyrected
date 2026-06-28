@@ -5,9 +5,15 @@
     "titleHighlight": "Programs",
     "description": "Select the level of alignment required to get your life on track. Our options range from single alignment audits to emergency procrastination interventions."
   },
+  "serviceGrid": {
+    "popularLabel": "Most Popular",
+    "priceSuffix": "/ program placeholder",
+    "actionLabel": "Book Alignment"
+  },
   "warningCallout": {
     "title": "Unsure which program is right for you?",
     "description": "Take the free Disappointment Diagnostic to calculate your exact drift metrics.",
-    "actionLabel": "Run Diagnostic"
+    "actionLabel": "Run Diagnostic",
+    "href": "/assessment"
   }
 }

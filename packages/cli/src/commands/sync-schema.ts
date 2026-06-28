@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import path from "path";
 import { createJiti } from "jiti";
 import { runGenerateTypes } from "../utils/type-generator.js";
+import { loadCommandEnv } from "../utils/env.js";
 
 export function registerSyncSchema(program: Command) {
   program
@@ -11,8 +12,9 @@ export function registerSyncSchema(program: Command) {
     .description("Sync your local Dyrected schema with the Cloud dashboard")
     .option("-k, --api-key <key>", "Your Dyrected API Key")
     .option("-s, --site-id <id>", "Your Dyrected Site ID")
-    .option("-u, --url <url>", "Cloud API URL", "https://prodeegi-vault.onrender.com")
+    .option("-u, --url <url>", "Cloud API URL", "https://cloud.dyrected.com")
     .option("-c, --config <path>", "Path to your dyrected.config.ts", "./dyrected.config.ts")
+    .option("--env-path <path>", "Path to an env file to load before syncing")
     .option("--skip-on-error", "Do not exit with error if sync fails (useful for CI builds)")
     .option("--skip-types", "Skip automatic type generation after a successful sync")
     .addHelpText(
@@ -21,6 +23,9 @@ export function registerSyncSchema(program: Command) {
 Examples:
   # Sync using env vars (DYRECTED_API_KEY, DYRECTED_SITE_ID)
   $ npx @dyrected/cli sync:schema
+
+  # Sync using a specific env file
+  $ npx @dyrected/cli sync:schema --env-path ./.env.local
 
   # Sync with explicit credentials
   $ npx @dyrected/cli sync:schema --api-key <key> --site-id <id>
@@ -34,9 +39,11 @@ Examples:
     )
     .action(async (options) => {
       try {
+        await loadCommandEnv({ cwd: process.cwd(), envPath: options.envPath });
+
         const apiKey = options.apiKey || process.env.DYRECTED_API_KEY;
         const siteId = options.siteId || process.env.DYRECTED_SITE_ID;
-        const apiUrl = options.url || process.env.DYRECTED_URL || "https://prodeegi-vault.onrender.com";
+        const apiUrl = options.url || process.env.DYRECTED_URL || "https://cloud.dyrected.com";
         const configPath = path.resolve(process.cwd(), options.config);
 
         if (!apiKey || !siteId) {

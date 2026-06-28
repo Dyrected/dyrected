@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { HelpCircle, ChevronDown, Award, Globe, Compass } from "lucide-react";
+import { HelpCircle, ChevronDown, Award, Globe, Compass, type LucideIcon } from "lucide-react";
 import aboutContent from "./about-content.json";
 
 // Map icon strings to Lucide components
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
   Compass,
   Award,
   Globe
@@ -39,8 +39,8 @@ export default function About() {
             <div className="lg:col-span-5 relative flex justify-center">
               <div className="relative w-full max-w-md aspect-square rounded-3xl overflow-hidden glass-panel p-4">
                 <Image
-                  src="/dr_tomorrow.png"
-                  alt={aboutContent.profile.name}
+                  src={aboutContent.profile.image.src}
+                  alt={aboutContent.profile.image.alt}
                   fill
                   className="object-cover p-2 rounded-2xl"
                   priority

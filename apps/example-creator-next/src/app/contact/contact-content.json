@@ -25,8 +25,19 @@
       "variant": "muted"
     }
   ],
+  "channelsIntro": {
+    "title": "Transmission Channels",
+    "description": "Have questions about custom timeline options or corporate focus assessments? Tap into our coordinates:"
+  },
+  "subjectOptions": [
+    "Timeline Drift Inquiry",
+    "Procrastination Emergency",
+    "Dr. Tomorrow Interview Request",
+    "Sponsorships & Alternate Realities"
+  ],
   "success": {
     "title": "Transmission Successful",
-    "description": "Your signal has been injected into the timeline pipeline. Dr. Tomorrow has already received this in 2031, and our present-day staff will reply shortly."
+    "description": "Your signal has been injected into the timeline pipeline. Dr. Tomorrow has already received this in 2031, and our present-day staff will reply shortly.",
+    "actionLabel": "Send Another Signal"
   }
 }

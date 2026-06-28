@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Send, CheckCircle2, MessageSquare, Mail, Globe, Brain } from "lucide-react";
+import { Send, CheckCircle2, Mail, Globe, Brain } from "lucide-react";
+import contactContent from "./contact-content.json";
 
 export default function Contact() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("Timeline Drift Inquiry");
+  const [subject, setSubject] = useState(contactContent.subjectOptions[0]);
   const [message, setMessage] = useState("");
   
   const [sent, setSent] = useState(false);
@@ -37,13 +38,13 @@ export default function Contact() {
       <section className="py-16 md:py-24 border-b border-white/5 bg-linear-to-b from-[#0c0c16] to-background text-center">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/30 px-3.5 py-1.5 text-xs font-semibold text-primary glow-text-purple">
-            <span>COMMUNICATION PORTAL</span>
+            <span>{contactContent.hero.badge}</span>
           </div>
           <h1 className="font-heading text-4xl sm:text-5xl font-extrabold text-white">
-            Establish <span className="text-gradient-purple-teal">Contact</span>
+            {contactContent.hero.titlePrefix} <span className="text-gradient-purple-teal">{contactContent.hero.titleHighlight}</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Reach out to Dr. Tomorrow. We respond in 2–3 business days, or instantly if we successfully figure out time travel in the interim.
+            {contactContent.hero.description}
           </p>
         </div>
       </section>
@@ -56,10 +57,10 @@ export default function Contact() {
             <div className="md:col-span-5 space-y-8">
               <div className="space-y-4">
                 <h3 className="font-heading text-xl font-bold text-white">
-                  Transmission Channels
+                  {contactContent.channelsIntro.title}
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Have questions about custom timeline options or corporate focus assessments? Tap into our coordinates:
+                  {contactContent.channelsIntro.description}
                 </p>
               </div>
 
@@ -70,8 +71,8 @@ export default function Contact() {
                     <Mail className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">Electronic Mail</h4>
-                    <p className="text-xs text-muted-foreground mt-1">hello@futureyoucoaching.com</p>
+                    <h4 className="text-sm font-bold text-white">{contactContent.channels[0].title}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{contactContent.channels[0].detail}</p>
                   </div>
                 </div>
 
@@ -81,8 +82,8 @@ export default function Contact() {
                     <Globe className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">Temporal Sector</h4>
-                    <p className="text-xs text-muted-foreground mt-1">Portal Frequency: Alpha-7</p>
+                    <h4 className="text-sm font-bold text-white">{contactContent.channels[1].title}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">{contactContent.channels[1].detail}</p>
                   </div>
                 </div>
 
@@ -92,9 +93,9 @@ export default function Contact() {
                     <Brain className="h-5 w-5 animate-pulse" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">Warning Notice</h4>
+                    <h4 className="text-sm font-bold text-white">{contactContent.channels[2].title}</h4>
                     <p className="text-xs text-muted-foreground mt-1">
-                      If you receive a message from yourself claiming to be from the future, verify the security hash.
+                      {contactContent.channels[2].detail}
                     </p>
                   </div>
                 </div>
@@ -109,16 +110,16 @@ export default function Contact() {
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-heading text-2xl font-extrabold text-white">Transmission Successful</h3>
+                    <h3 className="font-heading text-2xl font-extrabold text-white">{contactContent.success.title}</h3>
                     <p className="text-sm text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                      Your signal has been injected into the timeline pipeline. Dr. Tomorrow has already received this in 2031, and our present-day staff will reply shortly.
+                      {contactContent.success.description}
                     </p>
                   </div>
                   <button
                     onClick={() => setSent(false)}
                     className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-6 py-2.5 text-xs font-semibold text-white bg-white/5 hover:bg-white/10"
                   >
-                    <span>Send Another Signal</span>
+                    <span>{contactContent.success.actionLabel}</span>
                   </button>
                 </div>
               ) : (
@@ -161,10 +162,9 @@ export default function Contact() {
                       onChange={(e) => setSubject(e.target.value)}
                       className="w-full rounded-xl bg-[#11111c] border border-white/10 px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none"
                     >
-                      <option>Timeline Drift Inquiry</option>
-                      <option>Procrastination Emergency</option>
-                      <option>Dr. Tomorrow Interview Request</option>
-                      <option>Sponsorships & Alternate Realities</option>
+                      {contactContent.subjectOptions.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
                     </select>
                   </div>
 

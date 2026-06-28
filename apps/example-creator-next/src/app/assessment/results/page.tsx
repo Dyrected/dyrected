@@ -233,7 +233,7 @@ function ResultsContent() {
                 type="submit"
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-white hover:scale-102 transition-all shadow-lg shadow-primary/10"
               >
-                <span>Activate Dashboard Account</span>
+                <span>{resultsContent.saveReport.actionLabel}</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
@@ -267,11 +267,11 @@ function ResultsContent() {
           {resultsContent.bookingCta.description}
         </p>
         <Link
-          href="/booking?service=future-alignment"
+          href={resultsContent.bookingCta.href}
           className="inline-flex items-center gap-2 rounded-full bg-linear-to-r from-primary to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg hover:scale-105 transition-all"
         >
           <Calendar className="h-5 w-5 text-secondary" />
-          <span>Book Future Alignment Session</span>
+          <span>{resultsContent.bookingCta.actionLabel}</span>
           <ArrowRight className="h-5 w-5" />
         </Link>
       </section>

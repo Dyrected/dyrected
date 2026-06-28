@@ -12,12 +12,12 @@ export interface Article {
   readTime: string;
   date: string;
   excerpt: string;
-  content: string[];
+  bodyHtml: string;
 }
 
 export const ARTICLES: Article[] = blogContent.articles;
 
-const CATEGORIES = ["All", "Productivity", "Habits", "Decision Making", "Future Thinking"];
+const CATEGORIES = blogContent.categories;
 
 export default function Blog() {
   const [selectedCat, setSelectedCat] = useState("All");

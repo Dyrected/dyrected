@@ -9,6 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@dyrected/admin": "workspace:*",
+    "@dyrected/core": "workspace:*",
+    "@dyrected/next": "workspace:*",
+    "@dyrected/react": "workspace:*",
+    "@dyrected/sdk": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",

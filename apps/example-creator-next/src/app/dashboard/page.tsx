@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Activity, Calendar, Award, Compass, RefreshCw, AlertTriangle, ArrowRight, Brain, Settings, ShieldAlert, Sparkles, Clock } from "lucide-react";
+import { Activity, Calendar, Award, Compass, RefreshCw, ArrowRight, Brain, Settings, ShieldAlert, Sparkles, Clock } from "lucide-react";
 import { getStoredProfile, getStoredResults, getStoredBookings, saveProfile, clearAllData, UserProfile, AssessmentResult, Booking } from "@/lib/storage";
 import ScoreChart from "@/components/ScoreChart";
 
@@ -24,7 +24,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    loadData();
+    const timeoutId = setTimeout(loadData, 0);
 
     // Listen for updates
     const handleUpdate = () => {
@@ -32,6 +32,7 @@ export default function Dashboard() {
     };
     window.addEventListener("storage_profile_update", handleUpdate);
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener("storage_profile_update", handleUpdate);
     };
   }, []);

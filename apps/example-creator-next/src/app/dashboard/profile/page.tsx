@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, CheckCircle2, User } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2 } from "lucide-react";
 import { getStoredProfile, saveProfile, UserProfile } from "@/lib/storage";
 
 const FOCUS_AREAS_OPTIONS = [
@@ -32,17 +32,21 @@ export default function Profile() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const loaded = getStoredProfile();
-    if (loaded) {
-      setProfile(loaded);
-      setName(loaded.name);
-      setEmail(loaded.email);
-      setGoals(loaded.personalGoals || "");
-      setSelectedFocus(loaded.growthFocusAreas || []);
-    } else {
-      // Redirect if no profile exists
-      router.push("/dashboard");
-    }
+    const timeoutId = setTimeout(() => {
+      const loaded = getStoredProfile();
+      if (loaded) {
+        setProfile(loaded);
+        setName(loaded.name);
+        setEmail(loaded.email);
+        setGoals(loaded.personalGoals || "");
+        setSelectedFocus(loaded.growthFocusAreas || []);
+      } else {
+        // Redirect if no profile exists
+        router.push("/dashboard");
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [router]);
 
   const handleToggleFocus = (option: string) => {

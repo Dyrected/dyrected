@@ -1,13 +1,20 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clock, Calendar, Brain, ArrowRight } from "lucide-react";
 import { ARTICLES } from "../page";
+import blogContent from "../blog-content.json";
+
+function renderLocalBodyHtml(bodyHtml: string) {
+  return bodyHtml
+    .split("</p>")
+    .map((paragraph) => paragraph.replace("<p>", "").trim())
+    .filter(Boolean);
+}
 
 export default function BlogPost() {
   const params = useParams();
-  const router = useRouter();
   const slug = params.slug as string;
 
   const article = ARTICLES.find((a) => a.slug === slug);
@@ -73,7 +80,7 @@ export default function BlogPost() {
       <section className="py-12">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="glass-panel border-white/5 rounded-3xl p-6 sm:p-10 space-y-6 text-muted-foreground leading-relaxed text-base sm:text-lg">
-            {article.content.map((paragraph, idx) => (
+            {renderLocalBodyHtml(article.bodyHtml).map((paragraph, idx) => (
               <p key={idx} className="leading-relaxed">
                 {paragraph}
               </p>
@@ -85,17 +92,17 @@ export default function BlogPost() {
             <div className="space-y-2 max-w-md text-center sm:text-left">
               <h3 className="font-heading text-lg font-bold text-white flex items-center gap-2 justify-center sm:justify-start">
                 <Brain className="h-5 w-5 text-primary" />
-                <span>Dr. Tomorrow Timeline Analysis</span>
+                <span>{blogContent.articleCta.title}</span>
               </h3>
               <p className="text-xs text-muted-foreground">
-                Liked this content? Take the free disappointment assessment to get personalized feedback on these specific categories.
+                {blogContent.articleCta.description}
               </p>
             </div>
             <Link
-              href="/assessment"
+              href={blogContent.articleCta.href}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-white hover:scale-102 transition-all shadow-lg"
             >
-              <span>Run Diagnostic</span>
+              <span>{blogContent.articleCta.actionLabel}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

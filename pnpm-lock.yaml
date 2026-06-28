@@ -89,6 +89,21 @@ importers:
 
   apps/example-creator-next:
     dependencies:
+      '@dyrected/admin':
+        specifier: workspace:*
+        version: link:../../packages/admin
+      '@dyrected/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@dyrected/next':
+        specifier: workspace:*
+        version: link:../../packages/next
+      '@dyrected/react':
+        specifier: workspace:*
+        version: link:../../packages/react
+      '@dyrected/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

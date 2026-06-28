@@ -5,7 +5,45 @@
   },
   "intakeStep": {
     "title": "Future Intake Questionnaire",
-    "description": "Please complete this brief questionnaire so Dr. Tomorrow can audit your trajectory."
+    "description": "Please complete this brief questionnaire so Dr. Tomorrow can audit your trajectory.",
+    "fields": [
+      {
+        "key": "frustration",
+        "label": "What is Future You most frustrated about?",
+        "placeholder": "e.g. My tendency to buy gym memberships and spend evenings on the couch."
+      },
+      {
+        "key": "longestDelayed",
+        "label": "What goal have you delayed the longest?",
+        "placeholder": "e.g. Launching my side business / Learning to speak Spanish."
+      },
+      {
+        "key": "fiveYearProjection",
+        "label": "If nothing changed, where would you be in five years?",
+        "placeholder": "e.g. In the exact same job, feeling slightly more tired and regretful."
+      },
+      {
+        "key": "proudGoal",
+        "label": "What would make Future You proud?",
+        "placeholder": "e.g. Shipping a product with 100 paying customers."
+      },
+      {
+        "key": "biggestObstacle",
+        "label": "What is your biggest obstacle today?",
+        "placeholder": "e.g. Terrible focus management and checking social feeds every 10 minutes."
+      },
+      {
+        "key": "triedSolutions",
+        "label": "What have you already tried?",
+        "placeholder": "e.g. Buying planners, reading atomic habits twice, setting screen time limits."
+      },
+      {
+        "key": "whyNow",
+        "label": "Why are you seeking help now?",
+        "placeholder": "e.g. Tired of dreaming about a life I know I can build if I just execute."
+      }
+    ],
+    "actionLabel": "Continue to Scheduler"
   },
   "scheduleStep": {
     "title": "Schedule Your Alignment Slot",
@@ -15,12 +53,18 @@
       { "label": "In 2 Days", "desc": "Standard Trajectory" },
       { "label": "In 3 Days", "desc": "Emergency Alignment" },
       { "label": "Next Monday", "desc": "Fresh Cycle Start" }
-    ]
+    ],
+    "times": ["9:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"],
+    "actionLabel": "Confirm Alignment Session"
   },
   "successStep": {
     "badge": "Timeline Correction Confirmed",
     "title": "Booking Complete!",
     "description": "Dr. Tomorrow has locked in your coordinates. We are currently listening for the quantum notification of your session.",
-    "note": "Note: If you receive this session request five years ago, please ignore it. That was a calibration error. Otherwise, see you in alignment!"
+    "note": "Note: If you receive this session request five years ago, please ignore it. That was a calibration error. Otherwise, see you in alignment!",
+    "actions": [
+      { "label": "View Your Dashboard", "href": "/dashboard", "variant": "primary" },
+      { "label": "Back Home", "href": "/", "variant": "secondary" }
+    ]
   }
 }

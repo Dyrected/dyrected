@@ -8,6 +8,10 @@
     "badge": "Founder & Lead Coach",
     "name": "Dr. Tomorrow",
     "title": "Certified Future Alignment Specialist",
+    "image": {
+      "src": "/dr_tomorrow.png",
+      "alt": "Dr. Tomorrow"
+    },
     "bioParagraphs": [
       "Dr. Tomorrow has spent decades studying successful timelines and helping people avoid becoming cautionary tales. Frustrated by standard productivity coaching that focuses on past mistakes, he developed the Future-Back Framework.",
       "By establishing a virtual dialog with the person you could become, Dr. Tomorrow breaks down goal resistance, eliminates procrastination loops, and turns abstract goals into immediate daily systems."

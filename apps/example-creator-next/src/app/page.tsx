@@ -48,18 +48,18 @@ export default function Home() {
               
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
                 <Link
-                  href="/assessment"
+                  href={homeContent.hero.actions[0].href}
                   className="group flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-primary to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg hover:shadow-primary/30 hover:scale-105 transition-all"
                 >
-                  <span>Take Free Assessment</span>
+                  <span>{homeContent.hero.actions[0].label}</span>
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Link>
                 <Link
-                  href="/booking"
+                  href={homeContent.hero.actions[1].href}
                   className="flex items-center justify-center gap-2 rounded-full border border-white/10 px-8 py-4 text-base font-bold text-white bg-white/5 hover:bg-white/10 hover:border-white/20 transition-all hover:scale-105"
                 >
                   <Calendar className="h-5 w-5 text-secondary" />
-                  <span>Book Alignment Session</span>
+                  <span>{homeContent.hero.actions[1].label}</span>
                 </Link>
               </div>
             </div>
@@ -68,8 +68,8 @@ export default function Home() {
             <div className="relative flex justify-center">
               <div className="relative w-full max-w-md md:max-w-lg aspect-square rounded-3xl overflow-hidden glass-panel-glow p-4">
                 <Image
-                  src="/hero_portal.png"
-                  alt="Future You Coaching Portal"
+                  src={homeContent.hero.image.src}
+                  alt={homeContent.hero.image.alt}
                   fill
                   className="object-cover p-2 rounded-2xl"
                   priority
@@ -101,7 +101,7 @@ export default function Home() {
                   {homeContent.simulator.widgetLabel}
                 </h3>
                 <p className="text-lg font-bold text-white mt-1">
-                  Current score: <span className="text-primary">{sliderVal} / 100</span>
+                  {homeContent.simulator.scoreLabel} <span className="text-primary">{sliderVal} / 100</span>
                 </p>
               </div>
               <div className={`rounded-xl border px-3.5 py-1.5 text-xs font-bold ${sliderState.color}`}>
@@ -122,28 +122,28 @@ export default function Home() {
                 className="w-full h-2.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-primary"
               />
               <div className="flex justify-between text-xs text-muted-foreground font-semibold px-1">
-                <span>Concerned (10%)</span>
-                <span>Optimistic (50%)</span>
-                <span>Aligned (100%)</span>
+                {homeContent.simulator.sliderLabels.map((label) => (
+                  <span key={label}>{label}</span>
+                ))}
               </div>
             </div>
 
             {/* Simulated Stats Grid */}
             <div className="grid grid-cols-3 gap-4 pt-2">
               <div className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
-                <span className="text-xs text-muted-foreground block font-medium">Daily Focus</span>
+                <span className="text-xs text-muted-foreground block font-medium">{homeContent.simulator.statLabels[0]}</span>
                 <span className="text-lg sm:text-xl font-bold text-white block mt-1">
                   {sliderState.focus}
                 </span>
               </div>
               <div className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
-                <span className="text-xs text-muted-foreground block font-medium">Projects Done</span>
+                <span className="text-xs text-muted-foreground block font-medium">{homeContent.simulator.statLabels[1]}</span>
                 <span className="text-lg sm:text-xl font-bold text-white block mt-1">
                   {sliderState.finished}
                 </span>
               </div>
               <div className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
-                <span className="text-xs text-muted-foreground block font-medium">Trajectory</span>
+                <span className="text-xs text-muted-foreground block font-medium">{homeContent.simulator.statLabels[2]}</span>
                 <span className="text-lg sm:text-xl font-bold text-white block mt-1 truncate">
                   {sliderState.title.split(" ")[1]}
                 </span>
@@ -217,10 +217,10 @@ export default function Home() {
             </div>
             <div className="mt-8 md:mt-0 shrink-0">
               <Link
-                href="/assessment"
+                href={homeContent.featuredAssessment.action.href}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-secondary px-8 py-4 text-base font-bold text-black hover:scale-105 transition-all shadow-lg shadow-secondary/10 hover:shadow-secondary/20"
               >
-                <span>Take Assessment</span>
+                <span>{homeContent.featuredAssessment.action.label}</span>
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </div>
@@ -279,17 +279,17 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
-              href="/assessment"
+              href={homeContent.finalCta.actions[0].href}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-linear-to-r from-primary to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg hover:scale-105 transition-all"
             >
-              <span>Start Assessment</span>
+              <span>{homeContent.finalCta.actions[0].label}</span>
               <ArrowRight className="h-5 w-5" />
             </Link>
             <Link
-              href="/services"
+              href={homeContent.finalCta.actions[1].href}
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/10 px-8 py-4 text-base font-bold text-white bg-white/5 hover:bg-white/10 transition-all hover:scale-105"
             >
-              <span>Explore Programs</span>
+              <span>{homeContent.finalCta.actions[1].label}</span>
             </Link>
           </div>
         </div>

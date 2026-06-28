@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Sparkles, Activity, Menu, X, ArrowRight, Brain } from "lucide-react";
 import { getStoredProfile, UserProfile } from "@/lib/storage";
+import siteContent from "@/lib/site-content.json";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -40,14 +41,7 @@ export default function Navbar() {
     };
   }, []);
 
-  const navLinks = [
-    { name: "Home", href: "/" },
-    { name: "About", href: "/about" },
-    { name: "Services", href: "/services" },
-    { name: "Assessment", href: "/assessment" },
-    { name: "Blog", href: "/blog" },
-    { name: "Contact", href: "/contact" },
-  ];
+  const navLinks = siteContent.navigation.links;
 
   return (
     <header className="sticky top-0 z-50 w-full glass-panel border-b border-white/5 bg-background/70 backdrop-blur-md">
@@ -60,10 +54,10 @@ export default function Navbar() {
           </div>
           <div className="flex flex-col">
             <span className="font-heading text-lg font-bold tracking-tight text-white leading-none">
-              Future You
+              {siteContent.brand.name}
             </span>
             <span className="text-[10px] text-secondary font-medium tracking-widest uppercase">
-              Coaching
+              {siteContent.brand.descriptor}
             </span>
           </div>
         </Link>
@@ -102,13 +96,13 @@ export default function Navbar() {
                 href="/dashboard"
                 className="text-sm font-semibold text-muted-foreground hover:text-white transition-colors"
               >
-                Dashboard
+                {siteContent.navigation.dashboardLabel}
               </Link>
               <Link
                 href="/assessment"
                 className="group flex items-center gap-1.5 rounded-full bg-linear-to-r from-primary to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-primary/20 hover:scale-105 transition-all"
               >
-                <span>Diagnostic</span>
+                <span>{siteContent.navigation.diagnosticLabel}</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </>
@@ -164,14 +158,14 @@ export default function Navbar() {
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center rounded-xl border border-white/10 py-3 text-base font-semibold text-white"
                 >
-                  Dashboard
+                {siteContent.navigation.dashboardLabel}
                 </Link>
                 <Link
                   href="/assessment"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center justify-center rounded-xl bg-linear-to-r from-primary to-violet-600 py-3 text-base font-semibold text-white"
                 >
-                  Take Assessment
+                {siteContent.navigation.mobileAssessmentLabel}
                 </Link>
               </>
             )}

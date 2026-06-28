@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clock, Calendar, ArrowRight, ShieldAlert, Sparkles, Zap } from "lucide-react";
+import { CheckCircle2, Clock, ArrowRight, ShieldAlert, Sparkles, Zap } from "lucide-react";
 import { SERVICES } from "@/lib/storage";
 import servicesContent from "./services-content.json";
 
@@ -73,7 +73,7 @@ export default function Services() {
                 >
                   {isPopular && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white tracking-wider uppercase">
-                      Most Popular
+                      {servicesContent.serviceGrid.popularLabel}
                     </div>
                   )}
 
@@ -100,7 +100,7 @@ export default function Services() {
                     {/* Pricing */}
                     <div className="flex items-baseline gap-1 py-2 border-t border-b border-white/5">
                       <span className="text-3xl font-extrabold text-white">{s.price}</span>
-                      <span className="text-xs text-muted-foreground">/ program placeholder</span>
+                      <span className="text-xs text-muted-foreground">{servicesContent.serviceGrid.priceSuffix}</span>
                     </div>
 
                     {/* Benefits List */}
@@ -120,7 +120,7 @@ export default function Services() {
                       href={`/booking?service=${s.id}`}
                       className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-3 px-4 text-sm font-bold shadow-lg transition-all duration-300 ${style.btnClass}`}
                     >
-                      <span>Book Alignment</span>
+                      <span>{servicesContent.serviceGrid.actionLabel}</span>
                       <ArrowRight className="h-4 w-4" />
                     </Link>
                   </div>
@@ -142,7 +142,7 @@ export default function Services() {
             </div>
           </div>
           <Link
-            href="/assessment"
+            href={servicesContent.warningCallout.href}
             className="rounded-full bg-white/10 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/15 transition-all"
           >
             {servicesContent.warningCallout.actionLabel}

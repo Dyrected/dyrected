@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import siteContent from "@/lib/site-content.json";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Future You Coaching | Coaching from the Timeline Where Things Worked Out",
-  description: "Helping Present You Become the Person Future You Keeps Bragging About. Take the disappointment assessment and align your timeline today.",
+  title: siteContent.seo.title,
+  description: siteContent.seo.description,
 };
 
 export default function RootLayout({

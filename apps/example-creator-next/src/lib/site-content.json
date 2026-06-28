@@ -1,0 +1,58 @@
+{
+  "seo": {
+    "title": "Future You Coaching | Coaching from the Timeline Where Things Worked Out",
+    "description": "Helping Present You Become the Person Future You Keeps Bragging About. Take the disappointment assessment and align your timeline today."
+  },
+  "brand": {
+    "name": "Future You",
+    "descriptor": "Coaching"
+  },
+  "navigation": {
+    "links": [
+      { "name": "Home", "href": "/" },
+      { "name": "About", "href": "/about" },
+      { "name": "Services", "href": "/services" },
+      { "name": "Assessment", "href": "/assessment" },
+      { "name": "Blog", "href": "/blog" },
+      { "name": "Contact", "href": "/contact" }
+    ],
+    "dashboardLabel": "Dashboard",
+    "diagnosticLabel": "Diagnostic",
+    "mobileAssessmentLabel": "Take Assessment"
+  },
+  "footer": {
+    "tagline": "Helping Present You Become the Person Future You Keeps Bragging About.",
+    "socialLinks": [
+      { "label": "X", "href": "#" },
+      { "label": "GitHub", "href": "#" },
+      { "label": "YouTube", "href": "#" },
+      { "label": "Discord", "href": "#" }
+    ],
+    "linkGroups": [
+      {
+        "title": "Coaching",
+        "links": [
+          { "label": "Services Catalog", "href": "/services" },
+          { "label": "Book Session", "href": "/booking" },
+          { "label": "Frequently Asked Questions", "href": "/about#faq" }
+        ]
+      },
+      {
+        "title": "Diagnostics",
+        "links": [
+          { "label": "The Disappointment Test", "href": "/assessment" },
+          { "label": "Growth Dashboard", "href": "/dashboard" },
+          { "label": "Timeline Articles", "href": "/blog" }
+        ]
+      }
+    ],
+    "newsletter": {
+      "title": "Timeline Alerts",
+      "description": "Receive warnings and advice from timelines where you actually got your life together.",
+      "placeholder": "present.you@example.com",
+      "successMessage": "Subscribed! We'll email you 5 years ago to warn you about tomorrow."
+    },
+    "copyright": "© 2026 Future You Coaching. All rights reserved.",
+    "disclaimer": "Disclaimer: Results may vary by timeline. Anti-gravity or space-time fluctuations are not covered under standard terms."
+  }
+}

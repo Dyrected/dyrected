@@ -3,13 +3,24 @@
     "badge": "COACHING FROM THE TIMELINE WHERE THINGS WORKED OUT",
     "titlePrefix": "Future You Has Been",
     "titleHighlight": "Trying To Reach You",
-    "description": "The version of you from five years in the future has reviewed your life choices and would like to offer some suggestions. Take a free assessment, discover where you're stuck, and get a roadmap toward the future you actually want."
+    "description": "The version of you from five years in the future has reviewed your life choices and would like to offer some suggestions. Take a free assessment, discover where you're stuck, and get a roadmap toward the future you actually want.",
+    "image": {
+      "src": "/hero_portal.png",
+      "alt": "Future You Coaching Portal"
+    },
+    "actions": [
+      { "label": "Take Free Assessment", "href": "/assessment", "variant": "primary" },
+      { "label": "Book Alignment Session", "href": "/booking", "variant": "secondary" }
+    ]
   },
   "simulator": {
     "title": "Visualizing Your",
     "titleHighlight": "Trajectory",
     "description": "Slide to simulate what happens if your current habits persist versus what happens when you upgrade your timeline systems.",
     "widgetLabel": "Timeline Alignment Simulator",
+    "scoreLabel": "Current score:",
+    "sliderLabels": ["Concerned (10%)", "Optimistic (50%)", "Aligned (100%)"],
+    "statLabels": ["Daily Focus", "Projects Done", "Trajectory"],
     "ranges": [
       {
         "maxVal": 29,
@@ -79,7 +90,8 @@
   "featuredAssessment": {
     "badge": "Featured Diagnostics",
     "title": "How Disappointed Is Future You?",
-    "description": "Take our signature 15-question alignment check to find if Future You is currently proud, cautious, or actively draft-emailing complaints. No account required."
+    "description": "Take our signature 15-question alignment check to find if Future You is currently proud, cautious, or actively draft-emailing complaints. No account required.",
+    "action": { "label": "Take Assessment", "href": "/assessment" }
   },
   "testimonials": {
     "title": "Success Stories from",
@@ -102,6 +114,10 @@
   },
   "finalCta": {
     "title": "Future You Is Waiting.",
-    "description": "Every decision you make today writes the email you receive tomorrow. Secure your timeline alignment now."
+    "description": "Every decision you make today writes the email you receive tomorrow. Secure your timeline alignment now.",
+    "actions": [
+      { "label": "Start Assessment", "href": "/assessment", "variant": "primary" },
+      { "label": "Explore Programs", "href": "/services", "variant": "secondary" }
+    ]
   }
 }

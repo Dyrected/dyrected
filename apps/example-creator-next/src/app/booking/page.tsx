@@ -100,7 +100,8 @@ function BookingContent() {
   // Mock Calendar Options
   const dates = bookingContent.scheduleStep.dates;
 
-  const times = ["9:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"];
+  const times = bookingContent.scheduleStep.times;
+  const intakeFields = bookingContent.intakeStep.fields;
 
   return (
     <div className="flex-1 w-full max-w-4xl mx-auto px-4 py-12 sm:px-6 lg:px-8 bg-background">
@@ -184,98 +185,98 @@ function BookingContent() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-white block">
-                  What is Future You most frustrated about?
+                  {intakeFields[0].label}
                 </label>
                 <textarea
                   required
                   rows={3}
                   value={frustration}
                   onChange={(e) => setFrustration(e.target.value)}
-                  placeholder="e.g. My tendency to buy gym memberships and spend evenings on the couch."
+                  placeholder={intakeFields[0].placeholder}
                   className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-white block">
-                  What goal have you delayed the longest?
+                  {intakeFields[1].label}
                 </label>
                 <input
                   type="text"
                   required
                   value={longestDelayed}
                   onChange={(e) => setLongestDelayed(e.target.value)}
-                  placeholder="e.g. Launching my side business / Learning to speak Spanish."
+                  placeholder={intakeFields[1].placeholder}
                   className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-white block">
-                  If nothing changed, where would you be in five years?
+                  {intakeFields[2].label}
                 </label>
                 <textarea
                   required
                   rows={2}
                   value={fiveYearProjection}
                   onChange={(e) => setFiveYearProjection(e.target.value)}
-                  placeholder="e.g. In the exact same job, feeling slightly more tired and regretful."
+                  placeholder={intakeFields[2].placeholder}
                   className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-white block">
-                  What would make Future You proud?
+                  {intakeFields[3].label}
                 </label>
                 <input
                   type="text"
                   required
                   value={proudGoal}
                   onChange={(e) => setProudGoal(e.target.value)}
-                  placeholder="e.g. Shipping a product with 100 paying customers."
+                  placeholder={intakeFields[3].placeholder}
                   className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-white block">
-                  What is your biggest obstacle today?
+                  {intakeFields[4].label}
                 </label>
                 <input
                   type="text"
                   required
                   value={biggestObstacle}
                   onChange={(e) => setBiggestObstacle(e.target.value)}
-                  placeholder="e.g. Terrible focus management and checking social feeds every 10 minutes."
+                  placeholder={intakeFields[4].placeholder}
                   className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-white block">
-                  What have you already tried?
+                  {intakeFields[5].label}
                 </label>
                 <input
                   type="text"
                   required
                   value={triedSolutions}
                   onChange={(e) => setTriedSolutions(e.target.value)}
-                  placeholder="e.g. Buying planners, reading atomic habits twice, setting screen time limits."
+                  placeholder={intakeFields[5].placeholder}
                   className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-white block">
-                  Why are you seeking help now?
+                  {intakeFields[6].label}
                 </label>
                 <input
                   type="text"
                   required
                   value={whyNow}
                   onChange={(e) => setWhyNow(e.target.value)}
-                  placeholder="e.g. Tired of dreaming about a life I know I can build if I just execute."
+                  placeholder={intakeFields[6].placeholder}
                   className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                 />
               </div>
@@ -285,7 +286,7 @@ function BookingContent() {
               type="submit"
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-white hover:scale-102 transition-all shadow-lg"
             >
-              <span>Continue to Scheduler</span>
+              <span>{bookingContent.intakeStep.actionLabel}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
@@ -403,7 +404,7 @@ function BookingContent() {
               className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-secondary py-3 text-sm font-bold text-black hover:scale-102 transition-all shadow-lg"
             >
               <Check className="h-4 w-4" />
-              <span>Confirm Alignment Session</span>
+              <span>{bookingContent.scheduleStep.actionLabel}</span>
             </button>
           </div>
         </div>
@@ -459,17 +460,17 @@ function BookingContent() {
 
           <div className="flex gap-4 justify-center pt-2">
             <Link
-              href="/dashboard"
+              href={bookingContent.successStep.actions[0].href}
               className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white hover:scale-102 transition-all shadow-lg"
             >
-              <span>View Your Dashboard</span>
+              <span>{bookingContent.successStep.actions[0].label}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/"
+              href={bookingContent.successStep.actions[1].href}
               className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-6 py-3 text-sm font-semibold text-white bg-white/5 hover:bg-white/10 transition-all"
             >
-              <span>Back Home</span>
+              <span>{bookingContent.successStep.actions[1].label}</span>
             </Link>
           </div>
         </div>

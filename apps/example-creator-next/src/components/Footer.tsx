@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Brain, Sparkles, Send, CheckCircle2 } from "lucide-react";
-import footerContent from "./footer-content.json";
+import siteContent from "@/lib/site-content.json";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -23,6 +23,7 @@ export default function Footer() {
   };
 
   // Safely split the success message to keep the bold title styling
+  const footerContent = siteContent.footer;
   const [successTitle, successBody] = footerContent.newsletter.successMessage.split("! ");
 
   return (
@@ -37,10 +38,10 @@ export default function Footer() {
               </div>
               <div className="flex flex-col">
                 <span className="font-heading text-base font-bold tracking-tight text-white leading-none">
-                  Future You
+                  {siteContent.brand.name}
                 </span>
                 <span className="text-[9px] text-secondary font-medium tracking-widest uppercase">
-                  Coaching
+                  {siteContent.brand.descriptor}
                 </span>
               </div>
             </Link>
@@ -48,14 +49,14 @@ export default function Footer() {
               &ldquo;{footerContent.tagline}&rdquo;
             </p>
             <div className="flex gap-4">
-              {["X", "GitHub", "YouTube", "Discord"].map((platform) => (
+              {footerContent.socialLinks.map((platform) => (
                 <a
-                  key={platform}
-                  href="#"
+                  key={platform.label}
+                  href={platform.href}
                   className="text-xs hover:text-white transition-colors"
                   onClick={(e) => e.preventDefault()}
                 >
-                  {platform}
+                  {platform.label}
                 </a>
               ))}
             </div>
@@ -66,46 +67,30 @@ export default function Footer() {
             <div className="md:grid md:grid-cols-2 md:gap-8">
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-widest text-white">
-                  Coaching
+                  {footerContent.linkGroups[0].title}
                 </h3>
                 <ul role="list" className="mt-4 space-y-2.5">
-                  <li>
-                    <Link href="/services" className="text-sm hover:text-white transition-colors">
-                      Services Catalog
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/booking" className="text-sm hover:text-white transition-colors">
-                      Book Session
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/about#faq" className="text-sm hover:text-white transition-colors">
-                      Frequently Asked Questions
-                    </Link>
-                  </li>
+                  {footerContent.linkGroups[0].links.map((link) => (
+                    <li key={link.href}>
+                      <Link href={link.href} className="text-sm hover:text-white transition-colors">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
               <div className="mt-10 md:mt-0">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-white">
-                  Diagnostics
+                  {footerContent.linkGroups[1].title}
                 </h3>
                 <ul role="list" className="mt-4 space-y-2.5">
-                  <li>
-                    <Link href="/assessment" className="text-sm hover:text-white transition-colors">
-                      The Disappointment Test
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/dashboard" className="text-sm hover:text-white transition-colors">
-                      Growth Dashboard
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/blog" className="text-sm hover:text-white transition-colors">
-                      Timeline Articles
-                    </Link>
-                  </li>
+                  {footerContent.linkGroups[1].links.map((link) => (
+                    <li key={link.href}>
+                      <Link href={link.href} className="text-sm hover:text-white transition-colors">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -137,7 +122,7 @@ export default function Footer() {
                         setEmail(e.target.value);
                         setError("");
                       }}
-                      placeholder="present.you@example.com"
+                      placeholder={footerContent.newsletter.placeholder}
                       className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder-muted-foreground focus:border-primary focus:outline-none"
                     />
                     <button
@@ -157,7 +142,7 @@ export default function Footer() {
 
         {/* Footer Bottom */}
         <div className="mt-12 border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
-          <p>© 2026 Future You Coaching. All rights reserved.</p>
+          <p>{footerContent.copyright}</p>
           <p className="text-muted-foreground/60 italic">
             {footerContent.disclaimer}
           </p>
