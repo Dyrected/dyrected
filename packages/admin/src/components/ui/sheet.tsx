@@ -6,6 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 
 import { cn } from "../../lib/utils"
+import { useAdminTheme } from "../../hooks/use-admin-theme"
 
 const Sheet = SheetPrimitive.Root
 
@@ -56,24 +57,28 @@ interface SheetContentProps
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <div className="dy-admin-ui">
-      <SheetOverlay />
-      <SheetPrimitive.Content
-        ref={ref}
-        className={cn(sheetVariants({ side }), className)}
-        {...props}
-      >
-        {children}
-        <SheetPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-secondary">
-          <X className="dy-h-4 dy-w-4" />
-          <span className="dy-sr-only">Close</span>
-        </SheetPrimitive.Close>
-      </SheetPrimitive.Content>
-    </div>
-  </SheetPortal>
-))
+>(({ side = "right", className, children, ...props }, ref) => {
+  const { resolvedTheme, themeClassName } = useAdminTheme()
+
+  return (
+    <SheetPortal>
+      <div className={themeClassName} data-theme={resolvedTheme}>
+        <SheetOverlay />
+        <SheetPrimitive.Content
+          ref={ref}
+          className={cn(sheetVariants({ side }), className)}
+          {...props}
+        >
+          {children}
+          <SheetPrimitive.Close className="dy-absolute dy-right-4 dy-top-4 dy-rounded-sm dy-opacity-70 dy-ring-offset-background dy-transition-opacity hover:dy-opacity-100 focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-ring focus:dy-ring-offset-2 disabled:dy-pointer-events-none data-[state=open]:dy-bg-secondary">
+            <X className="dy-h-4 dy-w-4" />
+            <span className="dy-sr-only">Close</span>
+          </SheetPrimitive.Close>
+        </SheetPrimitive.Content>
+      </div>
+    </SheetPortal>
+  )
+})
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 const SheetHeader = ({

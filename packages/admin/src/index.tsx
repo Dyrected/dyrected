@@ -24,6 +24,7 @@ import { SetupPromptUI } from "./pages/setup/setup-prompt";
 import { ErrorBoundary } from "./components/error-boundary";
 import { AuthGate } from "./components/auth/auth-gate";
 import { Toaster } from "./components/ui/sonner";
+import { AdminThemeProvider, AdminThemedRoot } from "./hooks/admin-theme-provider";
 
 export type {
   AdminComponents,
@@ -192,12 +193,16 @@ export function AdminUI({
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
         <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken} defaultTechStack={defaultTechStack}>
-          <QueryProvider>
-            <HashRouter>
-              <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
-            </HashRouter>
-          </QueryProvider>
-          <Toaster position="top-right" expand={true} richColors />
+          <AdminThemeProvider>
+            <AdminThemedRoot>
+              <QueryProvider>
+                <HashRouter>
+                  <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
+                </HashRouter>
+              </QueryProvider>
+              <Toaster position="top-right" expand={true} richColors />
+            </AdminThemedRoot>
+          </AdminThemeProvider>
         </DyrectedProvider>
       </ErrorBoundary>
     </div>
@@ -250,12 +255,16 @@ export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProp
   return (
     <div className="dy-admin-ui dy-h-full">
       <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
-        <QueryProvider>
-          <MemoryRouter>
-            <AdminRoutes />
-          </MemoryRouter>
-        </QueryProvider>
-        <Toaster position="top-right" expand={true} richColors />
+        <AdminThemeProvider>
+          <AdminThemedRoot>
+            <QueryProvider>
+              <MemoryRouter>
+                <AdminRoutes />
+              </MemoryRouter>
+            </QueryProvider>
+            <Toaster position="top-right" expand={true} richColors />
+          </AdminThemedRoot>
+        </AdminThemeProvider>
       </DyrectedProvider>
     </div>
   );

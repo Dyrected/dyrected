@@ -1925,7 +1925,7 @@ If you're embedding Dyrected inside your own SaaS product (giving your customers
 
 ## Business Source License (BSL)
 
-Self-hosted usage is free under the BSL. The one restriction: you cannot offer Dyrected itself as a managed hosting service to third parties. Building client sites on your own self-hosted instance is fully permitted. The licence converts to Apache 2.0 after 4 years.
+Self-hosted usage is free under the BSL for your own company and for client projects that you build or deploy on behalf of a client. What is not included without a separate commercial license is offering Dyrected itself as a hosted or managed service, embedding it as part of a multi-tenant SaaS or platform, or commercially redistributing it to third-party end users. The licence converts to Apache 2.0 after 4 years.
 
 ---
 
@@ -4876,6 +4876,576 @@ The `password` field is always stripped from API read responses.
 
 ---
 
+## Admin SSO
+
+Canonical URL: https://docs.dyrected.com/docs/guides/admin-sso
+
+Dyrected supports external Admin authentication through `adminAuth`. This lets your editorial or operations team sign into the Admin UI with an OIDC provider such as Okta, Azure AD, Google Workspace, or another standards-compliant identity system.
+
+This guide is about **Admin login**, not your application's end-user auth. Your application can continue using its own auth collections and login flows independently.
+
+---
+
+## What Admin SSO is for
+
+Use Admin SSO when:
+
+- your team already signs into internal tools with an identity provider
+- you want Admin access governed separately from customer/member login
+- you need central control over who can access the dashboard
+- you want Just-in-Time provisioning or pre-approved Admin access rules
+
+Do not use this guide for application-user login such as customers, members, or subscribers. That remains collection-level `auth: true`.
+
+---
+
+## How the flow works
+
+At a high level:
+
+1. The Admin UI discovers that `adminAuth.mode` is `external`.
+2. The user clicks the provider on the login screen.
+3. Dyrected redirects the browser to the OIDC provider.
+4. The provider redirects back to Dyrected at `/api/admin/auth/:provider/callback`.
+5. Dyrected verifies the identity claims.
+6. Dyrected resolves access using `resolveAccess`.
+7. Dyrected provisions or updates an Admin user in the configured Admin auth collection.
+8. Dyrected issues its own Admin bearer token and the dashboard continues normally.
+
+This means the external provider controls identity, while Dyrected still controls its own Admin session and access rules.
+
+---
+
+## Before you start
+
+You need all of the following:
+
+1. A Dyrected app with an Admin UI route such as `/admin`
+2. An external identity provider that supports OpenID Connect
+3. An Admin auth collection in Dyrected
+4. A stable public callback URL reachable by the identity provider
+
+The Admin auth collection is important. Even with external SSO, Dyrected still needs a collection to store the Admin-side user record and metadata such as:
+
+- `email`
+- `name`
+- `roles`
+- `authProvider`
+- `externalSubject`
+- `lastLoginAt`
+
+---
+
+## Step 1: Define an Admin auth collection
+
+If you do not set `adminAuth.collectionSlug`, Dyrected prefers `__admins`. That is the cleanest default for most teams.
+
+```ts
+
+
+export const Admins = defineCollection({
+  slug: '__admins',
+  auth: true,
+  fields: [
+    { name: 'name', label: 'Name', type: 'text' },
+    {
+      name: 'roles',
+      label: 'Roles',
+      type: 'multiSelect',
+      options: ['admin', 'editor', 'publisher'],
+    },
+    { name: 'authProvider', label: 'Auth provider', type: 'text', admin: { hidden: true } },
+    { name: 'externalSubject', label: 'External subject', type: 'text', admin: { hidden: true } },
+    { name: 'lastLoginAt', label: 'Last login', type: 'datetime', admin: { hidden: true } },
+  ],
+})
+```
+
+If you are migrating from using a different Admin collection, read [Separating Admin Auth](/docs/guides/separating-admin-auth) first.
+
+---
+
+## Step 2: Configure `adminAuth`
+
+Add an external Admin auth configuration to `defineConfig`.
+
+```ts
+
+
+
+export default defineConfig({
+  collections: [Admins],
+  globals: [],
+  adminAuth: {
+    mode: 'external',
+    collectionSlug: '__admins',
+    provisioningMode: 'jit_plus_membership_management',
+    providers: [
+      {
+        id: 'okta',
+        type: 'oidc',
+        displayName: 'Okta',
+        issuer: process.env.OKTA_ISSUER!,
+        clientId: process.env.OKTA_CLIENT_ID!,
+        clientSecret: process.env.OKTA_CLIENT_SECRET!,
+        scopes: ['openid', 'profile', 'email'],
+        autoRedirect: true,
+      },
+    ],
+  },
+})
+```
+
+Minimum OIDC provider fields:
+
+- `id`
+- `type: 'oidc'`
+- `issuer`
+- `clientId`
+- `clientSecret`
+
+Optional but commonly useful:
+
+- `displayName`
+- `redirectUri`
+- `scopes`
+- `claimMapping`
+- `autoRedirect`
+
+---
+
+## Step 3: Register the callback URL in your identity provider
+
+By default, Dyrected uses this callback pattern:
+
+```txt
+https://your-app.com/api/admin/auth/<providerId>/callback
+```
+
+Example:
+
+```txt
+https://cms.example.com/api/admin/auth/okta/callback
+```
+
+If you set `redirectUri` explicitly in the provider config, that exact value must be registered with the identity provider.
+
+Important constraints:
+
+- the callback must be publicly reachable by the OIDC provider
+- the callback must resolve to the same Dyrected app that serves the Admin UI
+- in local development, use whatever callback URL your provider allows, or a local tunnel if necessary
+
+---
+
+## Step 4: Decide the provisioning mode
+
+`provisioningMode` controls how Dyrected admits external identities into the Admin layer.
+
+### `jit_only`
+
+Use this when:
+
+- anyone meeting `resolveAccess` rules should be created on first login
+- you do not want Dyrected to be the main source of truth for Admin membership
+
+### `jit_plus_membership_management`
+
+Use this when:
+
+- you want first-login creation
+- you also want Dyrected-side membership records to exist and stay updated
+
+This is the best default for most teams.
+
+### `preprovisioned_only`
+
+Use this when:
+
+- accounts must be approved or created before first login
+- you cannot allow Dyrected to create new Admin users automatically
+
+In this mode, a valid OIDC identity is still rejected if no matching Admin user has been provisioned already.
+
+---
+
+## Step 5: Map claims if your provider does not use the defaults
+
+By default, Dyrected expects:
+
+- `sub`
+- `email`
+- `name`
+
+If your provider stores roles or groups in custom claim names, map them explicitly.
+
+```ts
+adminAuth: {
+  mode: 'external',
+  collectionSlug: '__admins',
+  provisioningMode: 'jit_plus_membership_management',
+  providers: [
+    {
+      id: 'azure',
+      type: 'oidc',
+      displayName: 'Azure AD',
+      issuer: process.env.AZURE_ISSUER!,
+      clientId: process.env.AZURE_CLIENT_ID!,
+      clientSecret: process.env.AZURE_CLIENT_SECRET!,
+      claimMapping: {
+        sub: 'sub',
+        email: 'email',
+        name: 'name',
+        roles: 'roles',
+        groups: 'groups',
+      },
+    },
+  ],
+}
+```
+
+Common use cases:
+
+- `roles` claim from the provider should become Dyrected `roles`
+- `groups` claim helps `resolveAccess` decide whether the user should be admitted
+- tenant- or site-specific claims can be passed through custom mapping keys such as `siteIds` or `workspaceIds`
+
+---
+
+## Step 6: Write `resolveAccess`
+
+`resolveAccess` is the most important part of the setup. It decides whether the authenticated identity should be allowed into the Admin UI and what Dyrected-side roles or extra data should be stored.
+
+If you do not supply `resolveAccess`, Dyrected allows the external identity by default after successful authentication. That is too open for most real deployments.
+
+Start with an explicit function.
+
+```ts
+adminAuth: {
+  mode: 'external',
+  collectionSlug: '__admins',
+  provisioningMode: 'jit_plus_membership_management',
+  providers: [
+    {
+      id: 'okta',
+      type: 'oidc',
+      issuer: process.env.OKTA_ISSUER!,
+      clientId: process.env.OKTA_CLIENT_ID!,
+      clientSecret: process.env.OKTA_CLIENT_SECRET!,
+      claimMapping: {
+        roles: 'roles',
+        groups: 'groups',
+      },
+    },
+  ],
+  resolveAccess: ({ identity }) => {
+    const groups = identity.groups ?? []
+    const isCmsAdmin = groups.includes('cms-admins')
+    const isCmsEditor = groups.includes('cms-editors')
+
+    if (!isCmsAdmin && !isCmsEditor) {
+      return { allowed: false }
+    }
+
+    return {
+      allowed: true,
+      roles: isCmsAdmin ? ['admin'] : ['editor'],
+      data: {
+        department: identity.rawClaims?.department,
+      },
+    }
+  },
+}
+```
+
+Use `resolveAccess` for:
+
+- group- or role-based allow/deny logic
+- tenant- or site-aware restrictions
+- mapping external groups to Dyrected `roles`
+- attaching extra fields to the Dyrected Admin user document
+
+`resolveAccess` receives:
+
+- `identity`
+- `providerId`
+- `siteId`
+- `workspaceId`
+- request metadata
+- the current user record if one already exists
+
+---
+
+## Step 7: Test the full login flow
+
+Do not stop after saving the config. Test the whole redirect chain.
+
+### Expected start endpoint
+
+When the login page begins the external flow, it hits:
+
+```txt
+GET /api/admin/auth/:provider/start
+```
+
+Example:
+
+```txt
+GET /api/admin/auth/okta/start
+```
+
+### Expected callback endpoint
+
+The OIDC provider should redirect back to:
+
+```txt
+GET /api/admin/auth/:provider/callback
+```
+
+Example:
+
+```txt
+GET /api/admin/auth/okta/callback
+```
+
+### What success looks like
+
+After a successful callback:
+
+- the browser returns to the Admin UI
+- Dyrected exchanges the external identity for a Dyrected Admin token
+- the Admin UI loads as the provisioned user
+- `/api/collections/__admins/me` or your configured Admin collection `/me` resolves successfully
+
+---
+
+## Example: Okta setup
+
+```ts
+
+
+
+export default defineConfig({
+  collections: [Admins],
+  globals: [],
+  adminAuth: {
+    mode: 'external',
+    collectionSlug: '__admins',
+    provisioningMode: 'jit_plus_membership_management',
+    providers: [
+      {
+        id: 'okta',
+        type: 'oidc',
+        displayName: 'Okta',
+        issuer: process.env.OKTA_ISSUER!,
+        clientId: process.env.OKTA_CLIENT_ID!,
+        clientSecret: process.env.OKTA_CLIENT_SECRET!,
+        scopes: ['openid', 'profile', 'email'],
+        claimMapping: {
+          roles: 'roles',
+          groups: 'groups',
+        },
+      },
+    ],
+    resolveAccess: ({ identity }) => {
+      const groups = identity.groups ?? []
+
+      if (!groups.includes('cms-admins') && !groups.includes('cms-editors')) {
+        return { allowed: false }
+      }
+
+      return {
+        allowed: true,
+        roles: groups.includes('cms-admins') ? ['admin'] : ['editor'],
+      }
+    },
+  },
+})
+```
+
+Provider-side checklist:
+
+1. Create an OIDC application in Okta.
+2. Set the callback URL to `https://your-app.com/api/admin/auth/okta/callback`.
+3. Allow `openid`, `profile`, and `email` scopes.
+4. Ensure the required `groups` or `roles` claims are present in the token or userinfo response.
+5. Store issuer, client ID, and client secret in environment variables.
+
+The same pattern applies to Azure AD, Google Workspace, Auth0, and other OIDC providers.
+
+---
+
+## Multi-tenant note
+
+If your deployment uses `onSchemaFetch`, `adminAuth` can also be resolved per site.
+
+That is useful when:
+
+- different sites have different identity providers
+- different sites need different access rules
+- a platform builder stores site-specific admin auth settings in a control plane
+
+In that model:
+
+- your request must resolve the correct `siteId`
+- `onSchemaFetch(siteId)` can return tenant-specific `adminAuth`
+- your callback URL still points to the Dyrected app, but access resolution can vary by site
+
+---
+
+## Local development tips
+
+Local SSO is usually harder than production because identity providers often reject arbitrary localhost callback URLs.
+
+Practical advice:
+
+1. Prefer a provider that allows `http://localhost` callback registration for development.
+2. If not, use a tunnel or development hostname.
+3. Keep local and production client credentials separate.
+4. Test both the initial redirect and the callback exchange, not just the login button.
+
+If your provider requires an explicit redirect URI, set `redirectUri` in the Dyrected provider config so the generated flow matches exactly.
+
+---
+
+## Troubleshooting
+
+### `Admin auth provider not found.`
+
+Meaning:
+
+- the provider ID in the URL does not exist in `adminAuth.providers`
+- or `adminAuth.mode` is not `external`
+
+Check:
+
+- `mode: 'external'`
+- provider `id`
+- whether dynamic `onSchemaFetch` is returning the expected `adminAuth`
+
+### `Missing OIDC callback parameters.`
+
+Meaning:
+
+- the provider did not return `code` and `state`
+- or the callback route is wrong
+
+Check:
+
+- callback URL registration in the identity provider
+- whether the provider is redirecting to the right Dyrected route
+
+### `Failed to load OIDC discovery document.`
+
+Meaning:
+
+- Dyrected could not fetch `/.well-known/openid-configuration`
+
+Check:
+
+- `issuer` URL
+- network reachability from your server environment
+
+### `OIDC token exchange failed.`
+
+Meaning:
+
+- the authorization code could not be exchanged for tokens
+
+Check:
+
+- `clientId`
+- `clientSecret`
+- `redirectUri`
+- whether the provider expects a different redirect URI than the one Dyrected is sending
+
+### `OIDC nonce verification failed.` or `OIDC state verification failed.`
+
+Meaning:
+
+- callback verification failed
+
+Check:
+
+- whether the callback is completing in the same browser flow
+- whether reverse proxies or auth middleware are interfering
+- whether `DYRECTED_JWT_SECRET` is stable across the request chain
+
+### `External identity is missing a subject.`
+
+Meaning:
+
+- Dyrected could not find a usable `sub` claim
+
+Check:
+
+- provider token contents
+- `claimMapping.sub` if your provider uses a nonstandard claim name
+
+### `This account has not been provisioned for admin access.`
+
+Meaning:
+
+- `provisioningMode` is `preprovisioned_only`
+- and the Dyrected-side Admin user does not exist yet
+
+Fix:
+
+- create the Admin user first
+- or switch to a JIT provisioning mode if that matches your policy
+
+### `Access denied for this site.`
+
+Meaning:
+
+- `resolveAccess` returned `allowed: false`
+
+Check:
+
+- group/role claims returned by the provider
+- tenant or site logic in `resolveAccess`
+
+### Login succeeds, but `/me` fails
+
+Meaning:
+
+- the Dyrected-side Admin token was issued against a different collection than the Admin UI expects
+
+Check:
+
+- `adminAuth.collectionSlug`
+- whether your configured Admin collection actually has `auth: true`
+- whether the Admin collection is the one the UI is using
+
+---
+
+## Recommended baseline
+
+If you want a conservative setup that works for most teams:
+
+1. use `__admins` as the Admin collection
+2. set `adminAuth.mode` to `external`
+3. use one OIDC provider
+4. use `jit_plus_membership_management`
+5. map `groups`
+6. gate access in `resolveAccess`
+7. store Dyrected-side roles in the Admin collection
+
+That gives you a clean split between:
+
+- external identity and group ownership
+- Dyrected-side Admin sessions and content permissions
+
+---
+
+## Related docs
+
+- [Separating Admin Auth](/docs/guides/separating-admin-auth)
+- [Configuration Reference](/docs/reference/configuration)
+- [Using Core in Enterprise Environments](/docs/guides/enterprise-core)
+
+---
+
 ## Using Dyrected with AI Coding Tools
 
 Canonical URL: https://docs.dyrected.com/docs/guides/ai-integration
@@ -6126,6 +6696,312 @@ const doc = await client.collection('posts').transition(postId, 'reject', {
   comment: 'Needs better images.'
 })
 ```
+
+---
+
+## Using Core in Enterprise Environments
+
+Canonical URL: https://docs.dyrected.com/docs/guides/enterprise-core
+
+`@dyrected/core` is already structured for enterprise use, but enterprise projects usually fail on operating model, auth boundaries, and schema governance rather than on raw CRUD.
+
+This guide focuses on the parts of `core` that matter when multiple teams, environments, and tenants are involved.
+
+---
+
+## When to use `@dyrected/core` directly
+
+Use `@dyrected/core` directly when you need one or more of these:
+
+- Full control over deployment, networking, and data residency
+- Existing database, storage, email, or identity infrastructure
+- Tenant-aware schema resolution at request time
+- Strong separation between application auth and Admin auth
+- Custom hooks, workflows, and lifecycle-event handlers under your own review process
+
+If your organization wants a managed control plane instead, start with [Dyrected Cloud](/docs/deployment/cloud). If the requirement is infrastructure ownership and deeper integration into an existing platform, `core` is the right layer.
+
+---
+
+## Recommended architecture
+
+For enterprise teams, treat `dyrected.config.ts` as a reviewed application contract, not as local setup glue.
+
+```ts
+
+
+
+
+export default defineConfig({
+  db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
+  storage: new S3StorageAdapter({
+    bucket: process.env.S3_BUCKET!,
+    region: process.env.S3_REGION!,
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+    },
+  }),
+  collections: [],
+  globals: [],
+  cors: {
+    origins: [
+      'https://admin.example.com',
+      'https://www.example.com',
+    ],
+  },
+  redis: {
+    url: process.env.REDIS_URL!,
+  },
+})
+```
+
+Recommended boundaries:
+
+1. Keep config, hooks, and access rules in source control.
+2. Keep secrets only in environment variables.
+3. Treat slug changes and field renames like data migrations.
+4. Run the Admin UI behind a dedicated domain or route boundary.
+
+---
+
+## Separate Admin auth from application auth
+
+This is the first enterprise requirement to get right.
+
+Collection-level `auth: true` is for application users. Admin access should use `adminAuth`, so dashboard access is governed independently from customer/member login.
+
+```ts
+export default defineConfig({
+  collections: [
+    Customers,
+    Orders,
+  ],
+  globals: [],
+  adminAuth: {
+    mode: 'external',
+    collectionSlug: 'accounts',
+    provisioningMode: 'jit_plus_membership_management',
+    providers: [
+      {
+        id: 'okta',
+        type: 'oidc',
+        displayName: 'Okta',
+        issuer: process.env.OKTA_ISSUER!,
+        clientId: process.env.OKTA_CLIENT_ID!,
+        clientSecret: process.env.OKTA_CLIENT_SECRET!,
+        autoRedirect: true,
+      },
+    ],
+    resolveAccess: ({ identity, siteId }) => {
+      const roles = identity.roles ?? []
+      const allowed = roles.includes('cms-admin') || roles.includes('cms-editor')
+      return {
+        allowed,
+        roles,
+        data: { siteId },
+      }
+    },
+  },
+})
+```
+
+Why this matters:
+
+- Compromising a frontend user account does not grant Admin access.
+- Enterprise SSO can govern Admin login without reshaping customer auth.
+- Provisioning and de-provisioning can follow the identity provider lifecycle.
+
+See [Separating Admin Auth](/docs/guides/separating-admin-auth) for the local-collection pattern and [Admin Configuration](/docs/admin/configuration) for Admin UI concerns.
+
+---
+
+## Choose a provisioning model deliberately
+
+`adminAuth.provisioningMode` is not a cosmetic setting. It changes how identity is admitted into the Admin layer.
+
+| Mode | Use when | Tradeoff |
+| --- | --- | --- |
+| `jit_only` | Access is decided entirely at login time from external claims | Fastest to adopt, but membership is mostly owned by the identity provider |
+| `jit_plus_membership_management` | You want external login plus managed membership records in Dyrected | Better auditability and site-level control |
+| `preprovisioned_only` | Access must exist before first login | Strongest control, more operational overhead |
+
+For larger organizations, `jit_plus_membership_management` is usually the practical middle ground.
+
+---
+
+## Use tenant-aware schema loading for multi-tenant platforms
+
+If different sites or business units carry different collections, globals, or Admin auth rules, use `onSchemaFetch`.
+
+```ts
+export default defineConfig({
+  db,
+  collections: [],
+  globals: [],
+  onSchemaFetch: async (siteId) => {
+    const site = await siteRegistry.lookup(siteId)
+    if (!site) return {}
+
+    return {
+      collections: buildCollectionsForSite(site),
+      globals: buildGlobalsForSite(site),
+      adminAuth: buildAdminAuthForSite(site),
+    }
+  },
+})
+```
+
+Use this when:
+
+- Each tenant has distinct content models
+- Tenant-specific Admin auth providers must be resolved dynamically
+- A central platform team serves many business-owned sites
+
+Do not use it to avoid source control. Even when schemas are loaded dynamically, the schema builder code should still be versioned and reviewed.
+
+---
+
+## Lock down content governance
+
+Enterprise teams usually need more than "who can log in."
+
+Use these controls together:
+
+- Collection and field `access` rules for authorization
+- `workflow` for draft/review/publish state transitions
+- `audit: true` for document-level change history
+- `hooks` for validation, enrichment, and downstream side effects
+
+```ts
+
+
+export const Policies = defineCollection({
+  slug: 'policies',
+  audit: true,
+  workflow: publishingWorkflow(),
+  access: {
+    read: ({ user }) => !!user,
+    create: ({ user }) => user?.roles?.includes('policy-author') ?? false,
+    update: ({ user }) => user?.roles?.some((role) => ['policy-author', 'publisher'].includes(role)) ?? false,
+    delete: ({ user }) => user?.roles?.includes('admin') ?? false,
+  },
+  fields: [
+    { name: 'title', label: 'Title', type: 'text', required: true },
+    { name: 'body', label: 'Body', type: 'richText', required: true },
+  ],
+})
+```
+
+Recommended discipline:
+
+1. Use access rules for authorization, not hidden UI controls.
+2. Enable audit on regulated or operationally sensitive collections.
+3. Use workflows where publishing must be reviewed separately from editing.
+4. Keep `afterChange` and `afterDelete` hooks idempotent and failure-tolerant.
+
+Relevant docs:
+
+- [Access Control](/docs/concepts/access-control)
+- [Workflows](/docs/concepts/workflows)
+- [Audit Trail](/docs/guides/audit-trail)
+- [Using Hooks](/docs/guides/using-hooks)
+
+---
+
+## Treat lifecycle events as operational integration points
+
+Enterprise systems usually need webhooks, downstream indexing, search sync, analytics, or ERP/CRM fan-out. That work should not be embedded loosely across request handlers.
+
+Use `events.handlers` for durable lifecycle delivery:
+
+```ts
+export default defineConfig({
+  db,
+  collections: [Policies],
+  globals: [],
+  events: {
+    handlers: [
+      async (event) => {
+        await enterpriseEventBus.publish(event)
+      },
+    ],
+    maxAttempts: 8,
+    retryDelayMs: 1000,
+  },
+})
+```
+
+This gives you:
+
+- Retryable delivery state persisted in Dyrected
+- A cleaner boundary between content writes and downstream processing
+- Better visibility than ad hoc webhook calls in unrelated code paths
+
+If you run multiple instances, configure `redis` and make event processing an explicit part of your runtime model.
+
+---
+
+## Plan storage, email, and network controls up front
+
+Enterprise adoption is often blocked by non-CMS requirements:
+
+- Object storage must align with the company cloud account
+- Email must use the approved provider and sender domains
+- CORS must be explicit
+- JWT secrets and provider credentials must rotate cleanly
+
+Minimum checklist:
+
+- Configure `storage` if any collection uses uploads
+- Configure `email` for invites, welcome mail, and password reset flows
+- Set `cors.origins` to known frontend/Admin origins
+- Set `DYRECTED_JWT_SECRET` in every environment
+- Keep per-environment values outside `dyrected.config.ts`
+
+For upload-heavy systems, also review [Configuring Storage](/docs/guides/configuring-storage).
+
+---
+
+## Roll out changes like platform changes
+
+The highest-risk mistakes in enterprise deployments are usually schema drift and auth drift.
+
+Operational rules that help:
+
+1. Review config changes like database migrations.
+2. Promote config through environments in the same order as application code.
+3. Smoke-test auth, `/me`, uploads, and the highest-value list filters before each release.
+4. Avoid direct field renames on live collections; use compatibility steps first.
+5. Keep generated API and schema docs close to the current build.
+
+Use [Production Checklist](/docs/getting-started/production-checklist) as the baseline, then add your environment-specific controls on top.
+
+---
+
+## A practical enterprise baseline
+
+If you need a conservative starting point, use this stack:
+
+- PostgreSQL adapter for primary data
+- S3-compatible storage adapter for media
+- External `adminAuth` with OIDC
+- Dedicated Admin route or domain
+- `audit: true` on critical collections
+- `workflow` on published content
+- `events.handlers` for downstream sync
+- `onSchemaFetch` only when tenant-specific schemas are real, not hypothetical
+
+That baseline keeps the system understandable while still covering the requirements that usually appear first in enterprise delivery.
+
+---
+
+## Next steps
+
+- [Configuration Reference](/docs/reference/configuration)
+- [Separating Admin Auth](/docs/guides/separating-admin-auth)
+- [Access Control](/docs/concepts/access-control)
+- [Dyrected Cloud](/docs/deployment/cloud)
 
 ---
 

@@ -1204,6 +1204,83 @@
     "validation": "Inventoried vue example"
   },
   {
+    "id": "/guides/admin-sso#example-1",
+    "page": "/guides/admin-sso",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/admin-sso#example-2",
+    "page": "/guides/admin-sso",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/admin-sso#example-3",
+    "page": "/guides/admin-sso",
+    "language": "txt",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/admin-sso#example-4",
+    "page": "/guides/admin-sso",
+    "language": "txt",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/admin-sso#example-5",
+    "page": "/guides/admin-sso",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/admin-sso#example-6",
+    "page": "/guides/admin-sso",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/admin-sso#example-7",
+    "page": "/guides/admin-sso",
+    "language": "txt",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/admin-sso#example-8",
+    "page": "/guides/admin-sso",
+    "language": "txt",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/admin-sso#example-9",
+    "page": "/guides/admin-sso",
+    "language": "txt",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/admin-sso#example-10",
+    "page": "/guides/admin-sso",
+    "language": "txt",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
+  },
+  {
+    "id": "/guides/admin-sso#example-11",
+    "page": "/guides/admin-sso",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/guides/ai-integration#example-1",
     "page": "/guides/ai-integration",
     "language": "bash",
@@ -1563,6 +1640,41 @@
   {
     "id": "/guides/editorial-approval-workflow#example-2",
     "page": "/guides/editorial-approval-workflow",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/enterprise-core#example-1",
+    "page": "/guides/enterprise-core",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/enterprise-core#example-2",
+    "page": "/guides/enterprise-core",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/enterprise-core#example-3",
+    "page": "/guides/enterprise-core",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/enterprise-core#example-4",
+    "page": "/guides/enterprise-core",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/enterprise-core#example-5",
+    "page": "/guides/enterprise-core",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"

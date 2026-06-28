@@ -2,6 +2,7 @@
   "title": "Guides",
   "pages": [
     "enterprise-core",
+    "admin-sso",
     "building-a-blog",
     "adding-authentication",
     "file-uploads",

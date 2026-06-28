@@ -11,9 +11,12 @@ import {
   X,
   ChevronRight,
   ChevronDown,
+  Monitor,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Sparkles,
+  Sun,
   Lock,
   Shield,
   Share2,
@@ -29,9 +32,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
+import { Button } from "../ui/button"
+import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
 import logo from "@/assets/dyrected.svg"
 
 function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
@@ -139,6 +146,64 @@ function NavGroup({
   )
 }
 
+function ThemeSelector({
+  collapsed = false,
+  mobile = false,
+}: {
+  collapsed?: boolean
+  mobile?: boolean
+}) {
+  const { resolvedTheme, setTheme, theme } = useAdminTheme()
+  const Icon = resolvedTheme === "dark" ? Moon : Sun
+
+  const options: Array<{ value: AdminThemePreference; label: string; icon: React.ElementType }> = [
+    { value: "system", label: "System", icon: Monitor },
+    { value: "light", label: "Light", icon: Sun },
+    { value: "dark", label: "Dark", icon: Moon },
+  ]
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size={mobile || collapsed ? "icon" : "sm"}
+          className={cn(
+            "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
+            collapsed || mobile ? "dy-h-8 dy-w-8" : "dy-h-7 dy-w-full dy-justify-start dy-px-2.5 dy-text-[11px]"
+          )}
+          title="Theme"
+          aria-label="Change admin theme"
+        >
+          <Icon className="dy-h-3.5 dy-w-3.5" />
+          {!collapsed && !mobile && <span>Theme</span>}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side={collapsed || mobile ? "bottom" : "top"} align="end" sideOffset={8} className="dy-w-40">
+        <DropdownMenuLabel className="dy-px-2 dy-py-1.5 dy-text-xs dy-text-muted-foreground">
+          Theme
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup
+          value={theme}
+          onValueChange={(value) => setTheme(value as AdminThemePreference)}
+        >
+          {options.map((option) => {
+            const OptionIcon = option.icon
+            return (
+              <DropdownMenuRadioItem key={option.value} value={option.value} className="dy-cursor-pointer">
+                <OptionIcon className="dy-h-4 dy-w-4" />
+                {option.label}
+              </DropdownMenuRadioItem>
+            )
+          })}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Sidebar inner content (shared)
 // ---------------------------------------------------------------------------
@@ -178,7 +243,7 @@ function SidebarInner({
   const branding = schemas?.admin?.branding;
 
   return (
-    <div className="dy-flex dy-flex-col dy-min-h-screen dy-admin-ui">
+    <div className="dy-flex dy-flex-col dy-min-h-screen">
       {/* Logo */}
       {!isEmbedded && (
 
@@ -375,6 +440,8 @@ function SidebarInner({
           collapsed={collapsed}
           onClick={onNavigate}
         />
+
+        <ThemeSelector collapsed={collapsed} />
 
         {!isEmbedded && user && (
           <DropdownMenu>
@@ -587,12 +654,14 @@ export function AdminShell({
                 )}
               </div>
             )}
-            {/* User avatar — right side */}
-            {user && (
-              <div className="dy-ml-auto dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-                {(user.name || user.email || "?")[0].toUpperCase()}
-              </div>
-            )}
+            <div className="dy-ml-auto dy-flex dy-items-center dy-gap-1.5">
+              <ThemeSelector mobile />
+              {user && (
+                <div className="dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
+                  {(user.name || user.email || "?")[0].toUpperCase()}
+                </div>
+              )}
+            </div>
           </header>
 
           <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">

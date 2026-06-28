@@ -141,9 +141,56 @@
     --sidebar-ring: 259 100% 62%;
   }
 
+  .dy-admin-ui.dark,
+  .dy-admin-ui[data-theme="dark"] {
+    --background: 240 10% 4%;          /* #09090B charcoal */
+    --foreground: 78 38% 95%;          /* warm lime-white */
+
+    --card: 240 8% 7%;                 /* #111114 */
+    --card-foreground: 78 38% 95%;
+
+    --popover: 240 8% 7%;
+    --popover-foreground: 78 38% 95%;
+
+    --primary: 81 100% 59%;            /* Signal Lime */
+    --primary-foreground: 60 3% 6%;
+    --intelligence: 259 100% 70%;      /* Brighter Violet */
+    --intelligence-foreground: 0 0% 100%;
+
+    --secondary: 259 45% 15%;
+    --secondary-foreground: 266 82% 92%;
+
+    --muted: 240 7% 13%;
+    --muted-foreground: 252 9% 68%;
+
+    --accent: 259 44% 16%;
+    --accent-foreground: 266 82% 88%;
+
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 256 20% 21%;
+    --input: 256 20% 21%;
+    --ring: 259 100% 70% / 0.34;
+
+    --sidebar-background: 240 10% 4%;
+    --sidebar-foreground: 78 38% 95%;
+    --sidebar-primary: 81 100% 59%;
+    --sidebar-primary-foreground: 60 3% 6%;
+    --sidebar-accent: 259 44% 16%;
+    --sidebar-accent-foreground: 266 82% 88%;
+    --sidebar-border: 256 20% 21%;
+    --sidebar-ring: 259 100% 70%;
+  }
+
   .dy-admin-ui {
     color-scheme: light;
     @apply dy-font-sans;
+  }
+
+  .dy-admin-ui.dark,
+  .dy-admin-ui[data-theme="dark"] {
+    color-scheme: dark;
   }
 
   .dy-admin-ui :where(h1, h2, h3, h4, h5, h6) {
