@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.46
+
+### Patch Changes
+
+- 11c8ba0: Add low-impact dark mode support to the admin UI with system, light, and dark theme preferences.
+  - @dyrected/core@2.5.46
+  - @dyrected/sdk@2.5.46
+
 ## 2.5.45
 
 ### Patch Changes
