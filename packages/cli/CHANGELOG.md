@@ -1,5 +1,12 @@
 # @dyrected/cli
 
+## 2.5.47
+
+### Patch Changes
+
+- @dyrected/core@2.5.47
+- @dyrected/sdk@2.5.47
+
 ## 2.5.46
 
 ### Patch Changes

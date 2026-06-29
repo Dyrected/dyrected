@@ -1,5 +1,11 @@
 # @dyrected/storage-b2
 
+## 2.5.47
+
+### Patch Changes
+
+- @dyrected/core@2.5.47
+
 ## 2.5.46
 
 ### Patch Changes

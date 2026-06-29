@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.47
+
+### Patch Changes
+
+- Normalize cloud-issued admin session token roles for client-side access checks.
+  - @dyrected/core@2.5.47
+  - @dyrected/sdk@2.5.47
+
 ## 2.5.46
 
 ### Patch Changes

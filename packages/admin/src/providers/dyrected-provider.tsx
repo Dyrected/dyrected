@@ -29,7 +29,8 @@ export function DyrectedProvider({
   const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_key") : null) || undefined);
   const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
   const [schemas, setSchemas] = useState<AdminSchemas | null>(null);
-  const [user, setUser] = useState<AdminUser | null>(null);
+  const initialTokenUser = useMemo(() => (initialToken ? decodeTokenPayload(initialToken) : null), [initialToken]);
+  const [user, setUser] = useState<AdminUser | null>(() => initialTokenUser);
   const [authCollectionSlug, setAuthCollectionSlug] = useState<string | null>(
     () => (typeof window !== "undefined" ? localStorage.getItem("dyrected_admin_auth_collection") : null) || null,
   );
@@ -69,8 +70,9 @@ export function DyrectedProvider({
     };
   }, [client]);
 
-  // Apply the cloud-issued token to the SDK client so API calls include it.
-  // Does not call me() — AuthGate skips auth entirely when initialToken is present.
+  const activeUser = initialTokenUser ?? user;
+
+  // Apply the cloud-issued token to the SDK client.
   useEffect(() => {
     if (initialToken && client) {
       client.setToken(initialToken);
@@ -116,7 +118,7 @@ export function DyrectedProvider({
   }, [authCollectionSlug, client, schemas]);
 
   useEffect(() => {
-    if (initialToken || !client || !schemas || user) return;
+    if (initialToken || !client || !schemas || activeUser) return;
     const token = localStorage.getItem("dyrected_token");
     const resolvedCollectionSlug = authCollectionSlug || getAdminCollectionSlug(schemas);
 
@@ -127,7 +129,7 @@ export function DyrectedProvider({
       (nextUser) => setUser(nextUser as AdminUser),
       () => setUser(null),
     );
-  }, [authCollectionSlug, client, initialToken, schemas, user]);
+  }, [activeUser, authCollectionSlug, client, initialToken, schemas]);
 
   const logout = useCallback(() => {
     localStorage.removeItem("dyrected_url");
@@ -152,11 +154,47 @@ export function DyrectedProvider({
       logout,
       isAuthenticated: !!baseUrl && !!apiKey,
       schemas,
-      user,
+      user: activeUser,
       initialToken,
       components
     }}>
       {children}
     </DyrectedContext.Provider>
   );
+}
+
+function decodeTokenPayload(token: string): AdminUser | null {
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const json = decodeURIComponent(
+      atob(padded)
+        .split("")
+        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+        .join(""),
+    );
+    const parsed = JSON.parse(json);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const user = parsed as AdminUser;
+    const roles = Array.isArray(user.roles)
+      ? user.roles.filter((role): role is string => typeof role === "string").map(normalizeCloudRole)
+      : [];
+    const role = typeof user.role === "string" ? normalizeCloudRole(user.role) : undefined;
+
+    return {
+      ...user,
+      ...(role ? { role } : {}),
+      roles: roles.length > 0 ? roles : role ? [role] : roles,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCloudRole(role: string) {
+  return role === "owner" ? "admin" : role;
 }

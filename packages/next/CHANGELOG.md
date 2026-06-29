@@ -1,5 +1,13 @@
 # @dyrected/next
 
+## 2.5.47
+
+### Patch Changes
+
+- @dyrected/react@2.5.47
+- @dyrected/core@2.5.47
+- @dyrected/sdk@2.5.47
+
 ## 2.5.46
 
 ### Patch Changes
