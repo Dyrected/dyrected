@@ -206,7 +206,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       collections: filteredCollections,
       globals: filteredGlobals,
       admin: config.admin || {},
-      adminAuth: getPublicAdminAuthConfig(config.adminAuth),
+      adminAuth: getPublicAdminAuthConfig(config.adminAuth, collections),
     });
   });
 

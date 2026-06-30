@@ -5,10 +5,9 @@ export type AdminUser = Record<string, unknown>;
 
 export function getAdminCollectionSlug(schemas: AdminSchemas | null): string | null {
   if (!schemas) return null;
-  const requested = schemas.adminAuth?.collectionSlug;
-  if (requested) return requested;
   return (
     findCollection(schemas.collections, (collection) => collection.slug === "__admins")?.slug ??
+    findCollection(schemas.collections, (collection) => collection.slug === schemas.adminAuth?.collectionSlug)?.slug ??
     findCollection(schemas.collections, (collection) => !!collection.auth)?.slug ??
     null
   );

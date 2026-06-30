@@ -53,7 +53,7 @@ describe("external admin auth", () => {
     expect(res.status).toBe(200);
     expect(data.adminAuth).toEqual({
       mode: "external",
-      collectionSlug: undefined,
+      collectionSlug: "__admins",
       provisioningMode: undefined,
       providers: [
         {
@@ -307,6 +307,155 @@ describe("external admin auth", () => {
     expect(allAdmins.total).toBe(1);
     expect(allAdmins.docs[0].email).toBe("owner@example.com");
     expect(allAdmins.docs[0].authProvider).toBe("cloud");
+  });
+
+  it("prefers __admins over a stale configured adminAuth collection slug", async () => {
+    const db = new InMemoryAdapter();
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [],
+        globals: [],
+        db,
+        onSchemaFetch: async (siteId) => ({
+          collections: [
+            defineCollection({
+              slug: "__admins",
+              auth: true,
+              siteId,
+              fields: [{ name: "name", type: "text", label: "Name" }],
+            }),
+            defineCollection({
+              slug: "accounts",
+              auth: true,
+              siteId,
+              fields: [{ name: "name", type: "text", label: "Name" }],
+            }),
+          ],
+          adminAuth: {
+            mode: "external",
+            collectionSlug: "accounts",
+            providers: [
+              {
+                id: "cloud",
+                type: "cloud",
+                displayName: "Dyrected Cloud",
+                secret: "provider-secret",
+              },
+            ],
+            resolveAccess: ({ siteId: resolvedSiteId }) => ({
+              allowed: resolvedSiteId === "site-a",
+              roles: ["admin"],
+            }),
+          },
+        }),
+      }),
+    );
+
+    const schemasRes = await app.request("/api/schemas", {
+      headers: {
+        "x-site-id": "site-a",
+      },
+    });
+    const schemasData = await schemasRes.json();
+
+    expect(schemasRes.status).toBe(200);
+    expect(schemasData.adminAuth).toMatchObject({
+      mode: "external",
+      collectionSlug: "__admins",
+    });
+
+    const providerToken = await signProviderToken({
+      sub: "acct_123",
+      email: "owner@example.com",
+      name: "Owner",
+    });
+
+    const loginRes = await app.request("/api/admin/auth/cloud/exchange", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-site-id": "site-a",
+      },
+      body: JSON.stringify({ token: providerToken }),
+    });
+
+    expect(loginRes.status).toBe(200);
+    const loginData = await loginRes.json();
+    expect(loginData.collectionSlug).toBe("__admins");
+
+    const allAdmins = await db.find({ collection: "__admins", limit: 10 });
+    expect(allAdmins.total).toBe(1);
+    expect(allAdmins.docs[0].email).toBe("owner@example.com");
+  });
+
+  it("passes a normalized hook request context to delegated provider member handlers", async () => {
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [
+          defineCollection({
+            slug: "__admins",
+            auth: true,
+            fields: [{ name: "name", type: "text", label: "Name" }],
+          }),
+        ],
+        globals: [],
+        db: new InMemoryAdapter(),
+        adminAuth: {
+          mode: "external",
+          collectionSlug: "__admins",
+          providers: [
+            {
+              id: "cloud",
+              type: "cloud",
+              displayName: "Dyrected Cloud",
+              secret: "provider-secret",
+              members: {
+                list: async ({ req, limit, page, sort, where }) => {
+                  expect(req.headers["x-site-id"]).toBe("site-a");
+                  expect(req.query.limit).toBe("2");
+                  expect(req.query.page).toBe("3");
+                  expect(req.query.sort).toBe("-email");
+                  expect(req.query.where).toBe(JSON.stringify({ email: { equals: "owner@example.com" } }));
+                  expect(req.raw?.headers.get("x-site-id")).toBe("site-a");
+                  expect(limit).toBe(2);
+                  expect(page).toBe(3);
+                  expect(sort).toBe("-email");
+                  expect(where).toEqual({ email: { equals: "owner@example.com" } });
+
+                  return {
+                    docs: [{ id: "acct_123", email: "owner@example.com", roles: ["admin"] }],
+                    totalDocs: 1,
+                    limit: limit ?? 10,
+                    page: page ?? 1,
+                    totalPages: 1,
+                    hasNextPage: false,
+                    hasPrevPage: false,
+                  };
+                },
+              },
+            },
+          ],
+        },
+      }),
+    );
+
+    const res = await app.request(
+      `/api/collections/__admins?limit=2&page=3&sort=-email&where=${encodeURIComponent(JSON.stringify({ email: { equals: "owner@example.com" } }))}`,
+      {
+        headers: {
+          "x-site-id": "site-a",
+        },
+      },
+    );
+
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.docs).toHaveLength(1);
+    expect(data.docs[0]).toMatchObject({
+      id: "acct_123",
+      email: "owner@example.com",
+      externalSubject: "acct_123",
+    });
   });
 
   it("rejects unknown external users when provisioning is preprovisioned-only", async () => {

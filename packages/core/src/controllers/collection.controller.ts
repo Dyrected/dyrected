@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import type { CollectionConfig } from '../types/index.js';
 import type { DyrectedContext } from '../app.js';
+import type { HookRequestContext } from '../types/request.js';
 import { PopulationService } from '../services/population.service.js';
 import { DefaultsService } from '../services/defaults.service.js';
 import { AuditService } from '../services/audit.service.js';
@@ -35,6 +36,14 @@ export class CollectionController {
     return config.adminAuth?.providers?.find((p: any) => p.members) || null;
   }
 
+  private toHookRequestContext(c: Context<DyrectedContext>): HookRequestContext {
+    return {
+      query: c.req.query(),
+      headers: c.req.header(),
+      raw: c.req.raw,
+    };
+  }
+
   async find(c: Context<DyrectedContext>) {
     const config = c.get('config');
     const db = config.db;
@@ -42,6 +51,7 @@ export class CollectionController {
 
     const provider = this.getDelegatedProvider(c);
     if (provider && provider.members?.list) {
+      const hookReq = this.toHookRequestContext(c);
       const limit = Number(c.req.query('limit')) || 10;
       const page = Number(c.req.query('page')) || 1;
       const sort = c.req.query('sort') || undefined;
@@ -53,7 +63,7 @@ export class CollectionController {
         } catch {}
       }
 
-      const paginatedResult = await provider.members.list({ limit, page, sort, where, req: c.req as any });
+      const paginatedResult = await provider.members.list({ limit, page, sort, where, req: hookReq });
       const mappedDocs = [];
       for (const m of paginatedResult.docs) {
         let localId = m.id;
@@ -185,6 +195,7 @@ export class CollectionController {
 
     const provider = this.getDelegatedProvider(c);
     if (provider && (provider.members?.get || provider.members?.list)) {
+      const hookReq = this.toHookRequestContext(c);
       const id = c.req.param('id');
       if (!id) return c.json({ message: 'Missing ID' }, 400);
 
@@ -193,9 +204,9 @@ export class CollectionController {
 
       let member: any = null;
       if (provider.members.get) {
-        member = await provider.members.get({ externalSubject, req: c.req as any });
+        member = await provider.members.get({ externalSubject, req: hookReq });
       } else if (provider.members.list) {
-        const listResult = await provider.members.list({ req: c.req as any });
+        const listResult = await provider.members.list({ req: hookReq });
         member = listResult.docs.find((m) => m.id === externalSubject) || null;
       }
 
@@ -253,12 +264,13 @@ export class CollectionController {
 
     const provider = this.getDelegatedProvider(c);
     if (provider && provider.members?.create) {
+      const hookReq = this.toHookRequestContext(c);
       const contentType = c.req.header('Content-Type') || '';
       if (contentType.toLowerCase().includes('multipart/form-data')) {
         return this.upload(c);
       }
       const body = await c.req.json();
-      const member = await provider.members.create({ data: body, req: c.req as any });
+      const member = await provider.members.create({ data: body, req: hookReq });
       return c.json({
         ...member,
         id: member.id,
@@ -432,6 +444,7 @@ export class CollectionController {
 
     const provider = this.getDelegatedProvider(c);
     if (provider && provider.members?.update) {
+      const hookReq = this.toHookRequestContext(c);
       const id = c.req.param('id');
       if (!id) return c.json({ message: 'Missing ID' }, 400);
       const body = await c.req.json();
@@ -439,7 +452,7 @@ export class CollectionController {
       const localDoc = await db.findOne({ collection: this.collection.slug, id });
       const externalSubject = localDoc?.externalSubject || id;
 
-      const member = await provider.members.update({ externalSubject, data: body, req: c.req as any });
+      const member = await provider.members.update({ externalSubject, data: body, req: hookReq });
       return c.json({
         ...member,
         id: localDoc ? localDoc.id : member.id,
@@ -678,13 +691,14 @@ export class CollectionController {
 
     const provider = this.getDelegatedProvider(c);
     if (provider && provider.members?.delete) {
+      const hookReq = this.toHookRequestContext(c);
       const id = c.req.param('id');
       if (!id) return c.json({ message: 'Missing ID' }, 400);
 
       const localDoc = await db.findOne({ collection: this.collection.slug, id });
       const externalSubject = localDoc?.externalSubject || id;
 
-      await provider.members.delete({ externalSubject, req: c.req as any });
+      await provider.members.delete({ externalSubject, req: hookReq });
       return c.json({ message: 'Deleted' });
     }
 

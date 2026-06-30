@@ -600,12 +600,10 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
       }
     }
 
-    // Remove Content-Type so the browser/fetch sets the multipart boundary automatically
-    const { "Content-Type": _, ...headers } = this.headers;
-
+    // Pass undefined to trigger mergeHeaders' delete path, so fetch sets the multipart boundary
     return this.request(`/api/collections/${collection}`, {
       method: "POST",
-      headers,
+      headers: { "Content-Type": undefined } as HeadersInit,
       body: formData,
     });
   }

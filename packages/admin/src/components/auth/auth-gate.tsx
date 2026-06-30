@@ -191,11 +191,9 @@ function resolveAdminAuthCollection(
   collectionSlug?: string,
 ) {
   if (!collections) return undefined;
-  if (collectionSlug) {
-    return collections.find((collection) => collection.slug === collectionSlug);
-  }
   return (
     collections.find((collection) => collection.slug === "__admins") ??
+    collections.find((collection) => collection.slug === collectionSlug) ??
     collections.find((collection) => collection.auth)
   );
 }

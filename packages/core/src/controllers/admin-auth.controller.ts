@@ -30,8 +30,9 @@ interface AdminAuthStatePayload extends JWTPayload {
 export class AdminAuthController {
   constructor(private readonly config: DyrectedConfig) {}
 
-  providers(c: Context<DyrectedContext>) {
-    return c.json(getPublicAdminAuthConfig(this.config.adminAuth));
+  async providers(c: Context<DyrectedContext>) {
+    const requestConfig = await this.getRequestConfig(c);
+    return c.json(getPublicAdminAuthConfig(requestConfig.adminAuth, requestConfig.collections));
   }
 
   async start(c: Context<DyrectedContext>) {
