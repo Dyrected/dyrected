@@ -22,6 +22,7 @@ import {
   Settings2,
   GripVertical,
   FileUp,
+  ArrowLeft,
 } from "lucide-react"
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
@@ -30,7 +31,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from "@dnd-kit/utilities"
 
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
-import { CsvImporterDialog } from "../../components/ui/csv-importer-dialog"
+import { CsvImporter } from "../../components/ui/csv-importer"
 
 function SortableColumnItem({
   id,
@@ -154,13 +155,13 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     columns: ColumnPreference[]
   }
 
-  const allAvailableColumns = React.useMemo(() => {
+  const allAvailableColumns = React.useMemo((): string[] => {
     if (!schema) return []
     const allDisplayFields = schema.fields.filter((f: Field) =>
-      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+      f.name && f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
     )
     return [
-      ...allDisplayFields.map((field: Field) => field.name),
+      ...allDisplayFields.map((field: Field) => field.name!),
       "id",
       "createdAt",
       "updatedAt",
@@ -170,14 +171,14 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const defaultListColumns = React.useMemo((): string[] => {
     if (!schema) return []
     const allDisplayFields = schema.fields.filter((f: Field) =>
-      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+      f.name && f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
     )
     const configuredColumns = Array.isArray(schema.admin?.defaultColumns)
       ? schema.admin.defaultColumns
       : []
     return configuredColumns.length > 0
       ? configuredColumns
-      : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
+      : allDisplayFields.slice(0, 3).map((field: Field) => field.name!)
   }, [schema])
 
   const defaultListPreference = React.useMemo((): ListLayoutPreference => {
@@ -410,7 +411,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       )
       const csvColumns = [
         { key: "id", label: "ID" },
-        ...displayFields.map((f: Field) => ({ key: f.name, label: (f as {label?: string}).label || f.name })),
+        ...displayFields.filter((f: Field) => !!f.name).map((f: Field) => ({ key: f.name!, label: (f as {label?: string}).label || f.name! })),
         { key: "updatedAt", label: "Last Updated" },
       ]
 
@@ -501,13 +502,13 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     if (!schema) return []
 
     const allDisplayFields = schema.fields.filter((f: Field) =>
-      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+      f.name && f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
     )
-    const fieldByName = new Map<string, Field>(allDisplayFields.map((field: Field) => [field.name, field]))
+    const fieldByName = new Map<string, Field>(allDisplayFields.map((field: Field) => [field.name!, field]))
     const configuredColumns = localPreference.columns.filter(col => col.visible).map(col => col.name)
     const visibleColumnNames = configuredColumns.length > 0
       ? configuredColumns
-      : allDisplayFields.slice(0, 3).map((field: Field) => field.name)
+      : allDisplayFields.slice(0, 3).map((field: Field) => field.name!)
     const allColumnNames = visibleColumnNames
     const firstVisibleFieldName = visibleColumnNames.find((name) => fieldByName.has(name))
     const titleFieldName = visibleColumnNames.includes(schema.admin?.useAsTitle || "")
@@ -562,12 +563,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
 
     const makeFieldColumn = (field: Field): ColumnDef<Record<string, unknown>> => ({
-      accessorKey: field.name,
-      header: field.label || field.name,
+      accessorKey: field.name!,
+      header: field.label || field.name!,
       cell: ({ row }) => {
         const cell = (
           <RenderCell
-            value={row.getValue(field.name)}
+            value={row.getValue(field.name!)}
             field={field}
             client={client}
             schemas={schemas}
@@ -785,6 +786,35 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     )
   }
 
+  if (isImportOpen && schema) {
+    const collectionTitle = schema.labels?.plural || schema.slug
+    return (
+      <div className="dy-space-y-6 dy-animate-in lg:dy-space-y-8">
+        <div className="dy-flex dy-items-center dy-gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="dy-h-8 dy-px-2 dy-gap-1.5 dy-text-xs dy-text-muted-foreground hover:dy-text-foreground"
+            onClick={() => setIsImportOpen(false)}
+          >
+            <ArrowLeft className="dy-h-3.5 dy-w-3.5" />
+            Back to {collectionTitle}
+          </Button>
+        </div>
+        <PageHeader
+          title={`Import CSV — ${collectionTitle}`}
+          description={`Upload a CSV file to bulk-import records into the ${collectionTitle} collection.`}
+          icon={FileUp}
+        />
+        <CsvImporter
+          slug={slug}
+          schema={schema}
+          onClose={() => setIsImportOpen(false)}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="dy-space-y-6 dy-animate-in lg:dy-space-y-8">
       <AdminComponentSlot
@@ -850,7 +880,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
                           else if (col.name === "updatedAt") label = "Last Updated"
                           else {
                             const field = schema.fields.find((f: Field) => f.name === col.name)
-                            if (field) label = field.label || field.name
+                            if (field) label = field.label || field.name!
                           }
                           return (
                             <SortableColumnItem
@@ -1044,12 +1074,6 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         />
       </div>
 
-      <CsvImporterDialog
-        open={isImportOpen}
-        onOpenChange={setIsImportOpen}
-        slug={slug}
-        schema={schema}
-      />
     </div>
   )
 }
