@@ -12,8 +12,8 @@ import sharedContent from "./src/lib/shared-content.json";
 import siteContent from "./src/lib/site-content.json";
 
 const publicRead = "true";
-const staffWrite = "user.roles != null && ('admin' in user.roles || 'editor' in user.roles)";
-const adminOnly = "user.roles != null && 'admin' in user.roles";
+const staffWrite = "user.roles != null && ('owner' in user.roles || 'admin' in user.roles || 'editor' in user.roles)";
+const adminOnly = "user.roles != null && ('owner' in user.roles || 'admin' in user.roles)";
 
 const linkFields = [
   { name: "label", label: "Label", type: "text", required: true },
@@ -411,7 +411,7 @@ const Admins = defineCollection({
       name: "roles",
       label: "Roles",
       type: "multiSelect",
-      options: ["admin", "editor"],
+      options: ["owner", "admin", "editor"],
       required: true,
     },
   ],
@@ -509,7 +509,8 @@ const SiteSettings = defineGlobal({
   initialData: siteContent,
   access: {
     read: () => true,
-    update: ({ user }) => Boolean(user?.roles?.some((role) => role === "admin" || role === "editor")),
+    update: ({ user }) =>
+      Boolean(user?.roles?.some((role) => role === "admin" || role === "editor" || role === "owner")),
   },
 });
 
@@ -733,7 +734,8 @@ const AssessmentCategories = defineGlobal({
   },
   access: {
     read: () => true,
-    update: ({ user }) => Boolean(user?.roles?.some((role) => role === "admin" || role === "editor")),
+    update: ({ user }) =>
+      Boolean(user?.roles?.some((role) => role === "admin" || role === "editor" || role === "owner")),
   },
 });
 
