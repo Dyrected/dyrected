@@ -24,6 +24,7 @@ import {
   SelectValue
 } from "./select"
 import { ScrollArea } from "./scroll-area"
+import { cn } from "../../lib/utils"
 
 interface CsvImporterProps {
   slug: string
@@ -506,9 +507,9 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
             )}
           </div>
 
-          <div className="dy-h-[300px] dy-overflow-auto dy-border dy-border-border dy-rounded-xl">
-            <table className="dy-w-full dy-min-w-max dy-text-left dy-border-collapse">
-              <thead>
+          <div className="dy-overflow-x-auto dy-overflow-y-auto dy-max-h-[60vh] dy-border dy-border-border dy-rounded-xl">
+            <table className="dy-min-w-max dy-w-full dy-text-left dy-border-collapse">
+              <thead className="dy-sticky dy-top-0 dy-z-10">
                 <tr className="dy-border-b dy-border-border dy-bg-muted/40 dy-text-xs dy-font-semibold dy-text-muted-foreground">
                   <th className="dy-p-3 dy-w-16">Row</th>
                   {importableFields
@@ -579,7 +580,7 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
               Back
             </Button>
             <Button
-              onClick={startImport}
+              onClick={() => startImport()}
               variant="default"
               className="dy-gap-2"
               disabled={totalErrors === validatedData.length || (totalErrors > 0 && !confirmedSkip)}

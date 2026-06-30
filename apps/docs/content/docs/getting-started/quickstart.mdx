@@ -16,68 +16,38 @@ Before you start, ensure you have:
 
 **SPA** stands for Single-Page Application — a client-side app that runs entirely in the browser, such as a React (Vite), Vue, or Svelte project. There is no Node.js server handling CMS requests; your app fetches content directly from the Dyrected Cloud API using a site API key.
 
-**1. Create a Cloud site**
+Dyrected Cloud is designed for websites built with AI tools such as Lovable, Bolt, v0, Cursor, Replit, or Windsurf. Instead of writing integration code yourself, you copy a setup prompt from Dyrected and paste it into your AI builder. The AI handles the entire integration in stages.
 
-Sign in to Dyrected Cloud, create a site, and keep the site settings open. You will need:
+**Before you start**
 
-- Site ID
-- Site API key
-- Base URL
+- Open the project in the AI builder that owns the website code.
+- [Create a Dyrected site](https://app.dyrected.com) and keep the site settings open. You will need the Site ID, Site API key, and Base URL — the prompt tells the AI when to ask for them.
 
-**2. Model the content**
+**1. Copy the setup prompt**
 
-Create the collections, globals, and fields your app needs in the Cloud dashboard. Use collections for repeatable content such as posts, products, events, testimonials, FAQs, or services. Use globals for one shared version of content such as navigation, footer settings, company details, or default SEO.
+Open your Dyrected site and go to **Setup**. Copy the setup prompt — your credentials are pre-filled when you copy from inside the admin panel. Or copy the base prompt here:
 
-**3. Add starter content**
+<CopyPromptButton />
 
-Add at least one real entry for each collection or global before connecting your frontend. This gives your app a predictable response shape while you build the UI.
+**2. Paste the prompt into your AI builder**
 
-**4. Install the SDK**
+Paste the prompt into the same AI builder that can read and edit the website code. The AI will respond with a plain-language checklist of everything on the website a client could reasonably want to change.
 
-```bash
-pnpm add @dyrected/sdk
-```
+**3. Approve the checklist**
 
-Use the matching command for your package manager if you do not use pnpm.
+Read the checklist top to bottom. If something is missing or unnecessary, say what to add, remove, or change. Say **"approved"** when it looks right.
 
-**5. Store Cloud connection values**
+**4. Give the AI your Dyrected details**
 
-Add the public Cloud values your frontend needs to `.env.local`:
+The prompt makes the AI wait until the install stage before asking for credentials. When it asks, provide your Site ID, Site API key, and Base URL.
 
-```bash
-VITE_DYRECTED_SITE_ID="site_..."
-VITE_DYRECTED_API_KEY="..."
-VITE_DYRECTED_BASE_URL="https://..."
-```
+**5. Test one real edit**
 
-Use your framework's public environment variable prefix. For example, Vite uses `VITE_`, Next.js uses `NEXT_PUBLIC_`, and SvelteKit uses `PUBLIC_`.
+Open Dyrected and change a piece of content you can easily recognize — a heading, an image, or a list item. Confirm the change appears on the website and the design still looks right.
 
-**6. Fetch content from Cloud**
+**6. Invite the client**
 
-Create one small client module for Dyrected reads and call it from your pages or components:
-
-```ts
-import { createClient } from "@dyrected/sdk";
-
-export const dyrected = createClient({
-  siteId: import.meta.env.VITE_DYRECTED_SITE_ID,
-  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
-  baseUrl: import.meta.env.VITE_DYRECTED_BASE_URL,
-});
-
-export async function getPosts() {
-  const result = await dyrected.collection("posts").find({ depth: 0 });
-  return result.docs;
-}
-```
-
-**7. Render with a fallback**
-
-Keep a small fallback state while wiring the first page so your app can render useful UI during setup or if Cloud content is temporarily empty.
-
-**8. Go live**
-
-Deploy through your existing host. Confirm the production environment variables match the Cloud site, then edit one piece of content in Dyrected Cloud and verify the deployed app updates.
+Invite the client only after one Dyrected edit appears on the live website.
 
 </Tab>
 <Tab value="Next.js">

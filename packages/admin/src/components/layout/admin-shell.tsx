@@ -192,7 +192,7 @@ function ThemeSelector({
           {options.map((option) => {
             const OptionIcon = option.icon
             return (
-              <DropdownMenuRadioItem key={option.value} value={option.value} className="dy-cursor-pointer">
+              <DropdownMenuRadioItem key={option.value} value={option.value} className="dy-cursor-pointer dy-space-x-2">
                 <OptionIcon className="dy-h-4 dy-w-4" />
                 {option.label}
               </DropdownMenuRadioItem>
@@ -658,7 +658,7 @@ export function AdminShell({
               <ThemeSelector mobile />
               {user && (
                 <div className="dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-                  {(user.name || user.email || "?")[0].toUpperCase()}
+                  {((user.name || user.email || "?") as string).charAt(0).toUpperCase()}
                 </div>
               )}
             </div>

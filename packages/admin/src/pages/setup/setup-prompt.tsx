@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  ArrowUpRight,
-  BookOpen,
-  Check,
-  Code2,
-  Copy,
-  Sparkles,
-} from "lucide-react";
+import { ArrowUpRight, Check, Copy } from "lucide-react";
 import { GENERATE_CMS_PROMPT } from "@dyrected/knowledge";
-import { Button } from "../../components/ui/button";
 
 export interface SetupPromptConfig {
   siteName?: string;
@@ -28,22 +20,17 @@ const GUIDE_URL = "https://www.dyrected.com/guide";
 const DOCS_URL = "https://docs.dyrected.com";
 
 const steps = [
-  {
-    title: "Paste the prompt into your AI builder",
-    body: "Use the same AI builder that owns the website code — Lovable, Bolt, v0, Cursor, Replit, Windsurf, or any other.",
-  },
-  {
-    title: "Review and approve the content list",
-    body: "The AI sends back a plain list of everything on your site a client could edit. Correct anything missing or wrong, then say \"approved\".",
-  },
-  {
-    title: "Give your Dyrected details when asked",
-    body: "The prompt tells the AI to wait until the install stage before asking. Have your Site ID, API key, and Base URL ready.",
-  },
-  {
-    title: "Test one edit, then invite the client",
-    body: "Change a piece of content in Dyrected and confirm it appears on the website. If it looks right, the site is ready for the client.",
-  },
+  "Paste the prompt into your AI builder — the same one that owns the website code.",
+  "Review the content list the AI sends back. Correct anything missing or wrong, then say \"approved\".",
+  "Your Dyrected credentials are already in the prompt. Give them to the AI when it asks at Stage 4.",
+  "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
+];
+
+const stepsNoCredentials = [
+  "Paste the prompt into your AI builder — the same one that owns the website code.",
+  "Review the content list the AI sends back. Correct anything missing or wrong, then say \"approved\".",
+  "When the AI reaches Stage 4, it will ask for your Site ID, Site API key, and Base URL.",
+  "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
 ];
 
 function normalizeTechStack(techStack?: string): string | undefined {
@@ -65,151 +52,128 @@ export function buildGuideUrl(config: SetupPromptConfig): string {
   return url.toString();
 }
 
+function buildPrompt(config: SetupPromptConfig): string {
+  const { siteId, apiKey, baseUrl } = config;
+  const hasCredentials = siteId && apiKey && baseUrl;
+
+  if (!hasCredentials) return GENERATE_CMS_PROMPT;
+
+  const placeholder = `Ask me for the following in one message:
+
+- Site ID
+- Site API key
+- Base URL
+
+Wait for my reply.`;
+
+  const replacement = `Use the following credentials:
+
+- Site ID: ${siteId}
+- Site API key: ${apiKey}
+- Base URL: ${baseUrl}`;
+
+  return GENERATE_CMS_PROMPT.replace(placeholder, replacement);
+}
+
 export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState(false);
   const guideUrl = buildGuideUrl(config);
-  const stack = normalizeTechStack(config.defaultTechStack);
+  const hasCredentials = !!(config.siteId && config.apiKey && config.baseUrl);
+  const guideSteps = hasCredentials ? steps : stepsNoCredentials;
+  const promptText = buildPrompt(config);
 
   async function copyPrompt() {
-    await navigator.clipboard.writeText(GENERATE_CMS_PROMPT);
+    await navigator.clipboard.writeText(promptText);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1800);
   }
 
   return (
-    <div className="dy-mx-auto dy-max-w-5xl dy-py-6 lg:dy-py-10">
-      {/* Prompt copy card */}
-      <section className="dy-relative dy-overflow-hidden dy-rounded-[28px] dy-border dy-border-border dy-bg-card dy-text-card-foreground dy-shadow-2xl">
-        <div className="dy-absolute dy-inset-y-0 dy-right-0 dy-w-1/3 dy-bg-primary" aria-hidden="true" />
-        <div
-          className="dy-absolute dy-inset-y-0 dy-right-[12%] dy-w-40 dy-skew-x-[-12deg] dy-bg-card"
-          aria-hidden="true"
-        />
-
-        <div className="dy-relative dy-grid dy-min-h-[340px] dy-gap-10 dy-p-7 sm:dy-p-10 lg:dy-grid-cols-[1.35fr_0.65fr] lg:dy-p-12">
-          <div className="dy-flex dy-flex-col dy-justify-between dy-gap-12">
-            <div className="dy-space-y-6">
-              <div className="dy-inline-flex dy-items-center dy-gap-2 dy-rounded-full dy-border dy-border-border dy-bg-muted/60 dy-px-3 dy-py-1.5 dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-[0.14em] dy-text-muted-foreground">
-                <Sparkles className="dy-h-3.5 dy-w-3.5 dy-text-primary" />
-                Dyrected setup
-              </div>
-
-              <div className="dy-max-w-2xl dy-space-y-4">
-                <h1 className="dy-font-serif dy-text-4xl dy-font-bold dy-leading-[0.98] dy-tracking-tight sm:dy-text-5xl lg:dy-text-6xl">
-                  Copy the prompt. Paste. Done.
-                </h1>
-                <p className="dy-max-w-xl dy-text-base dy-leading-7 dy-text-muted-foreground sm:dy-text-lg">
-                  Copy the setup prompt below and paste it into the AI builder that owns your website code. It handles the rest.
-                </p>
-              </div>
-            </div>
-
-            <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row sm:dy-items-center">
-              <Button
-                size="lg"
-                className="dy-h-12 dy-bg-primary dy-px-6 dy-text-primary-foreground hover:dy-bg-primary/90"
-                onClick={copyPrompt}
-              >
-                {copied ? (
-                  <Check className="dy-h-4 dy-w-4" />
-                ) : (
-                  <Copy className="dy-h-4 dy-w-4" />
-                )}
-                {copied ? "Copied!" : "Copy setup prompt"}
-              </Button>
-              <Button asChild size="lg" variant="ghost" className="dy-h-12 dy-text-card-foreground hover:dy-bg-muted hover:dy-text-card-foreground">
-                <a href={guideUrl} target="_blank" rel="noopener noreferrer">
-                  Full guide
-                  <ArrowUpRight className="dy-h-4 dy-w-4" />
-                </a>
-              </Button>
-            </div>
-          </div>
-
-          <div className="dy-relative dy-flex dy-items-end lg:dy-justify-end">
-            <div className="dy-w-full dy-max-w-sm dy-rounded-2xl dy-border dy-border-border dy-bg-background/90 dy-p-5 dy-text-foreground dy-shadow-lg dy-backdrop-blur-sm">
-              <div className="dy-mb-5 dy-flex dy-items-center dy-justify-between">
-                <span className="dy-text-xs dy-font-bold dy-uppercase dy-tracking-[0.12em] dy-text-muted-foreground">
-                  Context included
-                </span>
-                <Code2 className="dy-h-4 dy-w-4 dy-text-primary" />
-              </div>
-              <dl className="dy-space-y-4 dy-text-sm">
-                <div className="dy-flex dy-items-center dy-justify-between dy-gap-4">
-                  <dt className="dy-text-muted-foreground">Tech stack</dt>
-                  <dd className="dy-font-mono dy-font-semibold dy-text-foreground">{stack ?? "Choose in guide"}</dd>
-                </div>
-                <div className="dy-flex dy-items-center dy-justify-between dy-gap-4">
-                  <dt className="dy-text-muted-foreground">Site</dt>
-                  <dd className="dy-max-w-[180px] dy-truncate dy-font-mono dy-font-semibold dy-text-foreground">
-                    {config.siteId || "Not provided"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Short guide */}
-      <div className="dy-px-1 dy-pt-8">
-        <h2 className="dy-mb-5 dy-text-sm dy-font-bold dy-uppercase dy-tracking-[0.12em] dy-text-muted-foreground">
-          What to do next
-        </h2>
-        <ol className="dy-grid dy-gap-4 md:dy-grid-cols-2">
-          {steps.map((step, index) => (
-            <li
-              key={step.title}
-              className="dy-flex dy-items-start dy-gap-4 dy-rounded-xl dy-border dy-bg-card dy-p-5"
-            >
-              <span className="dy-flex dy-h-7 dy-w-7 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/15 dy-text-xs dy-font-bold dy-tabular-nums dy-text-foreground">
-                {index + 1}
-              </span>
-              <div className="dy-min-w-0">
-                <h3 className="dy-font-semibold dy-text-card-foreground">{step.title}</h3>
-                <p className="dy-mt-1 dy-text-sm dy-leading-6 dy-text-muted-foreground">{step.body}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
+    <div className="dy-mx-auto dy-max-w-3xl dy-space-y-10 dy-px-4 dy-py-8">
+      {/* Header */}
+      <div className="dy-space-y-2">
+        <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight dy-text-foreground">
+          Set up Dyrected
+        </h1>
+        <p className="dy-text-sm dy-leading-6 dy-text-muted-foreground">
+          Copy the prompt below and paste it into your AI builder. It handles the setup in stages.
+        </p>
       </div>
 
-      {/* Footer links */}
-      <div className="dy-grid dy-gap-4 dy-px-1 dy-pt-4 md:dy-grid-cols-2">
+      {/* Steps */}
+      <ol className="dy-space-y-3">
+        {guideSteps.map((step, index) => (
+          <li key={index} className="dy-flex dy-gap-3 dy-text-sm">
+            <span className="dy-flex dy-h-6 dy-w-6 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-full dy-bg-muted dy-text-xs dy-font-semibold dy-tabular-nums dy-text-foreground">
+              {index + 1}
+            </span>
+            <span className="dy-leading-6 dy-text-muted-foreground">{step}</span>
+          </li>
+        ))}
+      </ol>
+
+      {/* Prompt card */}
+      <div className="dy-overflow-hidden dy-rounded-xl dy-border dy-border-border dy-bg-card">
+        {/* Bar */}
+        <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border dy-px-4 dy-py-3">
+          <div>
+            <p className="dy-text-xs dy-font-semibold dy-uppercase dy-tracking-[0.12em] dy-text-muted-foreground">
+              Dyrected setup prompt
+            </p>
+            {hasCredentials && (
+              <p className="dy-mt-0.5 dy-text-xs dy-text-muted-foreground">
+                Credentials pre-filled for {config.siteName || config.siteId}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={copyPrompt}
+            className="dy-inline-flex dy-items-center dy-gap-1.5 dy-rounded-lg dy-border dy-border-border dy-bg-background dy-px-3 dy-py-1.5 dy-text-xs dy-font-semibold dy-text-foreground dy-transition-colors hover:dy-bg-muted"
+          >
+            {copied ? (
+              <Check className="dy-h-3.5 dy-w-3.5 dy-text-primary" />
+            ) : (
+              <Copy className="dy-h-3.5 dy-w-3.5" />
+            )}
+            {copied ? "Copied" : "Copy prompt"}
+          </button>
+        </div>
+
+        {/* Prompt text */}
+        <pre className="dy-max-h-64 dy-overflow-y-auto dy-p-4 dy-text-[11px] dy-leading-5 dy-text-muted-foreground">
+          <code>{promptText}</code>
+        </pre>
+
+        {/* Footer note */}
+        <div className="dy-border-t dy-border-border dy-px-4 dy-py-3">
+          <p className="dy-text-xs dy-text-muted-foreground">
+            Paste this into the AI builder or code agent that can edit the website code.
+            {!hasCredentials && " The prompt will ask for your Dyrected details at the right stage."}
+          </p>
+        </div>
+      </div>
+
+      {/* Links */}
+      <div className="dy-flex dy-flex-col dy-gap-2 sm:dy-flex-row">
         <a
           href={guideUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="dy-group dy-flex dy-items-start dy-gap-4 dy-rounded-xl dy-border dy-bg-card dy-p-5 dy-transition-colors hover:dy-border-primary/60 hover:dy-bg-primary/[0.04] focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring"
+          className="dy-inline-flex dy-items-center dy-gap-1.5 dy-text-sm dy-text-muted-foreground dy-underline-offset-4 hover:dy-text-foreground hover:dy-underline"
         >
-          <div className="dy-rounded-lg dy-bg-primary/15 dy-p-2.5 dy-text-foreground">
-            <Sparkles className="dy-h-5 dy-w-5" />
-          </div>
-          <div className="dy-min-w-0 dy-flex-1">
-            <h2 className="dy-font-semibold dy-text-card-foreground">Need more detail?</h2>
-            <p className="dy-mt-1 dy-text-sm dy-leading-6 dy-text-muted-foreground">
-              The full guide walks through each decision with examples for AI-built websites.
-            </p>
-          </div>
-          <ArrowUpRight className="dy-h-4 dy-w-4 dy-text-muted-foreground dy-transition-transform group-hover:dy-translate-x-0.5 group-hover:dy--translate-y-0.5" />
+          Full guide
+          <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
         </a>
-
+        <span className="dy-hidden dy-text-muted-foreground sm:dy-inline" aria-hidden="true">·</span>
         <a
           href={DOCS_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="dy-group dy-flex dy-items-start dy-gap-4 dy-rounded-xl dy-border dy-bg-card dy-p-5 dy-transition-colors hover:dy-border-foreground/30 hover:dy-bg-muted/40 focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring"
+          className="dy-inline-flex dy-items-center dy-gap-1.5 dy-text-sm dy-text-muted-foreground dy-underline-offset-4 hover:dy-text-foreground hover:dy-underline"
         >
-          <div className="dy-rounded-lg dy-bg-muted dy-p-2.5 dy-text-foreground">
-            <BookOpen className="dy-h-5 dy-w-5" />
-          </div>
-          <div className="dy-min-w-0 dy-flex-1">
-            <h2 className="dy-font-semibold dy-text-card-foreground">Developer docs</h2>
-            <p className="dy-mt-1 dy-text-sm dy-leading-6 dy-text-muted-foreground">
-              SDK APIs, framework integrations, configuration, and production reference.
-            </p>
-          </div>
-          <ArrowUpRight className="dy-h-4 dy-w-4 dy-text-muted-foreground dy-transition-transform group-hover:dy-translate-x-0.5 group-hover:dy--translate-y-0.5" />
+          Developer docs
+          <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
         </a>
       </div>
     </div>

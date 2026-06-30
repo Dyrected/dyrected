@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { readFile } from 'node:fs/promises'
 import { notFound } from 'next/navigation'
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page'
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
 import { CopyPageButton } from '@/components/copy-page-button'
+import { CopyPromptButton } from '@/components/copy-prompt-button'
 import { source } from '@/app/source'
 
 interface Props {
@@ -16,10 +18,13 @@ export default async function Page({ params }: Props) {
   if (!page) notFound()
 
   const MDX = page.data.body
+  const rawContent = page.absolutePath
+    ? await readFile(page.absolutePath, 'utf-8').catch(() => '')
+    : ''
 
   return (
-    <DocsPage 
-      toc={page.data.toc} 
+    <DocsPage
+      toc={page.data.toc}
       full={page.data.full}
       lastUpdate={(page.data as any).lastModified}
     >
@@ -28,10 +33,10 @@ export default async function Page({ params }: Props) {
           <DocsTitle>{page.data.title}</DocsTitle>
           <DocsDescription>{page.data.description}</DocsDescription>
         </div>
-        <CopyPageButton content={(page as any)._exports?.raw ?? ''} />
+        <CopyPageButton content={rawContent} />
       </div>
       <DocsBody>
-        <MDX components={{ ...defaultMdxComponents, Tab, Tabs }} />
+        <MDX components={{ ...defaultMdxComponents, Tab, Tabs, CopyPromptButton }} />
       </DocsBody>
     </DocsPage>
   )

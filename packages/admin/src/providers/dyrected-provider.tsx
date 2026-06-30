@@ -132,18 +132,12 @@ export function DyrectedProvider({
   }, [activeUser, authCollectionSlug, client, initialToken, schemas]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("dyrected_url");
-    localStorage.removeItem("dyrected_key");
-    localStorage.removeItem("dyrected_site_id");
     localStorage.removeItem("dyrected_token");
     localStorage.removeItem("dyrected_admin_auth_collection");
-    setBaseUrl("");
-    setApiKey(undefined);
-    setSiteId(undefined);
+    if (client) client.clearToken();
     setAuthCollectionSlug(null);
     setUser(null);
-    setSchemas(null);
-  }, []);
+  }, [client]);
 
   return (
     <DyrectedContext.Provider value={{

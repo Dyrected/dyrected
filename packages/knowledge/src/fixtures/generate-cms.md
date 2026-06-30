@@ -66,6 +66,9 @@ Do not let editors create arbitrary styles, variants, components, or unsupported
 
 Before using any Dyrected feature, read the relevant Dyrected documentation.
 
+Full documentation index (fetch this first to navigate all available pages):
+https://docs.dyrected.com/llms.txt
+
 Main documentation:
 https://docs.dyrected.com
 
@@ -1658,6 +1661,9 @@ Wait for my reply.
 Then proceed.
 
 Before writing integration code, read the relevant Dyrected documentation:
+
+Full documentation index (fetch this first to navigate all available pages):
+https://docs.dyrected.com/llms.txt
 
 Main documentation:
 https://docs.dyrected.com
