@@ -53,12 +53,16 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
   const [parsedRows, setParsedRows] = React.useState<Record<string, string>[]>([])
   const [mapping, setMapping] = React.useState<Mapping>({})
   const [validatedData, setValidatedData] = React.useState<ValidationResult[]>([])
+  const [isDragging, setIsDragging] = React.useState(false)
+  const [fileError, setFileError] = React.useState<string | null>(null)
+  const [confirmedSkip, setConfirmedSkip] = React.useState(false)
 
   // Progress state
   const [totalRows, setTotalRows] = React.useState(0)
   const [processedCount, setProcessedCount] = React.useState(0)
   const [successCount, setSuccessCount] = React.useState(0)
   const [failedRows, setFailedRows] = React.useState<{ row: number; data: unknown; error: string }[]>([])
+  const [retryableRows, setRetryableRows] = React.useState<ValidationResult[]>([])
 
   const importableFields = React.useMemo(() => {
     return schema.fields.filter(
@@ -77,35 +81,71 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
   }, [importableFields])
 
   // Step 1: Handle File Selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    if (!selectedFile) return
+  const processFile = (file: File) => {
+    setFileError(null)
+    const isCSV = file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv")
+    if (!isCSV) {
+      setFileError(`Unsupported file type: "${file.name}". Please upload a CSV file.`)
+      return
+    }
 
-    Papa.parse(selectedFile, {
+    Papa.parse(file, {
       header: true,
       skipEmptyLines: "greedy",
       complete: (results) => {
         const headers = results.meta.fields || []
-        setCsvHeaders(headers)
-        setParsedRows(results.data as Record<string, string>[])
+        const rows = results.data as Record<string, string>[]
 
-        // Auto-match headers to schema fields
+        if (rows.length === 0) {
+          setFileError("This CSV file has no importable rows. Please upload a file with at least one data row.")
+          return
+        }
+
+        setCsvHeaders(headers)
+        setParsedRows(rows)
+
         const initialMapping: Mapping = {}
         headers.forEach((header) => {
           const match = importableFields.find(
             (f) =>
-              f.name.toLowerCase() === header.toLowerCase() ||
+              f.name?.toLowerCase() === header.toLowerCase() ||
               (f as { label?: string }).label?.toLowerCase() === header.toLowerCase()
           )
-          initialMapping[header] = match ? match.name : "__ignore__"
+          initialMapping[header] = match?.name ?? "__ignore__"
         })
         setMapping(initialMapping)
         setStep("map")
       },
       error: (error) => {
-        console.error("PapaParse error:", error)
+        setFileError(`Failed to parse CSV: ${error.message}`)
       }
     })
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile) processFile(selectedFile)
+    e.target.value = ""
+  }
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) processFile(file)
   }
 
   // Step 2: Mapping Configuration
@@ -229,23 +269,26 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
     })
 
     setValidatedData(results)
+    setConfirmedSkip(false)
     setStep("preview")
   }
 
   // Step 3: Trigger batch/sequential import
-  const startImport = async () => {
+  const startImport = async (rows = validatedData) => {
     setStep("importing")
-    setTotalRows(validatedData.length)
+    setTotalRows(rows.length)
     setProcessedCount(0)
     setSuccessCount(0)
     setFailedRows([])
+    setRetryableRows([])
 
     let success = 0
     const failures: typeof failedRows = []
+    const apiFailures: ValidationResult[] = []
 
     // Sequential loop through rows
-    for (let i = 0; i < validatedData.length; i++) {
-      const rowResult = validatedData[i]
+    for (let i = 0; i < rows.length; i++) {
+      const rowResult = rows[i]
       setProcessedCount(i + 1)
 
       if (!rowResult.isValid) {
@@ -279,17 +322,21 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
         success++
         setSuccessCount(success)
       } catch (error: unknown) {
-        failures.push({
-          row: rowResult.rowNumber,
-          data: rowResult.data,
-          error: (error as Error).message || "Failed to create entry"
-        })
+        const message = (error as Error).message || "Failed to create entry"
+        failures.push({ row: rowResult.rowNumber, data: rowResult.data, error: message })
         setFailedRows([...failures])
+        apiFailures.push(rowResult)
       }
     }
 
+    setRetryableRows(apiFailures)
     queryClient.invalidateQueries({ queryKey: ["collection", slug] })
     setStep("complete")
+  }
+
+  const handleRetryFailed = () => {
+    setValidatedData(retryableRows)
+    startImport(retryableRows)
   }
 
   // Download Failed Rows CSV helper
@@ -330,9 +377,19 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
       {/* STEP 1: UPLOAD */}
       {step === "upload" && (
         <div className="dy-space-y-4">
-          <div className="dy-text-center dy-py-10 dy-border-2 dy-border-dashed dy-border-border dy-rounded-xl hover:dy-bg-muted/30 dy-transition-colors">
+          <div
+            className={cn(
+              "dy-text-center dy-py-10 dy-border-2 dy-border-dashed dy-rounded-xl dy-transition-colors",
+              isDragging
+                ? "dy-border-primary dy-bg-primary/5"
+                : "dy-border-border hover:dy-bg-muted/30"
+            )}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             <label className="dy-cursor-pointer dy-block dy-space-y-4 dy-px-6">
-              <Upload className="dy-h-10 dy-w-10 dy-mx-auto dy-text-muted-foreground" />
+              <Upload className={cn("dy-h-10 dy-w-10 dy-mx-auto", isDragging ? "dy-text-primary" : "dy-text-muted-foreground")} />
               <div className="dy-space-y-1">
                 <p className="dy-text-sm dy-font-semibold">Click to upload or drag & drop</p>
                 <p className="dy-text-xs dy-text-muted-foreground">CSV files only</p>
@@ -345,6 +402,12 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
               />
             </label>
           </div>
+          {fileError && (
+            <div className="dy-flex dy-items-center dy-gap-2 dy-p-3 dy-rounded-lg dy-bg-destructive/10 dy-border dy-border-destructive/20 dy-text-destructive dy-text-sm">
+              <AlertCircle className="dy-h-4 dy-w-4 dy-shrink-0" />
+              {fileError}
+            </div>
+          )}
         </div>
       )}
 
@@ -490,12 +553,38 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
             </table>
           </div>
 
+          {totalErrors > 0 && totalErrors < validatedData.length && (
+            <label className="dy-flex dy-items-start dy-gap-3 dy-p-3 dy-rounded-lg dy-border dy-border-amber-300/60 dy-bg-amber-500/10 dy-cursor-pointer">
+              <input
+                type="checkbox"
+                className="dy-mt-0.5 dy-accent-amber-500"
+                checked={confirmedSkip}
+                onChange={(e) => setConfirmedSkip(e.target.checked)}
+              />
+              <span className="dy-text-xs dy-text-amber-700 dark:dy-text-amber-400">
+                I understand that <strong>{totalErrors} row{totalErrors !== 1 ? "s" : ""}</strong> with validation errors will be skipped. Only the {validatedData.length - totalErrors} valid row{validatedData.length - totalErrors !== 1 ? "s" : ""} will be imported.
+              </span>
+            </label>
+          )}
+
+          {totalErrors === validatedData.length && (
+            <div className="dy-flex dy-items-center dy-gap-2 dy-p-3 dy-rounded-lg dy-bg-destructive/10 dy-border dy-border-destructive/20 dy-text-destructive dy-text-sm">
+              <AlertCircle className="dy-h-4 dy-w-4 dy-shrink-0" />
+              All {totalErrors} rows have validation errors. Fix your CSV and re-upload before importing.
+            </div>
+          )}
+
           <div className="dy-flex dy-justify-between dy-pt-4">
             <Button variant="outline" onClick={() => setStep("map")}>
               Back
             </Button>
-            <Button onClick={startImport} variant="default" className="dy-gap-2">
-              <Play className="dy-h-4 dy-w-4" /> Start Import ({validatedData.length - totalErrors} Rows)
+            <Button
+              onClick={startImport}
+              variant="default"
+              className="dy-gap-2"
+              disabled={totalErrors === validatedData.length || (totalErrors > 0 && !confirmedSkip)}
+            >
+              <Play className="dy-h-4 dy-w-4" /> Start Import ({validatedData.length - totalErrors} Row{validatedData.length - totalErrors !== 1 ? "s" : ""})
             </Button>
           </div>
         </div>
@@ -543,14 +632,26 @@ export function CsvImporter({ slug, schema, onClose }: CsvImporterProps) {
                 <p className="dy-text-xs dy-font-bold dy-text-destructive uppercase tracking-wide">
                   Failure Logs ({failedRows.length} rows)
                 </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="dy-h-8 dy-text-xs dy-gap-1.5"
-                  onClick={downloadFailedCsv}
-                >
-                  <Download className="dy-h-3.5 dy-w-3.5" /> Download Errors CSV
-                </Button>
+                <div className="dy-flex dy-items-center dy-gap-2">
+                  {retryableRows.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="dy-h-8 dy-text-xs dy-gap-1.5"
+                      onClick={handleRetryFailed}
+                    >
+                      <RotateCcw className="dy-h-3.5 dy-w-3.5" /> Retry {retryableRows.length} Failed Row{retryableRows.length !== 1 ? "s" : ""}
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="dy-h-8 dy-text-xs dy-gap-1.5"
+                    onClick={downloadFailedCsv}
+                  >
+                    <Download className="dy-h-3.5 dy-w-3.5" /> Download Errors CSV
+                  </Button>
+                </div>
               </div>
 
               <ScrollArea className="dy-h-[180px] dy-border dy-border-border dy-rounded-xl">
