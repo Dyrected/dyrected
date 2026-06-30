@@ -1127,6 +1127,27 @@
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
+    "id": "/getting-started/quickstart#example-3",
+    "page": "/getting-started/quickstart",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/getting-started/quickstart#example-4",
+    "page": "/getting-started/quickstart",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/getting-started/quickstart#example-5",
+    "page": "/getting-started/quickstart",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
     "id": "/guides/adding-authentication#example-1",
     "page": "/guides/adding-authentication",
     "language": "ts",

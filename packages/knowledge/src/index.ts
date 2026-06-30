@@ -5,6 +5,7 @@ import { findRecipesByIntent as searchRecipes } from "./search.js";
 export { recipes } from "./generated/recipes.js";
 export { endpoints, references } from "./generated/references.js";
 export { AI_RULES, SKILL, buildAiRules } from "./generated/ai.js";
+export { GENERATE_CMS_PROMPT } from "./generated/prompts.js";
 export type {
   EndpointReference,
   ExampleInventoryEntry,

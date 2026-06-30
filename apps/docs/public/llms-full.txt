@@ -4570,13 +4570,70 @@ Before you start, ensure you have:
 <Tabs items={['Dyrected Cloud (SPA)', 'Next.js', 'Nuxt.js']}>
 <Tab value="Dyrected Cloud (SPA)">
 
-**SPA** stands for Single-Page Application — a client-side app that runs entirely in the browser, such as a React (Vite), Vue, or Svelte project. There is no Node.js server handling requests; your app fetches content directly from the Dyrected Cloud API using an API key.
+**SPA** stands for Single-Page Application — a client-side app that runs entirely in the browser, such as a React (Vite), Vue, or Svelte project. There is no Node.js server handling CMS requests; your app fetches content directly from the Dyrected Cloud API using a site API key.
 
-The full Cloud setup guide — including account creation, connecting your SPA, and going live — lives at:
+**1. Create a Cloud site**
 
-**[dyrected.com/guide](https://dyrected.com/guide)**
+Sign in to Dyrected Cloud, create a site, and keep the site settings open. You will need:
 
-It covers React, Vue, Svelte, and more, and is kept up to date alongside the Cloud dashboard.
+- Site ID
+- Site API key
+- Base URL
+
+**2. Model the content**
+
+Create the collections, globals, and fields your app needs in the Cloud dashboard. Use collections for repeatable content such as posts, products, events, testimonials, FAQs, or services. Use globals for one shared version of content such as navigation, footer settings, company details, or default SEO.
+
+**3. Add starter content**
+
+Add at least one real entry for each collection or global before connecting your frontend. This gives your app a predictable response shape while you build the UI.
+
+**4. Install the SDK**
+
+```bash
+pnpm add @dyrected/sdk
+```
+
+Use the matching command for your package manager if you do not use pnpm.
+
+**5. Store Cloud connection values**
+
+Add the public Cloud values your frontend needs to `.env.local`:
+
+```bash
+VITE_DYRECTED_SITE_ID="site_..."
+VITE_DYRECTED_API_KEY="..."
+VITE_DYRECTED_BASE_URL="https://..."
+```
+
+Use your framework's public environment variable prefix. For example, Vite uses `VITE_`, Next.js uses `NEXT_PUBLIC_`, and SvelteKit uses `PUBLIC_`.
+
+**6. Fetch content from Cloud**
+
+Create one small client module for Dyrected reads and call it from your pages or components:
+
+```ts
+
+
+export const dyrected = createClient({
+  siteId: import.meta.env.VITE_DYRECTED_SITE_ID,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+  baseUrl: import.meta.env.VITE_DYRECTED_BASE_URL,
+});
+
+export async function getPosts() {
+  const result = await dyrected.collection("posts").find({ depth: 0 });
+  return result.docs;
+}
+```
+
+**7. Render with a fallback**
+
+Keep a small fallback state while wiring the first page so your app can render useful UI during setup or if Cloud content is temporarily empty.
+
+**8. Go live**
+
+Deploy through your existing host. Confirm the production environment variables match the Cloud site, then edit one piece of content in Dyrected Cloud and verify the deployed app updates.
 
 </Tab>
 <Tab value="Next.js">

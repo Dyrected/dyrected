@@ -1,5 +1,11 @@
 # @dyrected/knowledge
 
+## 0.2.4
+
+### Patch Changes
+
+- Expose the generated CMS setup prompt as `GENERATE_CMS_PROMPT`.
+
 ## 0.2.3
 
 ### Patch Changes
