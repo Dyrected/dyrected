@@ -1,10 +1,13 @@
+import { useState } from "react";
 import {
   ArrowUpRight,
   BookOpen,
+  Check,
   Code2,
-  Compass,
+  Copy,
   Sparkles,
 } from "lucide-react";
+import { GENERATE_CMS_PROMPT } from "@dyrected/knowledge";
 import { Button } from "../../components/ui/button";
 
 export interface SetupPromptConfig {
@@ -23,6 +26,25 @@ export interface SetupPromptProps {
 
 const GUIDE_URL = "https://www.dyrected.com/guide";
 const DOCS_URL = "https://docs.dyrected.com";
+
+const steps = [
+  {
+    title: "Paste the prompt into your AI builder",
+    body: "Use the same AI builder that owns the website code — Lovable, Bolt, v0, Cursor, Replit, Windsurf, or any other.",
+  },
+  {
+    title: "Review and approve the content list",
+    body: "The AI sends back a plain list of everything on your site a client could edit. Correct anything missing or wrong, then say \"approved\".",
+  },
+  {
+    title: "Give your Dyrected details when asked",
+    body: "The prompt tells the AI to wait until the install stage before asking. Have your Site ID, API key, and Base URL ready.",
+  },
+  {
+    title: "Test one edit, then invite the client",
+    body: "Change a piece of content in Dyrected and confirm it appears on the website. If it looks right, the site is ready for the client.",
+  },
+];
 
 function normalizeTechStack(techStack?: string): string | undefined {
   if (!techStack) return undefined;
@@ -44,11 +66,19 @@ export function buildGuideUrl(config: SetupPromptConfig): string {
 }
 
 export function SetupPromptUI({ config }: SetupPromptProps) {
+  const [copied, setCopied] = useState(false);
   const guideUrl = buildGuideUrl(config);
   const stack = normalizeTechStack(config.defaultTechStack);
 
+  async function copyPrompt() {
+    await navigator.clipboard.writeText(GENERATE_CMS_PROMPT);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  }
+
   return (
     <div className="dy-mx-auto dy-max-w-5xl dy-py-6 lg:dy-py-10">
+      {/* Prompt copy card */}
       <section className="dy-relative dy-overflow-hidden dy-rounded-[28px] dy-border dy-border-border dy-bg-card dy-text-card-foreground dy-shadow-2xl">
         <div className="dy-absolute dy-inset-y-0 dy-right-0 dy-w-1/3 dy-bg-primary" aria-hidden="true" />
         <div
@@ -66,26 +96,31 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
 
               <div className="dy-max-w-2xl dy-space-y-4">
                 <h1 className="dy-font-serif dy-text-4xl dy-font-bold dy-leading-[0.98] dy-tracking-tight sm:dy-text-5xl lg:dy-text-6xl">
-                  Let the guide do the heavy lifting.
+                  Copy the prompt. Paste. Done.
                 </h1>
                 <p className="dy-max-w-xl dy-text-base dy-leading-7 dy-text-muted-foreground sm:dy-text-lg">
-                  Get a guided path tailored to your project, whether you are building with an AI coding tool or wiring up the SDK yourself.
+                  Copy the setup prompt below and paste it into the AI builder that owns your website code. It handles the rest.
                 </p>
               </div>
             </div>
 
             <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row sm:dy-items-center">
-              <Button asChild size="lg" className="dy-h-12 dy-bg-primary dy-px-6 dy-text-primary-foreground hover:dy-bg-primary/90">
-                <a href={guideUrl} target="_blank" rel="noopener noreferrer">
-                  <Compass className="dy-h-4 dy-w-4" />
-                  Open guided setup
-                  <ArrowUpRight className="dy-h-4 dy-w-4" />
-                </a>
+              <Button
+                size="lg"
+                className="dy-h-12 dy-bg-primary dy-px-6 dy-text-primary-foreground hover:dy-bg-primary/90"
+                onClick={copyPrompt}
+              >
+                {copied ? (
+                  <Check className="dy-h-4 dy-w-4" />
+                ) : (
+                  <Copy className="dy-h-4 dy-w-4" />
+                )}
+                {copied ? "Copied!" : "Copy setup prompt"}
               </Button>
               <Button asChild size="lg" variant="ghost" className="dy-h-12 dy-text-card-foreground hover:dy-bg-muted hover:dy-text-card-foreground">
-                <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
-                  <BookOpen className="dy-h-4 dy-w-4" />
-                  Browse developer docs
+                <a href={guideUrl} target="_blank" rel="noopener noreferrer">
+                  Full guide
+                  <ArrowUpRight className="dy-h-4 dy-w-4" />
                 </a>
               </Button>
             </div>
@@ -111,13 +146,36 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
                   </dd>
                 </div>
               </dl>
-
             </div>
           </div>
         </div>
       </section>
 
-      <div className="dy-grid dy-gap-4 dy-px-1 dy-pt-5 md:dy-grid-cols-2">
+      {/* Short guide */}
+      <div className="dy-px-1 dy-pt-8">
+        <h2 className="dy-mb-5 dy-text-sm dy-font-bold dy-uppercase dy-tracking-[0.12em] dy-text-muted-foreground">
+          What to do next
+        </h2>
+        <ol className="dy-grid dy-gap-4 md:dy-grid-cols-2">
+          {steps.map((step, index) => (
+            <li
+              key={step.title}
+              className="dy-flex dy-items-start dy-gap-4 dy-rounded-xl dy-border dy-bg-card dy-p-5"
+            >
+              <span className="dy-flex dy-h-7 dy-w-7 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/15 dy-text-xs dy-font-bold dy-tabular-nums dy-text-foreground">
+                {index + 1}
+              </span>
+              <div className="dy-min-w-0">
+                <h3 className="dy-font-semibold dy-text-card-foreground">{step.title}</h3>
+                <p className="dy-mt-1 dy-text-sm dy-leading-6 dy-text-muted-foreground">{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      {/* Footer links */}
+      <div className="dy-grid dy-gap-4 dy-px-1 dy-pt-4 md:dy-grid-cols-2">
         <a
           href={guideUrl}
           target="_blank"
@@ -128,9 +186,9 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
             <Sparkles className="dy-h-5 dy-w-5" />
           </div>
           <div className="dy-min-w-0 dy-flex-1">
-            <h2 className="dy-font-semibold dy-text-card-foreground">Building with AI?</h2>
+            <h2 className="dy-font-semibold dy-text-card-foreground">Need more detail?</h2>
             <p className="dy-mt-1 dy-text-sm dy-leading-6 dy-text-muted-foreground">
-              The guide gives your coding agent the right context and walks you through each decision.
+              The full guide walks through each decision with examples for AI-built websites.
             </p>
           </div>
           <ArrowUpRight className="dy-h-4 dy-w-4 dy-text-muted-foreground dy-transition-transform group-hover:dy-translate-x-0.5 group-hover:dy--translate-y-0.5" />
@@ -146,9 +204,9 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
             <BookOpen className="dy-h-5 dy-w-5" />
           </div>
           <div className="dy-min-w-0 dy-flex-1">
-            <h2 className="dy-font-semibold dy-text-card-foreground">Need implementation detail?</h2>
+            <h2 className="dy-font-semibold dy-text-card-foreground">Developer docs</h2>
             <p className="dy-mt-1 dy-text-sm dy-leading-6 dy-text-muted-foreground">
-              Use the docs for SDK APIs, framework integrations, configuration, and production reference.
+              SDK APIs, framework integrations, configuration, and production reference.
             </p>
           </div>
           <ArrowUpRight className="dy-h-4 dy-w-4 dy-text-muted-foreground dy-transition-transform group-hover:dy-translate-x-0.5 group-hover:dy--translate-y-0.5" />

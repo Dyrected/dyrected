@@ -250,6 +250,9 @@ importers:
       '@dyrected/core':
         specifier: workspace:^
         version: link:../core
+      '@dyrected/knowledge':
+        specifier: workspace:^
+        version: link:../knowledge
       '@dyrected/sdk':
         specifier: workspace:^
         version: link:../sdk

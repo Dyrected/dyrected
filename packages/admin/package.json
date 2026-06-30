@@ -29,6 +29,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@dyrected/core": "workspace:^",
+    "@dyrected/knowledge": "workspace:^",
     "@dyrected/sdk": "workspace:^",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
