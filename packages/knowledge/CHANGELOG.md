@@ -1,5 +1,13 @@
 # @dyrected/knowledge
 
+## 0.2.5
+
+### Patch Changes
+
+- 676ba83: Add llms.txt index URL to generate-cms prompt so the AI fetches the full documentation index before navigating individual pages
+- Updated dependencies [7cdfb01]
+  - @dyrected/core@2.5.48
+
 ## 0.2.4
 
 ### Patch Changes

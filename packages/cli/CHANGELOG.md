@@ -1,5 +1,15 @@
 # @dyrected/cli
 
+## 2.5.48
+
+### Patch Changes
+
+- Updated dependencies [676ba83]
+- Updated dependencies [7cdfb01]
+  - @dyrected/knowledge@0.2.5
+  - @dyrected/core@2.5.48
+  - @dyrected/sdk@2.5.48
+
 ## 2.5.47
 
 ### Patch Changes
