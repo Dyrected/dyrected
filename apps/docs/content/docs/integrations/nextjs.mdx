@@ -5,7 +5,9 @@ description: Complete guide to using Dyrected in a Next.js App Router project.
 
 Dyrected integrates natively with the Next.js App Router via a catch-all API route. You can fetch data server-side, client-side, or use the SDK in Server Components.
 
-> **Recommended:** Use the CLI to set up Dyrected automatically. It detects your App Router and optional `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
+> **Easiest path:** paste the [Dyrected setup prompt](/docs/getting-started/quickstart#self-hosted-nextjs) into an AI coding tool with access to your repo — it runs the CLI, models your content as collections and globals, and mounts the admin for you.
+>
+> **Setting up manually?** The CLI is still the safest way to install — it detects your App Router and optional `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
 > ```bash
 > npx @dyrected/cli init
 > ```
@@ -98,7 +100,7 @@ If your catch-all route uses another prefix, pass it explicitly—for example,
 
 ## Step 3 — Fetch data in Server Components
 
-<Tabs items={['SDK', 'Direct DB', 'REST API']}>
+<Tabs items={['SDK', 'REST API']}>
 <Tab value="SDK">
 ```tsx
 // app/blog/page.tsx
@@ -123,24 +125,6 @@ export default async function BlogPage() {
       ))}
     </ul>
   )
-}
-```
-</Tab>
-<Tab value="Direct DB">
-When Dyrected is co-located with your Next.js app (self-hosted), you can bypass HTTP entirely:
-
-```tsx
-// app/blog/page.tsx
-import config from '@/dyrected.config'
-
-export default async function BlogPage() {
-  const { docs: posts } = await config.db.find({
-    collection: 'posts',
-    where: { status: { equals: 'published' } },
-    limit: 10,
-  })
-
-  return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>
 }
 ```
 </Tab>
@@ -174,8 +158,6 @@ export default async function BlogPage() {
 ```
 </Tab>
 </Tabs>
-
-This approach has zero network overhead and is the fastest option for self-hosted setups.
 
 ---
 
