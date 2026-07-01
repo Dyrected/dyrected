@@ -38,22 +38,20 @@ The engine can run **inside your existing Next.js or Nuxt.js app** as a route ha
 
 ## Why Dyrected?
 
-| | Dyrected | Payload CMS | Sanity | Contentful |
-|---|---|---|---|---|
-| **Config** | TypeScript in your repo | TypeScript in your repo | Studio UI | Web UI |
-| **Runs in your app** | Yes — no separate server | Yes | No | No |
-| **Managed cloud option** | Yes ([Dyrected Cloud](/docs/deployment/cloud)) | No | Yes | Yes |
-| **Self-hostable** | Yes — free | Yes — free | Limited | No |
-| **Multi-site** | Yes (Cloud workspaces) | Manual | Project-based | Organisation-based |
-| **License** | BSL → Apache 2 | MIT | Proprietary | Proprietary |
+|                          | Dyrected                                       | Payload CMS             | Sanity        | Contentful         |
+| ------------------------ | ---------------------------------------------- | ----------------------- | ------------- | ------------------ |
+| **Config**               | TypeScript in your repo                        | TypeScript in your repo | Studio UI     | Web UI             |
+| **Runs in your app**     | Yes — no separate server                       | Yes                     | No            | No                 |
+| **Managed cloud option** | Yes ([Dyrected Cloud](/docs/deployment/cloud)) | No                      | Yes           | Yes                |
+| **Self-hostable**        | Yes — free                                     | Yes — free              | Limited       | No                 |
+| **Multi-site**           | Yes (Cloud workspaces)                         | Manual                  | Project-based | Organisation-based |
+| **License**              | BSL → Apache 2                                 | MIT                     | Proprietary   | Proprietary        |
 
 The short version: Dyrected gives you Payload's developer experience (config-as-code, no separate process) with the managed cloud option of Sanity or Contentful.
 
 ---
 
 ## Choose your setup
-
-<SetupWizard />
 
 There are three separate decisions to understand:
 
@@ -63,39 +61,43 @@ There are three separate decisions to understand:
 
 ### Backend location
 
-| | Self-Hosted | Cloud |
-|---|---|---|
-| **Engine** | Runs inside your app | Runs on Dyrected's servers |
-| **Database** | Your own (SQLite, Postgres, MySQL) | Fully managed |
-| **Storage** | Local disk or your S3/R2/Cloudinary | Fully managed |
-| **Auth** | You manage JWT secret and sessions | Managed, with workspace RBAC |
-| **Multi-site** | One site per deployment | Multiple sites per workspace |
-| **Price** | Free (BSL) | Paid — see [Billing](/docs/cloud/billing) |
-| **Best for** | Full control, data residency, offline | Speed, teams, multiple client sites |
+|                | Self-Hosted                           | Cloud                                     |
+| -------------- | ------------------------------------- | ----------------------------------------- |
+| **Engine**     | Runs inside your app                  | Runs on Dyrected's servers                |
+| **Database**   | Your own (SQLite, Postgres, MySQL)    | Fully managed                             |
+| **Storage**    | Local disk or your S3/R2/Cloudinary   | Fully managed                             |
+| **Auth**       | You manage JWT secret and sessions    | Managed, with workspace RBAC              |
+| **Multi-site** | One site per deployment               | Multiple sites per workspace              |
+| **Price**      | Free (BSL)                            | Paid — see [Billing](/docs/cloud/billing) |
+| **Best for**   | Full control, data residency, offline | Speed, teams, multiple client sites       |
 
 ### Admin location
 
-| | Hosted Admin | Embedded Admin |
-|---|---|---|
-| **Where editors log in** | `app.dyrected.com` | Your app, usually at `/admin` |
-| **Branding** | Dyrected-hosted | White-label inside your domain |
-| **Updates** | Managed by Dyrected | Shipped when you update your app packages and deploy |
-| **Best for** | Fastest setup, lowest maintenance | Client handoff, custom workflows, own-domain experience |
+|                          | Hosted Admin                      | Embedded Admin                                          |
+| ------------------------ | --------------------------------- | ------------------------------------------------------- |
+| **Where editors log in** | `app.dyrected.com`                | Your app, usually at `/admin`                           |
+| **Branding**             | Dyrected-hosted                   | White-label inside your domain                          |
+| **Updates**              | Managed by Dyrected               | Shipped when you update your app packages and deploy    |
+| **Best for**             | Fastest setup, lowest maintenance | Client handoff, custom workflows, own-domain experience |
 
 ### When to choose each backend
 
 **Cloud backend makes sense when:**
+
 - You're an agency managing multiple client sites — each gets its own site in one workspace
 - You want to ship fast — no Postgres to provision, no S3 bucket to configure
 - You need multi-site without deploying new infrastructure
 - You're a solo developer who wants a low-maintenance stack
 
 **Self-hosted backend makes sense when:**
+
 - You want the engine, database, and file handling to live inside your own infrastructure
 - You need full control over deployment, networking, or data residency
 - You are comfortable owning backend upgrades and operational maintenance
 
 Both backend modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
+
+<SetupWizard />
 
 ---
 
