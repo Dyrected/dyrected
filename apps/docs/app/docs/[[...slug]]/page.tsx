@@ -6,6 +6,7 @@ import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
 import { CopyPageButton } from '@/components/copy-page-button'
 import { CopyPromptButton } from '@/components/copy-prompt-button'
+import { SetupWizard } from '@/components/setup-wizard'
 import { source } from '@/app/source'
 
 interface Props {
@@ -36,7 +37,7 @@ export default async function Page({ params }: Props) {
         <CopyPageButton content={rawContent} />
       </div>
       <DocsBody>
-        <MDX components={{ ...defaultMdxComponents, Tab, Tabs, CopyPromptButton }} />
+        <MDX components={{ ...defaultMdxComponents, Tab, Tabs, CopyPromptButton, SetupWizard }} />
       </DocsBody>
     </DocsPage>
   )
