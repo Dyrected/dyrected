@@ -27,38 +27,47 @@ interface UrlFieldProps {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// Parse the current value
+const parseValue = (val: any): { type: "custom" | "internal", url: string, relationTo?: string, value?: string, label?: string } => {
+  if (!val) return { type: "custom", url: "" }
+
+  if (typeof val === "string") {
+    return { type: "custom", url: val }
+  }
+
+  if (typeof val === "object") {
+    return {
+      type: val.type === "internal" ? "internal" : "custom",
+      url: val.url || "",
+      relationTo: val.relationTo,
+      value: val.value,
+      label: val.label,
+    }
+  }
+
+  return { type: "custom", url: String(val) }
+}
+
 export function UrlField({ schema: _schema, field, disabled, context: _context }: UrlFieldProps) {
   const { client, schemas } = useDyrected()
   const [openPopover, setOpenPopover] = React.useState(false)
   const [documents, setDocuments] = React.useState<any[]>([])
   const [docsLoading, setDocsLoading] = React.useState(false)
 
-  // Parse the current value
-  const parseValue = (val: any): { type: "custom" | "internal", url: string, relationTo?: string, value?: string, label?: string } => {
-    if (!val) return { type: "custom", url: "" }
-
-    if (typeof val === "string") {
-      return { type: "custom", url: val }
-    }
-
-    if (typeof val === "object") {
-      return {
-        type: val.type === "internal" ? "internal" : "custom",
-        url: val.url || "",
-        relationTo: val.relationTo,
-        value: val.value,
-        label: val.label,
-      }
-    }
-
-    return { type: "custom", url: String(val) }
-  }
-
   const currentData = parseValue(field.value)
   const [urlValue, setUrlValue] = React.useState(currentData.url)
   const [labelValue, setLabelValue] = React.useState(currentData.label || "")
   const [collectionValue, setCollectionValue] = React.useState(currentData.relationTo || "")
   const [docValue, setDocValue] = React.useState(currentData.value || "")
+
+  // Synchronize internal state with changes in field.value (e.g. on load / async populate)
+  React.useEffect(() => {
+    const next = parseValue(field.value)
+    setUrlValue((prev) => prev === next.url ? prev : next.url)
+    setLabelValue((prev) => prev === next.label ? prev : (next.label || ""))
+    setCollectionValue((prev) => prev === next.relationTo ? prev : (next.relationTo || ""))
+    setDocValue((prev) => prev === next.value ? prev : (next.value || ""))
+  }, [field.value])
 
 
   // Get all available collections from schemas
