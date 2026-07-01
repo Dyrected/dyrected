@@ -4,9 +4,11 @@ import { notFound } from 'next/navigation'
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page'
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
+import { Steps, Step } from 'fumadocs-ui/components/steps'
 import { CopyPageButton } from '@/components/copy-page-button'
 import { CopyPromptButton } from '@/components/copy-prompt-button'
 import { SetupWizard } from '@/components/setup-wizard'
+import { Note, Warning } from '@/components/callouts'
 import { source } from '@/app/source'
 
 interface Props {
@@ -37,7 +39,7 @@ export default async function Page({ params }: Props) {
         <CopyPageButton content={rawContent} />
       </div>
       <DocsBody>
-        <MDX components={{ ...defaultMdxComponents, Tab, Tabs, CopyPromptButton, SetupWizard }} />
+        <MDX components={{ ...defaultMdxComponents, Tab, Tabs, Steps, Step, CopyPromptButton, SetupWizard, Note, Warning }} />
       </DocsBody>
     </DocsPage>
   )
