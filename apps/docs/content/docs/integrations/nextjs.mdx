@@ -140,7 +140,7 @@ export default async function BlogPage() {
   })
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?${query}`,
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/posts?${query}`,
     { 
       headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
       next: { revalidate: 3600 } 

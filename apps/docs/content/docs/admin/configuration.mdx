@@ -544,16 +544,11 @@ export default defineConfig({
 
 When mounting the Admin UI in your frontend, pass the `components` prop containing the component registries for `dashboard` and `collectionList`.
 
-<Tabs>
-  <Tab>Next.js</Tab>
-  <Tab>React</Tab>
-  <Tab>Nuxt.js</Tab>
-  <Tab>Vue</Tab>
-</Tabs>
-
-**React / Next.js:**
+<Tabs items={['Next.js', 'React', 'Nuxt.js', 'Vue']}>
+<Tab value="Next.js">
 
 ```tsx
+// app/admin/page.tsx
 import { DyrectedAdmin } from "@dyrected/next/admin";
 
 function WelcomeBanner(props) {
@@ -578,7 +573,75 @@ export default function AdminPage() {
 }
 ```
 
-**Vue / Nuxt:**
+</Tab>
+<Tab value="React">
+
+```tsx
+import { DyrectedAdmin } from "@dyrected/react";
+import "@dyrected/admin/styles";
+
+function WelcomeBanner(props) {
+  return <div className="p-4 bg-blue-50">Welcome, {props.user.email}!</div>;
+}
+
+export function AdminPage() {
+  return (
+    <DyrectedAdmin
+      baseUrl="/dyrected"
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      basename="/admin"
+      components={{
+        dashboard: {
+          "welcome-banner": WelcomeBanner,
+          "analytics-widget": AnalyticsWidget,
+        },
+        collectionList: {
+          "posts-header": PostsHeader,
+          "custom-pagination": CustomPagination,
+        },
+      }}
+    />
+  );
+}
+```
+
+</Tab>
+<Tab value="Nuxt.js">
+
+The `@dyrected/nuxt` module auto-imports `<DyrectedAdmin />` — no explicit import needed.
+
+```vue
+<!-- pages/admin/index.vue -->
+<script setup lang="ts">
+definePageMeta({ layout: false })
+
+import WelcomeBanner from "./WelcomeBanner.vue";
+import AnalyticsWidget from "./AnalyticsWidget.vue";
+import PostsHeader from "./PostsHeader.vue";
+import CustomPagination from "./CustomPagination.vue";
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin
+      basename="/admin"
+      :components="{
+        dashboard: {
+          'welcome-banner': WelcomeBanner,
+          'analytics-widget': AnalyticsWidget,
+        },
+        collectionList: {
+          'posts-header': PostsHeader,
+          'custom-pagination': CustomPagination,
+        },
+      }"
+    />
+  </ClientOnly>
+</template>
+```
+
+</Tab>
+<Tab value="Vue">
 
 ```vue
 <template>
@@ -604,6 +667,9 @@ import PostsHeader from "./PostsHeader.vue";
 import CustomPagination from "./CustomPagination.vue";
 </script>
 ```
+
+</Tab>
+</Tabs>
 
 </Step>
 </Steps>

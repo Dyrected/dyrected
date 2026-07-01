@@ -165,7 +165,8 @@ Use functions when you need async lookups or row-level filtering. Use Jexl strin
 
 ## Common Patterns
 
-### Blog: public reads, staff writes, authors own their content
+<Accordions type="single">
+<Accordion title="Blog: public reads, staff writes, authors own their content">
 
 Published posts are readable by anyone. Only logged-in users can create. Authors can edit their own posts; admins can edit anything. Only admins can delete.
 
@@ -208,9 +209,8 @@ To hide the `status` field from authors so they cannot self-publish, combine thi
 }
 ```
 
----
-
-### Contact form / lead capture: public submit, staff reads only
+</Accordion>
+<Accordion title="Contact form / lead capture: public submit, staff reads only">
 
 Anyone on the internet can submit the form. Only authenticated staff can read the submissions. Nobody can edit or delete entries after submission.
 
@@ -231,9 +231,8 @@ export const Inquiries = defineCollection({
 })
 ```
 
----
-
-### E-commerce orders: users see their own, admins see all
+</Accordion>
+<Accordion title="E-commerce orders: users see their own, admins see all">
 
 `read` returning an object is treated as a `where` filter — so regular users automatically get a filtered list without any extra code in the API route.
 
@@ -254,9 +253,8 @@ export const Orders = defineCollection({
 })
 ```
 
----
-
-### Role-based team: admin / editor / viewer
+</Accordion>
+<Accordion title="Role-based team: admin / editor / viewer">
 
 A three-tier role model. Viewers can read. Editors can read and write. Only admins can delete.
 
@@ -290,9 +288,8 @@ export const Articles = defineCollection({
 })
 ```
 
----
-
-### Invite-only community: restrict create to admins
+</Accordion>
+<Accordion title="Invite-only community: restrict create to admins">
 
 Public reads, but only admins can create new members. Users can update their own profile. No one can delete via the API.
 
@@ -309,3 +306,5 @@ export const Members = defineCollection({
   fields: [...],
 })
 ```
+</Accordion>
+</Accordions>

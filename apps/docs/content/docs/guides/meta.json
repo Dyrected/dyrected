@@ -1,8 +1,7 @@
 {
   "title": "Guides",
   "pages": [
-    "enterprise-core",
-    "admin-sso",
+    "ai-integration",
     "building-a-blog",
     "adding-authentication",
     "file-uploads",
@@ -20,6 +19,7 @@
     "globals-and-site-settings",
     "editorial-approval-workflow",
     "migrating-to-workflows",
-    "ai-integration"
+    "admin-sso",
+    "enterprise-core"
   ]
 }

@@ -109,29 +109,26 @@ For a full explanation of depth behaviour see [Understanding Depth](/docs/concep
 
 ## Common patterns
 
-### Post → Author (single)
-
+<Accordions type="single">
+<Accordion title="Post → Author (single)">
 ```ts
 // posts collection
 { name: 'author', type: 'relationship', relationTo: 'users' }
 ```
-
-### Post → Tags (many)
-
+</Accordion>
+<Accordion title="Post → Tags (many)">
 ```ts
 // posts collection
 { name: 'tags', type: 'relationship', relationTo: 'tags', hasMany: true }
 ```
-
-### Author's posts (reverse via join)
-
+</Accordion>
+<Accordion title="Author's posts (reverse via join)">
 ```ts
 // users collection
 { name: 'posts', type: 'join', collection: 'posts', on: 'author' }
 ```
-
-### Product → Category, with reverse
-
+</Accordion>
+<Accordion title="Product → Category, with reverse">
 ```ts
 // products collection
 { name: 'category', type: 'relationship', relationTo: 'categories' }
@@ -139,4 +136,6 @@ For a full explanation of depth behaviour see [Understanding Depth](/docs/concep
 // categories collection
 { name: 'products', type: 'join', collection: 'products', on: 'category', limit: 50 }
 ```
+</Accordion>
+</Accordions>
 
