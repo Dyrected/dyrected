@@ -1,5 +1,6 @@
 import type { CollectionConfig, DatabaseAdapter, Field, PaginatedResult } from '../types/index.js';
 import { DefaultsService } from './defaults.service.js';
+import jexl from 'jexl';
 
 export class PopulationService {
   private db: DatabaseAdapter;
@@ -132,7 +133,29 @@ export class PopulationService {
               maxDepth,
             });
             const identifier = docWithDefaults.slug || docWithDefaults.id;
-            const resolvedUrl = `/collections/${value.relationTo}/${identifier}`;
+            let resolvedUrl = `/collections/${value.relationTo}/${identifier}`;
+
+            const previewUrlPattern = relatedCollection.admin?.previewUrl || relatedCollection.admin?.urlPattern;
+            if (previewUrlPattern) {
+              if (typeof previewUrlPattern === 'function') {
+                try {
+                  resolvedUrl = previewUrlPattern(docWithDefaults, { locale: 'en' }) || resolvedUrl;
+                } catch {}
+              } else if (typeof previewUrlPattern === 'string') {
+                if (previewUrlPattern.includes('{{')) {
+                  resolvedUrl = previewUrlPattern.replace(/{{(.*?)}}/g, (_, key) => String(docWithDefaults[key.trim()] || ''));
+                } else if (previewUrlPattern.includes('+') || previewUrlPattern.includes('?') || previewUrlPattern.includes('==') || previewUrlPattern.includes('siteUrl')) {
+                  try {
+                    resolvedUrl = jexl.evalSync(previewUrlPattern, docWithDefaults);
+                  } catch (err) {
+                    resolvedUrl = previewUrlPattern.replace(/:([a-zA-Z0-9_]+)/g, (_, key) => String(docWithDefaults[key] || ''));
+                  }
+                } else {
+                  resolvedUrl = previewUrlPattern.replace(/:([a-zA-Z0-9_]+)/g, (_, key) => String(docWithDefaults[key] || ''));
+                }
+              }
+            }
+
             populatedDoc[field.name] = {
               ...value,
               url: resolvedUrl,

@@ -4938,7 +4938,7 @@ Open Dyrected and change a piece of content you can easily recognize — a headi
 
 - Use the **hosted admin** if you want automatic admin updates and the lowest maintenance
 - Use the **embedded admin** if you want the client to work inside your own domain at `/admin`
-  </Step>
+</Step>
 <Step>
 
 ### Invite the client
@@ -4989,7 +4989,7 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Mount the Admin UI at the path you choose during setup, defaulting to `app/admin/page.tsx` or `src/app/admin/page.tsx`.
 - Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
-  </Step>
+</Step>
 <Step>
 
 ### Define your config: collections and globals
@@ -5004,7 +5004,7 @@ Open `dyrected.config.ts` and describe your content model — see [Collections a
 2. Run `pnpm dev`.
 3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
 4. The admin URL is printed to the console on startup — open it and confirm you can log in and see your collections.
-   </Step>
+</Step>
 <Step>
 
 ### Seed initial data
@@ -5058,7 +5058,7 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Detect whether you use an `app/` directory and write the admin page to the path you choose during setup, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
 - Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
 - Generate a `.env.example`.
-  </Step>
+</Step>
 <Step>
 
 ### Define your config: collections and globals
@@ -5073,7 +5073,7 @@ Open `dyrected.config.ts` and describe your content model — see [Collections a
 2. Run `pnpm dev`.
 3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
 4. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL and confirm you can log in and see your collections.
-   </Step>
+</Step>
 <Step>
 
 ### Seed initial data
@@ -8882,7 +8882,7 @@ definePageMeta({ layout: false }); // Avoid nesting within your default site hea
    - In the **Page Layout** tab, click **Add Block** and select `Hero Banner` or `Features Grid`. Enter your text.
 5. Save the document and click the **Live Preview** button on the top right.
 6. Watch your changes render in real time as you edit the fields!
-   </Step>
+</Step>
 </Steps>
 
 ---

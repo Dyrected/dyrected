@@ -27,18 +27,25 @@ interface UrlFieldProps {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-// Parse the current value
 const parseValue = (val: any): { type: "custom" | "internal", url: string, relationTo?: string, value?: string, label?: string } => {
   if (!val) return { type: "custom", url: "" }
 
   if (typeof val === "string") {
-    return { type: "custom", url: val }
+    let url = val
+    if (url.startsWith("/")) {
+      url = `${window.location.origin}${url}`
+    }
+    return { type: "custom", url }
   }
 
   if (typeof val === "object") {
+    let url = val.url || ""
+    if (url.startsWith("/")) {
+      url = `${window.location.origin}${url}`
+    }
     return {
       type: val.type === "internal" ? "internal" : "custom",
-      url: val.url || "",
+      url,
       relationTo: val.relationTo,
       value: val.value,
       label: val.label,
@@ -133,9 +140,13 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
 
   const handleUpdate = (url: string, label: string, relationTo?: string, docId?: string) => {
     const isInternal = !!(relationTo && docId)
+    let cleanedUrl = url
+    if (isInternal && cleanedUrl.startsWith(window.location.origin)) {
+      cleanedUrl = cleanedUrl.substring(window.location.origin.length)
+    }
     const newValue = {
       type: isInternal ? "internal" : "custom",
-      url: url || undefined,
+      url: cleanedUrl || undefined,
       relationTo: isInternal ? relationTo : undefined,
       value: isInternal ? docId : undefined,
       label: label || undefined,
