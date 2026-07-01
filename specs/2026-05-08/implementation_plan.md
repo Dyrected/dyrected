@@ -262,7 +262,7 @@ This document outlines the phased roadmap for building the Dyrected CMS ecosyste
 
 ### Phase 11.3: CLI & Onboarding
 
-- [x] Implement `npx @dyrected/cli init` for rapid project bootstrapping.
+- [x] Implement `npx dyrected init` for rapid project bootstrapping.
 - [x] Create the "AI Cloud Setup Prompt" for instant scaffolding.
 
 ## Phase 12: Public Release & Stabilization [IN PROGRESS]

@@ -119,7 +119,7 @@ Both backend modes use the same `dyrected.config.ts`. You can migrate from self-
 
 Dyrected is designed to work well with AI coding agents. Because your entire CMS — collections, fields, hooks, access rules — lives in a single TypeScript file, any agent can read it, reason about it, and modify it.
 
-**`.dyrected/ai-rules.md`** is generated automatically when you run `npx @dyrected/cli init`. It teaches any AI agent in your workspace (Claude, Cursor, Windsurf, Copilot) how to work correctly with Dyrected — the DO NOTs, schema evolution rules, and a plain-language intent-to-pattern reference.
+**`.dyrected/ai-rules.md`** is generated automatically when you run `npx dyrected init`. It teaches any AI agent in your workspace (Claude, Cursor, Windsurf, Copilot) how to work correctly with Dyrected — the DO NOTs, schema evolution rules, and a plain-language intent-to-pattern reference.
 
 **The Dyrected Claude Code skill** loads the same knowledge on demand in any session:
 

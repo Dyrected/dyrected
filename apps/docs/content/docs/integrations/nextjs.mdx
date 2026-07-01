@@ -8,9 +8,11 @@ Dyrected integrates natively with the Next.js App Router via a catch-all API rou
 > **Easiest path:** paste the [Dyrected setup prompt](/docs/getting-started/quickstart#self-hosted-nextjs) into an AI coding tool with access to your repo — it runs the CLI, models your content as collections and globals, and mounts the admin for you.
 >
 > **Setting up manually?** The CLI is still the safest way to install — it detects your App Router and optional `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
+>
 > ```bash
-> npx @dyrected/cli init
+> npx dyrected init
 > ```
+>
 > The steps below cover manual setup and all available options.
 
 ---
@@ -22,7 +24,10 @@ pnpm add @dyrected/core @dyrected/sdk @dyrected/next @dyrected/react @dyrected/d
 ```
 
 <Note>
-`@dyrected/next` provides the API route handler, `getDyrectedClient`, and Next.js-optimised `<DyrectedImage />` / `<DyrectedMedia />` components. `@dyrected/react` is the React integration layer — it provides `<DyrectedAdmin />`, `DyrectedProvider`, `useDyrected`, and `useLivePreview`. `@dyrected/next` re-exports all of these so you can import from a single package.
+  `@dyrected/next` provides the API route handler, `getDyrectedClient`, and Next.js-optimised `<DyrectedImage />` / `
+  <DyrectedMedia />` components. `@dyrected/react` is the React integration layer — it provides `<DyrectedAdmin />
+  `, `DyrectedProvider`, `useDyrected`, and `useLivePreview`. `@dyrected/next` re-exports all of these so you can import
+  from a single package.
 </Note>
 
 ---
@@ -33,18 +38,17 @@ Wrap your `next.config.ts` with `withDyrected` to ensure a single React instance
 
 ```ts
 // next.config.ts
-import type { NextConfig } from 'next'
-import { withDyrected } from '@dyrected/next/config'
+import type { NextConfig } from "next";
+import { withDyrected } from "@dyrected/next/config";
 
 const nextConfig: NextConfig = {
   // your config here
-}
+};
 
-export default withDyrected(nextConfig)
+export default withDyrected(nextConfig);
 ```
 
 This applies the correct `react` and `react-dom` resolve aliases for both Webpack and Turbopack.
-
 
 ---
 
@@ -52,30 +56,30 @@ This applies the correct `react` and `react-dom` resolve aliases for both Webpac
 
 ```ts
 // dyrected.config.ts (project root)
-import { defineConfig } from '@dyrected/core'
-import { PostgresAdapter } from '@dyrected/db-postgres'
+import { defineConfig } from "@dyrected/core";
+import { PostgresAdapter } from "@dyrected/db-postgres";
 
 export default defineConfig({
   db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
   collections: [
     {
-      slug: 'posts',
-      admin: { useAsTitle: 'title' },
+      slug: "posts",
+      admin: { useAsTitle: "title" },
       fields: [
-        { name: 'title', label: 'Title', type: 'text', required: true },
-        { name: 'slug', label: 'Slug',  type: 'text', required: true, unique: true },
-        { name: 'body', label: 'Body',  type: 'richText' },
+        { name: "title", label: "Title", type: "text", required: true },
+        { name: "slug", label: "Slug", type: "text", required: true, unique: true },
+        { name: "body", label: "Body", type: "richText" },
         {
-          name: 'status',
-          label: 'Status',
-          type: 'select',
-          options: ['draft', 'published'],
-          defaultValue: 'draft',
+          name: "status",
+          label: "Status",
+          type: "select",
+          options: ["draft", "published"],
+          defaultValue: "draft",
         },
       ],
     },
   ],
-})
+});
 ```
 
 ---
@@ -86,10 +90,10 @@ export default defineConfig({
 
 ```ts
 // app/dyrected/[...route]/route.ts  (or src/app/dyrected/[...route]/route.ts)
-import { dyrectedNextHandler } from '@dyrected/next'
-import config from '../../../dyrected.config'
+import { dyrectedNextHandler } from "@dyrected/next";
+import config from "../../../dyrected.config";
 
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config);
 ```
 
 All Dyrected REST endpoints are now available at `/dyrected/...`.
@@ -108,8 +112,8 @@ If your catch-all route uses another prefix, pass it explicitly—for example,
 import { createClient } from '@dyrected/sdk'
 
 const client = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
-  apiKey: process.env.DYRECTED_API_KEY!,
+baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+apiKey: process.env.DYRECTED_API_KEY!,
 })
 
 export default async function BlogPage() {
@@ -119,15 +123,16 @@ export default async function BlogPage() {
     depth: 1,
   })
 
-  return (
-    <ul>
-      {posts.map(post => (
-        <li key={post.id}>{post.title}</li>
-      ))}
-    </ul>
-  )
+return (
+<ul>
+{posts.map(post => (
+<li key={post.id}>{post.title}</li>
+))}
+</ul>
+)
 }
-```
+
+````
 </Tab>
 <Tab value="REST API">
 For environments where the SDK isn't available, use raw HTTP:
@@ -141,9 +146,9 @@ export default async function BlogPage() {
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/posts?${query}`,
-    { 
+    {
       headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
-      next: { revalidate: 3600 } 
+      next: { revalidate: 3600 }
     }
   )
   const { docs: posts } = await res.json()
@@ -156,7 +161,8 @@ export default async function BlogPage() {
     </ul>
   )
 }
-```
+````
+
 </Tab>
 </Tabs>
 
@@ -166,30 +172,32 @@ export default async function BlogPage() {
 
 The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles Next.js router integration, CSS imports, and client-only mounting.
 
-If you used `npx @dyrected/cli init`, this file is already written in the correct location — the CLI detects your optional `src/` layout and writes an App Router page.
+If you used `npx dyrected init`, this file is already written in the correct location — the CLI detects your optional `src/` layout and writes an App Router page.
 
 ```tsx
 // app/admin/page.tsx  (or src/app/admin/page.tsx)
-import { DyrectedAdmin } from '@dyrected/next/admin'
+import { DyrectedAdmin } from "@dyrected/next/admin";
 
 export default function AdminPage() {
-  return <DyrectedAdmin />
+  return <DyrectedAdmin />;
 }
 ```
 
 <Note>
-`@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx @dyrected/cli init`.
+  `@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx
+  dyrected init`.
 </Note>
 
 <Note>
-`DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
+  `DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the
+  standard naming convention. You only need to pass props if you want to override the defaults.
 </Note>
 
 ---
 
 ## Dev server URL logging
 
-When you run `npx @dyrected/cli init`, it generates an `instrumentation.ts` file at your project root (or `src/instrumentation.ts` for `src/` layouts). This uses Next.js's built-in instrumentation hook to log the admin and API URLs whenever the server starts:
+When you run `npx dyrected init`, it generates an `instrumentation.ts` file at your project root (or `src/instrumentation.ts` for `src/` layouts). This uses Next.js's built-in instrumentation hook to log the admin and API URLs whenever the server starts:
 
 ```
   ➜  Dyrected admin:  http://localhost:3000/admin
@@ -197,7 +205,6 @@ When you run `npx @dyrected/cli init`, it generates an `instrumentation.ts` file
 ```
 
 The base URL is read from `NEXT_PUBLIC_APP_URL`, falling back to `http://localhost:3000`. This works in both development and production.
-
 
 ---
 
@@ -247,17 +254,17 @@ Or use webhook-style revalidation via a dedicated endpoint:
 
 ```ts
 // app/api/revalidate/route.ts
-import { revalidatePath } from 'next/cache'
-import { NextRequest } from 'next/server'
+import { revalidatePath } from "next/cache";
+import { NextRequest } from "next/server";
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get('x-revalidate-secret')
+  const secret = req.headers.get("x-revalidate-secret");
   if (secret !== process.env.REVALIDATE_SECRET) {
-    return new Response('Unauthorized', { status: 401 })
+    return new Response("Unauthorized", { status: 401 });
   }
-  const { path } = await req.json()
-  revalidatePath(path)
-  return Response.json({ revalidated: true })
+  const { path } = await req.json();
+  revalidatePath(path);
+  return Response.json({ revalidated: true });
 }
 ```
 
@@ -269,21 +276,21 @@ Add live preview support to any page with the `useLivePreview` hook:
 
 ```tsx
 // app/blog/[slug]/preview/page.tsx
-'use client'
-import { useLivePreview } from '@dyrected/react'
+"use client";
+import { useLivePreview } from "@dyrected/react";
 
 export default function BlogPreview({ initialPost }: { initialPost: Post }) {
   const { data: post, isLive } = useLivePreview({
     initialData: initialPost,
     serverURL: process.env.NEXT_PUBLIC_DYRECTED_ADMIN_URL!,
-  })
+  });
 
   return (
     <article>
       {isLive && <div className="preview-badge">Preview Mode</div>}
       <h1>{post.title}</h1>
     </article>
-  )
+  );
 }
 ```
 
@@ -309,20 +316,20 @@ Protect your admin route with Next.js middleware:
 
 ```ts
 // middleware.ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    const token = request.cookies.get('dyrected-token')?.value
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    const token = request.cookies.get("dyrected-token")?.value;
     if (!token) {
-      return NextResponse.redirect(new URL('/admin/login', request.url))
+      return NextResponse.redirect(new URL("/admin/login", request.url));
     }
   }
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
-}
+  matcher: ["/admin/:path*"],
+};
 ```

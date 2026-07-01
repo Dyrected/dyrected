@@ -1,3 +1,3 @@
-# @dyrected/cli
+# dyrected
 
 This is the cli package/app for the Dyrected ecosystem.

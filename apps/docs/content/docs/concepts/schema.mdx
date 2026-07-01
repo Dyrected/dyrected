@@ -39,7 +39,7 @@ Setting `promoted: true` on a field extracts it from the JSON blob into its own 
 }
 ```
 
-After adding `promoted: true`, run `npx @dyrected/cli sync:schema` (Cloud) or restart your server (self-hosted) to create the column.
+After adding `promoted: true`, run `npx dyrected sync:schema` (Cloud) or restart your server (self-hosted) to create the column.
 
 **Supported types for promotion:** `text`, `number`, `boolean`, `date`, `datetime`.
 
@@ -70,13 +70,15 @@ You do not need to define these fields yourself. They appear in API responses an
 **Dyrected Cloud** requires an explicit sync because the database is remote:
 
 ```bash
-npx @dyrected/cli sync:schema
+npx dyrected sync:schema
 ```
 
 Run this whenever you add a `promoted: true` field, add `unique: true` to an existing field, or change your database adapter. Regular field additions and removals (inside the JSON blob) do not require a sync.
 
 <Note>
-**MongoDB does not have a sync step.** MongoDB is schema-less — collections and fields are created on first write. There are no columns to add and no migration to run. `renameTo` and `defaultValue` still work exactly as described above (applied on read), but you never need to run `sync:schema` with the MongoDB adapter.
+  **MongoDB does not have a sync step.** MongoDB is schema-less — collections and fields are created on first write.
+  There are no columns to add and no migration to run. `renameTo` and `defaultValue` still work exactly as described
+  above (applied on read), but you never need to run `sync:schema` with the MongoDB adapter.
 </Note>
 
 ---
@@ -94,6 +96,7 @@ Renaming a field in your config would normally orphan existing data under the ol
 ```
 
 **How it works:**
+
 - **Read** — if `fullName` is missing in a document, Dyrected reads `name` instead.
 - **Write** — on the next save, the value is written under `fullName`. Over time, all documents migrate naturally without a bulk update.
 
@@ -107,16 +110,16 @@ Use `initialData` to seed a collection or global the first time it is fetched an
 
 ```ts
 export const Categories = defineCollection({
-  slug: 'categories',
+  slug: "categories",
   initialData: [
-    { name: 'News',   slug: 'news' },
-    { name: 'Events', slug: 'events' },
+    { name: "News", slug: "news" },
+    { name: "Events", slug: "events" },
   ],
   fields: [
-    { name: 'name', label: 'Name', type: 'text' },
-    { name: 'slug', label: 'Slug', type: 'text', promoted: true },
+    { name: "name", label: "Name", type: "text" },
+    { name: "slug", label: "Slug", type: "text", promoted: true },
   ],
-})
+});
 ```
 
 `initialData` runs once — if the collection already has documents, it is skipped entirely.
@@ -127,10 +130,10 @@ export const Categories = defineCollection({
 
 Dyrected reserves slugs prefixed with `__` for internal use:
 
-| Slug | Purpose |
-|---|---|
+| Slug       | Purpose                                                             |
+| ---------- | ------------------------------------------------------------------- |
 | `__admins` | Conventionally used for CMS dashboard auth, separate from app users |
-| `__audit` | Stores audit log entries when `audit: true` is set on a collection |
+| `__audit`  | Stores audit log entries when `audit: true` is set on a collection  |
 
 You can define `__admins` as a regular auth collection in your config — the double-underscore prefix just signals that it is infrastructure, not application content.
 
@@ -141,4 +144,3 @@ You can define `__admins` as a regular auth collection in your config — the do
 - [Collections & Globals](/docs/concepts/collections-and-globals) — the two building blocks and when to use each
 - [Fields](/docs/concepts/fields) — what fields are available and how they map to the database
 - [Relationships](/docs/concepts/relationships) — how collections reference each other
-

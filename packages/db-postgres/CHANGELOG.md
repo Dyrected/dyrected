@@ -121,7 +121,7 @@
 
   Remove internal setup-prompt utility (superseded by CLI). Expand public API surface with fluent collection/global builders, authentication helpers, and complete TypeScript generics.
 
-  @dyrected/cli — minor
+  dyrected — minor
 
   Add generate-ai-rules command. Extend init with framework/adapter detection. Add type generator and config templates.
 

@@ -37,7 +37,7 @@ This path uses the **Dyrected Cloud backend**. Your content API, database, stora
 
 ### Easiest: paste the setup prompt
 
-Instead of writing integration code yourself, copy a setup prompt from Dyrected and paste it into your AI builder. The AI handles the entire integration in stages — including running `npx @dyrected/cli init` and `npx @dyrected/cli sync:schema` for you, so your Cloud database is ready without you touching the CLI. This is the recommended path over setting things up by hand.
+Instead of writing integration code yourself, copy a setup prompt from Dyrected and paste it into your AI builder. The AI handles the entire integration in stages — including running `npx dyrected init` and `npx dyrected sync:schema` for you, so your Cloud database is ready without you touching the CLI. This is the recommended path over setting things up by hand.
 
 **Before you start**
 
@@ -56,32 +56,38 @@ Open your Dyrected site and go to **Setup**. Copy the setup prompt — your cred
 ### Paste the prompt into your AI builder
 
 Paste the prompt into the same AI builder that can read and edit the website code. The AI will respond with a plain-language checklist of everything on the website a client could reasonably want to change.
+
 </Step>
 <Step>
 ### Approve the checklist
 
 Read the checklist top to bottom. If something is missing or unnecessary, say what to add, remove, or change. Say **"approved"** when it looks right.
+
 </Step>
 <Step>
 ### Give the AI your Dyrected details
 
 The prompt makes the AI wait until the install stage before asking for credentials. When it asks, provide your Site ID, Site API key, and Base URL.
+
 </Step>
 <Step>
 ### Test one real edit
 
 Open Dyrected and change a piece of content you can easily recognize — a heading, an image, or a list item. Confirm the change appears on the website and the design still looks right.
+
 </Step>
 <Step>
 ### Choose how the client logs in
 
 - Use the **hosted admin** if you want automatic admin updates and the lowest maintenance
 - Use the **embedded admin** if you want the client to work inside your own domain at `/admin`
-</Step>
+  </Step>
 <Step>
+
 ### Invite the client
 
 Invite the client only after one Dyrected edit appears on the live website.
+
 </Step>
 </Steps>
 
@@ -99,7 +105,7 @@ This path uses a **self-hosted backend** inside your Next.js app. Your admin can
 
 ### Easiest: paste the setup prompt
 
-Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx @dyrected/cli init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
+Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx dyrected init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
 
 <CopyPromptButton mode="self-hosted" />
 
@@ -114,7 +120,7 @@ If you'd rather do this yourself, the CLI is the safest way to install — it de
 ### Install with the CLI
 
 ```bash
-npx @dyrected/cli init
+npx dyrected init
 ```
 
 The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
@@ -126,11 +132,13 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Mount the Admin UI at the path you choose during setup, defaulting to `app/admin/page.tsx` or `src/app/admin/page.tsx`.
 - Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
-</Step>
+  </Step>
 <Step>
+
 ### Define your config: collections and globals
 
 Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
+
 </Step>
 <Step>
 ### Run it and confirm `/admin` loads
@@ -139,16 +147,19 @@ Open `dyrected.config.ts` and describe your content model — see [Collections a
 2. Run `pnpm dev`.
 3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
 4. The admin URL is printed to the console on startup — open it and confirm you can log in and see your collections.
-</Step>
+   </Step>
 <Step>
+
 ### Seed initial data
 
 Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
+
 </Step>
 <Step>
 ### Integrate with your website
 
 Fetch content into your pages using the SDK or REST API — see [Next.js integration](/docs/integrations/nextjs).
+
 </Step>
 </Steps>
 
@@ -166,7 +177,7 @@ This path uses a **self-hosted backend** inside your Nuxt.js app. Your admin can
 
 ### Easiest: paste the setup prompt
 
-Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx @dyrected/cli init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
+Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx dyrected init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
 
 <CopyPromptButton mode="self-hosted" />
 
@@ -181,7 +192,7 @@ If you'd rather do this yourself, the CLI is the safest way to install — it de
 ### Install with the CLI
 
 ```bash
-npx @dyrected/cli init
+npx dyrected init
 ```
 
 The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
@@ -190,11 +201,13 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Detect whether you use an `app/` directory and write the admin page to the path you choose during setup, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
 - Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
 - Generate a `.env.example`.
-</Step>
+  </Step>
 <Step>
+
 ### Define your config: collections and globals
 
 Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
+
 </Step>
 <Step>
 ### Run it and confirm `/admin` loads
@@ -203,16 +216,19 @@ Open `dyrected.config.ts` and describe your content model — see [Collections a
 2. Run `pnpm dev`.
 3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
 4. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL and confirm you can log in and see your collections.
-</Step>
+   </Step>
 <Step>
+
 ### Seed initial data
 
 Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
+
 </Step>
 <Step>
 ### Integrate with your website
 
 Fetch content into your pages using the SDK or REST API — see [Nuxt.js integration](/docs/integrations/nuxt).
+
 </Step>
 </Steps>
 
@@ -227,4 +243,4 @@ Fetch content into your pages using the SDK or REST API — see [Nuxt.js integra
 
 ---
 
-The `npx @dyrected/cli init` command generates `.dyrected/ai-rules.md` plus non-destructive instruction pointers for supported AI coding tools. Commit these files so agents can translate plain-language requests—such as “make the URL follow the title”—into the correct Dyrected patterns automatically.
+The `npx dyrected init` command generates `.dyrected/ai-rules.md` plus non-destructive instruction pointers for supported AI coding tools. Commit these files so agents can translate plain-language requests—such as “make the URL follow the title”—into the correct Dyrected patterns automatically.

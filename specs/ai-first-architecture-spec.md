@@ -52,7 +52,7 @@ To turn the AI into an active collaborator with system capabilities, Dyrected pu
 * **`dyrected_generate_block`:**
   * *Purpose:* Instructs the agent to append a newly designed block schema configuration into the config file.
 * **`dyrected_sync_schema`:**
-  * *Purpose:* Executes the database migration/synchronization command (`npx @dyrected/cli sync:schema`) directly on behalf of the developer.
+  * *Purpose:* Executes the database migration/synchronization command (`npx dyrected sync:schema`) directly on behalf of the developer.
 
 ---
 
@@ -76,7 +76,7 @@ npx dyrected generate:block "testimonial-slider" "A carousel of client reviews f
    * Appends the new block configuration into the blocks array of `dyrected.config.ts`.
    * Generates a matching frontend component stub in the project's design system directory (e.g. `components/blocks/TestimonialSlider.vue` or `components/blocks/TestimonialSlider.tsx`).
 4. **Schema Sync:**
-   * Automatically executes `npx @dyrected/cli sync:schema` to provision the database schema safely.
+   * Automatically executes `npx dyrected sync:schema` to provision the database schema safely.
 
 ---
 

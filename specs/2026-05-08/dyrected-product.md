@@ -407,7 +407,7 @@ The SDK exposes a simple `useForm()` hook for React and Vue that handles submiss
 | `@dyrected/next`  | Next.js adapter and hooks            |
 | `@dyrected/nuxt`  | Nuxt module and composables          |
 | `@dyrected/admin` | Standalone React admin UI            |
-| `@dyrected/cli`   | Setup, migration, and management CLI |
+| `dyrected`   | Setup, migration, and management CLI |
 
 ---
 

@@ -19,19 +19,23 @@ You still choose separately:
 ## Getting Started
 
 ### 1. Create your site
+
 Sign up at [app.dyrected.com](https://app.dyrected.com) and create a new **Site**.
 
 ### 2. Copy the AI Prompt
+
 Immediately after creating your site, you will see a **Setup Prompt**. This is pre-filled with your Site ID and API Key.
 
 ### 3. Give it to your AI
-Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.). 
+
+Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.).
 
 **The AI will automatically:**
+
 - Install the necessary dependencies (`@dyrected/admin`, `@dyrected/core`).
 - Create a `dyrected.config.ts` with your initial collections.
 - **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
-- **Sync your Schema**: The AI will run `npx @dyrected/cli sync:schema` for you so your cloud database is ready immediately.
+- **Sync your Schema**: The AI will run `npx dyrected sync:schema` for you so your cloud database is ready immediately.
 
 ### 4. Choose the editor entry point
 

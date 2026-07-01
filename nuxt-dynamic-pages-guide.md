@@ -15,7 +15,7 @@ Dyrected comes with an interactive command-line setup wizard that detects your N
 Run this command in the root of your Nuxt project:
 
 ```bash
-npx @dyrected/cli init
+npx dyrected init
 ```
 
 ### What the CLI does for you:

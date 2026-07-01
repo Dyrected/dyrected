@@ -107,7 +107,7 @@ All published packages are scoped under `@dyrected`:
 @dyrected/next
 @dyrected/nuxt
 @dyrected/admin
-@dyrected/cli
+dyrected
 ```
 
 ### Cross-Package References

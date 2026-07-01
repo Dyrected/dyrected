@@ -1,6 +1,6 @@
 # Dyrected CLI Reference
 
-The `@dyrected/cli` is your primary tool for managing the Dyrected lifecycle—from initial project setup to database migrations and TypeScript type generation.
+The `dyrected` is your primary tool for managing the Dyrected lifecycle—from initial project setup to database migrations and TypeScript type generation.
 
 ---
 
@@ -9,7 +9,7 @@ The `@dyrected/cli` is your primary tool for managing the Dyrected lifecycle—f
 The CLI is typically installed as a development dependency in your project:
 
 ```bash
-pnpm add -D @dyrected/cli
+pnpm add -D dyrected
 ```
 
 You can then run it via `npx` or `pnpm`:

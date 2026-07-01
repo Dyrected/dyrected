@@ -6,6 +6,7 @@ description: Build a dynamic, block-based page builder in Nuxt 3 using catch-all
 This guide walks you through setting up dynamic, block-based pages in a **Nuxt 3** application using **Dyrected CMS** (a self-hosted, headless, developer-first TypeScript CMS).
 
 There are two ways to get started:
+
 1. **The Automatic Way (Recommended)**: Use the interactive CLI tool to scaffold everything in seconds.
 2. **The Manual Way**: Build your files and install packages step-by-step.
 
@@ -18,10 +19,11 @@ Dyrected comes with an interactive command-line setup wizard that detects your N
 Run this command in the root of your Nuxt project:
 
 ```bash
-npx @dyrected/cli init
+npx dyrected init
 ```
 
 ### What the CLI does for you:
+
 1. **Detects your framework**: Auto-detects that you are using Nuxt 3.
 2. **Dashboard Mount Path**: Prompts you for where the CMS editor dashboard should live (defaults to `/admin` or `/cms`).
 3. **Asks for Database/Storage Adapters**:
@@ -45,6 +47,7 @@ Install the main Nuxt module and SDK:
 ```bash
 pnpm add @dyrected/core @dyrected/nuxt @dyrected/sdk
 ```
+
 </Step>
 <Step>
 ### Choose and Configure Your Adapters
@@ -52,16 +55,18 @@ pnpm add @dyrected/core @dyrected/nuxt @dyrected/sdk
 Dyrected CMS relies on **Database** and **Storage** adapters to store structure and media files. You must select one database adapter and one storage adapter for your project.
 
 ### 1. Database Adapters
+
 Choose a database package to install based on your environment:
 
-| Database | Package | Best For |
-|---|---|---|
-| **SQLite** | `@dyrected/db-sqlite` | Local development, single-instance deployments |
+| Database       | Package                 | Best For                                           |
+| -------------- | ----------------------- | -------------------------------------------------- |
+| **SQLite**     | `@dyrected/db-sqlite`   | Local development, single-instance deployments     |
 | **PostgreSQL** | `@dyrected/db-postgres` | Production apps, robust scaling, cloud deployments |
-| **MySQL** | `@dyrected/db-mysql` | Traditional relational database setups |
-| **MongoDB** | `@dyrected/db-mongodb` | NoSQL document storage setups |
+| **MySQL**      | `@dyrected/db-mysql`    | Traditional relational database setups             |
+| **MongoDB**    | `@dyrected/db-mongodb`  | NoSQL document storage setups                      |
 
 Install your selected database adapter:
+
 ```bash
 # SQLite (Local Dev)
 pnpm add @dyrected/db-sqlite
@@ -71,16 +76,18 @@ pnpm add @dyrected/db-postgres
 ```
 
 ### 2. Media Storage Adapters
+
 Choose a storage package to store uploaded media/images:
 
-| Provider | Package | Best For |
-|---|---|---|
-| **Local Filesystem** | `@dyrected/storage-local` | Local development, Docker mounts |
-| **AWS S3** | `@dyrected/storage-s3` | standard cloud storage, AWS ecosystems |
-| **Backblaze B2** | `@dyrected/storage-b2` | Highly affordable, high-performance S3-compatible cloud storage |
-| **Cloudinary** | `@dyrected/storage-cloudinary` | Automatic image optimization, cropping, and dynamic resizing |
+| Provider             | Package                        | Best For                                                        |
+| -------------------- | ------------------------------ | --------------------------------------------------------------- |
+| **Local Filesystem** | `@dyrected/storage-local`      | Local development, Docker mounts                                |
+| **AWS S3**           | `@dyrected/storage-s3`         | standard cloud storage, AWS ecosystems                          |
+| **Backblaze B2**     | `@dyrected/storage-b2`         | Highly affordable, high-performance S3-compatible cloud storage |
+| **Cloudinary**       | `@dyrected/storage-cloudinary` | Automatic image optimization, cropping, and dynamic resizing    |
 
 Install your selected storage adapter:
+
 ```bash
 # Local uploads
 pnpm add @dyrected/storage-local
@@ -88,6 +95,7 @@ pnpm add @dyrected/storage-local
 # AWS S3 / Cloud uploads
 pnpm add @dyrected/storage-s3
 ```
+
 </Step>
 <Step>
 ### Write Your CMS Config (`dyrected.config.ts`)
@@ -107,9 +115,7 @@ import path from "node:path";
 const Media = defineCollection({
   slug: "media",
   upload: true,
-  fields: [
-    { name: "alt", type: "text", label: "Alt Text" }
-  ],
+  fields: [{ name: "alt", type: "text", label: "Alt Text" }],
 });
 
 // 2. Define a Pages collection for dynamic route handling
@@ -118,13 +124,13 @@ const Pages = defineCollection({
   admin: {
     useAsTitle: "title",
     group: "Content",
-    previewUrl: "slug == 'home' ? '/' : '/' + slug", 
+    previewUrl: "slug == 'home' ? '/' : '/' + slug",
     defaultColumns: ["title", "slug", "updatedAt"],
   },
   fields: [
     { name: "title", type: "text", label: "Title", required: true },
     { name: "slug", type: "text", label: "Slug", required: true, unique: true },
-    
+
     // SEO fields grouped together
     {
       name: "seo",
@@ -136,7 +142,7 @@ const Pages = defineCollection({
         { name: "metaDescription", type: "textarea", label: "Meta Description" },
       ],
     },
-    
+
     // Page Layout containing custom block types
     {
       name: "layout",
@@ -188,10 +194,11 @@ export default defineConfig({
 
 > **Production Alternative (PostgreSQL & S3):**
 > If you are deploying to production, replace the `db` and `storage` blocks with:
+>
 > ```ts
 > import { PostgresAdapter } from "@dyrected/db-postgres";
 > import { S3Adapter } from "@dyrected/storage-s3";
-> 
+>
 > export default defineConfig({
 >   // ... collections ...
 >   db: new PostgresAdapter({
@@ -203,10 +210,11 @@ export default defineConfig({
 >     credentials: {
 >       accessKeyId: process.env.S3_ACCESS_KEY,
 >       secretAccessKey: process.env.S3_SECRET_KEY,
->     }
+>     },
 >   }),
 > });
 > ```
+
 </Step>
 <Step>
 ### Hook Up the Nuxt Module
@@ -219,8 +227,9 @@ export default defineNuxtConfig({
   dyrected: {
     apiBase: "/dyrected", // Handles dashboard endpoints under /dyrected
   },
-})
+});
 ```
+
 </Step>
 <Step>
 ### Build Block UI Components
@@ -228,13 +237,14 @@ export default defineNuxtConfig({
 Create Vue components that reflect the layout blocks you configured in the CMS.
 
 ### 1. `components/blocks/Hero.vue`
+
 ```vue
 <script setup lang="ts">
 defineProps<{
-  heading: string
-  subheading?: string
-  ctaLink?: { url?: string; label?: string }
-}>()
+  heading: string;
+  subheading?: string;
+  ctaLink?: { url?: string; label?: string };
+}>();
 </script>
 
 <template>
@@ -243,7 +253,7 @@ defineProps<{
       <h1 class="text-5xl font-extrabold mb-4">{{ heading }}</h1>
       <p v-if="subheading" class="text-xl text-slate-300 mb-8">{{ subheading }}</p>
       <a v-if="ctaLink?.url" :href="ctaLink.url" class="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700">
-        {{ ctaLink.label || 'Learn More' }}
+        {{ ctaLink.label || "Learn More" }}
       </a>
     </div>
   </section>
@@ -251,12 +261,13 @@ defineProps<{
 ```
 
 ### 2. `components/blocks/Features.vue`
+
 ```vue
 <script setup lang="ts">
 defineProps<{
-  heading?: string
-  items: Array<{ title: string; description: string }>
-}>()
+  heading?: string;
+  items: Array<{ title: string; description: string }>;
+}>();
 </script>
 
 <template>
@@ -275,39 +286,35 @@ defineProps<{
 ```
 
 ### 3. Dispatch Blocks with a `BlockRenderer.vue`
+
 The `BlockRenderer` resolves which Vue component should be loaded based on the CMS block type. It also adds the `data-dy-path` property which Dyrected needs to enable inline highlights in the editor.
 
 ```vue
 <!-- components/BlockRenderer.vue -->
 <script setup lang="ts">
-import { defineAsyncComponent, computed } from 'vue'
+import { defineAsyncComponent, computed } from "vue";
 
 const props = defineProps<{
   block: {
-    blockType: string
-    [key: string]: any
-  }
-  index?: number
-}>()
+    blockType: string;
+    [key: string]: any;
+  };
+  index?: number;
+}>();
 
 // Dynamic preview highlight pathway
-const path = computed(() => props.index !== undefined ? `layout.${props.index}` : undefined)
+const path = computed(() => (props.index !== undefined ? `layout.${props.index}` : undefined));
 
 const blockComponents: Record<string, any> = {
-  hero: defineAsyncComponent(() => import('~/components/blocks/Hero.vue')),
-  features: defineAsyncComponent(() => import('~/components/blocks/Features.vue')),
-}
+  hero: defineAsyncComponent(() => import("~/components/blocks/Hero.vue")),
+  features: defineAsyncComponent(() => import("~/components/blocks/Features.vue")),
+};
 
-const SelectedBlock = computed(() => blockComponents[props.block.blockType])
+const SelectedBlock = computed(() => blockComponents[props.block.blockType]);
 </script>
 
 <template>
-  <component
-    :is="SelectedBlock"
-    v-if="SelectedBlock"
-    v-bind="block"
-    :data-dy-path="path"
-  />
+  <component :is="SelectedBlock" v-if="SelectedBlock" v-bind="block" :data-dy-path="path" />
   <div v-else class="p-6 border border-dashed border-red-400 text-red-500 text-center rounded my-4">
     Unknown block type: <strong>{{ block.blockType }}</strong>
   </div>
@@ -325,30 +332,30 @@ Create the page at `pages/[...slug].vue`:
 ```vue
 <!-- pages/[...slug].vue -->
 <script setup lang="ts">
-const route = useRoute()
+const route = useRoute();
 
 // 1. Resolve slug path - fallback empty slugs to 'home'
 const slug = computed(() => {
   const s = Array.isArray(route.params.slug) ? route.params.slug.join("/") : route.params.slug;
   return s || "home";
-})
+});
 
 // 2. Query CMS database for matching page entry
 const { data: response } = await useDyrectedCollection("pages", {
   where: { slug: { equals: slug.value } },
   limit: 1,
-})
+});
 
-const pageData = computed(() => response.value?.docs?.[0])
+const pageData = computed(() => response.value?.docs?.[0]);
 
 // 3. Wrap pageData to listen to incoming content updates from CMS editor iframe
 const { data: page } = useLivePreview({
   initialData: pageData.value,
-})
+});
 
 // 4. Handle 404 for pages not created in the CMS
 if (!page.value && slug.value !== "home") {
-  throw createError({ statusCode: 404, statusMessage: "Page Not Found" })
+  throw createError({ statusCode: 404, statusMessage: "Page Not Found" });
 }
 
 // 5. Dynamic SEO metadata
@@ -360,21 +367,19 @@ useHead({
       content: page.value?.seo?.metaDescription || "Welcome to my website.",
     },
   ],
-})
+});
 </script>
 
 <template>
   <main v-if="page">
-    <BlockRenderer 
-      v-for="(block, i) in page.layout" 
-      :key="i" 
-      :block="block" 
-      :index="i" 
-    />
+    <BlockRenderer v-for="(block, i) in page.layout" :key="i" :block="block" :index="i" />
   </main>
-  
+
   <!-- Fallback home page info when database is empty -->
-  <div v-else-if="slug === 'home'" class="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-slate-900 text-white">
+  <div
+    v-else-if="slug === 'home'"
+    class="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-slate-900 text-white"
+  >
     <h1 class="text-3xl font-bold mb-4">Welcome to your Dyrected CMS App!</h1>
     <p class="text-slate-400 mb-6">Log in to the dashboard to create your "home" page.</p>
     <NuxtLink to="/admin" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded">
@@ -394,7 +399,7 @@ Lastly, configure the admin client panel path. Create the page at `pages/admin.v
 <!-- pages/admin.vue -->
 <script setup lang="ts">
 // DyrectedAdmin component is auto-imported by @dyrected/nuxt
-definePageMeta({ layout: false }) // Avoid nesting within your default site header/footer layouts
+definePageMeta({ layout: false }); // Avoid nesting within your default site header/footer layouts
 </script>
 
 <template>
@@ -406,6 +411,7 @@ definePageMeta({ layout: false }) // Avoid nesting within your default site head
   </div>
 </template>
 ```
+
 </Step>
 <Step>
 ### Start Running & Creating Pages
@@ -420,7 +426,7 @@ definePageMeta({ layout: false }) // Avoid nesting within your default site head
    - Set **Title** to `Home Page`.
    - Set **Slug** to `home`.
    - In the **Page Layout** tab, click **Add Block** and select `Hero Banner` or `Features Grid`. Enter your text.
-5. Save the document and click the **Live Preview** button on the top right. 
+5. Save the document and click the **Live Preview** button on the top right.
 6. Watch your changes render in real time as you edit the fields!
-</Step>
+   </Step>
 </Steps>
