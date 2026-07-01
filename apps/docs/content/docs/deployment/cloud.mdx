@@ -1,14 +1,22 @@
 ---
-title: Quickstart with Dyrected Cloud
-description: The fastest way to get your CMS live. Choose your path to integration.
+title: Dyrected Cloud Backend
+description: Use Dyrected Cloud for the backend, then choose hosted admin or embedded admin based on the handoff you want.
 ---
 
-Dyrected Cloud handles the database, storage, and API, so you can focus on building your app. There are two main ways to get started:
+Dyrected Cloud handles the backend: database, storage, auth, and API. You keep your schema in code, then choose how editors access the admin.
 
----
+## What this page covers
 
-<Tabs items={['AI-First (Recommended)', 'Manual Setup']}>
-<Tab value="AI-First (Recommended)">
+Using Dyrected Cloud answers one question only:
+
+- **Where the backend runs**: on Dyrected's servers
+
+You still choose separately:
+
+- **Where editors use the admin**: hosted admin at `app.dyrected.com` or embedded admin in your app
+- **Who owns updates**: hosted admin updates are managed by Dyrected; embedded admin updates ship when you update your app packages and deploy
+
+## Getting Started
 
 ### 1. Create your site
 Sign up at [app.dyrected.com](https://app.dyrected.com) and create a new **Site**.
@@ -25,74 +33,32 @@ Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.).
 - **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
 - **Sync your Schema**: The AI will run `npx @dyrected/cli sync:schema` for you so your cloud database is ready immediately.
 
-### 4. Open your site
-Run your site and your new dashboard will be live at `yourwebsite.com/admin`.
+### 4. Choose the editor entry point
 
-</Tab>
-<Tab value="Manual Setup">
+After setup, decide where editors should work:
 
-### 1. Install Dependencies
-```bash
-pnpm add @dyrected/admin @dyrected/core @dyrected/next
-```
-
-### 2. Define your Config
-Create a `dyrected.config.ts` in your project root. No adapters are needed—Cloud handles everything.
-
-```ts
-import { defineConfig } from '@dyrected/core'
-
-export default defineConfig({
-  collections: [
-    {
-      slug: 'posts',
-      fields: [{ name: 'title', label: 'Title', type: 'text', required: true }],
-    },
-  ],
-})
-```
-
-> **Building a marketing site?** For pages where editors assemble sections (hero, rich text, call-to-action), use a `blocks` field instead of a fixed collection. See [Building a Page Builder](/docs/guides/building-a-page-builder).
-
-### 3. Embed the Admin UI
-Create a page in your app to host the dashboard.
-
-**Next.js (App Router):**
-```tsx
-// app/admin/page.tsx
-import { DyrectedAdmin } from '@dyrected/next'
-
-export default function AdminPage() {
-  return <DyrectedAdmin />
-}
-```
-
-**React (Vite):**
-```tsx
-import { AdminUI } from '@dyrected/admin'
-import '@dyrected/admin/styles'
-
-export default function AdminPage() {
-  return <AdminUI apiKey="..." siteId="..." />
-}
-```
-
-### 4. Sync Schema
-```bash
-npx @dyrected/cli sync:schema
-```
-
-</Tab>
-</Tabs>
+- **Hosted admin**: send them to [app.dyrected.com](https://app.dyrected.com)
+- **Embedded admin**: run your site and use the dashboard at `yourwebsite.com/admin`
 
 ---
 
-## Managed Admin vs. Embedded Admin
+## Hosted Admin vs. Embedded Admin
 
-While you can always use the [Hosted Dashboard](https://app.dyrected.com) to manage content, embedding it into your own app is the "Pro" way to work. It allows you to:
-- Keep everything under your own domain (e.g., `my-app.com/admin`).
-- Give your clients a white-labeled experience.
-- Build custom UI components alongside the CMS.
+Both options can use the same Cloud backend.
+
+### Hosted Admin
+
+- Editors log in at [app.dyrected.com](https://app.dyrected.com)
+- Admin updates are automatic
+- Best for the fastest setup and lowest maintenance
+
+### Embedded Admin
+
+- Editors log in inside your app, usually at `/admin`
+- Admin updates ship when you update packages and deploy your app
+- Best for white-label client handoff and custom in-app workflows
+
+If you want the admin on the client's domain, use embedded admin. If you want Dyrected to handle admin updates, use hosted admin.
 
 ---
 
@@ -101,4 +67,3 @@ While you can always use the [Hosted Dashboard](https://app.dyrected.com) to man
 - [Managing Media](/docs/guides/file-uploads)
 - [Authentication](/docs/guides/adding-authentication)
 - [Docker deployment](/docs/deployment/docker) if you want to host Dyrected yourself.
-

@@ -1,14 +1,26 @@
 ---
 title: Introduction
-description: What Dyrected is and how the pieces fit together.
+description: What Dyrected is, who it is for, and how the hosting options fit together.
 ---
 
-Dyrected is a code-first headless CMS. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates a REST API, an Admin UI, and a type-safe SDK from it automatically. No clicking through UI builders to create fields.
+Dyrected is a code-first CMS for websites and apps that need a safe handoff. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates the API, admin, and SDK automatically. Your team or client updates content. Your codebase and layout stay under your control.
 
 > **Philosophy**  
 > Dyrected handles the boring parts: storage, admin UI, access control, and relationship management. You own everything interesting: validation, business rules, emails, and concurrency. Collections define your data shape. API routes define your logic. The boundary is intentional and worth respecting from day one.
 
-The engine runs **inside your existing Next.js or Nuxt.js app** as a route handler. There is no separate CMS server to run.
+The core idea is simple: build the site the way you want, then give editors a controlled admin for the parts they should be allowed to change.
+
+---
+
+## Who Dyrected is for
+
+Dyrected is strongest when:
+
+- You build client websites and want to hand off content editing without handing over design control
+- You are a freelance developer tired of small text, image, and listing update requests
+- You have a product or marketing team that should own pricing pages, announcements, help content, or onboarding copy
+
+The engine can run **inside your existing Next.js or Nuxt.js app** as a route handler, or you can use Dyrected Cloud for the backend while keeping the same schema in your repo.
 
 ---
 
@@ -16,11 +28,11 @@ The engine runs **inside your existing Next.js or Nuxt.js app** as a route handl
 
 **`@dyrected/core`** — the engine. Mount it as a catch-all route in Next.js or as a Nuxt.js module. It handles the database, REST API, file uploads, auth, and email.
 
-**Admin UI** — auto-generated from your config. Mount it at `/admin`. Your clients use this to edit content. You never have to build a dashboard.
+**Admin UI** — auto-generated from your config. Use the hosted admin at `app.dyrected.com`, or mount it inside your app at `/admin`. Your clients or teammates use this to edit content. You never have to build a dashboard.
 
 **`@dyrected/sdk`** — a typed TypeScript client for fetching content from your frontend, Node scripts, or any other environment.
 
-**Dyrected Cloud** — managed hosting for the database, storage, and multi-site workspaces. The fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
+**Dyrected Cloud** — managed hosting for the backend: database, storage, auth, API, and multi-site workspaces. The fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
 
 ---
 
@@ -39,7 +51,15 @@ The short version: Dyrected gives you Payload's developer experience (config-as-
 
 ---
 
-## Self-hosted or Cloud?
+## Choose your setup
+
+There are three separate decisions to understand:
+
+1. **Where the backend runs**: Dyrected Cloud backend or self-hosted backend
+2. **Where editors use the admin**: hosted admin or embedded admin
+3. **Who owns updates**: Dyrected for hosted surfaces, or your app deployment/package updates for embedded and self-hosted surfaces
+
+### Backend location
 
 | | Self-Hosted | Cloud |
 |---|---|---|
@@ -51,13 +71,29 @@ The short version: Dyrected gives you Payload's developer experience (config-as-
 | **Price** | Free (BSL) | Paid — see [Billing](/docs/cloud/billing) |
 | **Best for** | Full control, data residency, offline | Speed, teams, multiple client sites |
 
-**Cloud makes sense when:**
+### Admin location
+
+| | Hosted Admin | Embedded Admin |
+|---|---|---|
+| **Where editors log in** | `app.dyrected.com` | Your app, usually at `/admin` |
+| **Branding** | Dyrected-hosted | White-label inside your domain |
+| **Updates** | Managed by Dyrected | Shipped when you update your app packages and deploy |
+| **Best for** | Fastest setup, lowest maintenance | Client handoff, custom workflows, own-domain experience |
+
+### When to choose each backend
+
+**Cloud backend makes sense when:**
 - You're an agency managing multiple client sites — each gets its own site in one workspace
 - You want to ship fast — no Postgres to provision, no S3 bucket to configure
 - You need multi-site without deploying new infrastructure
 - You're a solo developer who wants a low-maintenance stack
 
-Both modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
+**Self-hosted backend makes sense when:**
+- You want the engine, database, and file handling to live inside your own infrastructure
+- You need full control over deployment, networking, or data residency
+- You are comfortable owning backend upgrades and operational maintenance
+
+Both backend modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
 
 ---
 

@@ -6,8 +6,8 @@ export default function HomePage() {
   return (
     <main className="flex-1 space-y-20 pb-20">
       <Hero
-        title="Engineering-First Content Infrastructure"
-        description="The headless CMS that lives in your codebase. Framework-agnostic, AI-native, and built for speed."
+        title="Give every site you build a client-ready admin"
+        description="Dyrected adds a safe content admin to websites and SaaS apps, so clients and teams can update content without touching your design or creating engineering tickets."
       >
         <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
           <a href="/docs/getting-started/introduction" className="btn-lime rounded-full px-8 py-3 text-sm font-semibold">
@@ -22,6 +22,10 @@ export default function HomePage() {
             Star on GitHub
           </a>
         </div>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Use the hosted admin at <span className="font-medium text-foreground">app.dyrected.com</span> for automatic updates,
+          or mount the admin inside your app at <span className="font-medium text-foreground">/admin</span> for a white-label handoff.
+        </p>
       </Hero>
 
       <section className="container mx-auto px-4 max-w-6xl">
@@ -96,7 +100,7 @@ export default function HomePage() {
             Ready to build?
           </h2>
           <p className="cta-lime-copy mb-8 max-w-sm mx-auto text-sm leading-relaxed">
-            Drop Dyrected into your Next.js or Nuxt app and have your first collection live in minutes.
+            Define what editors can change in code, then choose hosted admin or embedded admin based on how you want to hand it off.
           </p>
           <a href="/docs/getting-started/introduction" className="btn-dark-on-lime inline-flex items-center rounded-full px-8 py-3 text-sm font-semibold">
             Read the docs →

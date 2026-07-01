@@ -1,9 +1,16 @@
 ---
 title: Admin UI
-description: How the Dyrected Admin dashboard works, how to embed it, and how to customise it.
+description: How the Dyrected admin works, where it can live, and what changes when you embed it.
 ---
 
-The `@dyrected/admin` package is a React-based Admin UI that is **automatically generated** from your `dyrected.config.ts`. You define your schema once — the Admin renders the forms, tables, media browser, and global editors without any additional code.
+The `@dyrected/admin` package is a React-based Admin UI that is **automatically generated** from your `dyrected.config.ts`. You define your schema once — the admin renders the forms, tables, media browser, and global editors without any additional code.
+
+There are two ways editors can use it:
+
+- **Hosted admin** at `app.dyrected.com`, managed by Dyrected
+- **Embedded admin** inside your own app, usually at `/admin`
+
+That choice is separate from the backend choice. You can use the admin with either a Dyrected Cloud backend or a self-hosted backend.
 
 ---
 

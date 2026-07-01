@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Get Dyrected running — choose Cloud for zero infrastructure or self-hosted for full control.
+description: Get Dyrected running and choose your backend, admin location, and update model clearly.
 ---
 
 ## Prerequisites
@@ -11,10 +11,19 @@ Before you start, ensure you have:
 - A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
 
-<Tabs items={['Dyrected Cloud (SPA)', 'Next.js', 'Nuxt.js']}>
-<Tab value="Dyrected Cloud (SPA)">
+## First choose your setup
 
-**SPA** stands for Single-Page Application — a client-side app that runs entirely in the browser, such as a React (Vite), Vue, or Svelte project. There is no Node.js server handling CMS requests; your app fetches content directly from the Dyrected Cloud API using a site API key.
+Dyrected has three choices that are easy to blur together:
+
+- **Backend**: Dyrected Cloud backend or self-hosted backend
+- **Admin location**: hosted admin at `app.dyrected.com` or embedded admin in your app at `/admin`
+- **Update ownership**: hosted admin updates automatically; embedded admin ships with your app deploys; self-hosted backend upgrades are yours to manage
+
+If you want the shortest path with the least maintenance, start with a Cloud backend and hosted admin. If you want a white-label handoff, keep the Cloud backend and embed the admin into your app.
+
+## Cloud Backend
+
+This path uses the **Dyrected Cloud backend**. Your content API, database, storage, and auth live on Dyrected's servers. You can then choose either the hosted admin at `app.dyrected.com` or an embedded admin route inside your own app.
 
 Dyrected Cloud is designed for websites built with AI tools such as Lovable, Bolt, v0, Cursor, Replit, or Windsurf. Instead of writing integration code yourself, you copy a setup prompt from Dyrected and paste it into your AI builder. The AI handles the entire integration in stages.
 
@@ -45,14 +54,18 @@ The prompt makes the AI wait until the install stage before asking for credentia
 
 Open Dyrected and change a piece of content you can easily recognize — a heading, an image, or a list item. Confirm the change appears on the website and the design still looks right.
 
-**6. Invite the client**
+**6. Choose how the client logs in**
+
+- Use the **hosted admin** if you want automatic admin updates and the lowest maintenance
+- Use the **embedded admin** if you want the client to work inside your own domain at `/admin`
+
+**7. Invite the client**
 
 Invite the client only after one Dyrected edit appears on the live website.
 
-</Tab>
-<Tab value="Self-hosted Next.js">
+## Self-hosted Next.js
 
-The easiest way to get started with Next.js is using the interactive CLI.
+This path uses a **self-hosted backend** inside your Next.js app. Your admin can still live at `/admin`, but backend upgrades and infrastructure remain your responsibility.
 
 **1. Initialize**
 
@@ -80,10 +93,9 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 
 > **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
 
-</Tab>
-<Tab value="Self-hosted Nuxt.js">
+## Self-hosted Nuxt.js
 
-The easiest way to get started with Nuxt.js is using the interactive CLI.
+This path uses a **self-hosted backend** inside your Nuxt.js app. Your admin can still live at `/admin`, but backend upgrades and infrastructure remain your responsibility.
 
 **1. Initialize**
 
@@ -105,9 +117,6 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 3. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL to start managing content.
 
 > **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
-
-</Tab>
-</Tabs>
 
 ---
 

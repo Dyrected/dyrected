@@ -1,14 +1,24 @@
 ---
-title: Embedding the Admin UI
-description: Learn how to mount the Dyrected Dashboard directly inside your own React or Vue application.
+title: Embedded Admin
+description: Mount the Dyrected admin inside your app and understand when to choose it over the hosted admin.
 ---
 
-Dyrected is "Headless First," which means you can choose where the Admin UI lives. While we host it for you on Dyrected Cloud, you can also embed it directly into your own frontend application.
+Embedded admin means editors use Dyrected inside your own app, usually at `/admin`. This is separate from where the backend runs: you can embed the admin while using either a Dyrected Cloud backend or a self-hosted backend.
+
+Choose embedded admin when you want the client or team to manage content from your own domain. Choose the hosted admin at `app.dyrected.com` when you want Dyrected to handle admin updates for you.
 
 This is perfect for:
 - Giving clients a white-labeled dashboard under your own domain.
 - Building custom administrative workflows alongside the CMS.
 - Deploying a "Single Page App" (SPA) dashboard with zero backend requirements.
+
+## Update ownership
+
+When you embed the admin, the admin UI becomes part of your app package and deployment flow.
+
+- **Hosted admin** updates are managed by Dyrected
+- **Embedded admin** updates ship when you update packages and deploy your app
+- **Backend upgrades** still depend on whether you use the Cloud backend or a self-hosted backend
 
 ---
 
@@ -100,7 +110,7 @@ onUnmounted(() => {
 
 The Admin UI package is a standalone application that communicates with the Dyrected API via HTTP. 
 
-- **No Server Needed**: You can host this dashboard as a static site on Vercel, Netlify, or even GitHub Pages.
+- **No Server Needed for the Admin UI**: You can host this dashboard as a static site on Vercel, Netlify, or even GitHub Pages while still pointing it at a Cloud or self-hosted backend.
 - **Auto-Sync**: In **Self-Hosted** mode, the UI reflects changes as soon as you save your `dyrected.config.ts`. In **Cloud** mode, run `npx @dyrected/cli sync:schema` to push your local changes to the cloud API.
 - **Authentication**: By default, the UI handles its own login state, securely storing the session token in the browser.
 
