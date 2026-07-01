@@ -11,7 +11,9 @@ This guide explains how to migrate an existing `status` field to the new `workfl
 
 ---
 
-## 1. Remove the old `status` field
+<Steps>
+<Step>
+### Remove the old `status` field
 
 Remove your custom `status` field from the collection definition.
 
@@ -27,10 +29,9 @@ Remove your custom `status` field from the collection definition.
 +  ]
  })
 ```
-
----
-
-## 2. Enable the Workflow
+</Step>
+<Step>
+### Enable the Workflow
 
 Add the `publishingWorkflow()` (or your custom workflow definition) to the collection:
 
@@ -45,18 +46,16 @@ Add the `publishingWorkflow()` (or your custom workflow definition) to the colle
    ]
  })
 ```
-
----
-
-## 3. Update Custom Filters
+</Step>
+<Step>
+### Update Custom Filters
 
 If your frontend or API clients previously queried for published content by checking the `status` field (e.g., `?where={"status":{"equals":"published"}}`), you can remove this check entirely.
 
 When workflows are enabled, the `client.find()` and `client.findOne()` endpoints **automatically materialize the public snapshot** for anonymous users. Drafts are safely hidden without needing manual filters.
-
----
-
-## 4. Run the Data Migration
+</Step>
+<Step>
+### Run the Data Migration
 
 Workflow state is stored internally as `__workflow`. API responses expose the safe, request-specific metadata as `_workflow`. Published rows also need a `__published` snapshot, so migrate existing data before enabling the workflow configuration.
 
@@ -95,5 +94,8 @@ async function migrateStatuses() {
 }
 ```
 
-> [!CAUTION]
-> Remember to run this data migration script before updating the collection configuration in production. Documents missing `__workflow`, or published documents missing `__published`, are not served through the workflow-aware public API.
+<Warning>
+Remember to run this data migration script before updating the collection configuration in production. Documents missing `__workflow`, or published documents missing `__published`, are not served through the workflow-aware public API.
+</Warning>
+</Step>
+</Steps>

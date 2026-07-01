@@ -67,9 +67,9 @@ The following table summarizes the runtime capabilities of each collection hook,
 | `beforeTransition`| ✓ | ✓ (read-only) | ✗ | ✗ |
 | `afterTransition`| ✓ | ✓ | ✓ | ✓ (email, webhooks) |
 
-> [!IMPORTANT]
-> **If you find yourself building an API route just to trigger a side effect after a save, check if `afterChange` covers it first.**  
-> `afterChange` receives the full writable database adapter context. It is the correct place for emails, webhook pings, capacity checks, and any write that should happen after a document is successfully saved.
+<Note>
+**If you find yourself building an API route just to trigger a side effect after a save, check if `afterChange` covers it first.** `afterChange` receives the full writable database adapter context. It is the correct place for emails, webhook pings, capacity checks, and any write that should happen after a document is successfully saved.
+</Note>
 
 ### Example: Asynchronous `afterChange` Side Effect
 
@@ -237,7 +237,9 @@ When the returned list changes, the field's current value is **automatically cle
 }
 ```
 
-> **`onChange` vs `options`**: `onChange` sets a field's *value*. `options` sets the *available choices* for a select/radio field. Never return an options list from `onChange`, and never return a plain value from `options`.
+<Note>
+**`onChange` vs `options`**: `onChange` sets a field's *value*. `options` sets the *available choices* for a select/radio field. Never return an options list from `onChange`, and never return a plain value from `options`.
+</Note>
 
 ---
 

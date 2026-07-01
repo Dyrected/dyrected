@@ -95,8 +95,9 @@ export default async function BlogPage() {
 }
 ```
 
-> [!TIP]
-> **Avoid blank states:** You can pass `initialData: fallbackPosts` (imported from a local JSON file) into `find()`. If the database is currently empty, the SDK immediately returns this fallback data and automatically seeds the database in the background so editors can start editing it right away.
+<Note>
+**Avoid blank states:** You can pass `initialData: fallbackPosts` (imported from a local JSON file) into `find()`. If the database is currently empty, the SDK immediately returns this fallback data and automatically seeds the database in the background so editors can start editing it right away.
+</Note>
 
 </Tab>
 <Tab value="Nuxt.js">

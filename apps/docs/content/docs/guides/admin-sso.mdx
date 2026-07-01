@@ -59,7 +59,9 @@ The Admin auth collection is important. Even with external SSO, Dyrected still n
 
 ---
 
-## Step 1: Define an Admin auth collection
+<Steps>
+<Step>
+### Define an Admin auth collection
 
 If you do not set `adminAuth.collectionSlug`, Dyrected prefers `__admins`. That is the cleanest default for most teams.
 
@@ -88,7 +90,9 @@ If you are migrating from using a different Admin collection, read [Separating A
 
 ---
 
-## Step 2: Configure `adminAuth`
+</Step>
+<Step>
+### Configure `adminAuth`
 
 Add an external Admin auth configuration to `defineConfig`.
 
@@ -137,7 +141,9 @@ Optional but commonly useful:
 
 ---
 
-## Step 3: Register the callback URL in your identity provider
+</Step>
+<Step>
+### Register the callback URL in your identity provider
 
 By default, Dyrected uses this callback pattern:
 
@@ -161,7 +167,9 @@ Important constraints:
 
 ---
 
-## Step 4: Decide the provisioning mode
+</Step>
+<Step>
+### Decide the provisioning mode
 
 `provisioningMode` controls how Dyrected admits external identities into the Admin layer.
 
@@ -192,7 +200,9 @@ In this mode, a valid OIDC identity is still rejected if no matching Admin user 
 
 ---
 
-## Step 5: Map claims if your provider does not use the defaults
+</Step>
+<Step>
+### Map claims if your provider does not use the defaults
 
 By default, Dyrected expects:
 
@@ -235,7 +245,9 @@ Common use cases:
 
 ---
 
-## Step 6: Write `resolveAccess`
+</Step>
+<Step>
+### Write `resolveAccess`
 
 `resolveAccess` is the most important part of the setup. It decides whether the authenticated identity should be allowed into the Admin UI and what Dyrected-side roles or extra data should be stored.
 
@@ -299,7 +311,9 @@ Use `resolveAccess` for:
 
 ---
 
-## Step 7: Test the full login flow
+</Step>
+<Step>
+### Test the full login flow
 
 Do not stop after saving the config. Test the whole redirect chain.
 
@@ -339,6 +353,8 @@ After a successful callback:
 - Dyrected exchanges the external identity for a Dyrected Admin token
 - the Admin UI loads as the provisioned user
 - `/api/collections/__admins/me` or your configured Admin collection `/me` resolves successfully
+</Step>
+</Steps>
 
 ---
 
@@ -433,8 +449,8 @@ If your provider requires an explicit redirect URI, set `redirectUri` in the Dyr
 
 ## Troubleshooting
 
-### `Admin auth provider not found.`
-
+<Accordions type="single">
+<Accordion title="Admin auth provider not found.">
 Meaning:
 
 - the provider ID in the URL does not exist in `adminAuth.providers`
@@ -445,9 +461,8 @@ Check:
 - `mode: 'external'`
 - provider `id`
 - whether dynamic `onSchemaFetch` is returning the expected `adminAuth`
-
-### `Missing OIDC callback parameters.`
-
+</Accordion>
+<Accordion title="Missing OIDC callback parameters.">
 Meaning:
 
 - the provider did not return `code` and `state`
@@ -457,9 +472,8 @@ Check:
 
 - callback URL registration in the identity provider
 - whether the provider is redirecting to the right Dyrected route
-
-### `Failed to load OIDC discovery document.`
-
+</Accordion>
+<Accordion title="Failed to load OIDC discovery document.">
 Meaning:
 
 - Dyrected could not fetch `/.well-known/openid-configuration`
@@ -468,9 +482,8 @@ Check:
 
 - `issuer` URL
 - network reachability from your server environment
-
-### `OIDC token exchange failed.`
-
+</Accordion>
+<Accordion title="OIDC token exchange failed.">
 Meaning:
 
 - the authorization code could not be exchanged for tokens
@@ -481,9 +494,8 @@ Check:
 - `clientSecret`
 - `redirectUri`
 - whether the provider expects a different redirect URI than the one Dyrected is sending
-
-### `OIDC nonce verification failed.` or `OIDC state verification failed.`
-
+</Accordion>
+<Accordion title="OIDC nonce verification failed. or OIDC state verification failed.">
 Meaning:
 
 - callback verification failed
@@ -493,9 +505,8 @@ Check:
 - whether the callback is completing in the same browser flow
 - whether reverse proxies or auth middleware are interfering
 - whether `DYRECTED_JWT_SECRET` is stable across the request chain
-
-### `External identity is missing a subject.`
-
+</Accordion>
+<Accordion title="External identity is missing a subject.">
 Meaning:
 
 - Dyrected could not find a usable `sub` claim
@@ -504,9 +515,8 @@ Check:
 
 - provider token contents
 - `claimMapping.sub` if your provider uses a nonstandard claim name
-
-### `This account has not been provisioned for admin access.`
-
+</Accordion>
+<Accordion title="This account has not been provisioned for admin access.">
 Meaning:
 
 - `provisioningMode` is `preprovisioned_only`
@@ -516,9 +526,8 @@ Fix:
 
 - create the Admin user first
 - or switch to a JIT provisioning mode if that matches your policy
-
-### `Access denied for this site.`
-
+</Accordion>
+<Accordion title="Access denied for this site.">
 Meaning:
 
 - `resolveAccess` returned `allowed: false`
@@ -527,9 +536,8 @@ Check:
 
 - group/role claims returned by the provider
 - tenant or site logic in `resolveAccess`
-
-### Login succeeds, but `/me` fails
-
+</Accordion>
+<Accordion title="Login succeeds, but /me fails">
 Meaning:
 
 - the Dyrected-side Admin token was issued against a different collection than the Admin UI expects
@@ -539,6 +547,8 @@ Check:
 - `adminAuth.collectionSlug`
 - whether your configured Admin collection actually has `auth: true`
 - whether the Admin collection is the one the UI is using
+</Accordion>
+</Accordions>
 
 ---
 

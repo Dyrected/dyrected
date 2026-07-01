@@ -36,18 +36,36 @@ import { DyrectedAdmin } from '@dyrected/vue'
 
 ### Props
 
-| Prop | Type | Required | Description |
-|---|---|---|---|
-| `baseUrl` | `string` | ✅ | The base URL of your Dyrected API. |
-| `apiKey` | `string` | ✅ | The Site API key used to authenticate requests. |
-| `siteId` | `string` | | Required in Cloud mode. |
-| `basename` | `string` | | The URL path prefix for the admin (default: `/admin`). |
+<TypeTable
+  type={{
+    baseUrl: {
+      description: 'The base URL of your Dyrected API.',
+      type: 'string',
+      required: true,
+    },
+    apiKey: {
+      description: 'The Site API key used to authenticate requests.',
+      type: 'string',
+      required: true,
+    },
+    siteId: {
+      description: 'Required in Cloud mode.',
+      type: 'string',
+    },
+    basename: {
+      description: 'The URL path prefix for the admin (default: `/admin`).',
+      type: 'string',
+    },
+  }}
+/>
 
 ### Passing Vue components as custom field inputs
 
 You can inject Vue components as custom admin field inputs. The bridge wraps them automatically so they render inside the React-based Admin UI.
 
-#### Step 1 — Register the key in your collection schema
+<Steps>
+<Step>
+### Register the key in your collection schema
 
 In your `dyrected.config.ts`, add `admin.component` to any field. The value is a **string key** that maps to the component you provide to `<DyrectedAdmin>`:
 
@@ -76,18 +94,40 @@ export default defineConfig({
 })
 ```
 
-#### Step 2 — Write your Vue component
+</Step>
+<Step>
+### Write your Vue component
 
 The bridge passes the following **props** to your component:
 
-| Prop | Type | Description |
-|---|---|---|
-| `value` | `any` | The current field value from the form state |
-| `onChange` | `(value: any) => void` | Call this to update the field value |
-| `field` | `FieldSchema` | The full field config object from your collection schema |
-| `path` | `string` | The dot-notation path of the field in the form (e.g. `brandColor`) |
-| `disabled` | `boolean` | `true` when the field is read-only or the user lacks update access |
-| `collection` | `string` | The slug of the current collection |
+<TypeTable
+  type={{
+    value: {
+      description: 'The current field value from the form state',
+      type: 'any',
+    },
+    onChange: {
+      description: 'Call this to update the field value',
+      type: '(value: any) => void',
+    },
+    field: {
+      description: 'The full field config object from your collection schema',
+      type: 'FieldSchema',
+    },
+    path: {
+      description: 'The dot-notation path of the field in the form (e.g. `brandColor`)',
+      type: 'string',
+    },
+    disabled: {
+      description: '`true` when the field is read-only or the user lacks update access',
+      type: 'boolean',
+    },
+    collection: {
+      description: 'The slug of the current collection',
+      type: 'string',
+    },
+  }}
+/>
 
 ```vue
 <!-- components/BrandColorPicker.vue -->
@@ -112,7 +152,9 @@ const props = defineProps<{
 </template>
 ```
 
-#### Step 3 — Pass the component to `<DyrectedAdmin>`
+</Step>
+<Step>
+### Pass the component to `<DyrectedAdmin>`
 
 ```vue
 <!-- pages/admin.vue -->
@@ -136,6 +178,8 @@ import BrandColorPicker from '~/components/BrandColorPicker.vue'
 ```
 
 The key (`'products.brandColor'`) must exactly match the `admin.component` value in your schema.
+</Step>
+</Steps>
 
 #### Virtual fields (computed/read-only display)
 
@@ -283,10 +327,18 @@ const { data, isLive } = useLivePreview<T>({
 })
 ```
 
-| Return | Type | Description |
-|---|---|---|
-| `data` | `Ref<T>` | Reactive live data — updates on every `postMessage` from the Admin |
-| `isLive` | `Ref<boolean>` | `true` once the first preview message has been received |
+<TypeTable
+  type={{
+    data: {
+      description: 'Reactive live data — updates on every `postMessage` from the Admin',
+      type: 'Ref<T>',
+    },
+    isLive: {
+      description: '`true` once the first preview message has been received',
+      type: 'Ref<boolean>',
+    },
+  }}
+/>
 
 ### Inline editing support
 

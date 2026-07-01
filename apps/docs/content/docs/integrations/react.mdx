@@ -13,8 +13,9 @@ The `@dyrected/react` package is the React integration layer for Dyrected. It pr
 pnpm add @dyrected/react @dyrected/sdk
 ```
 
-> [!NOTE]
-> To use `<DyrectedAdmin />`, your app must also have `react-router-dom` and `@tanstack/react-query` installed — these are peer dependencies of the admin UI bundle.
+<Note>
+To use `<DyrectedAdmin />`, your app must also have `react-router-dom` and `@tanstack/react-query` installed — these are peer dependencies of the admin UI bundle.
+</Note>
 
 ---
 
@@ -177,5 +178,6 @@ import { DyrectedMedia } from '@dyrected/react'
 <DyrectedMedia media={post.featuredMedia} width={800} height={450} />
 ```
 
-> [!TIP]
-> If you are using **Next.js**, prefer `DyrectedImage` and `DyrectedMedia` from `@dyrected/next` — they use `next/image` for automatic optimisation.
+<Note>
+If you are using **Next.js**, prefer `DyrectedImage` and `DyrectedMedia` from `@dyrected/next` — they use `next/image` for automatic optimisation.
+</Note>

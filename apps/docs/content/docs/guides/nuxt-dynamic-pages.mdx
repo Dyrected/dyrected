@@ -37,16 +37,17 @@ npx @dyrected/cli init
 
 If you prefer configuring your stack by hand, follow these steps:
 
-### Step 1: Install Core Dependencies
+<Steps>
+<Step>
+### Install Core Dependencies
 Install the main Nuxt module and SDK:
 
 ```bash
 pnpm add @dyrected/core @dyrected/nuxt @dyrected/sdk
 ```
-
----
-
-## 🗄️ Step 2: Choose and Configure Your Adapters
+</Step>
+<Step>
+### Choose and Configure Your Adapters
 
 Dyrected CMS relies on **Database** and **Storage** adapters to store structure and media files. You must select one database adapter and one storage adapter for your project.
 
@@ -87,10 +88,9 @@ pnpm add @dyrected/storage-local
 # AWS S3 / Cloud uploads
 pnpm add @dyrected/storage-s3
 ```
-
----
-
-### Step 3: Write Your CMS Config (`dyrected.config.ts`)
+</Step>
+<Step>
+### Write Your CMS Config (`dyrected.config.ts`)
 
 Create a `dyrected.config.ts` in your root directory. This configures the connection parameters, collection schemas, and globals.
 
@@ -207,10 +207,9 @@ export default defineConfig({
 >   }),
 > });
 > ```
-
----
-
-### Step 4: Hook Up the Nuxt Module
+</Step>
+<Step>
+### Hook Up the Nuxt Module
 Register the `@dyrected/nuxt` module in your `nuxt.config.ts`:
 
 ```ts
@@ -222,10 +221,9 @@ export default defineNuxtConfig({
   },
 })
 ```
-
----
-
-## 🎨 Step 5: Build Block UI Components
+</Step>
+<Step>
+### Build Block UI Components
 
 Create Vue components that reflect the layout blocks you configured in the CMS.
 
@@ -316,9 +314,9 @@ const SelectedBlock = computed(() => blockComponents[props.block.blockType])
 </template>
 ```
 
----
-
-## 🎛️ Step 6: Create the Catch-All Route with Live Preview
+</Step>
+<Step>
+### Create the Catch-All Route with Live Preview
 
 Nuxt uses catch-all routes (`[...slug].vue`) to dynamically load any page created in the CMS. By wrapping page data in the `useLivePreview` composable, the page content updates instantly inside the admin editor panel!
 
@@ -386,9 +384,9 @@ useHead({
 </template>
 ```
 
----
-
-## 💻 Step 7: Mount the Admin Dashboard
+</Step>
+<Step>
+### Mount the Admin Dashboard
 
 Lastly, configure the admin client panel path. Create the page at `pages/admin.vue`:
 
@@ -408,10 +406,9 @@ definePageMeta({ layout: false }) // Avoid nesting within your default site head
   </div>
 </template>
 ```
-
----
-
-## ⚡ Start Running & Creating Pages
+</Step>
+<Step>
+### Start Running & Creating Pages
 
 1. Run the local development server:
    ```bash
@@ -425,3 +422,5 @@ definePageMeta({ layout: false }) // Avoid nesting within your default site head
    - In the **Page Layout** tab, click **Add Block** and select `Hero Banner` or `Features Grid`. Enter your text.
 5. Save the document and click the **Live Preview** button on the top right. 
 6. Watch your changes render in real time as you edit the fields!
+</Step>
+</Steps>

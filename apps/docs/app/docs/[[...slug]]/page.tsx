@@ -5,6 +5,9 @@ import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page
 import defaultMdxComponents from 'fumadocs-ui/mdx'
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs'
 import { Steps, Step } from 'fumadocs-ui/components/steps'
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion'
+import { TypeTable } from 'fumadocs-ui/components/type-table'
+import { Files, File, Folder } from 'fumadocs-ui/components/files'
 import { CopyPageButton } from '@/components/copy-page-button'
 import { CopyPromptButton } from '@/components/copy-prompt-button'
 import { SetupWizard } from '@/components/setup-wizard'
@@ -39,7 +42,25 @@ export default async function Page({ params }: Props) {
         <CopyPageButton content={rawContent} />
       </div>
       <DocsBody>
-        <MDX components={{ ...defaultMdxComponents, Tab, Tabs, Steps, Step, CopyPromptButton, SetupWizard, Note, Warning }} />
+        <MDX
+          components={{
+            ...defaultMdxComponents,
+            Tab,
+            Tabs,
+            Steps,
+            Step,
+            Accordion,
+            Accordions,
+            TypeTable,
+            Files,
+            File,
+            Folder,
+            CopyPromptButton,
+            SetupWizard,
+            Note,
+            Warning,
+          }}
+        />
       </DocsBody>
     </DocsPage>
   )

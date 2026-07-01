@@ -26,10 +26,20 @@ export const Posts = defineCollection({
 })
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `singular` | `string` | capitalized slug | Used in "Create \{singular\}" buttons and breadcrumbs. |
-| `plural` | `string` | capitalized slug | Used in the sidebar navigation and list headings. |
+<TypeTable
+  type={{
+    singular: {
+      description: 'Used in "Create {singular}" buttons and breadcrumbs.',
+      type: "string",
+      default: "capitalized slug",
+    },
+    plural: {
+      description: "Used in the sidebar navigation and list headings.",
+      type: "string",
+      default: "capitalized slug",
+    },
+  }}
+/>
 
 ---
 
@@ -52,16 +62,55 @@ export const Posts = defineCollection({
 })
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `icon` | `AdminIconName` | Contextual default | Lucide component name displayed in the sidebar, such as `'Newspaper'` or `'ShoppingBag'`. TypeScript autocompletes valid names and rejects invalid ones. |
-| `useAsTitle` | `string` | `'id'` | The field name used as the document title throughout the Admin UI — in the list table, breadcrumb, and relationship pickers. |
-| `defaultColumns` | `string[]` | First 3 non-hidden fields | The ordered list of field names to display as columns in the list table. If omitted, the first three visible fields are shown. |
-| `group` | `string` | none | Groups this collection under a labelled section in the sidebar. Collections with the same `group` string are collapsed together. |
-| `hidden` | `boolean` | `false` | Hides the collection from the sidebar entirely. The API routes still exist; only the Admin UI navigation link is removed. |
-| `filterable` | `boolean` | `true` | Enables or disables the list filter builder for this collection. |
-| `previewUrl` | `string \| (doc, { locale }) => string` | none | Enables the Live Preview panel on the edit page. Provide a static URL string or a function that receives the current document and returns a URL. |
-| `previewMode` | `'postMessage' \| 'token'` | `'postMessage'` | How the Admin UI communicates draft data to the preview iframe. `postMessage` requires no server round-trip and works for same-origin or CORS-enabled frontends. `token` issues a signed preview token stored in Redis, suitable for statically generated sites. |
+<TypeTable
+  type={{
+    icon: {
+      description:
+        "Lucide component name displayed in the sidebar, such as 'Newspaper' or 'ShoppingBag'. TypeScript autocompletes valid names and rejects invalid ones.",
+      type: "AdminIconName",
+      default: "Contextual default",
+    },
+    useAsTitle: {
+      description:
+        "The field name used as the document title throughout the Admin UI — in the list table, breadcrumb, and relationship pickers.",
+      type: "string",
+      default: "'id'",
+    },
+    defaultColumns: {
+      description:
+        "The ordered list of field names to display as columns in the list table. If omitted, the first three visible fields are shown.",
+      type: "string[]",
+      default: "First 3 non-hidden fields",
+    },
+    group: {
+      description:
+        "Groups this collection under a labelled section in the sidebar. Collections with the same `group` string are collapsed together.",
+      type: "string",
+    },
+    hidden: {
+      description:
+        "Hides the collection from the sidebar entirely. The API routes still exist; only the Admin UI navigation link is removed.",
+      type: "boolean",
+      default: "false",
+    },
+    filterable: {
+      description: "Enables or disables the list filter builder for this collection.",
+      type: "boolean",
+      default: "true",
+    },
+    previewUrl: {
+      description:
+        "Enables the Live Preview panel on the edit page. Provide a static URL string or a function that receives the current document and returns a URL.",
+      type: "string | (doc, { locale }) => string",
+    },
+    previewMode: {
+      description:
+        "How the Admin UI communicates draft data to the preview iframe. `postMessage` requires no server round-trip and works for same-origin or CORS-enabled frontends. `token` issues a signed preview token stored in Redis, suitable for statically generated sites.",
+      type: "'postMessage' | 'token'",
+      default: "'postMessage'",
+    },
+  }}
+/>
 
 ### `useAsTitle`
 
@@ -74,7 +123,9 @@ The field referenced by `useAsTitle` is used in:
 
 ```ts
 // Collection: products
-admin: { useAsTitle: 'name' }
+admin: {
+  useAsTitle: "name";
+}
 
 // In a relationship picker for products, each option shows item.name instead of item.id
 ```
@@ -112,7 +163,7 @@ Set this to `false` for collections where filtering is not useful for editors, o
 export const Posts = defineCollection({ slug: 'posts', admin: { group: 'Content' }, ... })
 export const Pages = defineCollection({ slug: 'pages', admin: { group: 'Content' }, ... })
 
-// This collection appears under "Users" 
+// This collection appears under "Users"
 export const Members = defineCollection({ slug: 'members', admin: { group: 'Users' }, ... })
 ```
 
@@ -124,15 +175,17 @@ When set, the Edit page renders a split-pane layout: the form on the left, a liv
 
 ```ts
 // Static URL
-admin: { previewUrl: 'https://mysite.com/api/preview' }
+admin: {
+  previewUrl: "https://mysite.com/api/preview";
+}
 
 // Dynamic URL based on document fields
 admin: {
   previewUrl: (doc, { locale }) => {
-    if (!doc?.slug) return null
-    const base = process.env.NEXT_PUBLIC_SITE_URL
-    return `${base}/posts/${doc.slug}?preview=true`
-  }
+    if (!doc?.slug) return null;
+    const base = process.env.NEXT_PUBLIC_SITE_URL;
+    return `${base}/posts/${doc.slug}?preview=true`;
+  };
 }
 ```
 
@@ -156,11 +209,24 @@ export const SiteSettings = defineGlobal({
 })
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `icon` | `AdminIconName` | `Settings` | Lucide component name displayed beside the global in the sidebar. |
-| `group` | `string` | none | Same as collections — groups this global under a labelled sidebar section. |
-| `hidden` | `boolean` | `false` | Hides the global from the sidebar. |
+<TypeTable
+  type={{
+    icon: {
+      description: "Lucide component name displayed beside the global in the sidebar.",
+      type: "AdminIconName",
+      default: "Settings",
+    },
+    group: {
+      description: "Same as collections — groups this global under a labelled sidebar section.",
+      type: "string",
+    },
+    hidden: {
+      description: "Hides the global from the sidebar.",
+      type: "boolean",
+      default: "false",
+    },
+  }}
+/>
 
 ---
 
@@ -182,16 +248,53 @@ Every field accepts an `admin` object that controls how it renders inside the ed
 }
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `placeholder` | `string` | `'Enter {label}...'` | Placeholder text shown inside the input when empty. |
-| `description` | `string` | none | Help text rendered directly below the field. Use for formatting hints or data requirements. |
-| `readOnly` | `boolean` | `false` | Renders the field disabled. The value is included in the form submission but cannot be edited. |
-| `hidden` | `boolean` | `false` | Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI. |
-| `filterable` | `boolean` | `true` for supported field types | If `false`, the field is excluded from the list filter builder and stripped from incoming `where` queries. |
-| `condition` | `string \| (data: any) => boolean` | always shown | A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
-| `layout` | field-specific | field default | Presentation style only on fields that support alternate renderers. Boolean fields accept `checkbox` or `switch`. Select fields accept `select` or `radio`. |
-| `component` | `string` | none | Key of a custom UI component to render in place of the default field input. The component must be registered under the same key in the `components.fields` prop of `<DyrectedAdmin>`. See [Custom Field Components](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs). |
+<TypeTable
+  type={{
+    placeholder: {
+      description: "Placeholder text shown inside the input when empty.",
+      type: "string",
+      default: "'Enter {label}...'",
+    },
+    description: {
+      description: "Help text rendered directly below the field. Use for formatting hints or data requirements.",
+      type: "string",
+    },
+    readOnly: {
+      description: "Renders the field disabled. The value is included in the form submission but cannot be edited.",
+      type: "boolean",
+      default: "false",
+    },
+    hidden: {
+      description:
+        "Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI.",
+      type: "boolean",
+      default: "false",
+    },
+    filterable: {
+      description:
+        "If `false`, the field is excluded from the list filter builder and stripped from incoming `where` queries.",
+      type: "boolean",
+      default: "true for supported field types",
+    },
+    condition: {
+      description:
+        "A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it.",
+      type: "string | (data: any) => boolean",
+      default: "always shown",
+    },
+    layout: {
+      description:
+        "Presentation style only on fields that support alternate renderers. Boolean fields accept `checkbox` or `switch`. Select fields accept `select` or `radio`.",
+      type: "field-specific",
+      default: "field default",
+    },
+    component: {
+      description:
+        "Key of a custom UI component to render in place of the default field input. The component must be registered under the same key in the `components.fields` prop of `<DyrectedAdmin>`. See [Custom Field Components](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs).",
+      type: "string",
+    },
+  }}
+/>
 
 Character and word counters are configured on the field itself with `maxLength` and `maxWords`, not through generic `admin` options. The Admin UI still reads `admin.maxLength` and `admin.maxWords` as compatibility aliases for supported text inputs, but new schemas should prefer the top-level field properties.
 
@@ -218,7 +321,7 @@ Then pass your component to `<DyrectedAdmin>` under the matching key:
   :components="{
     fields: {
       'products.brandColor': BrandColorPicker,
-    }
+    },
   }"
 />
 ```
@@ -288,12 +391,16 @@ If the options require a database query, secret API key, or server-side cache, u
 
 ### `condition` — Conditional Fields
 
-Use `condition` to show or hide a field based on the values of *other* fields in the same document. For maximum compatibility and security, Dyrected uses [Jexl](https://github.com/TechnologyAdvice/Jexl) for conditions.
+Use `condition` to show or hide a field based on the values of _other_ fields in the same document. For maximum compatibility and security, Dyrected uses [Jexl](https://github.com/TechnologyAdvice/Jexl) for conditions.
 
-> [!NOTE]
-> JEXL conditions are compiled and memoized in the Admin UI to ensure optimal typing performance. If a condition string contains syntax errors or throws evaluation errors, the Admin UI renders an inline red error boundary showing the field name and error traceback, while disabling the field.
+<Note>
+  JEXL conditions are compiled and memoized in the Admin UI to ensure optimal typing performance. If a condition string
+  contains syntax errors or throws evaluation errors, the Admin UI renders an inline red error boundary showing the
+  field name and error traceback, while disabling the field.
+</Note>
 
 #### String Expressions (Recommended)
+
 String-based conditions are serializable and work across all environments (local, cloud, and production).
 
 ```ts
@@ -317,6 +424,7 @@ String-based conditions are serializable and work across all environments (local
 ```
 
 #### Function Callbacks
+
 Functions are supported in local/embedded mode but are **stripped out** when syncing your schema to the Dyrected Cloud dashboard. Use strings for cloud-compatible schemas.
 
 ```ts
@@ -331,7 +439,10 @@ Functions are supported in local/embedded mode but are **stripped out** when syn
 
 The `data` argument is the **current live values of the entire document** as the editor is typing — not the saved version. The condition is re-evaluated on every keystroke.
 
-> **Important:** `condition` only hides the field in the UI. The field is **not** removed from Zod validation or from the API. If you need the field to truly be absent from saves, combine `condition` with `access.update`.
+<Note>
+  `condition` only hides the field in the UI. The field is **not** removed from Zod validation or from the API. If you
+  need the field to truly be absent from saves, combine `condition` with `access.update`.
+</Note>
 
 ---
 
@@ -357,21 +468,48 @@ export default defineConfig({
 })
 ```
 
-| Property | Type | Description |
-|---|---|---|
-| `branding.logo` | `string` | URL or path to the logo shown in the sidebar header. |
-| `branding.logoMark` | `string` | Compact mark used when sidebar is collapsed to icon-only mode. |
-| `branding.primaryColor` | `string` | Hex color used for primary buttons, active states, and focus rings. |
-| `branding.favicon` | `string` | URL or path to the favicon served by the admin. |
-| `branding.fontSans` | `string` | `"DM Sans"` | CSS font-family for body and UI elements. |
-| `branding.fontSerif` | `string` | `"Instrument Serif"` | CSS font-family for headings and display. |
-| `meta.titleSuffix` | `string` | Appended to the `<title>` tag on every admin page. |
+<TypeTable
+  type={{
+    "branding.logo": {
+      description: "URL or path to the logo shown in the sidebar header.",
+      type: "string",
+    },
+    "branding.logoMark": {
+      description: "Compact mark used when sidebar is collapsed to icon-only mode.",
+      type: "string",
+    },
+    "branding.primaryColor": {
+      description: "Hex color used for primary buttons, active states, and focus rings.",
+      type: "string",
+    },
+    "branding.favicon": {
+      description: "URL or path to the favicon served by the admin.",
+      type: "string",
+    },
+    "branding.fontSans": {
+      description: "CSS font-family for body and UI elements.",
+      type: "string",
+      default: '"DM Sans"',
+    },
+    "branding.fontSerif": {
+      description: "CSS font-family for headings and display.",
+      type: "string",
+      default: '"Instrument Serif"',
+    },
+    "meta.titleSuffix": {
+      description: "Appended to the `<title>` tag on every admin page.",
+      type: "string",
+    },
+  }}
+/>
 
 ## Customizing the Admin UI with Component Slots
 
 You can inject custom React or Vue components into specific areas of the Admin UI using Component Slots. First, declare the slot keys in your Dyrected configuration, then provide the matching components to the `<DyrectedAdmin>` wrapper.
 
-### 1. Configure the Slot Keys
+<Steps>
+<Step>
+### Configure the Slot Keys
 
 In your `dyrected.config.ts`, declare the component keys you want to render in the `admin.components` array for the dashboard or collections.
 
@@ -400,16 +538,26 @@ export default defineConfig({
 })
 ```
 
-### 2. Provide the Components
+</Step>
+<Step>
+### Provide the Components
 
 When mounting the Admin UI in your frontend, pass the `components` prop containing the component registries for `dashboard` and `collectionList`.
 
+<Tabs>
+  <Tab>Next.js</Tab>
+  <Tab>React</Tab>
+  <Tab>Nuxt.js</Tab>
+  <Tab>Vue</Tab>
+</Tabs>
+
 **React / Next.js:**
+
 ```tsx
-import { DyrectedAdmin } from '@dyrected/next/admin'
+import { DyrectedAdmin } from "@dyrected/next/admin";
 
 function WelcomeBanner(props) {
-  return <div className="p-4 bg-blue-50">Welcome, {props.user.email}!</div>
+  return <div className="p-4 bg-blue-50">Welcome, {props.user.email}!</div>;
 }
 
 export default function AdminPage() {
@@ -417,20 +565,21 @@ export default function AdminPage() {
     <DyrectedAdmin
       components={{
         dashboard: {
-          'welcome-banner': WelcomeBanner,
-          'analytics-widget': AnalyticsWidget,
+          "welcome-banner": WelcomeBanner,
+          "analytics-widget": AnalyticsWidget,
         },
         collectionList: {
-          'posts-header': PostsHeader,
-          'custom-pagination': CustomPagination,
-        }
+          "posts-header": PostsHeader,
+          "custom-pagination": CustomPagination,
+        },
       }}
     />
-  )
+  );
 }
 ```
 
 **Vue / Nuxt:**
+
 ```vue
 <template>
   <DyrectedAdmin
@@ -442,30 +591,35 @@ export default function AdminPage() {
       collectionList: {
         'posts-header': PostsHeader,
         'custom-pagination': CustomPagination,
-      }
+      },
     }"
   />
 </template>
 
 <script setup>
-import { DyrectedAdmin } from '@dyrected/vue'
-import WelcomeBanner from './WelcomeBanner.vue'
-import AnalyticsWidget from './AnalyticsWidget.vue'
-import PostsHeader from './PostsHeader.vue'
-import CustomPagination from './CustomPagination.vue'
+import { DyrectedAdmin } from "@dyrected/vue";
+import WelcomeBanner from "./WelcomeBanner.vue";
+import AnalyticsWidget from "./AnalyticsWidget.vue";
+import PostsHeader from "./PostsHeader.vue";
+import CustomPagination from "./CustomPagination.vue";
 </script>
 ```
+
+</Step>
+</Steps>
 
 ### Available Slots and Props
 
 **Dashboard Slots (`beforeDashboard`, `afterDashboard`):**
 Components receive:
+
 - `client`: The initialized `DyrectedClient` for data fetching.
 - `user`: The currently authenticated admin user document.
 - `schemas`: The full loaded `AdminSchemas` object.
 
 **Collection List Slots (`beforeList`, `beforeListTable`, `afterListTable`, `afterList`):**
 Components receive:
+
 - `client`: The initialized `DyrectedClient` for data fetching or mutations.
 - `user`: The currently authenticated admin user document.
 - `collection`: The configuration of the current collection.
@@ -491,91 +645,93 @@ All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS conventio
 /* In your global.css — override any token you need */
 .my-admin-page .dy-admin-ui {
   /* ── Fonts ─────────────────────────────────────────── */
-  --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
 
   /* ── Page surface ───────────────────────────────────── */
-  --background:         0 0% 100%;   /* page background */
-  --foreground:         240 10% 4%;  /* default text */
+  --background: 0 0% 100%; /* page background */
+  --foreground: 240 10% 4%; /* default text */
 
   /* ── Card / panel surfaces ──────────────────────────── */
-  --card:               0 0% 100%;
-  --card-foreground:    240 10% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
 
   /* ── Popover / dropdown surfaces ────────────────────── */
-  --popover:            0 0% 100%;
+  --popover: 0 0% 100%;
   --popover-foreground: 240 10% 4%;
 
   /* ── Primary accent (buttons, active states, rings) ─── */
-  --primary:            38 92% 50%;  /* default: amber */
-  --primary-foreground: 60 3% 6%;   /* text on primary bg */
-  --intelligence:       259 100% 62%; /* links, navigation accents */
+  --primary: 38 92% 50%; /* default: amber */
+  --primary-foreground: 60 3% 6%; /* text on primary bg */
+  --intelligence: 259 100% 62%; /* links, navigation accents */
   --intelligence-foreground: 0 0% 100%;
 
   /* ── Secondary (subtle buttons, tags) ───────────────── */
-  --secondary:            60 10% 95%;
+  --secondary: 60 10% 95%;
   --secondary-foreground: 60 3% 6%;
 
   /* ── Muted (placeholders, helper text, disabled) ─────── */
-  --muted:            60 10% 95%;
+  --muted: 60 10% 95%;
   --muted-foreground: 60 4% 40%;
 
   /* ── Accent (hover tints) ───────────────────────────── */
-  --accent:            60 10% 95%;
+  --accent: 60 10% 95%;
   --accent-foreground: 60 3% 6%;
 
   /* ── Destructive (delete buttons, error states) ──────── */
-  --destructive:            0 84% 60%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 60 17% 97%;
 
   /* ── Borders & inputs ───────────────────────────────── */
-  --border: 60 7% 89%;   /* field borders, dividers */
-  --input:  60 7% 89%;   /* input border color */
-  --ring:   38 92% 50%;  /* focus ring color */
+  --border: 60 7% 89%; /* field borders, dividers */
+  --input: 60 7% 89%; /* input border color */
+  --ring: 38 92% 50%; /* focus ring color */
 
   /* ── Border radius ──────────────────────────────────── */
-  --radius: 0.5rem;      /* applied to cards, inputs, buttons */
+  --radius: 0.5rem; /* applied to cards, inputs, buttons */
 
   /* ── Sidebar ────────────────────────────────────────── */
-  --sidebar-background:         60 17% 97%;
-  --sidebar-foreground:         60 3% 6%;
-  --sidebar-primary:            38 92% 50%;  /* active item accent */
+  --sidebar-background: 60 17% 97%;
+  --sidebar-foreground: 60 3% 6%;
+  --sidebar-primary: 38 92% 50%; /* active item accent */
   --sidebar-primary-foreground: 60 3% 6%;
-  --sidebar-accent:             60 10% 95%;  /* hover background */
-  --sidebar-accent-foreground:  38 92% 50%;  /* hover text */
-  --sidebar-border:             60 7% 89%;
-  --sidebar-ring:               38 92% 50%;
+  --sidebar-accent: 60 10% 95%; /* hover background */
+  --sidebar-accent-foreground: 38 92% 50%; /* hover text */
+  --sidebar-border: 60 7% 89%;
+  --sidebar-ring: 38 92% 50%;
 }
 ```
 
 ### Common customisations
 
 **Change the accent color to blue:**
+
 ```css
 .my-admin-page .dy-admin-ui {
-  --primary:            217 91% 60%;
+  --primary: 217 91% 60%;
   --primary-foreground: 0 0% 100%;
-  --intelligence:        217 91% 60%;
+  --intelligence: 217 91% 60%;
   --intelligence-foreground: 0 0% 100%;
-  --ring:               217 91% 60%;
-  --sidebar-primary:            217 91% 60%;
+  --ring: 217 91% 60%;
+  --sidebar-primary: 217 91% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent-foreground:  217 91% 60%;
-  --sidebar-ring:               217 91% 60%;
+  --sidebar-accent-foreground: 217 91% 60%;
+  --sidebar-ring: 217 91% 60%;
 }
 ```
 
 **Use a neutral grey palette (no warm tint):**
+
 ```css
 .my-admin-page .dy-admin-ui {
-  --background:      0 0% 98%;
-  --card:            0 0% 100%;
-  --muted:           0 0% 94%;
+  --background: 0 0% 98%;
+  --card: 0 0% 100%;
+  --muted: 0 0% 94%;
   --muted-foreground: 0 0% 42%;
-  --border:          0 0% 88%;
-  --input:           0 0% 88%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
   --sidebar-background: 0 0% 97%;
-  --sidebar-border:     0 0% 88%;
+  --sidebar-border: 0 0% 88%;
 }
 ```
 
@@ -640,19 +796,28 @@ When you have two brand colors, use `--primary` for committed actions like Save,
 ```
 
 **Swap fonts (using a Google Font):**
+
 ```html
 <!-- In your <head> -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@600;700&display=swap"
+  rel="stylesheet"
+/>
 ```
+
 ```css
 .my-admin-page .dy-admin-ui {
-  --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Lora", ui-serif, Georgia, serif;
 }
 ```
 
-> **Scope:** Prefer overriding variables on `.dy-admin-ui`, optionally nested under your admin page wrapper such as `.my-admin-page .dy-admin-ui`. This matches the Admin UI's scoped reset and prevents unrelated app styles from inheriting admin tokens.
+<Note>
+  **Scope:** Prefer overriding variables on `.dy-admin-ui`, optionally nested under your admin page wrapper such as
+  `.my-admin-page .dy-admin-ui`. This matches the Admin UI's scoped reset and prevents unrelated app styles from
+  inheriting admin tokens.
+</Note>
 
 ---
 
@@ -686,13 +851,13 @@ Configured icons take precedence over defaults. Without an override, upload coll
 
 When a user is authenticated, the Admin UI resolves access functions against the current user and reflects the outcome:
 
-| Resolved Access | Admin UI Behaviour |
-|---|---|
-| `access.read === false` | Collection is hidden from the sidebar and returns a 403 if navigated to directly |
-| `access.create === false` | "Create" button is hidden on the list page |
-| `access.update === false` | Edit form renders in read-only mode; "Save" button is hidden |
-| `access.delete === false` | "Delete" action is hidden from the row action menu |
-| `field.access.read === false` | Field is removed from the form entirely |
-| `field.access.update === false` | Field is rendered as `readOnly` |
+| Resolved Access                 | Admin UI Behaviour                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `access.read === false`         | Collection is hidden from the sidebar and returns a 403 if navigated to directly |
+| `access.create === false`       | "Create" button is hidden on the list page                                       |
+| `access.update === false`       | Edit form renders in read-only mode; "Save" button is hidden                     |
+| `access.delete === false`       | "Delete" action is hidden from the row action menu                               |
+| `field.access.read === false`   | Field is removed from the form entirely                                          |
+| `field.access.update === false` | Field is rendered as `readOnly`                                                  |
 
 Access is resolved **server-side** via the `/api/schemas` response, which includes computed access booleans for the authenticated user. The Admin UI never re-implements access logic — it only reads and reflects what the server returns.

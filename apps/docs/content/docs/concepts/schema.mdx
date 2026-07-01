@@ -75,8 +75,9 @@ npx @dyrected/cli sync:schema
 
 Run this whenever you add a `promoted: true` field, add `unique: true` to an existing field, or change your database adapter. Regular field additions and removals (inside the JSON blob) do not require a sync.
 
-> [!NOTE]
-> **MongoDB does not have a sync step.** MongoDB is schema-less — collections and fields are created on first write. There are no columns to add and no migration to run. `renameTo` and `defaultValue` still work exactly as described above (applied on read), but you never need to run `sync:schema` with the MongoDB adapter.
+<Note>
+**MongoDB does not have a sync step.** MongoDB is schema-less — collections and fields are created on first write. There are no columns to add and no migration to run. `renameTo` and `defaultValue` still work exactly as described above (applied on read), but you never need to run `sync:schema` with the MongoDB adapter.
+</Note>
 
 ---
 

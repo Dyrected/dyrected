@@ -148,14 +148,36 @@ const unmount = renderAdminUI(container, {
 
 Both accept the same props:
 
-| Prop         | Type                     | Required | Description                                                                                                               |
-| ------------ | ------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `baseUrl`    | `string`                 | ✅       | The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).                                                        |
-| `apiKey`     | `string`                 | ✅       | The Site API key used to authenticate all Admin requests.                                                                 |
-| `siteId`     | `string`                 |          | The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).                                                |
-| `basename`   | `string`                 |          | The URL path prefix where the admin is mounted (default: `/admin`).                                                       |
-| `onNavigate` | `(path: string) => void` |          | Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded. |
-| `components` | `object`                 |          | Custom field components. See [Custom Field Components](#custom-field-components).                                         |
+<TypeTable
+  type={{
+    baseUrl: {
+      description: 'The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).',
+      type: 'string',
+      required: true,
+    },
+    apiKey: {
+      description: 'The Site API key used to authenticate all Admin requests.',
+      type: 'string',
+      required: true,
+    },
+    siteId: {
+      description: 'The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).',
+      type: 'string',
+    },
+    basename: {
+      description: 'The URL path prefix where the admin is mounted (default: `/admin`).',
+      type: 'string',
+    },
+    onNavigate: {
+      description: 'Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded.',
+      type: '(path: string) => void',
+    },
+    components: {
+      description: 'Custom field components. See [Custom Field Components](#custom-field-components).',
+      type: 'object',
+    },
+  }}
+/>
 
 ---
 
@@ -290,12 +312,26 @@ import { MyColorPicker } from "./components/MyColorPicker";
 
 Your component receives:
 
-| Prop       | Type                   | Description                                 |
-| ---------- | ---------------------- | ------------------------------------------- |
-| `value`    | `any`                  | The current field value.                    |
-| `onChange` | `(value: any) => void` | Callback to update the value.               |
-| `field`    | `FieldSchema`          | The full field definition from your config. |
-| `readOnly` | `boolean`              | Whether the field should be non-editable.   |
+<TypeTable
+  type={{
+    value: {
+      description: 'The current field value.',
+      type: 'any',
+    },
+    onChange: {
+      description: 'Callback to update the value.',
+      type: '(value: any) => void',
+    },
+    field: {
+      description: 'The full field definition from your config.',
+      type: 'FieldSchema',
+    },
+    readOnly: {
+      description: 'Whether the field should be non-editable.',
+      type: 'boolean',
+    },
+  }}
+/>
 
 ---
 

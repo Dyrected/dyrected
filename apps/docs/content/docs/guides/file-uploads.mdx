@@ -3,7 +3,9 @@ title: File Uploads
 description: Accept file uploads, store them locally or in S3/Cloudinary, and display images.
 ---
 
-## 1. Configure a storage adapter
+<Steps>
+<Step>
+### Configure a storage adapter
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -19,10 +21,9 @@ export default defineConfig({
 ```
 
 See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Cloudinary setup.
-
----
-
-## 2. Define an upload collection
+</Step>
+<Step>
+### Define an upload collection
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -41,10 +42,9 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
   ],
 }
 ```
-
----
-
-## 3. Upload via the Admin UI
+</Step>
+<Step>
+### Upload via the Admin UI
 
 The Admin UI renders a full-featured media manager and file picker for upload collections. Upload collections can use any slug and label — for example, a collection named `sermons` with `upload: true` will be presented using that collection's configured labels rather than always being called "media".
 
@@ -68,10 +68,9 @@ Both the Media Library dashboard and form-level `MediaPicker` fields support cli
 - Click the crop button on an image (or in the attachment details pane on the main media page) to open the crop dialog.
 - Pick an aspect ratio preset (Free-form, 1:1, 4:3, 3:2, 16:9) and adjust the cropping handles.
 - Click **Save** to apply the crop. The cropped version is uploaded as a new media document and the selection automatically updates to point to the cropped version. All image sizes are generated server-side automatically after upload.
-
----
-
-## 4. Upload programmatically
+</Step>
+<Step>
+### Upload programmatically
 
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
@@ -120,10 +119,9 @@ const media = await $fetch('/api/collections/media', {
 ```
 </Tab>
 </Tabs>
-
----
-
-## 5. Attach media to another collection
+</Step>
+<Step>
+### Attach media to another collection
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -142,10 +140,9 @@ Fetch with `depth: 1` to inline the media document:
 // docs[0].coverImage.url        → full storage URL
 // docs[0].coverImage.sizes.thumbnail.url
 ```
-
----
-
-## 6. Render images
+</Step>
+<Step>
+### Render images
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
@@ -190,3 +187,5 @@ defineProps<{ post: any }>()
 > For Nuxt.js Image optimisation, use `<NuxtImg>` from `@nuxt/image` and add your storage domain to `image.domains` in `nuxt.config.ts`.
 </Tab>
 </Tabs>
+</Step>
+</Steps>

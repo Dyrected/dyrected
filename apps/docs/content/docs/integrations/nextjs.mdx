@@ -21,8 +21,9 @@ Dyrected integrates natively with the Next.js App Router via a catch-all API rou
 pnpm add @dyrected/core @dyrected/sdk @dyrected/next @dyrected/react @dyrected/db-postgres
 ```
 
-> [!NOTE]
-> `@dyrected/next` provides the API route handler, `getDyrectedClient`, and Next.js-optimised `<DyrectedImage />` / `<DyrectedMedia />` components. `@dyrected/react` is the React integration layer — it provides `<DyrectedAdmin />`, `DyrectedProvider`, `useDyrected`, and `useLivePreview`. `@dyrected/next` re-exports all of these so you can import from a single package.
+<Note>
+`@dyrected/next` provides the API route handler, `getDyrectedClient`, and Next.js-optimised `<DyrectedImage />` / `<DyrectedMedia />` components. `@dyrected/react` is the React integration layer — it provides `<DyrectedAdmin />`, `DyrectedProvider`, `useDyrected`, and `useLivePreview`. `@dyrected/next` re-exports all of these so you can import from a single package.
+</Note>
 
 ---
 
@@ -176,11 +177,13 @@ export default function AdminPage() {
 }
 ```
 
-> [!NOTE]
-> `@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx @dyrected/cli init`.
+<Note>
+`@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx @dyrected/cli init`.
+</Note>
 
-> [!TIP]
-> `DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
+<Note>
+`DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
+</Note>
 
 ---
 
