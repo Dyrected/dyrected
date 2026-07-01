@@ -2,9 +2,16 @@ import fs from "fs-extra";
 import path from "path";
 
 export function detectPackageManager(cwd: string): string {
-  if (fs.existsSync(path.join(cwd, "bun.lockb")) || fs.existsSync(path.join(cwd, "bun.lock"))) return "bun";
-  if (fs.existsSync(path.join(cwd, "pnpm-lock.yaml"))) return "pnpm";
-  if (fs.existsSync(path.join(cwd, "yarn.lock"))) return "yarn";
+  let dir = cwd;
+  while (true) {
+    if (fs.existsSync(path.join(dir, "bun.lockb")) || fs.existsSync(path.join(dir, "bun.lock"))) return "bun";
+    if (fs.existsSync(path.join(dir, "pnpm-lock.yaml"))) return "pnpm";
+    if (fs.existsSync(path.join(dir, "yarn.lock"))) return "yarn";
+
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
   return "npm";
 }
 
