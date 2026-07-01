@@ -40,34 +40,34 @@ Instead of writing integration code yourself, copy a setup prompt from Dyrected 
 - Open the project in the AI builder that owns the website code.
 - [Create a Dyrected site](https://app.dyrected.com) and keep the site settings open. You will need the Site ID, Site API key, and Base URL — the prompt tells the AI when to ask for them.
 
-**1. Copy the setup prompt**
+1. **Copy the setup prompt**
 
 Open your Dyrected site and go to **Setup**. Copy the setup prompt — your credentials are pre-filled when you copy from inside the admin panel. Or copy the base prompt here:
 
 <CopyPromptButton />
 
-**2. Paste the prompt into your AI builder**
+2. **Paste the prompt into your AI builder**
 
 Paste the prompt into the same AI builder that can read and edit the website code. The AI will respond with a plain-language checklist of everything on the website a client could reasonably want to change.
 
-**3. Approve the checklist**
+3. **Approve the checklist**
 
 Read the checklist top to bottom. If something is missing or unnecessary, say what to add, remove, or change. Say **"approved"** when it looks right.
 
-**4. Give the AI your Dyrected details**
+4. **Give the AI your Dyrected details**
 
 The prompt makes the AI wait until the install stage before asking for credentials. When it asks, provide your Site ID, Site API key, and Base URL.
 
-**5. Test one real edit**
+5. **Test one real edit**
 
 Open Dyrected and change a piece of content you can easily recognize — a heading, an image, or a list item. Confirm the change appears on the website and the design still looks right.
 
-**6. Choose how the client logs in**
+6. **Choose how the client logs in**
 
 - Use the **hosted admin** if you want automatic admin updates and the lowest maintenance
 - Use the **embedded admin** if you want the client to work inside your own domain at `/admin`
 
-**7. Invite the client**
+7. **Invite the client**
 
 Invite the client only after one Dyrected edit appears on the live website.
 
@@ -93,7 +93,7 @@ When it reaches the install stage, it will ask for your **Site API key** and **B
 
 If you'd rather do this yourself, the CLI is the safest way to install — it detects your project layout and writes files in the right place, instead of you hand-assembling config that can drift from what the installed package actually supports.
 
-**1. Install with the CLI**
+1. **Install with the CLI**
 
 ```bash
 npx @dyrected/cli init
@@ -109,22 +109,22 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
 
-**2. Define your config: collections and globals**
+2. **Define your config: collections and globals**
 
 Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
 
-**3. Run it and confirm `/admin` loads**
+3. **Run it and confirm `/admin` loads**
 
 1. Copy `.env.example` to `.env` and fill in the values.
-2. Run `pnpm dev`.
-3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
-4. The admin URL is printed to the console on startup — open it and confirm you can log in and see your collections.
+1. Run `pnpm dev`.
+1. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
+1. The admin URL is printed to the console on startup — open it and confirm you can log in and see your collections.
 
-**4. Seed initial data**
+1. **Seed initial data**
 
 Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
 
-**5. Integrate with your website**
+5. **Integrate with your website**
 
 Fetch content into your pages using the SDK or REST API — see [Next.js integration](/docs/integrations/nextjs).
 
@@ -150,7 +150,7 @@ When it reaches the install stage, it will ask for your **Site API key** and **B
 
 If you'd rather do this yourself, the CLI is the safest way to install — it detects your project layout and writes files in the right place, instead of you hand-assembling config that can drift from what the installed package actually supports.
 
-**1. Install with the CLI**
+1. **Install with the CLI**
 
 ```bash
 npx @dyrected/cli init
@@ -163,22 +163,22 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
 - Generate a `.env.example`.
 
-**2. Define your config: collections and globals**
+2. **Define your config: collections and globals**
 
 Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
 
-**3. Run it and confirm `/admin` loads**
+3. **Run it and confirm `/admin` loads**
 
 1. Copy `.env.example` to `.env` and configure your secrets.
-2. Run `pnpm dev`.
-3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
-4. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL and confirm you can log in and see your collections.
+1. Run `pnpm dev`.
+1. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
+1. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL and confirm you can log in and see your collections.
 
-**4. Seed initial data**
+1. **Seed initial data**
 
 Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
 
-**5. Integrate with your website**
+5. **Integrate with your website**
 
 Fetch content into your pages using the SDK or REST API — see [Nuxt.js integration](/docs/integrations/nuxt).
 
