@@ -1,5 +1,11 @@
 # @dyrected/knowledge
 
+## 0.2.6
+
+### Patch Changes
+
+- Modularize content-modeling and frontend-integration rules into distinct shared source files and update the setup prompts.
+
 ## 0.2.5
 
 ### Patch Changes

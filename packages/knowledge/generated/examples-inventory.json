@@ -247,23 +247,23 @@
   {
     "id": "/admin/configuration#example-20",
     "page": "/admin/configuration",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/admin/configuration#example-21",
+    "page": "/admin/configuration",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/admin/configuration#example-21",
-    "page": "/admin/configuration",
-    "language": "css",
-    "classification": "syntax-checked",
-    "validation": "Inventoried css example"
-  },
-  {
     "id": "/admin/configuration#example-22",
     "page": "/admin/configuration",
-    "language": "css",
+    "language": "vue",
     "classification": "syntax-checked",
-    "validation": "Inventoried css example"
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/admin/configuration#example-23",
@@ -289,9 +289,9 @@
   {
     "id": "/admin/configuration#example-26",
     "page": "/admin/configuration",
-    "language": "html",
+    "language": "css",
     "classification": "syntax-checked",
-    "validation": "Inventoried html example"
+    "validation": "Inventoried css example"
   },
   {
     "id": "/admin/configuration#example-27",
@@ -302,6 +302,20 @@
   },
   {
     "id": "/admin/configuration#example-28",
+    "page": "/admin/configuration",
+    "language": "html",
+    "classification": "syntax-checked",
+    "validation": "Inventoried html example"
+  },
+  {
+    "id": "/admin/configuration#example-29",
+    "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-30",
     "page": "/admin/configuration",
     "language": "ts",
     "classification": "illustrative",
@@ -952,41 +966,6 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/deployment/cloud#example-1",
-    "page": "/deployment/cloud",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
-    "id": "/deployment/cloud#example-2",
-    "page": "/deployment/cloud",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/deployment/cloud#example-3",
-    "page": "/deployment/cloud",
-    "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/deployment/cloud#example-4",
-    "page": "/deployment/cloud",
-    "language": "tsx",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/deployment/cloud#example-5",
-    "page": "/deployment/cloud",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
     "id": "/deployment/docker#example-1",
     "page": "/deployment/docker",
     "language": "dockerfile",
@@ -1121,27 +1100,6 @@
   },
   {
     "id": "/getting-started/quickstart#example-2",
-    "page": "/getting-started/quickstart",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
-    "id": "/getting-started/quickstart#example-3",
-    "page": "/getting-started/quickstart",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/getting-started/quickstart#example-4",
-    "page": "/getting-started/quickstart",
-    "language": "bash",
-    "classification": "command",
-    "validation": "Command example; package and CLI names are inventoried"
-  },
-  {
-    "id": "/getting-started/quickstart#example-5",
     "page": "/getting-started/quickstart",
     "language": "bash",
     "classification": "command",
@@ -2403,54 +2361,47 @@
   {
     "id": "/integrations/nextjs#example-9",
     "page": "/integrations/nextjs",
-    "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/integrations/nextjs#example-10",
-    "page": "/integrations/nextjs",
     "language": "",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/integrations/nextjs#example-11",
+    "id": "/integrations/nextjs#example-10",
     "page": "/integrations/nextjs",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/integrations/nextjs#example-12",
+    "id": "/integrations/nextjs#example-11",
     "page": "/integrations/nextjs",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/integrations/nextjs#example-13",
+    "id": "/integrations/nextjs#example-12",
     "page": "/integrations/nextjs",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/integrations/nextjs#example-14",
+    "id": "/integrations/nextjs#example-13",
     "page": "/integrations/nextjs",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/integrations/nextjs#example-15",
+    "id": "/integrations/nextjs#example-14",
     "page": "/integrations/nextjs",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/integrations/nextjs#example-16",
+    "id": "/integrations/nextjs#example-15",
     "page": "/integrations/nextjs",
     "language": "ts",
     "classification": "syntax-checked",

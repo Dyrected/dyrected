@@ -79,6 +79,16 @@ The current `name` is the new key and `renameTo` is the previous stored key:
 
 Keep the fallback until production documents are migrated and verified. For relational adapters, test promoted or unique changes in staging before synchronization.
 
+### Content Architecture & Modeling Guidelines
+
+<!-- GENERATED:MODELING_RULES:START -->
+<!-- GENERATED:MODELING_RULES:END -->
+
+### Frontend Integration Guidelines
+
+<!-- GENERATED:FRONTEND_RULES:START -->
+<!-- GENERATED:FRONTEND_RULES:END -->
+
 ### Zero-state behavior
 
 Use `initialData` only when deliberate seed/fallback behavior is desired:

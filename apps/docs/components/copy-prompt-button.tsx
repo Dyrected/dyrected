@@ -2,14 +2,15 @@
 
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
-import { GENERATE_CMS_PROMPT } from '@dyrected/knowledge';
+import { GENERATE_CMS_PROMPT, GENERATE_CMS_PROMPT_SELF_HOSTED } from '@dyrected/knowledge';
 import { Button } from '@/components/ui/button';
 
-export function CopyPromptButton() {
+export function CopyPromptButton({ mode }: { mode?: 'cloud' | 'self-hosted' }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(GENERATE_CMS_PROMPT);
+    const promptText = mode === 'self-hosted' ? GENERATE_CMS_PROMPT_SELF_HOSTED : GENERATE_CMS_PROMPT;
+    await navigator.clipboard.writeText(promptText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

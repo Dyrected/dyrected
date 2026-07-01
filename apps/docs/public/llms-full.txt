@@ -485,10 +485,20 @@ export const Posts = defineCollection({
 })
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `singular` | `string` | capitalized slug | Used in "Create \{singular\}" buttons and breadcrumbs. |
-| `plural` | `string` | capitalized slug | Used in the sidebar navigation and list headings. |
+<TypeTable
+  type={{
+    singular: {
+      description: 'Used in "Create {singular}" buttons and breadcrumbs.',
+      type: "string",
+      default: "capitalized slug",
+    },
+    plural: {
+      description: "Used in the sidebar navigation and list headings.",
+      type: "string",
+      default: "capitalized slug",
+    },
+  }}
+/>
 
 ---
 
@@ -511,16 +521,55 @@ export const Posts = defineCollection({
 })
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `icon` | `AdminIconName` | Contextual default | Lucide component name displayed in the sidebar, such as `'Newspaper'` or `'ShoppingBag'`. TypeScript autocompletes valid names and rejects invalid ones. |
-| `useAsTitle` | `string` | `'id'` | The field name used as the document title throughout the Admin UI — in the list table, breadcrumb, and relationship pickers. |
-| `defaultColumns` | `string[]` | First 3 non-hidden fields | The ordered list of field names to display as columns in the list table. If omitted, the first three visible fields are shown. |
-| `group` | `string` | none | Groups this collection under a labelled section in the sidebar. Collections with the same `group` string are collapsed together. |
-| `hidden` | `boolean` | `false` | Hides the collection from the sidebar entirely. The API routes still exist; only the Admin UI navigation link is removed. |
-| `filterable` | `boolean` | `true` | Enables or disables the list filter builder for this collection. |
-| `previewUrl` | `string \| (doc, { locale }) => string` | none | Enables the Live Preview panel on the edit page. Provide a static URL string or a function that receives the current document and returns a URL. |
-| `previewMode` | `'postMessage' \| 'token'` | `'postMessage'` | How the Admin UI communicates draft data to the preview iframe. `postMessage` requires no server round-trip and works for same-origin or CORS-enabled frontends. `token` issues a signed preview token stored in Redis, suitable for statically generated sites. |
+<TypeTable
+  type={{
+    icon: {
+      description:
+        "Lucide component name displayed in the sidebar, such as 'Newspaper' or 'ShoppingBag'. TypeScript autocompletes valid names and rejects invalid ones.",
+      type: "AdminIconName",
+      default: "Contextual default",
+    },
+    useAsTitle: {
+      description:
+        "The field name used as the document title throughout the Admin UI — in the list table, breadcrumb, and relationship pickers.",
+      type: "string",
+      default: "'id'",
+    },
+    defaultColumns: {
+      description:
+        "The ordered list of field names to display as columns in the list table. If omitted, the first three visible fields are shown.",
+      type: "string[]",
+      default: "First 3 non-hidden fields",
+    },
+    group: {
+      description:
+        "Groups this collection under a labelled section in the sidebar. Collections with the same `group` string are collapsed together.",
+      type: "string",
+    },
+    hidden: {
+      description:
+        "Hides the collection from the sidebar entirely. The API routes still exist; only the Admin UI navigation link is removed.",
+      type: "boolean",
+      default: "false",
+    },
+    filterable: {
+      description: "Enables or disables the list filter builder for this collection.",
+      type: "boolean",
+      default: "true",
+    },
+    previewUrl: {
+      description:
+        "Enables the Live Preview panel on the edit page. Provide a static URL string or a function that receives the current document and returns a URL.",
+      type: "string | (doc, { locale }) => string",
+    },
+    previewMode: {
+      description:
+        "How the Admin UI communicates draft data to the preview iframe. `postMessage` requires no server round-trip and works for same-origin or CORS-enabled frontends. `token` issues a signed preview token stored in Redis, suitable for statically generated sites.",
+      type: "'postMessage' | 'token'",
+      default: "'postMessage'",
+    },
+  }}
+/>
 
 ### `useAsTitle`
 
@@ -533,7 +582,9 @@ The field referenced by `useAsTitle` is used in:
 
 ```ts
 // Collection: products
-admin: { useAsTitle: 'name' }
+admin: {
+  useAsTitle: "name";
+}
 
 // In a relationship picker for products, each option shows item.name instead of item.id
 ```
@@ -571,7 +622,7 @@ Set this to `false` for collections where filtering is not useful for editors, o
 export const Posts = defineCollection({ slug: 'posts', admin: { group: 'Content' }, ... })
 export const Pages = defineCollection({ slug: 'pages', admin: { group: 'Content' }, ... })
 
-// This collection appears under "Users" 
+// This collection appears under "Users"
 export const Members = defineCollection({ slug: 'members', admin: { group: 'Users' }, ... })
 ```
 
@@ -583,15 +634,17 @@ When set, the Edit page renders a split-pane layout: the form on the left, a liv
 
 ```ts
 // Static URL
-admin: { previewUrl: 'https://mysite.com/api/preview' }
+admin: {
+  previewUrl: "https://mysite.com/api/preview";
+}
 
 // Dynamic URL based on document fields
 admin: {
   previewUrl: (doc, { locale }) => {
-    if (!doc?.slug) return null
-    const base = process.env.NEXT_PUBLIC_SITE_URL
-    return `${base}/posts/${doc.slug}?preview=true`
-  }
+    if (!doc?.slug) return null;
+    const base = process.env.NEXT_PUBLIC_SITE_URL;
+    return `${base}/posts/${doc.slug}?preview=true`;
+  };
 }
 ```
 
@@ -615,11 +668,24 @@ export const SiteSettings = defineGlobal({
 })
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `icon` | `AdminIconName` | `Settings` | Lucide component name displayed beside the global in the sidebar. |
-| `group` | `string` | none | Same as collections — groups this global under a labelled sidebar section. |
-| `hidden` | `boolean` | `false` | Hides the global from the sidebar. |
+<TypeTable
+  type={{
+    icon: {
+      description: "Lucide component name displayed beside the global in the sidebar.",
+      type: "AdminIconName",
+      default: "Settings",
+    },
+    group: {
+      description: "Same as collections — groups this global under a labelled sidebar section.",
+      type: "string",
+    },
+    hidden: {
+      description: "Hides the global from the sidebar.",
+      type: "boolean",
+      default: "false",
+    },
+  }}
+/>
 
 ---
 
@@ -641,16 +707,53 @@ Every field accepts an `admin` object that controls how it renders inside the ed
 }
 ```
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `placeholder` | `string` | `'Enter {label}...'` | Placeholder text shown inside the input when empty. |
-| `description` | `string` | none | Help text rendered directly below the field. Use for formatting hints or data requirements. |
-| `readOnly` | `boolean` | `false` | Renders the field disabled. The value is included in the form submission but cannot be edited. |
-| `hidden` | `boolean` | `false` | Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI. |
-| `filterable` | `boolean` | `true` for supported field types | If `false`, the field is excluded from the list filter builder and stripped from incoming `where` queries. |
-| `condition` | `string \| (data: any) => boolean` | always shown | A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it. |
-| `layout` | field-specific | field default | Presentation style only on fields that support alternate renderers. Boolean fields accept `checkbox` or `switch`. Select fields accept `select` or `radio`. |
-| `component` | `string` | none | Key of a custom UI component to render in place of the default field input. The component must be registered under the same key in the `components.fields` prop of `<DyrectedAdmin>`. See [Custom Field Components](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs). |
+<TypeTable
+  type={{
+    placeholder: {
+      description: "Placeholder text shown inside the input when empty.",
+      type: "string",
+      default: "'Enter {label}...'",
+    },
+    description: {
+      description: "Help text rendered directly below the field. Use for formatting hints or data requirements.",
+      type: "string",
+    },
+    readOnly: {
+      description: "Renders the field disabled. The value is included in the form submission but cannot be edited.",
+      type: "boolean",
+      default: "false",
+    },
+    hidden: {
+      description:
+        "Hides the field from the form entirely. The value is preserved in the database — it just cannot be edited via the Admin UI.",
+      type: "boolean",
+      default: "false",
+    },
+    filterable: {
+      description:
+        "If `false`, the field is excluded from the list filter builder and stripped from incoming `where` queries.",
+      type: "boolean",
+      default: "true for supported field types",
+    },
+    condition: {
+      description:
+        "A Jexl expression string (recommended) or a function evaluated reactively against the current document values. Return `true` to show the field, `false` to hide it.",
+      type: "string | (data: any) => boolean",
+      default: "always shown",
+    },
+    layout: {
+      description:
+        "Presentation style only on fields that support alternate renderers. Boolean fields accept `checkbox` or `switch`. Select fields accept `select` or `radio`.",
+      type: "field-specific",
+      default: "field default",
+    },
+    component: {
+      description:
+        "Key of a custom UI component to render in place of the default field input. The component must be registered under the same key in the `components.fields` prop of `<DyrectedAdmin>`. See [Custom Field Components](/docs/integrations/vue#passing-vue-components-as-custom-field-inputs).",
+      type: "string",
+    },
+  }}
+/>
 
 Character and word counters are configured on the field itself with `maxLength` and `maxWords`, not through generic `admin` options. The Admin UI still reads `admin.maxLength` and `admin.maxWords` as compatibility aliases for supported text inputs, but new schemas should prefer the top-level field properties.
 
@@ -677,7 +780,7 @@ Then pass your component to `<DyrectedAdmin>` under the matching key:
   :components="{
     fields: {
       'products.brandColor': BrandColorPicker,
-    }
+    },
   }"
 />
 ```
@@ -747,12 +850,16 @@ If the options require a database query, secret API key, or server-side cache, u
 
 ### `condition` — Conditional Fields
 
-Use `condition` to show or hide a field based on the values of *other* fields in the same document. For maximum compatibility and security, Dyrected uses [Jexl](https://github.com/TechnologyAdvice/Jexl) for conditions.
+Use `condition` to show or hide a field based on the values of _other_ fields in the same document. For maximum compatibility and security, Dyrected uses [Jexl](https://github.com/TechnologyAdvice/Jexl) for conditions.
 
-> [!NOTE]
-> JEXL conditions are compiled and memoized in the Admin UI to ensure optimal typing performance. If a condition string contains syntax errors or throws evaluation errors, the Admin UI renders an inline red error boundary showing the field name and error traceback, while disabling the field.
+<Note>
+  JEXL conditions are compiled and memoized in the Admin UI to ensure optimal typing performance. If a condition string
+  contains syntax errors or throws evaluation errors, the Admin UI renders an inline red error boundary showing the
+  field name and error traceback, while disabling the field.
+</Note>
 
 #### String Expressions (Recommended)
+
 String-based conditions are serializable and work across all environments (local, cloud, and production).
 
 ```ts
@@ -776,6 +883,7 @@ String-based conditions are serializable and work across all environments (local
 ```
 
 #### Function Callbacks
+
 Functions are supported in local/embedded mode but are **stripped out** when syncing your schema to the Dyrected Cloud dashboard. Use strings for cloud-compatible schemas.
 
 ```ts
@@ -790,7 +898,10 @@ Functions are supported in local/embedded mode but are **stripped out** when syn
 
 The `data` argument is the **current live values of the entire document** as the editor is typing — not the saved version. The condition is re-evaluated on every keystroke.
 
-> **Important:** `condition` only hides the field in the UI. The field is **not** removed from Zod validation or from the API. If you need the field to truly be absent from saves, combine `condition` with `access.update`.
+<Note>
+  `condition` only hides the field in the UI. The field is **not** removed from Zod validation or from the API. If you
+  need the field to truly be absent from saves, combine `condition` with `access.update`.
+</Note>
 
 ---
 
@@ -816,21 +927,48 @@ export default defineConfig({
 })
 ```
 
-| Property | Type | Description |
-|---|---|---|
-| `branding.logo` | `string` | URL or path to the logo shown in the sidebar header. |
-| `branding.logoMark` | `string` | Compact mark used when sidebar is collapsed to icon-only mode. |
-| `branding.primaryColor` | `string` | Hex color used for primary buttons, active states, and focus rings. |
-| `branding.favicon` | `string` | URL or path to the favicon served by the admin. |
-| `branding.fontSans` | `string` | `"DM Sans"` | CSS font-family for body and UI elements. |
-| `branding.fontSerif` | `string` | `"Instrument Serif"` | CSS font-family for headings and display. |
-| `meta.titleSuffix` | `string` | Appended to the `<title>` tag on every admin page. |
+<TypeTable
+  type={{
+    "branding.logo": {
+      description: "URL or path to the logo shown in the sidebar header.",
+      type: "string",
+    },
+    "branding.logoMark": {
+      description: "Compact mark used when sidebar is collapsed to icon-only mode.",
+      type: "string",
+    },
+    "branding.primaryColor": {
+      description: "Hex color used for primary buttons, active states, and focus rings.",
+      type: "string",
+    },
+    "branding.favicon": {
+      description: "URL or path to the favicon served by the admin.",
+      type: "string",
+    },
+    "branding.fontSans": {
+      description: "CSS font-family for body and UI elements.",
+      type: "string",
+      default: '"DM Sans"',
+    },
+    "branding.fontSerif": {
+      description: "CSS font-family for headings and display.",
+      type: "string",
+      default: '"Instrument Serif"',
+    },
+    "meta.titleSuffix": {
+      description: "Appended to the `<title>` tag on every admin page.",
+      type: "string",
+    },
+  }}
+/>
 
 ## Customizing the Admin UI with Component Slots
 
 You can inject custom React or Vue components into specific areas of the Admin UI using Component Slots. First, declare the slot keys in your Dyrected configuration, then provide the matching components to the `<DyrectedAdmin>` wrapper.
 
-### 1. Configure the Slot Keys
+<Steps>
+<Step>
+### Configure the Slot Keys
 
 In your `dyrected.config.ts`, declare the component keys you want to render in the `admin.components` array for the dashboard or collections.
 
@@ -859,16 +997,21 @@ export default defineConfig({
 })
 ```
 
-### 2. Provide the Components
+</Step>
+<Step>
+### Provide the Components
 
 When mounting the Admin UI in your frontend, pass the `components` prop containing the component registries for `dashboard` and `collectionList`.
 
-**React / Next.js:**
+<Tabs items={['Next.js', 'React', 'Nuxt.js', 'Vue']}>
+<Tab value="Next.js">
+
 ```tsx
+// app/admin/page.tsx
 
 
 function WelcomeBanner(props) {
-  return <div className="p-4 bg-blue-50">Welcome, {props.user.email}!</div>
+  return <div className="p-4 bg-blue-50">Welcome, {props.user.email}!</div>;
 }
 
 export default function AdminPage() {
@@ -876,20 +1019,89 @@ export default function AdminPage() {
     <DyrectedAdmin
       components={{
         dashboard: {
+          "welcome-banner": WelcomeBanner,
+          "analytics-widget": AnalyticsWidget,
+        },
+        collectionList: {
+          "posts-header": PostsHeader,
+          "custom-pagination": CustomPagination,
+        },
+      }}
+    />
+  );
+}
+```
+
+</Tab>
+<Tab value="React">
+
+```tsx
+
+
+
+function WelcomeBanner(props) {
+  return <div className="p-4 bg-blue-50">Welcome, {props.user.email}!</div>;
+}
+
+export function AdminPage() {
+  return (
+    <DyrectedAdmin
+      baseUrl="/dyrected"
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      basename="/admin"
+      components={{
+        dashboard: {
+          "welcome-banner": WelcomeBanner,
+          "analytics-widget": AnalyticsWidget,
+        },
+        collectionList: {
+          "posts-header": PostsHeader,
+          "custom-pagination": CustomPagination,
+        },
+      }}
+    />
+  );
+}
+```
+
+</Tab>
+<Tab value="Nuxt.js">
+
+The `@dyrected/nuxt` module auto-imports `<DyrectedAdmin />` — no explicit import needed.
+
+```vue
+<!-- pages/admin/index.vue -->
+<script setup lang="ts">
+definePageMeta({ layout: false })
+
+
+
+
+
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin
+      basename="/admin"
+      :components="{
+        dashboard: {
           'welcome-banner': WelcomeBanner,
           'analytics-widget': AnalyticsWidget,
         },
         collectionList: {
           'posts-header': PostsHeader,
           'custom-pagination': CustomPagination,
-        }
-      }}
+        },
+      }"
     />
-  )
-}
+  </ClientOnly>
+</template>
 ```
 
-**Vue / Nuxt:**
+</Tab>
+<Tab value="Vue">
+
 ```vue
 <template>
   <DyrectedAdmin
@@ -901,7 +1113,7 @@ export default function AdminPage() {
       collectionList: {
         'posts-header': PostsHeader,
         'custom-pagination': CustomPagination,
-      }
+      },
     }"
   />
 </template>
@@ -915,16 +1127,24 @@ export default function AdminPage() {
 </script>
 ```
 
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
+
 ### Available Slots and Props
 
 **Dashboard Slots (`beforeDashboard`, `afterDashboard`):**
 Components receive:
+
 - `client`: The initialized `DyrectedClient` for data fetching.
 - `user`: The currently authenticated admin user document.
 - `schemas`: The full loaded `AdminSchemas` object.
 
 **Collection List Slots (`beforeList`, `beforeListTable`, `afterListTable`, `afterList`):**
 Components receive:
+
 - `client`: The initialized `DyrectedClient` for data fetching or mutations.
 - `user`: The currently authenticated admin user document.
 - `collection`: The configuration of the current collection.
@@ -940,6 +1160,8 @@ Use `client` for mutations and data fetching. Slot props intentionally do not ex
 
 If a configured key is not registered, or if a component throws during render, the Admin UI skips that component so the rest of the CMS remains usable. Missing-key warnings are deduplicated in development.
 
+---
+
 ## Theming & CSS Overrides
 
 The Admin UI uses CSS custom properties for all design tokens. Override them on `.dy-admin-ui` from your host application's global stylesheet. Scoping overrides to `.dy-admin-ui` keeps the admin theme isolated from the rest of your app.
@@ -950,91 +1172,93 @@ All color values use **HSL without the `hsl()` wrapper** (Tailwind CSS conventio
 /* In your global.css — override any token you need */
 .my-admin-page .dy-admin-ui {
   /* ── Fonts ─────────────────────────────────────────── */
-  --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
 
   /* ── Page surface ───────────────────────────────────── */
-  --background:         0 0% 100%;   /* page background */
-  --foreground:         240 10% 4%;  /* default text */
+  --background: 0 0% 100%; /* page background */
+  --foreground: 240 10% 4%; /* default text */
 
   /* ── Card / panel surfaces ──────────────────────────── */
-  --card:               0 0% 100%;
-  --card-foreground:    240 10% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
 
   /* ── Popover / dropdown surfaces ────────────────────── */
-  --popover:            0 0% 100%;
+  --popover: 0 0% 100%;
   --popover-foreground: 240 10% 4%;
 
   /* ── Primary accent (buttons, active states, rings) ─── */
-  --primary:            38 92% 50%;  /* default: amber */
-  --primary-foreground: 60 3% 6%;   /* text on primary bg */
-  --intelligence:       259 100% 62%; /* links, navigation accents */
+  --primary: 38 92% 50%; /* default: amber */
+  --primary-foreground: 60 3% 6%; /* text on primary bg */
+  --intelligence: 259 100% 62%; /* links, navigation accents */
   --intelligence-foreground: 0 0% 100%;
 
   /* ── Secondary (subtle buttons, tags) ───────────────── */
-  --secondary:            60 10% 95%;
+  --secondary: 60 10% 95%;
   --secondary-foreground: 60 3% 6%;
 
   /* ── Muted (placeholders, helper text, disabled) ─────── */
-  --muted:            60 10% 95%;
+  --muted: 60 10% 95%;
   --muted-foreground: 60 4% 40%;
 
   /* ── Accent (hover tints) ───────────────────────────── */
-  --accent:            60 10% 95%;
+  --accent: 60 10% 95%;
   --accent-foreground: 60 3% 6%;
 
   /* ── Destructive (delete buttons, error states) ──────── */
-  --destructive:            0 84% 60%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 60 17% 97%;
 
   /* ── Borders & inputs ───────────────────────────────── */
-  --border: 60 7% 89%;   /* field borders, dividers */
-  --input:  60 7% 89%;   /* input border color */
-  --ring:   38 92% 50%;  /* focus ring color */
+  --border: 60 7% 89%; /* field borders, dividers */
+  --input: 60 7% 89%; /* input border color */
+  --ring: 38 92% 50%; /* focus ring color */
 
   /* ── Border radius ──────────────────────────────────── */
-  --radius: 0.5rem;      /* applied to cards, inputs, buttons */
+  --radius: 0.5rem; /* applied to cards, inputs, buttons */
 
   /* ── Sidebar ────────────────────────────────────────── */
-  --sidebar-background:         60 17% 97%;
-  --sidebar-foreground:         60 3% 6%;
-  --sidebar-primary:            38 92% 50%;  /* active item accent */
+  --sidebar-background: 60 17% 97%;
+  --sidebar-foreground: 60 3% 6%;
+  --sidebar-primary: 38 92% 50%; /* active item accent */
   --sidebar-primary-foreground: 60 3% 6%;
-  --sidebar-accent:             60 10% 95%;  /* hover background */
-  --sidebar-accent-foreground:  38 92% 50%;  /* hover text */
-  --sidebar-border:             60 7% 89%;
-  --sidebar-ring:               38 92% 50%;
+  --sidebar-accent: 60 10% 95%; /* hover background */
+  --sidebar-accent-foreground: 38 92% 50%; /* hover text */
+  --sidebar-border: 60 7% 89%;
+  --sidebar-ring: 38 92% 50%;
 }
 ```
 
 ### Common customisations
 
 **Change the accent color to blue:**
+
 ```css
 .my-admin-page .dy-admin-ui {
-  --primary:            217 91% 60%;
+  --primary: 217 91% 60%;
   --primary-foreground: 0 0% 100%;
-  --intelligence:        217 91% 60%;
+  --intelligence: 217 91% 60%;
   --intelligence-foreground: 0 0% 100%;
-  --ring:               217 91% 60%;
-  --sidebar-primary:            217 91% 60%;
+  --ring: 217 91% 60%;
+  --sidebar-primary: 217 91% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent-foreground:  217 91% 60%;
-  --sidebar-ring:               217 91% 60%;
+  --sidebar-accent-foreground: 217 91% 60%;
+  --sidebar-ring: 217 91% 60%;
 }
 ```
 
 **Use a neutral grey palette (no warm tint):**
+
 ```css
 .my-admin-page .dy-admin-ui {
-  --background:      0 0% 98%;
-  --card:            0 0% 100%;
-  --muted:           0 0% 94%;
+  --background: 0 0% 98%;
+  --card: 0 0% 100%;
+  --muted: 0 0% 94%;
   --muted-foreground: 0 0% 42%;
-  --border:          0 0% 88%;
-  --input:           0 0% 88%;
+  --border: 0 0% 88%;
+  --input: 0 0% 88%;
   --sidebar-background: 0 0% 97%;
-  --sidebar-border:     0 0% 88%;
+  --sidebar-border: 0 0% 88%;
 }
 ```
 
@@ -1099,19 +1323,28 @@ When you have two brand colors, use `--primary` for committed actions like Save,
 ```
 
 **Swap fonts (using a Google Font):**
+
 ```html
 <!-- In your <head> -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@600;700&display=swap" rel="stylesheet" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@600;700&display=swap"
+  rel="stylesheet"
+/>
 ```
+
 ```css
 .my-admin-page .dy-admin-ui {
-  --font-sans:  "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Lora", ui-serif, Georgia, serif;
 }
 ```
 
-> **Scope:** Prefer overriding variables on `.dy-admin-ui`, optionally nested under your admin page wrapper such as `.my-admin-page .dy-admin-ui`. This matches the Admin UI's scoped reset and prevents unrelated app styles from inheriting admin tokens.
+<Note>
+  **Scope:** Prefer overriding variables on `.dy-admin-ui`, optionally nested under your admin page wrapper such as
+  `.my-admin-page .dy-admin-ui`. This matches the Admin UI's scoped reset and prevents unrelated app styles from
+  inheriting admin tokens.
+</Note>
 
 ---
 
@@ -1145,14 +1378,14 @@ Configured icons take precedence over defaults. Without an override, upload coll
 
 When a user is authenticated, the Admin UI resolves access functions against the current user and reflects the outcome:
 
-| Resolved Access | Admin UI Behaviour |
-|---|---|
-| `access.read === false` | Collection is hidden from the sidebar and returns a 403 if navigated to directly |
-| `access.create === false` | "Create" button is hidden on the list page |
-| `access.update === false` | Edit form renders in read-only mode; "Save" button is hidden |
-| `access.delete === false` | "Delete" action is hidden from the row action menu |
-| `field.access.read === false` | Field is removed from the form entirely |
-| `field.access.update === false` | Field is rendered as `readOnly` |
+| Resolved Access                 | Admin UI Behaviour                                                               |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `access.read === false`         | Collection is hidden from the sidebar and returns a 403 if navigated to directly |
+| `access.create === false`       | "Create" button is hidden on the list page                                       |
+| `access.update === false`       | Edit form renders in read-only mode; "Save" button is hidden                     |
+| `access.delete === false`       | "Delete" action is hidden from the row action menu                               |
+| `field.access.read === false`   | Field is removed from the form entirely                                          |
+| `field.access.update === false` | Field is rendered as `readOnly`                                                  |
 
 Access is resolved **server-side** via the `/api/schemas` response, which includes computed access booleans for the authenticated user. The Admin UI never re-implements access logic — it only reads and reflects what the server returns.
 
@@ -1302,7 +1535,14 @@ The export always returns the full collection regardless of any active search qu
 
 Canonical URL: https://docs.dyrected.com/docs/admin/overview
 
-The `@dyrected/admin` package is a React-based Admin UI that is **automatically generated** from your `dyrected.config.ts`. You define your schema once — the Admin renders the forms, tables, media browser, and global editors without any additional code.
+The `@dyrected/admin` package is a React-based Admin UI that is **automatically generated** from your `dyrected.config.ts`. You define your schema once — the admin renders the forms, tables, media browser, and global editors without any additional code.
+
+There are two ways editors can use it:
+
+- **Hosted admin** at `app.dyrected.com`, managed by Dyrected
+- **Embedded admin** inside your own app, usually at `/admin`
+
+That choice is separate from the backend choice. You can use the admin with either a Dyrected Cloud backend or a self-hosted backend.
 
 ---
 
@@ -1440,14 +1680,36 @@ const unmount = renderAdminUI(container, {
 
 Both accept the same props:
 
-| Prop         | Type                     | Required | Description                                                                                                               |
-| ------------ | ------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `baseUrl`    | `string`                 | ✅       | The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).                                                        |
-| `apiKey`     | `string`                 | ✅       | The Site API key used to authenticate all Admin requests.                                                                 |
-| `siteId`     | `string`                 |          | The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).                                                |
-| `basename`   | `string`                 |          | The URL path prefix where the admin is mounted (default: `/admin`).                                                       |
-| `onNavigate` | `(path: string) => void` |          | Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded. |
-| `components` | `object`                 |          | Custom field components. See [Custom Field Components](#custom-field-components).                                         |
+<TypeTable
+  type={{
+    baseUrl: {
+      description: 'The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).',
+      type: 'string',
+      required: true,
+    },
+    apiKey: {
+      description: 'The Site API key used to authenticate all Admin requests.',
+      type: 'string',
+      required: true,
+    },
+    siteId: {
+      description: 'The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).',
+      type: 'string',
+    },
+    basename: {
+      description: 'The URL path prefix where the admin is mounted (default: `/admin`).',
+      type: 'string',
+    },
+    onNavigate: {
+      description: 'Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded.',
+      type: '(path: string) => void',
+    },
+    components: {
+      description: 'Custom field components. See [Custom Field Components](#custom-field-components).',
+      type: 'object',
+    },
+  }}
+/>
 
 ---
 
@@ -1582,12 +1844,26 @@ You can replace the default Admin UI widget for any field type or specific field
 
 Your component receives:
 
-| Prop       | Type                   | Description                                 |
-| ---------- | ---------------------- | ------------------------------------------- |
-| `value`    | `any`                  | The current field value.                    |
-| `onChange` | `(value: any) => void` | Callback to update the value.               |
-| `field`    | `FieldSchema`          | The full field definition from your config. |
-| `readOnly` | `boolean`              | Whether the field should be non-editable.   |
+<TypeTable
+  type={{
+    value: {
+      description: 'The current field value.',
+      type: 'any',
+    },
+    onChange: {
+      description: 'Callback to update the value.',
+      type: '(value: any) => void',
+    },
+    field: {
+      description: 'The full field definition from your config.',
+      type: 'FieldSchema',
+    },
+    readOnly: {
+      description: 'Whether the field should be non-editable.',
+      type: 'boolean',
+    },
+  }}
+/>
 
 ---
 
@@ -2126,7 +2402,8 @@ Use functions when you need async lookups or row-level filtering. Use Jexl strin
 
 ## Common Patterns
 
-### Blog: public reads, staff writes, authors own their content
+<Accordions type="single">
+<Accordion title="Blog: public reads, staff writes, authors own their content">
 
 Published posts are readable by anyone. Only logged-in users can create. Authors can edit their own posts; admins can edit anything. Only admins can delete.
 
@@ -2169,9 +2446,8 @@ To hide the `status` field from authors so they cannot self-publish, combine thi
 }
 ```
 
----
-
-### Contact form / lead capture: public submit, staff reads only
+</Accordion>
+<Accordion title="Contact form / lead capture: public submit, staff reads only">
 
 Anyone on the internet can submit the form. Only authenticated staff can read the submissions. Nobody can edit or delete entries after submission.
 
@@ -2192,9 +2468,8 @@ export const Inquiries = defineCollection({
 })
 ```
 
----
-
-### E-commerce orders: users see their own, admins see all
+</Accordion>
+<Accordion title="E-commerce orders: users see their own, admins see all">
 
 `read` returning an object is treated as a `where` filter — so regular users automatically get a filtered list without any extra code in the API route.
 
@@ -2215,9 +2490,8 @@ export const Orders = defineCollection({
 })
 ```
 
----
-
-### Role-based team: admin / editor / viewer
+</Accordion>
+<Accordion title="Role-based team: admin / editor / viewer">
 
 A three-tier role model. Viewers can read. Editors can read and write. Only admins can delete.
 
@@ -2251,9 +2525,8 @@ export const Articles = defineCollection({
 })
 ```
 
----
-
-### Invite-only community: restrict create to admins
+</Accordion>
+<Accordion title="Invite-only community: restrict create to admins">
 
 Public reads, but only admins can create new members. Users can update their own profile. No one can delete via the API.
 
@@ -2270,6 +2543,8 @@ export const Members = defineCollection({
   fields: [...],
 })
 ```
+</Accordion>
+</Accordions>
 
 ---
 
@@ -2443,11 +2718,11 @@ Defining a collection gives you, automatically:
 
 | What you get | Detail |
 |---|---|
-| **List endpoint** | `GET /api/posts` — paginated, filterable, sortable |
-| **Single endpoint** | `GET /api/posts/:id` |
-| **Create endpoint** | `POST /api/posts` |
-| **Update endpoint** | `PATCH /api/posts/:id` |
-| **Delete endpoint** | `DELETE /api/posts/:id` |
+| **List endpoint** | `GET /api/collections/posts` — paginated, filterable, sortable |
+| **Single endpoint** | `GET /api/collections/posts/:id` |
+| **Create endpoint** | `POST /api/collections/posts` |
+| **Update endpoint** | `PATCH /api/collections/posts/:id` |
+| **Delete endpoint** | `DELETE /api/collections/posts/:id` |
 | **List page** in Admin UI | Searchable table with configurable columns |
 | **Edit page** in Admin UI | Form generated from your `fields` array |
 | **SDK methods** | `.collection('posts').find()`, `.findOne()`, `.create()`, `.update()`, `.delete()` |
@@ -3110,9 +3385,9 @@ The following table summarizes the runtime capabilities of each collection hook,
 | `beforeTransition`| ✓ | ✓ (read-only) | ✗ | ✗ |
 | `afterTransition`| ✓ | ✓ | ✓ | ✓ (email, webhooks) |
 
-> [!IMPORTANT]
-> **If you find yourself building an API route just to trigger a side effect after a save, check if `afterChange` covers it first.**  
-> `afterChange` receives the full writable database adapter context. It is the correct place for emails, webhook pings, capacity checks, and any write that should happen after a document is successfully saved.
+<Note>
+**If you find yourself building an API route just to trigger a side effect after a save, check if `afterChange` covers it first.** `afterChange` receives the full writable database adapter context. It is the correct place for emails, webhook pings, capacity checks, and any write that should happen after a document is successfully saved.
+</Note>
 
 ### Example: Asynchronous `afterChange` Side Effect
 
@@ -3280,7 +3555,9 @@ When the returned list changes, the field's current value is **automatically cle
 }
 ```
 
-> **`onChange` vs `options`**: `onChange` sets a field's *value*. `options` sets the *available choices* for a select/radio field. Never return an options list from `onChange`, and never return a plain value from `options`.
+<Note>
+**`onChange` vs `options`**: `onChange` sets a field's *value*. `options` sets the *available choices* for a select/radio field. Never return an options list from `onChange`, and never return a plain value from `options`.
+</Note>
 
 ---
 
@@ -3542,29 +3819,26 @@ For a full explanation of depth behaviour see [Understanding Depth](/docs/concep
 
 ## Common patterns
 
-### Post → Author (single)
-
+<Accordions type="single">
+<Accordion title="Post → Author (single)">
 ```ts
 // posts collection
 { name: 'author', type: 'relationship', relationTo: 'users' }
 ```
-
-### Post → Tags (many)
-
+</Accordion>
+<Accordion title="Post → Tags (many)">
 ```ts
 // posts collection
 { name: 'tags', type: 'relationship', relationTo: 'tags', hasMany: true }
 ```
-
-### Author's posts (reverse via join)
-
+</Accordion>
+<Accordion title="Author's posts (reverse via join)">
 ```ts
 // users collection
 { name: 'posts', type: 'join', collection: 'posts', on: 'author' }
 ```
-
-### Product → Category, with reverse
-
+</Accordion>
+<Accordion title="Product → Category, with reverse">
 ```ts
 // products collection
 { name: 'category', type: 'relationship', relationTo: 'categories' }
@@ -3572,6 +3846,8 @@ For a full explanation of depth behaviour see [Understanding Depth](/docs/concep
 // categories collection
 { name: 'products', type: 'join', collection: 'products', on: 'category', limit: 50 }
 ```
+</Accordion>
+</Accordions>
 
 ---
 
@@ -3651,8 +3927,9 @@ npx @dyrected/cli sync:schema
 
 Run this whenever you add a `promoted: true` field, add `unique: true` to an existing field, or change your database adapter. Regular field additions and removals (inside the JSON blob) do not require a sync.
 
-> [!NOTE]
-> **MongoDB does not have a sync step.** MongoDB is schema-less — collections and fields are created on first write. There are no columns to add and no migration to run. `renameTo` and `defaultValue` still work exactly as described above (applied on read), but you never need to run `sync:schema` with the MongoDB adapter.
+<Note>
+**MongoDB does not have a sync step.** MongoDB is schema-less — collections and fields are created on first write. There are no columns to add and no migration to run. `renameTo` and `defaultValue` still work exactly as described above (applied on read), but you never need to run `sync:schema` with the MongoDB adapter.
+</Note>
 
 ---
 
@@ -3785,16 +4062,24 @@ export const CustomWorkflow = {
 
 ---
 
-## Quickstart with Dyrected Cloud
+## Dyrected Cloud Backend
 
 Canonical URL: https://docs.dyrected.com/docs/deployment/cloud
 
-Dyrected Cloud handles the database, storage, and API, so you can focus on building your app. There are two main ways to get started:
+Dyrected Cloud handles the backend: database, storage, auth, and API. You keep your schema in code, then choose how editors access the admin.
 
----
+## What this page covers
 
-<Tabs items={['AI-First (Recommended)', 'Manual Setup']}>
-<Tab value="AI-First (Recommended)">
+Using Dyrected Cloud answers one question only:
+
+- **Where the backend runs**: on Dyrected's servers
+
+You still choose separately:
+
+- **Where editors use the admin**: hosted admin at `app.dyrected.com` or embedded admin in your app
+- **Who owns updates**: hosted admin updates are managed by Dyrected; embedded admin updates ship when you update your app packages and deploy
+
+## Getting Started
 
 ### 1. Create your site
 Sign up at [app.dyrected.com](https://app.dyrected.com) and create a new **Site**.
@@ -3811,74 +4096,32 @@ Paste that prompt into your AI tool (Claude, GPT, Cursor, etc.).
 - **Embed the Admin Dashboard** directly into your React, Vue, or Next.js application at a route like `/admin`.
 - **Sync your Schema**: The AI will run `npx @dyrected/cli sync:schema` for you so your cloud database is ready immediately.
 
-### 4. Open your site
-Run your site and your new dashboard will be live at `yourwebsite.com/admin`.
+### 4. Choose the editor entry point
 
-</Tab>
-<Tab value="Manual Setup">
+After setup, decide where editors should work:
 
-### 1. Install Dependencies
-```bash
-pnpm add @dyrected/admin @dyrected/core @dyrected/next
-```
-
-### 2. Define your Config
-Create a `dyrected.config.ts` in your project root. No adapters are needed—Cloud handles everything.
-
-```ts
-
-
-export default defineConfig({
-  collections: [
-    {
-      slug: 'posts',
-      fields: [{ name: 'title', label: 'Title', type: 'text', required: true }],
-    },
-  ],
-})
-```
-
-> **Building a marketing site?** For pages where editors assemble sections (hero, rich text, call-to-action), use a `blocks` field instead of a fixed collection. See [Building a Page Builder](/docs/guides/building-a-page-builder).
-
-### 3. Embed the Admin UI
-Create a page in your app to host the dashboard.
-
-**Next.js (App Router):**
-```tsx
-// app/admin/page.tsx
-
-
-export default function AdminPage() {
-  return <DyrectedAdmin />
-}
-```
-
-**React (Vite):**
-```tsx
-
-
-
-export default function AdminPage() {
-  return <AdminUI apiKey="..." siteId="..." />
-}
-```
-
-### 4. Sync Schema
-```bash
-npx @dyrected/cli sync:schema
-```
-
-</Tab>
-</Tabs>
+- **Hosted admin**: send them to [app.dyrected.com](https://app.dyrected.com)
+- **Embedded admin**: run your site and use the dashboard at `yourwebsite.com/admin`
 
 ---
 
-## Managed Admin vs. Embedded Admin
+## Hosted Admin vs. Embedded Admin
 
-While you can always use the [Hosted Dashboard](https://app.dyrected.com) to manage content, embedding it into your own app is the "Pro" way to work. It allows you to:
-- Keep everything under your own domain (e.g., `my-app.com/admin`).
-- Give your clients a white-labeled experience.
-- Build custom UI components alongside the CMS.
+Both options can use the same Cloud backend.
+
+### Hosted Admin
+
+- Editors log in at [app.dyrected.com](https://app.dyrected.com)
+- Admin updates are automatic
+- Best for the fastest setup and lowest maintenance
+
+### Embedded Admin
+
+- Editors log in inside your app, usually at `/admin`
+- Admin updates ship when you update packages and deploy your app
+- Best for white-label client handoff and custom in-app workflows
+
+If you want the admin on the client's domain, use embedded admin. If you want Dyrected to handle admin updates, use hosted admin.
 
 ---
 
@@ -4051,16 +4294,26 @@ app:
 
 ---
 
-## Embedding the Admin UI
+## Embedded Admin
 
 Canonical URL: https://docs.dyrected.com/docs/deployment/embedding
 
-Dyrected is "Headless First," which means you can choose where the Admin UI lives. While we host it for you on Dyrected Cloud, you can also embed it directly into your own frontend application.
+Embedded admin means editors use Dyrected inside your own app, usually at `/admin`. This is separate from where the backend runs: you can embed the admin while using either a Dyrected Cloud backend or a self-hosted backend.
+
+Choose embedded admin when you want the client or team to manage content from your own domain. Choose the hosted admin at `app.dyrected.com` when you want Dyrected to handle admin updates for you.
 
 This is perfect for:
 - Giving clients a white-labeled dashboard under your own domain.
 - Building custom administrative workflows alongside the CMS.
 - Deploying a "Single Page App" (SPA) dashboard with zero backend requirements.
+
+## Update ownership
+
+When you embed the admin, the admin UI becomes part of your app package and deployment flow.
+
+- **Hosted admin** updates are managed by Dyrected
+- **Embedded admin** updates ship when you update packages and deploy your app
+- **Backend upgrades** still depend on whether you use the Cloud backend or a self-hosted backend
 
 ---
 
@@ -4152,7 +4405,7 @@ onUnmounted(() => {
 
 The Admin UI package is a standalone application that communicates with the Dyrected API via HTTP. 
 
-- **No Server Needed**: You can host this dashboard as a static site on Vercel, Netlify, or even GitHub Pages.
+- **No Server Needed for the Admin UI**: You can host this dashboard as a static site on Vercel, Netlify, or even GitHub Pages while still pointing it at a Cloud or self-hosted backend.
 - **Auto-Sync**: In **Self-Hosted** mode, the UI reflects changes as soon as you save your `dyrected.config.ts`. In **Cloud** mode, run `npx @dyrected/cli sync:schema` to push your local changes to the cloud API.
 - **Authentication**: By default, the UI handles its own login state, securely storing the session token in the browser.
 
@@ -4413,12 +4666,24 @@ export default nextConfig
 
 Canonical URL: https://docs.dyrected.com/docs/getting-started/introduction
 
-Dyrected is a code-first headless CMS. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates a REST API, an Admin UI, and a type-safe SDK from it automatically. No clicking through UI builders to create fields.
+Dyrected is a code-first CMS for websites and apps that need a safe handoff. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates the API, admin, and SDK automatically. Your team or client updates content. Your codebase and layout stay under your control.
 
 > **Philosophy**  
 > Dyrected handles the boring parts: storage, admin UI, access control, and relationship management. You own everything interesting: validation, business rules, emails, and concurrency. Collections define your data shape. API routes define your logic. The boundary is intentional and worth respecting from day one.
 
-The engine runs **inside your existing Next.js or Nuxt.js app** as a route handler. There is no separate CMS server to run.
+The core idea is simple: build the site the way you want, then give editors a controlled admin for the parts they should be allowed to change.
+
+---
+
+## Who Dyrected is for
+
+Dyrected is strongest when:
+
+- You build client websites and want to hand off content editing without handing over design control
+- You are a freelance developer tired of small text, image, and listing update requests
+- You have a product or marketing team that should own pricing pages, announcements, help content, or onboarding copy
+
+The engine can run **inside your existing Next.js or Nuxt.js app** as a route handler, or you can use Dyrected Cloud for the backend while keeping the same schema in your repo.
 
 ---
 
@@ -4426,48 +4691,76 @@ The engine runs **inside your existing Next.js or Nuxt.js app** as a route handl
 
 **`@dyrected/core`** — the engine. Mount it as a catch-all route in Next.js or as a Nuxt.js module. It handles the database, REST API, file uploads, auth, and email.
 
-**Admin UI** — auto-generated from your config. Mount it at `/admin`. Your clients use this to edit content. You never have to build a dashboard.
+**Admin UI** — auto-generated from your config. Use the hosted admin at `app.dyrected.com`, or mount it inside your app at `/admin`. Your clients or teammates use this to edit content. You never have to build a dashboard.
 
 **`@dyrected/sdk`** — a typed TypeScript client for fetching content from your frontend, Node scripts, or any other environment.
 
-**Dyrected Cloud** — managed hosting for the database, storage, and multi-site workspaces. The fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
+**Dyrected Cloud** — managed hosting for the backend: database, storage, auth, API, and multi-site workspaces. The fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
 
 ---
 
 ## Why Dyrected?
 
-| | Dyrected | Payload CMS | Sanity | Contentful |
-|---|---|---|---|---|
-| **Config** | TypeScript in your repo | TypeScript in your repo | Studio UI | Web UI |
-| **Runs in your app** | Yes — no separate server | Yes | No | No |
-| **Managed cloud option** | Yes ([Dyrected Cloud](/docs/deployment/cloud)) | No | Yes | Yes |
-| **Self-hostable** | Yes — free | Yes — free | Limited | No |
-| **Multi-site** | Yes (Cloud workspaces) | Manual | Project-based | Organisation-based |
-| **License** | BSL → Apache 2 | MIT | Proprietary | Proprietary |
+|                          | Dyrected                                       | Payload CMS             | Sanity        | Contentful         |
+| ------------------------ | ---------------------------------------------- | ----------------------- | ------------- | ------------------ |
+| **Config**               | TypeScript in your repo                        | TypeScript in your repo | Studio UI     | Web UI             |
+| **Runs in your app**     | Yes — no separate server                       | Yes                     | No            | No                 |
+| **Managed cloud option** | Yes ([Dyrected Cloud](/docs/deployment/cloud)) | No                      | Yes           | Yes                |
+| **Self-hostable**        | Yes — free                                     | Yes — free              | Limited       | No                 |
+| **Multi-site**           | Yes (Cloud workspaces)                         | Manual                  | Project-based | Organisation-based |
+| **License**              | BSL → Apache 2                                 | MIT                     | Proprietary   | Proprietary        |
 
 The short version: Dyrected gives you Payload's developer experience (config-as-code, no separate process) with the managed cloud option of Sanity or Contentful.
 
 ---
 
-## Self-hosted or Cloud?
+## Choose your setup
 
-| | Self-Hosted | Cloud |
-|---|---|---|
-| **Engine** | Runs inside your app | Runs on Dyrected's servers |
-| **Database** | Your own (SQLite, Postgres, MySQL) | Fully managed |
-| **Storage** | Local disk or your S3/R2/Cloudinary | Fully managed |
-| **Auth** | You manage JWT secret and sessions | Managed, with workspace RBAC |
-| **Multi-site** | One site per deployment | Multiple sites per workspace |
-| **Price** | Free (BSL) | Paid — see [Billing](/docs/cloud/billing) |
-| **Best for** | Full control, data residency, offline | Speed, teams, multiple client sites |
+There are three separate decisions to understand:
 
-**Cloud makes sense when:**
+1. **Where the backend runs**: Dyrected Cloud backend or self-hosted backend
+2. **Where editors use the admin**: hosted admin or embedded admin
+3. **Who owns updates**: Dyrected for hosted surfaces, or your app deployment/package updates for embedded and self-hosted surfaces
+
+### Backend location
+
+|                | Self-Hosted                           | Cloud                                     |
+| -------------- | ------------------------------------- | ----------------------------------------- |
+| **Engine**     | Runs inside your app                  | Runs on Dyrected's servers                |
+| **Database**   | Your own (SQLite, Postgres, MySQL)    | Fully managed                             |
+| **Storage**    | Local disk or your S3/R2/Cloudinary   | Fully managed                             |
+| **Auth**       | You manage JWT secret and sessions    | Managed, with workspace RBAC              |
+| **Multi-site** | One site per deployment               | Multiple sites per workspace              |
+| **Price**      | Free (BSL)                            | Paid — see [Billing](/docs/cloud/billing) |
+| **Best for**   | Full control, data residency, offline | Speed, teams, multiple client sites       |
+
+### Admin location
+
+|                          | Hosted Admin                      | Embedded Admin                                          |
+| ------------------------ | --------------------------------- | ------------------------------------------------------- |
+| **Where editors log in** | `app.dyrected.com`                | Your app, usually at `/admin`                           |
+| **Branding**             | Dyrected-hosted                   | White-label inside your domain                          |
+| **Updates**              | Managed by Dyrected               | Shipped when you update your app packages and deploy    |
+| **Best for**             | Fastest setup, lowest maintenance | Client handoff, custom workflows, own-domain experience |
+
+### When to choose each backend
+
+**Cloud backend makes sense when:**
+
 - You're an agency managing multiple client sites — each gets its own site in one workspace
 - You want to ship fast — no Postgres to provision, no S3 bucket to configure
 - You need multi-site without deploying new infrastructure
 - You're a solo developer who wants a low-maintenance stack
 
-Both modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
+**Self-hosted backend makes sense when:**
+
+- You want the engine, database, and file handling to live inside your own infrastructure
+- You need full control over deployment, networking, or data residency
+- You are comfortable owning backend upgrades and operational maintenance
+
+Both backend modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
+
+<SetupWizard />
 
 ---
 
@@ -4567,80 +4860,107 @@ Before you start, ensure you have:
 - A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
 
-<Tabs items={['Dyrected Cloud (SPA)', 'Next.js', 'Nuxt.js']}>
-<Tab value="Dyrected Cloud (SPA)">
+---
 
-**SPA** stands for Single-Page Application — a client-side app that runs entirely in the browser, such as a React (Vite), Vue, or Svelte project. There is no Node.js server handling CMS requests; your app fetches content directly from the Dyrected Cloud API using a site API key.
+## First choose your setup
 
-**1. Create a Cloud site**
+Dyrected has three choices that are easy to blur together:
 
-Sign in to Dyrected Cloud, create a site, and keep the site settings open. You will need:
+- **Backend**: Dyrected Cloud backend or self-hosted backend
+- **Admin location**: hosted admin at `app.dyrected.com` or embedded admin in your app at `/admin`
+- **Update ownership**: hosted admin updates automatically; embedded admin ships with your app deploys; self-hosted backend upgrades are yours to manage
 
-- Site ID
-- Site API key
-- Base URL
+If you want the shortest path with the least maintenance, start with a Cloud backend and hosted admin. If you want a white-label handoff, keep the Cloud backend and embed the admin into your app.
 
-**2. Model the content**
+---
 
-Create the collections, globals, and fields your app needs in the Cloud dashboard. Use collections for repeatable content such as posts, products, events, testimonials, FAQs, or services. Use globals for one shared version of content such as navigation, footer settings, company details, or default SEO.
+## Cloud Backend
 
-**3. Add starter content**
+This path uses the **Dyrected Cloud backend**. Your content API, database, storage, and auth live on Dyrected's servers. You can then choose either the hosted admin at `app.dyrected.com` or an embedded admin route inside your own app.
 
-Add at least one real entry for each collection or global before connecting your frontend. This gives your app a predictable response shape while you build the UI.
+**Prerequisites & assumptions**
 
-**4. Install the SDK**
+- You already have a website or app repo, open in an AI coding tool such as Lovable, Bolt, v0, Cursor, Replit, or Windsurf.
+- You're willing to create a free [Dyrected Cloud](https://app.dyrected.com) account — no Postgres, S3, or server to provision.
+- No prior Dyrected knowledge assumed — the setup prompt below teaches your AI builder everything it needs.
 
-```bash
-pnpm add @dyrected/sdk
-```
+### Easiest: paste the setup prompt
 
-Use the matching command for your package manager if you do not use pnpm.
+Instead of writing integration code yourself, copy a setup prompt from Dyrected and paste it into your AI builder. The AI handles the entire integration in stages — including running `npx @dyrected/cli init` and `npx @dyrected/cli sync:schema` for you, so your Cloud database is ready without you touching the CLI. This is the recommended path over setting things up by hand.
 
-**5. Store Cloud connection values**
+**Before you start**
 
-Add the public Cloud values your frontend needs to `.env.local`:
+- Open the project in the AI builder that owns the website code.
+- [Create a Dyrected site](https://app.dyrected.com) and keep the site settings open. You will need the Site ID, Site API key, and Base URL — the prompt tells the AI when to ask for them.
 
-```bash
-VITE_DYRECTED_SITE_ID="site_..."
-VITE_DYRECTED_API_KEY="..."
-VITE_DYRECTED_BASE_URL="https://..."
-```
+<Steps>
+<Step>
+### Copy the setup prompt
 
-Use your framework's public environment variable prefix. For example, Vite uses `VITE_`, Next.js uses `NEXT_PUBLIC_`, and SvelteKit uses `PUBLIC_`.
+Open your Dyrected site and go to **Setup**. Copy the setup prompt — your credentials are pre-filled when you copy from inside the admin panel. Or copy the base prompt here:
 
-**6. Fetch content from Cloud**
+<CopyPromptButton />
+</Step>
+<Step>
+### Paste the prompt into your AI builder
 
-Create one small client module for Dyrected reads and call it from your pages or components:
+Paste the prompt into the same AI builder that can read and edit the website code. The AI will respond with a plain-language checklist of everything on the website a client could reasonably want to change.
+</Step>
+<Step>
+### Approve the checklist
 
-```ts
+Read the checklist top to bottom. If something is missing or unnecessary, say what to add, remove, or change. Say **"approved"** when it looks right.
+</Step>
+<Step>
+### Give the AI your Dyrected details
 
+The prompt makes the AI wait until the install stage before asking for credentials. When it asks, provide your Site ID, Site API key, and Base URL.
+</Step>
+<Step>
+### Test one real edit
 
-export const dyrected = createClient({
-  siteId: import.meta.env.VITE_DYRECTED_SITE_ID,
-  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
-  baseUrl: import.meta.env.VITE_DYRECTED_BASE_URL,
-});
+Open Dyrected and change a piece of content you can easily recognize — a heading, an image, or a list item. Confirm the change appears on the website and the design still looks right.
+</Step>
+<Step>
+### Choose how the client logs in
 
-export async function getPosts() {
-  const result = await dyrected.collection("posts").find({ depth: 0 });
-  return result.docs;
-}
-```
+- Use the **hosted admin** if you want automatic admin updates and the lowest maintenance
+- Use the **embedded admin** if you want the client to work inside your own domain at `/admin`
+</Step>
+<Step>
+### Invite the client
 
-**7. Render with a fallback**
+Invite the client only after one Dyrected edit appears on the live website.
+</Step>
+</Steps>
 
-Keep a small fallback state while wiring the first page so your app can render useful UI during setup or if Cloud content is temporarily empty.
+---
 
-**8. Go live**
+## Self-hosted Next.js
 
-Deploy through your existing host. Confirm the production environment variables match the Cloud site, then edit one piece of content in Dyrected Cloud and verify the deployed app updates.
+This path uses a **self-hosted backend** inside your Next.js app. Your admin can still live at `/admin`, but backend upgrades and infrastructure remain your responsibility.
 
-</Tab>
-<Tab value="Next.js">
+**Prerequisites & assumptions**
 
-The easiest way to get started with Next.js is using the interactive CLI.
+- [Node.js 22+](https://nodejs.org) and a package manager (pnpm recommended).
+- An existing Next.js app using the **App Router** (`@dyrected/next` doesn't support the Pages Router — add an `app/` directory first if you don't have one).
+- Comfort running one terminal command and editing an `.env` file. No prior Dyrected knowledge assumed beyond that.
 
-**1. Initialize**
+### Easiest: paste the setup prompt
+
+Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx @dyrected/cli init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
+
+<CopyPromptButton mode="self-hosted" />
+
+When it reaches the install stage, it will ask for your **Site API key** and **Base URL** — self-hosted projects don't have a Site ID, so tell the AI that field doesn't apply.
+
+### Manual setup
+
+If you'd rather do this yourself, the CLI is the safest way to install — it detects your project layout and writes files in the right place, instead of you hand-assembling config that can drift from what the installed package actually supports.
+
+<Steps>
+<Step>
+### Install with the CLI
 
 ```bash
 npx @dyrected/cli init
@@ -4655,23 +4975,59 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Mount the Admin UI at the path you choose during setup, defaulting to `app/admin/page.tsx` or `src/app/admin/page.tsx`.
 - Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
+</Step>
+<Step>
+### Define your config: collections and globals
 
-> **Note:** `@dyrected/next` requires the Next.js App Router. If your app only has the Pages Router, add an `app/` directory before running init.
-
-**2. Configure and Run**
+Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
+</Step>
+<Step>
+### Run it and confirm `/admin` loads
 
 1. Copy `.env.example` to `.env` and fill in the values.
 2. Run `pnpm dev`.
-3. The admin URL is printed to the console on startup — open it to start managing content.
+3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
+4. The admin URL is printed to the console on startup — open it and confirm you can log in and see your collections.
+</Step>
+<Step>
+### Seed initial data
 
-> **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
+Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
+</Step>
+<Step>
+### Integrate with your website
 
-</Tab>
-<Tab value="Nuxt.js">
+Fetch content into your pages using the SDK or REST API — see [Next.js integration](/docs/integrations/nextjs).
+</Step>
+</Steps>
 
-The easiest way to get started with Nuxt.js is using the interactive CLI.
+---
 
-**1. Initialize**
+## Self-hosted Nuxt.js
+
+This path uses a **self-hosted backend** inside your Nuxt.js app. Your admin can still live at `/admin`, but backend upgrades and infrastructure remain your responsibility.
+
+**Prerequisites & assumptions**
+
+- [Node.js 22+](https://nodejs.org) and a package manager (pnpm recommended).
+- An existing Nuxt 3 app.
+- Comfort running one terminal command and editing an `.env` file. No prior Dyrected knowledge assumed beyond that.
+
+### Easiest: paste the setup prompt
+
+Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx @dyrected/cli init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
+
+<CopyPromptButton mode="self-hosted" />
+
+When it reaches the install stage, it will ask for your **Site API key** and **Base URL** — self-hosted projects don't have a Site ID, so tell the AI that field doesn't apply.
+
+### Manual setup
+
+If you'd rather do this yourself, the CLI is the safest way to install — it detects your project layout and writes files in the right place, instead of you hand-assembling config that can drift from what the installed package actually supports.
+
+<Steps>
+<Step>
+### Install with the CLI
 
 ```bash
 npx @dyrected/cli init
@@ -4683,17 +5039,31 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 - Detect whether you use an `app/` directory and write the admin page to the path you choose during setup, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
 - Automatically add `@dyrected/nuxt` to `modules` in your `nuxt.config.ts`.
 - Generate a `.env.example`.
+</Step>
+<Step>
+### Define your config: collections and globals
 
-**2. Configure and Run**
+Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
+</Step>
+<Step>
+### Run it and confirm `/admin` loads
 
 1. Copy `.env.example` to `.env` and configure your secrets.
 2. Run `pnpm dev`.
-3. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL to start managing content.
+3. Your database schema is synced automatically on startup — no manual CLI sync required for self-hosted projects.
+4. The Dyrected admin and API URLs are printed to the console when the dev server starts — open the admin URL and confirm you can log in and see your collections.
+</Step>
+<Step>
+### Seed initial data
 
-> **Note:** Your database schema is synced automatically on startup. No manual CLI sync is required for self-hosted projects.
+Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
+</Step>
+<Step>
+### Integrate with your website
 
-</Tab>
-</Tabs>
+Fetch content into your pages using the SDK or REST API — see [Nuxt.js integration](/docs/integrations/nuxt).
+</Step>
+</Steps>
 
 ---
 
@@ -4993,7 +5363,9 @@ The Admin auth collection is important. Even with external SSO, Dyrected still n
 
 ---
 
-## Step 1: Define an Admin auth collection
+<Steps>
+<Step>
+### Define an Admin auth collection
 
 If you do not set `adminAuth.collectionSlug`, Dyrected prefers `__admins`. That is the cleanest default for most teams.
 
@@ -5022,7 +5394,9 @@ If you are migrating from using a different Admin collection, read [Separating A
 
 ---
 
-## Step 2: Configure `adminAuth`
+</Step>
+<Step>
+### Configure `adminAuth`
 
 Add an external Admin auth configuration to `defineConfig`.
 
@@ -5071,7 +5445,9 @@ Optional but commonly useful:
 
 ---
 
-## Step 3: Register the callback URL in your identity provider
+</Step>
+<Step>
+### Register the callback URL in your identity provider
 
 By default, Dyrected uses this callback pattern:
 
@@ -5095,7 +5471,9 @@ Important constraints:
 
 ---
 
-## Step 4: Decide the provisioning mode
+</Step>
+<Step>
+### Decide the provisioning mode
 
 `provisioningMode` controls how Dyrected admits external identities into the Admin layer.
 
@@ -5126,7 +5504,9 @@ In this mode, a valid OIDC identity is still rejected if no matching Admin user 
 
 ---
 
-## Step 5: Map claims if your provider does not use the defaults
+</Step>
+<Step>
+### Map claims if your provider does not use the defaults
 
 By default, Dyrected expects:
 
@@ -5169,7 +5549,9 @@ Common use cases:
 
 ---
 
-## Step 6: Write `resolveAccess`
+</Step>
+<Step>
+### Write `resolveAccess`
 
 `resolveAccess` is the most important part of the setup. It decides whether the authenticated identity should be allowed into the Admin UI and what Dyrected-side roles or extra data should be stored.
 
@@ -5233,7 +5615,9 @@ Use `resolveAccess` for:
 
 ---
 
-## Step 7: Test the full login flow
+</Step>
+<Step>
+### Test the full login flow
 
 Do not stop after saving the config. Test the whole redirect chain.
 
@@ -5273,6 +5657,8 @@ After a successful callback:
 - Dyrected exchanges the external identity for a Dyrected Admin token
 - the Admin UI loads as the provisioned user
 - `/api/collections/__admins/me` or your configured Admin collection `/me` resolves successfully
+</Step>
+</Steps>
 
 ---
 
@@ -5367,8 +5753,8 @@ If your provider requires an explicit redirect URI, set `redirectUri` in the Dyr
 
 ## Troubleshooting
 
-### `Admin auth provider not found.`
-
+<Accordions type="single">
+<Accordion title="Admin auth provider not found.">
 Meaning:
 
 - the provider ID in the URL does not exist in `adminAuth.providers`
@@ -5379,9 +5765,8 @@ Check:
 - `mode: 'external'`
 - provider `id`
 - whether dynamic `onSchemaFetch` is returning the expected `adminAuth`
-
-### `Missing OIDC callback parameters.`
-
+</Accordion>
+<Accordion title="Missing OIDC callback parameters.">
 Meaning:
 
 - the provider did not return `code` and `state`
@@ -5391,9 +5776,8 @@ Check:
 
 - callback URL registration in the identity provider
 - whether the provider is redirecting to the right Dyrected route
-
-### `Failed to load OIDC discovery document.`
-
+</Accordion>
+<Accordion title="Failed to load OIDC discovery document.">
 Meaning:
 
 - Dyrected could not fetch `/.well-known/openid-configuration`
@@ -5402,9 +5786,8 @@ Check:
 
 - `issuer` URL
 - network reachability from your server environment
-
-### `OIDC token exchange failed.`
-
+</Accordion>
+<Accordion title="OIDC token exchange failed.">
 Meaning:
 
 - the authorization code could not be exchanged for tokens
@@ -5415,9 +5798,8 @@ Check:
 - `clientSecret`
 - `redirectUri`
 - whether the provider expects a different redirect URI than the one Dyrected is sending
-
-### `OIDC nonce verification failed.` or `OIDC state verification failed.`
-
+</Accordion>
+<Accordion title="OIDC nonce verification failed. or OIDC state verification failed.">
 Meaning:
 
 - callback verification failed
@@ -5427,9 +5809,8 @@ Check:
 - whether the callback is completing in the same browser flow
 - whether reverse proxies or auth middleware are interfering
 - whether `DYRECTED_JWT_SECRET` is stable across the request chain
-
-### `External identity is missing a subject.`
-
+</Accordion>
+<Accordion title="External identity is missing a subject.">
 Meaning:
 
 - Dyrected could not find a usable `sub` claim
@@ -5438,9 +5819,8 @@ Check:
 
 - provider token contents
 - `claimMapping.sub` if your provider uses a nonstandard claim name
-
-### `This account has not been provisioned for admin access.`
-
+</Accordion>
+<Accordion title="This account has not been provisioned for admin access.">
 Meaning:
 
 - `provisioningMode` is `preprovisioned_only`
@@ -5450,9 +5830,8 @@ Fix:
 
 - create the Admin user first
 - or switch to a JIT provisioning mode if that matches your policy
-
-### `Access denied for this site.`
-
+</Accordion>
+<Accordion title="Access denied for this site.">
 Meaning:
 
 - `resolveAccess` returned `allowed: false`
@@ -5461,9 +5840,8 @@ Check:
 
 - group/role claims returned by the provider
 - tenant or site logic in `resolveAccess`
-
-### Login succeeds, but `/me` fails
-
+</Accordion>
+<Accordion title="Login succeeds, but /me fails">
 Meaning:
 
 - the Dyrected-side Admin token was issued against a different collection than the Admin UI expects
@@ -5473,6 +5851,8 @@ Check:
 - `adminAuth.collectionSlug`
 - whether your configured Admin collection actually has `auth: true`
 - whether the Admin collection is the one the UI is using
+</Accordion>
+</Accordions>
 
 ---
 
@@ -5763,9 +6143,23 @@ Describe what you want in plain language. An AI agent with `.dyrected/ai-rules.m
 
 When adding Dyrected to an existing codebase, work in small, verified batches:
 
-1. **Foundation first** — install packages, set up the config, admin route, and environment variables. Verify before creating any content types.
-2. **Three content areas at a time** — create no more than three related collections or globals per batch, connect them to the UI, and verify lint/types/build before moving on.
-3. **Fix before continuing** — if a batch fails verification, fix it before starting the next one.
+<Steps>
+<Step>
+### Foundation first
+
+Install packages, set up the config, admin route, and environment variables. Verify before creating any content types.
+</Step>
+<Step>
+### Three content areas at a time
+
+Create no more than three related collections or globals per batch, connect them to the UI, and verify lint/types/build before moving on.
+</Step>
+<Step>
+### Fix before continuing
+
+If a batch fails verification, fix it before starting the next one.
+</Step>
+</Steps>
 
 ---
 
@@ -5982,8 +6376,9 @@ export default async function BlogPage() {
 }
 ```
 
-> [!TIP]
-> **Avoid blank states:** You can pass `initialData: fallbackPosts` (imported from a local JSON file) into `find()`. If the database is currently empty, the SDK immediately returns this fallback data and automatically seeds the database in the background so editors can start editing it right away.
+<Note>
+**Avoid blank states:** You can pass `initialData: fallbackPosts` (imported from a local JSON file) into `find()`. If the database is currently empty, the SDK immediately returns this fallback data and automatically seeds the database in the background so editors can start editing it right away.
+</Note>
 
 </Tab>
 <Tab value="Nuxt.js">
@@ -7066,7 +7461,9 @@ That baseline keeps the system understandable while still covering the requireme
 
 Canonical URL: https://docs.dyrected.com/docs/guides/file-uploads
 
-## 1. Configure a storage adapter
+<Steps>
+<Step>
+### Configure a storage adapter
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -7082,10 +7479,9 @@ export default defineConfig({
 ```
 
 See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Cloudinary setup.
-
----
-
-## 2. Define an upload collection
+</Step>
+<Step>
+### Define an upload collection
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -7104,10 +7500,9 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
   ],
 }
 ```
-
----
-
-## 3. Upload via the Admin UI
+</Step>
+<Step>
+### Upload via the Admin UI
 
 The Admin UI renders a full-featured media manager and file picker for upload collections. Upload collections can use any slug and label — for example, a collection named `sermons` with `upload: true` will be presented using that collection's configured labels rather than always being called "media".
 
@@ -7131,10 +7526,9 @@ Both the Media Library dashboard and form-level `MediaPicker` fields support cli
 - Click the crop button on an image (or in the attachment details pane on the main media page) to open the crop dialog.
 - Pick an aspect ratio preset (Free-form, 1:1, 4:3, 3:2, 16:9) and adjust the cropping handles.
 - Click **Save** to apply the crop. The cropped version is uploaded as a new media document and the selection automatically updates to point to the cropped version. All image sizes are generated server-side automatically after upload.
-
----
-
-## 4. Upload programmatically
+</Step>
+<Step>
+### Upload programmatically
 
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
@@ -7183,10 +7577,9 @@ const media = await $fetch('/api/collections/media', {
 ```
 </Tab>
 </Tabs>
-
----
-
-## 5. Attach media to another collection
+</Step>
+<Step>
+### Attach media to another collection
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -7205,10 +7598,9 @@ Fetch with `depth: 1` to inline the media document:
 // docs[0].coverImage.url        → full storage URL
 // docs[0].coverImage.sizes.thumbnail.url
 ```
-
----
-
-## 6. Render images
+</Step>
+<Step>
+### Render images
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
@@ -7253,6 +7645,8 @@ defineProps<{ post: any }>()
 > For Nuxt.js Image optimisation, use `<NuxtImg>` from `@nuxt/image` and add your storage domain to `image.domains` in `nuxt.config.ts`.
 </Tab>
 </Tabs>
+</Step>
+</Steps>
 
 ---
 
@@ -7947,7 +8341,9 @@ This guide explains how to migrate an existing `status` field to the new `workfl
 
 ---
 
-## 1. Remove the old `status` field
+<Steps>
+<Step>
+### Remove the old `status` field
 
 Remove your custom `status` field from the collection definition.
 
@@ -7963,10 +8359,9 @@ Remove your custom `status` field from the collection definition.
 +  ]
  })
 ```
-
----
-
-## 2. Enable the Workflow
+</Step>
+<Step>
+### Enable the Workflow
 
 Add the `publishingWorkflow()` (or your custom workflow definition) to the collection:
 
@@ -7981,18 +8376,16 @@ Add the `publishingWorkflow()` (or your custom workflow definition) to the colle
    ]
  })
 ```
-
----
-
-## 3. Update Custom Filters
+</Step>
+<Step>
+### Update Custom Filters
 
 If your frontend or API clients previously queried for published content by checking the `status` field (e.g., `?where={"status":{"equals":"published"}}`), you can remove this check entirely.
 
 When workflows are enabled, the `client.find()` and `client.findOne()` endpoints **automatically materialize the public snapshot** for anonymous users. Drafts are safely hidden without needing manual filters.
-
----
-
-## 4. Run the Data Migration
+</Step>
+<Step>
+### Run the Data Migration
 
 Workflow state is stored internally as `__workflow`. API responses expose the safe, request-specific metadata as `_workflow`. Published rows also need a `__published` snapshot, so migrate existing data before enabling the workflow configuration.
 
@@ -8031,8 +8424,11 @@ async function migrateStatuses() {
 }
 ```
 
-> [!CAUTION]
-> Remember to run this data migration script before updating the collection configuration in production. Documents missing `__workflow`, or published documents missing `__published`, are not served through the workflow-aware public API.
+<Warning>
+Remember to run this data migration script before updating the collection configuration in production. Documents missing `__workflow`, or published documents missing `__published`, are not served through the workflow-aware public API.
+</Warning>
+</Step>
+</Steps>
 
 ---
 
@@ -8074,16 +8470,17 @@ npx @dyrected/cli init
 
 If you prefer configuring your stack by hand, follow these steps:
 
-### Step 1: Install Core Dependencies
+<Steps>
+<Step>
+### Install Core Dependencies
 Install the main Nuxt module and SDK:
 
 ```bash
 pnpm add @dyrected/core @dyrected/nuxt @dyrected/sdk
 ```
-
----
-
-## 🗄️ Step 2: Choose and Configure Your Adapters
+</Step>
+<Step>
+### Choose and Configure Your Adapters
 
 Dyrected CMS relies on **Database** and **Storage** adapters to store structure and media files. You must select one database adapter and one storage adapter for your project.
 
@@ -8124,10 +8521,9 @@ pnpm add @dyrected/storage-local
 # AWS S3 / Cloud uploads
 pnpm add @dyrected/storage-s3
 ```
-
----
-
-### Step 3: Write Your CMS Config (`dyrected.config.ts`)
+</Step>
+<Step>
+### Write Your CMS Config (`dyrected.config.ts`)
 
 Create a `dyrected.config.ts` in your root directory. This configures the connection parameters, collection schemas, and globals.
 
@@ -8244,10 +8640,9 @@ export default defineConfig({
 >   }),
 > });
 > ```
-
----
-
-### Step 4: Hook Up the Nuxt Module
+</Step>
+<Step>
+### Hook Up the Nuxt Module
 Register the `@dyrected/nuxt` module in your `nuxt.config.ts`:
 
 ```ts
@@ -8259,10 +8654,9 @@ export default defineNuxtConfig({
   },
 })
 ```
-
----
-
-## 🎨 Step 5: Build Block UI Components
+</Step>
+<Step>
+### Build Block UI Components
 
 Create Vue components that reflect the layout blocks you configured in the CMS.
 
@@ -8353,9 +8747,9 @@ const SelectedBlock = computed(() => blockComponents[props.block.blockType])
 </template>
 ```
 
----
-
-## 🎛️ Step 6: Create the Catch-All Route with Live Preview
+</Step>
+<Step>
+### Create the Catch-All Route with Live Preview
 
 Nuxt uses catch-all routes (`[...slug].vue`) to dynamically load any page created in the CMS. By wrapping page data in the `useLivePreview` composable, the page content updates instantly inside the admin editor panel!
 
@@ -8423,9 +8817,9 @@ useHead({
 </template>
 ```
 
----
-
-## 💻 Step 7: Mount the Admin Dashboard
+</Step>
+<Step>
+### Mount the Admin Dashboard
 
 Lastly, configure the admin client panel path. Create the page at `pages/admin.vue`:
 
@@ -8445,10 +8839,9 @@ definePageMeta({ layout: false }) // Avoid nesting within your default site head
   </div>
 </template>
 ```
-
----
-
-## ⚡ Start Running & Creating Pages
+</Step>
+<Step>
+### Start Running & Creating Pages
 
 1. Run the local development server:
    ```bash
@@ -8462,6 +8855,8 @@ definePageMeta({ layout: false }) // Avoid nesting within your default site head
    - In the **Page Layout** tab, click **Add Block** and select `Hero Banner` or `Features Grid`. Enter your text.
 5. Save the document and click the **Live Preview** button on the top right. 
 6. Watch your changes render in real time as you edit the fields!
+</Step>
+</Steps>
 
 ---
 
@@ -8876,7 +9271,9 @@ const admins = defineCollection({ slug: '__admins', auth: true, fields: [...] })
 
 Restart your server. The Admin UI will authenticate against the existing records in `collection___admins`.
 
-> **Warning:** If you restart before renaming the table, Dyrected will create a new empty `collection___admins` table and prompt you to create a first user. Your old data will still exist in `collection_users` but will be inaccessible to the admin system.
+<Warning>
+If you restart before renaming the table, Dyrected will create a new empty `collection___admins` table and prompt you to create a first user. Your old data will still exist in `collection_users` but will be inaccessible to the admin system.
+</Warning>
 
 ---
 
@@ -9455,8 +9852,9 @@ export const Articles = defineCollection({
 });
 ```
 
-> [!NOTE]
-> Workflow hooks are only available on collections that have a `workflow` config. The `transition`, `from`, and `to` arguments tell you exactly what changed — use them to send targeted notifications rather than firing on every state change.
+<Note>
+Workflow hooks are only available on collections that have a `workflow` config. The `transition`, `from`, and `to` arguments tell you exactly what changed — use them to send targeted notifications rather than firing on every state change.
+</Note>
 
 ---
 
@@ -9492,7 +9890,9 @@ Canonical URL: https://docs.dyrected.com/docs/integrations/nextjs
 
 Dyrected integrates natively with the Next.js App Router via a catch-all API route. You can fetch data server-side, client-side, or use the SDK in Server Components.
 
-> **Recommended:** Use the CLI to set up Dyrected automatically. It detects your App Router and optional `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
+> **Easiest path:** paste the [Dyrected setup prompt](/docs/getting-started/quickstart#self-hosted-nextjs) into an AI coding tool with access to your repo — it runs the CLI, models your content as collections and globals, and mounts the admin for you.
+>
+> **Setting up manually?** The CLI is still the safest way to install — it detects your App Router and optional `src/` layout, installs dependencies, writes all required files, and generates `instrumentation.ts` to log URLs on startup.
 > ```bash
 > npx @dyrected/cli init
 > ```
@@ -9506,8 +9906,9 @@ Dyrected integrates natively with the Next.js App Router via a catch-all API rou
 pnpm add @dyrected/core @dyrected/sdk @dyrected/next @dyrected/react @dyrected/db-postgres
 ```
 
-> [!NOTE]
-> `@dyrected/next` provides the API route handler, `getDyrectedClient`, and Next.js-optimised `<DyrectedImage />` / `<DyrectedMedia />` components. `@dyrected/react` is the React integration layer — it provides `<DyrectedAdmin />`, `DyrectedProvider`, `useDyrected`, and `useLivePreview`. `@dyrected/next` re-exports all of these so you can import from a single package.
+<Note>
+`@dyrected/next` provides the API route handler, `getDyrectedClient`, and Next.js-optimised `<DyrectedImage />` / `<DyrectedMedia />` components. `@dyrected/react` is the React integration layer — it provides `<DyrectedAdmin />`, `DyrectedProvider`, `useDyrected`, and `useLivePreview`. `@dyrected/next` re-exports all of these so you can import from a single package.
+</Note>
 
 ---
 
@@ -9585,7 +9986,7 @@ If your catch-all route uses another prefix, pass it explicitly—for example,
 
 ## Step 3 — Fetch data in Server Components
 
-<Tabs items={['SDK', 'Direct DB', 'REST API']}>
+<Tabs items={['SDK', 'REST API']}>
 <Tab value="SDK">
 ```tsx
 // app/blog/page.tsx
@@ -9613,24 +10014,6 @@ export default async function BlogPage() {
 }
 ```
 </Tab>
-<Tab value="Direct DB">
-When Dyrected is co-located with your Next.js app (self-hosted), you can bypass HTTP entirely:
-
-```tsx
-// app/blog/page.tsx
-
-
-export default async function BlogPage() {
-  const { docs: posts } = await config.db.find({
-    collection: 'posts',
-    where: { status: { equals: 'published' } },
-    limit: 10,
-  })
-
-  return <ul>{posts.map(p => <li key={p.id}>{p.title}</li>)}</ul>
-}
-```
-</Tab>
 <Tab value="REST API">
 For environments where the SDK isn't available, use raw HTTP:
 
@@ -9642,7 +10025,7 @@ export default async function BlogPage() {
   })
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?${query}`,
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/posts?${query}`,
     { 
       headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
       next: { revalidate: 3600 } 
@@ -9662,8 +10045,6 @@ export default async function BlogPage() {
 </Tab>
 </Tabs>
 
-This approach has zero network overhead and is the fastest option for self-hosted setups.
-
 ---
 
 ## Step 4 — Embed the Admin UI
@@ -9681,11 +10062,13 @@ export default function AdminPage() {
 }
 ```
 
-> [!NOTE]
-> `@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx @dyrected/cli init`.
+<Note>
+`@dyrected/next` requires the Next.js App Router. Pages Router projects need an `app/` directory before running `npx @dyrected/cli init`.
+</Note>
 
-> [!TIP]
-> `DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
+<Note>
+`DyrectedAdmin` automatically reads your environment variables (like `NEXT_PUBLIC_DYRECTED_URL`) if they follow the standard naming convention. You only need to pass props if you want to override the defaults.
+</Note>
 
 ---
 
@@ -9837,7 +10220,9 @@ Canonical URL: https://docs.dyrected.com/docs/integrations/nuxt
 
 The `@dyrected/nuxt` module provides first-class Nuxt 3 support: automatic server handler registration, SSR-aware composables, and live preview support.
 
-> **Recommended:** Use the CLI to set up Dyrected automatically. It detects your project layout, installs dependencies, writes the admin page, and patches `nuxt.config.ts` for you.
+> **Easiest path:** paste the [Dyrected setup prompt](/docs/getting-started/quickstart#self-hosted-nuxtjs) into an AI coding tool with access to your repo — it runs the CLI, models your content as collections and globals, and mounts the admin for you.
+>
+> **Setting up manually?** The CLI is still the safest way to install — it detects your project layout, installs dependencies, writes the admin page, and patches `nuxt.config.ts` for you.
 > ```bash
 > npx @dyrected/cli init
 > ```
@@ -10102,8 +10487,9 @@ definePageMeta({
 
 > No additional `build.transpile` or `vite.optimizeDeps` config is needed — the module handles all of that automatically.
 
-> [!TIP]
-> If you are using Cloud mode and want to connect directly to the Cloud API from the browser (bypassing the proxy), you can pass `baseUrl`, `apiKey`, and `siteId` props to `<AdminUI />`.
+<Note>
+If you are using Cloud mode and want to connect directly to the Cloud API from the browser (bypassing the proxy), you can pass `baseUrl`, `apiKey`, and `siteId` props to `<AdminUI />`.
+</Note>
 
 ---
 
@@ -10213,8 +10599,9 @@ The `@dyrected/react` package is the React integration layer for Dyrected. It pr
 pnpm add @dyrected/react @dyrected/sdk
 ```
 
-> [!NOTE]
-> To use `<DyrectedAdmin />`, your app must also have `react-router-dom` and `@tanstack/react-query` installed — these are peer dependencies of the admin UI bundle.
+<Note>
+To use `<DyrectedAdmin />`, your app must also have `react-router-dom` and `@tanstack/react-query` installed — these are peer dependencies of the admin UI bundle.
+</Note>
 
 ---
 
@@ -10377,8 +10764,9 @@ Renders the right element based on media type — YouTube embed, image, video, o
 <DyrectedMedia media={post.featuredMedia} width={800} height={450} />
 ```
 
-> [!TIP]
-> If you are using **Next.js**, prefer `DyrectedImage` and `DyrectedMedia` from `@dyrected/next` — they use `next/image` for automatic optimisation.
+<Note>
+If you are using **Next.js**, prefer `DyrectedImage` and `DyrectedMedia` from `@dyrected/next` — they use `next/image` for automatic optimisation.
+</Note>
 
 ---
 
@@ -10668,18 +11056,36 @@ pnpm add @dyrected/vue @dyrected/sdk
 
 ### Props
 
-| Prop | Type | Required | Description |
-|---|---|---|---|
-| `baseUrl` | `string` | ✅ | The base URL of your Dyrected API. |
-| `apiKey` | `string` | ✅ | The Site API key used to authenticate requests. |
-| `siteId` | `string` | | Required in Cloud mode. |
-| `basename` | `string` | | The URL path prefix for the admin (default: `/admin`). |
+<TypeTable
+  type={{
+    baseUrl: {
+      description: 'The base URL of your Dyrected API.',
+      type: 'string',
+      required: true,
+    },
+    apiKey: {
+      description: 'The Site API key used to authenticate requests.',
+      type: 'string',
+      required: true,
+    },
+    siteId: {
+      description: 'Required in Cloud mode.',
+      type: 'string',
+    },
+    basename: {
+      description: 'The URL path prefix for the admin (default: `/admin`).',
+      type: 'string',
+    },
+  }}
+/>
 
 ### Passing Vue components as custom field inputs
 
 You can inject Vue components as custom admin field inputs. The bridge wraps them automatically so they render inside the React-based Admin UI.
 
-#### Step 1 — Register the key in your collection schema
+<Steps>
+<Step>
+### Register the key in your collection schema
 
 In your `dyrected.config.ts`, add `admin.component` to any field. The value is a **string key** that maps to the component you provide to `<DyrectedAdmin>`:
 
@@ -10708,18 +11114,40 @@ export default defineConfig({
 })
 ```
 
-#### Step 2 — Write your Vue component
+</Step>
+<Step>
+### Write your Vue component
 
 The bridge passes the following **props** to your component:
 
-| Prop | Type | Description |
-|---|---|---|
-| `value` | `any` | The current field value from the form state |
-| `onChange` | `(value: any) => void` | Call this to update the field value |
-| `field` | `FieldSchema` | The full field config object from your collection schema |
-| `path` | `string` | The dot-notation path of the field in the form (e.g. `brandColor`) |
-| `disabled` | `boolean` | `true` when the field is read-only or the user lacks update access |
-| `collection` | `string` | The slug of the current collection |
+<TypeTable
+  type={{
+    value: {
+      description: 'The current field value from the form state',
+      type: 'any',
+    },
+    onChange: {
+      description: 'Call this to update the field value',
+      type: '(value: any) => void',
+    },
+    field: {
+      description: 'The full field config object from your collection schema',
+      type: 'FieldSchema',
+    },
+    path: {
+      description: 'The dot-notation path of the field in the form (e.g. `brandColor`)',
+      type: 'string',
+    },
+    disabled: {
+      description: '`true` when the field is read-only or the user lacks update access',
+      type: 'boolean',
+    },
+    collection: {
+      description: 'The slug of the current collection',
+      type: 'string',
+    },
+  }}
+/>
 
 ```vue
 <!-- components/BrandColorPicker.vue -->
@@ -10744,7 +11172,9 @@ const props = defineProps<{
 </template>
 ```
 
-#### Step 3 — Pass the component to `<DyrectedAdmin>`
+</Step>
+<Step>
+### Pass the component to `<DyrectedAdmin>`
 
 ```vue
 <!-- pages/admin.vue -->
@@ -10768,6 +11198,8 @@ const props = defineProps<{
 ```
 
 The key (`'products.brandColor'`) must exactly match the `admin.component` value in your schema.
+</Step>
+</Steps>
 
 #### Virtual fields (computed/read-only display)
 
@@ -10915,10 +11347,18 @@ const { data, isLive } = useLivePreview<T>({
 })
 ```
 
-| Return | Type | Description |
-|---|---|---|
-| `data` | `Ref<T>` | Reactive live data — updates on every `postMessage` from the Admin |
-| `isLive` | `Ref<boolean>` | `true` once the first preview message has been received |
+<TypeTable
+  type={{
+    data: {
+      description: 'Reactive live data — updates on every `postMessage` from the Admin',
+      type: 'Ref<T>',
+    },
+    isLive: {
+      description: '`true` once the first preview message has been received',
+      type: 'Ref<boolean>',
+    },
+  }}
+/>
 
 ### Inline editing support
 
