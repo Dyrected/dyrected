@@ -6,7 +6,7 @@
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "Branding and metadata options for the Dyrected Admin UI.",
-    "signature": "export interface AdminConfig {\n  /** Custom component slots around the built-in dashboard. */\n  components?: AdminDashboardComponentSlots;\n  branding?: {\n    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */\n    logo?: string;\n    /** Compact logo mark used in the collapsed sidebar state. */\n    logoMark?: string;\n    /** Text alternative or addition to the logo image. */\n    logoText?: string;\n    /**\n     * Primary accent colour as any CSS colour value.\n     * @example '#6366f1'\n     * @example 'hsl(240 50% 60%)'\n     */\n    primaryColor?: string;\n    /** Browser tab favicon URL. */\n    favicon?: string;\n    /** Font family for body and UI text. Must be loaded separately. */\n    fontSans?: string;\n    /** Font family for headings. Must be loaded separately. */\n    fontSerif?: string;\n  };\n  meta?: {\n    /**\n     * String appended to every Admin page's `<title>`.\n     * @default '- Dyrected'\n     */\n    titleSuffix?: string;\n  };\n}",
+    "signature": "export interface AdminConfig {\n  /** Custom component slots around the built-in dashboard. */\n  components?: AdminDashboardComponentSlots;\n  branding?: {\n    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */\n    logo?: string;\n    /** Compact logo mark used in the collapsed sidebar state. */\n    logoMark?: string;\n    /** Text alternative or addition to the logo image. */\n    logoText?: string;\n    /**\n     * Primary accent colour as any CSS colour value.\n     * @example '#6366f1'\n     * @example 'hsl(240 50% 60%)'\n     */\n    primaryColor?: string;\n    /** Browser tab favicon URL. */\n    favicon?: string;\n    /** Font family for body and UI text. Must be loaded separately. */\n    fontSans?: string;\n    /** Font family for headings. Must be loaded separately. */\n    fontSerif?: string;\n  };\n  meta?: {\n    /**\n     * String appended to every Admin page's `<title>`.\n     * @default '- Dyrected'\n     */\n    titleSuffix?: string;\n  };\n  /**\n   * The canonical/base URL of the frontend website for links and iframe live previews.\n   */\n  siteUrl?: string;\n}",
     "members": [
       {
         "name": "components",
@@ -22,6 +22,11 @@
         "name": "meta",
         "signature": "meta?: {\n    /**\n     * String appended to every Admin page's `<title>`.\n     * @default '- Dyrected'\n     */\n    titleSuffix?: string;\n  }",
         "description": ""
+      },
+      {
+        "name": "siteUrl",
+        "signature": "siteUrl?: string",
+        "description": "The canonical/base URL of the frontend website for links and iframe live previews."
       }
     ]
   },

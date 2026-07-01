@@ -540,7 +540,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => String(item[key.trim()] || ""))
       } else if (typeof previewUrl === 'string') {
         try {
-          const context = { ...item, siteUrl: window.location.origin }
+          const siteUrl = schemas?.admin?.siteUrl || window.location.origin
+          const context = { ...item, siteUrl }
           if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
             previewUrl = jexl.evalSync(previewUrl, context)
           }
@@ -550,7 +551,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       }
 
       if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
-        previewUrl = `${window.location.origin}${previewUrl}`
+        previewUrl = `${schemas?.admin?.siteUrl || window.location.origin}${previewUrl}`
       }
 
       return typeof previewUrl === 'string' ? previewUrl : null

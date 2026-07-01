@@ -356,15 +356,15 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                   <ChevronDown className="dy-w-3 dy-h-3 dy-ml-1.5" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="dy-max-w-2xl dy-p-6 dy-rounded-xl dy-border-border/40 dy-shadow-2xl">
-                <DialogHeader className="dy-pb-2">
+              <DialogContent className="dy-max-w-md md:dy-max-w-4xl dy-p-6 dy-rounded-xl dy-border-border/40 dy-shadow-2xl dy-flex dy-flex-col dy-max-h-[85vh]">
+                <DialogHeader className="dy-pb-2 dy-flex-shrink-0">
                   <DialogTitle className="dy-text-lg dy-font-bold dy-text-foreground">Block Library</DialogTitle>
                   <DialogDescription className="dy-text-xs dy-text-muted-foreground">
                     Select a block template to insert into your page layout.
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="dy-relative dy-my-3">
+                <div className="dy-relative dy-my-3 dy-flex-shrink-0">
                   <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
                   <Input
                     placeholder="Search blocks by name..."
@@ -374,32 +374,34 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                   />
                 </div>
 
-                <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 dy-gap-4 dy-pr-1 dy-pt-2">
-                  {filteredBlocks.length === 0 ? (
-                    <div className="dy-col-span-full dy-text-center dy-py-8 dy-text-xs dy-text-muted-foreground/50">
-                      No blocks match your search query.
-                    </div>
-                  ) : (
-                    filteredBlocks.map((block) => (
-                      <div
-                        key={block.slug}
-                        onClick={() => handleAddBlock(block)}
-                        className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
-                      >
-                        <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
-                          <Layers className="dy-w-4 dy-h-4" />
-                        </div>
-                        <div className="dy-min-w-0 dy-flex-1">
-                          <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
-                            {block.labels?.singular || block.slug}
-                          </h5>
-                          <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
-                            {block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page."}
-                          </p>
-                        </div>
+                <div className="dy-flex-1 dy-overflow-y-auto dy-pr-1 dy-pt-2">
+                  <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 md:dy-grid-cols-3 dy-gap-4">
+                    {filteredBlocks.length === 0 ? (
+                      <div className="dy-col-span-full dy-text-center dy-py-8 dy-text-xs dy-text-muted-foreground/50">
+                        No blocks match your search query.
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      filteredBlocks.map((block) => (
+                        <div
+                          key={block.slug}
+                          onClick={() => handleAddBlock(block)}
+                          className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
+                        >
+                          <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
+                            <Layers className="dy-w-4 dy-h-4" />
+                          </div>
+                          <div className="dy-min-w-0 dy-flex-1">
+                            <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
+                              {block.labels?.singular || block.slug}
+                            </h5>
+                            <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
+                              {block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page."}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </DialogContent>
             </Dialog>

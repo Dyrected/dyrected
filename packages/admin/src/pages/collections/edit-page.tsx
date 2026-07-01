@@ -359,7 +359,8 @@ export function EditEntryPage() {
   } else if (typeof previewUrl === 'string' && (previewData || entry)) {
     try {
       // Provide current window origin to Jexl context so users can use it in expressions
-      const context = { ...(previewData || entry), siteUrl: window.location.origin };
+      const siteUrl = schemas?.admin?.siteUrl || window.location.origin;
+      const context = { ...(previewData || entry), siteUrl };
 
       if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
         previewUrl = jexl.evalSync(previewUrl, context)
@@ -371,7 +372,7 @@ export function EditEntryPage() {
 
   // If the resolved URL is relative, prepend the current origin
   if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
-    previewUrl = `${window.location.origin}${previewUrl}`
+    previewUrl = `${schemas?.admin?.siteUrl || window.location.origin}${previewUrl}`
   }
 
   // Evaluate collection-level read access

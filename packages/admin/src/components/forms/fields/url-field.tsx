@@ -27,13 +27,13 @@ interface UrlFieldProps {
   context?: { user: any, schemas?: any, siblingData: any }
 }
 
-const parseValue = (val: any): { type: "custom" | "internal", url: string, relationTo?: string, value?: string, label?: string } => {
+const parseValue = (val: any, siteUrl: string): { type: "custom" | "internal", url: string, relationTo?: string, value?: string, label?: string } => {
   if (!val) return { type: "custom", url: "" }
 
   if (typeof val === "string") {
     let url = val
     if (url.startsWith("/")) {
-      url = `${window.location.origin}${url}`
+      url = `${siteUrl}${url}`
     }
     return { type: "custom", url }
   }
@@ -41,7 +41,7 @@ const parseValue = (val: any): { type: "custom" | "internal", url: string, relat
   if (typeof val === "object") {
     let url = val.url || ""
     if (url.startsWith("/")) {
-      url = `${window.location.origin}${url}`
+      url = `${siteUrl}${url}`
     }
     return {
       type: val.type === "internal" ? "internal" : "custom",
@@ -57,11 +57,12 @@ const parseValue = (val: any): { type: "custom" | "internal", url: string, relat
 
 export function UrlField({ field, disabled }: UrlFieldProps) {
   const { client, schemas } = useDyrected()
+  const siteUrl = React.useMemo(() => schemas?.admin?.siteUrl || window.location.origin, [schemas?.admin?.siteUrl])
   const [openPopover, setOpenPopover] = React.useState(false)
   const [documents, setDocuments] = React.useState<any[]>([])
   const [docsLoading, setDocsLoading] = React.useState(false)
 
-  const currentData = parseValue(field.value)
+  const currentData = parseValue(field.value, siteUrl)
   const [urlValue, setUrlValue] = React.useState(currentData.url)
   const [labelValue, setLabelValue] = React.useState(currentData.label || "")
   const [collectionValue, setCollectionValue] = React.useState(currentData.relationTo || "")
@@ -69,14 +70,14 @@ export function UrlField({ field, disabled }: UrlFieldProps) {
 
   // Synchronize internal state with changes in field.value (e.g. on load / async populate)
   React.useEffect(() => {
-    const next = parseValue(field.value)
+    const next = parseValue(field.value, siteUrl)
     Promise.resolve().then(() => {
       setUrlValue((prev) => prev === next.url ? prev : next.url)
       setLabelValue((prev) => prev === next.label ? prev : (next.label || ""))
       setCollectionValue((prev) => prev === next.relationTo ? prev : (next.relationTo || ""))
       setDocValue((prev) => prev === next.value ? prev : (next.value || ""))
     })
-  }, [field.value])
+  }, [field.value, siteUrl])
 
 
   // Get all available collections from schemas
@@ -143,8 +144,8 @@ export function UrlField({ field, disabled }: UrlFieldProps) {
   const handleUpdate = (url: string, label: string, relationTo?: string, docId?: string) => {
     const isInternal = !!(relationTo && docId)
     let cleanedUrl = url
-    if (isInternal && cleanedUrl.startsWith(window.location.origin)) {
-      cleanedUrl = cleanedUrl.substring(window.location.origin.length)
+    if (isInternal && cleanedUrl.startsWith(siteUrl)) {
+      cleanedUrl = cleanedUrl.substring(siteUrl.length)
     }
     const newValue = {
       type: isInternal ? "internal" : "custom",
@@ -183,7 +184,7 @@ export function UrlField({ field, disabled }: UrlFieldProps) {
           resolvedUrl = urlPattern.replace(/{{(.*?)}}/g, (_, key) => String(doc[key.trim()] || ""))
         } else {
           try {
-            const context = { ...doc, siteUrl: window.location.origin }
+            const context = { ...doc, siteUrl }
             if (urlPattern.includes("+") || urlPattern.includes("?") || urlPattern.includes("==") || urlPattern.includes("siteUrl")) {
               resolvedUrl = jexl.evalSync(urlPattern, context)
             } else {
@@ -197,7 +198,7 @@ export function UrlField({ field, disabled }: UrlFieldProps) {
     }
 
     if (typeof resolvedUrl === "string" && resolvedUrl.startsWith("/")) {
-      resolvedUrl = `${window.location.origin}${resolvedUrl}`
+      resolvedUrl = `${siteUrl}${resolvedUrl}`
     }
 
     const finalUrl = resolvedUrl || ""

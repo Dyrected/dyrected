@@ -61,4 +61,8 @@ export interface AdminConfig {
      */
     titleSuffix?: string;
   };
+  /**
+   * The canonical/base URL of the frontend website for links and iframe live previews.
+   */
+  siteUrl?: string;
 }

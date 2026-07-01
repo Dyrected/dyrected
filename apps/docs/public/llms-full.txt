@@ -12366,6 +12366,10 @@ export interface AdminConfig {
      */
     titleSuffix?: string;
   };
+  /**
+   * The canonical/base URL of the frontend website for links and iframe live previews.
+   */
+  siteUrl?: string;
 }
 ```
 
@@ -12374,6 +12378,7 @@ export interface AdminConfig {
 | <code>components</code> | <code>components?: AdminDashboardComponentSlots</code> | Custom component slots around the built-in dashboard. |
 | <code>branding</code> | <code>branding?: &#123;     /** Full logo image shown in the expanded sidebar. URL or imported image asset. */     logo?: string;     /** Compact logo mark used in the collapsed sidebar state. */     logoMark?: string;     /** Text alternative or addition to the logo image. */     logoText?: string;     /**      * Primary accent colour as any CSS colour value.      * @example '#6366f1'      * @example 'hsl(240 50% 60%)'      */     primaryColor?: string;     /** Browser tab favicon URL. */     favicon?: string;     /** Font family for body and UI text. Must be loaded separately. */     fontSans?: string;     /** Font family for headings. Must be loaded separately. */     fontSerif?: string;   &#125;</code> |  |
 | <code>meta</code> | <code>meta?: &#123;     /**      * String appended to every Admin page's &#96;&lt;title&gt;&#96;.      * @default '- Dyrected'      */     titleSuffix?: string;   &#125;</code> |  |
+| <code>siteUrl</code> | <code>siteUrl?: string</code> | The canonical/base URL of the frontend website for links and iframe live previews. |
 
 
 ## CollectionConfig
