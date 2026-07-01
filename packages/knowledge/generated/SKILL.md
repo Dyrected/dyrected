@@ -1318,6 +1318,32 @@ For caching:
 - Ensure CMS edits can appear according to the expected publishing workflow
 - Avoid permanently static CMS-powered routes unless the project uses a rebuild workflow intentionally
 - Use dynamic rendering, revalidation, no-store, ISR, preview mode, or the project’s existing cache strategy as appropriate
+
+For page routing:
+
+- If editors can create new pages in Dyrected, the frontend must support rendering CMS-created pages by slug.
+- Creating a page document in Dyrected is not enough.
+- The project must include a dynamic route, fallback route, catch-all route, or router configuration that:
+  - receives the URL slug
+  - fetches the matching page document from the Dyrected Pages collection
+  - renders the page layout/sections blocks
+  - returns a safe 404 when no page exists for that slug
+  - preserves the existing home page route
+  - maps the home page slug, such as "home", to "/"
+  - maps other page slugs, such as "new-page", to "/new-page"
+  - supports nested slugs if the project already uses nested pages
+  - supports preview mode if page previews are enabled
+  - uses the correct cache/revalidation strategy so CMS edits can appear without a code change
+- Use the routing method appropriate to the project’s frontend framework.
+  - Next.js: `app/[slug]/page.tsx`, `pages/[slug].tsx`, or catch-all routes
+  - Nuxt: `pages/[slug].vue`, `pages/[...slug].vue`, or route middleware
+  - Vue Router: dynamic routes such as `/:slug` or `/:pathMatch(.*)` with CMS fetching
+  - React Router: dynamic routes such as `/:slug` or `/*` with CMS fetching
+  - SvelteKit: `src/routes/[slug]/+page.ts` or `[...slug]`
+  - Astro: `src/pages/[slug].astro` or `[...slug].astro`
+  - Remix: `app/routes/$slug.tsx` or splat routes
+  - Plain HTML/SPA: configure the router and host fallback so unknown slugs load the app and fetch the CMS page
+- Do not say editors can create new pages unless the frontend route exists and has been tested.
 <!-- GENERATED:FRONTEND_RULES:END -->
 
 ### Zero-state behavior
