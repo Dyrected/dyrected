@@ -1,5 +1,11 @@
 # @dyrected/knowledge
 
+## 0.2.8
+
+### Patch Changes
+
+- fb76591: Add Page Routing Rule for frontend integration guidelines in AI Rules template.
+
 ## 0.2.7
 
 ### Patch Changes
