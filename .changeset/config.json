@@ -5,7 +5,7 @@
   "fixed": [
     [
       "@dyrected/admin",
-      "@dyrected/cli",
+      "dyrected",
       "@dyrected/core",
       "@dyrected/db-mongodb",
       "@dyrected/db-mysql",

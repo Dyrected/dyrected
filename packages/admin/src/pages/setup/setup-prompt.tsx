@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowUpRight, Check, Copy } from "lucide-react";
-import { GENERATE_CMS_PROMPT } from "@dyrected/knowledge";
+import { buildGuideUrl, buildPrompt } from "./utils";
 
 export interface SetupPromptConfig {
   siteName?: string;
@@ -16,7 +16,6 @@ export interface SetupPromptProps {
   config: SetupPromptConfig;
 }
 
-const GUIDE_URL = "https://www.dyrected.com/guide";
 const DOCS_URL = "https://docs.dyrected.com";
 
 const steps = [
@@ -33,48 +32,6 @@ const stepsNoCredentials = [
   "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
 ];
 
-function normalizeTechStack(techStack?: string): string | undefined {
-  if (!techStack) return undefined;
-  if (techStack === "next") return "nextjs";
-  if (techStack === "nuxtjs") return "nuxt";
-  return techStack.toLowerCase();
-}
-
-export function buildGuideUrl(config: SetupPromptConfig): string {
-  const url = new URL(GUIDE_URL);
-  const stack = normalizeTechStack(config.defaultTechStack);
-
-  url.searchParams.set("source", "admin");
-  if (stack) url.searchParams.set("stack", stack);
-  if (config.siteId) url.searchParams.set("siteId", config.siteId);
-  if (config.baseUrl) url.searchParams.set("endpoint", config.baseUrl);
-
-  return url.toString();
-}
-
-function buildPrompt(config: SetupPromptConfig): string {
-  const { siteId, apiKey, baseUrl } = config;
-  const hasCredentials = siteId && apiKey && baseUrl;
-
-  if (!hasCredentials) return GENERATE_CMS_PROMPT;
-
-  const placeholder = `Ask me for the following in one message:
-
-- Site ID
-- Site API key
-- Base URL
-
-Wait for my reply.`;
-
-  const replacement = `Use the following credentials:
-
-- Site ID: ${siteId}
-- Site API key: ${apiKey}
-- Base URL: ${baseUrl}`;
-
-  return GENERATE_CMS_PROMPT.replace(placeholder, replacement);
-}
-
 export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState(false);
   const guideUrl = buildGuideUrl(config);
@@ -88,8 +45,86 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
     window.setTimeout(() => setCopied(false), 1800);
   }
 
+  const currentVersion = (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION || "0.0.0";
+  const [latestVersion, setLatestVersion] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("dyrected_latest_release");
+  });
+
+  useEffect(() => {
+    if (!latestVersion) {
+      fetch("https://registry.npmjs.org/@dyrected/core/latest")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.version) {
+            setLatestVersion(data.version);
+            localStorage.setItem("dyrected_latest_release", data.version);
+            localStorage.setItem("dyrected_latest_release_timestamp", String(Date.now()));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [latestVersion]);
+
+  const hasUpdate = latestVersion && latestVersion !== currentVersion && (() => {
+    const lParts = latestVersion.split(".").map(Number);
+    const cParts = currentVersion.split(".").map(Number);
+    for (let i = 0; i < 3; i++) {
+      const l = lParts[i] || 0;
+      const c = cParts[i] || 0;
+      if (l > c) return true;
+      if (l < c) return false;
+    }
+    return false;
+  })();
+
   return (
     <div className="dy-mx-auto dy-max-w-3xl dy-space-y-10 dy-px-4 dy-py-8">
+      {/* Version and Updates */}
+      <div className="dy-rounded-xl dy-border dy-border-border dy-bg-muted/30 dy-p-5 dy-space-y-3">
+        <h2 className="dy-text-sm dy-font-semibold dy-text-foreground">
+          System Info & Updates
+        </h2>
+        <div className="dy-flex dy-flex-col sm:dy-flex-row sm:dy-items-center dy-justify-between dy-gap-4 dy-text-xs">
+          <div className="dy-space-y-1">
+            <p className="dy-text-muted-foreground">
+              Current version: <span className="dy-font-mono dy-font-semibold dy-text-foreground">v{currentVersion}</span>
+            </p>
+            {latestVersion && (
+              <p className="dy-text-muted-foreground">
+                Latest release: <span className="dy-font-mono dy-font-semibold dy-text-foreground">v{latestVersion}</span>
+              </p>
+            )}
+          </div>
+
+          {hasUpdate ? (
+            <div className="dy-flex dy-flex-col dy-items-start sm:dy-items-end dy-gap-1.5">
+              <div className="dy-flex dy-items-center dy-gap-2">
+                <span className="dy-inline-flex dy-items-center dy-gap-1 dy-rounded-full dy-bg-primary/10 dy-px-2.5 dy-py-0.5 dy-text-[11px] dy-font-medium dy-text-primary">
+                  Update available!
+                </span>
+                <a
+                  href="https://github.com/Dyrected/dyrected/blob/main/CHANGELOG.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dy-inline-flex dy-items-center dy-gap-1 dy-text-[11px] dy-text-primary dy-underline-offset-4 hover:dy-underline"
+                >
+                  View changelog
+                  <ArrowUpRight className="dy-h-3 dy-w-3" />
+                </a>
+              </div>
+              <p className="dy-text-muted-foreground">
+                Run <code className="dy-bg-black/5 dark:dy-bg-white/5 dy-px-1 dy-py-0.5 dy-rounded dy-font-mono">npx dyrected upgrade</code> to update.
+              </p>
+            </div>
+          ) : (
+            <span className="dy-inline-flex dy-items-center dy-gap-1 dy-rounded-full dy-bg-green-500/10 dy-px-2.5 dy-py-0.5 dy-text-[11px] dy-font-medium dy-text-green-600 dark:dy-text-green-400">
+              Up to date
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="dy-space-y-2">
         <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight dy-text-foreground">

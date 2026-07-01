@@ -1,12 +1,10 @@
 import * as React from "react"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { Input } from "../../ui/input"
-import { Button } from "../../ui/button"
 import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "../../ui/command"
@@ -15,31 +13,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../ui/select"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../ui/tabs"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check } from "lucide-react"
 import { cn } from "../../../lib/utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 import { interpolateUrlPattern } from "../../../lib/url-pattern"
-
-interface UrlValue {
-  type: "custom" | "internal"
-  url?: string
-  relationTo?: string
-  value?: string
-  label?: string
-}
+import jexl from "jexl"
 
 interface UrlFieldProps {
   schema: FieldSchema
@@ -48,6 +26,7 @@ interface UrlFieldProps {
   context?: { user: any, schemas?: any, siblingData: any }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function UrlField({ schema: _schema, field, disabled, context: _context }: UrlFieldProps) {
   const { client, schemas } = useDyrected()
   const [openPopover, setOpenPopover] = React.useState(false)
@@ -55,291 +34,278 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
   const [docsLoading, setDocsLoading] = React.useState(false)
 
   // Parse the current value
-  const parseValue = (val: any): { mode: "external" | "internal", data: UrlValue } => {
-    if (!val) return { mode: "external", data: { type: "custom", url: "", label: "" } }
+  const parseValue = (val: any): { type: "custom" | "internal", url: string, relationTo?: string, value?: string, label?: string } => {
+    if (!val) return { type: "custom", url: "" }
 
     if (typeof val === "string") {
-      // Backward compatibility: simple strings are treated as external URLs
-      return { mode: "external", data: { type: "custom", url: val, label: "" } }
+      return { type: "custom", url: val }
     }
 
-    if (typeof val === "object" && val.type) {
-      const mode = val.type === "internal" ? "internal" : "external"
-      return { mode, data: val as UrlValue }
+    if (typeof val === "object") {
+      return {
+        type: val.type === "internal" ? "internal" : "custom",
+        url: val.url || "",
+        relationTo: val.relationTo,
+        value: val.value,
+        label: val.label,
+      }
     }
 
-    return { mode: "external", data: { type: "custom", url: String(val), label: "" } }
+    return { type: "custom", url: String(val) }
   }
 
-  const { mode: currentMode, data: currentData } = parseValue(field.value)
-  const [mode, setMode] = React.useState<"external" | "internal">(currentMode)
-  const [urlValue, setUrlValue] = React.useState(currentData.url || "")
+  const currentData = parseValue(field.value)
+  const [urlValue, setUrlValue] = React.useState(currentData.url)
   const [labelValue, setLabelValue] = React.useState(currentData.label || "")
   const [collectionValue, setCollectionValue] = React.useState(currentData.relationTo || "")
   const [docValue, setDocValue] = React.useState(currentData.value || "")
-  const [resolvedUrlValue, setResolvedUrlValue] = React.useState(
-    currentMode === "internal" ? (currentData.url || "") : ""
-  )
-  const [docSearch, setDocSearch] = React.useState("")
+
 
   // Get all available collections from schemas
-  const collections = schemas?.collections || []
+  const collections = React.useMemo(() => schemas?.collections || [], [schemas?.collections])
 
-  // Load documents when collection changes
+  // Load documents for all collections that have a previewUrl
   React.useEffect(() => {
-    if (collectionValue && client) {
+    if (!client || !schemas?.collections) return
+
+    const eligibleCollections = collections.filter((c: any) => c.admin?.previewUrl)
+    if (eligibleCollections.length === 0) return
+
+    let active = true
+
+    // Defer state update slightly to avoid synchronous setState inside render/effect loop warning
+    Promise.resolve().then(() => {
+      if (!active) return
       setDocsLoading(true)
       setDocuments([])
+    })
 
-      client
-        .collection(collectionValue)
-        .find({ limit: 50 })
-        .exec()
-        .then((res: any) => {
-          setDocuments(res.docs || [])
-        })
-        .catch((err: any) => {
-          console.error("Failed to load documents:", err)
-          setDocuments([])
-        })
-        .finally(() => {
+    Promise.all(
+      eligibleCollections.map((col: any) =>
+        client
+          .collection(col.slug)
+          .find({ limit: 50 })
+          .exec()
+          .then((res: any) => ({
+            collection: col,
+            docs: res.docs || [],
+          }))
+          .catch((err: any) => {
+            console.error(`Failed to load documents for ${col.slug}:`, err)
+            return { collection: col, docs: [] }
+          })
+      )
+    )
+      .then((results) => {
+        if (!active) return
+        const allDocs = results.flatMap((r) =>
+          r.docs.map((doc: any) => ({
+            ...doc,
+            __collectionSlug: r.collection.slug,
+            __collectionLabel: r.collection.labels?.plural || r.collection.slug,
+            __previewUrl: r.collection.admin?.previewUrl,
+          }))
+        )
+        setDocuments(allDocs)
+      })
+      .catch((err) => {
+        console.error("Failed to load documents:", err)
+      })
+      .finally(() => {
+        if (active) {
           setDocsLoading(false)
-        })
+        }
+      })
+
+    return () => {
+      active = false
     }
-  }, [collectionValue, client])
+  }, [client, schemas, collections])
 
-  // Update field.value when any state changes
-  const handleUpdate = (newMode: "external" | "internal", updates: Partial<UrlValue>) => {
-    let newValue: any
-
-    if (newMode === "external") {
-      newValue = {
-        type: "custom",
-        url: updates.url !== undefined ? updates.url : urlValue,
-        label: updates.label !== undefined ? updates.label : labelValue,
-      }
-    } else {
-      const url = updates.url !== undefined ? updates.url : resolvedUrlValue
-      newValue = {
-        type: "internal",
-        url: url || undefined,
-        relationTo: updates.relationTo || collectionValue,
-        value: updates.value || docValue,
-        label: updates.label !== undefined ? updates.label : labelValue,
-      }
+  const handleUpdate = (url: string, label: string, relationTo?: string, docId?: string) => {
+    const isInternal = !!(relationTo && docId)
+    const newValue = {
+      type: isInternal ? "internal" : "custom",
+      url: url || undefined,
+      relationTo: isInternal ? relationTo : undefined,
+      value: isInternal ? docId : undefined,
+      label: label || undefined,
     }
-
     field.onChange(newValue)
   }
 
-  const handleModeChange = (newMode: "external" | "internal") => {
-    setMode(newMode)
-    if (newMode === "external") {
-      setUrlValue(currentData.url || "")
-      setLabelValue(currentData.label || "")
-      setResolvedUrlValue("")
-    } else {
-      setCollectionValue(currentData.relationTo || "")
-      setDocValue(currentData.value || "")
-      setResolvedUrlValue(currentData.type === "internal" ? (currentData.url || "") : "")
-      setLabelValue(currentData.label || "")
-    }
-  }
-
-  const handleExternalUrlChange = (value: string) => {
+  const handleUrlInputChange = (value: string) => {
     setUrlValue(value)
-    handleUpdate("external", { url: value })
-  }
-
-  const handleExternalLabelChange = (value: string) => {
-    setLabelValue(value)
-    handleUpdate("external", { label: value })
-  }
-
-  const handleCollectionChange = (value: string) => {
-    setCollectionValue(value)
+    setCollectionValue("")
     setDocValue("")
-    setResolvedUrlValue("")
+    handleUpdate(value, labelValue)
   }
 
-  const handleDocumentSelect = (docId: string) => {
-    setDocValue(docId)
-    setOpenPopover(false)
-    const colSchema = collections.find((c: any) => c.slug === collectionValue)
-    const urlPattern = colSchema?.admin?.urlPattern
-    const doc = documents.find((d: any) => d.id === docId)
-    const resolvedUrl = urlPattern && doc ? interpolateUrlPattern(urlPattern, doc) : undefined
-    setResolvedUrlValue(resolvedUrl || "")
-    handleUpdate("internal", { value: docId, url: resolvedUrl })
-  }
-
-  const handleInternalLabelChange = (value: string) => {
+  const handleLabelInputChange = (value: string) => {
     setLabelValue(value)
-    handleUpdate("internal", { label: value })
+    handleUpdate(urlValue, value, collectionValue, docValue)
+  }
+
+  const handleDocumentSelect = (doc: any) => {
+    setDocValue(doc.id)
+    setCollectionValue(doc.__collectionSlug)
+    setOpenPopover(false)
+    const urlPattern = doc.__previewUrl
+    let resolvedUrl: string | undefined = undefined
+
+    if (urlPattern) {
+      if (typeof urlPattern === "function") {
+        resolvedUrl = urlPattern(doc, { locale: "en" })
+      } else if (typeof urlPattern === "string") {
+        if (urlPattern.includes("{{")) {
+          resolvedUrl = urlPattern.replace(/{{(.*?)}}/g, (_, key) => String(doc[key.trim()] || ""))
+        } else {
+          try {
+            const context = { ...doc, siteUrl: window.location.origin }
+            if (urlPattern.includes("+") || urlPattern.includes("?") || urlPattern.includes("==") || urlPattern.includes("siteUrl")) {
+              resolvedUrl = jexl.evalSync(urlPattern, context)
+            } else {
+              resolvedUrl = interpolateUrlPattern(urlPattern, doc)
+            }
+          } catch {
+            resolvedUrl = interpolateUrlPattern(urlPattern, doc)
+          }
+        }
+      }
+    }
+
+    if (typeof resolvedUrl === "string" && resolvedUrl.startsWith("/")) {
+      resolvedUrl = `${window.location.origin}${resolvedUrl}`
+    }
+
+    const finalUrl = resolvedUrl || ""
+    setUrlValue(finalUrl)
+    handleUpdate(finalUrl, labelValue, doc.__collectionSlug, doc.id)
   }
 
   // Get display field from collection schema
-  const getCollectionDisplayField = (collectionSlug: string): string => {
+  const getCollectionDisplayField = React.useCallback((collectionSlug: string): string => {
     const col = collections.find((c: any) => c.slug === collectionSlug)
     return col?.admin?.useAsTitle || "title"
-  }
+  }, [collections])
 
   // Get document display value
-  const getDocumentDisplay = (doc: any, collectionSlug: string): string => {
+  const getDocumentDisplay = React.useCallback((doc: any, collectionSlug: string): string => {
     const displayField = getCollectionDisplayField(collectionSlug)
     return doc[displayField] || doc.name || doc.slug || doc.id
-  }
+  }, [getCollectionDisplayField])
 
-  const selectedDoc = documents.find((d: any) => d.id === docValue)
+  const filteredDocs = React.useMemo(() => {
+    if (!urlValue) return documents
+    const query = urlValue.toLowerCase()
+    return documents.filter((doc) => {
+      const display = getDocumentDisplay(doc, doc.__collectionSlug).toLowerCase()
+      const slug = String(doc.slug || "").toLowerCase()
+      return display.includes(query) || slug.includes(query)
+    })
+  }, [documents, urlValue, getDocumentDisplay])
+
+  const selectedDoc = documents.find((d: any) => d.id === docValue && d.__collectionSlug === collectionValue)
   const selectedCollectionLabel = collections.find((c: any) => c.slug === collectionValue)?.labels?.singular || collectionValue
 
   return (
     <div className="dy-space-y-3">
-      <Tabs value={mode} onValueChange={(val) => handleModeChange(val as "external" | "internal")}>
-        <TabsList className="dy-w-full dy-grid dy-grid-cols-2 dy-bg-muted dy-p-1 dy-rounded-lg dy-h-auto">
-          <TabsTrigger value="internal" disabled={disabled} className="dy-rounded-md">
-            Internal Link
-          </TabsTrigger>
-          <TabsTrigger value="external" disabled={disabled} className="dy-rounded-md">
-            External Link
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="external" className="dy-space-y-3 dy-mt-3">
-          <div>
-            <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
-              URL
-            </label>
-            <Input
-              type="url"
-              value={urlValue}
-              onChange={(e) => handleExternalUrlChange(e.target.value)}
-              placeholder="https://example.com"
-              disabled={disabled}
-              className="dy-border-border/50"
-            />
-          </div>
-
-          <div>
-            <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
-              Link Label (Optional)
-            </label>
-            <Input
-              type="text"
-              value={labelValue}
-              onChange={(e) => handleExternalLabelChange(e.target.value)}
-              placeholder="e.g., Learn More"
-              disabled={disabled}
-              className="dy-border-border/50"
-            />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="internal" className="dy-space-y-3 dy-mt-3">
-          <div>
-            <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
-              Collection
-            </label>
-            <Select value={collectionValue} onValueChange={handleCollectionChange} disabled={disabled}>
-              <SelectTrigger className="dy-bg-background dy-border-border/50">
-                <SelectValue placeholder="Select a collection..." />
-              </SelectTrigger>
-              <SelectContent>
-                {collections.map((col: any) => (
-                  <SelectItem key={col.slug} value={col.slug}>
-                    {col.labels?.plural || col.slug}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {collectionValue && (
-            <div>
-              <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
-                Document
-              </label>
-              <Popover open={disabled ? false : openPopover} onOpenChange={setOpenPopover}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openPopover}
-                    disabled={disabled}
-                    className="dy-w-full dy-justify-between dy-font-normal dy-bg-background dy-border-border/50 dy-h-11"
-                  >
-                    {docsLoading ? (
-                      "Loading..."
-                    ) : selectedDoc ? (
-                      <span className="dy-truncate">
-                        {getDocumentDisplay(selectedDoc, collectionValue)}
-                      </span>
-                    ) : (
-                      <span className="dy-text-muted-foreground">Select a document...</span>
-                    )}
-                    <ChevronsUpDown className="dy-ml-2 dy-h-4 dy-w-4 dy-shrink-0 dy-opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="dy-w-full dy-p-0" align="start">
-                  <Command>
-                    <CommandInput
-                      placeholder={`Search ${selectedCollectionLabel}...`}
-                      value={docSearch}
-                      onValueChange={setDocSearch}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        {docsLoading ? "Searching..." : "No documents found."}
-                      </CommandEmpty>
-                      <CommandGroup>
-                        {documents
-                          .filter((doc: any) => {
-                            if (!docSearch) return true
-                            const displayValue = getDocumentDisplay(doc, collectionValue)
-                            return displayValue
-                              .toLowerCase()
-                              .includes(docSearch.toLowerCase())
-                          })
-                          .map((doc: any) => (
-                            <CommandItem
-                              key={doc.id}
-                              value={doc.id}
-                              onSelect={() => handleDocumentSelect(doc.id)}
-                            >
-                              <Check
-                                className={cn(
-                                  "dy-mr-2 dy-h-4 dy-w-4",
-                                  docValue === doc.id ? "dy-opacity-100" : "dy-opacity-0"
-                                )}
-                              />
-                              <span className="dy-flex-1">
-                                {getDocumentDisplay(doc, collectionValue)}
-                              </span>
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+      <div>
+        <Popover open={openPopover && !disabled} onOpenChange={setOpenPopover}>
+          <PopoverTrigger asChild>
+            <div className="dy-w-full">
+              <Input
+                type="text"
+                value={urlValue}
+                onChange={(e) => handleUrlInputChange(e.target.value)}
+                onFocus={() => setOpenPopover(true)}
+                placeholder="Type or paste a URL, or search pages..."
+                disabled={disabled}
+                className="dy-bg-background dy-border-border/50 dy-h-11 dy-w-full"
+              />
             </div>
-          )}
+          </PopoverTrigger>
+          <PopoverContent
+            className="dy-p-0 dy-w-[var(--radix-popover-trigger-width)] dy-max-h-60 dy-overflow-y-auto"
+            align="start"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <Command className="dy-border-none" shouldFilter={false}>
+              <CommandList>
+                <CommandEmpty className="dy-py-2.5 dy-px-3 dy-text-xs dy-text-muted-foreground">
+                  {docsLoading ? "Loading pages..." : "No matching pages found. Press Enter to use as custom link."}
+                </CommandEmpty>
 
-          <div>
-            <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
-              Link Label (Optional)
-            </label>
-            <Input
-              type="text"
-              value={labelValue}
-              onChange={(e) => handleInternalLabelChange(e.target.value)}
-              placeholder="e.g., Read More"
-              disabled={disabled}
-              className="dy-bg-background dy-border-border/50"
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+                {urlValue && (
+                  <CommandGroup heading="Custom Link">
+                    <CommandItem
+                      value={`custom-${urlValue}`}
+                      onSelect={() => {
+                        handleUrlInputChange(urlValue)
+                        setOpenPopover(false)
+                      }}
+                      className="dy-text-primary"
+                    >
+                      Use link "{urlValue}"
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+
+                {(() => {
+                  const grouped: Record<string, any[]> = {}
+                  filteredDocs.forEach((doc: any) => {
+                    const key = doc.__collectionLabel
+                    if (!grouped[key]) grouped[key] = []
+                    grouped[key].push(doc)
+                  })
+
+                  return Object.entries(grouped).map(([groupName, docs]) => (
+                    <CommandGroup key={groupName} heading={groupName}>
+                      {docs.map((doc: any) => (
+                        <CommandItem
+                          key={`${doc.__collectionSlug}-${doc.id}`}
+                          value={`${doc.__collectionSlug}-${doc.id}-${getDocumentDisplay(doc, doc.__collectionSlug)}`}
+                          onSelect={() => handleDocumentSelect(doc)}
+                        >
+                          <Check
+                            className={cn(
+                              "dy-mr-2 dy-h-4 dy-w-4",
+                              docValue === doc.id && collectionValue === doc.__collectionSlug ? "dy-opacity-100" : "dy-opacity-0"
+                            )}
+                          />
+                          <span className="dy-flex-1">
+                            {getDocumentDisplay(doc, doc.__collectionSlug)}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  ))
+                })()}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+
+        {selectedDoc && (
+          <p className="dy-text-[11px] dy-text-muted-foreground dy-mt-1.5">
+            Linked to internal page: <span className="dy-font-medium dy-text-foreground">{selectedCollectionLabel}: {getDocumentDisplay(selectedDoc, collectionValue)}</span>
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
+          Link Label (Optional)
+        </label>
+        <Input
+          type="text"
+          value={labelValue}
+          onChange={(e) => handleLabelInputChange(e.target.value)}
+          placeholder="e.g., Learn More"
+          disabled={disabled}
+          className="dy-bg-background dy-border-border/50"
+        />
+      </div>
     </div>
   )
 }

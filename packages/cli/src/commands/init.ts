@@ -27,12 +27,21 @@ export function registerInit(program: Command) {
   program
     .command("init")
     .description("Bootstrap a new Dyrected CMS project")
+    .option("-y, --yes", "Skip prompts and use default settings (SQLite + Local Storage)")
+    .option("-f, --framework <framework>", "Target framework (next, nuxt, react, vue)")
+    .option("-d, --db <adapter>", "Database adapter (sqlite, postgres, mysql, mongodb)")
+    .option("-s, --storage <adapter>", "Storage adapter (local, s3, b2, cloudinary)")
+    .option("-p, --path <path>", "Admin dashboard route path", "admin")
+    .option("-o, --overwrite", "Overwrite existing config/env files without confirmation")
     .addHelpText(
       "after",
       `
 Examples:
   # Interactive setup (detects your framework automatically)
-  $ npx @dyrected/cli init
+  $ npx dyrected init
+
+  # Non-interactive automated setup (Next.js, Postgres, S3, custom path)
+  $ npx dyrected init -y -f next -d postgres -s s3 -p custom-admin
 
 After running init:
   1. Fill in the values in .env
@@ -40,11 +49,20 @@ After running init:
   3. Open the admin path you chose (default: /cms)
 `,
     )
-    .action(async () => {
+    .action(async (options: {
+      yes?: boolean;
+      framework?: string;
+      db?: string;
+      storage?: string;
+      path?: string;
+      overwrite?: boolean;
+    }) => {
       console.log(chalk.bold("\n🚀 Welcome to Dyrected CMS\n"));
-
+ 
       const cwd = process.cwd();
       const detection = await detectFramework(cwd);
+      const autoAccept = !!options.yes;
+      const forceOverwrite = !!options.overwrite || autoAccept;
 
       if (detection && !detection.supported) {
         console.log(chalk.yellow(`  Detected framework: ${detection.name}`));
@@ -65,7 +83,10 @@ After running init:
       }
 
       let framework: SupportedFramework;
-      if (detection?.supported) {
+      const validFrameworks: SupportedFramework[] = ["next", "nuxt", "react", "vue"];
+      if (options.framework && validFrameworks.includes(options.framework as SupportedFramework)) {
+        framework = options.framework as SupportedFramework;
+      } else if (detection?.supported) {
         const labels: Record<SupportedFramework, string> = {
           next: "Next.js",
           nuxt: "Nuxt 3",
@@ -78,6 +99,9 @@ After running init:
           ),
         );
         framework = detection.framework;
+      } else if (autoAccept) {
+        console.log(chalk.dim("  No framework detected. Defaulting to Next.js\n"));
+        framework = "next";
       } else {
         const answer = await prompts({
           type: "select",
@@ -99,18 +123,32 @@ After running init:
 
       const isSpa = framework === "react" || framework === "vue";
 
-      const { adminPath } = await prompts({
-        type: "text",
-        name: "adminPath",
-        message: "What path should the admin dashboard use?",
-        initial: "admin",
-        format: (val: string) => val.replace(/^\//, "").replace(/\/$/, ""),
-      });
+      let adminPath = options.path || "admin";
+      if (!options.path && !autoAccept) {
+        const answer = await prompts({
+          type: "text",
+          name: "adminPath",
+          message: "What path should the admin dashboard use?",
+          initial: "admin",
+          format: (val: string) => val.replace(/^\//, "").replace(/\/$/, ""),
+        });
+        adminPath = answer.adminPath || "admin";
+      }
 
       let db = "sqlite";
       let storage = "local";
 
-      if (!isSpa) {
+      const validDbs = ["sqlite", "postgres", "mysql", "mongodb"];
+      const validStorages = ["local", "s3", "b2", "cloudinary"];
+
+      if (options.db && validDbs.includes(options.db)) {
+        db = options.db;
+      }
+      if (options.storage && validStorages.includes(options.storage)) {
+        storage = options.storage;
+      }
+
+      if (!isSpa && !options.db && !options.storage && !autoAccept) {
         const { quickSetup } = await prompts({
           type: "confirm",
           name: "quickSetup",
@@ -194,12 +232,16 @@ After running init:
 
         const configPath = path.join(cwd, "dyrected.config.ts");
         if (await fs.pathExists(configPath)) {
-          const { overwrite } = await prompts({
-            type: "confirm",
-            name: "overwrite",
-            message: "dyrected.config.ts already exists. Overwrite?",
-            initial: false,
-          });
+          let overwrite = forceOverwrite;
+          if (!forceOverwrite) {
+            const answer = await prompts({
+              type: "confirm",
+              name: "overwrite",
+              message: "dyrected.config.ts already exists. Overwrite?",
+              initial: false,
+            });
+            overwrite = answer.overwrite;
+          }
           if (!overwrite) {
             console.log(chalk.yellow("Skipping config file."));
           } else {
@@ -244,12 +286,16 @@ After running init:
           .join("\n");
 
         if (missingVars) {
-          const { appendEnv } = await prompts({
-            type: "confirm",
-            name: "appendEnv",
-            message: ".env already exists. Append missing Dyrected variables?",
-            initial: true,
-          });
+          let appendEnv = forceOverwrite;
+          if (!forceOverwrite) {
+            const answer = await prompts({
+              type: "confirm",
+              name: "appendEnv",
+              message: ".env already exists. Append missing Dyrected variables?",
+              initial: true,
+            });
+            appendEnv = answer.appendEnv;
+          }
           if (appendEnv) {
             await fs.appendFile(
               envPath,
@@ -265,12 +311,16 @@ After running init:
           );
         }
       } else {
-        const { createEnv } = await prompts({
-          type: "confirm",
-          name: "createEnv",
-          message: ".env file is missing. Create it now?",
-          initial: true,
-        });
+        let createEnv = forceOverwrite;
+        if (!forceOverwrite) {
+          const answer = await prompts({
+            type: "confirm",
+            name: "createEnv",
+            message: ".env file is missing. Create it now?",
+            initial: true,
+          });
+          createEnv = answer.createEnv;
+        }
         if (createEnv) {
           await fs.outputFile(envPath, envContent);
           console.log(chalk.green("✔  .env file created"));

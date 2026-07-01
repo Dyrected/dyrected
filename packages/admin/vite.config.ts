@@ -18,6 +18,9 @@ const external = (id: string) => {
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    "import.meta.env.DYRECTED_VERSION": JSON.stringify(pkg.version),
+  },
   plugins: [
     react(),
     dts({

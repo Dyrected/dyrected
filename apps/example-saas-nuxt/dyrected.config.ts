@@ -14,6 +14,7 @@ const Admin = defineCollection({
   auth: true,
   admin: {
     useAsTitle: "firstName",
+    icon: "UserCog",
   },
   fields: [
     {
@@ -47,6 +48,7 @@ const Products = defineCollection({
     group: "Content",
     defaultColumns: ["title", "price", "featured", "publishedAt"],
     useAsTitle: "title",
+    icon: "Boxes",
   },
   fields: [
     { label: "Title", name: "title", type: "text", required: true },
@@ -85,6 +87,7 @@ const Pages = defineCollection({
     previewUrl: "slug == 'home' ? '/' : '/' + slug",
     defaultColumns: ["title", "slug", "updatedAt"],
     urlPattern: "/{slug}",
+    icon: "ListCheck",
   },
   fields: [
     { name: "title", type: "text", required: true },
@@ -297,6 +300,7 @@ const Authors = defineCollection({
   admin: {
     useAsTitle: "name",
     group: "Content",
+    icon: "Users",
   },
   fields: [
     { name: "name", type: "text", required: true },
@@ -316,7 +320,7 @@ const Authors = defineCollection({
       name: "country",
       type: "select",
       options: async () => {
-        const cache = (globalThis as any) as { __dyrectedCountryOptions?: { label: string; value: string }[] };
+        const cache = globalThis as any as { __dyrectedCountryOptions?: { label: string; value: string }[] };
         if (cache.__dyrectedCountryOptions) return cache.__dyrectedCountryOptions;
         const response = await fetch("https://restcountries.com/v3.1/all?fields=name,cca2");
         if (!response.ok) return [];
@@ -383,6 +387,7 @@ const Blog = defineCollection({
     group: "Content",
     previewUrl: "'/blog/' + slug",
     urlPattern: "/blog/{slug}",
+    icon: "File",
   },
   fields: [
     { name: "title", type: "text", required: true },
@@ -403,6 +408,7 @@ const Settings = defineGlobal({
     { name: "logo", type: "relationship", relationTo: Media.slug },
     { name: "footerText", type: "textarea" },
   ],
+  admin: { icon: "Settings" },
 });
 
 const Navigation = defineGlobal({
@@ -420,6 +426,7 @@ const Navigation = defineGlobal({
     },
     { label: "Call to Action", name: "ctaButton", type: "url" },
   ],
+  admin: { icon: "Navigation" },
 });
 
 const RsvpGroups = defineCollection({

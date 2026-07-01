@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGuideUrl } from "./setup-prompt";
+import { buildGuideUrl } from "./utils";
 
 describe("buildGuideUrl", () => {
   it("includes useful setup context without exposing credentials", () => {

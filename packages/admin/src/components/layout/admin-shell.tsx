@@ -40,6 +40,7 @@ import {
 import { Button } from "../ui/button"
 import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
 import logo from "@/assets/dyrected.svg"
+import type { AdminSchemas } from "../../types/admin-components"
 
 function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
   const value = user?.[key]
@@ -149,35 +150,37 @@ function NavGroup({
 function ThemeSelector({
   collapsed = false,
   mobile = false,
+  iconOnly = false,
 }: {
   collapsed?: boolean
   mobile?: boolean
+  iconOnly?: boolean
 }) {
   const { resolvedTheme, setTheme, theme } = useAdminTheme()
   const Icon = resolvedTheme === "dark" ? Moon : Sun
-
+ 
   const options: Array<{ value: AdminThemePreference; label: string; icon: React.ElementType }> = [
     { value: "system", label: "System", icon: Monitor },
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Dark", icon: Moon },
   ]
-
+ 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
           variant="ghost"
-          size={mobile || collapsed ? "icon" : "sm"}
+          size={mobile || collapsed || iconOnly ? "icon" : "sm"}
           className={cn(
             "dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground",
-            collapsed || mobile ? "dy-h-8 dy-w-8" : "dy-h-7 dy-w-full dy-justify-start dy-px-2.5 dy-text-[11px]"
+            collapsed || mobile || iconOnly ? "dy-h-7 dy-w-7 dy-px-0 dy-justify-center" : "dy-h-7 dy-w-full dy-justify-start dy-px-2.5 dy-text-[11px]"
           )}
           title="Theme"
           aria-label="Change admin theme"
         >
           <Icon className="dy-h-3.5 dy-w-3.5" />
-          {!collapsed && !mobile && <span>Theme</span>}
+          {!collapsed && !mobile && !iconOnly && <span>Theme</span>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side={collapsed || mobile ? "bottom" : "top"} align="end" sideOffset={8} className="dy-w-40">
@@ -207,6 +210,50 @@ function ThemeSelector({
 // ---------------------------------------------------------------------------
 // Sidebar inner content (shared)
 // ---------------------------------------------------------------------------
+interface UpdateInfo {
+  latestVersion: string;
+  hasUpdate: boolean;
+}
+
+interface AdminSidebarCollection {
+  slug: string;
+  upload?: boolean;
+  auth?: boolean;
+  label?: string;
+  labels?: {
+    singular?: string;
+    plural?: string;
+  };
+  admin?: {
+    icon?: string;
+    group?: string;
+    hidden?: boolean;
+  };
+  access?: {
+    read?: boolean;
+    create?: boolean;
+    update?: boolean;
+    delete?: boolean;
+  };
+  shared?: boolean;
+}
+
+interface AdminSidebarGlobal {
+  slug: string;
+  label?: string;
+  admin?: {
+    icon?: string;
+    hidden?: boolean;
+  };
+}
+
+interface AdminBranding {
+  logoText?: string;
+  logo?: string;
+  logoMark?: string;
+  titleSuffix?: string;
+}
+
 function SidebarInner({
   schemas,
   isLoading,
@@ -216,8 +263,9 @@ function SidebarInner({
   collapsed,
   onToggleCollapse,
   onNavigate,
+  updateInfo,
 }: {
-  schemas: any
+  schemas: AdminSchemas | null | undefined
   isLoading: boolean
   location: ReturnType<typeof useLocation>
   logout: () => void
@@ -225,11 +273,12 @@ function SidebarInner({
   collapsed: boolean
   onToggleCollapse?: () => void
   onNavigate?: () => void
+  updateInfo: UpdateInfo | null
 }) {
   const { client, user } = useDyrected()
-  const collections = schemas?.collections?.filter((c: any) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
-  const globals = schemas?.globals?.filter((g: any) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
-  const uploadCollections = collections.filter((c: any) => c.upload)
+  const collections = (schemas?.collections as unknown as AdminSidebarCollection[] | undefined)?.filter((c) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
+  const globals = (schemas?.globals as unknown as AdminSidebarGlobal[] | undefined)?.filter((g) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
+  const uploadCollections = collections.filter((c) => c.upload)
 
   const groupLabel = (text: string) =>
     !collapsed ? (
@@ -240,7 +289,7 @@ function SidebarInner({
       <div className="dy-my-2 dy-mx-3 dy-h-px dy-bg-border" />
     )
 
-  const branding = schemas?.admin?.branding;
+  const branding = (schemas?.admin as Record<string, unknown> | undefined)?.branding as AdminBranding | undefined;
 
   return (
     <div className="dy-flex dy-flex-col dy-min-h-screen">
@@ -320,7 +369,7 @@ function SidebarInner({
         {uploadCollections.length > 0 && (
           <div>
             {groupLabel("Media")}
-            {uploadCollections.map((col: any) => (
+            {uploadCollections.map((col) => (
               <NavItem
                 key={col.slug}
                 to={`/collections/${col.slug}`}
@@ -334,7 +383,7 @@ function SidebarInner({
           </div>
         )}
 
-        {(isLoading || collections.filter((c: any) => !c.upload).length > 0) && (
+        {(isLoading || collections.filter((c) => !c.upload).length > 0) && (
           <div>
             {isLoading ? (
               <div className="dy-space-y-1 dy-px-1">
@@ -343,14 +392,14 @@ function SidebarInner({
                 ))}
               </div>
             ) : (() => {
-              const nonUpload = collections.filter((col: any) => !col.upload)
-              const groups = new Map<string, any[]>()
-              const ungrouped: any[] = []
-
-              nonUpload.forEach((col: any) => {
+              const nonUpload = collections.filter((col) => !col.upload)
+              const groups = new Map<string, Array<AdminSidebarCollection>>()
+              const ungrouped: Array<AdminSidebarCollection> = []
+ 
+              nonUpload.forEach((col) => {
                 let g = col.admin?.group
                 if (!g && col.auth) g = "System"
-
+ 
                 if (g) {
                   if (!groups.has(g)) groups.set(g, [])
                   groups.get(g)!.push(col)
@@ -358,8 +407,8 @@ function SidebarInner({
                   ungrouped.push(col)
                 }
               })
-
-              const renderCollectionItem = (col: any) => {
+ 
+              const renderCollectionItem = (col: AdminSidebarCollection) => {
                 const isReadOnly = col.access?.read && !col.access?.create && !col.access?.update && !col.access?.delete
                 const navLabel = (
                   <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
@@ -413,7 +462,7 @@ function SidebarInner({
           <div>
             {groupLabel("Configuration")}
             <div className="dy-space-y-0.5">
-              {globals.map((glob: any) => (
+              {globals.map((glob) => (
                 <NavItem
                   key={glob.slug}
                   to={`/globals/${glob.slug}`}
@@ -435,14 +484,18 @@ function SidebarInner({
         <NavItem
           to="/setup"
           icon={Sparkles}
-          label="Setup & Help"
+          label={
+            <div className="dy-flex dy-items-center dy-justify-between dy-w-full dy-min-w-0">
+              <span className="dy-truncate">Setup & Help</span>
+              {updateInfo?.hasUpdate && (
+                <span className="dy-h-1.5 dy-w-1.5 dy-rounded-full dy-bg-primary dy-shrink-0 dy-ml-2" />
+              )}
+            </div>
+          }
           active={location.pathname === "/setup"}
           collapsed={collapsed}
           onClick={onNavigate}
         />
-
-        <ThemeSelector collapsed={collapsed} />
-
         {!isEmbedded && user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -503,26 +556,33 @@ function SidebarInner({
           </DropdownMenu>
         )}
 
-        {onToggleCollapse && !isEmbedded && (
-          <button
-            onClick={onToggleCollapse}
-            className={cn(
-              "dy-group/btn dy-mt-1 dy-flex dy-h-7 dy-w-full dy-items-center dy-gap-2 dy-rounded-md dy-px-2.5 dy-text-[11px] dy-font-medium dy-text-muted-foreground/45 dy-transition-colors hover:dy-bg-accent/40 hover:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
-              collapsed ? "dy-justify-center dy-px-2" : ""
-            )}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="dy-h-3.5 dy-w-3.5" />
-            ) : (
-              <>
-                <PanelLeftClose className="dy-h-3.5 dy-w-3.5 dy-transition-transform dy-group-hover/btn:dy--translate-x-0.5" />
-                <span>Collapse sidebar</span>
-              </>
-            )}
-          </button>
-        )}
+        <div className={cn(
+          "dy-flex dy-items-center dy-gap-1.5 dy-w-full dy-mt-1",
+          collapsed ? "dy-flex-col dy-items-center" : "dy-flex-row dy-justify-between"
+        )}>
+          {onToggleCollapse && !isEmbedded && (
+            <button
+              onClick={onToggleCollapse}
+              className={cn(
+                "dy-group/btn dy-flex dy-h-7 dy-items-center dy-gap-2 dy-rounded-md dy-px-2.5 dy-text-[11px] dy-font-medium dy-text-muted-foreground/45 dy-transition-colors hover:dy-bg-accent/40 hover:dy-text-muted-foreground focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
+                collapsed ? "dy-justify-center dy-px-2 dy-w-full" : "dy-flex-1"
+              )}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="dy-h-3.5 dy-w-3.5" />
+              ) : (
+                <>
+                  <PanelLeftClose className="dy-h-3.5 dy-w-3.5 dy-transition-transform dy-group-hover/btn:dy--translate-x-0.5" />
+                  <span className="dy-truncate">Collapse</span>
+                </>
+              )}
+            </button>
+          )}
+
+          <ThemeSelector collapsed={collapsed} iconOnly={!collapsed} />
+        </div>
       </div>
     </div >
   )
@@ -531,6 +591,84 @@ function SidebarInner({
 // ---------------------------------------------------------------------------
 // AdminShell
 // ---------------------------------------------------------------------------
+function isNewerVersion(latest: string, current: string): boolean {
+  if (latest === current) return false;
+  const lParts = latest.split(".").map(Number);
+  const cParts = current.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    const l = lParts[i] || 0;
+    const c = cParts[i] || 0;
+    if (l > c) return true;
+    if (l < c) return false;
+  }
+  return false;
+}
+
+function useUpdateCheck() {
+  const currentVersion = (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION || "0.0.0";
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => {
+    if (typeof window === "undefined") return null;
+    const cacheKey = "dyrected_latest_release";
+    const cacheTimeKey = "dyrected_latest_release_timestamp";
+    const cachedVersion = localStorage.getItem(cacheKey);
+    const cachedTimestamp = localStorage.getItem(cacheTimeKey);
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (cachedVersion && cachedTimestamp && Date.now() - Number(cachedTimestamp) < oneDay) {
+      return {
+        latestVersion: cachedVersion,
+        hasUpdate: isNewerVersion(cachedVersion, currentVersion),
+      };
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    const cacheKey = "dyrected_latest_release";
+    const cacheTimeKey = "dyrected_latest_release_timestamp";
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    const cachedVersion = localStorage.getItem(cacheKey);
+    const cachedTimestamp = localStorage.getItem(cacheTimeKey);
+
+    if (cachedVersion && cachedTimestamp && Date.now() - Number(cachedTimestamp) < oneDay) {
+      return;
+    }
+
+    async function fetchLatest() {
+      try {
+        const res = await fetch("https://registry.npmjs.org/@dyrected/core/latest");
+        if (!res.ok) return;
+        const data = await res.json();
+        const latest = data?.version;
+
+        if (latest) {
+          localStorage.setItem(cacheKey, latest);
+          localStorage.setItem(cacheTimeKey, String(Date.now()));
+
+          if (!cancelled) {
+            setUpdateInfo({
+              latestVersion: latest,
+              hasUpdate: isNewerVersion(latest, currentVersion),
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check for updates:", err);
+      }
+    }
+
+    fetchLatest();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentVersion]);
+
+  return updateInfo;
+}
+
 export function AdminShell({
   children,
   isEmbedded = false,
@@ -540,6 +678,7 @@ export function AdminShell({
 }) {
   const { client, logout, user } = useDyrected()
   const location = useLocation()
+  const updateInfo = useUpdateCheck()
 
   // Desktop: collapsed state (sidebar still sits in the layout)
   const [collapsed, setCollapsed] = useState(false)
@@ -548,8 +687,13 @@ export function AdminShell({
 
   // Close mobile sidebar on navigation
   useEffect(() => {
-    setMobileOpen(false)
-  }, [location.pathname])
+    if (mobileOpen) {
+      const timer = setTimeout(() => {
+        setMobileOpen(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname, mobileOpen])
 
   // Lock scroll on mobile when open
   useEffect(() => {
@@ -568,7 +712,7 @@ export function AdminShell({
 
   // Extract branding from schemas — schemas type doesn't include admin in its TS signature
   // but it is present at runtime, so we cast once here.
-  const mobileBranding = (schemas as Record<string, any>)?.admin?.branding as {
+  const mobileBranding = (schemas?.admin as Record<string, unknown> | undefined)?.branding as {
     logoText?: string
     logo?: string
     logoMark?: string
@@ -592,6 +736,7 @@ export function AdminShell({
             isEmbedded={isEmbedded}
             collapsed={collapsed}
             onToggleCollapse={() => setCollapsed((v) => !v)}
+            updateInfo={updateInfo}
           />
         </aside>
 
@@ -621,6 +766,7 @@ export function AdminShell({
             isEmbedded={isEmbedded}
             collapsed={false}
             onNavigate={() => setMobileOpen(false)}
+            updateInfo={updateInfo}
           />
         </aside>
 

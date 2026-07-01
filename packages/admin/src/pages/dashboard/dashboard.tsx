@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { AlertCircle, ArrowRight, ChevronDown, Clock3, FileText, Globe, Plus, Settings, Upload } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useQueries, useQuery } from "@tanstack/react-query"
@@ -99,6 +100,39 @@ function getStatusLabel(doc: Record<string, unknown>) {
 export function Dashboard() {
   const { client, components, user } = useDyrected()
 
+  const currentVersion = (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION || "0.0.0";
+  const [latestVersion, setLatestVersion] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("dyrected_latest_release");
+  });
+
+  useEffect(() => {
+    if (!latestVersion) {
+      fetch("https://registry.npmjs.org/@dyrected/core/latest")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.version) {
+            setLatestVersion(data.version);
+            localStorage.setItem("dyrected_latest_release", data.version);
+            localStorage.setItem("dyrected_latest_release_timestamp", String(Date.now()));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [latestVersion]);
+
+  const hasUpdate = latestVersion && latestVersion !== currentVersion && (() => {
+    const lParts = latestVersion.split(".").map(Number);
+    const cParts = currentVersion.split(".").map(Number);
+    for (let i = 0; i < 3; i++) {
+      const l = lParts[i] || 0;
+      const c = cParts[i] || 0;
+      if (l > c) return true;
+      if (l < c) return false;
+    }
+    return false;
+  })();
+
   const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
     queryKey: ["schemas"],
     queryFn: () => client!.getSchemas(),
@@ -142,6 +176,14 @@ export function Dashboard() {
     .slice(0, 6)
 
   const attentionItems = [
+    ...(hasUpdate
+      ? [{
+          key: "dyrected-update",
+          title: `A system update is available (v${latestVersion})`,
+          description: "Please notify your developer or site administrator to apply this update.",
+          to: "/setup",
+        }]
+      : []),
     ...collections
       .filter((collection) => !collection.upload && !collection.admin?.useAsTitle)
       // .slice(0, 2)

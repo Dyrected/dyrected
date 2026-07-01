@@ -411,7 +411,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       )
       const csvColumns = [
         { key: "id", label: "ID" },
-        ...displayFields.filter((f: Field) => !!f.name).map((f: Field) => ({ key: f.name!, label: (f as {label?: string}).label || f.name! })),
+        ...displayFields.filter((f: Field) => !!f.name).map((f: Field) => ({ key: f.name!, label: (f as { label?: string }).label || f.name! })),
         { key: "updatedAt", label: "Last Updated" },
       ]
 
@@ -530,8 +530,35 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       return true
     }
 
+    const getPreviewUrl = (item: Record<string, unknown>) => {
+      if (!schema?.admin?.previewUrl) return null
+      let previewUrl = typeof schema.admin.previewUrl === 'function'
+        ? schema.admin.previewUrl(item, { locale: 'en' })
+        : schema.admin.previewUrl
+
+      if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
+        previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => String(item[key.trim()] || ""))
+      } else if (typeof previewUrl === 'string') {
+        try {
+          const context = { ...item, siteUrl: window.location.origin }
+          if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
+            previewUrl = jexl.evalSync(previewUrl, context)
+          }
+        } catch (e) {
+          console.warn("Preview URL eval failed:", e)
+        }
+      }
+
+      if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
+        previewUrl = `${window.location.origin}${previewUrl}`
+      }
+
+      return typeof previewUrl === 'string' ? previewUrl : null
+    }
+
     const renderLinkedCell = (item: Record<string, unknown>, cell: React.ReactNode) => {
       const canDelete = canDeleteRow(item)
+      const previewUrl = getPreviewUrl(item)
 
       return (
         <div className="dy-flex dy-flex-col dy-gap-1">
@@ -542,6 +569,19 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             {cell}
           </Link>
           <div className="dy-flex dy-items-center dy-gap-2">
+            {previewUrl && (
+              <>
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
+                >
+                  View
+                </a>
+                <span className="dy-text-muted-foreground/40 dy-text-[11px]">|</span>
+              </>
+            )}
             <Link
               to={`/collections/${slug}/edit/${String(item.id)}`}
               className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
@@ -566,6 +606,25 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       accessorKey: field.name!,
       header: field.label || field.name!,
       cell: ({ row }) => {
+        if (field.name === 'url') {
+          if (schema?.admin?.previewUrl) {
+            const resolved = getPreviewUrl(row.original)
+            if (resolved) {
+              return (
+                <a
+                  href={resolved}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dy-text-xs dy-text-primary hover:dy-underline dy-underline-offset-2 dy-font-medium"
+                >
+                  {resolved}
+                </a>
+              )
+            }
+          }
+          return <span className="dy-text-muted-foreground">-</span>
+        }
+
         const cell = (
           <RenderCell
             value={row.getValue(field.name!)}
@@ -1022,7 +1081,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
                 const item = response?.docs?.find((d: Record<string, unknown>) => d.id === id)
                 if (!item) return false
                 if (schema.auth && id === user?.id) return false
-                
+
                 const deleteAccess = (schema.access as { delete?: unknown })?.delete
                 let canDelete = true
                 if (deleteAccess === false) {

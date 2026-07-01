@@ -1,5 +1,5 @@
 {
-  "name": "@dyrected/cli",
+  "name": "dyrected",
   "version": "2.5.48",
   "type": "module",
   "files": [
