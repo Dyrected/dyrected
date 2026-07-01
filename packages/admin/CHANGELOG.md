@@ -1,5 +1,15 @@
 # @dyrected/admin
 
+## 2.5.49
+
+### Patch Changes
+
+- b23b116: Add upgrade command, non-interactive init options, and unified combobox URL field redesign.
+- Updated dependencies [03acdb6]
+  - @dyrected/knowledge@0.2.7
+  - @dyrected/core@2.5.49
+  - @dyrected/sdk@2.5.49
+
 ## 2.5.48
 
 ### Patch Changes

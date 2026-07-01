@@ -1,6 +1,6 @@
 {
   "name": "dyrected",
-  "version": "2.5.48",
+  "version": "2.5.49",
   "type": "module",
   "files": [
     "dist"

@@ -1,5 +1,12 @@
 # @dyrected/knowledge
 
+## 0.2.7
+
+### Patch Changes
+
+- 03acdb6: Update AI templates, generated rules, and re-compile auto-generated markdown documentation files across apps and specs.
+  - @dyrected/core@2.5.49
+
 ## 0.2.6
 
 ### Patch Changes

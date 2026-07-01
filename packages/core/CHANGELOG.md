@@ -1,5 +1,7 @@
 # @dyrected/core
 
+## 2.5.49
+
 ## 2.5.48
 
 ### Patch Changes
