@@ -852,15 +852,19 @@ During Dyrected integration:
 
 Good local separation:
 
+```typescript
 bodyHtml: "<h2>...</h2><p>...</p><ul><li>...</li></ul>"
+```
 
 Bad local separation:
 
+```typescript
 body: [
 "Paragraph one",
 "Paragraph two",
 "Paragraph three"
 ]
+```
 
 Only use arrays when the content is truly a repeatable list of items, such as FAQs, services, testimonials, steps, features, links, or cards.
 
@@ -1318,16 +1322,18 @@ Keep the data serializable:
 For long-form editorial content, use semantic HTML strings during local separation instead of arrays of paragraph strings.
 
 Good:
-
+```typescript
 bodyHtml: "<h2>...</h2><p>...</p><ul><li>...</li></ul>"
+```
 
 Bad:
-
+```typescript
 body: [
 "Paragraph one",
 "Paragraph two",
 "Paragraph three"
 ]
+```
 
 Only use arrays when the content is truly a repeatable list of items, such as FAQs, services, testimonials, steps, features, links, cards, questions, options, or navigation items.
 

@@ -603,7 +603,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
     // Pass undefined to trigger mergeHeaders' delete path, so fetch sets the multipart boundary
     return this.request(`/api/collections/${collection}`, {
       method: "POST",
-      headers: { "Content-Type": undefined } as HeadersInit,
+      headers: { "Content-Type": undefined } as unknown as HeadersInit,
       body: formData,
     });
   }
