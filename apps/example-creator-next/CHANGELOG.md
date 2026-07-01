@@ -1,5 +1,15 @@
 # example-creator-next
 
+## 0.1.5
+
+### Patch Changes
+
+- @dyrected/admin@2.5.51
+- @dyrected/core@2.5.51
+- @dyrected/next@2.5.51
+- @dyrected/react@2.5.51
+- @dyrected/sdk@2.5.51
+
 ## 0.1.4
 
 ### Patch Changes

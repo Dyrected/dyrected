@@ -1,5 +1,12 @@
 # @dyrected/react
 
+## 2.5.51
+
+### Patch Changes
+
+- @dyrected/admin@2.5.51
+- @dyrected/sdk@2.5.51
+
 ## 2.5.50
 
 ### Patch Changes

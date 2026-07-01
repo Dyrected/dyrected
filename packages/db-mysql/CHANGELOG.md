@@ -1,5 +1,11 @@
 # @dyrected/db-mysql
 
+## 2.5.51
+
+### Patch Changes
+
+- @dyrected/core@2.5.51
+
 ## 2.5.50
 
 ### Patch Changes

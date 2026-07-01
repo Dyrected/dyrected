@@ -1,5 +1,13 @@
 # dyrected
 
+## 2.5.51
+
+### Patch Changes
+
+- 6b77541: Traverse parent directories to detect lockfiles in monorepos/nested workspaces during package manager detection.
+  - @dyrected/core@2.5.51
+  - @dyrected/sdk@2.5.51
+
 ## 2.5.50
 
 ### Patch Changes
