@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from "react"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { Input } from "../../ui/input"
@@ -26,7 +27,6 @@ interface UrlFieldProps {
   context?: { user: any, schemas?: any, siblingData: any }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const parseValue = (val: any): { type: "custom" | "internal", url: string, relationTo?: string, value?: string, label?: string } => {
   if (!val) return { type: "custom", url: "" }
 
@@ -55,7 +55,7 @@ const parseValue = (val: any): { type: "custom" | "internal", url: string, relat
   return { type: "custom", url: String(val) }
 }
 
-export function UrlField({ schema: _schema, field, disabled, context: _context }: UrlFieldProps) {
+export function UrlField({ field, disabled }: UrlFieldProps) {
   const { client, schemas } = useDyrected()
   const [openPopover, setOpenPopover] = React.useState(false)
   const [documents, setDocuments] = React.useState<any[]>([])
@@ -70,10 +70,12 @@ export function UrlField({ schema: _schema, field, disabled, context: _context }
   // Synchronize internal state with changes in field.value (e.g. on load / async populate)
   React.useEffect(() => {
     const next = parseValue(field.value)
-    setUrlValue((prev) => prev === next.url ? prev : next.url)
-    setLabelValue((prev) => prev === next.label ? prev : (next.label || ""))
-    setCollectionValue((prev) => prev === next.relationTo ? prev : (next.relationTo || ""))
-    setDocValue((prev) => prev === next.value ? prev : (next.value || ""))
+    Promise.resolve().then(() => {
+      setUrlValue((prev) => prev === next.url ? prev : next.url)
+      setLabelValue((prev) => prev === next.label ? prev : (next.label || ""))
+      setCollectionValue((prev) => prev === next.relationTo ? prev : (next.relationTo || ""))
+      setDocValue((prev) => prev === next.value ? prev : (next.value || ""))
+    })
   }, [field.value])
 
 
