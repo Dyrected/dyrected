@@ -16,7 +16,7 @@ Before changing code, inspect the nearest `package.json` and the workspace root.
 Use the CLI:
 
 ```bash
-npx @dyrected/cli init
+npx dyrected init
 ```
 
 Detect the framework, package manager, database requirements, storage requirements and deployment target. Let the CLI scaffold configuration, environment variables, Admin integration and AI rules. Verify lint, types and build before modeling content.

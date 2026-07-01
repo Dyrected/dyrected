@@ -22,19 +22,19 @@ export function registerSyncSchema(program: Command) {
       `
 Examples:
   # Sync using env vars (DYRECTED_API_KEY, DYRECTED_SITE_ID)
-  $ npx @dyrected/cli sync:schema
+  $ npx dyrected sync:schema
 
   # Sync using a specific env file
-  $ npx @dyrected/cli sync:schema --env-path ./.env.local
+  $ npx dyrected sync:schema --env-path ./.env.local
 
   # Sync with explicit credentials
-  $ npx @dyrected/cli sync:schema --api-key <key> --site-id <id>
+  $ npx dyrected sync:schema --api-key <key> --site-id <id>
 
   # Sync in CI without failing the build on error
-  $ npx @dyrected/cli sync:schema --skip-on-error
+  $ npx dyrected sync:schema --skip-on-error
 
   # Sync without regenerating types
-  $ npx @dyrected/cli sync:schema --skip-types
+  $ npx dyrected sync:schema --skip-types
 `,
     )
     .action(async (options) => {

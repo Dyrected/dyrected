@@ -84,7 +84,7 @@ describe("generated knowledge contracts", () => {
       expect(content).toContain("label: \"Full name\"");
       expect(content).toContain("server");
     }
-    expect(SKILL).toContain("npx @dyrected/cli init");
+    expect(SKILL).toContain("npx dyrected init");
     expect(SKILL).toContain("Troubleshooting");
     expect(SKILL).toContain("Relationships and depth");
     expect(SKILL).toContain("Auth and access");

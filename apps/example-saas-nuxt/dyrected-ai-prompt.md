@@ -44,7 +44,7 @@ Do NOT write any code until the user has answered these questions.
 - Never drop existing fields from the schema. Mark unused fields as deprecated only.
 - All new fields must have a defaultValue.
 - Never rename a field slug — add a new field and migrate data separately.
-- Run npx @dyrected/cli sync:schema after every config change.
+- Run npx dyrected sync:schema after every config change.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5. DO NOT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

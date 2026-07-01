@@ -14,16 +14,16 @@ export function registerGenerateTypes(program: Command) {
       `
 Examples:
   # Generate from local config (default)
-  $ npx @dyrected/cli generate:types
+  $ npx dyrected generate:types
 
   # Generate from a self-hosted instance
-  $ npx @dyrected/cli generate:types --url http://localhost:3000
+  $ npx dyrected generate:types --url http://localhost:3000
 
   # Generate from Dyrected Cloud
-  $ npx @dyrected/cli generate:types --url https://your-site.dyrected.com
+  $ npx dyrected generate:types --url https://your-site.dyrected.com
 
   # Custom config and output paths
-  $ npx @dyrected/cli generate:types --config ./cms/dyrected.config.ts --output ./types/cms.ts
+  $ npx dyrected generate:types --config ./cms/dyrected.config.ts --output ./types/cms.ts
 `,
     )
     .action(async (options) => {
