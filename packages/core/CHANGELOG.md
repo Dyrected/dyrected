@@ -1,5 +1,11 @@
 # @dyrected/core
 
+## 2.5.50
+
+### Patch Changes
+
+- 08b7839: Resolve preview domain dynamically using schemas siteUrl, prefix/strip url field domains using siteUrl origin, and update block builder library dialog with scrollable 3-column desktop layout.
+
 ## 2.5.49
 
 ## 2.5.48
