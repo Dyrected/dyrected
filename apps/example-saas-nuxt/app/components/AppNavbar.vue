@@ -2,16 +2,43 @@
 const route = useRoute()
 const mobileOpen = ref(false)
 
-const links = [
-  { label: 'Home', to: '/' },
-  { label: 'Features', to: '/features' },
-  { label: 'Pricing', to: '/pricing' },
-  { label: 'About', to: '/about' },
-  { label: 'Contact', to: '/contact' },
+// Navigation is content-managed via the Dyrected "navigation" global.
+const { data: nav } = await useDyrectedGlobal('navigation')
+
+// A `url` field resolves to { type, url, label? } (or a plain string). Normalize
+// it to a href + whether it points off-site.
+function resolveLink(url) {
+  if (!url) return { href: '#', external: false }
+  if (typeof url === 'string') return { href: url, external: /^https?:\/\//.test(url) }
+  const href = url.url || '#'
+  return { href, external: url.type === 'custom' || /^https?:\/\//.test(href) }
+}
+
+const fallbackLinks = [
+  { label: 'Home', href: '/', external: false },
+  { label: 'Features', href: '/features', external: false },
+  { label: 'Pricing', href: '/pricing', external: false },
+  { label: 'About', href: '/about', external: false },
+  { label: 'Contact', href: '/contact', external: false },
 ]
 
-function isActive(path) {
-  return route.path === path
+const links = computed(() => {
+  const raw = nav.value?.navLinks
+  if (!Array.isArray(raw) || raw.length === 0) return fallbackLinks
+  return raw
+    .filter((link) => link?.title)
+    .map((link) => ({ label: link.title, ...resolveLink(link.url) }))
+})
+
+const cta = computed(() => {
+  const button = nav.value?.ctaButton
+  const { href, external } = resolveLink(button)
+  const label = (button && typeof button === 'object' && button.label) || 'Request Demo'
+  return { label, href: href === '#' ? '/contact' : href, external }
+})
+
+function isActive(link) {
+  return !link.external && route.path === link.href
 }
 </script>
 
@@ -29,11 +56,13 @@ function isActive(path) {
 
       <!-- Desktop nav -->
       <ul class="hidden md:flex items-center gap-1">
-        <li v-for="link in links" :key="link.to">
+        <li v-for="link in links" :key="link.label">
           <NuxtLink
-            :to="link.to"
+            :to="link.href"
+            :target="link.external ? '_blank' : undefined"
+            :rel="link.external ? 'noopener noreferrer' : undefined"
             class="px-4 py-2 rounded text-sm font-medium transition-colors"
-            :class="isActive(link.to)
+            :class="isActive(link)
               ? 'text-accent-foreground bg-accent'
               : 'text-muted-foreground hover:text-foreground hover:bg-muted'"
           >
@@ -46,10 +75,12 @@ function isActive(path) {
         <NuxtLink to="/contact" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Log in</NuxtLink>
         <ThemeToggle />
         <NuxtLink
-          to="/contact"
+          :to="cta.href"
+          :target="cta.external ? '_blank' : undefined"
+          :rel="cta.external ? 'noopener noreferrer' : undefined"
           class="px-4 py-2 bg-primary text-primary-foreground text-sm font-bold rounded hover:bg-primary/90 transition-colors"
         >
-          Request Demo
+          {{ cta.label }}
         </NuxtLink>
       </div>
 
@@ -75,10 +106,12 @@ function isActive(path) {
     <div v-show="mobileOpen" class="md:hidden border-t border-border bg-card px-6 py-4 space-y-1">
       <NuxtLink
         v-for="link in links"
-        :key="link.to"
-        :to="link.to"
+        :key="link.label"
+        :to="link.href"
+        :target="link.external ? '_blank' : undefined"
+        :rel="link.external ? 'noopener noreferrer' : undefined"
         class="block px-4 py-2.5 rounded text-sm font-medium transition-colors"
-        :class="isActive(link.to)
+        :class="isActive(link)
           ? 'text-accent-foreground bg-accent'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted'"
         @click="mobileOpen = false"
@@ -87,11 +120,13 @@ function isActive(path) {
       </NuxtLink>
       <div class="pt-3 border-t border-border">
         <NuxtLink
-          to="/contact"
+          :to="cta.href"
+          :target="cta.external ? '_blank' : undefined"
+          :rel="cta.external ? 'noopener noreferrer' : undefined"
           class="block w-full text-center px-4 py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded"
           @click="mobileOpen = false"
         >
-          Request Demo
+          {{ cta.label }}
         </NuxtLink>
       </div>
     </div>
