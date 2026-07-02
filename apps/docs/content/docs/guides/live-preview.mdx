@@ -1,17 +1,74 @@
 ---
 title: Live Preview
-description: See content changes in real time while editing, and click elements in the preview to jump straight to their field.
+description: Build a real landing page from blocks, then edit it visually — type and watch it update, or click any element to jump straight to its field.
 ---
 
-Live preview renders your frontend in an iframe inside the Admin UI. As the editor types, draft data is sent to the page via `postMessage` and it re-renders instantly — no publish, no reload.
+Imagine you're launching **SnackTrack Pro**, a SaaS product. Marketing needs a landing page they can reshape without a developer — swap the hero copy, add a pricing tier, drop in a testimonial — and *see the result as they type*. No publish, no reload, no guessing what the change will look like.
 
-With **click-to-edit**, you can also click any annotated element in the preview and the editor jumps to (and focuses) the exact field behind it.
+That's live preview. Your frontend renders inside an iframe in the Admin, draft data streams in over `postMessage`, and the page re-renders instantly. With **click-to-edit**, an editor can also click the headline in the preview and the form scrolls to — and focuses — the exact field behind it.
+
+This guide builds that page end to end: a landing page assembled from **five blocks**, wired for real-time preview and click-to-edit.
 
 <Callout type="info">
-  Everything below uses the `useLivePreview` composable/hook — the recommended
-  approach. It handles the `postMessage` handshake, draft-data sync, and
-  click-to-edit for you.
+  New to the `blocks` field itself? Read [Building a Page
+  Builder](/docs/guides/building-a-page-builder) first — it covers the schema
+  and rendering basics. This guide assumes you have blocks working and focuses
+  on the *preview* experience.
 </Callout>
+
+---
+
+## What we're building
+
+A single `pages` document whose `layout` is an ordered list of five block types. Editors add, reorder, and remove them freely.
+
+```
+┌─────────────────────────────────────┐
+│  1. Hero        "Snacks, sorted."    │  headline · subhead · CTA button
+├─────────────────────────────────────┤
+│  2. Features    3 value props        │  heading · repeatable feature cards
+├─────────────────────────────────────┤
+│  3. Pricing     Starter / Team / Ent │  heading · repeatable plans
+├─────────────────────────────────────┤
+│  4. Testimonial  "We saved 6 hrs..." │  quote · author · role
+├─────────────────────────────────────┤
+│  5. CTA         "Start your trial"   │  heading · description · button
+└─────────────────────────────────────┘
+```
+
+The five blocks and their fields:
+
+| Block | Purpose | Fields |
+| --- | --- | --- |
+| **`hero`** | Above-the-fold headline + CTA | `heading`, `subheading`, `image`, `ctaLabel`, `ctaLink` |
+| **`features`** | Value propositions | `heading`, `items[]` → `{ icon, title, description }` |
+| **`pricing`** | Plan comparison | `heading`, `plans[]` → `{ name, price, features[], ctaLabel, ctaLink }` |
+| **`testimonial`** | Social proof | `quote`, `author`, `role`, `initials` |
+| **`cta`** | Closing call to action | `heading`, `description`, `buttonLabel`, `buttonLink` |
+
+---
+
+## Prerequisites
+
+Before wiring preview, make sure the following are in place:
+
+<Callout type="warn">
+  Live preview needs a working Dyrected project **and** a frontend route that
+  renders a page. If any box below is unchecked, follow the linked setup first.
+</Callout>
+
+- [ ] **A Dyrected project** running in Next.js or Nuxt — see [Next.js](/docs/integrations/nextjs) or [Nuxt](/docs/integrations/nuxt).
+- [ ] **A database adapter** configured in `dyrected.config.ts` (Postgres, SQLite, etc.).
+- [ ] **The Admin UI mounted** (e.g. at `/admin`) and reachable.
+- [ ] **Site helpers installed** — `@dyrected/next` (Next.js) or `@dyrected/nuxt` (Nuxt). These give you `useLivePreview`, `Blocks`/`DyrectedBlocks`, and `useDyPath`.
+- [ ] **Environment variables** for the API base URL and the Admin origin:
+  ```bash
+  # Next.js (.env.local)
+  NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000/dyrected
+  NEXT_PUBLIC_ADMIN_URL=http://localhost:3000/admin
+  SITE_URL=http://localhost:3000
+  ```
+- [ ] **A public route** that renders a page by slug (e.g. `/[slug]`) — the preview route reuses the same components.
 
 ---
 
@@ -20,226 +77,145 @@ With **click-to-edit**, you can also click any annotated element in the preview 
 ```
 Admin edit page                          Your frontend (in the iframe)
 ───────────────                          ────────────────────────────
-previewUrl  ──────────── loads ────────▶ /blog/my-post/preview
+previewUrl  ─────────── loads ─────────▶ /snacktrack/preview
                                           useLivePreview() → posts "ready"
 draft data  ── postMessage ────────────▶ data updates → page re-renders
 Edit mode on (default) ── postMessage ──▶ [data-dy-path] elements become clickable
                         ◀── click ──────  posts { path: "layout.2.heading" }
-editor drills into block 2, focuses "heading"
+editor drills into block 3, focuses "heading"
 ```
 
 ---
 
-## Set it up
+## Build it
 
 <Steps>
 <Step>
-### Configure `previewUrl` on the collection
+### Define the page collection and its five blocks
 
-Point the collection at the frontend route that will render the preview. This is what enables the **Preview** pane in the Admin edit page.
+The config is identical for both frameworks. Each block is an object in the `layout` field's `blocks` array.
 
 ```ts
-// dyrected.config.ts  (same for both frameworks)
+// dyrected.config.ts
 export default defineConfig({
   collections: [
     {
-      slug: 'posts',
+      slug: 'pages',
       admin: {
-        // Function form — receives the current draft document
-        previewUrl: (doc) =>
-          doc?.slug ? `${process.env.SITE_URL}/blog/${doc.slug}/preview` : null,
+        useAsTitle: 'title',
+        // Enables the Preview pane. Points at the frontend preview route.
+        previewUrl: (doc) => (doc?.slug ? `${process.env.SITE_URL}/${doc.slug}/preview` : null),
         previewMode: 'postMessage', // default
       },
       fields: [
         { name: 'title', type: 'text', required: true },
         { name: 'slug', type: 'text', required: true, unique: true },
-        { name: 'content', type: 'richText' },
+        {
+          name: 'layout',
+          type: 'blocks',
+          blocks: [
+            {
+              slug: 'hero',
+              labels: { singular: 'Hero', plural: 'Heroes' },
+              fields: [
+                { name: 'heading', type: 'text', required: true },
+                { name: 'subheading', type: 'textarea' },
+                { name: 'image', type: 'relationship', relationTo: 'media' },
+                { name: 'ctaLabel', type: 'text' },
+                { name: 'ctaLink', type: 'url' },
+              ],
+            },
+            {
+              slug: 'features',
+              labels: { singular: 'Features', plural: 'Feature Sections' },
+              fields: [
+                { name: 'heading', type: 'text' },
+                {
+                  name: 'items',
+                  type: 'array',
+                  fields: [
+                    { name: 'icon', type: 'icon' },
+                    { name: 'title', type: 'text', required: true },
+                    { name: 'description', type: 'textarea' },
+                  ],
+                },
+              ],
+            },
+            {
+              slug: 'pricing',
+              labels: { singular: 'Pricing', plural: 'Pricing Sections' },
+              fields: [
+                { name: 'heading', type: 'text' },
+                {
+                  name: 'plans',
+                  type: 'array',
+                  fields: [
+                    { name: 'name', type: 'text', required: true },
+                    { name: 'price', type: 'text' },
+                    { name: 'features', type: 'array', fields: [{ name: 'text', type: 'text' }] },
+                    { name: 'ctaLabel', type: 'text' },
+                    { name: 'ctaLink', type: 'url' },
+                  ],
+                },
+              ],
+            },
+            {
+              slug: 'testimonial',
+              labels: { singular: 'Testimonial', plural: 'Testimonials' },
+              fields: [
+                { name: 'quote', type: 'textarea', required: true },
+                { name: 'author', type: 'text', required: true },
+                { name: 'role', type: 'text' },
+                { name: 'initials', type: 'text' },
+              ],
+            },
+            {
+              slug: 'cta',
+              labels: { singular: 'CTA', plural: 'CTAs' },
+              fields: [
+                { name: 'heading', type: 'text', required: true },
+                { name: 'description', type: 'textarea' },
+                { name: 'buttonLabel', type: 'text' },
+                { name: 'buttonLink', type: 'url' },
+              ],
+            },
+          ],
+        },
       ],
     },
   ],
 })
 ```
 
-You can also use a Jexl string, e.g. `previewUrl: "siteUrl + '/blog/' + slug + '/preview'"`.
+Restart the dev server, open `/admin`, create a **Page** with slug `snacktrack`, and add the five blocks. You now have content to preview.
+
+> 📸 **Screenshot to add:** `/images/live-preview/01-blocks-list.png` — the edit
+> page showing the five blocks stacked in the `layout` field. Capture the block
+> list with the "Add Block" library open so readers see the five choices.
 </Step>
 
 <Step>
-### Build the preview page
+### Render the blocks with click-to-edit
 
-Fetch the published document for the initial render, then hand it to `useLivePreview`. The hook swaps in draft data the moment the Admin sends it.
-
-<Callout type="warn">
-  `useLivePreview` accepts only `initialData` and `serverURL`. Depth belongs on
-  the **data fetch**, not the hook.
-</Callout>
+`Blocks` (React) / `<DyrectedBlocks>` (Nuxt) maps each `layout` entry to a component **and** scopes its base path — `layout.0`, `layout.1`, … — automatically. Inside each block component, `useDyPath('heading')` turns that into `data-dy-path="layout.<i>.heading"`. You never write the index yourself.
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 
 ```tsx
-// app/blog/[slug]/preview/page.tsx  — Server Component
-import { getDyrectedClient } from '@dyrected/next'
-import PostPreview from './post-preview'
-
-export default async function PreviewPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>
-}) {
-  const { slug } = await params
-  const client = getDyrectedClient()
-
-  // depth: 1 resolves relationships (author, images) into full objects
-  const { docs } = await client.collection('posts').find({
-    where: { slug: { equals: slug } },
-    limit: 1,
-    depth: 1,
-  })
-
-  return <PostPreview initialData={docs[0] ?? null} />
-}
-```
-
-```tsx
-// app/blog/[slug]/preview/post-preview.tsx  — Client Component
+// components/page-blocks.tsx
 'use client'
-import { useLivePreview } from '@dyrected/next'
+import { Blocks } from '@dyrected/next'
+import Hero from './blocks/hero'
+import Features from './blocks/features'
+import Pricing from './blocks/pricing'
+import Testimonial from './blocks/testimonial'
+import Cta from './blocks/cta'
 
-export default function PostPreview({ initialData }: { initialData: any }) {
-  const { data: post, isLive } = useLivePreview({
-    initialData,
-    // Lock messages to your Admin origin in production (defaults to '*')
-    serverURL: process.env.NEXT_PUBLIC_ADMIN_URL,
-  })
+const components = { hero: Hero, features: Features, pricing: Pricing, testimonial: Testimonial, cta: Cta }
 
-  if (!post) return <div>Waiting for preview data…</div>
-
-  return (
-    <article>
-      {isLive && <span className="preview-badge">Live preview</span>}
-      <h1>{post.title}</h1>
-      <div dangerouslySetInnerHTML={{ __html: post.content }} />
-    </article>
-  )
-}
-```
-
-</Tab>
-<Tab value="Nuxt.js">
-
-In Nuxt, `useLivePreview` is **auto-imported** by `@dyrected/nuxt` — no import line needed.
-
-```vue
-<!-- pages/blog/[slug]/preview.vue -->
-<script setup lang="ts">
-const route = useRoute()
-
-// Initial data for the first render
-const { data: response } = await useDyrectedCollection('posts', {
-  where: { slug: { equals: route.params.slug } },
-  limit: 1,
-  depth: 1,
-})
-
-// Swap in draft data as the editor types
-const { data: post, isLive } = useLivePreview({
-  initialData: response.value?.docs?.[0] ?? null,
-})
-</script>
-
-<template>
-  <div v-if="!post">Waiting for preview data…</div>
-  <article v-else>
-    <span v-if="isLive" class="preview-badge">Live preview</span>
-    <h1>{{ post.title }}</h1>
-    <div v-html="post.content" />
-  </article>
-</template>
-```
-
-</Tab>
-</Tabs>
-</Step>
-
-<Step>
-### Enable click-to-edit
-
-Annotate the elements you want to be editable with `data-dy-path` — a dot-path
-that matches the field in the document (e.g. `title`, or `layout.2.heading` for
-a field inside the 3rd block). You never write that path by hand: the `Blocks`
-renderer supplies each block's base path, and `useDyPath('field')` appends the
-field name.
-
-<Callout type="info">
-  Edit mode is **on by default** in the preview pane. Hovering highlights
-  clickable elements; clicking one drills the editor into that block and focuses
-  the field. Toggle it off with the pointer button in the preview toolbar.
-</Callout>
-
-**Flat (top-level) fields** — call `useDyPath` with just the field name:
-
-<Tabs items={['Next.js', 'Nuxt.js']}>
-<Tab value="Next.js">
-
-```tsx
-'use client'
-import { useLivePreview, useDyPath } from '@dyrected/next'
-
-export default function PostPreview({ initialData }: { initialData: any }) {
-  const { data: post } = useLivePreview({ initialData })
-  if (!post) return null
-
-  return (
-    <article>
-      <h1 {...useDyPath('title')}>{post.title}</h1>
-      <div {...useDyPath('content')} dangerouslySetInnerHTML={{ __html: post.content }} />
-    </article>
-  )
-}
-```
-
-</Tab>
-<Tab value="Nuxt.js">
-
-`useDyPath` is auto-imported. Spread it with `v-bind`:
-
-```vue
-<script setup lang="ts">
-const { data: post } = useLivePreview({ initialData: null })
-
-const dyTitle = useDyPath('title')
-const dyContent = useDyPath('content')
-</script>
-
-<template>
-  <article v-if="post">
-    <h1 v-bind="dyTitle">{{ post.title }}</h1>
-    <div v-bind="dyContent" v-html="post.content" />
-  </article>
-</template>
-```
-
-</Tab>
-</Tabs>
-
-**Blocks / page builder** — render the `layout` array with `Blocks`. It scopes
-each item's base path (`layout.0`, `layout.1`, …) automatically, so block
-components only reference their own field names:
-
-<Tabs items={['Next.js', 'Nuxt.js']}>
-<Tab value="Next.js">
-
-```tsx
-'use client'
-import { useLivePreview, Blocks } from '@dyrected/next'
-import Hero from '@/components/blocks/hero'
-import Cta from '@/components/blocks/cta'
-
-export default function PagePreview({ initialData }: { initialData: any }) {
-  const { data: page } = useLivePreview({ initialData })
-  if (!page) return null
-
-  return <Blocks items={page.layout} components={{ hero: Hero, cta: Cta }} path="layout" />
+export default function PageBlocks({ layout }: { layout: any[] }) {
+  return <Blocks items={layout} components={components} path="layout" />
 }
 ```
 
@@ -247,13 +223,32 @@ export default function PagePreview({ initialData }: { initialData: any }) {
 // components/blocks/hero.tsx
 import { useDyPath } from '@dyrected/next'
 
-export default function Hero({ heading, subheading }: { heading: string; subheading?: string }) {
+export default function Hero({ heading, subheading, ctaLabel, ctaLink }: any) {
   return (
-    <section>
-      {/* useDyPath('heading') → data-dy-path="layout.<i>.heading" */}
+    <section className="hero">
       <h1 {...useDyPath('heading')}>{heading}</h1>
       {subheading && <p {...useDyPath('subheading')}>{subheading}</p>}
+      {ctaLabel && (
+        <a href={ctaLink} {...useDyPath('ctaLabel')}>{ctaLabel}</a>
+      )}
     </section>
+  )
+}
+```
+
+```tsx
+// components/blocks/testimonial.tsx
+import { useDyPath } from '@dyrected/next'
+
+export default function Testimonial({ quote, author, role }: any) {
+  return (
+    <figure className="testimonial">
+      <blockquote {...useDyPath('quote')}>{quote}</blockquote>
+      <figcaption>
+        <span {...useDyPath('author')}>{author}</span>
+        {role && <span {...useDyPath('role')}>{role}</span>}
+      </figcaption>
+    </figure>
   )
 }
 ```
@@ -261,55 +256,169 @@ export default function Hero({ heading, subheading }: { heading: string; subhead
 </Tab>
 <Tab value="Nuxt.js">
 
-`<DyrectedBlocks>` and `useDyPath` are auto-imported by `@dyrected/nuxt`.
+`<DyrectedBlocks>` and `useDyPath` are auto-imported by `@dyrected/nuxt` — no import lines.
 
 ```vue
-<!-- pages/[...slug].vue -->
+<!-- components/PageBlocks.vue -->
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
 
-const blockComponents = {
+const components = {
   hero: defineAsyncComponent(() => import('~/components/blocks/Hero.vue')),
+  features: defineAsyncComponent(() => import('~/components/blocks/Features.vue')),
+  pricing: defineAsyncComponent(() => import('~/components/blocks/Pricing.vue')),
+  testimonial: defineAsyncComponent(() => import('~/components/blocks/Testimonial.vue')),
   cta: defineAsyncComponent(() => import('~/components/blocks/Cta.vue')),
 }
 
-const { data: page } = useLivePreview({ initialData: null })
+defineProps<{ layout: any[] }>()
 </script>
 
 <template>
-  <DyrectedBlocks v-if="page" :items="page.layout" :components="blockComponents" path="layout" />
+  <DyrectedBlocks :items="layout" :components="components" path="layout" />
 </template>
 ```
 
 ```vue
 <!-- components/blocks/Hero.vue -->
 <script setup lang="ts">
-defineProps<{ heading: string; subheading?: string }>()
+defineProps<{ heading: string; subheading?: string; ctaLabel?: string; ctaLink?: string }>()
 
-// Base path ("layout.<i>") is supplied by <DyrectedBlocks>
 const dyHeading = useDyPath('heading')
 const dySubheading = useDyPath('subheading')
+const dyCta = useDyPath('ctaLabel')
 </script>
 
 <template>
-  <section>
+  <section class="hero">
     <h1 v-bind="dyHeading">{{ heading }}</h1>
     <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+    <a v-if="ctaLabel" :href="ctaLink" v-bind="dyCta">{{ ctaLabel }}</a>
   </section>
+</template>
+```
+
+```vue
+<!-- components/blocks/Testimonial.vue -->
+<script setup lang="ts">
+defineProps<{ quote: string; author: string; role?: string }>()
+const dyQuote = useDyPath('quote')
+const dyAuthor = useDyPath('author')
+const dyRole = useDyPath('role')
+</script>
+
+<template>
+  <figure class="testimonial">
+    <blockquote v-bind="dyQuote">{{ quote }}</blockquote>
+    <figcaption>
+      <span v-bind="dyAuthor">{{ author }}</span>
+      <span v-if="role" v-bind="dyRole">{{ role }}</span>
+    </figcaption>
+  </figure>
 </template>
 ```
 
 </Tab>
 </Tabs>
 
-`<Blocks>` also sets a block-level `data-dy-path` on each item, so clicking
-anywhere in a block (not just an annotated field) drills into it.
+The `features` and `pricing` blocks follow the same pattern for their scalar fields (e.g. `useDyPath('heading')`). Their repeatable `items`/`plans` are still editable — `<Blocks>` also puts a **block-level** `data-dy-path` on each block, so clicking anywhere inside a block drills the editor into it, where the array rows live.
+
+<Callout type="info">
+  Reuse these exact components for your public `/[slug]` route too. The only
+  difference between the live page and the preview is where the data comes from
+  (next step) — the markup and `useDyPath` annotations are identical.
+</Callout>
+</Step>
+
+<Step>
+### Build the preview route
+
+Fetch the document for the first paint, then hand it to `useLivePreview`, which swaps in draft data as the editor types.
+
+<Callout type="warn">
+  `useLivePreview` accepts only `initialData` and `serverURL`. Relationship
+  `depth` goes on the **data fetch**, not the hook.
+</Callout>
+
+<Tabs items={['Next.js', 'Nuxt.js']}>
+<Tab value="Next.js">
+
+```tsx
+// app/[slug]/preview/page.tsx — Server Component
+import { getDyrectedClient } from '@dyrected/next'
+import PagePreview from './page-preview'
+
+export default async function PreviewRoute({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const client = getDyrectedClient()
+  const { docs } = await client.collection('pages').find({
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 1, // resolve hero image + any relationships
+  })
+  return <PagePreview initialData={docs[0] ?? null} />
+}
+```
+
+```tsx
+// app/[slug]/preview/page-preview.tsx — Client Component
+'use client'
+import { useLivePreview } from '@dyrected/next'
+import PageBlocks from '@/components/page-blocks'
+
+export default function PagePreview({ initialData }: { initialData: any }) {
+  const { data: page, isLive } = useLivePreview({
+    initialData,
+    serverURL: process.env.NEXT_PUBLIC_ADMIN_URL, // lock origin in prod
+  })
+
+  if (!page) return <div>Waiting for preview data…</div>
+
+  return (
+    <>
+      {isLive && <span className="preview-badge">Live preview</span>}
+      <PageBlocks layout={page.layout} />
+    </>
+  )
+}
+```
+
+</Tab>
+<Tab value="Nuxt.js">
+
+```vue
+<!-- pages/[slug]/preview.vue -->
+<script setup lang="ts">
+const route = useRoute()
+
+const { data: response } = await useDyrectedCollection('pages', {
+  where: { slug: { equals: route.params.slug } },
+  limit: 1,
+  depth: 1,
+})
+
+const { data: page, isLive } = useLivePreview({
+  initialData: response.value?.docs?.[0] ?? null,
+})
+</script>
+
+<template>
+  <div v-if="!page">Waiting for preview data…</div>
+  <template v-else>
+    <span v-if="isLive" class="preview-badge">Live preview</span>
+    <PageBlocks :layout="page.layout" />
+  </template>
+</template>
+```
+
+</Tab>
+</Tabs>
 </Step>
 
 <Step>
 ### Secure the preview route
 
-The preview route serves draft (unpublished) content, so restrict it to requests coming from the Admin.
+The preview serves unpublished draft content, so restrict it to requests coming from the Admin.
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
@@ -320,7 +429,6 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export function middleware(req: NextRequest) {
   if (!req.nextUrl.pathname.includes('/preview')) return NextResponse.next()
-
   const referer = req.headers.get('referer') ?? ''
   if (!referer.includes(process.env.NEXT_PUBLIC_ADMIN_URL ?? '/admin')) {
     return NextResponse.redirect(new URL('/', req.url))
@@ -336,10 +444,8 @@ export function middleware(req: NextRequest) {
 // middleware/preview-guard.ts
 export default defineNuxtRouteMiddleware((to) => {
   if (!to.path.includes('/preview')) return
-
   const referer = useRequestHeaders(['referer']).referer ?? ''
   const adminUrl = useRuntimeConfig().public.adminUrl ?? '/admin'
-
   if (!referer.includes(adminUrl)) return navigateTo('/')
 })
 ```
@@ -351,17 +457,50 @@ export default defineNuxtRouteMiddleware((to) => {
 
 ---
 
-## Try it
+## See it live
 
-1. Open the Admin UI and edit a post.
-2. For collections with a `previewUrl`, the **preview pane opens on the left by default** (the nav sidebar auto-collapses to make room).
-3. Type in the title — it updates in the preview instantly.
-4. Hover the preview: annotated elements highlight. Click one — the editor drills into that block and focuses the field.
+Open `/admin`, edit your **SnackTrack** page, and watch it come together:
+
+1. Because the collection has a `previewUrl`, the **preview pane opens on the left by default** and the nav sidebar auto-collapses to give it room.
+
+   > 📸 **Screenshot to add:** `/images/live-preview/02-split-view.png` — the
+   > edit page with preview on the left, form/blocks on the right, and the
+   > vertical action rail on the far right.
+
+2. Change the hero **heading** in the form. The preview updates as you type — no save, no reload.
+
+   > 📸 **Screenshot to add:** `/images/live-preview/03-typing.png` — mid-edit,
+   > form value and preview headline showing the same in-progress text.
+
+3. Now the magic: **Edit mode is on by default**. Hover the preview and elements with a `data-dy-path` highlight. Click the testimonial quote in the preview — the editor drills into the Testimonial block and focuses the **quote** field.
+
+   > 📸 **Screenshot to add:** `/images/live-preview/04-click-to-edit.png` — a
+   > highlighted element in the preview with the corresponding field focused in
+   > the form (breadcrumb showing the drilled-in block).
 
 <Callout type="info">
   Nested/block fields only use the drill-in editor while the preview is open.
-  With the preview closed, blocks render as a normal flat form.
+  Close the preview and the same page renders as a normal flat form. You can
+  turn click-to-edit off with the pointer button in the preview toolbar.
 </Callout>
+
+---
+
+## Plain React & Vue (no meta-framework)
+
+The API is identical outside Next/Nuxt — only the import source and data fetching differ. Import from `@dyrected/react` or `@dyrected/vue` (Vue is **not** auto-imported here — import `useLivePreview`, `Blocks`, `useDyPath` explicitly), and fetch initial data client-side via the SDK.
+
+```tsx
+// React (Vite/CRA)
+import { useLivePreview, Blocks, useDyPath } from '@dyrected/react'
+```
+
+```ts
+// Vue 3 (Vite)
+import { useLivePreview, Blocks, useDyPath } from '@dyrected/vue'
+```
+
+Full runnable examples: [React integration](/docs/integrations/react#live-preview--uselivepreview) · [Vue integration](/docs/integrations/vue#live-preview--uselivepreview).
 
 ---
 
