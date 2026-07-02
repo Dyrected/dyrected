@@ -12,6 +12,7 @@ import { CopyPageButton } from '@/components/copy-page-button'
 import { CopyPromptButton } from '@/components/copy-prompt-button'
 import { SetupWizard } from '@/components/setup-wizard'
 import { Note, Warning } from '@/components/callouts'
+import { Mermaid } from '@/components/mermaid'
 import { source } from '@/app/source'
 
 interface Props {
@@ -59,6 +60,7 @@ export default async function Page({ params }: Props) {
             SetupWizard,
             Note,
             Warning,
+            Mermaid,
           }}
         />
       </DocsBody>
