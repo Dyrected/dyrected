@@ -27,47 +27,38 @@ export function useLivePreview<T = any>(
   const isLive = ref(false)
 
   const origin = options.serverURL || '*'
-  let cleanupEditMode: (() => void) | null = null
+  let editModeActive = false
+  let hoveredElement: HTMLElement | null = null
 
-  function enterEditMode() {
-    const elements = document.querySelectorAll<HTMLElement>('[data-dy-path]')
+  const handleClick = (e: MouseEvent) => {
+    if (!editModeActive) return
+    const target = e.target as HTMLElement | null
+    const clickable = target?.closest<HTMLElement>('[data-dy-path]')
+    if (clickable) {
+      e.preventDefault()
+      e.stopPropagation()
+      const path = clickable.getAttribute('data-dy-path') || ''
+      window.parent.postMessage({ type: 'dyrected-element-clicked', path }, origin)
+    }
+  }
 
-    const cleanups = Array.from(elements).map(el => {
-      const path = el.dataset.dyPath!
-
-      const onClick = (e: MouseEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
-        window.parent.postMessage({ type: 'dyrected-element-clicked', path }, origin)
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!editModeActive) return
+    const target = e.target as HTMLElement | null
+    const clickable = target?.closest<HTMLElement>('[data-dy-path]') || null
+    if (clickable !== hoveredElement) {
+      if (hoveredElement) {
+        hoveredElement.style.outline = ''
+        hoveredElement.style.outlineOffset = ''
+        hoveredElement.style.cursor = ''
       }
-
-      const onMouseEnter = () => {
-        el.style.outline = '2px solid rgba(99,102,241,0.7)'
-        el.style.outlineOffset = '2px'
-        el.style.cursor = 'pointer'
+      if (clickable) {
+        clickable.style.outline = '2px solid rgba(99,102,241,0.7)'
+        clickable.style.outlineOffset = '2px'
+        clickable.style.cursor = 'pointer'
       }
-
-      const onMouseLeave = () => {
-        el.style.outline = ''
-        el.style.outlineOffset = ''
-        el.style.cursor = ''
-      }
-
-      el.addEventListener('click', onClick, true)
-      el.addEventListener('mouseenter', onMouseEnter)
-      el.addEventListener('mouseleave', onMouseLeave)
-
-      return () => {
-        el.removeEventListener('click', onClick, true)
-        el.removeEventListener('mouseenter', onMouseEnter)
-        el.removeEventListener('mouseleave', onMouseLeave)
-        el.style.outline = ''
-        el.style.outlineOffset = ''
-        el.style.cursor = ''
-      }
-    })
-
-    return () => cleanups.forEach(fn => fn())
+      hoveredElement = clickable
+    }
   }
 
   function handleMessage(event: MessageEvent) {
@@ -85,13 +76,21 @@ export function useLivePreview<T = any>(
     }
 
     if (type === 'dyrected-enter-edit-mode') {
-      cleanupEditMode?.()
-      cleanupEditMode = enterEditMode()
+      editModeActive = true
+      document.addEventListener('click', handleClick, true)
+      document.addEventListener('mousemove', handleMouseMove, true)
     }
 
     if (type === 'dyrected-exit-edit-mode') {
-      cleanupEditMode?.()
-      cleanupEditMode = null
+      editModeActive = false
+      document.removeEventListener('click', handleClick, true)
+      document.removeEventListener('mousemove', handleMouseMove, true)
+      if (hoveredElement) {
+        hoveredElement.style.outline = ''
+        hoveredElement.style.outlineOffset = ''
+        hoveredElement.style.cursor = ''
+        hoveredElement = null
+      }
     }
   }
 
@@ -102,8 +101,13 @@ export function useLivePreview<T = any>(
 
   onUnmounted(() => {
     window.removeEventListener('message', handleMessage)
-    cleanupEditMode?.()
-    cleanupEditMode = null
+    document.removeEventListener('click', handleClick, true)
+    document.removeEventListener('mousemove', handleMouseMove, true)
+    if (hoveredElement) {
+      hoveredElement.style.outline = ''
+      hoveredElement.style.outlineOffset = ''
+      hoveredElement.style.cursor = ''
+    }
   })
 
   return {
@@ -111,3 +115,4 @@ export function useLivePreview<T = any>(
     isLive,
   }
 }
+

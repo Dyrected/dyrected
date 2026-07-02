@@ -1,9 +1,10 @@
 import * as React from "react"
 import { useWatch } from "react-hook-form"
 import type { Control, FieldValues } from "react-hook-form"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronRight, ChevronUp } from "lucide-react"
 import type { FieldSchema } from "../form-engine"
 import { Button } from "../../ui/button"
+import { useNestedEditor } from "../nested-editor-context"
 
 interface ObjectFieldRendererProps {
   schema: FieldSchema
@@ -36,6 +37,10 @@ export function ObjectFieldRenderer({
   renderField,
 }: ObjectFieldRendererProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
+  const { drillInEnabled, drillInto } = useNestedEditor()
+
+  // Drill-in only when opted in AND enabled (live-preview mode); else inline.
+  const isDrillIn = drillInEnabled && (schema.admin as Record<string, unknown>)?.drillIn === true
 
   const objectValues = useWatch({
     control,
@@ -54,7 +59,7 @@ export function ObjectFieldRenderer({
 
     const summaries: string[] = []
     schema.fields?.forEach((field) => {
-      const val = objectValues[field.name]
+      const val = (objectValues as Record<string, unknown>)[field.name!]
       if (val !== undefined && val !== null && val !== "") {
         if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
           summaries.push(`${field.label || field.name}: ${val}`)
@@ -65,13 +70,49 @@ export function ObjectFieldRenderer({
     return summaries.length > 0 ? summaries.slice(0, 3).join(", ") : "Empty"
   }
 
+  const fieldLabel = schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)
+
+  // Drill-in mode: render a clickable summary row
+  if (isDrillIn) {
+    const summary = getObjectSummary()
+    return (
+      <div
+        className="dy-border dy-border-muted/30 dy-bg-muted/5 dy-rounded-2xl dy-p-4 dy-cursor-pointer hover:dy-border-primary/30 hover:dy-bg-primary/[0.02] dy-transition-all"
+        onClick={() => {
+          drillInto({
+            fieldName: schema.name!,
+            basePath,
+            stableId: undefined,
+            breadcrumbLabel: fieldLabel,
+          })
+        }}
+      >
+        <div className="dy-flex dy-items-center dy-justify-between">
+          <div className="dy-flex dy-flex-col dy-min-w-0">
+            <h4 className="dy-font-bold dy-text-sm dy-text-foreground/80 dy-tracking-tight">{fieldLabel}</h4>
+            {summary && (
+              <span className="dy-text-xs dy-text-muted-foreground/60 dy-truncate dy-max-w-[250px] dy-font-normal dy-italic dy-mt-0.5">
+                {summary}
+              </span>
+            )}
+            {schema.admin?.description && (
+              <p className="dy-text-[10px] dy-text-muted-foreground/50 dy-italic dy-mt-0.5">{schema.admin.description}</p>
+            )}
+          </div>
+          <ChevronRight className="dy-w-4 dy-h-4 dy-text-muted-foreground/40 dy-flex-shrink-0" />
+        </div>
+      </div>
+    )
+  }
+
+  // Default inline mode (unchanged behaviour)
   return (
     <div className="dy-border dy-border-muted/30 dy-bg-muted/5 dy-rounded-2xl dy-p-4 dy-transition-all">
       <div className="dy-flex dy-items-center dy-justify-between dy-pb-3 dy-border-b dy-border-muted/20 dy-mb-4">
         <div className="dy-flex dy-flex-col dy-min-w-0">
           <div className="dy-flex dy-items-center dy-gap-2">
             <h4 className="dy-font-bold dy-text-sm dy-text-foreground/80 dy-tracking-tight">
-              {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
+              {fieldLabel}
             </h4>
             {isCollapsed && (
               <span className="dy-text-xs dy-text-muted-foreground/60 dy-truncate max-w-[250px] dy-font-normal dy-italic">

@@ -247,6 +247,9 @@
     border-color: hsl(var(--intelligence) / 0.5);
   }
 }
+.dy-admin-ui [data-dy-path]:hover {
+  @apply dy-border dy-border-dashed dy-border-primary/10;
+}
 
 .dy-admin-ui .media-preview-dialod-details-form div[style="min-width: 100%;display: table;"] {
   display: flex !important;

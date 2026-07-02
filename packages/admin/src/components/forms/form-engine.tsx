@@ -7,10 +7,10 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs"
 import type { Field as FieldSchema, Block as BlockSchema } from "@dyrected/sdk"
-import { buildSchemaShape, buildDefaultValues, getFlatErrors, formatPath } from "./utils"
+import { buildSchemaShape, buildDefaultValues, getFlatErrors, formatPath, resolveContainerPath } from "./utils"
 import { runHookSandboxed } from "./hooks-sandbox"
 import { FormFieldRenderer } from "./form-field-renderer"
-import { AlertCircle, Lock, ChevronDown } from "lucide-react"
+import { AlertCircle, ChevronRight, Lock, ChevronDown, Home } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "../../lib/utils"
 import {
@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
+import { NestedEditorProvider, NestedEditorContext, useNestedEditor } from "./nested-editor-context"
 
 export type { FieldSchema, BlockSchema }
 
@@ -175,9 +176,15 @@ interface FormEngineProps {
    */
   passwordChangeMode?: 'self' | 'admin' | null
   documentId?: string
+  /**
+   * Label for the implicit tab that collects fields without an `admin.tab`
+   * when the form uses tabs. Typically the collection's singular label
+   * (e.g. "Page"). Falls back to a capitalised collection slug.
+   */
+  defaultTabLabel?: string
 }
 
-export function FormEngine({
+function FormEngineInner({
   collection,
   fields,
   defaultValues = {},
@@ -189,7 +196,10 @@ export function FormEngine({
   onDataChange,
   passwordChangeMode = null,
   documentId,
+  defaultTabLabel,
 }: FormEngineProps) {
+  const { activePath, navigateToPath, getStableId } = useNestedEditor()
+  const isDrilledIn = activePath.length > 0
   const isEdit = !!defaultValues?.id
   const [dynamicOptions, setDynamicOptions] = useState<Record<string, Array<{ label: string, value: unknown }>>>({})
 
@@ -499,6 +509,15 @@ export function FormEngine({
   const tabOrder: string[] = []
   const tabGroups = new Map<string, FieldSchema[]>()
 
+  // When the form uses tabs, fields without an `admin.tab` are collected into a
+  // leading tab named after the collection's singular label (e.g. "Page")
+  // instead of floating above the tab bar.
+  const defaultTab = defaultTabLabel || (collection.charAt(0).toUpperCase() + collection.slice(1))
+  if (tabbedFields.length > 0 && topFields.length > 0) {
+    tabGroups.set(defaultTab, [...topFields])
+    tabOrder.push(defaultTab)
+  }
+
   for (const field of tabbedFields) {
     const tab = field.admin!.tab!
     if (!tabGroups.has(tab)) {
@@ -540,6 +559,8 @@ export function FormEngine({
     }))
   }
 
+  const tabHidden = isDrilledIn
+
   if (tabbedFields.length > 0) {
     const tabErrorsCount = new Map<string, number>()
     for (const tab of tabOrder) {
@@ -555,11 +576,6 @@ export function FormEngine({
 
     fieldsContent = (
       <div className="dy-space-y-6">
-        {topFields.length > 0 && (
-          <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6">
-            {topFields.map(renderFieldColumn)}
-          </div>
-        )}
         {isMobile ? (
           <div className="dy-flex dy-flex-col dy-gap-4">
             {tabOrder.map((tab) => {
@@ -595,12 +611,15 @@ export function FormEngine({
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <ResponsiveTabsList
-              tabs={tabOrder}
-              tabErrorsCount={tabErrorsCount}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
+            {/* Hide tab bar while drilled in, but keep it mounted so activeTab is preserved */}
+            <div className={cn(tabHidden && "dy-hidden")}>
+              <ResponsiveTabsList
+                tabs={tabOrder}
+                tabErrorsCount={tabErrorsCount}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
+            </div>
             {tabOrder.map((tab) => (
               <TabsContent key={tab} value={tab}>
                 <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6 dy-pt-4">
@@ -621,7 +640,37 @@ export function FormEngine({
   }
 
   return (
-    <Form {...form}>
+    <>
+      {/* Breadcrumb navigation — visible when drilled into a nested container */}
+      {isDrilledIn && (
+        <nav className="dy-flex dy-items-center dy-gap-1 dy-text-xs dy-text-muted-foreground dy-mb-4 dy-flex-wrap">
+          <button
+            type="button"
+            className="dy-flex dy-items-center dy-gap-1 hover:dy-text-foreground dy-transition-colors"
+            onClick={() => navigateToPath([])}
+          >
+            <Home className="dy-w-3 dy-h-3" />
+            <span>Content</span>
+          </button>
+          {activePath.map((segment, idx) => (
+            <React.Fragment key={segment.stableId ?? segment.basePath}>
+              <ChevronRight className="dy-w-3 dy-h-3 dy-flex-shrink-0" />
+              {idx === activePath.length - 1 ? (
+                <span className="dy-font-semibold dy-text-foreground">{segment.breadcrumbLabel}</span>
+              ) : (
+                <button
+                  type="button"
+                  className="hover:dy-text-foreground dy-transition-colors"
+                  onClick={() => navigateToPath(activePath.slice(0, idx + 1))}
+                >
+                  {segment.breadcrumbLabel}
+                </button>
+              )}
+            </React.Fragment>
+          ))}
+        </nav>
+      )}
+      <Form {...form}>
       <form
         id="dyrected-edit-form"
         onSubmit={form.handleSubmit(handleFormSubmit)}
@@ -651,18 +700,30 @@ export function FormEngine({
                   key={idx}
                   className="dy-cursor-pointer hover:dy-underline"
                   onClick={() => {
-                    const el = (
-                      document.querySelector(`[data-dy-field="${err.path}"]`) ||
-                      document.querySelector(`[name="${err.path}"]`)
-                    ) as HTMLElement | null
-                    if (el) {
-                      el.scrollIntoView({ behavior: "smooth", block: "center" })
-                      const input =
-                        el.querySelector<HTMLElement>(
-                          'input, textarea, [contenteditable], button[role="combobox"]',
-                        ) || el
-                      input?.focus()
+                    // Navigate the nested editor to the field's container path first
+                    const trail = resolveContainerPath(
+                      resolvedFields,
+                      err.path,
+                      getStableId
+                    )
+                    if (trail && trail.length > 0) {
+                      navigateToPath(trail)
                     }
+                    // One-tick wait so the drilled-in sub-form mounts before scroll
+                    setTimeout(() => {
+                      const el = (
+                        document.querySelector(`[data-dy-field="${err.path}"]`) ||
+                        document.querySelector(`[name="${err.path}"]`)
+                      ) as HTMLElement | null
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "center" })
+                        const input =
+                          el.querySelector<HTMLElement>(
+                            'input, textarea, [contenteditable], button[role="combobox"]',
+                          ) || el
+                        input?.focus()
+                      }
+                    }, 0)
                   }}
                 >
                   <span className="dy-font-medium">{formatPath(err.path)}:</span> {err.message}
@@ -758,6 +819,20 @@ export function FormEngine({
           )}
         </div>
       </form>
-    </Form>
+      </Form>
+    </>
+  )
+}
+
+export function FormEngine(props: FormEngineProps) {
+  // Reuse an ancestor provider (e.g. the edit page wraps both the form and the
+  // live-preview pane in one provider so they share activePath + the field-array
+  // registry). Only self-provide when rendered standalone.
+  const existing = React.useContext(NestedEditorContext)
+  if (existing) return <FormEngineInner {...props} />
+  return (
+    <NestedEditorProvider>
+      <FormEngineInner {...props} />
+    </NestedEditorProvider>
   )
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useFieldArray, useWatch } from "react-hook-form"
 import type { Control, FieldValues } from "react-hook-form"
 import { FormFieldRenderer } from "../form-field-renderer"
@@ -7,7 +7,9 @@ import { buildDefaultValues } from "../utils"
 import type { FieldSchema, BlockSchema } from "../form-engine"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
-import { X, GripVertical, ChevronDown, ChevronUp, Layers, Plus, Copy, Search } from "lucide-react"
+import { X, GripVertical, Layers, Plus, Copy, Search, ChevronRight, ChevronDown } from "lucide-react"
+import { useNestedEditor, isActiveOrChild } from "../nested-editor-context"
+import type { PathSegment } from "../nested-editor-context"
 import {
   Dialog,
   DialogContent,
@@ -49,12 +51,12 @@ function SortableBlockItem({
   schema,
   basePath,
   control,
-  collection,
   remove,
-  isExpanded,
-  onToggleExpand,
   onDuplicate,
-  documentId
+  onDrillInto,
+  inline = false,
+  collection,
+  documentId,
 }: {
   id: string;
   index: number;
@@ -62,11 +64,12 @@ function SortableBlockItem({
   schema: FieldSchema;
   basePath: string;
   control: Control<FieldValues>;
-  collection: string;
   remove: (index: number) => void;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
   onDuplicate: () => void;
+  onDrillInto: (segment: PathSegment) => void;
+  /** When true, render the block's fields inline (flat form) instead of drilling in. */
+  inline?: boolean;
+  collection: string;
   documentId?: string;
 }) {
   const {
@@ -87,6 +90,7 @@ function SortableBlockItem({
   }
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [expanded, setExpanded] = useState(true)
 
   const blockConfig = schema.blocks?.find(b => b.slug === item.blockType)
 
@@ -129,10 +133,23 @@ function SortableBlockItem({
         isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-muted/10 dy-border-primary/50" : "hover:dy-shadow-md"
       )}
     >
-      {/* Header */}
+      {/* Header — inline mode toggles the fields; drill-in mode opens the sub-form */}
       <div
         className="dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-3 dy-bg-muted/30 dy-border-b dy-border-border/10 dy-cursor-pointer select-none"
-        onClick={onToggleExpand}
+        onClick={() => {
+          if (inline) {
+            setExpanded((v) => !v)
+            return
+          }
+          const itemPath = `${basePath}.${index}`
+          const blockConfig = schema.blocks?.find(b => b.slug === item.blockType)
+          onDrillInto({
+            fieldName: basePath.split('.').pop() ?? basePath,
+            basePath: itemPath,
+            stableId: id,
+            breadcrumbLabel: blockConfig?.labels?.singular || String(item.blockType || 'Block'),
+          })
+        }}
       >
         <div className="dy-flex dy-items-center dy-gap-2.5 dy-min-w-0">
           <div
@@ -147,9 +164,9 @@ function SortableBlockItem({
             <Layers className="dy-h-3.5 dy-w-3.5" />
           </div>
           <span className="dy-text-xs dy-font-bold dy-text-foreground dy-tracking-tight dy-flex-shrink-0">
-            {blockConfig.labels?.singular || blockConfig.slug}
+            {blockConfig?.labels?.singular || blockConfig?.slug}
           </span>
-          {!isExpanded && previewText && (
+          {previewText && (
             <>
               <span className="dy-text-muted-foreground/30 dy-text-xs dy-font-light dy-flex-shrink-0">·</span>
               <span className="dy-hidden md:dy-inline-block dy-text-[11px] dy-font-medium dy-text-muted-foreground/60 dy-italic dy-flex-shrink-0">
@@ -159,15 +176,6 @@ function SortableBlockItem({
           )}
         </div>
         <div className="dy-flex dy-items-center dy-gap-1 dy-flex-shrink-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="dy-h-7 dy-w-7 dy-text-muted-foreground/50 hover:dy-text-foreground hover:dy-bg-muted"
-            onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
-          >
-            {isExpanded ? <ChevronUp className="dy-w-3.5 dy-h-3.5" /> : <ChevronDown className="dy-w-3.5 dy-h-3.5" />}
-          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -187,13 +195,18 @@ function SortableBlockItem({
           >
             <X className="dy-w-3.5 dy-h-3.5" />
           </Button>
+          {inline ? (
+            <ChevronDown className={cn("dy-w-3.5 dy-h-3.5 dy-text-muted-foreground/40 dy-transition-transform", expanded && "dy-rotate-180")} />
+          ) : (
+            <ChevronRight className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground/40" />
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      {isExpanded && (
-        <div className="dy-space-y-6 px-4 py-4">
-          {blockConfig.fields.map(subField => (
+      {/* Inline fields (flat-form mode, when drill-in is disabled) */}
+      {inline && expanded && (
+        <div className="dy-space-y-6 dy-px-4 dy-py-4">
+          {blockConfig.fields.map((subField) => (
             <FormFieldRenderer
               key={subField.name}
               schema={subField}
@@ -231,8 +244,27 @@ function SortableBlockItem({
 export function BlockBuilder({ schema, basePath, control, collection, documentId }: BlockBuilderProps) {
   const { fields, append, remove, move, insert } = useFieldArray({ control, name: basePath })
   const watchedBlocks = useWatch({ control, name: basePath }) || []
+  const { drillInEnabled, activePath, drillInto, reconcileAfterMutation, registerFieldArray, unregisterFieldArray } = useNestedEditor()
 
-  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({})
+  // Check if this builder has a drilled-in item
+  const drivenPath = activePath.find(s => isActiveOrChild([s], basePath) || s.basePath.startsWith(basePath + '.'))
+  const focusedSegment = activePath.find(s => s.basePath.startsWith(basePath + '.') && s.stableId)
+  const focusedStableId = focusedSegment?.stableId
+  const focusedIndex = focusedStableId ? fields.findIndex(f => f.id === focusedStableId) : -1
+  const isDrilledIntoThisBuilder = focusedIndex !== -1
+
+  // Publish live ids so top-level nav (error/preview click) can resolve
+  // stable ids by (basePath, index), and reconcile the active path after
+  // every mutation.
+  useEffect(() => {
+    const ids = fields.map(f => f.id)
+    registerFieldArray(basePath, ids)
+    reconcileAfterMutation(basePath, ids)
+  }, [fields, basePath, reconcileAfterMutation, registerFieldArray])
+
+  useEffect(() => {
+    return () => unregisterFieldArray(basePath)
+  }, [basePath, unregisterFieldArray])
 
   const duplicate = (index: number) => {
     const blockToCopy = watchedBlocks[index]
@@ -242,49 +274,6 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
     insert(index + 1, copy)
   }
 
-  // Auto-expand newly appended blocks
-  const prevFieldsRef = useRef(fields)
-  useEffect(() => {
-    const prevIds = new Set(prevFieldsRef.current.map(f => f.id))
-    const newFields = fields.filter(f => !prevIds.has(f.id))
-    if (newFields.length > 0) {
-      setExpandedIds(prev => {
-        const next = { ...prev }
-        newFields.forEach(f => {
-          next[f.id] = true
-        })
-        return next
-      })
-    }
-    prevFieldsRef.current = fields
-  }, [fields])
-
-  const toggleExpand = (id: string) => {
-    setExpandedIds(prev => ({
-      ...prev,
-      [id]: !(prev[id] ?? false)
-    }))
-  }
-
-  const allCollapsed = fields.length > 0 && fields.every(f => !(expandedIds[f.id] ?? false))
-
-  const handleToggleAll = () => {
-    if (allCollapsed) {
-      // Expand all
-      const next: Record<string, boolean> = {}
-      fields.forEach(f => {
-        next[f.id] = true
-      })
-      setExpandedIds(next)
-    } else {
-      // Collapse all
-      const next: Record<string, boolean> = {}
-      fields.forEach(f => {
-        next[f.id] = false
-      })
-      setExpandedIds(next)
-    }
-  }
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -322,6 +311,30 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
     setIsModalOpen(false)
   }
 
+  // When drilled into a specific block, render only that block's sub-form
+  if (drillInEnabled && isDrilledIntoThisBuilder && focusedSegment) {
+    const blockItem = watchedBlocks[focusedIndex] as Record<string, unknown> | undefined
+    const blockConfig = schema.blocks?.find(b => b.slug === blockItem?.blockType)
+    if (!blockConfig) return null
+    return (
+      <div className="dy-space-y-6 dy-py-2">
+        {blockConfig.fields.map(subField => (
+          <FormFieldRenderer
+            key={subField.name}
+            schema={subField}
+            basePath={focusedSegment.basePath}
+            control={control}
+            collection={collection}
+            documentId={documentId}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  // Prevent mutations while drilled into a descendant of this builder
+  const isChildDrilled = drivenPath !== undefined && !isDrilledIntoThisBuilder
+
   return (
     <div className="dy-space-y-4">
       <div className="dy-flex dy-justify-between dy-items-center dy-pb-2">
@@ -332,81 +345,71 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
           )}
         </div>
 
-        <div className="dy-flex dy-items-center dy-gap-2">
-          {fields.length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="dy-h-7 dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground hover:dy-bg-muted dy-rounded-md dy-px-2"
-              onClick={handleToggleAll}
-            >
-              {allCollapsed ? "Expand All" : "Collapse All"}
-            </Button>
-          )}
+        {!isChildDrilled && (
+          <div className="dy-flex dy-items-center dy-gap-2">
+            {schema.blocks && schema.blocks.length > 0 && (
+              <Dialog open={isModalOpen} onOpenChange={(open) => {
+                setIsModalOpen(open)
+                if (!open) setSearchQuery("")
+              }}>
+                <DialogTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="dy-h-7 dy-text-[11px] dy-rounded-md dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary">
+                    Add Block
+                    <Plus className="dy-w-3 dy-h-3 dy-ml-1.5" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="dy-max-w-md md:dy-max-w-4xl dy-p-6 dy-rounded-xl dy-border-border/40 dy-shadow-2xl !dy-flex dy-flex-col dy-max-h-[85vh] dy-overflow-hidden">
+                  <DialogHeader className="dy-pb-2 dy-flex-shrink-0">
+                    <DialogTitle className="dy-text-lg dy-font-bold dy-text-foreground">Block Library</DialogTitle>
+                    <DialogDescription className="dy-text-xs dy-text-muted-foreground">
+                      Select a block template to insert into your page layout.
+                    </DialogDescription>
+                  </DialogHeader>
 
-          {schema.blocks && schema.blocks.length > 0 && (
-            <Dialog open={isModalOpen} onOpenChange={(open) => {
-              setIsModalOpen(open)
-              if (!open) setSearchQuery("")
-            }}>
-              <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="dy-h-7 dy-text-[11px] dy-rounded-md dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary">
-                  Add Block
-                  <ChevronDown className="dy-w-3 dy-h-3 dy-ml-1.5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="dy-max-w-md md:dy-max-w-4xl dy-p-6 dy-rounded-xl dy-border-border/40 dy-shadow-2xl dy-flex dy-flex-col dy-max-h-[85vh]">
-                <DialogHeader className="dy-pb-2 dy-flex-shrink-0">
-                  <DialogTitle className="dy-text-lg dy-font-bold dy-text-foreground">Block Library</DialogTitle>
-                  <DialogDescription className="dy-text-xs dy-text-muted-foreground">
-                    Select a block template to insert into your page layout.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="dy-relative dy-my-3 dy-flex-shrink-0">
-                  <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
-                  <Input
-                    placeholder="Search blocks by name..."
-                    className="dy-pl-10 dy-h-9 dy-bg-card dy-border-border/60 dy-rounded-lg dy-shadow-sm focus-visible:dy-ring-primary/20"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-
-                <div className="dy-flex-1 dy-overflow-y-auto dy-pr-1 dy-pt-2">
-                  <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 md:dy-grid-cols-3 dy-gap-4">
-                    {filteredBlocks.length === 0 ? (
-                      <div className="dy-col-span-full dy-text-center dy-py-8 dy-text-xs dy-text-muted-foreground/50">
-                        No blocks match your search query.
-                      </div>
-                    ) : (
-                      filteredBlocks.map((block) => (
-                        <div
-                          key={block.slug}
-                          onClick={() => handleAddBlock(block)}
-                          className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
-                        >
-                          <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
-                            <Layers className="dy-w-4 dy-h-4" />
-                          </div>
-                          <div className="dy-min-w-0 dy-flex-1">
-                            <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
-                              {block.labels?.singular || block.slug}
-                            </h5>
-                            <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
-                              {block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page."}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    )}
+                  <div className="dy-relative dy-my-3 dy-flex-shrink-0">
+                    <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
+                    <Input
+                      placeholder="Search blocks by name..."
+                      className="dy-pl-10 dy-h-9 dy-bg-card dy-border-border/60 dy-rounded-lg dy-shadow-sm focus-visible:dy-ring-primary/20"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                   </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
+
+                  <div className="dy-flex-1 dy-overflow-y-auto dy-pr-1 dy-pt-2">
+                    <div className="dy-grid dy-grid-cols-1 sm:dy-grid-cols-2 md:dy-grid-cols-3 dy-gap-4">
+                      {filteredBlocks.length === 0 ? (
+                        <div className="dy-col-span-full dy-text-center dy-py-8 dy-text-xs dy-text-muted-foreground/50">
+                          No blocks match your search query.
+                        </div>
+                      ) : (
+                        filteredBlocks.map((block) => (
+                          <div
+                            key={block.slug}
+                            onClick={() => handleAddBlock(block)}
+                            className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
+                          >
+                            <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
+                              <Layers className="dy-w-4 dy-h-4" />
+                            </div>
+                            <div className="dy-min-w-0 dy-flex-1">
+                              <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
+                                {block.labels?.singular || block.slug}
+                              </h5>
+                              <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
+                                {block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page."}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        )}
       </div>
 
       {fields.length === 0 ? (
@@ -446,11 +449,11 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                     schema={schema}
                     basePath={basePath}
                     control={control}
-                    collection={collection}
                     remove={remove}
-                    isExpanded={expandedIds[item.id] ?? false}
-                    onToggleExpand={() => toggleExpand(item.id)}
                     onDuplicate={() => duplicate(index)}
+                    onDrillInto={drillInto}
+                    inline={!drillInEnabled}
+                    collection={collection}
                     documentId={documentId}
                   />
                 ))}

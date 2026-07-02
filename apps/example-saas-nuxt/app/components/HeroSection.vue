@@ -35,7 +35,7 @@ defineProps({
         </h1>
 
         <p v-if="subheadline" class="mt-6 text-lg md:text-xl text-slate-400 leading-relaxed">
-          {{ subheadline }}
+          <slot name="subheadline">{{ subheadline }}</slot>
         </p>
 
         <div v-if="primaryCta || secondaryCta" class="mt-10 flex flex-wrap gap-4" :class="centered ? 'justify-center' : ''">
@@ -44,7 +44,7 @@ defineProps({
             :to="primaryCtaTo"
             class="px-6 py-3.5 bg-[#f5c842] text-[#050d1a] font-bold rounded hover:bg-[#e6b800] transition-colors text-sm"
           >
-            {{ primaryCta }}
+            <slot name="primaryCta">{{ primaryCta }}</slot>
           </NuxtLink>
           <NuxtLink
             v-if="secondaryCta"

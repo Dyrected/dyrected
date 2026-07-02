@@ -27,6 +27,7 @@ import { useDyrected } from "../../providers/dyrected-context"
 import { cn, getMediaUrl } from "../../lib/utils"
 import { resolveAdminIcon } from "../../lib/admin-icons"
 import { BrandingProvider } from "./branding-provider"
+import { SidebarControlProvider } from "./sidebar-control"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -682,6 +683,7 @@ export function AdminShell({
 
   // Desktop: collapsed state (sidebar still sits in the layout)
   const [collapsed, setCollapsed] = useState(false)
+  const sidebarControl = React.useMemo(() => ({ collapsed, setCollapsed }), [collapsed])
   // Mobile: open/close overlay
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -720,6 +722,7 @@ export function AdminShell({
 
   return (
     <BrandingProvider>
+      <SidebarControlProvider value={sidebarControl}>
       <div className={cn("dy-flex dy-w-full dy-relative", isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-min-h-screen")}>
         {/* ... existing sidebar and main content ... */}
         <aside
@@ -815,6 +818,7 @@ export function AdminShell({
           </div>
         </main>
       </div>
+      </SidebarControlProvider>
     </BrandingProvider>
   )
 }

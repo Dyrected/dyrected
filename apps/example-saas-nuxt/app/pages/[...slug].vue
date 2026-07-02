@@ -1,4 +1,27 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
+
+// Map block slugs to components. <DyrectedBlocks> renders each entry in the
+// page's `layout` array by `blockType` and scopes its data-dy-path base
+// (e.g. "layout.0"), so fields inside each block become click-to-edit targets
+// in the admin live preview.
+const blockComponents: Record<string, ReturnType<typeof defineAsyncComponent>> = {
+  hero: defineAsyncComponent(() => import('~/components/blocks/Hero.vue')),
+  features: defineAsyncComponent(() => import('~/components/blocks/Features.vue')),
+  richContent: defineAsyncComponent(() => import('~/components/blocks/RichText.vue')),
+  cta: defineAsyncComponent(() => import('~/components/blocks/Cta.vue')),
+  pricing: defineAsyncComponent(() => import('~/components/blocks/Pricing.vue')),
+  timeline: defineAsyncComponent(() => import('~/components/blocks/Timeline.vue')),
+  logos: defineAsyncComponent(() => import('~/components/blocks/Logos.vue')),
+  stats: defineAsyncComponent(() => import('~/components/blocks/Stats.vue')),
+  team: defineAsyncComponent(() => import('~/components/blocks/Team.vue')),
+  press: defineAsyncComponent(() => import('~/components/blocks/Press.vue')),
+  faq: defineAsyncComponent(() => import('~/components/blocks/Faq.vue')),
+  testimonial: defineAsyncComponent(() => import('~/components/blocks/Testimonial.vue')),
+  comparison: defineAsyncComponent(() => import('~/components/blocks/Comparison.vue')),
+  contactForm: defineAsyncComponent(() => import('~/components/blocks/ContactForm.vue')),
+}
+
 const route = useRoute();
 const slug = computed(() => {
   const s = Array.isArray(route.params.slug) ? route.params.slug.join("/") : route.params.slug;
@@ -34,7 +57,7 @@ useHead({
 
 <template>
   <main v-if="page">
-    <BlockRenderer v-for="(block, i) in page.layout" :key="i" :block="block" :index="i" />
+    <DyrectedBlocks :items="page.layout" :components="blockComponents" path="layout" />
   </main>
   <div v-else-if="slug === 'home'" class="flex-1 flex items-center justify-center">
     <div class="min-h-screen flex flex-col items-center justify-center text-center px-6">

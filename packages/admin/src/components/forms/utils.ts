@@ -1,5 +1,6 @@
 import * as z from "zod"
 import type { Field as FieldSchema } from "@dyrected/sdk"
+import type { PathSegment } from "./nested-editor-context"
 
 /**
  * Normalises a field's `options` array to the canonical `{ label, value }` shape.
@@ -268,3 +269,116 @@ export function formatPath(path: string): string {
     })
     .join(" > ")
 }
+
+/**
+ * Walks the schema tree alongside a dot-notation path (e.g. "body.2.cta.url")
+ * and returns the ordered PathSegments representing each drillable container
+ * boundary crossed. Drillable boundaries are:
+ *   - `blocks` fields (always drillable)
+ *   - `array` or `object` fields with `admin.drillIn === true`
+ * Leaf field names and raw numeric indices are consumed but not emitted.
+ *
+ * @param fields       Top-level field schemas for the collection.
+ * @param path         Dot-notation path, e.g. "body.2.cta.url"
+ * @param getStableId  Resolves (basePath, rawIndex) → stableId from live
+ *                     useFieldArray state. Takes the full cumulative RHF path
+ *                     (e.g. "body.2.items"), not just the leaf field name, to
+ *                     disambiguate identically-named sub-arrays across block types.
+ * @returns Ordered PathSegment[] for the drill-in trail, or null if the path
+ *          cannot be resolved against the schema.
+ */
+export function resolveContainerPath(
+  fields: FieldSchema[],
+  path: string,
+  getStableId: (basePath: string, rawIndex: number) => string | undefined
+): PathSegment[] | null {
+  const segments = path.split('.')
+  const result: PathSegment[] = []
+  let currentFields: FieldSchema[] = fields
+  let i = 0
+
+  // Running RHF path of everything consumed so far (field names AND indices),
+  // whether or not it produced an emitted segment. Building each emitted
+  // segment's basePath from this — rather than from the last emitted segment —
+  // keeps paths correct even when a consumed-but-not-emitted container (e.g. a
+  // non-drillIn object) sits between two drillable boundaries.
+  let cumulativePath = ''
+  const join = (base: string, next: string) => (base ? `${base}.${next}` : next)
+
+  const labelFor = (field: FieldSchema, name: string) =>
+    field.label || name.charAt(0).toUpperCase() + name.slice(1)
+
+  while (i < segments.length) {
+    const segment = segments[i]
+
+    // Numeric index without a preceding container is malformed — but if we get
+    // here it means the container branch already consumed its index, so a stray
+    // index is just skipped defensively.
+    if (/^\d+$/.test(segment)) {
+      cumulativePath = join(cumulativePath, segment)
+      i++
+      continue
+    }
+
+    const field = currentFields.find(f => f.name === segment)
+    if (!field) return null // path doesn't match schema
+
+    const isLast = i === segments.length - 1
+    const fieldPath = join(cumulativePath, segment)
+
+    // Array-like container (blocks always; array only when drillIn) — expects a
+    // following numeric index and emits an item-level segment.
+    const isBlocks = field.type === 'blocks'
+    const isDrillInArray =
+      field.type === 'array' && (field.admin as Record<string, unknown>)?.drillIn === true
+
+    if (isBlocks || isDrillInArray) {
+      const nextIndex = i + 1 < segments.length ? parseInt(segments[i + 1], 10) : NaN
+      if (isLast || isNaN(nextIndex)) {
+        // Path ends at the container field itself — not a drillable item position.
+        break
+      }
+      const itemBasePath = join(fieldPath, String(nextIndex))
+      result.push({
+        fieldName: segment,
+        basePath: itemBasePath,
+        stableId: getStableId(fieldPath, nextIndex),
+        breadcrumbLabel: labelFor(field, segment),
+      })
+      cumulativePath = itemBasePath
+      i += 2
+      // Descend into the item's fields. For blocks we can't know the block type
+      // without runtime data, so we union all block field definitions.
+      currentFields = isBlocks
+        ? (field.blocks ?? []).flatMap(b => b.fields ?? [])
+        : field.fields ?? []
+      continue
+    }
+
+    // Object container with drillIn — single instance, no index, no stableId.
+    if (field.type === 'object' && (field.admin as Record<string, unknown>)?.drillIn === true) {
+      if (isLast) break
+      result.push({
+        fieldName: segment,
+        basePath: fieldPath,
+        stableId: undefined,
+        breadcrumbLabel: labelFor(field, segment),
+      })
+      cumulativePath = fieldPath
+      i++
+      currentFields = field.fields ?? []
+      continue
+    }
+
+    // Leaf field or non-drillable container — consume without emitting, but keep
+    // descending into nested fields so deeper drillable boundaries resolve.
+    cumulativePath = fieldPath
+    if (field.fields && !isLast) {
+      currentFields = field.fields
+    }
+    i++
+  }
+
+  return result
+}
+

@@ -5,6 +5,7 @@ import {
   ArrowDown,
   ArrowUp,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Copy,
   GripVertical,
@@ -50,6 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu"
 import { MediaLibraryDialog } from "../../media/media-library-dialog"
+import { useNestedEditor } from "../nested-editor-context"
 
 interface ArrayFieldRendererProps {
   schema: FieldSchema
@@ -148,6 +150,7 @@ function SortableArrayItem({
   totalCount,
   isExpanded,
   onToggleExpand,
+  onDrillInto,
   renderField,
 }: {
   id: string
@@ -161,6 +164,7 @@ function SortableArrayItem({
   totalCount: number
   isExpanded: boolean
   onToggleExpand: () => void
+  onDrillInto?: (id: string, index: number) => void
   renderField: (field: FieldSchema, basePath: string) => React.ReactNode
 }) {
   const {
@@ -210,80 +214,98 @@ function SortableArrayItem({
             <GripVertical className="dy-w-4 dy-h-4" />
           </div>
 
-          <ArrayItemHeader onClick={onToggleExpand} basePath={basePath} index={index} control={control} schema={schema} />
+          <ArrayItemHeader onClick={onDrillInto ? () => onDrillInto(id, index) : onToggleExpand} basePath={basePath} index={index} control={control} schema={schema} />
         </div>
 
         <div className="dy-flex dy-flex-shrink-0 dy-items-center dy-gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="dy-h-10 dy-w-10 dy-rounded-xl dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
-            onClick={(event) => {
-              event.stopPropagation()
-              onToggleExpand()
-            }}
-            title={isExpanded ? "Collapse item" : "Expand item"}
-          >
-            {isExpanded ? <ChevronUp className="dy-w-4 dy-h-4" /> : <ChevronDown className="dy-w-4 dy-h-4" />}
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {onDrillInto ? (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="dy-h-10 dy-w-10 dy-rounded-xl dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10 sm:dy-h-8 sm:dy-w-8"
+                onClick={(event) => { event.stopPropagation(); setShowDeleteConfirm(true) }}
+                title="Delete item"
+              >
+                <Trash2 className="dy-w-4 dy-h-4" />
+              </Button>
+              <ChevronRight className="dy-w-4 dy-h-4 dy-text-muted-foreground/40" />
+            </>
+          ) : (
+            <>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 className="dy-h-10 dy-w-10 dy-rounded-xl dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
-                onClick={(event) => event.stopPropagation()}
-                title="Item actions"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onToggleExpand()
+                }}
+                title={isExpanded ? "Collapse item" : "Expand item"}
               >
-                <MoreHorizontal className="dy-w-4 dy-h-4" />
+                {isExpanded ? <ChevronUp className="dy-w-4 dy-h-4" /> : <ChevronDown className="dy-w-4 dy-h-4" />}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="dy-min-w-44">
-              <DropdownMenuItem
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onDuplicate(index)
-                }}
-              >
-                <Copy className="dy-mr-2 dy-h-4 dy-w-4" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={index === 0}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  move(index, index - 1)
-                }}
-              >
-                <ArrowUp className="dy-mr-2 dy-h-4 dy-w-4" />
-                Move up
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={index === totalCount - 1}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  move(index, index + 1)
-                }}
-              >
-                <ArrowDown className="dy-mr-2 dy-h-4 dy-w-4" />
-                Move down
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="dy-text-destructive focus:dy-text-destructive"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  setShowDeleteConfirm(true)
-                }}
-              >
-                <Trash2 className="dy-mr-2 dy-h-4 dy-w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="dy-h-10 dy-w-10 dy-rounded-xl dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
+                    onClick={(event) => event.stopPropagation()}
+                    title="Item actions"
+                  >
+                    <MoreHorizontal className="dy-w-4 dy-h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="dy-min-w-44">
+                  <DropdownMenuItem
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onDuplicate(index)
+                    }}
+                  >
+                    <Copy className="dy-mr-2 dy-h-4 dy-w-4" />
+                    Duplicate
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={index === 0}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      move(index, index - 1)
+                    }}
+                  >
+                    <ArrowUp className="dy-mr-2 dy-h-4 dy-w-4" />
+                    Move up
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={index === totalCount - 1}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      move(index, index + 1)
+                    }}
+                  >
+                    <ArrowDown className="dy-mr-2 dy-h-4 dy-w-4" />
+                    Move down
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="dy-text-destructive focus:dy-text-destructive"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setShowDeleteConfirm(true)
+                    }}
+                  >
+                    <Trash2 className="dy-mr-2 dy-h-4 dy-w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
         </div>
       </div>
 
@@ -328,9 +350,46 @@ function singularize(str: string) {
 export function ArrayFieldRenderer({ schema, basePath, control, renderField }: ArrayFieldRendererProps) {
   const { fields, append, remove, move, insert } = useFieldArray({ control, name: basePath })
   const { schemas } = useDyrected()
+  const { drillInEnabled, drillInto, reconcileAfterMutation, activePath, registerFieldArray, unregisterFieldArray } = useNestedEditor()
   const [isBulkOpen, setIsBulkOpen] = React.useState(false)
   const [expandedIds, setExpandedIds] = React.useState<Record<string, boolean>>({})
   const watchedItems = useWatch({ control, name: basePath as never }) || []
+
+  // Drill-in opt-in: only when admin.drillIn === true AND drill-in is enabled
+  // (i.e. the edit page's live-preview mode is on). Otherwise render inline.
+  const isDrillIn = drillInEnabled && (schema.admin as Record<string, unknown>)?.drillIn === true
+
+  // If drilled in, find the focused item for this array
+  const focusedSegment = isDrillIn
+    ? activePath.find(s => s.basePath.startsWith(basePath + '.') && s.stableId)
+    : undefined
+  const focusedIndex = focusedSegment?.stableId
+    ? fields.findIndex(f => f.id === focusedSegment.stableId)
+    : -1
+  const isDrilledInto = focusedIndex !== -1
+
+  // Publish live ids + reconcile after mutations (only when drill-in is active)
+  React.useEffect(() => {
+    if (!isDrillIn) return
+    const ids = fields.map(f => f.id)
+    registerFieldArray(basePath, ids)
+    reconcileAfterMutation(basePath, ids)
+  }, [fields, basePath, isDrillIn, reconcileAfterMutation, registerFieldArray])
+
+  React.useEffect(() => {
+    if (!isDrillIn) return
+    return () => unregisterFieldArray(basePath)
+  }, [basePath, isDrillIn, unregisterFieldArray])
+
+  const handleDrillInto = isDrillIn ? (id: string, index: number) => {
+    const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
+    drillInto({
+      fieldName: basePath.split('.').pop() ?? basePath,
+      basePath: `${basePath}.${index}`,
+      stableId: id,
+      breadcrumbLabel: `${label} #${index + 1}`,
+    })
+  } : undefined
 
   const imageField = React.useMemo(() => {
     return schema.fields?.find((field) => {
@@ -431,6 +490,23 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
     }
   }
 
+  // When drilled into a specific item, render only that item's sub-form
+  if (isDrillIn && isDrilledInto && focusedSegment) {
+    return (
+      <div className="dy-flex dy-flex-wrap dy-gap-y-5 dy-py-2">
+        {schema.fields?.map((subField) => (
+          <div
+            key={subField.name}
+            className="dy-min-w-0 dy-px-3"
+            style={{ width: subField.admin?.width || "100%" }}
+          >
+            {renderField(subField, focusedSegment.basePath)}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="dy-space-y-4 dy-transition-all">
       <div className="dy-flex dy-justify-between dy-items-end dy-pb-2">
@@ -486,6 +562,7 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
                   totalCount={fields.length}
                   isExpanded={!!expandedIds[item.id]}
                   onToggleExpand={() => toggleExpanded(item.id)}
+                  onDrillInto={handleDrillInto}
                   renderField={renderField}
                 />
               ))}

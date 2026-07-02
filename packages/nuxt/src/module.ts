@@ -85,6 +85,14 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       filePath: resolver.resolve("./runtime/components/DyrectedAdmin.vue"),
     });
 
+    // <DyrectedBlocks> renders an array of blocks by blockType and scopes each
+    // item's data-dy-path base, powering click-to-edit in the live preview.
+    addComponent({
+      name: "DyrectedBlocks",
+      filePath: "@dyrected/vue",
+      export: "Blocks",
+    });
+
     // 3. Add Composables
     addImports([
       { name: "useDyrected", from: resolver.resolve("./runtime/composables/useDyrected") },
@@ -97,6 +105,8 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       { name: "useDyrectedGlobal", from: resolver.resolve("./runtime/composables/useDyrected") },
       { name: "useDyrectedAuth", from: resolver.resolve("./runtime/composables/useDyrectedAuth") },
       { name: "useLivePreview", from: "@dyrected/vue" },
+      { name: "useDyPath", from: "@dyrected/vue" },
+      { name: "provideDyPath", from: "@dyrected/vue" },
     ]);
 
     // 4. Pass options to runtime

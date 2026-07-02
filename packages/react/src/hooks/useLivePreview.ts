@@ -28,9 +28,44 @@ export function useLivePreview<T = any>(
   const [isLive, setIsLive] = useState(false);
 
   useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      const allowedOrigin = options.serverURL || '*';
+    const allowedOrigin = options.serverURL || '*';
+    let editModeActive = false;
+    let hoveredElement: HTMLElement | null = null;
 
+    // Handle clicks on any element with data-dy-path (or its children)
+    const handleClick = (e: MouseEvent) => {
+      if (!editModeActive) return;
+      const target = e.target as HTMLElement | null;
+      const clickable = target?.closest<HTMLElement>('[data-dy-path]');
+      if (clickable) {
+        e.preventDefault();
+        e.stopPropagation();
+        const path = clickable.getAttribute('data-dy-path') || '';
+        window.parent.postMessage({ type: 'dyrected-element-clicked', path }, allowedOrigin);
+      }
+    };
+
+    // Track mouse moves to dynamically highlight hovered data-dy-path elements
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!editModeActive) return;
+      const target = e.target as HTMLElement | null;
+      const clickable = target?.closest<HTMLElement>('[data-dy-path]') || null
+      if (clickable !== hoveredElement) {
+        if (hoveredElement) {
+          hoveredElement.style.outline = '';
+          hoveredElement.style.outlineOffset = '';
+          hoveredElement.style.cursor = '';
+        }
+        if (clickable) {
+          clickable.style.outline = '2px solid rgba(99,102,241,0.7)';
+          clickable.style.outlineOffset = '2px';
+          clickable.style.cursor = 'pointer';
+        }
+        hoveredElement = clickable;
+      }
+    };
+
+    function handleMessage(event: MessageEvent) {
       // Origin check (skip if '*' is configured)
       if (allowedOrigin !== '*' && event.origin !== allowedOrigin) return;
 
@@ -45,15 +80,40 @@ export function useLivePreview<T = any>(
         // Admin UI is asking the preview pane if it is ready
         window.parent.postMessage({ type: 'dyrected-live-preview-ack' }, allowedOrigin);
       }
+
+      if (type === 'dyrected-enter-edit-mode') {
+        editModeActive = true;
+        document.addEventListener('click', handleClick, true);
+        document.addEventListener('mousemove', handleMouseMove, true);
+      }
+
+      if (type === 'dyrected-exit-edit-mode') {
+        editModeActive = false;
+        document.removeEventListener('click', handleClick, true);
+        document.removeEventListener('mousemove', handleMouseMove, true);
+        if (hoveredElement) {
+          hoveredElement.style.outline = '';
+          hoveredElement.style.outlineOffset = '';
+          hoveredElement.style.cursor = '';
+          hoveredElement = null;
+        }
+      }
     }
 
     window.addEventListener('message', handleMessage);
     
     // Signal the Admin UI that we're ready to receive preview data
-    window.parent.postMessage({ type: 'dyrected-live-preview-ready' }, options.serverURL || '*');
+    window.parent.postMessage({ type: 'dyrected-live-preview-ready' }, allowedOrigin);
 
     return () => {
       window.removeEventListener('message', handleMessage);
+      document.removeEventListener('click', handleClick, true);
+      document.removeEventListener('mousemove', handleMouseMove, true);
+      if (hoveredElement) {
+        hoveredElement.style.outline = '';
+        hoveredElement.style.outlineOffset = '';
+        hoveredElement.style.cursor = '';
+      }
     };
   }, [options.serverURL]);
 
@@ -71,3 +131,4 @@ export function useLivePreview<T = any>(
     isLive,
   };
 }
+
