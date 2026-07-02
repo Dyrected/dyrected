@@ -1,54 +1,122 @@
 ---
 title: Live Preview
-description: See content changes in real time while editing in the Admin UI.
+description: See content changes in real time while editing, and click elements in the preview to jump straight to their field.
 ---
 
-Live preview renders your frontend in an iframe inside the Admin UI. As the editor types, draft data is sent via `postMessage` and your page re-renders instantly — no publish, no page reload.
+Live preview renders your frontend in an iframe inside the Admin UI. As the editor types, draft data is sent to the page via `postMessage` and it re-renders instantly — no publish, no reload.
+
+With **click-to-edit**, you can also click any annotated element in the preview and the editor jumps to (and focuses) the exact field behind it.
+
+<Callout type="info">
+  Everything below uses the `useLivePreview` composable/hook — the recommended
+  approach. It handles the `postMessage` handshake, draft-data sync, and
+  click-to-edit for you.
+</Callout>
 
 ---
 
-## 1. Configure live preview on the collection
+## How it works
 
-```ts
-// dyrected.config.ts  (same for both frameworks)
-{
-  slug: 'posts',
-  admin: {
-    previewUrl: (doc) =>
-      doc?.slug ? `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${doc.slug}/preview` : null,
-    previewMode: 'postMessage', // default
-  },
-  fields: [...],
-}
+```
+Admin edit page                          Your frontend (in the iframe)
+───────────────                          ────────────────────────────
+previewUrl  ──────────── loads ────────▶ /blog/my-post/preview
+                                          useLivePreview() → posts "ready"
+draft data  ── postMessage ────────────▶ data updates → page re-renders
+Edit mode on (default) ── postMessage ──▶ [data-dy-path] elements become clickable
+                        ◀── click ──────  posts { path: "layout.2.heading" }
+editor drills into block 2, focuses "heading"
 ```
 
 ---
 
-## 2. Create the preview route
+## Set it up
+
+<Steps>
+<Step>
+### Configure `previewUrl` on the collection
+
+Point the collection at the frontend route that will render the preview. This is what enables the **Preview** pane in the Admin edit page.
+
+```ts
+// dyrected.config.ts  (same for both frameworks)
+export default defineConfig({
+  collections: [
+    {
+      slug: 'posts',
+      admin: {
+        // Function form — receives the current draft document
+        previewUrl: (doc) =>
+          doc?.slug ? `${process.env.SITE_URL}/blog/${doc.slug}/preview` : null,
+        previewMode: 'postMessage', // default
+      },
+      fields: [
+        { name: 'title', type: 'text', required: true },
+        { name: 'slug', type: 'text', required: true, unique: true },
+        { name: 'content', type: 'richText' },
+      ],
+    },
+  ],
+})
+```
+
+You can also use a Jexl string, e.g. `previewUrl: "siteUrl + '/blog/' + slug + '/preview'"`.
+</Step>
+
+<Step>
+### Build the preview page
+
+Fetch the published document for the initial render, then hand it to `useLivePreview`. The hook swaps in draft data the moment the Admin sends it.
+
+<Callout type="warn">
+  `useLivePreview` accepts only `initialData` and `serverURL`. Depth belongs on
+  the **data fetch**, not the hook.
+</Callout>
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
-**Option A — raw `postMessage`**
 
 ```tsx
-// app/blog/[slug]/preview/page.tsx
+// app/blog/[slug]/preview/page.tsx  — Server Component
+import { getDyrectedClient } from '@dyrected/next'
+import PostPreview from './post-preview'
+
+export default async function PreviewPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const client = getDyrectedClient()
+
+  // depth: 1 resolves relationships (author, images) into full objects
+  const { docs } = await client.collection('posts').find({
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 1,
+  })
+
+  return <PostPreview initialData={docs[0] ?? null} />
+}
+```
+
+```tsx
+// app/blog/[slug]/preview/post-preview.tsx  — Client Component
 'use client'
-import { useEffect, useState } from 'react'
+import { useLivePreview } from '@dyrected/next'
 
-export default function PostPreviewPage() {
-  const [post, setPost] = useState<any>(null)
-
-  useEffect(() => {
-    window.addEventListener('message', (e) => {
-      if (e.data?.type === 'dyrected-live-preview') setPost(e.data.data)
-    })
-    window.parent.postMessage({ type: 'dyrected-live-preview-ready' }, '*')
-  }, [])
+export default function PostPreview({ initialData }: { initialData: any }) {
+  const { data: post, isLive } = useLivePreview({
+    initialData,
+    // Lock messages to your Admin origin in production (defaults to '*')
+    serverURL: process.env.NEXT_PUBLIC_ADMIN_URL,
+  })
 
   if (!post) return <div>Waiting for preview data…</div>
 
   return (
     <article>
+      {isLive && <span className="preview-badge">Live preview</span>}
       <h1>{post.title}</h1>
       <div dangerouslySetInnerHTML={{ __html: post.content }} />
     </article>
@@ -56,113 +124,214 @@ export default function PostPreviewPage() {
 }
 ```
 
-**Option B — `useLivePreview` hook**
-
-```tsx
-'use client'
-import { useLivePreview } from '@dyrected/react'
-
-export default function PostPreviewPage({ initialData }: { initialData: any }) {
-  const { data: post } = useLivePreview({
-    initialData,
-    serverURL: process.env.NEXT_PUBLIC_DYRECTED_URL!,
-    depth: 1,
-  })
-
-  return (
-    <article>
-      <h1>{post.title}</h1>
-    </article>
-  )
-}
-```
-
-Pass `initialData` from a server component wrapper so the page renders before the first postMessage:
-
-```tsx
-// app/blog/[slug]/preview/page.tsx
-import { createClient } from '@dyrected/sdk'
-
-const client = createClient({
-  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
-  apiKey:  process.env.DYRECTED_API_KEY!,
-})
-
-export default async function PreviewWrapper({ params }: any) {
-  const { docs } = await client.collection('posts').find({
-    where: { slug: { equals: params.slug } },
-    depth: 1
-  })
-  
-  return <PostPreviewPage initialData={docs[0] ?? {}} />
-}
-```
 </Tab>
 <Tab value="Nuxt.js">
-**Option A — raw `postMessage`**
+
+In Nuxt, `useLivePreview` is **auto-imported** by `@dyrected/nuxt` — no import line needed.
 
 ```vue
 <!-- pages/blog/[slug]/preview.vue -->
 <script setup lang="ts">
-const post = ref<any>(null)
+const route = useRoute()
 
-onMounted(() => {
-  window.addEventListener('message', (e) => {
-    if (e.data?.type === 'dyrected-live-preview') post.value = e.data.data
-  })
-  window.parent.postMessage({ type: 'dyrected-live-preview-ready' }, '*')
+// Initial data for the first render
+const { data: response } = await useDyrectedCollection('posts', {
+  where: { slug: { equals: route.params.slug } },
+  limit: 1,
+  depth: 1,
+})
+
+// Swap in draft data as the editor types
+const { data: post, isLive } = useLivePreview({
+  initialData: response.value?.docs?.[0] ?? null,
 })
 </script>
 
 <template>
   <div v-if="!post">Waiting for preview data…</div>
   <article v-else>
+    <span v-if="isLive" class="preview-badge">Live preview</span>
     <h1>{{ post.title }}</h1>
     <div v-html="post.content" />
   </article>
 </template>
 ```
 
-**Option B — `useLivePreview` composable**
+</Tab>
+</Tabs>
+</Step>
+
+<Step>
+### Enable click-to-edit
+
+Annotate the elements you want to be editable with `data-dy-path` — a dot-path
+that matches the field in the document (e.g. `title`, or `layout.2.heading` for
+a field inside the 3rd block). You never write that path by hand: the `Blocks`
+renderer supplies each block's base path, and `useDyPath('field')` appends the
+field name.
+
+<Callout type="info">
+  Edit mode is **on by default** in the preview pane. Hovering highlights
+  clickable elements; clicking one drills the editor into that block and focuses
+  the field. Toggle it off with the pointer button in the preview toolbar.
+</Callout>
+
+**Flat (top-level) fields** — call `useDyPath` with just the field name:
+
+<Tabs items={['Next.js', 'Nuxt.js']}>
+<Tab value="Next.js">
+
+```tsx
+'use client'
+import { useLivePreview, useDyPath } from '@dyrected/next'
+
+export default function PostPreview({ initialData }: { initialData: any }) {
+  const { data: post } = useLivePreview({ initialData })
+  if (!post) return null
+
+  return (
+    <article>
+      <h1 {...useDyPath('title')}>{post.title}</h1>
+      <div {...useDyPath('content')} dangerouslySetInnerHTML={{ __html: post.content }} />
+    </article>
+  )
+}
+```
+
+</Tab>
+<Tab value="Nuxt.js">
+
+`useDyPath` is auto-imported. Spread it with `v-bind`:
 
 ```vue
-<!-- pages/blog/[slug]/preview.vue -->
 <script setup lang="ts">
 const { data: post } = useLivePreview({ initialData: null })
+
+const dyTitle = useDyPath('title')
+const dyContent = useDyPath('content')
 </script>
 
 <template>
   <article v-if="post">
-    <h1>{{ post.title }}</h1>
-    <div v-html="post.content" />
+    <h1 v-bind="dyTitle">{{ post.title }}</h1>
+    <div v-bind="dyContent" v-html="post.content" />
   </article>
-  <div v-else>Waiting for preview data…</div>
 </template>
 ```
+
 </Tab>
 </Tabs>
 
----
-
-## 3. Secure the preview route
+**Blocks / page builder** — render the `layout` array with `Blocks`. It scopes
+each item's base path (`layout.0`, `layout.1`, …) automatically, so block
+components only reference their own field names:
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
+
+```tsx
+'use client'
+import { useLivePreview, Blocks } from '@dyrected/next'
+import Hero from '@/components/blocks/hero'
+import Cta from '@/components/blocks/cta'
+
+export default function PagePreview({ initialData }: { initialData: any }) {
+  const { data: page } = useLivePreview({ initialData })
+  if (!page) return null
+
+  return <Blocks items={page.layout} components={{ hero: Hero, cta: Cta }} path="layout" />
+}
+```
+
+```tsx
+// components/blocks/hero.tsx
+import { useDyPath } from '@dyrected/next'
+
+export default function Hero({ heading, subheading }: { heading: string; subheading?: string }) {
+  return (
+    <section>
+      {/* useDyPath('heading') → data-dy-path="layout.<i>.heading" */}
+      <h1 {...useDyPath('heading')}>{heading}</h1>
+      {subheading && <p {...useDyPath('subheading')}>{subheading}</p>}
+    </section>
+  )
+}
+```
+
+</Tab>
+<Tab value="Nuxt.js">
+
+`<DyrectedBlocks>` and `useDyPath` are auto-imported by `@dyrected/nuxt`.
+
+```vue
+<!-- pages/[...slug].vue -->
+<script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
+
+const blockComponents = {
+  hero: defineAsyncComponent(() => import('~/components/blocks/Hero.vue')),
+  cta: defineAsyncComponent(() => import('~/components/blocks/Cta.vue')),
+}
+
+const { data: page } = useLivePreview({ initialData: null })
+</script>
+
+<template>
+  <DyrectedBlocks v-if="page" :items="page.layout" :components="blockComponents" path="layout" />
+</template>
+```
+
+```vue
+<!-- components/blocks/Hero.vue -->
+<script setup lang="ts">
+defineProps<{ heading: string; subheading?: string }>()
+
+// Base path ("layout.<i>") is supplied by <DyrectedBlocks>
+const dyHeading = useDyPath('heading')
+const dySubheading = useDyPath('subheading')
+</script>
+
+<template>
+  <section>
+    <h1 v-bind="dyHeading">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+  </section>
+</template>
+```
+
+</Tab>
+</Tabs>
+
+`<Blocks>` also sets a block-level `data-dy-path` on each item, so clicking
+anywhere in a block (not just an annotated field) drills into it.
+</Step>
+
+<Step>
+### Secure the preview route
+
+The preview route serves draft (unpublished) content, so restrict it to requests coming from the Admin.
+
+<Tabs items={['Next.js', 'Nuxt.js']}>
+<Tab value="Next.js">
+
 ```ts
 // middleware.ts
-export function middleware(req: NextRequest) {
-  const referer = req.headers.get('referer') ?? ''
-  const isPreview = req.nextUrl.pathname.includes('/preview')
-  const fromAdmin = referer.includes(process.env.NEXT_PUBLIC_ADMIN_URL ?? '/admin')
+import { NextRequest, NextResponse } from 'next/server'
 
-  if (isPreview && !fromAdmin) {
+export function middleware(req: NextRequest) {
+  if (!req.nextUrl.pathname.includes('/preview')) return NextResponse.next()
+
+  const referer = req.headers.get('referer') ?? ''
+  if (!referer.includes(process.env.NEXT_PUBLIC_ADMIN_URL ?? '/admin')) {
     return NextResponse.redirect(new URL('/', req.url))
   }
   return NextResponse.next()
 }
 ```
+
 </Tab>
 <Tab value="Nuxt.js">
+
 ```ts
 // middleware/preview-guard.ts
 export default defineNuxtRouteMiddleware((to) => {
@@ -171,21 +340,36 @@ export default defineNuxtRouteMiddleware((to) => {
   const referer = useRequestHeaders(['referer']).referer ?? ''
   const adminUrl = useRuntimeConfig().public.adminUrl ?? '/admin'
 
-  if (!referer.includes(adminUrl)) {
-    return navigateTo('/')
-  }
+  if (!referer.includes(adminUrl)) return navigateTo('/')
 })
 ```
+
 </Tab>
 </Tabs>
+</Step>
+</Steps>
 
 ---
 
-## Testing
+## Try it
 
-1. Open the Admin UI and edit a post
-2. Click **Preview** in the top-right corner
-3. The preview pane loads your frontend in an iframe
-4. Edit the title — it updates in real time
+1. Open the Admin UI and edit a post.
+2. For collections with a `previewUrl`, the **preview pane opens on the left by default** (the nav sidebar auto-collapses to make room).
+3. Type in the title — it updates in the preview instantly.
+4. Hover the preview: annotated elements highlight. Click one — the editor drills into that block and focuses the field.
 
-See [`previewUrl` and `previewMode`](/docs/concepts/schema) in the collection config reference for all options, including token mode for statically generated sites.
+<Callout type="info">
+  Nested/block fields only use the drill-in editor while the preview is open.
+  With the preview closed, blocks render as a normal flat form.
+</Callout>
+
+---
+
+## Reference
+
+- **Hook / composable:** `useLivePreview({ initialData, serverURL? })` → `{ data, isLive }`
+- **Annotation:** `useDyPath(field?)` → `{ 'data-dy-path': string }` (omit `field` for the block-level path)
+- **Renderer:** `<Blocks items components path />` (React) · `<DyrectedBlocks>` (Nuxt, auto-imported)
+- **Imports:** `@dyrected/next` (Next.js) · `@dyrected/react` (React) · auto-imported (Nuxt) · `@dyrected/vue` (Vue)
+
+See [`previewUrl` and `previewMode`](/docs/reference/configuration) for all collection options, including token mode for statically generated sites.

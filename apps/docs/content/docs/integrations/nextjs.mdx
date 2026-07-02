@@ -124,6 +124,7 @@ export default async function BlogPage() {
   })
 
 return (
+
 <ul>
 {posts.map(post => (
 <li key={post.id}>{post.title}</li>
@@ -301,8 +302,29 @@ Enable it on the collection:
   slug: 'posts',
   admin: {
     previewUrl: (doc) =>
-      doc?.slug ? `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${doc.slug}/preview` : null,
+      doc?.slug ? `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${doc.slug}` : null,
   }
+}
+```
+
+### Click-to-edit
+
+Annotate elements with `useDyPath` so clicking them in the preview jumps to the field. Render block arrays with `Blocks` — it scopes each block's base path automatically. All three are re-exported from `@dyrected/next`:
+
+```tsx
+"use client";
+import { useLivePreview, Blocks, useDyPath } from "@dyrected/next";
+import Hero from "@/components/blocks/hero";
+
+export default function PagePreview({ initialData }: { initialData: any }) {
+  const { data: page } = useLivePreview({ initialData });
+  if (!page) return null;
+  return <Blocks items={page.layout} components={{ hero: Hero }} path="layout" />;
+}
+
+// components/blocks/hero.tsx — useDyPath('heading') → data-dy-path="layout.<i>.heading"
+export default function Hero({ heading }: { heading: string }) {
+  return <h1 {...useDyPath("heading")}>{heading}</h1>;
 }
 ```
 

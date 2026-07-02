@@ -205,6 +205,10 @@ async function submitForm(data: any) {
 | `useDyrectedGlobal(slug)`         | ✅ Available | Wraps `client.global(slug).get()` with `useAsyncData` |
 | `useDyrectedAuth(collection)`     | ✅ Available | Returns `login()`, `logout()`, `user`, `isLoggedIn`   |
 | `useLivePreview(options)`         | ✅ Available | Live preview `postMessage` integration                |
+| `useDyPath(field?)`               | ✅ Available | Returns `data-dy-path` attrs for click-to-edit        |
+| `provideDyPath(path)`             | ✅ Available | Scopes the base path for a section subtree            |
+
+The module also registers a `<DyrectedBlocks>` component for rendering block arrays with click-to-edit paths.
 
 ---
 
@@ -246,6 +250,37 @@ const { data: page, isLive } = useLivePreview({
 });
 </script>
 ```
+
+### Click-to-edit
+
+`useDyPath` and `<DyrectedBlocks>` are auto-imported. Annotate fields so clicking them in the preview focuses the field in the Admin — `<DyrectedBlocks>` supplies each block's base path, so components only reference their own field names:
+
+```vue
+<!-- pages/[...slug].vue -->
+<script setup lang="ts">
+import { defineAsyncComponent } from "vue";
+const blockComponents = { hero: defineAsyncComponent(() => import("~/components/blocks/Hero.vue")) };
+const { data: page } = useLivePreview({ initialData: null });
+</script>
+
+<template>
+  <DyrectedBlocks v-if="page" :items="page.layout" :components="blockComponents" path="layout" />
+</template>
+```
+
+```vue
+<!-- components/blocks/Hero.vue -->
+<script setup lang="ts">
+defineProps<{ heading: string }>();
+const dyHeading = useDyPath("heading"); // → data-dy-path="layout.<i>.heading"
+</script>
+
+<template>
+  <h1 v-bind="dyHeading">{{ heading }}</h1>
+</template>
+```
+
+See [Live Preview](/docs/guides/live-preview) for the full guide.
 
 ---
 

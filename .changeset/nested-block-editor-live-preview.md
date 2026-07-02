@@ -3,6 +3,7 @@
 "@dyrected/vue": patch
 "@dyrected/react": patch
 "@dyrected/nuxt": patch
+"@dyrected/next": patch
 ---
 
 Nested block editor, live-preview click-to-edit, and a redesigned edit page.
@@ -17,8 +18,9 @@ Nested block editor, live-preview click-to-edit, and a redesigned edit page.
 - Document metadata moved into an Info popover on the rail; the workflow panel is an independent rail toggle; fields without an `admin.tab` are grouped into a tab named after the collection's singular label; the block library modal is now reliably scrollable.
 - Added a scalar `usePreference` hook.
 
-**Site packages (`@dyrected/vue`, `@dyrected/react`, `@dyrected/nuxt`)**
+**Site packages (`@dyrected/vue`, `@dyrected/react`, `@dyrected/nuxt`, `@dyrected/next`)**
 
 - New `Blocks` component plus `useDyPath` / `provideDyPath` (`DyPathProvider` in React, `DyPathScope` in Vue) for low-effort `data-dy-path` annotation — authors pass only a field name and the ancestor supplies the base path.
 - `useLivePreview` now supports edit mode: on `dyrected-enter-edit-mode` it highlights and captures clicks on `[data-dy-path]` elements (via document-level event delegation) and reports them to the admin.
 - Nuxt module auto-imports `useDyPath`/`provideDyPath` and registers the `DyrectedBlocks` component.
+- `@dyrected/next` re-exports `Blocks`, `DyPathProvider`, and `useDyPath` so Next.js apps import everything from one package.
