@@ -19,6 +19,19 @@ import {
 } from "../../components/ui/dialog"
 import { ScrollArea } from "../../components/ui/scroll-area"
 import { AspectRatio } from "../../components/ui/aspect-ratio"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs"
 import { Link } from "react-router-dom"
 import {
   Upload,
@@ -30,8 +43,17 @@ import {
   Copy,
   Info,
   Pencil,
-  Scissors
+  Scissors,
+  Link as LinkIcon,
+  Globe,
+  Video,
+  LayoutGrid,
+  List as ListIcon,
+  ArrowUpDown,
+  Download
 } from "lucide-react"
+import { getMediaPreviewUrl, getVideoEmbedUrl } from "../../lib/external-media"
+import { useAddMediaFromUrl } from "../../hooks/use-add-media-from-url"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
 import { Separator } from "../../components/ui/separator"
@@ -44,6 +66,20 @@ import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { CollectionListSlotProps } from "../../types/admin-components"
 import jexl from "jexl"
 
+type ViewMode = "grid" | "list"
+
+/** Sort values map directly to the SDK `sort` string (`-` prefix = descending). */
+type SortValue = "-createdAt" | "createdAt" | "filename" | "-filename" | "-filesize" | "filesize"
+
+const SORT_OPTIONS: { value: SortValue; label: string }[] = [
+  { value: "-createdAt", label: "Newest first" },
+  { value: "createdAt", label: "Oldest first" },
+  { value: "filename", label: "Name (A–Z)" },
+  { value: "-filename", label: "Name (Z–A)" },
+  { value: "-filesize", label: "Size (largest)" },
+  { value: "filesize", label: "Size (smallest)" },
+]
+
 export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, schema: CollectionConfig }) {
   const { client, components, user } = useDyrected()
   const queryClient = useQueryClient()
@@ -51,6 +87,8 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
   const [uploadFiles, setUploadFiles] = React.useState<File[]>([])
   const [selectedItem, setSelectedItem] = React.useState<Media | null>(null)
+  const [sortValue, setSortValue] = React.useState<SortValue>("-createdAt")
+  const [viewMode, setViewMode] = React.useState<ViewMode>("grid")
 
   const {
     data,
@@ -59,11 +97,12 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
     isFetchingNextPage,
     isLoading
   } = useInfiniteQuery({
-    queryKey: ["media", collectionSlug, search],
+    queryKey: ["media", collectionSlug, search, sortValue],
     queryFn: ({ pageParam = 1 }) =>
       client!.listMedia(
         {
           where: search ? { filename: { contains: search } } : undefined,
+          sort: sortValue,
           limit: 12,
           page: pageParam
         },
@@ -280,7 +319,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
         </Dialog>}
       </div>
 
-      <div className="dy-flex dy-items-center dy-gap-4">
+      <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row sm:dy-items-center">
         <div className="dy-relative dy-w-full sm:dy-max-w-sm">
           <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
           <Input
@@ -289,6 +328,45 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+
+        <div className="dy-flex dy-items-center dy-gap-2 sm:dy-ml-auto">
+          <Select value={sortValue} onValueChange={(v) => setSortValue(v as SortValue)}>
+            <SelectTrigger className="dy-h-11 dy-w-full dy-rounded-xl dy-bg-card dy-border-border/60 dy-shadow-sm sm:dy-w-44">
+              <ArrowUpDown className="dy-h-4 dy-w-4 dy-text-muted-foreground/70" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="dy-flex dy-h-11 dy-items-center dy-rounded-xl dy-border dy-border-border/60 dy-bg-card dy-p-1 dy-shadow-sm">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Grid view"
+              aria-pressed={viewMode === "grid"}
+              onClick={() => setViewMode("grid")}
+              className={cn("dy-h-9 dy-w-9 dy-rounded-lg", viewMode === "grid" ? "dy-bg-primary/10 dy-text-primary" : "dy-text-muted-foreground")}
+            >
+              <LayoutGrid className="dy-h-4 dy-w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="List view"
+              aria-pressed={viewMode === "list"}
+              onClick={() => setViewMode("list")}
+              className={cn("dy-h-9 dy-w-9 dy-rounded-lg", viewMode === "list" ? "dy-bg-primary/10 dy-text-primary" : "dy-text-muted-foreground")}
+            >
+              <ListIcon className="dy-h-4 dy-w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -314,7 +392,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
               Your media library is empty. Upload some files to start building your content.
             </p>
           </div>
-        ) : (
+        ) : viewMode === "grid" ? (
           <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-8 sm:dy-grid-cols-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 lg:dy-gap-5 xl:dy-grid-cols-5 2xl:dy-grid-cols-6">
             {mediaResponse?.map((item) => (
               <MediaCard
@@ -333,6 +411,18 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
               )}
             </div>
           </div>
+        ) : (
+          <MediaListView
+            items={mediaResponse}
+            baseUrl={client!.getBaseUrl()}
+            selectedId={selectedItem?.id as string | undefined}
+            sortValue={sortValue}
+            onSort={setSortValue}
+            onSelect={setSelectedItem}
+            onDelete={(id) => deleteMutation.mutate(id)}
+            sentinelRef={sentinelRef}
+            isFetchingNextPage={isFetchingNextPage}
+          />
         )}
       </ScrollArea>
 
@@ -369,6 +459,118 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
   )
 }
 
+/** Human-readable file size (B / KB / MB / GB). */
+function formatBytes(bytes?: number): string {
+  if (!bytes || bytes <= 0) return "—"
+  const units = ["B", "KB", "MB", "GB", "TB"]
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`
+}
+
+function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect, onDelete, sentinelRef, isFetchingNextPage }: {
+  items: Media[]
+  baseUrl: string
+  selectedId?: string
+  sortValue: SortValue
+  onSort: (v: SortValue) => void
+  onSelect: (item: Media) => void
+  onDelete: (id: string) => void
+  sentinelRef: (node: HTMLDivElement | null) => void
+  isFetchingNextPage: boolean
+}) {
+  // Clicking a column header toggles between its ascending/descending sort value.
+  const toggleSort = (asc: SortValue, desc: SortValue) => onSort(sortValue === desc ? asc : desc)
+  const indicator = (asc: SortValue, desc: SortValue) =>
+    sortValue === asc ? "↑" : sortValue === desc ? "↓" : ""
+
+  return (
+    <div className="dy-pb-8">
+      <div className="dy-overflow-hidden dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm">
+        {/* Header */}
+        <div className="dy-flex dy-items-center dy-gap-4 dy-border-b dy-border-border/50 dy-bg-muted/20 dy-px-4 dy-py-3 dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
+          <div className="dy-w-10 dy-flex-shrink-0" />
+          <button type="button" className="dy-flex dy-flex-1 dy-items-center dy-gap-1 dy-text-left hover:dy-text-foreground" onClick={() => toggleSort("filename", "-filename")}>
+            Name <span className="dy-text-primary">{indicator("filename", "-filename")}</span>
+          </button>
+          <div className="dy-hidden dy-w-24 sm:dy-block">Type</div>
+          <button type="button" className="dy-hidden dy-w-24 dy-items-center dy-gap-1 dy-text-left hover:dy-text-foreground sm:dy-flex" onClick={() => toggleSort("filesize", "-filesize")}>
+            Size <span className="dy-text-primary">{indicator("filesize", "-filesize")}</span>
+          </button>
+          <button type="button" className="dy-hidden dy-w-32 dy-items-center dy-gap-1 dy-text-left hover:dy-text-foreground md:dy-flex" onClick={() => toggleSort("createdAt", "-createdAt")}>
+            Date <span className="dy-text-primary">{indicator("createdAt", "-createdAt")}</span>
+          </button>
+          <div className="dy-w-16 dy-flex-shrink-0 dy-text-right">Actions</div>
+        </div>
+
+        {/* Rows */}
+        {items.map((item) => {
+          const isImage = item.mimeType?.startsWith("image/")
+          const isExternalVideo = item.mimeType === "video/youtube" || item.mimeType === "video/vimeo"
+          const preview = getMediaPreviewUrl(item, baseUrl)
+          const hasPreview = (isImage || isExternalVideo) && !!preview
+          const fileUrl = getMediaUrl(item, baseUrl)
+          const createdAt = (item as { createdAt?: string }).createdAt
+          return (
+            <div
+              key={item.id as string}
+              onClick={() => onSelect(item)}
+              className={cn(
+                "dy-flex dy-items-center dy-gap-4 dy-border-b dy-border-border/30 dy-px-4 dy-py-2.5 dy-cursor-pointer dy-transition-colors hover:dy-bg-muted/30 last:dy-border-b-0",
+                selectedId === item.id && "dy-bg-primary/5"
+              )}
+            >
+              <div className="dy-relative dy-flex dy-h-10 dy-w-10 dy-flex-shrink-0 dy-items-center dy-justify-center dy-overflow-hidden dy-rounded-lg dy-bg-muted/40">
+                {hasPreview ? (
+                  <img src={preview} alt="" className="dy-h-full dy-w-full dy-object-cover" loading="lazy" />
+                ) : (
+                  <FileIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground/50" />
+                )}
+                {isExternalVideo && (
+                  <div className="dy-absolute dy-inset-0 dy-flex dy-items-center dy-justify-center dy-bg-black/30">
+                    <Video className="dy-h-3 dy-w-3 dy-text-white" />
+                  </div>
+                )}
+              </div>
+              <div className="dy-min-w-0 dy-flex-1">
+                <p className="dy-truncate dy-text-sm dy-font-semibold dy-text-foreground/90" title={item.filename}>{item.filename}</p>
+                <p className="dy-truncate dy-text-[11px] dy-text-muted-foreground sm:dy-hidden">
+                  {(item.mimeType?.split("/")[1] || "file")} · {formatBytes(item.filesize)}
+                </p>
+              </div>
+              <div className="dy-hidden dy-w-24 dy-truncate dy-text-xs dy-text-muted-foreground sm:dy-block">{item.mimeType?.split("/")[1] || "file"}</div>
+              <div className="dy-hidden dy-w-24 dy-text-xs dy-text-muted-foreground sm:dy-block">{formatBytes(item.filesize)}</div>
+              <div className="dy-hidden dy-w-32 dy-text-xs dy-text-muted-foreground md:dy-block">{createdAt ? new Date(createdAt).toLocaleDateString() : "—"}</div>
+              <div className="dy-flex dy-w-16 dy-flex-shrink-0 dy-items-center dy-justify-end dy-gap-1" onClick={(e) => e.stopPropagation()}>
+                {fileUrl && (
+                  <a
+                    href={fileUrl}
+                    download
+                    target="_blank"
+                    rel="noreferrer"
+                    title="Download"
+                    className="dy-inline-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-lg dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground"
+                  >
+                    <Download className="dy-h-4 dy-w-4" />
+                  </a>
+                )}
+                <Button variant="ghost" size="icon" className="dy-h-8 dy-w-8 dy-text-destructive hover:dy-bg-destructive/10" onClick={() => onDelete(item.id as string)} title="Delete">
+                  <Trash2 className="dy-h-4 dy-w-4" />
+                </Button>
+              </div>
+            </div>
+          )
+        })}
+
+        <div ref={sentinelRef} className="dy-flex dy-justify-center dy-py-4">
+          {isFetchingNextPage && (
+            <div className="dy-h-6 dy-w-6 dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary" />
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   item: Media,
   baseUrl: string,
@@ -377,7 +579,9 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   isSelected: boolean
 }) {
   const isImage = item.mimeType?.startsWith("image/")
-  const url = getMediaUrl(item, baseUrl)
+  const isExternalVideo = item.mimeType === "video/youtube" || item.mimeType === "video/vimeo"
+  const previewUrl = getMediaPreviewUrl(item, baseUrl)
+  const hasPreview = (isImage || isExternalVideo) && !!previewUrl
 
   return (
     <Card
@@ -389,7 +593,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
     >
       <CardHeader className="!dy-p-0 dy-border-b dy-border-border/10">
         <AspectRatio ratio={1 / 1} className="dy-bg-muted/30 dy-overflow-hidden dy-relative">
-          {isImage ? (
+          {hasPreview ? (
             <>
               {item.blurhash && (
                 <div className="dy-absolute dy-inset-0 dy-z-0">
@@ -404,11 +608,18 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
                 </div>
               )}
               <img
-                src={url}
+                src={previewUrl}
                 alt={item.filename}
                 className="dy-object-cover dy-w-full dy-h-full dy-transition-transform dy-duration-500 dy-group-hover:dy-scale-110 dy-relative dy-z-10"
                 loading="lazy"
               />
+              {isExternalVideo && (
+                <div className="dy-absolute dy-inset-0 dy-z-20 dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
+                  <div className="dy-h-10 dy-w-10 dy-rounded-full dy-bg-black/50 dy-backdrop-blur-sm dy-flex dy-items-center dy-justify-center">
+                    <Video className="dy-h-5 dy-w-5 dy-text-white" />
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="dy-flex dy-items-center dy-justify-center dy-h-full dy-bg-primary/5">
@@ -488,6 +699,12 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
   if (!item) return null
 
   const isImage = item.mimeType?.startsWith("image/")
+  const isExternalVideo = item.mimeType === "video/youtube" || item.mimeType === "video/vimeo"
+  const previewUrl = getMediaPreviewUrl(item, baseUrl)
+  const hasPreview = (isImage || isExternalVideo) && !!previewUrl
+  const embedUrl = getVideoEmbedUrl(item)
+  // Real asset URL (for the File URL field, open-in-new-tab, and crop source),
+  // distinct from previewUrl which may be a YouTube/Vimeo thumbnail.
   const url = getMediaUrl(item, baseUrl)
 
   const handleSave = async () => {
@@ -517,7 +734,15 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
           {/* Left Side: Large Preview */}
           <div className="dy-relative dy-flex dy-w-full dy-flex-none dy-items-center dy-justify-center dy-border-b dy-border-border/40 dy-bg-muted/15 dy-p-3 sm:dy-p-5 md:dy-h-full md:dy-min-h-0 md:dy-w-3/5 md:dy-flex-shrink md:dy-border-b-0 md:dy-border-r lg:dy-w-2/3">
             <div className="dy-relative dy-flex dy-h-[40dvh] dy-min-h-[220px] dy-max-h-80 dy-w-full dy-max-w-full dy-items-center dy-justify-center dy-overflow-hidden dy-rounded-xl dy-border dy-border-border/40 dy-bg-checkered dy-shadow-inner md:dy-h-full md:dy-max-h-full">
-              {isImage ? (
+              {embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  title={item.filename}
+                  className="dy-absolute dy-inset-0 dy-z-10 dy-h-full dy-w-full dy-border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : hasPreview ? (
                 <>
                   {item.blurhash && (
                     <div className="dy-absolute dy-inset-0 dy-z-0">
@@ -532,7 +757,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                     </div>
                   )}
                   <img
-                    src={url}
+                    src={previewUrl}
                     alt={item.filename}
                     className="dy-relative dy-z-10 dy-h-auto dy-max-h-full dy-w-auto dy-max-w-full dy-object-contain"
                   />
@@ -731,6 +956,20 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
   const [uploading, setUploading] = React.useState(false)
   const [progress, setProgress] = React.useState(0)
 
+  const {
+    url: externalUrl,
+    setUrl: setExternalUrl,
+    submit: handleAddUrl,
+    isSubmitting: addingUrl,
+  } = useAddMediaFromUrl({
+    collection: collectionSlug || "media",
+    onAdded: () => {
+      toast.success("External media added")
+      onComplete()
+    },
+    onError: (error) => toast.error("Failed to add media from URL", { description: error.message }),
+  })
+
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles])
   }, [setFiles])
@@ -743,10 +982,13 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
     setProgress(0)
 
     try {
+      const total = files.length
       for (let i = 0; i < files.length; i++) {
-        await client!.uploadMedia(files[i], collectionSlug)
-        setProgress(((i + 1) / files.length) * 100)
+        await client!.collection(collectionSlug || "media").upload(files[i], undefined, {
+          onProgress: (pct) => setProgress(Math.round(((i + pct / 100) / total) * 100)),
+        })
       }
+      setProgress(100)
       onComplete()
       toast.success(`${files.length} assets uploaded successfully`)
     } catch (error: unknown) {
@@ -760,7 +1002,19 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
   }
 
   return (
-    <div className="dy-space-y-6 dy-py-6 dy-px-4">
+    <Tabs defaultValue="files" className="dy-w-full">
+      <TabsList className="dy-grid dy-w-full dy-grid-cols-2">
+        <TabsTrigger value="files" className="dy-gap-2">
+          <Upload className="dy-h-4 dy-w-4" />
+          Upload Files
+        </TabsTrigger>
+        <TabsTrigger value="url" className="dy-gap-2">
+          <LinkIcon className="dy-h-4 dy-w-4" />
+          From URL
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="files" className="dy-mt-0 dy-space-y-6 dy-py-6 dy-px-4">
       <div
         {...getRootProps()}
         className={`dy-border-2 dy-border-dashed dy-rounded-2xl dy-p-12 dy-text-center dy-cursor-pointer dy-transition-all dy-duration-300 ${isDragActive
@@ -827,6 +1081,46 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
           </div>
         </div>
       )}
-    </div>
+      </TabsContent>
+
+      <TabsContent value="url" className="dy-mt-0 dy-space-y-5 dy-py-6 dy-px-4">
+        <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto">
+          <Globe className="dy-h-8 dy-w-8 dy-text-primary" />
+        </div>
+        <div className="dy-text-center">
+          <p className="dy-text-xl dy-font-bold dy-text-foreground">Add media from a URL</p>
+          <p className="dy-text-sm dy-text-muted-foreground dy-mt-1">
+            Paste a YouTube or Vimeo link, or a direct link to an image or file.
+          </p>
+        </div>
+        <div className="dy-flex dy-flex-col dy-gap-3 sm:dy-flex-row">
+          <Input
+            value={externalUrl}
+            onChange={(e) => setExternalUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !addingUrl && externalUrl.trim()) {
+                e.preventDefault()
+                handleAddUrl()
+              }
+            }}
+            placeholder="https://youtube.com/watch?v=…"
+            disabled={addingUrl}
+            className="dy-h-12 dy-flex-1"
+          />
+          <Button
+            onClick={handleAddUrl}
+            disabled={addingUrl || !externalUrl.trim()}
+            className="dy-h-12 dy-rounded-xl dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98] sm:dy-w-auto"
+          >
+            {addingUrl ? (
+              <span className="dy-flex dy-items-center dy-gap-2">
+                <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-card/30 dy-border-t-card dy-rounded-full dy-animate-spin" />
+                Adding…
+              </span>
+            ) : "Add Media"}
+          </Button>
+        </div>
+      </TabsContent>
+    </Tabs>
   )
 }

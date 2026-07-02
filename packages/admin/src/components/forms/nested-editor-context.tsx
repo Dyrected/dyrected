@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 export interface PathSegment {
   /** Schema field name at this level (e.g. "body", "cta"). */
@@ -74,6 +75,40 @@ export interface NestedEditorContextValue {
 
 export const NestedEditorContext = createContext<NestedEditorContextValue | null>(null)
 
+/**
+ * Query-string key holding the serialized drill-in trail. Keeping the trail in
+ * the URL means drilling into a block pushes a history entry, so the browser
+ * (and the mobile back button) can step back out of a block to its list, and
+ * deep links / refreshes restore the drilled-in view.
+ */
+const BLOCK_PARAM = 'block'
+
+/** Serialize a trail to a compact JSON string for the URL. */
+function serializeTrail(trail: PathSegment[]): string {
+  return JSON.stringify(
+    trail.map(s => ({ f: s.fieldName, b: s.basePath, l: s.breadcrumbLabel, s: s.stableId })),
+  )
+}
+
+/** Parse the serialized trail back into PathSegments (tolerant of bad input). */
+function parseTrail(raw: string | null): PathSegment[] {
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    if (!Array.isArray(arr)) return []
+    return arr
+      .filter(s => s && typeof s.b === 'string' && typeof s.f === 'string')
+      .map(s => ({
+        fieldName: String(s.f),
+        basePath: String(s.b),
+        breadcrumbLabel: typeof s.l === 'string' ? s.l : String(s.f),
+        stableId: typeof s.s === 'string' ? s.s : undefined,
+      }))
+  } catch {
+    return []
+  }
+}
+
 export function NestedEditorProvider({
   children,
   drillInEnabled = false,
@@ -81,7 +116,20 @@ export function NestedEditorProvider({
   children: React.ReactNode
   drillInEnabled?: boolean
 }) {
-  const [activePath, setActivePath] = useState<PathSegment[]>([])
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // The URL is the source of truth for the drill trail — deriving activePath
+  // from it (rather than local state) is what makes browser back/forward work.
+  // Ignored entirely when drill-in is disabled (blocks render inline).
+  const rawTrail = drillInEnabled ? searchParams.get(BLOCK_PARAM) : null
+  const activePath = useMemo(() => parseTrail(rawTrail), [rawTrail])
+
+  // Latest searchParams for imperative callbacks that must read-then-write
+  // without a stale closure (and without re-creating the callbacks each render).
+  const searchParamsRef = useRef(searchParams)
+  useEffect(() => {
+    searchParamsRef.current = searchParams
+  }, [searchParams])
 
   // Live map of basePath -> ordered useFieldArray ids, published by each
   // drill-capable renderer. Kept in a ref so registration never re-renders.
@@ -99,32 +147,42 @@ export function NestedEditorProvider({
     return fieldArrayRegistry.current.get(basePath)?.[rawIndex]
   }, [])
 
+  // Write a trail to the URL. `push` adds a history entry (drilling deeper);
+  // `replace` corrects state in place (e.g. after a deletion) without one.
+  const writeTrail = useCallback(
+    (trail: PathSegment[], mode: 'push' | 'replace') => {
+      const next = new URLSearchParams(searchParamsRef.current)
+      if (trail.length === 0) next.delete(BLOCK_PARAM)
+      else next.set(BLOCK_PARAM, serializeTrail(trail))
+      setSearchParams(next, { replace: mode === 'replace' })
+    },
+    [setSearchParams],
+  )
+
   const drillInto = useCallback((segment: PathSegment) => {
-    setActivePath(prev => [...prev, segment])
-  }, [])
+    const current = parseTrail(searchParamsRef.current.get(BLOCK_PARAM))
+    writeTrail([...current, segment], 'push')
+  }, [writeTrail])
 
   const navigateTo = useCallback((depth: number) => {
-    setActivePath(prev => {
-      if (depth === 0) return []
-      return prev.slice(0, depth)
-    })
-  }, [])
+    const current = parseTrail(searchParamsRef.current.get(BLOCK_PARAM))
+    writeTrail(depth === 0 ? [] : current.slice(0, depth), 'push')
+  }, [writeTrail])
 
   const reconcileAfterMutation = useCallback((basePath: string, liveStableIds: string[]) => {
-    setActivePath(prev => {
-      const segmentIndex = prev.findIndex(s => s.basePath === basePath)
-      if (segmentIndex === -1) return prev // not in active path, no-op
-      const segment = prev[segmentIndex]
-      if (!segment.stableId) return prev // object field, no stableId to check
-      if (liveStableIds.includes(segment.stableId)) return prev // still alive
-      // Active item was deleted — pop back to the parent level
-      return prev.slice(0, segmentIndex)
-    })
-  }, [])
+    const current = parseTrail(searchParamsRef.current.get(BLOCK_PARAM))
+    const segmentIndex = current.findIndex(s => s.basePath === basePath)
+    if (segmentIndex === -1) return // not in active path, no-op
+    const segment = current[segmentIndex]
+    if (!segment.stableId) return // object field, no stableId to check
+    if (liveStableIds.includes(segment.stableId)) return // still alive
+    // Active item was deleted — pop back to the parent level (in place).
+    writeTrail(current.slice(0, segmentIndex), 'replace')
+  }, [writeTrail])
 
   const navigateToPath = useCallback((resolvedSegments: PathSegment[]) => {
-    setActivePath(resolvedSegments)
-  }, [])
+    writeTrail(resolvedSegments, 'push')
+  }, [writeTrail])
 
   const value = useMemo<NestedEditorContextValue>(() => ({
     drillInEnabled,

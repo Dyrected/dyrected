@@ -185,10 +185,17 @@ export function buildDefaultValues(fields: FieldSchema[], defaults: any) {
       acc[name] = arr.map(item => {
         const block = field.blocks?.find((b: any) => b.slug === item.blockType)
         if (block && block.fields) {
-          return {
+          const merged: Record<string, unknown> = {
             ...item,
             ...buildDefaultValues(block.fields, item || {})
           }
+          // Ensure a variant is always present in form state when the block
+          // defines variants, so switching/saving round-trips (older rows may
+          // predate the block gaining variants).
+          if (block.variants?.length && merged.variant == null) {
+            merged.variant = block.variants[0].slug
+          }
+          return merged
         }
         return item
       })

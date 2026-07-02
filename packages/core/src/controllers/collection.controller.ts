@@ -8,6 +8,7 @@ import { AuditService } from '../services/audit.service.js';
 import { hashPassword, verifyPassword } from '../auth/password.js';
 import { runCollectionHooks, executeFieldBeforeChange, executeFieldAfterRead } from '../utils/hooks.js';
 import { createReadonlyDb } from '../utils/readonly-db.js';
+import { validateUpload } from '../utils/upload-validation.js';
 import { evaluateAccess } from '../auth/jexl.js';
 import { getAdminAuthCollection } from '../utils/admin-auth.js';
 import {
@@ -366,6 +367,14 @@ export class CollectionController {
     const formData = await c.req.formData();
     const file = formData.get('file') as any;
     if (!file) return c.json({ message: 'No file uploaded' }, 400);
+
+    // Enforce the collection's upload restrictions (allowedMimeTypes / maxFileSize)
+    // before buffering the file into memory.
+    const uploadConfig = typeof this.collection.upload === 'object' ? this.collection.upload : undefined;
+    const validationError = validateUpload(file, uploadConfig);
+    if (validationError) {
+      return c.json({ message: validationError.message }, validationError.status);
+    }
 
     const buffer = new Uint8Array(await file.arrayBuffer());
     const siteId = c.get('siteId');

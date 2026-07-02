@@ -1,7 +1,13 @@
 /**
  * Returns a standalone HTML string for Swagger UI loading from a CDN.
+ *
+ * @param specUrl - Explicit URL to the OpenAPI JSON. When omitted, the spec is
+ *   resolved **at runtime, relative to the docs page** (`/api/docs` →
+ *   `/api/openapi.json`). This preserves any mount prefix the app is served
+ *   under (e.g. a Nuxt `apiBase: "/dyrected"` serving `/dyrected/api/docs`),
+ *   which an absolute `/api/openapi.json` would drop.
  */
-export function getSwaggerHtml(specUrl: string = '/api/openapi.json') {
+export function getSwaggerHtml(specUrl?: string) {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -21,7 +27,12 @@ export function getSwaggerHtml(specUrl: string = '/api/openapi.json') {
     // Forward the apikey query param when loading the spec and making API calls
     const params = new URLSearchParams(window.location.search);
     const apiKey = params.get('apikey');
-    const specUrlWithKey = apiKey ? '${specUrl}?apikey=' + encodeURIComponent(apiKey) : '${specUrl}';
+    // Resolve the spec relative to this docs page so any mount prefix
+    // (e.g. "/dyrected/api/docs") is preserved. Falls back to an explicit URL
+    // when one is supplied by the caller.
+    const explicitSpecUrl = ${JSON.stringify(specUrl ?? '')};
+    const specUrl = explicitSpecUrl || (window.location.pathname.replace(/\\/docs\\/?$/, '') + '/openapi.json');
+    const specUrlWithKey = apiKey ? specUrl + '?apikey=' + encodeURIComponent(apiKey) : specUrl;
 
     window.ui = SwaggerUIBundle({
       url: specUrlWithKey,

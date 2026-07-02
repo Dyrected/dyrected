@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 import { Pencil, Trash2 } from "lucide-react"
 import { Button } from "../ui/button"
-import { getMediaUrl } from "../../lib/utils"
+import { getMediaPreviewUrl } from "../../lib/external-media"
 
 interface MediaCardProps {
   item: any
@@ -11,7 +11,7 @@ interface MediaCardProps {
 }
 
 export function MediaCard({ item, baseUrl, onDelete, editPath }: MediaCardProps) {
-  const url = getMediaUrl(item, baseUrl)
+  const url = getMediaPreviewUrl(item, baseUrl)
   return (
     <div className="dy-group dy-relative dy-aspect-square dy-rounded-2xl dy-overflow-hidden dy-bg-background dy-border dy-border-border/40 dy-shadow-sm hover:dy-shadow-xl hover:dy-border-primary/20 dy-transition-all dy-duration-300">
       <img

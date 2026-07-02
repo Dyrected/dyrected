@@ -31,6 +31,9 @@ const slug = computed(() => {
 const { data: response } = await useDyrectedCollection("pages", {
   where: { slug: { equals: slug.value } },
   limit: 1,
+  // Populate relationships one level so block media (e.g. the hero image) and
+  // seo.ogImage resolve to media objects with a usable `url`.
+  depth: 1,
 });
 
 const pageData = computed(() => response.value?.docs?.[0]);

@@ -2,17 +2,11 @@
 const route = useRoute()
 const mobileOpen = ref(false)
 
+// Branding (logo, name) is content-managed via the "settings" global.
+const branding = useBranding()
+
 // Navigation is content-managed via the Dyrected "navigation" global.
 const { data: nav } = await useDyrectedGlobal('navigation')
-
-// A `url` field resolves to { type, url, label? } (or a plain string). Normalize
-// it to a href + whether it points off-site.
-function resolveLink(url) {
-  if (!url) return { href: '#', external: false }
-  if (typeof url === 'string') return { href: url, external: /^https?:\/\//.test(url) }
-  const href = url.url || '#'
-  return { href, external: url.type === 'custom' || /^https?:\/\//.test(href) }
-}
 
 const fallbackLinks = [
   { label: 'Home', href: '/', external: false },
@@ -46,11 +40,23 @@ function isActive(link) {
   <header class="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
     <nav class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
       <NuxtLink to="/" class="flex items-center gap-2 group">
-        <div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
-          <span class="text-primary-foreground font-black text-sm">ST</span>
+        <DyrectedMedia
+          v-if="branding.logo"
+          :media="branding.logo"
+          :alt="branding.siteName"
+          class="h-8 w-auto"
+        >
+          <template #fallback>
+            <div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+              <span class="text-primary-foreground font-black text-sm">{{ branding.initials }}</span>
+            </div>
+          </template>
+        </DyrectedMedia>
+        <div v-else class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+          <span class="text-primary-foreground font-black text-sm">{{ branding.initials }}</span>
         </div>
         <span class="font-bold text-foreground text-lg tracking-tight">
-          SnackTrack <span class="text-intelligence">Pro</span>
+          {{ branding.nameLead }}<template v-if="branding.nameAccent"> <span class="text-intelligence">{{ branding.nameAccent }}</span></template>
         </span>
       </NuxtLink>
 

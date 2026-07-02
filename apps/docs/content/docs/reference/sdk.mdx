@@ -353,6 +353,28 @@ export interface TransitionOptions {
 | <code>comment</code> | <code>comment?: string</code> | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
 
 
+## UploadOptions
+
+Options for file uploads.
+When `onProgress` is provided and the runtime supports XMLHttpRequest (browsers),
+the upload reports real byte-level progress. In other environments (SSR, custom
+fetch) the callback is ignored and the standard fetch path is used.
+
+```ts
+export interface UploadOptions {
+  /** Called with an integer 0–100 as the file bytes are sent. */
+  onProgress?: (percent: number) => void;
+  /** Abort the in-flight upload. */
+  signal?: AbortSignal;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>onProgress</code> | <code>onProgress?: (percent: number) =&gt; void</code> | Called with an integer 0–100 as the file bytes are sent. |
+| <code>signal</code> | <code>signal?: AbortSignal</code> | Abort the in-flight upload. |
+
+
 ## WorkflowDocument
 
 Shape of a document returned from a workflow-enabled collection.

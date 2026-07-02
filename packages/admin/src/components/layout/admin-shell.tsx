@@ -90,7 +90,7 @@ function NavItem({
         className={cn(
           "dy-shrink-0 dy-transition-colors",
           collapsed ? "dy-h-[17px] dy-w-[17px]" : "dy-h-[15px] dy-w-[15px]",
-          active ? "dy-text-background" : "dy-text-muted-foreground dy-group-hover:dy-text-foreground"
+          active ? "dy-text-background" : "dy-text-foreground dy-group-hover:dy-text-foreground"
         )}
       />
       {!collapsed && <span className="dy-truncate">{label}</span>}
@@ -159,13 +159,13 @@ function ThemeSelector({
 }) {
   const { resolvedTheme, setTheme, theme } = useAdminTheme()
   const Icon = resolvedTheme === "dark" ? Moon : Sun
- 
+
   const options: Array<{ value: AdminThemePreference; label: string; icon: React.ElementType }> = [
     { value: "system", label: "System", icon: Monitor },
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Dark", icon: Moon },
   ]
- 
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -196,8 +196,8 @@ function ThemeSelector({
           {options.map((option) => {
             const OptionIcon = option.icon
             return (
-              <DropdownMenuRadioItem key={option.value} value={option.value} className="dy-cursor-pointer dy-space-x-2">
-                <OptionIcon className="dy-h-4 dy-w-4" />
+              <DropdownMenuRadioItem key={option.value} value={option.value} className="dy-cursor-pointer">
+                <OptionIcon className="dy-h-4 dy-w-4 mr-2" />
                 {option.label}
               </DropdownMenuRadioItem>
             )
@@ -396,11 +396,11 @@ function SidebarInner({
               const nonUpload = collections.filter((col) => !col.upload)
               const groups = new Map<string, Array<AdminSidebarCollection>>()
               const ungrouped: Array<AdminSidebarCollection> = []
- 
+
               nonUpload.forEach((col) => {
                 let g = col.admin?.group
                 if (!g && col.auth) g = "System"
- 
+
                 if (g) {
                   if (!groups.has(g)) groups.set(g, [])
                   groups.get(g)!.push(col)
@@ -408,7 +408,7 @@ function SidebarInner({
                   ungrouped.push(col)
                 }
               })
- 
+
               const renderCollectionItem = (col: AdminSidebarCollection) => {
                 const isReadOnly = col.access?.read && !col.access?.create && !col.access?.update && !col.access?.delete
                 const navLabel = (
@@ -723,101 +723,101 @@ export function AdminShell({
   return (
     <BrandingProvider>
       <SidebarControlProvider value={sidebarControl}>
-      <div className={cn("dy-flex dy-w-full dy-relative", isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-min-h-screen")}>
-        {/* ... existing sidebar and main content ... */}
-        <aside
-          className={cn(
-            "dy-hidden md:dy-flex dy-flex-col dy-shrink-0 dy-h-full dy-border-r dy-border-border dy-bg-background dy-transition-all dy-duration-300 dy-overflow-hidden",
-            collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
-          )}
-        >
-          <SidebarInner
-            schemas={schemas}
-            isLoading={isLoading}
-            location={location}
-            logout={logout}
-            isEmbedded={isEmbedded}
-            collapsed={collapsed}
-            onToggleCollapse={() => setCollapsed((v) => !v)}
-            updateInfo={updateInfo}
-          />
-        </aside>
-
-        {mobileOpen && (
-          <div
-            className="dy-fixed dy-inset-0 dy-z-30 dy-bg-black/30 md:dy-hidden"
-            onClick={() => setMobileOpen(false)}
-          />
-        )}
-        <aside
-          className={cn(
-            "dy-fixed dy-top-0 dy-left-0 dy-z-40 dy-h-full dy-w-[220px] dy-flex dy-flex-col dy-border-r dy-border-border dy-bg-background dy-transition-transform dy-duration-300 dy-ease-in-out md:dy-hidden",
-            mobileOpen ? "dy-translate-x-0" : "dy--translate-x-full"
-          )}
-        >
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="dy-absolute dy-top-3.5 dy-right-3 dy-p-1.5 dy-rounded-md dy-text-muted-foreground hover:dy-bg-muted dy-transition-colors"
-          >
-            <X className="dy-h-4 dy-w-4" />
-          </button>
-          <SidebarInner
-            schemas={schemas}
-            isLoading={isLoading}
-            location={location}
-            logout={logout}
-            isEmbedded={isEmbedded}
-            collapsed={false}
-            onNavigate={() => setMobileOpen(false)}
-            updateInfo={updateInfo}
-          />
-        </aside>
-
-        <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/50">
-          {/* Mobile top header — hidden on desktop */}
-          <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
-            {/* Hamburger */}
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu className="dy-h-5 dy-w-5" />
-            </button>
-
-            {/* Brand — centered */}
-            {!isEmbedded && (
-              <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
-                {mobileBranding?.logoText ? (
-                  <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
-                    {mobileBranding.logoText}
-                  </span>
-                ) : mobileBranding?.logo ? (
-                  <img
-                    src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
-                    alt="Logo"
-                    className="dy-h-7 dy-w-auto dy-object-contain"
-                  />
-                ) : (
-                  <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
-                )}
-              </div>
+        <div className={cn("dy-flex dy-w-full dy-relative", isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-min-h-screen")}>
+          {/* ... existing sidebar and main content ... */}
+          <aside
+            className={cn(
+              "dy-hidden md:dy-flex dy-flex-col dy-shrink-0 dy-h-full dy-border-r dy-border-border dy-bg-background dy-transition-all dy-duration-300 dy-overflow-hidden",
+              collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
             )}
-            <div className="dy-ml-auto dy-flex dy-items-center dy-gap-1.5">
-              <ThemeSelector mobile />
-              {user && (
-                <div className="dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-                  {((user.name || user.email || "?") as string).charAt(0).toUpperCase()}
+          >
+            <SidebarInner
+              schemas={schemas}
+              isLoading={isLoading}
+              location={location}
+              logout={logout}
+              isEmbedded={isEmbedded}
+              collapsed={collapsed}
+              onToggleCollapse={() => setCollapsed((v) => !v)}
+              updateInfo={updateInfo}
+            />
+          </aside>
+
+          {mobileOpen && (
+            <div
+              className="dy-fixed dy-inset-0 dy-z-30 dy-bg-black/30 md:dy-hidden"
+              onClick={() => setMobileOpen(false)}
+            />
+          )}
+          <aside
+            className={cn(
+              "dy-fixed dy-top-0 dy-left-0 dy-z-40 dy-h-full dy-w-[220px] dy-flex dy-flex-col dy-border-r dy-border-border dy-bg-background dy-transition-transform dy-duration-300 dy-ease-in-out md:dy-hidden",
+              mobileOpen ? "dy-translate-x-0" : "dy--translate-x-full"
+            )}
+          >
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="dy-absolute dy-top-3.5 dy-right-3 dy-p-1.5 dy-rounded-md dy-text-muted-foreground hover:dy-bg-muted dy-transition-colors"
+            >
+              <X className="dy-h-4 dy-w-4" />
+            </button>
+            <SidebarInner
+              schemas={schemas}
+              isLoading={isLoading}
+              location={location}
+              logout={logout}
+              isEmbedded={isEmbedded}
+              collapsed={false}
+              onNavigate={() => setMobileOpen(false)}
+              updateInfo={updateInfo}
+            />
+          </aside>
+
+          <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/95">
+            {/* Mobile top header — hidden on desktop */}
+            <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
+              {/* Hamburger */}
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu className="dy-h-5 dy-w-5" />
+              </button>
+
+              {/* Brand — centered */}
+              {!isEmbedded && (
+                <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
+                  {mobileBranding?.logoText ? (
+                    <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
+                      {mobileBranding.logoText}
+                    </span>
+                  ) : mobileBranding?.logo ? (
+                    <img
+                      src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
+                      alt="Logo"
+                      className="dy-h-7 dy-w-auto dy-object-contain"
+                    />
+                  ) : (
+                    <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
+                  )}
                 </div>
               )}
-            </div>
-          </header>
+              <div className="dy-ml-auto dy-flex dy-items-center dy-gap-1.5">
+                <ThemeSelector mobile />
+                {user && (
+                  <div className="dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
+                    {((user.name || user.email || "?") as string).charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+            </header>
 
-          <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
-            {children}
-          </div>
-        </main>
-      </div>
+            <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
+              {children}
+            </div>
+          </main>
+        </div>
       </SidebarControlProvider>
     </BrandingProvider>
   )

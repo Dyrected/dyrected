@@ -1,14 +1,32 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   eyebrow: { type: String, default: '' },
   headline: { type: String, required: true },
   subheadline: { type: String, default: '' },
+  // Media relationship: a populated media object (with a url) or a url string.
+  image: { type: [Object, String], default: null },
+  // Click-to-edit attrs for the image field (from useDyPath in the block).
+  imageAttrs: { type: Object, default: () => ({}) },
   primaryCta: { type: String, default: '' },
   primaryCtaTo: { type: String, default: '/contact' },
   secondaryCta: { type: String, default: '' },
   secondaryCtaTo: { type: String, default: '/features' },
   centered: { type: Boolean, default: true },
 })
+
+// Only render an image when it resolves to something displayable — a populated
+// media object with a url, or a real url string. An unresolved relationship id
+// renders nothing rather than a broken image.
+const hasImage = computed(() => {
+  const i = props.image
+  if (!i) return false
+  return typeof i === 'object' ? Boolean(i.url) : /^(https?:\/\/|\/)/.test(i)
+})
+
+// Split hero places the image beside the copy; centered places it below.
+const splitWithImage = computed(() => hasImage.value && !props.centered)
 </script>
 
 <template>
@@ -21,8 +39,14 @@ defineProps({
     <!-- Glow -->
     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-intelligence/5 rounded-full blur-3xl pointer-events-none" />
 
-    <div class="relative max-w-7xl mx-auto px-6" :class="centered ? 'text-center' : ''">
-      <div :class="centered ? 'max-w-4xl mx-auto' : 'max-w-3xl'">
+    <div
+      class="relative max-w-7xl mx-auto px-6"
+      :class="[
+        splitWithImage ? 'grid md:grid-cols-2 gap-12 lg:gap-16 items-center' : '',
+        centered && !splitWithImage ? 'text-center' : '',
+      ]"
+    >
+      <div :class="splitWithImage ? '' : (centered ? 'max-w-4xl mx-auto' : 'max-w-3xl')">
         <span
           v-if="eyebrow"
           class="inline-block mb-4 text-xs font-bold uppercase tracking-widest text-intelligence border border-intelligence/30 rounded-full px-4 py-1"
@@ -55,6 +79,24 @@ defineProps({
           </NuxtLink>
         </div>
       </div>
+
+      <!-- Split variant: image beside the copy -->
+      <div v-if="splitWithImage" v-bind="imageAttrs">
+        <DyrectedMedia
+          :media="image"
+          :alt="headline"
+          class="w-full h-auto rounded-xl border border-border shadow-2xl"
+        />
+      </div>
+    </div>
+
+    <!-- Centered variant: image below the copy -->
+    <div v-if="hasImage && centered" class="relative max-w-5xl mx-auto px-6 mt-14" v-bind="imageAttrs">
+      <DyrectedMedia
+        :media="image"
+        :alt="headline"
+        class="w-full h-auto rounded-xl border border-border shadow-2xl"
+      />
     </div>
   </section>
 </template>

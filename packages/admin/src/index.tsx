@@ -23,8 +23,10 @@ import { GlobalEditorPage } from "./pages/globals/editor-page";
 import { SetupPromptUI } from "./pages/setup/setup-prompt";
 import { ErrorBoundary } from "./components/error-boundary";
 import { AuthGate } from "./components/auth/auth-gate";
+import { AdminSplash } from "./components/layout/admin-splash";
 import { Toaster } from "./components/ui/sonner";
 import { AdminThemeProvider, AdminThemedRoot } from "./hooks/admin-theme-provider";
+import { cn } from "./lib/utils";
 
 export type {
   AdminComponents,
@@ -182,9 +184,16 @@ export function AdminUI({
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
+    // Theme context isn't available pre-mount, so best-effort match the system
+    // scheme to avoid a light flash for dark-mode users. Wrapping in
+    // `.dy-admin-ui` gives the splash its themed tokens (same visual as the
+    // auth-loading splash → one continuous screen, not a sequence of flashes).
+    const prefersDark =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-color-scheme: dark)").matches;
     return (
-      <div className="dy-flex-1 dy-flex dy-items-center dy-justify-center dy-p-12 dy-bg-muted/5 dy-animate-pulse">
-        <div className="dy-text-muted-foreground/40 dy-text-sm dy-font-medium">Loading Dashboard...</div>
+      <div className={cn("dy-admin-ui dy-h-full", prefersDark && "dark")}>
+        <AdminSplash />
       </div>
     );
   }
@@ -252,6 +261,20 @@ export interface AdminStandaloneProps {
  * the entire page and does not share URL history with a host app.
  */
 export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    const prefersDark =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    return (
+      <div className={cn("dy-admin-ui dy-h-full", prefersDark && "dark")}>
+        <AdminSplash />
+      </div>
+    );
+  }
+
   return (
     <div className="dy-admin-ui dy-h-full">
       <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>

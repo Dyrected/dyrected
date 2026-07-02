@@ -119,7 +119,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
               onClick={() => setEditMode(v => !v)}
             >
               <MousePointer2 className="dy-h-3.5 dy-w-3.5" />
-              {editMode ? 'Editing' : 'Edit'}
+              <span className='sm:dy-hidden'> {editMode ? 'Editing' : 'Edit'}</span>
             </Button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from "vitest"
 import { cleanup, render, waitFor, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { MemoryRouter } from "react-router-dom"
 import { FormEngine } from "../form-engine"
 import type { FieldSchema } from "../form-engine"
 import { afterEach } from "vitest"
@@ -53,7 +54,7 @@ function renderWithQueryClient(ui: React.ReactElement) {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      {ui}
+      <MemoryRouter>{ui}</MemoryRouter>
     </QueryClientProvider>
   )
 }

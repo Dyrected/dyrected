@@ -1176,6 +1176,125 @@ Do not extract something merely because it is a string.
 Do not extract an image merely because it is an image.
 
 Only extract images that communicate website content or are reasonably managed by the website owner.
+
+---
+
+## Plain-Language Communication Rule
+
+These rules instruct you, the assistant, technically. They do not describe how you speak to the user.
+
+Never expose Dyrected terminology, schema decisions, field types, database concepts, adapters, seeding mechanics, or code details to the user unless the user is clearly technical and asks for them.
+
+- Ask only plain-language questions about their business, content, and goals.
+- Never ask the user to choose between technical CMS concepts. The intent determines the correct pattern; you choose it silently.
+- Describe what you are building in terms of what the site owner will be able to see and change, not in terms of collections, globals, blocks, or fields.
+- Report progress and completion in the user's language.
+
+Apply every technical rule below internally. Translate outward.
+
+---
+
+## Greenfield Site Generation Rule
+
+The other rules in this document assume an existing website is being made editable. When there is no existing website and the user is asking you to generate a new site, the stance inverts for content but not for structure.
+
+When generating a new site:
+
+- Inventing coherent content is the goal, not a violation. Create real headings, body copy, features, pricing, testimonials, FAQs, blog posts, team members, and navigation that fit the user's described business.
+- Still model structure with the same discipline as a migration: Globals for singletons, Collections for repeatable entries, Page Section blocks for arrangeable page content.
+- Still put Hero inside the page layout blocks, never as a top-level page field.
+- Still seed the generated content through initialData so the site is not empty on first load.
+- Generate every page the navigation and footer reference. Do not link to pages that do not exist.
+- Do not generate placeholder or lorem ipsum text. Write content a real owner of that business would be proud to publish.
+- Keep the amount of generated content proportional to the request. A marketing site needs a few coherent pages, not dozens.
+
+When an existing website is present, follow the preserve-and-do-not-invent rules instead. Greenfield generation applies only when there is genuinely nothing to preserve.
+
+Reference: https://docs.dyrected.com/docs/concepts/schema
+
+---
+
+## Content Coherence Rule
+
+Generated content must be internally consistent across the whole site.
+
+- Use one brand identity everywhere: the same site name, tagline, and voice across site settings, navigation, footer, page copy, and blog content.
+- Every navigation link, footer link, and call-to-action must resolve to a real destination: a page slug that exists, a routable collection entry that exists, or an intentional external URL.
+- Every page referenced by navigation must be generated as a page document.
+- Relationships must point at documents that exist. A blog post's author must be a seeded author. A product's image must be a seeded or real media document.
+- Give every page a metaTitle and metaDescription that match that page's actual content.
+- Keep tone, audience, and product claims consistent between pages. Do not describe the business differently on the home page than on the about page.
+
+Trace the generated site as a whole before finishing. A link that points nowhere, an author with no posts, or a second page that contradicts the first is an incomplete result.
+
+Reference: https://docs.dyrected.com/docs/reference/fields
+
+---
+
+## Deterministic Seed Relationships Rule
+
+Seeded documents may reference each other. To make those references resolve, assign stable identifiers.
+
+- When seeding related documents through initialData, give referenced documents a fixed `id` and reference that same `id` from the owning document. Dyrected honors a provided `id` on create, so relationships seed deterministically.
+- Seed the referenced document (for example, an author) and the owning document (for example, a blog post whose `author` is that author's `id`) in the same configuration.
+- Do not rely on randomly generated identifiers when a relationship must point at a specific seeded document.
+- Media references in seed data must use the identifier of a media document that exists. Do not seed a relationship to a media document you have not created. When no media exists yet, omit the reference and let the frontend fall back safely.
+
+Reference: https://docs.dyrected.com/docs/concepts/schema
+
+---
+
+## Initial Data Seeding Mechanics Rule
+
+initialData does not behave identically for globals and collections. Know the trigger before you rely on it.
+
+- A global seeds from initialData on any read while it is empty, and the seeded value is written back and returned.
+- A collection seeds from initialData only on an unfiltered list read: the first page, with no filter applied. A read that filters by slug or any other field does not trigger seeding.
+- This matters because frontends usually fetch a page by its slug. On a fresh database that filtered read finds nothing and does not seed, so the page appears missing until an unfiltered list of that collection has been read at least once.
+- When a generated site must display seeded content immediately, ensure each seeded collection is listed without a filter once after deploy — by opening it in the Admin, by requesting its unfiltered list endpoint, or by an equivalent warm-up step. Do not assume filtered page reads will seed collections.
+- Seeding writes documents directly and does not run field change hooks. Provide already-valid values in seed data: lowercase and unique slugs, correctly shaped link and media values, and any value a hook would normally derive.
+- initialData is a seed, not the runtime source. The frontend still reads live content from Dyrected. Do not overwrite existing content with initialData; it applies only while the target is empty.
+
+Reference: https://docs.dyrected.com/docs/concepts/schema and https://docs.dyrected.com/docs/reference/rest-api
+
+---
+
+## Icon Field Rule
+
+An `icon` field stores the name of an icon from the icon set the project renders, which is Lucide by default.
+
+- Seed and generate icon values using real icon names from that set, for example `PackageSearch`, `BellRing`, or `ChartNoAxesCombined`.
+- Do not invent icon names. An unknown name renders nothing.
+- Do not store arbitrary text, emoji, or file paths in an icon field.
+
+Reference: https://docs.dyrected.com/docs/reference/fields
+
+---
+
+## Config Authoring Rule
+
+How the configuration file is written affects whether it type-checks and loads.
+
+- Keep a collection's `blocks` array and a field's `fields` array inline inside the `defineCollection` or `defineGlobal` call. Extracting them into a separate standalone constant widens their literal type values and breaks the config's type inference. If they must be extracted, preserve the literal types with `satisfies` or a typed helper.
+- Every named field must define an explicit `label`. Every collection should define `labels`, `admin.useAsTitle`, an `admin.group` where grouping helps, and an `admin.icon`. Routable collections should define `previewUrl` and `urlPattern`.
+- A large configuration may be split into modules — one file per collection and global, imported into the main config. Keep cross-references (a collection referencing a media collection, a blog referencing an authors collection) as direct imports and avoid import cycles.
+- When splitting into modules, relative imports in the configuration must use the explicit file extension the config loader expects, because the configuration file is not part of the application's TypeScript project.
+
+Reference: https://docs.dyrected.com/docs/reference/configuration
+
+---
+
+## Adapter and Deployment Target Rule
+
+Choose the database and storage adapters from the deployment target, not habit.
+
+- A file-based SQLite database and a local-filesystem storage adapter require a persistent, writable disk. They are correct for local development and for long-running self-hosted servers with a mounted volume.
+- They are not compatible with ephemeral serverless hosting, which has a read-only or non-persistent filesystem. On such hosts the seed and every editor write fail or vanish. This includes typical serverless deployments.
+- For serverless targets, use a network database adapter (PostgreSQL, MySQL, or MongoDB) and an object-storage adapter (S3-compatible, Cloudinary, or similar). Read credentials from environment variables and keep them server-side.
+- Confirm the deployment target before finalizing adapters. If the project uses Dyrected Cloud, follow the Cloud storage guidance rather than configuring a custom adapter.
+- Drive adapter choice from environment configuration so local development and production can differ without code changes.
+
+Reference: https://docs.dyrected.com/docs/adapters/databases and https://docs.dyrected.com/docs/adapters/storage
 <!-- GENERATED:MODELING_RULES:END -->
 
 
@@ -2254,6 +2373,34 @@ For page routing:
   - Remix: `app/routes/$slug.tsx` or splat routes
   - Plain HTML/SPA: configure the router and host fallback so unknown slugs load the app and fetch the CMS page
 - Do not say editors can create new pages unless the frontend route exists and has been tested.
+
+For link and URL fields:
+
+- A url field does not resolve to a bare string at runtime. It resolves to an object describing the link, typically with a type such as internal or custom, the resolved url, an optional label, and, for internal links, the referenced collection and document.
+- Normalize a url field before rendering. Derive the href and whether the link points off-site, and set target and rel accordingly for external links.
+- Treat internal links as same-site navigation and custom or absolute links as external.
+- A url field already carries its own label. Do not model a separate label field next to it, and do not require editors to enter the label twice.
+- Block calls-to-action generally need only the resolved href. Navigation, footer, and menus need the full internal-versus-external resolution.
+- Handle a missing or empty url safely. Do not render a broken or dead link.
+- Reference: https://docs.dyrected.com/docs/reference/fields
+
+For site chrome:
+
+- Treat the logo, site name, navigation, and footer as content managed through singleton globals, not as hardcoded markup.
+- Read chrome globals on the server so the first render is not empty, and provide a safe fallback that matches the intended content until the global loads.
+- Render a managed logo from its media document, and fall back to a text or initials mark when no logo image is set.
+- Keep chrome fallbacks equal to the seeded defaults so a fresh site renders correctly before any edit.
+- Reference: https://docs.dyrected.com/docs/reference/configuration
+
+For live preview and click-to-edit:
+
+- When the installed Dyrected package supports live preview, wire routes that display editable content through the live-preview mechanism so Admin edits reflect immediately.
+- Render page section blocks through the package's blocks renderer, mapping each block type to an existing component, and pass the layout field path so each block is addressable.
+- For editable fields inside a block or document, attach the package's click-to-edit field path so clicking the element in the preview focuses the matching field in the Admin.
+- Scope field paths correctly: block-level paths come from the blocks renderer, and field-level paths are relative to their block or document.
+- Do not hand-build preview identifiers or field paths. Use the helpers the installed package provides.
+- Keep click-to-edit additive. It must not change the rendered markup, layout, styling, or behaviour of the site.
+- Reference: https://docs.dyrected.com/docs/admin/overview
 <!-- GENERATED:FRONTEND_RULES:END -->
 
 ---

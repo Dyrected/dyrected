@@ -27,7 +27,9 @@ import {
 } from "lucide-react"
 import { ScrollArea } from "../ui/scroll-area"
 import { Input } from "../ui/input"
-import { getMediaUrl, cn } from "../../lib/utils"
+import { cn } from "../../lib/utils"
+import { getMediaPreviewUrl } from "../../lib/external-media"
+import { useAddMediaFromUrl } from "../../hooks/use-add-media-from-url"
 import type { Media } from "@dyrected/sdk"
 
 interface MediaLibraryDialogProps {
@@ -53,7 +55,6 @@ export function MediaLibraryDialog({
   const schema = React.useMemo(() => schemas?.collections?.find((c: { slug: string }) => c.slug === collection), [schemas, collection])
   const collectionLabel = React.useMemo(() => schema?.labels?.plural ?? schema?.labels?.singular ?? (collection && collection !== 'media' ? (collection.charAt(0).toUpperCase() + collection.slice(1)) : "Media Library"), [schema, collection])
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [externalUrl, setExternalUrl] = React.useState("")
   const [activeTab, setActiveTab] = React.useState("library")
   const [selectedItem, setSelectedItem] = React.useState<(Media & { id?: string }) | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
@@ -124,75 +125,23 @@ export function MediaLibraryDialog({
     }
   }
 
-  const handleExternalUrlSubmit = async () => {
-    if (!externalUrl || !client) return
-
-    setIsUploading(true)
-    try {
-      let mimeType = 'application/octet-stream'
-      let filename = 'External Asset'
-      let idPrefix = 'ext'
-
-      // YouTube Detection
-      const ytMatch = externalUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#&?]*)/)
-      if (ytMatch && ytMatch[1]) {
-        mimeType = 'video/youtube'
-        filename = `YouTube: ${ytMatch[1]}`
-        idPrefix = `yt_${ytMatch[1]}`
-      }
-      // Vimeo Detection
-      else if (externalUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/)) {
-        const vimeoId = externalUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/)![1]
-        mimeType = 'video/vimeo'
-        filename = `Vimeo: ${vimeoId}`
-        idPrefix = `vm_${vimeoId}`
-      }
-      // Image Detection
-      else if (externalUrl.match(/\.(jpeg|jpg|gif|png|webp|svg|avif)(?:\?.*)?$/i)) {
-        mimeType = 'image/external'
-        filename = externalUrl.split('/').pop()?.split('?')[0] || 'External Image'
-        idPrefix = `img_${Math.random().toString(36).substring(7)}`
-      }
-      // Default / Generic
-      else {
-        filename = externalUrl.split('/').pop()?.split('?')[0] || 'External File'
-      }
-
-      const result = await client.collection(collection).create({
-        filename,
-        url: externalUrl,
-        mimeType,
-        filesize: 0,
-        id: idPrefix
-      }) as unknown as Media & { id: string }
-
+  const {
+    url: externalUrl,
+    setUrl: setExternalUrl,
+    submit: handleExternalUrlSubmit,
+    isSubmitting: isAddingUrl,
+  } = useAddMediaFromUrl({
+    collection,
+    onAdded: async (result) => {
       await refetch()
       onSelect(result.id, result)
       if (!multiple) onOpenChange(false)
-      setExternalUrl("")
-    } catch (error) {
-      console.error("Failed to add external URL:", error)
-      alert("Failed to add URL. Please make sure it is valid.")
-    } finally {
-      setIsUploading(false)
-    }
-  }
+    },
+    onError: () => alert("Failed to add URL. Please make sure it is valid."),
+  })
 
-  const getPreviewUrl = (item: { url?: string; mimeType?: string;[key: string]: unknown }) => {
-    if (!item) return ""
-    if (item.mimeType === 'video/youtube') {
-      const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#&?]*)/)
-      const videoId = match && match[1]
-      return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
-    }
-    if (item.mimeType === 'video/vimeo') {
-      return "https://vimeo.com/assets/images/logo_vimeo_blue.png"
-    }
-    if (item.mimeType === 'image/external') {
-      return item.url
-    }
-    return getMediaUrl(item, client?.getBaseUrl() || "");
-  }
+  const getPreviewUrl = (item: { url?: string; mimeType?: string;[key: string]: unknown }) =>
+    getMediaPreviewUrl(item, client?.getBaseUrl() || "")
 
   const getIdentifier = React.useCallback((v: unknown): string => {
     if (!v) return ""
@@ -487,10 +436,10 @@ export function MediaLibraryDialog({
                     </div>
                     <Button
                       onClick={handleExternalUrlSubmit}
-                      disabled={isUploading || !externalUrl}
+                      disabled={isAddingUrl || !externalUrl}
                       className="dy-h-12 dy-w-full dy-rounded-2xl dy-px-8 dy-font-bold dy-shadow-xl dy-shadow-primary/20 dy-bg-primary hover:dy-bg-primary/90 dy-transition-all active:dy-scale-95 sm:dy-h-14 sm:dy-w-auto sm:dy-px-10"
                     >
-                      {isUploading ? "Adding..." : "Add URL"}
+                      {isAddingUrl ? "Adding..." : "Add URL"}
                     </Button>
                   </div>
 

@@ -1602,6 +1602,27 @@
     ]
   },
   {
+    "id": "@dyrected/sdk:UploadOptions",
+    "name": "UploadOptions",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "Options for file uploads.\nWhen `onProgress` is provided and the runtime supports XMLHttpRequest (browsers),\nthe upload reports real byte-level progress. In other environments (SSR, custom\nfetch) the callback is ignored and the standard fetch path is used.",
+    "signature": "export interface UploadOptions {\n  /** Called with an integer 0–100 as the file bytes are sent. */\n  onProgress?: (percent: number) => void;\n  /** Abort the in-flight upload. */\n  signal?: AbortSignal;\n}",
+    "members": [
+      {
+        "name": "onProgress",
+        "signature": "onProgress?: (percent: number) => void",
+        "description": "Called with an integer 0–100 as the file bytes are sent."
+      },
+      {
+        "name": "signal",
+        "signature": "signal?: AbortSignal",
+        "description": "Abort the in-flight upload."
+      }
+    ]
+  },
+  {
     "id": "@dyrected/sdk:WorkflowDocument",
     "name": "WorkflowDocument",
     "kind": "interface",

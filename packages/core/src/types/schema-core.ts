@@ -1,6 +1,7 @@
 import type { AuthenticatedUser, HookRequestContext } from "./request.js";
 import type { AccessFunction } from "./access.js";
 import type { DatabaseAdapter, ReadonlyDatabaseAdapter } from "./adapters.js";
+import type { AdminIconName } from "./admin.js";
 
 export type FieldType =
   | "text"
@@ -58,8 +59,37 @@ export interface Block {
     /** Plural label, for example `Heroes`. */
     plural: string;
   };
+  /**
+   * Lucide icon name shown on the block card and in the block library.
+   * Falls back to a generic layout icon when omitted.
+   */
+  icon?: AdminIconName;
+  /** Short one-line summary shown under the block name (block card subtitle). */
+  description?: string;
+  /**
+   * Presentation variants for this block. All variants share the same `fields`;
+   * only the rendered layout differs. The chosen variant is stored on each block
+   * row under the reserved `variant` key and passed to the render component as a
+   * `variant` prop. Switching variant preserves the author's content.
+   */
+  variants?: BlockVariant[];
   /** Fields that make up this block's payload. */
   fields: Field[];
+}
+
+/**
+ * A single presentation variant of a {@link Block}. Variants are a layout choice
+ * over a shared field set — for example a Hero rendered "centered" vs "split".
+ */
+export interface BlockVariant {
+  /** Stable identifier stored on the block row as `variant`. */
+  slug: string;
+  /** Human-readable label shown in the variant switcher. Defaults to `slug`. */
+  label?: string;
+  /** Lucide icon name shown beside the variant label. */
+  icon?: AdminIconName;
+  /** Short one-line summary of what this variant looks like. */
+  description?: string;
 }
 
 interface FieldBase {

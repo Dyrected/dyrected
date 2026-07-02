@@ -30,7 +30,9 @@ describe("SDK Robustness", () => {
       fetch: mockFetch,
     });
 
-    const post = await customClient.collection("posts").findOne("post-1", { depth: 3 });
+    const post = (await customClient.collection("posts").findOne("post-1", { depth: 3 })) as {
+      author: { profile: { bio: string } };
+    };
     expect(post.author.profile.bio).toBe("Bio 1");
     expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("depth=3"), expect.any(Object));
   });

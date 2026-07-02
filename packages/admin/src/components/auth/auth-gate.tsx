@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoginPage } from "../../pages/auth/login-page";
 import { FirstUserPage } from "../../pages/auth/first-user-page";
 import { ExternalLoginPage } from "../../pages/auth/external-login-page";
+import { AdminSplash } from "../layout/admin-splash";
 import type { CollectionConfig } from "@dyrected/core";
 
 /**
@@ -115,14 +116,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (initialToken) return <>{children}</>;
 
   if (isLoading) {
-    return (
-      <div className="dy-flex dy-h-screen dy-items-center dy-justify-center dy-bg-background">
-        <div className="dy-flex dy-flex-col dy-items-center dy-gap-4">
-          <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary dy-border-t-transparent" />
-          <p className="dy-text-sm dy-text-muted-foreground dy-animate-pulse">Authenticating...</p>
-        </div>
-      </div>
-    );
+    return <AdminSplash />;
   }
 
   // If no auth collection exists, the app is open

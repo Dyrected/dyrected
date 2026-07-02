@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useFieldArray, useWatch } from "react-hook-form"
+import { useFieldArray, useWatch, useController } from "react-hook-form"
 import type { Control, FieldValues } from "react-hook-form"
 import { FormFieldRenderer } from "../form-field-renderer"
 import { cn } from "../../../lib/utils"
@@ -8,6 +8,7 @@ import type { FieldSchema, BlockSchema } from "../form-engine"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { X, GripVertical, Layers, Plus, Copy, Search, ChevronRight, ChevronDown } from "lucide-react"
+import { resolveAdminIcon } from "../../../lib/admin-icons"
 import { useNestedEditor, isActiveOrChild } from "../nested-editor-context"
 import type { PathSegment } from "../nested-editor-context"
 import {
@@ -44,6 +45,57 @@ interface BlockBuilderProps {
   documentId?: string
 }
 
+/**
+ * Variant switcher — a compact pill row shown at the top of a block's editor
+ * when the block defines `variants`. Changing the variant writes the reserved
+ * `variant` key on the block row; the author's field content is preserved, and
+ * the live preview updates immediately.
+ */
+function VariantSwitcher({
+  control,
+  name,
+  variants,
+}: {
+  control: Control<FieldValues>
+  name: string
+  variants: NonNullable<BlockSchema["variants"]>
+}) {
+  const { field } = useController({ control, name })
+  const current = (field.value as string) || variants[0]?.slug
+
+  return (
+    <div className="dy-space-y-2 dy-pb-2">
+      <div className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/60">
+        Variant
+      </div>
+      <div className="dy-flex dy-flex-wrap dy-gap-1.5">
+        {variants.map((v) => {
+          const isActive = current === v.slug
+          const Icon = v.icon ? resolveAdminIcon(v.icon, Layers) : null
+          return (
+            <button
+              key={v.slug}
+              type="button"
+              onClick={() => field.onChange(v.slug)}
+              title={v.description || v.label || v.slug}
+              aria-pressed={isActive}
+              className={cn(
+                "dy-flex dy-items-center dy-gap-1.5 dy-rounded-lg dy-border dy-px-2.5 dy-py-1.5 dy-text-xs dy-font-medium dy-transition-all",
+                isActive
+                  ? "dy-border-primary dy-bg-primary/10 dy-text-primary"
+                  : "dy-border-border/60 dy-text-muted-foreground hover:dy-border-border hover:dy-text-foreground"
+              )}
+            >
+              {Icon && <Icon className="dy-h-3.5 dy-w-3.5" />}
+              {v.label || v.slug}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function SortableBlockItem({
   id,
   index,
@@ -55,6 +107,7 @@ function SortableBlockItem({
   onDuplicate,
   onDrillInto,
   inline = false,
+  active = false,
   collection,
   documentId,
 }: {
@@ -69,6 +122,8 @@ function SortableBlockItem({
   onDrillInto: (segment: PathSegment) => void;
   /** When true, render the block's fields inline (flat form) instead of drilling in. */
   inline?: boolean;
+  /** Highlighted state — the block is currently selected/active in the preview. */
+  active?: boolean;
   collection: string;
   documentId?: string;
 }) {
@@ -123,19 +178,31 @@ function SortableBlockItem({
   }
 
   const previewText = getPreviewText()
+  const BlockIcon = resolveAdminIcon(blockConfig.icon, Layers)
+  const activeVariant = blockConfig.variants?.find(
+    (v) => v.slug === (itemValues as Record<string, unknown>)?.variant
+  ) ?? blockConfig.variants?.[0]
+  // Prefer the active variant label as the card subtitle (most relevant when a
+  // block has variants), then the block description, then derived preview text.
+  const subtitle = activeVariant
+    ? `${activeVariant.label || activeVariant.slug}${previewText ? " · " + previewText : ""}`
+    : blockConfig.description || previewText
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "dy-bg-card dy-border dy-border-border/30 dy-rounded-xl dy-shadow-sm dy-overflow-hidden dy-transition-all",
-        isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-muted/10 dy-border-primary/50" : "hover:dy-shadow-md"
+        "dy-group dy-bg-card dy-border dy-rounded-xl dy-overflow-hidden dy-transition-all",
+        active
+          ? "dy-border-primary dy-ring-1 dy-ring-primary/40 dy-shadow-sm"
+          : "dy-border-border/50 hover:dy-border-border hover:dy-shadow-sm",
+        isDragging && "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-border-primary/50"
       )}
     >
-      {/* Header — inline mode toggles the fields; drill-in mode opens the sub-form */}
+      {/* Card row — inline mode toggles the fields; drill-in mode opens the sub-form */}
       <div
-        className="dy-flex dy-items-center dy-justify-between dy-px-4 dy-py-3 dy-bg-muted/30 dy-border-b dy-border-border/10 dy-cursor-pointer select-none"
+        className="dy-flex dy-items-center dy-gap-3 dy-px-3 dy-py-3 dy-cursor-pointer dy-select-none"
         onClick={() => {
           if (inline) {
             setExpanded((v) => !v)
@@ -151,38 +218,45 @@ function SortableBlockItem({
           })
         }}
       >
-        <div className="dy-flex dy-items-center dy-gap-2.5 dy-min-w-0">
-          <div
-            {...attributes}
-            {...listeners}
-            className="dy-cursor-grab dy-opacity-35 hover:dy-opacity-100 hover:dy-bg-muted dy-p-1 dy-rounded-md dy-transition-all"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <GripVertical className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground" />
-          </div>
-          <div className="dy-flex dy-items-center dy-justify-center dy-h-7 dy-w-7 dy-rounded-lg dy-bg-primary/5 dy-border dy-border-primary/10 dy-text-primary dy-flex-shrink-0">
-            <Layers className="dy-h-3.5 dy-w-3.5" />
-          </div>
-          <span className="dy-text-xs dy-font-bold dy-text-foreground dy-tracking-tight dy-flex-shrink-0">
+        <div
+          {...attributes}
+          {...listeners}
+          className="dy-cursor-grab active:dy-cursor-grabbing dy-text-muted-foreground/40 hover:dy-text-muted-foreground dy-shrink-0 dy-transition-colors"
+          onClick={(e) => e.stopPropagation()}
+          title="Drag to reorder"
+        >
+          <GripVertical className="dy-h-4 dy-w-4" />
+        </div>
+
+        <div className={cn(
+          "dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-lg dy-shrink-0 dy-transition-colors",
+          active ? "dy-bg-primary/10 dy-text-primary" : "dy-bg-muted dy-text-muted-foreground group-hover:dy-text-foreground"
+        )}>
+          <BlockIcon className="dy-h-4 dy-w-4" />
+        </div>
+
+        <div className="dy-min-w-0 dy-flex-1">
+          <div className={cn(
+            "dy-text-sm dy-font-semibold dy-truncate",
+            active ? "dy-text-primary" : "dy-text-foreground"
+          )}>
             {blockConfig?.labels?.singular || blockConfig?.slug}
-          </span>
-          {previewText && (
-            <>
-              <span className="dy-text-muted-foreground/30 dy-text-xs dy-font-light dy-flex-shrink-0">·</span>
-              <span className="dy-hidden md:dy-inline-block dy-text-[11px] dy-font-medium dy-text-muted-foreground/60 dy-italic dy-flex-shrink-0">
-                {previewText.length > 50 ? previewText.slice(0, 50) + "…" : previewText}
-              </span>
-            </>
+          </div>
+          {subtitle && (
+            <div className="dy-text-xs dy-text-muted-foreground dy-truncate">
+              {subtitle.length > 60 ? subtitle.slice(0, 60) + "…" : subtitle}
+            </div>
           )}
         </div>
-        <div className="dy-flex dy-items-center dy-gap-1 dy-flex-shrink-0">
+
+        <div className="dy-flex dy-items-center dy-gap-0.5 dy-shrink-0">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-primary hover:dy-bg-primary/10"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/50 hover:dy-text-primary hover:dy-bg-primary/10 dy-opacity-0 group-hover:dy-opacity-100 focus-visible:dy-opacity-100 dy-transition-opacity"
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            title="Duplicate Block"
+            title="Duplicate block"
           >
             <Copy className="dy-w-3.5 dy-h-3.5" />
           </Button>
@@ -190,22 +264,30 @@ function SortableBlockItem({
             type="button"
             variant="ghost"
             size="icon"
-            className="dy-h-7 dy-w-7 dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10"
+            className="dy-h-7 dy-w-7 dy-text-muted-foreground/50 hover:dy-text-destructive hover:dy-bg-destructive/10 dy-opacity-0 group-hover:dy-opacity-100 focus-visible:dy-opacity-100 dy-transition-opacity"
             onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+            title="Delete block"
           >
             <X className="dy-w-3.5 dy-h-3.5" />
           </Button>
           {inline ? (
-            <ChevronDown className={cn("dy-w-3.5 dy-h-3.5 dy-text-muted-foreground/40 dy-transition-transform", expanded && "dy-rotate-180")} />
+            <ChevronDown className={cn("dy-w-4 dy-h-4 dy-text-muted-foreground/40 dy-transition-transform", expanded && "dy-rotate-180")} />
           ) : (
-            <ChevronRight className="dy-w-3.5 dy-h-3.5 dy-text-muted-foreground/40" />
+            <ChevronRight className="dy-w-4 dy-h-4 dy-text-muted-foreground/40" />
           )}
         </div>
       </div>
 
       {/* Inline fields (flat-form mode, when drill-in is disabled) */}
       {inline && expanded && (
-        <div className="dy-space-y-6 dy-px-4 dy-py-4">
+        <div className="dy-space-y-6 dy-px-4 dy-py-4 dy-border-t dy-border-border/40">
+          {blockConfig.variants && blockConfig.variants.length > 0 && (
+            <VariantSwitcher
+              control={control}
+              name={`${basePath}.${index}.variant`}
+              variants={blockConfig.variants}
+            />
+          )}
           {blockConfig.fields.map((subField) => (
             <FormFieldRenderer
               key={subField.name}
@@ -250,7 +332,17 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
   const drivenPath = activePath.find(s => isActiveOrChild([s], basePath) || s.basePath.startsWith(basePath + '.'))
   const focusedSegment = activePath.find(s => s.basePath.startsWith(basePath + '.') && s.stableId)
   const focusedStableId = focusedSegment?.stableId
-  const focusedIndex = focusedStableId ? fields.findIndex(f => f.id === focusedStableId) : -1
+  let focusedIndex = focusedStableId ? fields.findIndex(f => f.id === focusedStableId) : -1
+  // On deep-link/refresh the trail comes from the URL, where the stored
+  // stableId no longer matches the freshly-generated useFieldArray ids. Fall
+  // back to the item index encoded in the segment's basePath ("<base>.<index>").
+  if (focusedIndex === -1 && focusedSegment) {
+    const rest = focusedSegment.basePath.slice(basePath.length + 1)
+    const parsed = Number.parseInt(rest.split('.')[0], 10)
+    if (Number.isInteger(parsed) && parsed >= 0 && parsed < fields.length) {
+      focusedIndex = parsed
+    }
+  }
   const isDrilledIntoThisBuilder = focusedIndex !== -1
 
   // Publish live ids so top-level nav (error/preview click) can resolve
@@ -304,8 +396,10 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
 
   const handleAddBlock = (block: BlockSchema) => {
     const defaultVals = buildDefaultValues(block.fields, {})
+    const defaultVariant = block.variants?.[0]?.slug
     append({
       blockType: block.slug,
+      ...(defaultVariant ? { variant: defaultVariant } : {}),
       ...defaultVals
     })
     setIsModalOpen(false)
@@ -318,6 +412,13 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
     if (!blockConfig) return null
     return (
       <div className="dy-space-y-6 dy-py-2">
+        {blockConfig.variants && blockConfig.variants.length > 0 && (
+          <VariantSwitcher
+            control={control}
+            name={`${focusedSegment.basePath}.variant`}
+            variants={blockConfig.variants}
+          />
+        )}
         {blockConfig.fields.map(subField => (
           <FormFieldRenderer
             key={subField.name}
@@ -383,25 +484,28 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                           No blocks match your search query.
                         </div>
                       ) : (
-                        filteredBlocks.map((block) => (
-                          <div
-                            key={block.slug}
-                            onClick={() => handleAddBlock(block)}
-                            className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
-                          >
-                            <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
-                              <Layers className="dy-w-4 dy-h-4" />
+                        filteredBlocks.map((block) => {
+                          const LibIcon = resolveAdminIcon(block.icon, Layers)
+                          return (
+                            <div
+                              key={block.slug}
+                              onClick={() => handleAddBlock(block)}
+                              className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
+                            >
+                              <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
+                                <LibIcon className="dy-w-4 dy-h-4" />
+                              </div>
+                              <div className="dy-min-w-0 dy-flex-1">
+                                <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
+                                  {block.labels?.singular || block.slug}
+                                </h5>
+                                <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
+                                  {block.description || (block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page.")}
+                                </p>
+                              </div>
                             </div>
-                            <div className="dy-min-w-0 dy-flex-1">
-                              <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
-                                {block.labels?.singular || block.slug}
-                              </h5>
-                              <p className="dy-text-[11px] dy-text-muted-foreground/60 dy-mt-0.5 dy-line-clamp-2">
-                                {block.labels?.plural ? `Create and manage ${block.labels.plural.toLowerCase()}` : "Custom layout block for this page."}
-                              </p>
-                            </div>
-                          </div>
-                        ))
+                          )
+                        })
                       )}
                     </div>
                   </div>
@@ -440,23 +544,30 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
               strategy={verticalListSortingStrategy}
             >
               <div className="dy-pt-2 dy-space-y-4">
-                {fields.map((item, index) => (
-                  <SortableBlockItem
-                    key={item.id}
-                    id={item.id}
-                    index={index}
-                    item={item}
-                    schema={schema}
-                    basePath={basePath}
-                    control={control}
-                    remove={remove}
-                    onDuplicate={() => duplicate(index)}
-                    onDrillInto={drillInto}
-                    inline={!drillInEnabled}
-                    collection={collection}
-                    documentId={documentId}
-                  />
-                ))}
+                {fields.map((item, index) => {
+                  const itemPath = `${basePath}.${index}`
+                  const isItemActive = activePath.some(
+                    (s) => s.basePath === itemPath || s.basePath.startsWith(itemPath + ".")
+                  )
+                  return (
+                    <SortableBlockItem
+                      key={item.id}
+                      id={item.id}
+                      index={index}
+                      item={item}
+                      schema={schema}
+                      basePath={basePath}
+                      control={control}
+                      remove={remove}
+                      onDuplicate={() => duplicate(index)}
+                      onDrillInto={drillInto}
+                      inline={!drillInEnabled}
+                      active={isItemActive}
+                      collection={collection}
+                      documentId={documentId}
+                    />
+                  )
+                })}
               </div>
             </SortableContext>
           </DndContext>

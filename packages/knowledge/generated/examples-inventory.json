@@ -912,9 +912,9 @@
   {
     "id": "/concepts/schema#example-1",
     "page": "/concepts/schema",
-    "language": "",
+    "language": "ts",
     "classification": "illustrative",
-    "validation": "Output, prose, or non-executable illustration"
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/concepts/schema#example-2",
@@ -926,26 +926,19 @@
   {
     "id": "/concepts/schema#example-3",
     "page": "/concepts/schema",
-    "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/concepts/schema#example-4",
-    "page": "/concepts/schema",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/concepts/schema#example-5",
+    "id": "/concepts/schema#example-4",
     "page": "/concepts/schema",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/concepts/schema#example-6",
+    "id": "/concepts/schema#example-5",
     "page": "/concepts/schema",
     "language": "ts",
     "classification": "syntax-checked",
@@ -1479,33 +1472,26 @@
   {
     "id": "/guides/building-a-page-builder#example-4",
     "page": "/guides/building-a-page-builder",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-5",
+    "page": "/guides/building-a-page-builder",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/building-a-page-builder#example-5",
+    "id": "/guides/building-a-page-builder#example-6",
     "page": "/guides/building-a-page-builder",
     "language": "tsx",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/building-a-page-builder#example-6",
-    "page": "/guides/building-a-page-builder",
-    "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
     "id": "/guides/building-a-page-builder#example-7",
-    "page": "/guides/building-a-page-builder",
-    "language": "vue",
-    "classification": "syntax-checked",
-    "validation": "Inventoried vue example"
-  },
-  {
-    "id": "/guides/building-a-page-builder#example-8",
     "page": "/guides/building-a-page-builder",
     "language": "vue",
     "classification": "syntax-checked",
@@ -1857,54 +1843,103 @@
   {
     "id": "/guides/live-preview#example-1",
     "page": "/guides/live-preview",
-    "language": "ts",
+    "language": "mermaid",
     "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/guides/live-preview#example-2",
     "page": "/guides/live-preview",
-    "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
   },
   {
     "id": "/guides/live-preview#example-3",
     "page": "/guides/live-preview",
-    "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "mermaid",
+    "classification": "illustrative",
+    "validation": "Output, prose, or non-executable illustration"
   },
   {
     "id": "/guides/live-preview#example-4",
     "page": "/guides/live-preview",
-    "language": "tsx",
+    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/guides/live-preview#example-5",
     "page": "/guides/live-preview",
-    "language": "vue",
-    "classification": "syntax-checked",
-    "validation": "Inventoried vue example"
-  },
-  {
-    "id": "/guides/live-preview#example-6",
-    "page": "/guides/live-preview",
-    "language": "vue",
-    "classification": "syntax-checked",
-    "validation": "Inventoried vue example"
-  },
-  {
-    "id": "/guides/live-preview#example-7",
-    "page": "/guides/live-preview",
-    "language": "ts",
+    "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/guides/live-preview#example-6",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/live-preview#example-7",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/guides/live-preview#example-8",
+    "page": "/guides/live-preview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/live-preview#example-9",
+    "page": "/guides/live-preview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/live-preview#example-10",
+    "page": "/guides/live-preview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/live-preview#example-11",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-12",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-13",
+    "page": "/guides/live-preview",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/guides/live-preview#example-14",
+    "page": "/guides/live-preview",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/live-preview#example-15",
     "page": "/guides/live-preview",
     "language": "ts",
     "classification": "syntax-checked",
@@ -2403,6 +2438,13 @@
   {
     "id": "/integrations/nextjs#example-15",
     "page": "/integrations/nextjs",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/integrations/nextjs#example-16",
+    "page": "/integrations/nextjs",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
@@ -2522,9 +2564,9 @@
   {
     "id": "/integrations/nuxt#example-17",
     "page": "/integrations/nuxt",
-    "language": "ts",
+    "language": "vue",
     "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/integrations/nuxt#example-18",
@@ -2543,12 +2585,26 @@
   {
     "id": "/integrations/nuxt#example-20",
     "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/nuxt#example-21",
+    "page": "/integrations/nuxt",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/integrations/nuxt#example-21",
+    "id": "/integrations/nuxt#example-22",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nuxt#example-23",
     "page": "/integrations/nuxt",
     "language": "ts",
     "classification": "syntax-checked",
@@ -3690,6 +3746,13 @@
   },
   {
     "id": "/reference/sdk#example-21",
+    "page": "/reference/sdk",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/sdk#example-22",
     "page": "/reference/sdk",
     "language": "ts",
     "classification": "syntax-checked",

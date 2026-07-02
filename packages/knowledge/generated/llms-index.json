@@ -550,6 +550,12 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:UploadOptions",
+      "name": "UploadOptions",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:WorkflowDocument",
       "name": "WorkflowDocument",
       "category": "sdk",

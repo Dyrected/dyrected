@@ -8,7 +8,7 @@ import { ChevronLeft, Plus } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl } from "../../lib/utils"
-import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info } from "lucide-react"
+import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "../../components/ui/popover"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
@@ -87,28 +87,28 @@ function SortableFieldItem({
 }
 
 /**
- * A single vertical action-rail button: icon stacked over a small label, with
- * active / primary / disabled states. Mirrors the calm right-hand tool rail in
- * modern visual editors instead of a cluttered horizontal icon cluster.
+ * A single top-bar action: a compact square icon button with active / disabled /
+ * busy states. Groups into the horizontal action cluster on the right of the
+ * editor header (Storyblok-style top bar rather than a far-right vertical rail).
  */
-function RailButton({
+function HeaderAction({
   icon: Icon,
   label,
   onClick,
   active,
-  primary,
   disabled,
   busy,
   title,
+  className,
 }: {
   icon: LucideIcon
   label: string
   onClick: () => void
   active?: boolean
-  primary?: boolean
   disabled?: boolean
   busy?: boolean
   title?: string
+  className?: string
 }) {
   return (
     <button
@@ -116,14 +116,14 @@ function RailButton({
       onClick={onClick}
       disabled={disabled}
       title={title || label}
+      aria-label={title || label}
       className={cn(
-        "dy-flex dy-w-full dy-flex-col dy-items-center dy-gap-1 dy-rounded-xl dy-px-1 dy-py-2 dy-transition-all",
-        primary
-          ? "dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm"
-          : active
-            ? "dy-bg-muted dy-text-primary"
-            : "dy-text-muted-foreground hover:dy-bg-muted/60 hover:dy-text-foreground",
+        "dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-lg dy-transition-all",
+        active
+          ? "dy-bg-muted dy-text-primary"
+          : "dy-text-muted-foreground hover:dy-bg-muted/60 hover:dy-text-foreground",
         disabled && "dy-opacity-50 dy-pointer-events-none",
+        className,
       )}
     >
       {busy ? (
@@ -131,7 +131,6 @@ function RailButton({
       ) : (
         <Icon className="dy-h-4 dy-w-4" />
       )}
-      <span className="dy-text-[10px] dy-font-medium dy-leading-none">{label}</span>
     </button>
   )
 }
@@ -148,6 +147,7 @@ function PreviewPaneWithNav({
   mode,
   fields,
   active,
+  onFieldNavigate,
 }: {
   previewUrl: string
   data: Record<string, unknown> | null
@@ -155,6 +155,12 @@ function PreviewPaneWithNav({
   fields: FieldSchema[]
   /** True when the live preview pane is actually visible (not width-0). */
   active: boolean
+  /**
+   * Called just before the editor drills into a clicked field. On mobile the
+   * form and preview share one column, so this lets the page swap back to the
+   * form pane so the drilled-in field is actually visible.
+   */
+  onFieldNavigate?: () => void
 }) {
   const { navigateToPath, getStableId } = useNestedEditor()
 
@@ -192,6 +198,7 @@ function PreviewPaneWithNav({
   }, [setCollapsed])
 
   const handleFieldFocus = (path: string) => {
+    onFieldNavigate?.()
     const trail = resolveContainerPath(fields, path, getStableId)
     if (trail && trail.length > 0) {
       navigateToPath(trail)
@@ -225,6 +232,9 @@ export function EditEntryPage() {
   const queryClient = useQueryClient()
   const [showPreview, setShowPreview] = useState(false)
   const [showWorkflow, setShowWorkflow] = useState(false)
+  // Mobile only: the form and preview cannot sit side-by-side on a narrow
+  // screen, so one pane is shown at a time. false = form, true = preview.
+  const [mobilePreview, setMobilePreview] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [previewData, setPreviewData] = useState<Record<string, unknown> | null>(null)
   const isEdit = !!id
@@ -584,12 +594,168 @@ export function EditEntryPage() {
 
   return (
     <NestedEditorProvider drillInEnabled={!!showLivePreview}>
-      <div key={id || "new"} className={cn("dy-flex dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6", showLivePreview ? "dy-h-screen" : "")}>
+      <div key={id || "new"} className={cn("dy-flex dy-flex-col dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6", showLivePreview ? "dy-h-screen" : "")}>
+        {/* Top action bar — title/status on the left, actions on the right.
+            Replaces the former far-right vertical rail. */}
+        <div className="dy-flex dy-shrink-0 dy-items-center dy-gap-2 dy-border-b dy-border-border/50 dy-bg-background dy-px-3 dy-py-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="dy-h-9 dy-w-9 dy-rounded-lg hover:dy-bg-muted dy-shrink-0"
+            onClick={() => navigate(`/collections/${slug}`)}
+            title="Back to list"
+          >
+            <ChevronLeft className="dy-h-4 dy-w-4" />
+          </Button>
+          <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
+            <h1 className="dy-text-base dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
+              {isEdit ? `Edit ${schema?.labels?.plural || schema?.slug}` : `New ${schema?.labels?.singular || schema?.slug}`}
+            </h1>
+            {hasStatus && !workflowConfig && (
+              <Badge className={cn(
+                "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
+                currentStatus === "published" ? "dy-bg-emerald-100 dy-text-emerald-700 dy-border-emerald-200" : "dy-bg-amber-100 dy-text-amber-700 dy-border-amber-200"
+              )} variant="outline">
+                {currentStatus === "published" ? "Live" : "Draft"}
+              </Badge>
+            )}
+          </div>
+
+          <div className="dy-ml-auto dy-flex dy-items-center dy-gap-1">
+            {/* Mobile-only Edit/Preview switch — the two panes can't sit
+                side-by-side on a phone, so this swaps between them. */}
+            {showLivePreview && (
+              <HeaderAction
+                icon={mobilePreview ? Pencil : Eye}
+                label={mobilePreview ? "Edit" : "Preview"}
+                active={mobilePreview}
+                title={mobilePreview ? "Back to the form" : "Show live preview"}
+                onClick={() => setMobilePreview((v) => !v)}
+                className="lg:dy-hidden"
+              />
+            )}
+            {isEdit && canCreate && (
+              <HeaderAction
+                icon={Plus}
+                label="New"
+                title="Add new entry"
+                onClick={() => navigate(`/collections/${slug}/new`)}
+              />
+            )}
+            <HeaderAction
+              icon={Settings2}
+              label="View"
+              active={isConfiguringView}
+              title="Configure form layout"
+              onClick={() => setIsConfiguringView(!isConfiguringView)}
+            />
+            {workflowAvailable && (
+              <HeaderAction
+                icon={Workflow}
+                label="Workflow"
+                active={showWorkflow}
+                title={showWorkflow ? "Hide Workflow" : "Show Workflow"}
+                onClick={() => setShowWorkflow((v) => !v)}
+              />
+            )}
+            {/* Desktop preview show/hide. On mobile the Edit/Preview switch above
+                handles pane visibility, so this is hidden there. */}
+            {previewUrl && (
+              <HeaderAction
+                icon={showPreview ? Eye : EyeOff}
+                label="Preview"
+                active={showPreview}
+                title={showPreview ? "Hide preview" : "Show live preview"}
+                onClick={() => setShowPreview((v) => !v)}
+                className="dy-hidden lg:dy-flex"
+              />
+            )}
+            {schema?.auth && isEdit && isAdminUser && !isSelf && entry?.email && (
+              <HeaderAction
+                icon={Mail}
+                label="Reset password"
+                busy={sendingReset}
+                disabled={sendingReset}
+                title={`Send password reset link to ${entry.email}`}
+                onClick={handleSendResetLink}
+              />
+            )}
+            {/* Document metadata popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  title="Document info"
+                  aria-label="Document info"
+                  className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-lg dy-transition-all dy-text-muted-foreground hover:dy-bg-muted/60 hover:dy-text-foreground"
+                >
+                  <Info className="dy-h-4 dy-w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="end" className="dy-w-64 dy-space-y-3">
+                <div className="dy-space-y-1">
+                  <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/50">Document ID</p>
+                  <code className="dy-text-xs dy-font-mono dy-text-muted-foreground/80 dy-select-all dy-break-all">
+                    {isEdit ? id : "Pending…"}
+                  </code>
+                </div>
+                {isEdit && (
+                  <>
+                    <div className="dy-space-y-1">
+                      <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/50">Created At</p>
+                      <p className="dy-text-xs dy-font-medium dy-text-muted-foreground/80">
+                        {entry?.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="dy-space-y-1">
+                      <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/50">Last Updated</p>
+                      <p className="dy-text-xs dy-font-medium dy-text-muted-foreground/80">
+                        {entry?.updatedAt ? new Date(entry.updatedAt).toLocaleString() : 'N/A'}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </PopoverContent>
+            </Popover>
+
+            {(isEdit ? canUpdate : canCreate) && (
+              <>
+                <div className="dy-mx-1 dy-h-6 dy-w-px dy-bg-border/60" />
+                <Button
+                  size="sm"
+                  className="dy-h-9 dy-rounded-lg dy-px-4 dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
+                  onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                  disabled={saveMutation.isPending}
+                  title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
+                >
+                  {saveMutation.isPending ? (
+                    <span className="dy-flex dy-items-center dy-gap-2">
+                      <span className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent" />
+                      Saving…
+                    </span>
+                  ) : (
+                    <span className="dy-flex dy-items-center dy-gap-2">
+                      <Save className="dy-h-3.5 dy-w-3.5" />
+                      {isEdit ? "Save" : "Create"}
+                    </span>
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Content row: preview (left) + form + optional workflow sidebar */}
+        <div className="dy-flex dy-flex-1 dy-min-h-0">
         {/* Left Column: Preview (if active) */}
         {previewUrl && (
           <div className={cn(
-            "dy-hidden lg:dy-block dy-border-r dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden",
-            showLivePreview ? "dy-flex-1 dy-opacity-100" : "dy-w-0 dy-opacity-0 dy-border-r-0"
+            "dy-border-r dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden lg:dy-block",
+            // Desktop: side-by-side, width driven by the preview toggle.
+            showLivePreview ? "lg:dy-flex-1 lg:dy-opacity-100" : "lg:dy-w-0 lg:dy-opacity-0 lg:dy-border-r-0",
+            // Mobile: single-pane. Full width only when the mobile Preview tab
+            // is selected; otherwise fully hidden so the form gets the screen.
+            mobilePreview && showLivePreview ? "dy-flex-1 dy-opacity-100" : "dy-hidden"
           )}>
             <div className="dy-h-full">
               <PreviewPaneWithNav
@@ -598,6 +764,7 @@ export function EditEntryPage() {
                 mode={schema.admin?.previewMode}
                 fields={orderedFields}
                 active={!!showLivePreview}
+                onFieldNavigate={() => setMobilePreview(false)}
               />
             </div>
           </div>
@@ -606,35 +773,11 @@ export function EditEntryPage() {
         {/* Right Column: Header + Form */}
         <div className={cn(
           "dy-px-4 dy-py-6 md:dy-px-4 lg:dy-px-4 lg:dy-py-6 dy-transition-all dy-duration-500",
-          showLivePreview ? "dy-flex-none dy-w-full lg:dy-w-2/6 xl:dy-w-2/7 dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full dy-overflow-y-auto"
+          showLivePreview ? "dy-flex-none dy-w-full lg:dy-w-2/6 xl:dy-w-2/7 dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full dy-overflow-y-auto",
+          // Mobile single-pane: yield the screen to the preview when selected.
+          mobilePreview && showLivePreview ? "dy-hidden lg:dy-block" : ""
         )}>
           <div className="dy-space-y-4">
-            {/* Header — kept intentionally minimal; actions live in the right rail */}
-            <div className="dy-flex dy-items-center dy-gap-3 dy-border-b dy-border-muted/20 dy-pb-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="dy-h-8 dy-w-8 dy-rounded-lg hover:dy-bg-muted dy-shrink-0"
-                onClick={() => navigate(`/collections/${slug}`)}
-              >
-                <ChevronLeft className="dy-h-4 dy-w-4" />
-              </Button>
-              <div className="dy-flex dy-items-center dy-gap-3 dy-min-w-0">
-                <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
-                  {isEdit ? `Edit ${schema?.labels?.plural || schema?.slug}` : `New ${schema?.labels?.singular || schema?.slug}`}
-                </h1>
-                {/* Legacy status field badge (non-workflow) */}
-                {hasStatus && !workflowConfig && (
-                  <Badge className={cn(
-                    "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider",
-                    currentStatus === "published" ? "dy-bg-emerald-100 dy-text-emerald-700 dy-border-emerald-200" : "dy-bg-amber-100 dy-text-amber-700 dy-border-amber-200"
-                  )} variant="outline">
-                    {currentStatus === "published" ? "Live" : "Draft"}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
             {/* Form */}
             <div className="dy-animate-in dy-space-y-8 dy-pb-32">
               {!canUpdate && isEdit && (
@@ -847,7 +990,7 @@ export function EditEntryPage() {
           </div>
         </div>
 
-        {/* Workflow Sidebar — shown instead of preview when workflow is active */}
+        {/* Workflow Sidebar — an extra right column when workflow is active */}
         {showWorkflowSidebar && (
           <div className="dy-hidden lg:dy-block dy-w-72 dy-shrink-0 dy-border-l dy-border-border/50 dy-bg-muted/5 dy-px-4 dy-py-8 dy-overflow-y-auto">
             <WorkflowPanel
@@ -858,108 +1001,6 @@ export function EditEntryPage() {
             />
           </div>
         )}
-
-        {/* Right action rail — vertical, pinned to the far edge */}
-        <div className="dy-shrink-0 dy-w-16 dy-border-l dy-border-border/50 dy-bg-muted/5">
-          <div className="dy-sticky dy-top-0 dy-flex dy-flex-col dy-gap-1 dy-p-2">
-            {(isEdit ? canUpdate : canCreate) && (
-              <RailButton
-                icon={Save}
-                label={isEdit ? "Save" : "Create"}
-                primary
-                busy={saveMutation.isPending}
-                disabled={saveMutation.isPending}
-                title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
-                onClick={() => document.getElementById('dyrected-form-submit')?.click()}
-              />
-            )}
-            {isEdit && canCreate && (
-              <RailButton
-                icon={Plus}
-                label="New"
-                title="Add new entry"
-                onClick={() => navigate(`/collections/${slug}/new`)}
-              />
-            )}
-
-            {(previewUrl || workflowAvailable || (schema?.auth && isEdit && isAdminUser && !isSelf && entry?.email)) && (
-              <div className="dy-my-1 dy-h-px dy-w-full dy-bg-border/60" />
-            )}
-
-            {/* {previewUrl && (
-              <RailButton
-                icon={showPreview ? EyeOff : Eye}
-                label="Preview"
-                active={showPreview}
-                title={showPreview ? "Hide Preview" : "Live Preview"}
-                onClick={() => setShowPreview(!showPreview)}
-              />
-            )} */}
-            {workflowAvailable && (
-              <RailButton
-                icon={Workflow}
-                label="Workflow"
-                active={showWorkflow}
-                title={showWorkflow ? "Hide Workflow" : "Show Workflow"}
-                onClick={() => setShowWorkflow((v) => !v)}
-              />
-            )}
-            <RailButton
-              icon={Settings2}
-              label="View"
-              active={isConfiguringView}
-              title="Configure form layout"
-              onClick={() => setIsConfiguringView(!isConfiguringView)}
-            />
-            {schema?.auth && isEdit && isAdminUser && !isSelf && entry?.email && (
-              <RailButton
-                icon={Mail}
-                label="Reset"
-                busy={sendingReset}
-                disabled={sendingReset}
-                title={`Send password reset link to ${entry.email}`}
-                onClick={handleSendResetLink}
-              />
-            )}
-
-            {/* Document metadata — surfaced from the rail instead of the form footer */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  title="Document info"
-                  className="dy-flex dy-w-full dy-flex-col dy-items-center dy-gap-1 dy-rounded-xl dy-px-1 dy-py-2 dy-transition-all dy-text-muted-foreground hover:dy-bg-muted/60 hover:dy-text-foreground"
-                >
-                  <Info className="dy-h-4 dy-w-4" />
-                  <span className="dy-text-[10px] dy-font-medium dy-leading-none">Info</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent side="left" align="end" className="dy-w-64 dy-space-y-3">
-                <div className="dy-space-y-1">
-                  <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/50">Document ID</p>
-                  <code className="dy-text-xs dy-font-mono dy-text-muted-foreground/80 dy-select-all dy-break-all">
-                    {isEdit ? id : "Pending…"}
-                  </code>
-                </div>
-                {isEdit && (
-                  <>
-                    <div className="dy-space-y-1">
-                      <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/50">Created At</p>
-                      <p className="dy-text-xs dy-font-medium dy-text-muted-foreground/80">
-                        {entry?.createdAt ? new Date(entry.createdAt).toLocaleString() : 'N/A'}
-                      </p>
-                    </div>
-                    <div className="dy-space-y-1">
-                      <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/50">Last Updated</p>
-                      <p className="dy-text-xs dy-font-medium dy-text-muted-foreground/80">
-                        {entry?.updatedAt ? new Date(entry.updatedAt).toLocaleString() : 'N/A'}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </PopoverContent>
-            </Popover>
-          </div>
         </div>
       </div>
     </NestedEditorProvider>

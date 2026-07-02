@@ -11,6 +11,8 @@ import {
   Scissors,
 } from "lucide-react"
 import { cn, getMediaUrl } from "../../../lib/utils"
+import { getMediaPreviewUrl } from "../../../lib/external-media"
+import { Progress } from "../../ui/progress"
 import { MediaLibraryDialog } from "../../media/media-library-dialog"
 import { ImageCropDialog } from "./image-crop-dialog"
 import type { Media } from "@dyrected/sdk"
@@ -115,6 +117,7 @@ export function MediaPicker({
   const [isOpen, setIsOpen] = React.useState(false)
   const [localMediaCache, setLocalMediaCache] = React.useState<CachedMedia[]>([])
   const [uploading, setUploading] = React.useState(false)
+  const [uploadProgress, setUploadProgress] = React.useState(0)
   const [cropState, setCropState] = React.useState<{ targetId: string; imageUrl: string; filename: string } | null>(null)
 
   const selectedValues = React.useMemo(() => {
@@ -283,14 +286,19 @@ export function MediaPicker({
   const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0 || !client) return
     setUploading(true)
+    setUploadProgress(0)
     const toastId = toast.loading(`Uploading ${acceptedFiles.length} file(s)...`)
     try {
       const uploadedItems: any[] = []
-      for (const file of acceptedFiles) {
-        const processedFile = await compressImage(file)
-        const res = await client.collection(activeMediaCollection).upload(processedFile)
+      const total = acceptedFiles.length
+      for (let i = 0; i < acceptedFiles.length; i++) {
+        const processedFile = await compressImage(acceptedFiles[i])
+        const res = await client.collection(activeMediaCollection).upload(processedFile, undefined, {
+          onProgress: (pct) => setUploadProgress(Math.round(((i + pct / 100) / total) * 100)),
+        })
         uploadedItems.push(res)
       }
+      setUploadProgress(100)
 
       setLocalMediaCache(prev => {
         const next = [...prev]
@@ -327,6 +335,7 @@ export function MediaPicker({
       toast.error("Upload failed", { description: err.message, id: toastId })
     } finally {
       setUploading(false)
+      setUploadProgress(0)
     }
   }, [client, activeMediaCollection, multiple, selectedIds, localMediaCache, getFullUrl, onChange])
 
@@ -359,7 +368,9 @@ export function MediaPicker({
     const file = new File([blob], cropFilename, { type: blob.type })
     const toastId = toast.loading("Uploading cropped image…")
     try {
-      const uploaded = await client.collection(activeMediaCollection).upload(file) as CachedMedia
+      const uploaded = await client.collection(activeMediaCollection).upload(file, undefined, {
+        onProgress: (pct) => toast.loading(`Uploading cropped image… ${pct}%`, { id: toastId }),
+      }) as CachedMedia
       setLocalMediaCache(prev => {
         if (prev.some(m => m.id === uploaded.id)) return prev
         return [...prev, uploaded]
@@ -408,15 +419,7 @@ export function MediaPicker({
     noClick: true,
   })
 
-  const getPreviewUrl = (item: Media) => {
-    if (!item) return ""
-    if (item.mimeType === "video/youtube") {
-      const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#&?]*)/)
-      const videoId = match && match[1]
-      return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
-    }
-    return getMediaUrl(item, client?.getBaseUrl() || "")
-  }
+  const getPreviewUrl = (item: Media) => getMediaPreviewUrl(item, client?.getBaseUrl() || "")
 
   const isIcon = variant === "icon"
 
@@ -454,9 +457,15 @@ export function MediaPicker({
         )}
         {uploading && (
           <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-background/60 dy-backdrop-blur-[1px] dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
-            <div className="dy-bg-card dy-p-4 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
-              <Loader2 className="dy-h-5 dy-w-5 dy-text-primary dy-animate-spin" />
-              <p className="dy-text-xs dy-font-bold">Uploading files...</p>
+            <div className="dy-bg-card dy-p-4 dy-rounded-xl dy-shadow-xl dy-w-56 dy-max-w-[80%] dy-space-y-2">
+              <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+                <div className="dy-flex dy-items-center dy-gap-2">
+                  <Loader2 className="dy-h-4 dy-w-4 dy-text-primary dy-animate-spin" />
+                  <p className="dy-text-xs dy-font-bold">Uploading files…</p>
+                </div>
+                <span className="dy-text-xs dy-font-bold dy-tabular-nums dy-text-muted-foreground">{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="dy-h-2 dy-rounded-full" />
             </div>
           </div>
         )}
@@ -589,9 +598,15 @@ export function MediaPicker({
       )}
       {uploading && (
         <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-background/60 dy-backdrop-blur-[1px] dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
-          <div className="dy-bg-card dy-p-3 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
-            <Loader2 className="dy-h-4 dy-w-4 dy-text-primary dy-animate-spin" />
-            <p className="dy-text-[11px] dy-font-bold">Uploading...</p>
+          <div className="dy-bg-card dy-p-3 dy-rounded-xl dy-shadow-xl dy-w-48 dy-max-w-[85%] dy-space-y-2">
+            <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
+              <div className="dy-flex dy-items-center dy-gap-2">
+                <Loader2 className="dy-h-4 dy-w-4 dy-text-primary dy-animate-spin" />
+                <p className="dy-text-[11px] dy-font-bold">Uploading…</p>
+              </div>
+              <span className="dy-text-[11px] dy-font-bold dy-tabular-nums dy-text-muted-foreground">{uploadProgress}%</span>
+            </div>
+            <Progress value={uploadProgress} className="dy-h-1.5 dy-rounded-full" />
           </div>
         </div>
       )}

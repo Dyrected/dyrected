@@ -4,6 +4,11 @@ import { DyPathProvider } from '../providers/DyPathProvider';
 export interface BlocksItem {
   /** Discriminator selecting which component renders this item. */
   blockType: string;
+  /**
+   * Selected presentation variant, when the block defines `variants` in its
+   * schema. Passed straight through to the component so it can switch layout.
+   */
+  variant?: string;
   /** Optional stable id; used as the React key when present. */
   id?: string;
   [key: string]: unknown;

@@ -36,6 +36,10 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState(false);
   const guideUrl = buildGuideUrl(config);
   const hasCredentials = !!(config.siteId && config.apiKey && config.baseUrl);
+  // Interactive Swagger UI served by the Dyrected backend at /api/docs.
+  const apiDocsUrl = config.baseUrl
+    ? `${config.baseUrl.replace(/\/$/, "")}/api/docs`
+    : null;
   const guideSteps = hasCredentials ? steps : stepsNoCredentials;
   const promptText = buildPrompt(config);
 
@@ -210,6 +214,20 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           Developer docs
           <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
         </a>
+        {apiDocsUrl && (
+          <>
+            <span className="dy-hidden dy-text-muted-foreground sm:dy-inline" aria-hidden="true">·</span>
+            <a
+              href={apiDocsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dy-inline-flex dy-items-center dy-gap-1.5 dy-text-sm dy-text-muted-foreground dy-underline-offset-4 hover:dy-text-foreground hover:dy-underline"
+            >
+              API reference (Swagger)
+              <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
+            </a>
+          </>
+        )}
       </div>
     </div>
   );

@@ -185,6 +185,12 @@
 
   .dy-admin-ui {
     color-scheme: light;
+    /* Base text/background so elements without an explicit color utility (raw
+       inputs via `color: inherit`, ghost/outline buttons, plain text) resolve
+       to the themed foreground instead of the browser default black — which is
+       invisible in dark mode. Resolves per-theme via the --foreground var. */
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
     @apply dy-font-sans;
   }
 
@@ -357,4 +363,15 @@
 
 .dy-admin-ui .dsg-container .dsg-add-row {
   background: hsl(var(--card)) !important;
+}
+
+/* Bootstrap splash animations (see AdminSplash). */
+@keyframes dy-splash-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dy-splash-slide {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(340%); }
 }

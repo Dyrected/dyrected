@@ -106,3 +106,31 @@ For page routing:
   - Remix: `app/routes/$slug.tsx` or splat routes
   - Plain HTML/SPA: configure the router and host fallback so unknown slugs load the app and fetch the CMS page
 - Do not say editors can create new pages unless the frontend route exists and has been tested.
+
+For link and URL fields:
+
+- A url field does not resolve to a bare string at runtime. It resolves to an object describing the link, typically with a type such as internal or custom, the resolved url, an optional label, and, for internal links, the referenced collection and document.
+- Normalize a url field before rendering. Derive the href and whether the link points off-site, and set target and rel accordingly for external links.
+- Treat internal links as same-site navigation and custom or absolute links as external.
+- A url field already carries its own label. Do not model a separate label field next to it, and do not require editors to enter the label twice.
+- Block calls-to-action generally need only the resolved href. Navigation, footer, and menus need the full internal-versus-external resolution.
+- Handle a missing or empty url safely. Do not render a broken or dead link.
+- Reference: https://docs.dyrected.com/docs/reference/fields
+
+For site chrome:
+
+- Treat the logo, site name, navigation, and footer as content managed through singleton globals, not as hardcoded markup.
+- Read chrome globals on the server so the first render is not empty, and provide a safe fallback that matches the intended content until the global loads.
+- Render a managed logo from its media document, and fall back to a text or initials mark when no logo image is set.
+- Keep chrome fallbacks equal to the seeded defaults so a fresh site renders correctly before any edit.
+- Reference: https://docs.dyrected.com/docs/reference/configuration
+
+For live preview and click-to-edit:
+
+- When the installed Dyrected package supports live preview, wire routes that display editable content through the live-preview mechanism so Admin edits reflect immediately.
+- Render page section blocks through the package's blocks renderer, mapping each block type to an existing component, and pass the layout field path so each block is addressable.
+- For editable fields inside a block or document, attach the package's click-to-edit field path so clicking the element in the preview focuses the matching field in the Admin.
+- Scope field paths correctly: block-level paths come from the blocks renderer, and field-level paths are relative to their block or document.
+- Do not hand-build preview identifiers or field paths. Use the helpers the installed package provides.
+- Keep click-to-edit additive. It must not change the rendered markup, layout, styling, or behaviour of the site.
+- Reference: https://docs.dyrected.com/docs/admin/overview

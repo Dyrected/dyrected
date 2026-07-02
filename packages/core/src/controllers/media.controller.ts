@@ -1,5 +1,6 @@
 import type { Context } from 'hono';
 import type { DyrectedContext } from '../app.js';
+import { validateUpload } from '../utils/upload-validation.js';
 
 export class MediaController {
   private collection: string;
@@ -26,23 +27,31 @@ export class MediaController {
       return c.json({ message: 'No file uploaded' }, 400);
     }
 
-    const buffer = new Uint8Array(await file.arrayBuffer());
-    
     const siteId = c.get('siteId');
+
+    // Resolve the collection config so we can enforce its upload restrictions.
+    let colConfig = config.collections.find(col => col.slug === this.collection);
+    if (!colConfig && config.onSchemaFetch && siteId) {
+        const dynamic = await config.onSchemaFetch(siteId);
+        colConfig = dynamic.collections?.find(col => col.slug === this.collection);
+    }
+
+    const uploadConfig = typeof colConfig?.upload === 'object' ? colConfig.upload : undefined;
+    const validationError = validateUpload(file, uploadConfig);
+    if (validationError) {
+      return c.json({ message: validationError.message }, validationError.status);
+    }
+
+    const buffer = new Uint8Array(await file.arrayBuffer());
+
     const workspaceId = c.get('workspaceId');
     const prefix = workspaceId ? `${workspaceId}/${siteId}` : (siteId || 'default');
 
     // 1. Process Image if service exists
     let imageMetadata: any = {};
     let imageSizes: any = {};
-    
-    if (imageService && file.type.startsWith('image/')) {
-        let colConfig = config.collections.find(col => col.slug === this.collection);
-        if (!colConfig && config.onSchemaFetch && siteId) {
-            const dynamic = await config.onSchemaFetch(siteId);
-            colConfig = dynamic.collections?.find(col => col.slug === this.collection);
-        }
 
+    if (imageService && file.type.startsWith('image/')) {
         try {
           const processed = await imageService.process({
               buffer,

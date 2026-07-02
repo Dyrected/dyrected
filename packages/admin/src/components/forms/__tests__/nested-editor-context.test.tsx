@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest"
 import { renderHook, act } from "@testing-library/react"
 import type { ReactNode } from "react"
+import { MemoryRouter } from "react-router-dom"
 import {
   NestedEditorProvider,
   useNestedEditor,
@@ -10,8 +11,12 @@ import {
   type PathSegment,
 } from "../nested-editor-context"
 
+// The drill trail lives in the URL, so the provider needs a Router; drilling is
+// only active when `drillInEnabled` (mirrors the edit page's live-preview mode).
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <NestedEditorProvider>{children}</NestedEditorProvider>
+  <MemoryRouter>
+    <NestedEditorProvider drillInEnabled>{children}</NestedEditorProvider>
+  </MemoryRouter>
 )
 
 const seg = (over: Partial<PathSegment> & { basePath: string }): PathSegment => ({

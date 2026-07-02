@@ -148,6 +148,19 @@ export interface BaseSchema {
   globals: Record<string, UnknownRecord>;
 }
 
+/**
+ * Options for file uploads.
+ * When `onProgress` is provided and the runtime supports XMLHttpRequest (browsers),
+ * the upload reports real byte-level progress. In other environments (SSR, custom
+ * fetch) the callback is ignored and the standard fetch path is used.
+ */
+export interface UploadOptions {
+  /** Called with an integer 0–100 as the file bytes are sent. */
+  onProgress?: (percent: number) => void;
+  /** Abort the in-flight upload. */
+  signal?: AbortSignal;
+}
+
 export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
   private baseUrl: string;
   private headers: Record<string, string>;
@@ -321,8 +334,10 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
        * Upload a file to this collection. Sends as multipart/form-data.
        * @param file - A File or Blob (browser) or Buffer with filename/mimeType (Node.js)
        * @param data - Additional metadata fields to save alongside the file (e.g. alt, caption)
+       * @param options - Upload options, including an `onProgress` callback for byte-level progress.
        */
-      upload: (file: File | Blob, data?: Record<string, string>) => this._upload(slug, file, data),
+      upload: (file: File | Blob, data?: Record<string, string>, options?: UploadOptions) =>
+        this._upload(slug, file, data, options),
       // ---- Auth methods (only meaningful when the collection has auth: true) ----
       /**
        * Log in with email + password. Returns a JWT token and the user document.
@@ -589,7 +604,12 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
   /**
    * Internal upload implementation shared by collection().upload() and uploadMedia().
    */
-  private async _upload(collection: string, file: File | Blob, data?: Record<string, string>): Promise<Media> {
+  private async _upload(
+    collection: string,
+    file: File | Blob,
+    data?: Record<string, string>,
+    options?: UploadOptions,
+  ): Promise<Media> {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -600,11 +620,84 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
       }
     }
 
+    // When the caller wants progress and we're in a browser with XHR available, use an
+    // XHR-based upload so we can emit real byte-level progress. Otherwise (SSR, custom
+    // fetch, or no callback) fall back to the standard fetch path with identical behavior.
+    if (options?.onProgress && typeof XMLHttpRequest !== "undefined") {
+      return this._uploadWithProgress(collection, formData, options);
+    }
+
     // Pass undefined to trigger mergeHeaders' delete path, so fetch sets the multipart boundary
     return this.request(`/api/collections/${collection}`, {
       method: "POST",
       headers: { "Content-Type": undefined } as unknown as HeadersInit,
       body: formData,
+    });
+  }
+
+  /**
+   * XHR-based upload used when a caller requests progress. Mirrors `request()`'s auth
+   * headers and error handling (rate-limit event + DyrectedError) while exposing the
+   * upload's byte-level progress via `options.onProgress`.
+   */
+  private _uploadWithProgress(collection: string, formData: FormData, options: UploadOptions): Promise<Media> {
+    const url = `${this.baseUrl}/api/collections/${collection}`;
+
+    return new Promise<Media>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+
+      // Forward auth/site headers, but NOT Content-Type — the browser sets the
+      // multipart boundary automatically from the FormData body.
+      for (const [key, value] of Object.entries(this.headers)) {
+        if (key.toLowerCase() === "content-type") continue;
+        xhr.setRequestHeader(key, value);
+      }
+
+      if (options.signal) {
+        if (options.signal.aborted) {
+          reject(new DyrectedError("Upload aborted", 0));
+          return;
+        }
+        options.signal.addEventListener("abort", () => xhr.abort(), { once: true });
+      }
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          options.onProgress?.(Math.round((event.loaded / event.total) * 100));
+        }
+      };
+
+      const parse = (): Record<string, any> => {
+        try {
+          return JSON.parse(xhr.responseText);
+        } catch {
+          return { message: "Unknown error" };
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          options.onProgress?.(100);
+          resolve(parse() as Media);
+          return;
+        }
+
+        const body = parse();
+        if (xhr.status === 429 && typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("dyrected:rate-limit", {
+              detail: { message: body.message, code: body.code },
+            }),
+          );
+        }
+        reject(new DyrectedError(body.message || `Request failed with status ${xhr.status}`, xhr.status, body.code));
+      };
+
+      xhr.onerror = () => reject(new DyrectedError("Network error during upload", 0));
+      xhr.onabort = () => reject(new DyrectedError("Upload aborted", 0));
+
+      xhr.send(formData);
     });
   }
 
