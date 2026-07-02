@@ -21,6 +21,9 @@ export * from "./components/DyrectedImage.js";
 
 // Re-export React integration layer so Next.js users have one package to import from
 export { DyrectedProvider, useDyrected, useLivePreview } from "@dyrected/react";
+// Live-preview click-to-edit helpers
+export { Blocks, DyPathProvider, useDyPath } from "@dyrected/react";
+export type { BlocksProps, BlocksItem } from "@dyrected/react";
 export type { DyrectedImageProps, DyrectedMediaProps } from "@dyrected/react";
 export type {
   DyrectedAdminProps,
