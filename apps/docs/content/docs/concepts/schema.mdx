@@ -11,16 +11,12 @@ Your `dyrected.config.ts` is the single source of truth for everything — colle
 
 Dyrected uses a **JSON blob strategy** by default. Each document is stored as a single row with an `id` column and a `data` JSON column. This means you can add, remove, or rename fields without running a migration — the schema is always in sync with your config.
 
-```
-┌──────────────────────────────────────────────────────┐
-│  posts table                                         │
-├────────────┬─────────────────────────────────────────┤
-│  id        │  data (JSON)                            │
-├────────────┼─────────────────────────────────────────┤
-│  post-123  │  { title: "Hello", status: "draft" }    │
-│  post-456  │  { title: "World", status: "published"} │
-└────────────┴─────────────────────────────────────────┘
-```
+The `posts` table holds one row per document — an `id` and a single `data` JSON column:
+
+| `id`       | `data` (JSON)                                 |
+| ---------- | --------------------------------------------- |
+| `post-123` | `{ "title": "Hello", "status": "draft" }`     |
+| `post-456` | `{ "title": "World", "status": "published" }` |
 
 The tradeoff: JSON fields cannot use native database indexes. For fields you filter or sort by frequently, you can opt out of the JSON blob.
 

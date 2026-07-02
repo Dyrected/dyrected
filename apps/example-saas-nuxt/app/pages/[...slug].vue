@@ -61,10 +61,10 @@ useHead({
   </main>
   <div v-else-if="slug === 'home'" class="flex-1 flex items-center justify-center">
     <div class="min-h-screen flex flex-col items-center justify-center text-center px-6">
-      <h1 class="text-4xl font-black text-white mb-4">Welcome to SnackTrack Pro</h1>
-      <p class="text-slate-400 mb-8">
+      <h1 class="text-4xl font-black text-foreground mb-4">Welcome to SnackTrack Pro</h1>
+      <p class="text-muted-foreground mb-8">
         Start by creating a page with the slug "home" in the
-        <a href="/admin" class="text-gold-400 underline">Admin Dashboard</a>.
+        <a href="/admin" class="text-intelligence underline">Admin Dashboard</a>.
       </p>
     </div>
   </div>

@@ -21,18 +21,14 @@ This guide builds that page end to end: a landing page assembled from **five blo
 
 A single `pages` document whose `layout` is an ordered list of five block types. Editors add, reorder, and remove them freely.
 
-```
-┌──────────────────────────────────────┐
-│  1. Hero        "Snacks, sorted."    │  headline · subhead · CTA button
-├──────────────────────────────────────┤
-│  2. Features    3 value props        │  heading · repeatable feature cards
-├──────────────────────────────────────┤
-│  3. Pricing     Starter / Team / Ent │  heading · repeatable plans
-├──────────────────────────────────────┤
-│  4. Testimonial  "We saved 6 hrs..." │  quote · author · role
-├──────────────────────────────────────┤
-│  5. CTA         "Start your trial"   │  heading · description · button
-└──────────────────────────────────────┘
+```mermaid
+flowchart TD
+    H["1 · Hero<br/><small>heading · subheading · image · CTA</small>"]
+    F["2 · Features<br/><small>heading · feature cards[]</small>"]
+    P["3 · Pricing<br/><small>heading · plans[]</small>"]
+    T["4 · Testimonial<br/><small>quote · author · role</small>"]
+    C["5 · CTA<br/><small>heading · description · button</small>"]
+    H --> F --> P --> T --> C
 ```
 
 The five blocks and their fields:
