@@ -440,22 +440,20 @@ const { data: page, isLive } = useLivePreview({
 
 Open `/admin`, edit your **SnackTrack** page, and watch it come together:
 
-1. Because the collection has a `previewUrl`, the **preview pane opens on the left by default** and the nav sidebar auto-collapses to give it room.
+<video
+  src="/images/live-preview/snacktrack-demo.mp4"
+  controls
+  loop
+  muted
+  playsInline
+  className="rounded-lg border shadow-sm w-full"
+/>
 
-   > 📸 **Screenshot to add:** `/images/live-preview/02-split-view.png` — the
-   > edit page with preview on the left, form/blocks on the right, and the
-   > vertical action rail on the far right.
+1. Because the collection has a `previewUrl`, the **preview pane opens on the left by default** and the nav sidebar auto-collapses to give it room.
 
 2. Change the hero **heading** in the form. The preview updates as you type — no save, no reload.
 
-   > 📸 **Screenshot to add:** `/images/live-preview/03-typing.png` — mid-edit,
-   > form value and preview headline showing the same in-progress text.
-
 3. Now the magic: **Edit mode is on by default**. Hover the preview and elements with a `data-dy-path` highlight. Click the testimonial quote in the preview — the editor drills into the Testimonial block and focuses the **quote** field.
-
-   > 📸 **Screenshot to add:** `/images/live-preview/04-click-to-edit.png` — a
-   > highlighted element in the preview with the corresponding field focused in
-   > the form (breadcrumb showing the drilled-in block).
 
 <Callout type="info">
   Nested/block fields only use the drill-in editor while the preview is open. Close the preview and the same page

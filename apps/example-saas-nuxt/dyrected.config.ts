@@ -93,20 +93,8 @@ const Pages = defineCollection({
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },
     {
-      name: "seo",
-      type: "object",
       admin: {
-        tab: "SEO",
-      },
-      fields: [
-        { name: "metaTitle", type: "text" },
-        { name: "metaDescription", type: "textarea" },
-        { name: "ogImage", type: "relationship", relationTo: Media.slug },
-      ],
-    },
-    {
-      admin: {
-        tab: "Page Layout",
+        tab: "Layout",
       },
       name: "layout",
       type: "blocks",
@@ -290,6 +278,18 @@ const Pages = defineCollection({
             { name: "subheading", type: "text", label: "Subheading" },
           ],
         },
+      ],
+    },
+    {
+      name: "seo",
+      type: "object",
+      admin: {
+        tab: "SEO",
+      },
+      fields: [
+        { name: "metaTitle", type: "text" },
+        { name: "metaDescription", type: "textarea" },
+        { name: "ogImage", type: "relationship", relationTo: Media.slug },
       ],
     },
   ],
