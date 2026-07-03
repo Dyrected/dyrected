@@ -93,6 +93,14 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       export: "Blocks",
     });
 
+    // <DyrectedIcon> renders an `icon` field value (a Lucide icon name) as an
+    // SVG icon, so CMS-managed icons render without hand-wiring an icon library.
+    addComponent({
+      name: "DyrectedIcon",
+      filePath: "@dyrected/vue",
+      export: "DyrectedIcon",
+    });
+
     // 3. Add Composables
     addImports([
       { name: "useDyrected", from: resolver.resolve("./runtime/composables/useDyrected") },

@@ -26,9 +26,7 @@ defineProps<{
           class="bg-card border border-border rounded-xl p-8 hover:border-intelligence/30 transition-colors group"
         >
           <div class="w-12 h-12 bg-intelligence/10 rounded-xl flex items-center justify-center mb-5 group-hover:bg-intelligence/20 transition-colors">
-            <svg class="w-6 h-6 text-intelligence" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path v-html="f.icon" />
-            </svg>
+            <DyrectedIcon :name="f.icon" class="w-6 h-6 text-intelligence" />
           </div>
           <h3 class="text-foreground font-bold text-lg mb-2">{{ f.title }}</h3>
           <p class="text-muted-foreground text-sm leading-relaxed">{{ f.description }}</p>

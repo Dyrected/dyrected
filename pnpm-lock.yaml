@@ -740,9 +740,15 @@ importers:
       '@dyrected/admin':
         specifier: workspace:*
         version: link:../admin
+      '@dyrected/core':
+        specifier: workspace:*
+        version: link:../core
       '@dyrected/sdk':
         specifier: workspace:*
         version: link:../sdk
+      lucide-react:
+        specifier: ^1.14.0
+        version: 1.14.0(react@18.3.1)
     devDependencies:
       '@types/node':
         specifier: ^20.12.12
@@ -853,9 +859,15 @@ importers:
       '@dyrected/admin':
         specifier: workspace:*
         version: link:../admin
+      '@dyrected/core':
+        specifier: workspace:*
+        version: link:../core
       '@dyrected/sdk':
         specifier: workspace:*
         version: link:../sdk
+      lucide-vue-next:
+        specifier: ^1.0.0
+        version: 1.0.0(vue@3.5.34)
       react:
         specifier: ^18.0.0 || ^19.0.0
         version: 19.2.6
@@ -16469,6 +16481,14 @@ packages:
     engines: {bun: '>=1.0.0', deno: '>=1.30.0', node: '>=8.0.0'}
     dev: false
 
+  /lucide-react@1.14.0(react@18.3.1):
+    resolution: {integrity: sha512-+1mdWcfSJVUsaTIjN9zoezmUhfXo5l0vP7ekBMPo3jcS/aIkxHnXqAPsByszMZx/Y8oQBRJxJx5xg+RH3urzxA==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    dependencies:
+      react: 18.3.1
+    dev: false
+
   /lucide-react@1.14.0(react@19.2.4):
     resolution: {integrity: sha512-+1mdWcfSJVUsaTIjN9zoezmUhfXo5l0vP7ekBMPo3jcS/aIkxHnXqAPsByszMZx/Y8oQBRJxJx5xg+RH3urzxA==}
     peerDependencies:
@@ -16483,6 +16503,15 @@ packages:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
     dependencies:
       react: 19.2.6
+    dev: false
+
+  /lucide-vue-next@1.0.0(vue@3.5.34):
+    resolution: {integrity: sha512-V6SPvx1IHTj/UY+FrIYWV5faISsPSb8BnWSFDxAtezWKvWc9ZZ40PDrdu1/Qb5vg4lHWr1hs1BAMGVGm6V1Xdg==}
+    deprecated: Package deprecated. Please use @lucide/vue instead.
+    peerDependencies:
+      vue: '>=3.0.1'
+    dependencies:
+      vue: 3.5.34(typescript@5.9.3)
     dev: false
 
   /lz-string@1.5.0:
@@ -19737,7 +19766,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
-    dev: true
 
   /react@19.2.4:
     resolution: {integrity: sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ==}

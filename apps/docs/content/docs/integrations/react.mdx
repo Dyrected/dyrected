@@ -181,3 +181,58 @@ import { DyrectedMedia } from '@dyrected/react'
 <Note>
 If you are using **Next.js**, prefer `DyrectedImage` and `DyrectedMedia` from `@dyrected/next` — they use `next/image` for automatic optimisation.
 </Note>
+
+---
+
+## Icons — `DyrectedIcon`
+
+The `icon` field type stores the **name** of a [Lucide](https://lucide.dev) icon (e.g. `"ChartNoAxesCombined"`), not SVG markup. `DyrectedIcon` resolves that name to the matching Lucide icon so you can render an `icon` field value directly — no icon library wiring required.
+
+```tsx
+import { DyrectedIcon } from '@dyrected/react'
+
+// feature.icon === "ChartNoAxesCombined"
+<DyrectedIcon name={feature.icon} className="w-6 h-6 text-primary" />
+```
+
+Any standard Lucide prop (`size`, `color`, `strokeWidth`, `className`, …) is forwarded to the underlying icon.
+
+<TypeTable
+  type={{
+    name: {
+      description: 'The `icon` field value — a Lucide icon name. Renders nothing (or the `fallback`) if unknown.',
+      type: 'string',
+      required: true,
+    },
+    fallback: {
+      description: 'Icon name to render when `name` is missing or not a known icon.',
+      type: 'string',
+    },
+    '...props': {
+      description: 'All other Lucide props (`size`, `color`, `strokeWidth`, `className`, …) forwarded to the icon.',
+      type: 'LucideProps',
+    },
+  }}
+/>
+
+<Note>
+Browse valid icon names at [lucide.dev/icons](https://lucide.dev/icons). The Admin UI's icon-picker field uses the same set, so any value an editor can choose will resolve here.
+</Note>
+
+---
+
+## Reference — everything `@dyrected/react` exports
+
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `DyrectedProvider` | Component | Provides the client + config to the tree. Wrap your app once. |
+| `DyPathProvider` | Component | Scopes a `data-dy-path` base for nested live-preview editing. |
+| `DyrectedAdmin` | Component | Embeds the full Admin UI (`@dyrected/react/admin`). |
+| `Blocks` | Component | Renders an array of blocks by `blockType` to your block components. |
+| `DyrectedImage` | Component | `<img>` wrapper for a `Media` object or URL. |
+| `DyrectedMedia` | Component | Renders image / video / YouTube / download by media type. |
+| `DyrectedIcon` | Component | Renders an `icon` field value as a Lucide icon. |
+| `useDyrected` | Hook | Fetch a document / collection / global. |
+| `useLivePreview` | Hook | Subscribe to Admin preview messages + inline editing. |
+| `useDyPath` | Hook | Read the current `data-dy-path` scope. |
+| `DyrectedClient`, `DyrectedError` | Re-export | SDK client + error type, for convenience. |

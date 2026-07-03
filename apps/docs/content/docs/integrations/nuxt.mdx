@@ -208,7 +208,25 @@ async function submitForm(data: any) {
 | `useDyPath(field?)`               | ✅ Available | Returns `data-dy-path` attrs for click-to-edit        |
 | `provideDyPath(path)`             | ✅ Available | Scopes the base path for a section subtree            |
 
-The module also registers a `<DyrectedBlocks>` component for rendering block arrays with click-to-edit paths.
+### Auto-imported components
+
+The module registers these components globally — use them in any template with no `import`:
+
+| Component | Purpose |
+| --------- | ------- |
+| `<DyrectedBlocks>` | Renders block arrays by `blockType` with click-to-edit paths |
+| `<DyrectedMedia>`  | Renders image / video / YouTube / download by media type |
+| `<DyrectedIcon>`   | Renders an `icon` field value (a Lucide icon name) as an SVG icon |
+| `<DyrectedAdmin>`  | Embeds the Admin UI |
+
+```vue
+<template>
+  <!-- feature.icon === "ChartNoAxesCombined" -->
+  <DyrectedIcon :name="feature.icon" class="w-6 h-6 text-primary" />
+</template>
+```
+
+Every non-Nuxt-specific export (including `<DyrectedImage>`) is also available from `@dyrected/vue` — see the [Vue integration](/docs/integrations/vue#rendering-components) for the full component reference.
 
 ---
 
