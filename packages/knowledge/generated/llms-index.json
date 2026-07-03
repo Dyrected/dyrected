@@ -142,6 +142,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:ArrayField",
+      "name": "ArrayField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:AuthDocFields",
       "name": "AuthDocFields",
       "category": "fields",
@@ -160,8 +166,20 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:BaseFieldAdmin",
+      "name": "BaseFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:Block",
       "name": "Block",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:BlocksField",
+      "name": "BlocksField",
       "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
@@ -172,9 +190,33 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:BooleanField",
+      "name": "BooleanField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:BooleanFieldAdmin",
+      "name": "BooleanFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:canViewWorkflowDraft",
       "name": "canViewWorkflowDraft",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CharacterLimitFieldAdmin",
+      "name": "CharacterLimitFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CharacterLimitFieldConfig",
+      "name": "CharacterLimitFieldConfig",
+      "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -238,6 +280,18 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:DateField",
+      "name": "DateField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DateTimeField",
+      "name": "DateTimeField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:dispatchLifecycleEvent",
       "name": "dispatchLifecycleEvent",
       "category": "workflows",
@@ -250,15 +304,57 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:DynamicOptionItem",
+      "name": "DynamicOptionItem",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DynamicOptionsConfig",
+      "name": "DynamicOptionsConfig",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DynamicOptionsResolver",
+      "name": "DynamicOptionsResolver",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DynamicOptionsResolverArgs",
+      "name": "DynamicOptionsResolverArgs",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:DyrectedConfig",
       "name": "DyrectedConfig",
       "category": "configuration",
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:EmailField",
+      "name": "EmailField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:EmailFieldAdmin",
+      "name": "EmailFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:Field",
       "name": "Field",
       "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:FieldAdminHooks",
+      "name": "FieldAdminHooks",
+      "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -304,6 +400,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:FieldBase",
+      "name": "FieldBase",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:FieldBeforeChangeHook",
       "name": "FieldBeforeChangeHook",
       "category": "hooks",
@@ -318,6 +420,12 @@
     {
       "id": "@dyrected/core:FieldHook",
       "name": "FieldHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:FieldHooks",
+      "name": "FieldHooks",
       "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
@@ -376,6 +484,24 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:IconField",
+      "name": "IconField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:IconFieldAdmin",
+      "name": "IconFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ImageField",
+      "name": "ImageField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:ImageService",
       "name": "ImageService",
       "category": "adapters",
@@ -391,6 +517,18 @@
       "id": "@dyrected/core:initializeWorkflowDocument",
       "name": "initializeWorkflowDocument",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:JoinField",
+      "name": "JoinField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:JsonField",
+      "name": "JsonField",
+      "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -424,6 +562,30 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:MultiSelectField",
+      "name": "MultiSelectField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:MultiSelectFieldAdmin",
+      "name": "MultiSelectFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:NumberField",
+      "name": "NumberField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:ObjectField",
+      "name": "ObjectField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:PaginatedResult",
       "name": "PaginatedResult",
       "category": "adapters",
@@ -436,15 +598,57 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:RadioField",
+      "name": "RadioField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:RadioFieldAdmin",
+      "name": "RadioFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:ReadonlyDatabaseAdapter",
       "name": "ReadonlyDatabaseAdapter",
       "category": "adapters",
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:RelationshipField",
+      "name": "RelationshipField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:RichTextField",
+      "name": "RichTextField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:RowField",
+      "name": "RowField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:saveWorkflowDraft",
       "name": "saveWorkflowDraft",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:SelectField",
+      "name": "SelectField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:SelectFieldAdmin",
+      "name": "SelectFieldAdmin",
+      "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -460,14 +664,74 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:TextareaField",
+      "name": "TextareaField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:TextareaFieldAdmin",
+      "name": "TextareaFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:TextField",
+      "name": "TextField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:TextFieldAdmin",
+      "name": "TextFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:TimeField",
+      "name": "TimeField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:transitionWorkflow",
       "name": "transitionWorkflow",
       "category": "workflows",
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:TypedField",
+      "name": "TypedField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:UploadDocFields",
       "name": "UploadDocFields",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:UrlField",
+      "name": "UrlField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:UrlFieldAdmin",
+      "name": "UrlFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WordLimitFieldAdmin",
+      "name": "WordLimitFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:WordLimitFieldConfig",
+      "name": "WordLimitFieldConfig",
       "category": "fields",
       "sourcePackage": "@dyrected/core"
     },

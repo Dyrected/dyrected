@@ -92,7 +92,7 @@ export interface BlockVariant {
   description?: string;
 }
 
-interface FieldBase {
+export interface FieldBase {
   /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */
   name?: string;
   /** Human-readable label shown in the Admin UI. */
@@ -134,7 +134,7 @@ interface FieldBase {
   promoted?: boolean;
 }
 
-interface BaseFieldAdmin {
+export interface BaseFieldAdmin {
   /** Placeholder text shown when the input has no value. */
   placeholder?: string;
   /** Custom component key registered in the Admin UI. */
@@ -187,7 +187,7 @@ export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<st
   args: FieldAfterReadHookArgs<TValue, TDoc>,
 ) => unknown;
 
-type FieldHooks<TValue> = {
+export type FieldHooks<TValue> = {
   hooks?: {
     beforeChange?: Array<FieldBeforeChangeHook<TValue>>;
     afterRead?: Array<FieldAfterReadHook<TValue>>;
@@ -207,7 +207,7 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
 
 export type FieldAdminOnChangeHook<TValue = unknown> = (args: FieldAdminOnChangeHookArgs<TValue>) => unknown;
 
-type FieldAdminHooks<TValue> = {
+export type FieldAdminHooks<TValue> = {
   admin?: {
     hooks?: {
       onChange?: FieldAdminOnChangeHook<TValue>;
@@ -228,18 +228,18 @@ export type FieldAdminOptionsHook = (
   args: FieldAdminOptionsHookArgs,
 ) => FieldAdminOptionsHookResult | Promise<FieldAdminOptionsHookResult>;
 
-type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<never, never>> = Omit<FieldBase, "admin"> & {
+export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<never, never>> = Omit<FieldBase, "admin"> & {
   type: TType;
   admin?: BaseFieldAdmin & TAdminExtra;
 } & FieldHooks<TValue> &
   FieldAdminHooks<TValue>;
 
-type BooleanFieldAdmin = {
+export type BooleanFieldAdmin = {
   /** Boolean presentation style. */
   layout?: "checkbox" | "switch";
 };
 
-type SelectFieldAdmin = {
+export type SelectFieldAdmin = {
   /** Select presentation style. */
   layout?: "radio" | "select";
   /** Radio orientation when `layout: 'radio'` is used. */
@@ -250,7 +250,7 @@ type SelectFieldAdmin = {
   };
 };
 
-type RadioFieldAdmin = {
+export type RadioFieldAdmin = {
   /** Radio group orientation. */
   direction?: "horizontal" | "vertical";
   hooks?: {
@@ -259,7 +259,7 @@ type RadioFieldAdmin = {
   };
 };
 
-type MultiSelectFieldAdmin = {
+export type MultiSelectFieldAdmin = {
   hooks?: {
     /** Client-side option recalculation for dependent multi-select fields. */
     options?: FieldAdminOptionsHook;
@@ -276,21 +276,21 @@ export interface WordLimitFieldConfig {
   maxWords?: number;
 }
 
-type CharacterLimitFieldAdmin = {
+export type CharacterLimitFieldAdmin = {
   /** Admin-only compatibility alias for `field.maxLength`. Prefer the top-level field property. */
   maxLength?: number;
 };
 
-type WordLimitFieldAdmin = {
+export type WordLimitFieldAdmin = {
   /** Admin-only compatibility alias for `field.maxWords`. Prefer the top-level field property. */
   maxWords?: number;
 };
 
-type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
-type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
-type EmailFieldAdmin = CharacterLimitFieldAdmin;
-type UrlFieldAdmin = CharacterLimitFieldAdmin;
-type IconFieldAdmin = CharacterLimitFieldAdmin;
+export type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
+export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
+export type EmailFieldAdmin = CharacterLimitFieldAdmin;
+export type UrlFieldAdmin = CharacterLimitFieldAdmin;
+export type IconFieldAdmin = CharacterLimitFieldAdmin;
 
 export type TextField = TypedField<"text", string, TextFieldAdmin> & CharacterLimitFieldConfig & WordLimitFieldConfig;
 export type TextareaField = TypedField<"textarea", string, TextareaFieldAdmin> &

@@ -34,6 +34,16 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:ArrayField",
+    "name": "ArrayField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type ArrayField = TypedField<\"array\", unknown>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:AuthDocFields",
     "name": "AuthDocFields",
     "kind": "type",
@@ -85,6 +95,62 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:BaseFieldAdmin",
+    "name": "BaseFieldAdmin",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface BaseFieldAdmin {\n  /** Placeholder text shown when the input has no value. */\n  placeholder?: string;\n  /** Custom component key registered in the Admin UI. */\n  component?: string;\n  /** Help text rendered below the field. */\n  description?: string;\n  /** Hides the field from the Admin form without deleting stored data. */\n  hidden?: boolean;\n  /** Excludes the field from Admin list filtering. */\n  filterable?: boolean;\n  /** Renders the field as non-editable in the Admin UI. */\n  readOnly?: boolean;\n  /** Reactive condition controlling whether the field is visible in the Admin UI. */\n  condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;\n  /** Tab name used when the edit form is rendered as tabs. */\n  tab?: string;\n  /** CSS width hint used when the field appears inside a `row`. */\n  width?: string;\n}",
+    "members": [
+      {
+        "name": "placeholder",
+        "signature": "placeholder?: string",
+        "description": "Placeholder text shown when the input has no value."
+      },
+      {
+        "name": "component",
+        "signature": "component?: string",
+        "description": "Custom component key registered in the Admin UI."
+      },
+      {
+        "name": "description",
+        "signature": "description?: string",
+        "description": "Help text rendered below the field."
+      },
+      {
+        "name": "hidden",
+        "signature": "hidden?: boolean",
+        "description": "Hides the field from the Admin form without deleting stored data."
+      },
+      {
+        "name": "filterable",
+        "signature": "filterable?: boolean",
+        "description": "Excludes the field from Admin list filtering."
+      },
+      {
+        "name": "readOnly",
+        "signature": "readOnly?: boolean",
+        "description": "Renders the field as non-editable in the Admin UI."
+      },
+      {
+        "name": "condition",
+        "signature": "condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string",
+        "description": "Reactive condition controlling whether the field is visible in the Admin UI."
+      },
+      {
+        "name": "tab",
+        "signature": "tab?: string",
+        "description": "Tab name used when the edit form is rendered as tabs."
+      },
+      {
+        "name": "width",
+        "signature": "width?: string",
+        "description": "CSS width hint used when the field appears inside a `row`."
+      }
+    ]
+  },
+  {
     "id": "@dyrected/core:Block",
     "name": "Block",
     "kind": "interface",
@@ -126,6 +192,16 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:BlocksField",
+    "name": "BlocksField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type BlocksField = TypedField<\"blocks\", unknown>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:BlockVariant",
     "name": "BlockVariant",
     "kind": "interface",
@@ -157,6 +233,26 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:BooleanField",
+    "name": "BooleanField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type BooleanField = TypedField<\"boolean\", boolean, BooleanFieldAdmin>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:BooleanFieldAdmin",
+    "name": "BooleanFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type BooleanFieldAdmin = {\n  /** Boolean presentation style. */\n  layout?: \"checkbox\" | \"switch\";\n};",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:canViewWorkflowDraft",
     "name": "canViewWorkflowDraft",
     "kind": "function",
@@ -165,6 +261,32 @@ export const references: readonly ReferenceEntry[] = [
     "description": "",
     "signature": "export function canViewWorkflowDraft(workflow: WorkflowConfig, user?: AuthenticatedUser): boolean",
     "members": []
+  },
+  {
+    "id": "@dyrected/core:CharacterLimitFieldAdmin",
+    "name": "CharacterLimitFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type CharacterLimitFieldAdmin = {\n  /** Admin-only compatibility alias for `field.maxLength`. Prefer the top-level field property. */\n  maxLength?: number;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:CharacterLimitFieldConfig",
+    "name": "CharacterLimitFieldConfig",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface CharacterLimitFieldConfig {\n  /** Advisory maximum character count exposed to editors and client tooling. */\n  maxLength?: number;\n}",
+    "members": [
+      {
+        "name": "maxLength",
+        "signature": "maxLength?: number",
+        "description": "Advisory maximum character count exposed to editors and client tooling."
+      }
+    ]
   },
   {
     "id": "@dyrected/core:CollectionAfterChangeHook",
@@ -389,6 +511,26 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:DateField",
+    "name": "DateField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type DateField = TypedField<\"date\", string>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DateTimeField",
+    "name": "DateTimeField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type DateTimeField = TypedField<\"datetime\", string>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:dispatchLifecycleEvent",
     "name": "dispatchLifecycleEvent",
     "kind": "function",
@@ -407,6 +549,73 @@ export const references: readonly ReferenceEntry[] = [
     "description": "",
     "signature": "export async function dispatchPendingLifecycleEvents(config: DyrectedConfig, limit = 50): Promise<number>",
     "members": []
+  },
+  {
+    "id": "@dyrected/core:DynamicOptionItem",
+    "name": "DynamicOptionItem",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type DynamicOptionItem = string | { label: string; value: unknown };",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DynamicOptionsConfig",
+    "name": "DynamicOptionsConfig",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface DynamicOptionsConfig {\n  /** Resolver function executed on the server to produce option items. */\n  resolve: DynamicOptionsResolver;\n  /** Cache duration in seconds for identical resolver calls. */\n  cacheTTL?: number;\n}",
+    "members": [
+      {
+        "name": "resolve",
+        "signature": "resolve: DynamicOptionsResolver",
+        "description": "Resolver function executed on the server to produce option items."
+      },
+      {
+        "name": "cacheTTL",
+        "signature": "cacheTTL?: number",
+        "description": "Cache duration in seconds for identical resolver calls."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:DynamicOptionsResolver",
+    "name": "DynamicOptionsResolver",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type DynamicOptionsResolver = (\n  args: DynamicOptionsResolverArgs,\n) => Promise<DynamicOptionItem[]> | DynamicOptionItem[];",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DynamicOptionsResolverArgs",
+    "name": "DynamicOptionsResolverArgs",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface DynamicOptionsResolverArgs {\n  /** Database adapter available to server-side option resolvers. */\n  db?: DatabaseAdapter;\n  /** Authenticated user making the request, if any. */\n  user?: AuthenticatedUser;\n  /** Current HTTP request context, including query parameters. */\n  req: HookRequestContext;\n}",
+    "members": [
+      {
+        "name": "db",
+        "signature": "db?: DatabaseAdapter",
+        "description": "Database adapter available to server-side option resolvers."
+      },
+      {
+        "name": "user",
+        "signature": "user?: AuthenticatedUser",
+        "description": "Authenticated user making the request, if any."
+      },
+      {
+        "name": "req",
+        "signature": "req: HookRequestContext",
+        "description": "Current HTTP request context, including query parameters."
+      }
+    ]
   },
   {
     "id": "@dyrected/core:DyrectedConfig",
@@ -480,6 +689,26 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:EmailField",
+    "name": "EmailField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type EmailField = TypedField<\"email\", string, EmailFieldAdmin> & CharacterLimitFieldConfig;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:EmailFieldAdmin",
+    "name": "EmailFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type EmailFieldAdmin = CharacterLimitFieldAdmin;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:Field",
     "name": "Field",
     "kind": "type",
@@ -487,6 +716,16 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export type Field =\n  | TextField\n  | TextareaField\n  | EmailField\n  | UrlField\n  | IconField\n  | DateField\n  | DateTimeField\n  | TimeField\n  | SelectField\n  | RadioField\n  | NumberField\n  | BooleanField\n  | MultiSelectField\n  | RelationshipField\n  | ImageField\n  | RichTextField\n  | JsonField\n  | ObjectField\n  | ArrayField\n  | BlocksField\n  | JoinField\n  | RowField;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:FieldAdminHooks",
+    "name": "FieldAdminHooks",
+    "kind": "type",
+    "category": "hooks",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type FieldAdminHooks<TValue> = {\n  admin?: {\n    hooks?: {\n      onChange?: FieldAdminOnChangeHook<TValue>;\n    };\n  };\n};",
     "members": []
   },
   {
@@ -613,6 +852,102 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:FieldBase",
+    "name": "FieldBase",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface FieldBase {\n  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */\n  name?: string;\n  /** Human-readable label shown in the Admin UI. */\n  label?: string;\n  /** Whether the field must have a value when saving. */\n  required?: boolean;\n  /** Whether values for this field must be unique across the collection. */\n  unique?: boolean;\n  /** Default value used when a new document omits this field. */\n  defaultValue?: unknown;\n  /** Static or dynamic option source for supported selection fields. */\n  options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig;\n  /** Target collection slug for `relationship` fields. */\n  relationTo?: string;\n  /** Whether the field stores multiple values instead of one. */\n  hasMany?: boolean;\n  /** Child fields for `object` and `array` field types. */\n  fields?: Field[];\n  /** Allowed block definitions for a `blocks` field. */\n  blocks?: Block[];\n  /** Target collection slug for `join` fields. */\n  collection?: string;\n  /** Back-reference field name on the joined collection. */\n  on?: string;\n  /** Maximum number of joined documents returned by a `join` field. */\n  limit?: number;\n  /** Field-level read and update access rules. */\n  access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessFunction | string;\n    /** Controls whether incoming writes may change this field. */\n    update?: AccessFunction | string;\n  };\n  /** Admin-only presentation options for this field. */\n  admin?: BaseFieldAdmin;\n  /** Previous storage key to migrate from during schema sync. */\n  renameTo?: string;\n  /** Whether SQL adapters should promote this field into a first-class column. */\n  promoted?: boolean;\n}",
+    "members": [
+      {
+        "name": "name",
+        "signature": "name?: string",
+        "description": "Stored key for this field. Omit only for layout-only fields such as `row` or `join`."
+      },
+      {
+        "name": "label",
+        "signature": "label?: string",
+        "description": "Human-readable label shown in the Admin UI."
+      },
+      {
+        "name": "required",
+        "signature": "required?: boolean",
+        "description": "Whether the field must have a value when saving."
+      },
+      {
+        "name": "unique",
+        "signature": "unique?: boolean",
+        "description": "Whether values for this field must be unique across the collection."
+      },
+      {
+        "name": "defaultValue",
+        "signature": "defaultValue?: unknown",
+        "description": "Default value used when a new document omits this field."
+      },
+      {
+        "name": "options",
+        "signature": "options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig",
+        "description": "Static or dynamic option source for supported selection fields."
+      },
+      {
+        "name": "relationTo",
+        "signature": "relationTo?: string",
+        "description": "Target collection slug for `relationship` fields."
+      },
+      {
+        "name": "hasMany",
+        "signature": "hasMany?: boolean",
+        "description": "Whether the field stores multiple values instead of one."
+      },
+      {
+        "name": "fields",
+        "signature": "fields?: Field[]",
+        "description": "Child fields for `object` and `array` field types."
+      },
+      {
+        "name": "blocks",
+        "signature": "blocks?: Block[]",
+        "description": "Allowed block definitions for a `blocks` field."
+      },
+      {
+        "name": "collection",
+        "signature": "collection?: string",
+        "description": "Target collection slug for `join` fields."
+      },
+      {
+        "name": "on",
+        "signature": "on?: string",
+        "description": "Back-reference field name on the joined collection."
+      },
+      {
+        "name": "limit",
+        "signature": "limit?: number",
+        "description": "Maximum number of joined documents returned by a `join` field."
+      },
+      {
+        "name": "access",
+        "signature": "access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessFunction | string;\n    /** Controls whether incoming writes may change this field. */\n    update?: AccessFunction | string;\n  }",
+        "description": "Field-level read and update access rules."
+      },
+      {
+        "name": "admin",
+        "signature": "admin?: BaseFieldAdmin",
+        "description": "Admin-only presentation options for this field."
+      },
+      {
+        "name": "renameTo",
+        "signature": "renameTo?: string",
+        "description": "Previous storage key to migrate from during schema sync."
+      },
+      {
+        "name": "promoted",
+        "signature": "promoted?: boolean",
+        "description": "Whether SQL adapters should promote this field into a first-class column."
+      }
+    ]
+  },
+  {
     "id": "@dyrected/core:FieldBeforeChangeHook",
     "name": "FieldBeforeChangeHook",
     "kind": "type",
@@ -666,6 +1001,16 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export type FieldHook<TDoc extends object = Record<string, unknown>, TValue = unknown> = FieldBeforeChangeHook<\n  TValue,\n  TDoc\n>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:FieldHooks",
+    "name": "FieldHooks",
+    "kind": "type",
+    "category": "hooks",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type FieldHooks<TValue> = {\n  hooks?: {\n    beforeChange?: Array<FieldBeforeChangeHook<TValue>>;\n    afterRead?: Array<FieldAfterReadHook<TValue>>;\n  };\n};",
     "members": []
   },
   {
@@ -877,6 +1222,36 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:IconField",
+    "name": "IconField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type IconField = TypedField<\"icon\", string, IconFieldAdmin> & CharacterLimitFieldConfig;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:IconFieldAdmin",
+    "name": "IconFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type IconFieldAdmin = CharacterLimitFieldAdmin;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:ImageField",
+    "name": "ImageField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type ImageField = TypedField<\"image\", string | string[]>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:ImageService",
     "name": "ImageService",
     "kind": "interface",
@@ -910,6 +1285,26 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export function initializeWorkflowDocument(data: Record<string, unknown>, workflow: WorkflowConfig)",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:JoinField",
+    "name": "JoinField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type JoinField = TypedField<\"join\", unknown>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:JsonField",
+    "name": "JsonField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type JsonField = TypedField<\"json\", Record<string, unknown>>;",
     "members": []
   },
   {
@@ -1024,6 +1419,46 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:MultiSelectField",
+    "name": "MultiSelectField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type MultiSelectField = TypedField<\"multiSelect\", string[], MultiSelectFieldAdmin>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:MultiSelectFieldAdmin",
+    "name": "MultiSelectFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type MultiSelectFieldAdmin = {\n  hooks?: {\n    /** Client-side option recalculation for dependent multi-select fields. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:NumberField",
+    "name": "NumberField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type NumberField = TypedField<\"number\", number>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:ObjectField",
+    "name": "ObjectField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type ObjectField = TypedField<\"object\", unknown>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:PaginatedResult",
     "name": "PaginatedResult",
     "kind": "interface",
@@ -1080,6 +1515,26 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:RadioField",
+    "name": "RadioField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type RadioField = TypedField<\"radio\", string, RadioFieldAdmin>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:RadioFieldAdmin",
+    "name": "RadioFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type RadioFieldAdmin = {\n  /** Radio group orientation. */\n  direction?: \"horizontal\" | \"vertical\";\n  hooks?: {\n    /** Client-side option recalculation for dependent radio groups. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:ReadonlyDatabaseAdapter",
     "name": "ReadonlyDatabaseAdapter",
     "kind": "type",
@@ -1090,6 +1545,36 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:RelationshipField",
+    "name": "RelationshipField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type RelationshipField = TypedField<\"relationship\", string | string[]>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:RichTextField",
+    "name": "RichTextField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type RichTextField = TypedField<\"richText\", Record<string, unknown>>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:RowField",
+    "name": "RowField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type RowField = TypedField<\"row\", unknown>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:saveWorkflowDraft",
     "name": "saveWorkflowDraft",
     "kind": "function",
@@ -1097,6 +1582,26 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export async function saveWorkflowDraft(args: {\n  config: DyrectedConfig;\n  collection: CollectionConfig;\n  id: string;\n  originalDoc: BaseDocument;\n  data: Record<string, unknown>;\n  user?: AuthenticatedUser;\n}): Promise<{ doc: BaseDocument; event: LifecycleEvent }>",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:SelectField",
+    "name": "SelectField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type SelectField = TypedField<\"select\", string, SelectFieldAdmin>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:SelectFieldAdmin",
+    "name": "SelectFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type SelectFieldAdmin = {\n  /** Select presentation style. */\n  layout?: \"radio\" | \"select\";\n  /** Radio orientation when `layout: 'radio'` is used. */\n  direction?: \"horizontal\" | \"vertical\";\n  hooks?: {\n    /** Client-side option recalculation for dependent dropdowns or radios. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
     "members": []
   },
   {
@@ -1141,6 +1646,56 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:TextareaField",
+    "name": "TextareaField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type TextareaField = TypedField<\"textarea\", string, TextareaFieldAdmin> &\n  CharacterLimitFieldConfig &\n  WordLimitFieldConfig;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:TextareaFieldAdmin",
+    "name": "TextareaFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:TextField",
+    "name": "TextField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type TextField = TypedField<\"text\", string, TextFieldAdmin> & CharacterLimitFieldConfig & WordLimitFieldConfig;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:TextFieldAdmin",
+    "name": "TextFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:TimeField",
+    "name": "TimeField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type TimeField = TypedField<\"time\", string>;",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:transitionWorkflow",
     "name": "transitionWorkflow",
     "kind": "function",
@@ -1148,6 +1703,16 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/core",
     "description": "",
     "signature": "export async function transitionWorkflow(args: {\n  config: DyrectedConfig;\n  collection: CollectionConfig;\n  id: string;\n  transitionName: string;\n  expectedRevision?: number;\n  comment?: string;\n  user?: AuthenticatedUser;\n  req: HookRequestContext;\n}): Promise<BaseDocument>",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:TypedField",
+    "name": "TypedField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<never, never>> = Omit<FieldBase, \"admin\"> & {\n  type: TType;\n  admin?: BaseFieldAdmin & TAdminExtra;\n} & FieldHooks<TValue> &\n  FieldAdminHooks<TValue>;",
     "members": []
   },
   {
@@ -1159,6 +1724,52 @@ export const references: readonly ReferenceEntry[] = [
     "description": "",
     "signature": "export type UploadDocFields = {\n  filename: string;\n  filesize?: number;\n  mimeType: string;\n  url: string;\n  width?: number;\n  height?: number;\n  focalPoint?: { x: number; y: number };\n  blurhash?: string;\n  sizes?: Record<string, { filename?: string; url?: string; width?: number; height?: number }>;\n};",
     "members": []
+  },
+  {
+    "id": "@dyrected/core:UrlField",
+    "name": "UrlField",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type UrlField = TypedField<\"url\", string, UrlFieldAdmin> & CharacterLimitFieldConfig;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:UrlFieldAdmin",
+    "name": "UrlFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type UrlFieldAdmin = CharacterLimitFieldAdmin;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:WordLimitFieldAdmin",
+    "name": "WordLimitFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type WordLimitFieldAdmin = {\n  /** Admin-only compatibility alias for `field.maxWords`. Prefer the top-level field property. */\n  maxWords?: number;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:WordLimitFieldConfig",
+    "name": "WordLimitFieldConfig",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface WordLimitFieldConfig {\n  /** Advisory maximum word count exposed to editors and client tooling. */\n  maxWords?: number;\n}",
+    "members": [
+      {
+        "name": "maxWords",
+        "signature": "maxWords?: number",
+        "description": "Advisory maximum word count exposed to editors and client tooling."
+      }
+    ]
   },
   {
     "id": "@dyrected/core:WORKFLOW_HISTORY_COLLECTION",
