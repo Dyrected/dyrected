@@ -12,9 +12,7 @@
   "dependencies": {
     "@dyrected/core": "workspace:^",
     "@dyrected/db-postgres": "workspace:^",
-    "@dyrected/db-sqlite": "workspace:^",
     "@dyrected/nuxt": "workspace:^",
-    "@dyrected/storage-local": "workspace:^",
     "chart.js": "^4.4.4",
     "nuxt": "^4.4.5",
     "vue": "^3.5.34",

@@ -1,7 +1,4 @@
 import { defineConfig } from "@dyrected/core";
-import { SqliteAdapter } from "@dyrected/db-sqlite";
-import { LocalStorageAdapter } from "@dyrected/storage-local";
-import path from "node:path";
 
 // Collections
 import { Media } from "./dyrected/collections/media.ts";
@@ -19,16 +16,9 @@ import { Footer } from "./dyrected/globals/footer.ts";
 export default defineConfig({
   collections: [Admin, Media, Pages, Blog, Products, Authors],
   globals: [Settings, Navigation, Footer],
-  db: new SqliteAdapter({
-    filename: "dyrected.db",
-  }),
-  storage: new LocalStorageAdapter({
-    uploadDir: path.resolve(process.cwd(), "public/uploads"),
-    staticUrlPrefix: "/uploads",
-  }),
   admin: {
     branding: {
-      logoText: "Acme CMS", // replaces the Dyrected logo
+      logoText: "SnackTrack CMS", // replaces the Dyrected logo
     },
   },
 });
