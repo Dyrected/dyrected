@@ -1,18 +1,10 @@
 import type { ReactNode } from 'react'
 import { RootProvider } from 'fumadocs-ui/provider/next'
-import { Fraunces, DM_Sans } from 'next/font/google'
 import type { Metadata } from 'next'
 import './globals.css'
 
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-sans',
-})
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-display',
-})
+const dmSans = { variable: '' }
+const fraunces = { variable: '' }
 
 export const metadata: Metadata = {
   title: {

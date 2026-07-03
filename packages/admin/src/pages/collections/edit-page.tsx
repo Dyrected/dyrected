@@ -747,260 +747,260 @@ export function EditEntryPage() {
 
         {/* Content row: preview (left) + form + optional workflow sidebar */}
         <div className="dy-flex dy-flex-1 dy-min-h-0">
-        {/* Left Column: Preview (if active) */}
-        {previewUrl && (
-          <div className={cn(
-            "dy-border-r dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden lg:dy-block",
-            // Desktop: side-by-side, width driven by the preview toggle.
-            showLivePreview ? "lg:dy-flex-1 lg:dy-opacity-100" : "lg:dy-w-0 lg:dy-opacity-0 lg:dy-border-r-0",
-            // Mobile: single-pane. Full width only when the mobile Preview tab
-            // is selected; otherwise fully hidden so the form gets the screen.
-            mobilePreview && showLivePreview ? "dy-flex-1 dy-opacity-100" : "dy-hidden"
-          )}>
-            <div className="dy-h-full">
-              <PreviewPaneWithNav
-                previewUrl={previewUrl}
-                data={previewData || entry}
-                mode={schema.admin?.previewMode}
-                fields={orderedFields}
-                active={!!showLivePreview}
-                onFieldNavigate={() => setMobilePreview(false)}
-              />
+          {/* Left Column: Preview (if active) */}
+          {previewUrl && (
+            <div className={cn(
+              "dy-border-r dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden lg:dy-block",
+              // Desktop: side-by-side, width driven by the preview toggle.
+              showLivePreview ? "lg:dy-flex-1 lg:dy-opacity-100" : "lg:dy-w-0 lg:dy-opacity-0 lg:dy-border-r-0",
+              // Mobile: single-pane. Full width only when the mobile Preview tab
+              // is selected; otherwise fully hidden so the form gets the screen.
+              mobilePreview && showLivePreview ? "dy-flex-1 dy-opacity-100" : "dy-hidden"
+            )}>
+              <div className="dy-h-full">
+                <PreviewPaneWithNav
+                  previewUrl={previewUrl}
+                  data={previewData || entry}
+                  mode={schema.admin?.previewMode}
+                  fields={orderedFields}
+                  active={!!showLivePreview}
+                  onFieldNavigate={() => setMobilePreview(false)}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Right Column: Header + Form */}
-        <div className={cn(
-          "dy-px-4 dy-py-6 md:dy-px-4 lg:dy-px-4 lg:dy-py-6 dy-transition-all dy-duration-500",
-          showLivePreview ? "dy-flex-none dy-w-full lg:dy-w-2/6 xl:dy-w-2/7 dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full dy-overflow-y-auto",
-          // Mobile single-pane: yield the screen to the preview when selected.
-          mobilePreview && showLivePreview ? "dy-hidden lg:dy-block" : ""
-        )}>
-          <div className="dy-space-y-4">
-            {/* Form */}
-            <div className="dy-animate-in dy-space-y-8 dy-pb-32">
-              {!canUpdate && isEdit && (
-                <div className="dy-p-4 dy-rounded-lg dy-bg-amber-50 dy-border dy-border-amber-200 dy-text-amber-800 dy-text-sm dy-flex dy-items-center dy-gap-3">
-                  <Archive className="dy-h-4 dy-w-4" />
-                  You have read-only access to this collection.
-                </div>
-              )}
-              {schema.upload && (previewData || entry) && ((previewData || entry).filename || (previewData || entry).url) && (
-                <div className="dy-p-5 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-muted/10 dy-space-y-4">
-                  <div className="dy-flex dy-items-start dy-gap-4">
-                    <div className="dy-flex-1 dy-space-y-1">
-                      <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Uploaded File</p>
-                      <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{(previewData || entry).filename}</h3>
-                      <p className="dy-text-xs dy-text-muted-foreground">
-                        {(previewData || entry).filesize ? `${(((previewData || entry).filesize || 0) / 1024).toFixed(1)} KB` : 'N/A Size'} • {(previewData || entry).mimeType || 'Unknown Type'}
-                      </p>
-                    </div>
+          {/* Right Column: Header + Form */}
+          <div className={cn(
+            "dy-px-4 dy-py-6 md:dy-px-4 lg:dy-px-4 lg:dy-py-6 dy-transition-all dy-duration-500",
+            showLivePreview ? "dy-flex-none dy-w-full lg:dy-w-2/6 xl:dy-w-2/7 dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full dy-overflow-y-auto",
+            // Mobile single-pane: yield the screen to the preview when selected.
+            mobilePreview && showLivePreview ? "dy-hidden lg:dy-block" : ""
+          )}>
+            <div className="dy-space-y-4">
+              {/* Form */}
+              <div className="dy-animate-in dy-space-y-8 dy-pb-32">
+                {!canUpdate && isEdit && (
+                  <div className="dy-p-4 dy-rounded-lg dy-bg-amber-50 dy-border dy-border-amber-200 dy-text-amber-800 dy-text-sm dy-flex dy-items-center dy-gap-3">
+                    <Archive className="dy-h-4 dy-w-4" />
+                    You have read-only access to this collection.
                   </div>
+                )}
+                {schema.upload && (previewData || entry) && ((previewData || entry).filename || (previewData || entry).url) && (
+                  <div className="dy-p-5 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-muted/10 dy-space-y-4">
+                    <div className="dy-flex dy-items-start dy-gap-4">
+                      <div className="dy-flex-1 dy-space-y-1">
+                        <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Uploaded File</p>
+                        <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{(previewData || entry).filename}</h3>
+                        <p className="dy-text-xs dy-text-muted-foreground">
+                          {(previewData || entry).filesize ? `${(((previewData || entry).filesize || 0) / 1024).toFixed(1)} KB` : 'N/A Size'} • {(previewData || entry).mimeType || 'Unknown Type'}
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-flex dy-items-center dy-justify-center dy-p-4 dy-min-h-[160px] dy-max-h-[320px] dy-relative">
-                    {(previewData || entry).mimeType?.startsWith("image/") ? (
-                      <img
-                        src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
-                        alt={(previewData || entry).alt || (previewData || entry).filename}
-                        className="dy-object-contain dy-max-h-[280px] dy-rounded-lg dy-shadow-sm"
-                      />
-                    ) : (previewData || entry).mimeType?.startsWith("audio/") ? (
-                      <div className="dy-w-full dy-max-w-md dy-bg-card dy-p-4 dy-rounded-xl dy-border dy-border-border/60 dy-shadow-sm dy-flex dy-flex-col dy-gap-3 dy-items-center">
-                        <div className="dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-text-primary">
-                          <Volume2 className="dy-h-5 dy-w-5" />
+                    <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-flex dy-items-center dy-justify-center dy-p-4 dy-min-h-[160px] dy-max-h-[320px] dy-relative">
+                      {(previewData || entry).mimeType?.startsWith("image/") ? (
+                        <img
+                          src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                          alt={(previewData || entry).alt || (previewData || entry).filename}
+                          className="dy-object-contain dy-max-h-[280px] dy-rounded-lg dy-shadow-sm"
+                        />
+                      ) : (previewData || entry).mimeType?.startsWith("audio/") ? (
+                        <div className="dy-w-full dy-max-w-md dy-bg-card dy-p-4 dy-rounded-xl dy-border dy-border-border/60 dy-shadow-sm dy-flex dy-flex-col dy-gap-3 dy-items-center">
+                          <div className="dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-text-primary">
+                            <Volume2 className="dy-h-5 dy-w-5" />
+                          </div>
+                          <audio
+                            src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                            controls
+                            className="dy-w-full"
+                          />
                         </div>
-                        <audio
+                      ) : (previewData || entry).mimeType?.startsWith("video/") ? (
+                        <video
                           src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
                           controls
-                          className="dy-w-full"
+                          className="dy-max-h-[280px] dy-w-full dy-rounded-lg dy-shadow-sm"
                         />
-                      </div>
-                    ) : (previewData || entry).mimeType?.startsWith("video/") ? (
-                      <video
-                        src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
-                        controls
-                        className="dy-max-h-[280px] dy-w-full dy-rounded-lg dy-shadow-sm"
-                      />
-                    ) : (
-                      <div className="dy-flex dy-flex-col dy-items-center dy-gap-2 dy-p-6">
-                        <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
-                          <FileIcon className="dy-h-8 dy-w-8 dy-text-primary" />
-                        </div>
-                        <span className="dy-text-xs dy-font-medium dy-text-muted-foreground">Preview not available</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              {isConfiguringView ? (
-                <div className="dy-space-y-6">
-                  <div className="dy-p-4 dy-rounded-xl">
-                    <p className="mb-2 dy-text-sm dy-text-muted-foreground">Drag and drop fields to reorder the form layout. Changes will be saved as your personal preference or global default.</p>
-                    <div className="dy-space-y-2 dy-pr-1 dy-outline-none">
-                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                        <SortableContext items={layout.map(item => item.name)} strategy={verticalListSortingStrategy}>
-                          <div className="dy-space-y-1.5">
-                            {layout.map((item) => {
-                              const field = fieldsList.find(f => f.name === item.name)
-                              if (!field) return null
-                              return (
-                                <SortableFieldItem
-                                  key={item.name}
-                                  id={item.name}
-                                  label={field.label || field.name}
-                                  type={field.type}
-                                  width={item.width || "100%"}
-                                  onChangeWidth={(newWidth) => {
-                                    setLayout((prev) =>
-                                      prev.map((x) =>
-                                        x.name === item.name ? { ...x, width: newWidth } : x
-                                      )
-                                    )
-                                  }}
-                                />
-                              )
-                            })}
+                      ) : (
+                        <div className="dy-flex dy-flex-col dy-items-center dy-gap-2 dy-p-6">
+                          <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
+                            <FileIcon className="dy-h-8 dy-w-8 dy-text-primary" />
                           </div>
-                        </SortableContext>
-                      </DndContext>
+                          <span className="dy-text-xs dy-font-medium dy-text-muted-foreground">Preview not available</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+                )}
+                {isConfiguringView ? (
+                  <div className="dy-space-y-6 ">
+                    <div className="dy-p-4 dy-rounded-xl">
+                      <p className="mb-2 dy-text-sm dy-text-muted-foreground">Drag and drop fields to reorder the form layout. Changes will be saved as your personal preference or global default.</p>
+                      <div className="dy-space-y-2 dy-pr-1 dy-outline-none">
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                          <SortableContext items={layout.map(item => item.name)} strategy={verticalListSortingStrategy}>
+                            <div className="dy-space-y-1.5">
+                              {layout.map((item) => {
+                                const field = fieldsList.find(f => f.name === item.name)
+                                if (!field) return null
+                                return (
+                                  <SortableFieldItem
+                                    key={item.name}
+                                    id={item.name}
+                                    label={field.label || field.name}
+                                    type={field.type}
+                                    width={item.width || "100%"}
+                                    onChangeWidth={(newWidth) => {
+                                      setLayout((prev) =>
+                                        prev.map((x) =>
+                                          x.name === item.name ? { ...x, width: newWidth } : x
+                                        )
+                                      )
+                                    }}
+                                  />
+                                )
+                              })}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
+                      </div>
+                    </div>
 
-                  {/* Sticky Save Preferences Bar */}
-                  <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
-                    <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
-                      <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
-                        <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
-                          View
-                        </p>
-                        <div className="dy-flex dy-items-center dy-gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="dy-rounded-xl"
-                            onClick={async () => {
-                              await resetLayout("personal")
-                              setIsConfiguringView(false)
-                              toast.success("Personal layout reset to default")
-                            }}
-                          >
-                            Reset
-                          </Button>
-                          {isAdminUser && (
+                    {/* Sticky Save Preferences Bar */}
+                    <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
+                      <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
+                        <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
+                          <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
+                            View
+                          </p>
+                          <div className="dy-flex dy-items-center dy-gap-2">
                             <Button
                               variant="outline"
                               size="sm"
                               className="dy-rounded-xl"
                               onClick={async () => {
-                                await saveLayout("global")
+                                await resetLayout("personal")
                                 setIsConfiguringView(false)
-                                toast.success("Saved for everyone successfully")
+                                toast.success("Personal layout reset to default")
                               }}
                             >
-                              Save for Everyone
+                              Reset
                             </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            className="dy-rounded-xl dy-bg-primary dy-text-primary-foreground"
-                            onClick={async () => {
-                              await saveLayout("personal")
-                              setIsConfiguringView(false)
-                              toast.success("Saved for me successfully")
-                            }}
-                          >
-                            Save for Me
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="dy-rounded-xl"
-                            onClick={() => {
-                              setLayout(reconciledLayout)
-                              setIsConfiguringView(false)
-                            }}
-                          >
-                            Cancel
-                          </Button>
+                            {isAdminUser && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="dy-rounded-xl"
+                                onClick={async () => {
+                                  await saveLayout("global")
+                                  setIsConfiguringView(false)
+                                  toast.success("Saved for everyone successfully")
+                                }}
+                              >
+                                Save for Everyone
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="dy-rounded-xl dy-bg-primary dy-text-primary-foreground"
+                              onClick={async () => {
+                                await saveLayout("personal")
+                                setIsConfiguringView(false)
+                                toast.success("Saved for me successfully")
+                              }}
+                            >
+                              Save for Me
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="dy-rounded-xl"
+                              onClick={() => {
+                                setLayout(reconciledLayout)
+                                setIsConfiguringView(false)
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (() => {
-                // Merge query params as default values for new entries
-                const queryParamsDefaults: Record<string, unknown> = {}
-                if (!isEdit) {
-                  searchParams.forEach((value, key) => {
-                    queryParamsDefaults[key] = value
-                  })
-                }
+                ) : (() => {
+                  // Merge query params as default values for new entries
+                  const queryParamsDefaults: Record<string, unknown> = {}
+                  if (!isEdit) {
+                    searchParams.forEach((value, key) => {
+                      queryParamsDefaults[key] = value
+                    })
+                  }
 
-                return (
-                  <FormEngine
-                    collection={slug!}
-                    fields={orderedFields}
-                    defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
-                    onSubmit={(data) => saveMutation.mutate(data)}
-                    onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
-                    onChange={(dirty) => setIsDirty(dirty)}
-                    isLoading={saveMutation.isPending || isPreferenceLoading}
-                    submitLabel={isEdit ? "Save Changes" : "Create Entry"}
-                    readOnly={isEdit ? !canUpdate : !canCreate}
-                    passwordChangeMode={isEdit ? passwordChangeMode : null}
-                    documentId={id}
-                    defaultTabLabel={schema?.labels?.singular || 'General'}
-                  />
-                );
-              })()}
-              <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
+                  return (
+                    <FormEngine
+                      collection={slug!}
+                      fields={orderedFields}
+                      defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
+                      onSubmit={(data) => saveMutation.mutate(data)}
+                      onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
+                      onChange={(dirty) => setIsDirty(dirty)}
+                      isLoading={saveMutation.isPending || isPreferenceLoading}
+                      submitLabel={isEdit ? "Save Changes" : "Create Entry"}
+                      readOnly={isEdit ? !canUpdate : !canCreate}
+                      passwordChangeMode={isEdit ? passwordChangeMode : null}
+                      documentId={id}
+                      defaultTabLabel={schema?.labels?.singular || 'General'}
+                    />
+                  );
+                })()}
+                <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
 
-              {/* Sticky Save Bar */}
-              {(isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
-                <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
-                  <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-4">
-                    <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
-                      <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
-                        {isEdit ? "You have unsaved changes" : `Create a new ${schema?.labels?.singular || schema?.slug}`}
-                      </p>
-                      <Button
-                        size="sm"
-                        className="dy-h-9 dy-px-5 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
-                        onClick={() => document.getElementById('dyrected-form-submit')?.click()}
-                        disabled={saveMutation.isPending}
-                      >
-                        {saveMutation.isPending ? (
-                          <div className="dy-flex dy-items-center dy-gap-2">
-                            <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
-                            Saving...
-                          </div>
-                        ) : (
-                          <div className="dy-flex dy-items-center dy-gap-2">
-                            <Save className="dy-h-3.5 dy-w-3.5" />
-                            {isEdit ? "Save Changes" : "Create Entry"}
-                          </div>
-                        )}
-                      </Button>
+                {/* Sticky Save Bar */}
+                {(isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
+                  <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
+                    <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-4">
+                      <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
+                        <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
+                          {isEdit ? "You have unsaved changes" : `Create a new ${schema?.labels?.singular || schema?.slug}`}
+                        </p>
+                        <Button
+                          size="sm"
+                          className="dy-h-9 dy-px-5 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
+                          onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                          disabled={saveMutation.isPending}
+                        >
+                          {saveMutation.isPending ? (
+                            <div className="dy-flex dy-items-center dy-gap-2">
+                              <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
+                              Saving...
+                            </div>
+                          ) : (
+                            <div className="dy-flex dy-items-center dy-gap-2">
+                              <Save className="dy-h-3.5 dy-w-3.5" />
+                              {isEdit ? "Save Changes" : "Create Entry"}
+                            </div>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Workflow Sidebar — an extra right column when workflow is active */}
-        {showWorkflowSidebar && (
-          <div className="dy-hidden lg:dy-block dy-w-72 dy-shrink-0 dy-border-l dy-border-border/50 dy-bg-muted/5 dy-px-4 dy-py-8 dy-overflow-y-auto">
-            <WorkflowPanel
-              collection={slug!}
-              documentId={id!}
-              workflowMeta={workflowMeta}
-              workflowConfig={workflowConfig}
-            />
-          </div>
-        )}
+          {/* Workflow Sidebar — an extra right column when workflow is active */}
+          {showWorkflowSidebar && (
+            <div className="dy-hidden lg:dy-block dy-w-72 dy-shrink-0 dy-border-l dy-border-border/50 dy-bg-muted/5 dy-px-4 dy-py-8 dy-overflow-y-auto">
+              <WorkflowPanel
+                collection={slug!}
+                documentId={id!}
+                workflowMeta={workflowMeta}
+                workflowConfig={workflowConfig}
+              />
+            </div>
+          )}
         </div>
       </div>
     </NestedEditorProvider>

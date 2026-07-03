@@ -19,8 +19,9 @@ export const Authors = defineCollection({
       type: "join",
       collection: "blog",
       on: "author",
-      label: "Blog Posts",
+      label: "Articles",
       admin: {
+        tab: "Articles",
         description: "Blog posts written by this author",
       },
     },

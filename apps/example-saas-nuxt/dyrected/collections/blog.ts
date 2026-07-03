@@ -5,7 +5,7 @@ import { blogSeed } from "../seed.ts";
 
 export const Blog = defineCollection({
   slug: "blog",
-  labels: { plural: "Articles", singular: "Author" },
+  labels: { plural: "Articles", singular: "Article" },
   admin: {
     useAsTitle: "title",
     group: "Content",

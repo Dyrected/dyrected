@@ -5,6 +5,8 @@
 
 /* Dyrected semantic theme tokens */
 :root {
+  --font-sans: DM Sans, ui-sans-serif, system-ui, sans-serif;
+  --font-display: Fraunces, Georgia, serif;
   color-scheme: light;
   --background: #fefffa;
   --foreground: #111110;
