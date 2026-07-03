@@ -171,9 +171,6 @@ importers:
       '@dyrected/core':
         specifier: workspace:^
         version: link:../../packages/core
-      '@dyrected/db-postgres':
-        specifier: workspace:^
-        version: link:../../packages/db-postgres
       '@dyrected/nuxt':
         specifier: workspace:^
         version: link:../../packages/nuxt
