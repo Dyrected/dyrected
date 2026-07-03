@@ -1,5 +1,12 @@
 # @dyrected/db-postgres
 
+## 2.5.53
+
+### Patch Changes
+
+- Updated dependencies [8e391a5]
+  - @dyrected/core@2.5.53
+
 ## 2.5.52
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @dyrected/knowledge
 
+## 0.2.10
+
+### Patch Changes
+
+- 8e391a5: Document block variants and expand the generated field reference. Adds `Block`/`BlockVariant` guidance (presentation variants, switching behaviour, defaults, admin/preview) and generates the full field-type contract set — `TypedField`, `FieldBase`, every per-type field alias, the admin option types, and the dynamic-options and character/word-limit config types — into the knowledge reference.
+- Updated dependencies [8e391a5]
+  - @dyrected/core@2.5.53
+
 ## 0.2.9
 
 ### Patch Changes

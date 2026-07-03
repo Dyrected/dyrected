@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/storage-local",
-  "version": "2.5.52",
+  "version": "2.5.53",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

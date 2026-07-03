@@ -1,5 +1,15 @@
 # dyrected
 
+## 2.5.53
+
+### Patch Changes
+
+- Updated dependencies [8e391a5]
+- Updated dependencies [8e391a5]
+  - @dyrected/core@2.5.53
+  - @dyrected/knowledge@0.2.10
+  - @dyrected/sdk@2.5.53
+
 ## 2.5.52
 
 ### Patch Changes

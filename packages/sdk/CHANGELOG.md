@@ -1,5 +1,7 @@
 # @dyrected/sdk
 
+## 2.5.53
+
 ## 2.5.52
 
 ### Patch Changes
