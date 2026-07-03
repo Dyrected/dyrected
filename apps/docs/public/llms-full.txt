@@ -3267,6 +3267,8 @@ Use `blocks` when each item in a list can be a different type. This is the found
 // Each item in the array has a `blockType` property identifying its slug
 ```
 
+A block may also declare `variants` — a set of approved layouts that share the same fields. The chosen variant is stored on each item under the reserved `variant` key. See [Presentation variants](/docs/guides/building-a-page-builder#presentation-variants).
+
 See the [Building a Page Builder](/docs/guides/building-a-page-builder) guide for a full walkthrough.
 
 ### `row` — layout only, no data
@@ -6824,6 +6826,123 @@ const dyCta = useDyPath('ctaLabel')
   Want editors to edit this page visually — typing and seeing changes live, or
   clicking an element to jump to its field? Follow [Live
   Preview](/docs/guides/live-preview), which reuses these exact components.
+</Callout>
+
+---
+
+## Presentation variants
+
+Sometimes one block should render in a few approved layouts — a Hero that is sometimes centered, sometimes split with an image, sometimes minimal. Rather than defining `heroCentered`, `heroSplit`, and `heroMinimal` as separate blocks (each duplicating the same fields), give one block a set of **variants**. All variants share the same `fields`; only the rendered layout differs.
+
+Add a `variants` array to the block. This is a block-level property, not a field:
+
+```ts
+const HeroBlock = {
+  slug: 'hero',
+  labels: { singular: 'Hero', plural: 'Heroes' },
+  variants: [
+    { slug: 'centered', label: 'Centered', icon: 'AlignCenter', description: 'Title and subtitle centered, no image' },
+    { slug: 'split', label: 'Split', icon: 'Columns2', description: 'Copy on the left, image on the right' },
+    { slug: 'minimal', label: 'Minimal' },
+  ],
+  fields: [
+    { name: 'heading', label: 'Heading', type: 'text', required: true },
+    { name: 'subheading', label: 'Subheading', type: 'textarea' },
+    { name: 'image', label: 'Image', type: 'relationship', relationTo: 'media' },
+  ],
+}
+```
+
+Each entry is a `BlockVariant`:
+
+| Property | Required | Purpose |
+| --- | --- | --- |
+| `slug` | Yes | Stable identifier stored on the block row under the reserved `variant` key. Passed to your component as the `variant` prop. Never rename it once content exists, or saved rows lose their variant. |
+| `label` | No | Human-readable text shown in the Admin variant switcher. Falls back to `slug`. |
+| `icon` | No | A [Lucide](https://lucide.dev/icons) icon name shown beside the label in the switcher. |
+| `description` | No | One-line summary surfaced as the switcher's tooltip. |
+
+### How editors choose a variant
+
+When a block defines `variants`, the Admin editor shows a compact pill row labelled **Variant** at the top of that block, one pill per variant (with its icon and label). Selecting a pill updates the [live preview](/docs/guides/live-preview) immediately.
+
+<Callout type="info">
+  Switching a variant **preserves the author's content**. Because every variant
+  shares one field set, changing the variant only rewrites the reserved
+  `variant` key — every field value the editor already entered is kept.
+</Callout>
+
+The **first variant is the default**. New blocks start on `variants[0]`, and any older rows saved before the block gained variants are initialised to `variants[0].slug` on load, so saving always round-trips a valid variant. You never define or manage a `variant` field yourself — it is reserved and handled for you.
+
+### What the API returns
+
+The selected variant travels alongside `blockType` on each item:
+
+```json
+{
+  "layout": [
+    { "blockType": "hero", "variant": "split", "heading": "Ship faster", "subheading": "…" }
+  ]
+}
+```
+
+### Render the variant
+
+`<Blocks>` (`<DyrectedBlocks>` in Nuxt) passes `variant` straight through to your component as a prop. Switch layout on it, and always fall back to a default so missing or unrecognised values still render safely.
+
+<Tabs items={['Next.js (React)', 'Nuxt.js (Vue)']}>
+<Tab value="Next.js (React)">
+```tsx
+// components/blocks/Hero.tsx
+
+
+export function Hero({ variant = 'centered', heading, subheading, image }: any) {
+  return (
+    <section className={variant === 'split' ? 'grid md:grid-cols-2 gap-8' : 'py-24 text-center'}>
+      <div>
+        <h1 {...useDyPath('heading')} className="text-5xl font-bold">{heading}</h1>
+        {variant !== 'minimal' && subheading && (
+          <p {...useDyPath('subheading')} className="mt-4 text-xl">{subheading}</p>
+        )}
+      </div>
+      {variant === 'split' && image && <img src={image.url} alt={image.alt} />}
+    </section>
+  )
+}
+```
+</Tab>
+<Tab value="Nuxt.js (Vue)">
+```vue
+<!-- components/blocks/Hero.vue -->
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{ variant?: string; heading: string; subheading?: string; image?: any }>(),
+  { variant: 'centered' },
+)
+const dyHeading = useDyPath('heading')
+const dySubheading = useDyPath('subheading')
+</script>
+
+<template>
+  <section :class="variant === 'split' ? 'grid md:grid-cols-2 gap-8' : 'py-24 text-center'">
+    <div>
+      <h1 v-bind="dyHeading" class="text-5xl font-bold">{{ heading }}</h1>
+      <p v-if="variant !== 'minimal' && subheading" v-bind="dySubheading" class="mt-4 text-xl">
+        {{ subheading }}
+      </p>
+    </div>
+    <img v-if="variant === 'split' && image" :src="image.url" :alt="image.alt" />
+  </section>
+</template>
+```
+</Tab>
+</Tabs>
+
+<Callout type="warning">
+  Only offer variants that already exist as approved designs, and only render
+  variant slugs your component knows how to handle. Do not let editors type
+  arbitrary variant names, and map each slug to a real layout rather than
+  exposing styling implementation details.
 </Callout>
 
 ---
@@ -13519,6 +13638,8 @@ Use `array` for repeatable items with one shared shape. Use a collection instead
 
 Blocks allow each array entry to choose a different configured shape. Keep block slugs stable and make frontend renderers handle unknown block types safely during rolling deployments.
 
+A block may declare `variants: BlockVariant[]` — approved layouts that share the block's `fields`. Each `BlockVariant` has a required stable `slug` and optional `label`, `icon` (a Lucide name), and `description`. The selected slug is stored on the item under the reserved `variant` key and passed to your renderer as a `variant` prop; switching variant preserves field content, and the first variant is the default. See [Presentation variants](/docs/guides/building-a-page-builder#presentation-variants).
+
 ### `json`
 
 Use `json` for genuinely open-ended structured values. Prefer `object`, `array`, or blocks when editors and consumers benefit from an explicit contract.
@@ -13623,6 +13744,75 @@ export interface AuthenticatedUser {
 | <code>email</code> | <code>email?: string</code> | The user's email address. |
 | <code>collection</code> | <code>collection: string</code> | Slug of the collection this user was authenticated against. |
 | <code>roles</code> | <code>roles?: string[]</code> | Array of role strings, if your auth collection has a &#96;roles&#96; field. |
+
+
+## Block
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface Block {
+  /** Stable identifier stored in each block row as `blockType`. */
+  slug: string;
+  /** Human-readable labels shown in the Admin block picker. */
+  labels?: {
+    /** Singular label, for example `Hero`. */
+    singular: string;
+    /** Plural label, for example `Heroes`. */
+    plural: string;
+  };
+  /**
+   * Lucide icon name shown on the block card and in the block library.
+   * Falls back to a generic layout icon when omitted.
+   */
+  icon?: AdminIconName;
+  /** Short one-line summary shown under the block name (block card subtitle). */
+  description?: string;
+  /**
+   * Presentation variants for this block. All variants share the same `fields`;
+   * only the rendered layout differs. The chosen variant is stored on each block
+   * row under the reserved `variant` key and passed to the render component as a
+   * `variant` prop. Switching variant preserves the author's content.
+   */
+  variants?: BlockVariant[];
+  /** Fields that make up this block's payload. */
+  fields: Field[];
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>slug</code> | <code>slug: string</code> | Stable identifier stored in each block row as &#96;blockType&#96;. |
+| <code>labels</code> | <code>labels?: &#123;     /** Singular label, for example &#96;Hero&#96;. */     singular: string;     /** Plural label, for example &#96;Heroes&#96;. */     plural: string;   &#125;</code> | Human-readable labels shown in the Admin block picker. |
+| <code>icon</code> | <code>icon?: AdminIconName</code> | Lucide icon name shown on the block card and in the block library. Falls back to a generic layout icon when omitted. |
+| <code>description</code> | <code>description?: string</code> | Short one-line summary shown under the block name (block card subtitle). |
+| <code>variants</code> | <code>variants?: BlockVariant[]</code> | Presentation variants for this block. All variants share the same &#96;fields&#96;; only the rendered layout differs. The chosen variant is stored on each block row under the reserved &#96;variant&#96; key and passed to the render component as a &#96;variant&#96; prop. Switching variant preserves the author's content. |
+| <code>fields</code> | <code>fields: Field[]</code> | Fields that make up this block's payload. |
+
+
+## BlockVariant
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface BlockVariant {
+  /** Stable identifier stored on the block row as `variant`. */
+  slug: string;
+  /** Human-readable label shown in the variant switcher. Defaults to `slug`. */
+  label?: string;
+  /** Lucide icon name shown beside the variant label. */
+  icon?: AdminIconName;
+  /** Short one-line summary of what this variant looks like. */
+  description?: string;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>slug</code> | <code>slug: string</code> | Stable identifier stored on the block row as &#96;variant&#96;. |
+| <code>label</code> | <code>label?: string</code> | Human-readable label shown in the variant switcher. Defaults to &#96;slug&#96;. |
+| <code>icon</code> | <code>icon?: AdminIconName</code> | Lucide icon name shown beside the variant label. |
+| <code>description</code> | <code>description?: string</code> | Short one-line summary of what this variant looks like. |
 
 
 ## CollectionAfterChangeHook

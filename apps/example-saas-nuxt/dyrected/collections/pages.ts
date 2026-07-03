@@ -13,6 +13,7 @@ export const Pages = defineCollection({
     urlPattern: "/{slug}",
     icon: "ListCheck",
   },
+  audit: true,
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },

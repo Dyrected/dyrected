@@ -160,6 +160,18 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:Block",
+      "name": "Block",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:BlockVariant",
+      "name": "BlockVariant",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:canViewWorkflowDraft",
       "name": "canViewWorkflowDraft",
       "category": "workflows",

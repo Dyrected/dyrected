@@ -85,6 +85,78 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:Block",
+    "name": "Block",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface Block {\n  /** Stable identifier stored in each block row as `blockType`. */\n  slug: string;\n  /** Human-readable labels shown in the Admin block picker. */\n  labels?: {\n    /** Singular label, for example `Hero`. */\n    singular: string;\n    /** Plural label, for example `Heroes`. */\n    plural: string;\n  };\n  /**\n   * Lucide icon name shown on the block card and in the block library.\n   * Falls back to a generic layout icon when omitted.\n   */\n  icon?: AdminIconName;\n  /** Short one-line summary shown under the block name (block card subtitle). */\n  description?: string;\n  /**\n   * Presentation variants for this block. All variants share the same `fields`;\n   * only the rendered layout differs. The chosen variant is stored on each block\n   * row under the reserved `variant` key and passed to the render component as a\n   * `variant` prop. Switching variant preserves the author's content.\n   */\n  variants?: BlockVariant[];\n  /** Fields that make up this block's payload. */\n  fields: Field[];\n}",
+    "members": [
+      {
+        "name": "slug",
+        "signature": "slug: string",
+        "description": "Stable identifier stored in each block row as `blockType`."
+      },
+      {
+        "name": "labels",
+        "signature": "labels?: {\n    /** Singular label, for example `Hero`. */\n    singular: string;\n    /** Plural label, for example `Heroes`. */\n    plural: string;\n  }",
+        "description": "Human-readable labels shown in the Admin block picker."
+      },
+      {
+        "name": "icon",
+        "signature": "icon?: AdminIconName",
+        "description": "Lucide icon name shown on the block card and in the block library.\nFalls back to a generic layout icon when omitted."
+      },
+      {
+        "name": "description",
+        "signature": "description?: string",
+        "description": "Short one-line summary shown under the block name (block card subtitle)."
+      },
+      {
+        "name": "variants",
+        "signature": "variants?: BlockVariant[]",
+        "description": "Presentation variants for this block. All variants share the same `fields`;\nonly the rendered layout differs. The chosen variant is stored on each block\nrow under the reserved `variant` key and passed to the render component as a\n`variant` prop. Switching variant preserves the author's content."
+      },
+      {
+        "name": "fields",
+        "signature": "fields: Field[]",
+        "description": "Fields that make up this block's payload."
+      }
+    ]
+  },
+  {
+    "id": "@dyrected/core:BlockVariant",
+    "name": "BlockVariant",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface BlockVariant {\n  /** Stable identifier stored on the block row as `variant`. */\n  slug: string;\n  /** Human-readable label shown in the variant switcher. Defaults to `slug`. */\n  label?: string;\n  /** Lucide icon name shown beside the variant label. */\n  icon?: AdminIconName;\n  /** Short one-line summary of what this variant looks like. */\n  description?: string;\n}",
+    "members": [
+      {
+        "name": "slug",
+        "signature": "slug: string",
+        "description": "Stable identifier stored on the block row as `variant`."
+      },
+      {
+        "name": "label",
+        "signature": "label?: string",
+        "description": "Human-readable label shown in the variant switcher. Defaults to `slug`."
+      },
+      {
+        "name": "icon",
+        "signature": "icon?: AdminIconName",
+        "description": "Lucide icon name shown beside the variant label."
+      },
+      {
+        "name": "description",
+        "signature": "description?: string",
+        "description": "Short one-line summary of what this variant looks like."
+      }
+    ]
+  },
+  {
     "id": "@dyrected/core:canViewWorkflowDraft",
     "name": "canViewWorkflowDraft",
     "kind": "function",

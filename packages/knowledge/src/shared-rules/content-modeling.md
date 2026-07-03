@@ -184,7 +184,7 @@ If a section displays a list of real-world items, model the list as a Collection
 
 Use a Page Section when the content exists because of where it appears on a page.
 
-A Page Section is a meaningful block of content inside a page.
+A Page Section is a meaningful block of content inside a page. In Dyrected configuration, page sections are typically implemented as blocks.
 
 Page Sections should be reusable by default.
 
@@ -747,6 +747,44 @@ Do not allow editors to type arbitrary variant names.
 
 Use select options based on variants that already exist in the project.
 
+### How Variants Are Defined
+
+Variants are declared on the block, not as a normal field. Add a `variants` array to the block definition. Every variant shares the block's `fields`; only the rendered layout differs.
+
+Each entry in `variants` is a `BlockVariant`:
+
+- `slug` — required. Stable identifier stored on the block row. Never rename an existing slug, or already-saved rows lose their variant.
+- `label` — optional. Human-readable text shown in the variant switcher. Defaults to `slug` when omitted.
+- `icon` — optional. Lucide icon name shown beside the label in the switcher.
+- `description` — optional. One-line summary of what the variant looks like; surfaced as the switcher tooltip.
+
+Example:
+
+```ts
+{
+  slug: "hero",
+  labels: { singular: "Hero", plural: "Heroes" },
+  variants: [
+    { slug: "centered", label: "Centered", icon: "AlignCenter", description: "Title and subtitle centered, no image" },
+    { slug: "split", label: "Split", icon: "Columns2", description: "Copy on the left, image on the right" },
+    { slug: "minimal", label: "Minimal" },
+  ],
+  fields: [ /* one shared field set for every variant */ ],
+}
+```
+
+### How Variants Behave
+
+The selected variant slug is stored on the block row under the reserved `variant` key. Do not define a field named `variant` yourself — it is managed for you.
+
+Switching a variant preserves the author's content. Because all variants share one field set, changing the variant only rewrites the `variant` key; every field value is kept.
+
+The first variant is the default. When a block defines `variants`, new rows and any older rows saved before the block gained variants are initialised to `variants[0].slug`, so saving always round-trips a valid variant.
+
+In the Admin editor, a variant appears as a compact pill row at the top of the block's editor (labelled "Variant"), showing each variant's label and optional icon. Selecting a pill updates the live preview immediately.
+
+Only offer variants that already exist as approved designs. Do not invent variant slugs the frontend cannot render.
+
 ---
 
 ## Media and Image Rule
@@ -1257,13 +1295,12 @@ Reference: https://docs.dyrected.com/docs/reference/configuration
 
 ## Adapter and Deployment Target Rule
 
-Choose the database and storage adapters from the deployment target, not habit.
+Choose database and storage adapters from the deployment target, not habit.
 
 - A file-based SQLite database and a local-filesystem storage adapter require a persistent, writable disk. They are correct for local development and for long-running self-hosted servers with a mounted volume.
-- They are not compatible with ephemeral serverless hosting, which has a read-only or non-persistent filesystem. On such hosts the seed and every editor write fail or vanish. This includes typical serverless deployments.
+- They are not compatible with ephemeral serverless hosting, which has a read-only or non-persistent filesystem. On such hosts, seed data and editor writes fail or vanish. This includes typical serverless deployments.
 - For serverless targets, use a network database adapter (PostgreSQL, MySQL, or MongoDB) and an object-storage adapter (S3-compatible, Cloudinary, or similar). Read credentials from environment variables and keep them server-side.
-- Confirm the deployment target before finalizing adapters. If the project uses Dyrected Cloud, follow the Cloud storage guidance rather than configuring a custom adapter.
+- Confirm the deployment target before finalizing adapters. If the project uses Dyrected Cloud, follow the Cloud guidance rather than configuring custom database or storage adapters.
 - Drive adapter choice from environment configuration so local development and production can differ without code changes.
 
 Reference: https://docs.dyrected.com/docs/adapters/databases and https://docs.dyrected.com/docs/adapters/storage
-

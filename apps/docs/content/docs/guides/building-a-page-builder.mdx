@@ -223,6 +223,123 @@ const dyCta = useDyPath('ctaLabel')
 
 ---
 
+## Presentation variants
+
+Sometimes one block should render in a few approved layouts — a Hero that is sometimes centered, sometimes split with an image, sometimes minimal. Rather than defining `heroCentered`, `heroSplit`, and `heroMinimal` as separate blocks (each duplicating the same fields), give one block a set of **variants**. All variants share the same `fields`; only the rendered layout differs.
+
+Add a `variants` array to the block. This is a block-level property, not a field:
+
+```ts
+const HeroBlock = {
+  slug: 'hero',
+  labels: { singular: 'Hero', plural: 'Heroes' },
+  variants: [
+    { slug: 'centered', label: 'Centered', icon: 'AlignCenter', description: 'Title and subtitle centered, no image' },
+    { slug: 'split', label: 'Split', icon: 'Columns2', description: 'Copy on the left, image on the right' },
+    { slug: 'minimal', label: 'Minimal' },
+  ],
+  fields: [
+    { name: 'heading', label: 'Heading', type: 'text', required: true },
+    { name: 'subheading', label: 'Subheading', type: 'textarea' },
+    { name: 'image', label: 'Image', type: 'relationship', relationTo: 'media' },
+  ],
+}
+```
+
+Each entry is a `BlockVariant`:
+
+| Property | Required | Purpose |
+| --- | --- | --- |
+| `slug` | Yes | Stable identifier stored on the block row under the reserved `variant` key. Passed to your component as the `variant` prop. Never rename it once content exists, or saved rows lose their variant. |
+| `label` | No | Human-readable text shown in the Admin variant switcher. Falls back to `slug`. |
+| `icon` | No | A [Lucide](https://lucide.dev/icons) icon name shown beside the label in the switcher. |
+| `description` | No | One-line summary surfaced as the switcher's tooltip. |
+
+### How editors choose a variant
+
+When a block defines `variants`, the Admin editor shows a compact pill row labelled **Variant** at the top of that block, one pill per variant (with its icon and label). Selecting a pill updates the [live preview](/docs/guides/live-preview) immediately.
+
+<Callout type="info">
+  Switching a variant **preserves the author's content**. Because every variant
+  shares one field set, changing the variant only rewrites the reserved
+  `variant` key — every field value the editor already entered is kept.
+</Callout>
+
+The **first variant is the default**. New blocks start on `variants[0]`, and any older rows saved before the block gained variants are initialised to `variants[0].slug` on load, so saving always round-trips a valid variant. You never define or manage a `variant` field yourself — it is reserved and handled for you.
+
+### What the API returns
+
+The selected variant travels alongside `blockType` on each item:
+
+```json
+{
+  "layout": [
+    { "blockType": "hero", "variant": "split", "heading": "Ship faster", "subheading": "…" }
+  ]
+}
+```
+
+### Render the variant
+
+`<Blocks>` (`<DyrectedBlocks>` in Nuxt) passes `variant` straight through to your component as a prop. Switch layout on it, and always fall back to a default so missing or unrecognised values still render safely.
+
+<Tabs items={['Next.js (React)', 'Nuxt.js (Vue)']}>
+<Tab value="Next.js (React)">
+```tsx
+// components/blocks/Hero.tsx
+import { useDyPath } from '@dyrected/next'
+
+export function Hero({ variant = 'centered', heading, subheading, image }: any) {
+  return (
+    <section className={variant === 'split' ? 'grid md:grid-cols-2 gap-8' : 'py-24 text-center'}>
+      <div>
+        <h1 {...useDyPath('heading')} className="text-5xl font-bold">{heading}</h1>
+        {variant !== 'minimal' && subheading && (
+          <p {...useDyPath('subheading')} className="mt-4 text-xl">{subheading}</p>
+        )}
+      </div>
+      {variant === 'split' && image && <img src={image.url} alt={image.alt} />}
+    </section>
+  )
+}
+```
+</Tab>
+<Tab value="Nuxt.js (Vue)">
+```vue
+<!-- components/blocks/Hero.vue -->
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{ variant?: string; heading: string; subheading?: string; image?: any }>(),
+  { variant: 'centered' },
+)
+const dyHeading = useDyPath('heading')
+const dySubheading = useDyPath('subheading')
+</script>
+
+<template>
+  <section :class="variant === 'split' ? 'grid md:grid-cols-2 gap-8' : 'py-24 text-center'">
+    <div>
+      <h1 v-bind="dyHeading" class="text-5xl font-bold">{{ heading }}</h1>
+      <p v-if="variant !== 'minimal' && subheading" v-bind="dySubheading" class="mt-4 text-xl">
+        {{ subheading }}
+      </p>
+    </div>
+    <img v-if="variant === 'split' && image" :src="image.url" :alt="image.alt" />
+  </section>
+</template>
+```
+</Tab>
+</Tabs>
+
+<Callout type="warning">
+  Only offer variants that already exist as approved designs, and only render
+  variant slugs your component knows how to handle. Do not let editors type
+  arbitrary variant names, and map each slug to a real layout rather than
+  exposing styling implementation details.
+</Callout>
+
+---
+
 ## Adding new block types
 
 1. Define a new block object and add it to the `blocks` array in your config.

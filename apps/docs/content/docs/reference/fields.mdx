@@ -309,6 +309,8 @@ Use `array` for repeatable items with one shared shape. Use a collection instead
 
 Blocks allow each array entry to choose a different configured shape. Keep block slugs stable and make frontend renderers handle unknown block types safely during rolling deployments.
 
+A block may declare `variants: BlockVariant[]` — approved layouts that share the block's `fields`. Each `BlockVariant` has a required stable `slug` and optional `label`, `icon` (a Lucide name), and `description`. The selected slug is stored on the item under the reserved `variant` key and passed to your renderer as a `variant` prop; switching variant preserves field content, and the first variant is the default. See [Presentation variants](/docs/guides/building-a-page-builder#presentation-variants).
+
 ### `json`
 
 Use `json` for genuinely open-ended structured values. Prefer `object`, `array`, or blocks when editors and consumers benefit from an explicit contract.
@@ -413,6 +415,75 @@ export interface AuthenticatedUser {
 | <code>email</code> | <code>email?: string</code> | The user's email address. |
 | <code>collection</code> | <code>collection: string</code> | Slug of the collection this user was authenticated against. |
 | <code>roles</code> | <code>roles?: string[]</code> | Array of role strings, if your auth collection has a &#96;roles&#96; field. |
+
+
+## Block
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface Block {
+  /** Stable identifier stored in each block row as `blockType`. */
+  slug: string;
+  /** Human-readable labels shown in the Admin block picker. */
+  labels?: {
+    /** Singular label, for example `Hero`. */
+    singular: string;
+    /** Plural label, for example `Heroes`. */
+    plural: string;
+  };
+  /**
+   * Lucide icon name shown on the block card and in the block library.
+   * Falls back to a generic layout icon when omitted.
+   */
+  icon?: AdminIconName;
+  /** Short one-line summary shown under the block name (block card subtitle). */
+  description?: string;
+  /**
+   * Presentation variants for this block. All variants share the same `fields`;
+   * only the rendered layout differs. The chosen variant is stored on each block
+   * row under the reserved `variant` key and passed to the render component as a
+   * `variant` prop. Switching variant preserves the author's content.
+   */
+  variants?: BlockVariant[];
+  /** Fields that make up this block's payload. */
+  fields: Field[];
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>slug</code> | <code>slug: string</code> | Stable identifier stored in each block row as &#96;blockType&#96;. |
+| <code>labels</code> | <code>labels?: &#123;     /** Singular label, for example &#96;Hero&#96;. */     singular: string;     /** Plural label, for example &#96;Heroes&#96;. */     plural: string;   &#125;</code> | Human-readable labels shown in the Admin block picker. |
+| <code>icon</code> | <code>icon?: AdminIconName</code> | Lucide icon name shown on the block card and in the block library. Falls back to a generic layout icon when omitted. |
+| <code>description</code> | <code>description?: string</code> | Short one-line summary shown under the block name (block card subtitle). |
+| <code>variants</code> | <code>variants?: BlockVariant[]</code> | Presentation variants for this block. All variants share the same &#96;fields&#96;; only the rendered layout differs. The chosen variant is stored on each block row under the reserved &#96;variant&#96; key and passed to the render component as a &#96;variant&#96; prop. Switching variant preserves the author's content. |
+| <code>fields</code> | <code>fields: Field[]</code> | Fields that make up this block's payload. |
+
+
+## BlockVariant
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface BlockVariant {
+  /** Stable identifier stored on the block row as `variant`. */
+  slug: string;
+  /** Human-readable label shown in the variant switcher. Defaults to `slug`. */
+  label?: string;
+  /** Lucide icon name shown beside the variant label. */
+  icon?: AdminIconName;
+  /** Short one-line summary of what this variant looks like. */
+  description?: string;
+}
+```
+
+| Member | Signature | Description |
+| --- | --- | --- |
+| <code>slug</code> | <code>slug: string</code> | Stable identifier stored on the block row as &#96;variant&#96;. |
+| <code>label</code> | <code>label?: string</code> | Human-readable label shown in the variant switcher. Defaults to &#96;slug&#96;. |
+| <code>icon</code> | <code>icon?: AdminIconName</code> | Lucide icon name shown beside the variant label. |
+| <code>description</code> | <code>description?: string</code> | Short one-line summary of what this variant looks like. |
 
 
 ## CollectionAfterChangeHook

@@ -1,6 +1,6 @@
 ---
 name: dyrected
-description: Work correctly with Dyrected in new and existing projects using installation checks, schema safety rules, and compiled implementation recipes.
+description: Install, model, migrate, and wire Dyrected in new or existing projects, especially when converting an existing website into a reusable-block CMS without changing its design or behavior.
 ---
 
 # Dyrected
@@ -84,6 +84,11 @@ Keep the fallback until production documents are migrated and verified. For rela
 <!-- GENERATED:MODELING_RULES:START -->
 <!-- GENERATED:MODELING_RULES:END -->
 
+### CMS Generation & Migration Workflow
+
+<!-- GENERATED:CMS_GENERATION_RULES:START -->
+<!-- GENERATED:CMS_GENERATION_RULES:END -->
+
 ### Frontend Integration Guidelines
 
 <!-- GENERATED:FRONTEND_RULES:START -->
@@ -131,7 +136,7 @@ export const Users = defineCollection({
   fields: [
     { name: "name", type: "text", label: "Name" },
     {
-      name: "role",
+      name: "roles",
       type: "select",
       label: "Role",
       options: ["member", "editor", "admin"],

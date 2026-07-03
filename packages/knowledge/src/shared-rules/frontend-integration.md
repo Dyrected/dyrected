@@ -40,6 +40,9 @@ For section variants:
 - Do not let editors enter arbitrary variant names
 - Do not expose styling implementation details to editors
 - Use friendly variant labels the client can understand
+- Read the selected variant from the block item's reserved `variant` key
+- The `<Blocks>` renderer passes `variant` straight through to the mapped component as a prop; switch layout on it inside the component
+- Fall back to a default layout when `variant` is missing or unrecognised, so older rows and unknown values still render safely
 
 For media:
 

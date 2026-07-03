@@ -1498,6 +1498,34 @@
     "validation": "Inventoried vue example"
   },
   {
+    "id": "/guides/building-a-page-builder#example-8",
+    "page": "/guides/building-a-page-builder",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-9",
+    "page": "/guides/building-a-page-builder",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-10",
+    "page": "/guides/building-a-page-builder",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/guides/building-a-page-builder#example-11",
+    "page": "/guides/building-a-page-builder",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
     "id": "/guides/configuring-storage#example-1",
     "page": "/guides/configuring-storage",
     "language": "json",
@@ -3363,8 +3391,8 @@
     "id": "/reference/fields#example-52",
     "page": "/reference/fields",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/reference/fields#example-53",
@@ -3375,6 +3403,20 @@
   },
   {
     "id": "/reference/fields#example-54",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/reference/fields#example-55",
+    "page": "/reference/fields",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/reference/fields#example-56",
     "page": "/reference/fields",
     "language": "ts",
     "classification": "syntax-checked",

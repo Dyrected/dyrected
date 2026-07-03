@@ -57,6 +57,11 @@ Keep `renameTo` until production documents have been migrated and verified.
 <!-- GENERATED:MODELING_RULES:START -->
 <!-- GENERATED:MODELING_RULES:END -->
 
+## CMS Generation & Migration Workflow
+
+<!-- GENERATED:CMS_GENERATION_RULES:START -->
+<!-- GENERATED:CMS_GENERATION_RULES:END -->
+
 ## Frontend Integration Guidelines
 
 <!-- GENERATED:FRONTEND_RULES:START -->

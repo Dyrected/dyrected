@@ -22,10 +22,10 @@ const generatedPromptsSource = path.join(
   packageRoot,
   "src/generated/prompts.ts",
 );
-const generateCmsPromptSource = path.join(
-  packageRoot,
-  "src/fixtures/generate-cms.md",
-);
+const promptTemplatesRoot = path.join(packageRoot, "src/prompt-templates");
+const sharedRulesRoot = path.join(packageRoot, "src/shared-rules");
+const promptSnapshotsRoot = path.join(packageRoot, "src/prompt-snapshots");
+const testFixturesRoot = path.join(packageRoot, "src/test-fixtures");
 const docsRoot = path.join(repositoryRoot, "apps/docs/content/docs/recipes");
 const allDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
 const docsPublicRoot = path.join(repositoryRoot, "apps/docs/public");
@@ -415,6 +415,8 @@ const fieldNames = new Set([
   "Field",
   "FieldType",
   "FieldBase",
+  "Block",
+  "BlockVariant",
   "InferDocShape",
   "SystemDocFields",
   "AuthDocFields",
@@ -502,7 +504,7 @@ const jiti =
     : jitiModule(import.meta.url, { interopDefault: true });
 const [{ generateOpenApi }, maximalConfigModule] = await Promise.all([
   jiti.import(path.join(repositoryRoot, "packages/core/src/index.ts")),
-  jiti.import(path.join(packageRoot, "src/fixtures/maximal-config.ts")),
+  jiti.import(path.join(testFixturesRoot, "maximal-config.ts")),
 ]);
 const openapi = generateOpenApi(maximalConfigModule.default);
 const httpMethods = new Set([
@@ -797,17 +799,23 @@ const intentLines = recipes.flatMap((recipe) =>
   ),
 );
 const modelingRules = fs.readFileSync(
-  path.join(packageRoot, "src/rules/content-modeling.md"),
+  path.join(sharedRulesRoot, "content-modeling.md"),
+  "utf8",
+).trim();
+
+const cmsGenerationRules = fs.readFileSync(
+  path.join(sharedRulesRoot, "cms-generation.md"),
   "utf8",
 ).trim();
 
 const frontendRules = fs.readFileSync(
-  path.join(packageRoot, "src/rules/frontend-integration.md"),
+  path.join(sharedRulesRoot, "frontend-integration.md"),
   "utf8",
 ).trim();
 
 const generatedSections = {
   MODELING_RULES: modelingRules,
+  CMS_GENERATION_RULES: cmsGenerationRules,
   FRONTEND_RULES: frontendRules,
   FIELD_TYPES: fieldTypes.map((type) => `\`${type}\``).join(", "),
   RECIPES: recipes
@@ -845,26 +853,26 @@ function renderHybridTemplate(templatePath) {
 }
 
 const aiRules = renderHybridTemplate(
-  path.join(packageRoot, "src/templates/ai-rules.md"),
+  path.join(promptTemplatesRoot, "ai-rules.template.md"),
 );
 const skill = renderHybridTemplate(
-  path.join(packageRoot, "src/templates/SKILL.md"),
+  path.join(promptTemplatesRoot, "skill.template.md"),
 );
 const generateCmsPromptCompiled = renderHybridTemplate(
-  path.join(packageRoot, "src/templates/generate-cms.md"),
+  path.join(promptTemplatesRoot, "generate-cms.template.md"),
 );
 
 outputFile(
-  path.join(packageRoot, "src/fixtures/generate-cms.md"),
+  path.join(promptSnapshotsRoot, "generate-cms.md"),
   generateCmsPromptCompiled,
 );
 
 const generateSitePromptCompiled = renderHybridTemplate(
-  path.join(packageRoot, "src/templates/generate-site.md"),
+  path.join(promptTemplatesRoot, "generate-site.template.md"),
 );
 
 outputFile(
-  path.join(packageRoot, "src/fixtures/generate-site.md"),
+  path.join(promptSnapshotsRoot, "generate-site.md"),
   generateSitePromptCompiled,
 );
 
