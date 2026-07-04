@@ -1,4 +1,0 @@
-{
-  "installCommand": "pnpm install --filter @dyrected/example-saas-nuxt",
-  "buildCommand": "npx turbo build --filter=@dyrected/example-saas-nuxt"
-}
