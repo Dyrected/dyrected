@@ -145,7 +145,7 @@ export function DataTable<TData, TValue>({
           </div>
         )}
       </div>
-      <div className="dy-overflow-x-auto dy-rounded-md dy-border dy-border-border/40 dy-bg-card">
+      <div className="dy-overflow-x-auto dy-rounded-md dy-border dy-border-border/40 dy-bg-background">
         <Table className="dy-min-w-[720px]">
           <TableHeader className="dy-bg-primary/[0.05]">
             {table.getHeaderGroups().map((headerGroup) => (
