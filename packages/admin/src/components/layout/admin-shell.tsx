@@ -727,7 +727,7 @@ export function AdminShell({
           {/* ... existing sidebar and main content ... */}
           <aside
             className={cn(
-              "dy-hidden md:dy-flex dy-flex-col dy-shrink-0 dy-h-full dy-border-r dy-border-border dy-bg-background dy-transition-all dy-duration-300 dy-overflow-hidden",
+              "dy-hidden md:dy-flex dy-flex-col dy-shrink-0 dy-h-full dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
               collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
             )}
           >
@@ -751,7 +751,7 @@ export function AdminShell({
           )}
           <aside
             className={cn(
-              "dy-fixed dy-top-0 dy-left-0 dy-z-40 dy-h-full dy-w-[220px] dy-flex dy-flex-col dy-border-r dy-border-border dy-bg-background dy-transition-transform dy-duration-300 dy-ease-in-out md:dy-hidden",
+              "dy-fixed dy-top-0 dy-left-0 dy-z-40 dy-h-full dy-w-[220px] dy-flex dy-flex-col dy-border-r dy-border-border dy-bg-card dy-transition-transform dy-duration-300 dy-ease-in-out md:dy-hidden",
               mobileOpen ? "dy-translate-x-0" : "dy--translate-x-full"
             )}
           >
@@ -773,7 +773,7 @@ export function AdminShell({
             />
           </aside>
 
-          <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/90">
+          <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/95">
             {/* Mobile top header — hidden on desktop */}
             <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
               {/* Hamburger */}
