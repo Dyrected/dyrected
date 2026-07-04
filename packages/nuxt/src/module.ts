@@ -268,6 +268,20 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     // 7. Vite-specific optimization — exclude @dyrected/admin from dep optimization.
     if (nuxt.options.vite) {
+      // Suppress noisy third-party client directive and sourcemap warnings
+      nuxt.options.vite.build = nuxt.options.vite.build || {};
+      nuxt.options.vite.build.rollupOptions = nuxt.options.vite.build.rollupOptions || {};
+      const originalOnwarn = nuxt.options.vite.build.rollupOptions.onwarn as any;
+      nuxt.options.vite.build.rollupOptions.onwarn = function (warning, defaultHandler) {
+        if (warning.code === "MODULE_LEVEL_DIRECTIVE") return;
+        if (warning.message?.includes("Sourcemap is likely to be incorrect")) return;
+        if (originalOnwarn) {
+          originalOnwarn.call(this, warning, defaultHandler);
+        } else {
+          defaultHandler(warning);
+        }
+      };
+
       const adminRequire = createRequire(_require.resolve("@dyrected/admin"));
       nuxt.options.vite.optimizeDeps = nuxt.options.vite.optimizeDeps || {};
       nuxt.options.vite.optimizeDeps.include = nuxt.options.vite.optimizeDeps.include || [];

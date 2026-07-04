@@ -17,7 +17,7 @@ import type { CollectionConfig } from "@dyrected/core";
  * 5. If logged in (or no auth required), renders the children.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { client, user, setToken, schemas, initialToken } = useDyrected();
+  const { client, user, setToken, schemas, initialToken, config } = useDyrected();
   const queryClient = useQueryClient();
   const handledExternalTokenRef = useRef<string | null>(null);
   const [externalExchangeError, setExternalExchangeError] = useState<string | null>(null);
@@ -98,9 +98,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     if (!isExternalAdminAuth || user || !client) return;
     const providers = adminAuth?.providers || [];
     if (!pendingExternalToken && !externalError && providers.length === 1 && providers[0].autoRedirect !== false) {
-      window.location.assign(buildProviderStartUrl(client.getBaseUrl(), providers[0].id));
+      window.location.assign(buildProviderStartUrl(client.getBaseUrl(), providers[0].id, config.apiKey));
     }
-  }, [adminAuth?.providers, client, externalError, isExternalAdminAuth, pendingExternalToken, user]);
+  }, [adminAuth?.providers, client, externalError, isExternalAdminAuth, pendingExternalToken, user, config.apiKey]);
 
   // 1. Check if the collection is initialized for local auth only
   const { data: initData, isLoading: isLoadingInit } = useQuery({
@@ -134,7 +134,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           providers={providers}
           error={externalError}
           onStart={(providerId) => {
-            window.location.assign(buildProviderStartUrl(client!.getBaseUrl(), providerId));
+            window.location.assign(buildProviderStartUrl(client!.getBaseUrl(), providerId, config.apiKey));
           }}
         />
       );
@@ -174,9 +174,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function buildProviderStartUrl(baseUrl: string, providerId: string) {
+function buildProviderStartUrl(baseUrl: string, providerId: string, apiKey?: string) {
   const startUrl = new URL(`${baseUrl.replace(/\/$/, "")}/api/admin/auth/${providerId}/start`);
   startUrl.searchParams.set("returnTo", window.location.href);
+  if (apiKey) {
+    startUrl.searchParams.set("apikey", apiKey);
+  }
   return startUrl.toString();
 }
 
