@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { Button } from "../ui/button"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
 import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
 import logo from "@/assets/dyrected.svg"
 import type { AdminSchemas } from "../../types/admin-components"
@@ -743,41 +744,41 @@ export function AdminShell({
             />
           </aside>
 
-          {mobileOpen && (
-            <div
-              className="dy-fixed dy-inset-0 dy-z-30 dy-bg-black/30 md:dy-hidden"
-              onClick={() => setMobileOpen(false)}
-            />
-          )}
-          <aside
-            className={cn(
-              "dy-fixed dy-top-0 dy-left-0 dy-z-40 dy-h-full dy-w-[220px] dy-flex dy-flex-col dy-border-r dy-border-border dy-bg-card dy-transition-transform dy-duration-300 dy-ease-in-out md:dy-hidden",
-              mobileOpen ? "dy-translate-x-0" : "dy--translate-x-full"
-            )}
-          >
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="dy-absolute dy-top-3.5 dy-right-3 dy-p-1.5 dy-rounded-md dy-text-muted-foreground hover:dy-bg-muted dy-transition-colors"
-            >
-              <X className="dy-h-4 dy-w-4" />
-            </button>
-            <SidebarInner
-              schemas={schemas}
-              isLoading={isLoading}
-              location={location}
-              logout={logout}
-              isEmbedded={isEmbedded}
-              collapsed={false}
-              onNavigate={() => setMobileOpen(false)}
-              updateInfo={updateInfo}
-            />
-          </aside>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetContent side="left" className="dy-w-[220px] dy-border-r dy-border-border dy-bg-card dy-p-0 md:dy-hidden [&>button]:dy-hidden">
+              <SheetHeader className="dy-sr-only">
+                <SheetTitle>Navigation menu</SheetTitle>
+                <SheetDescription>Displays the mobile admin navigation.</SheetDescription>
+              </SheetHeader>
+              <div className="dy-relative dy-flex dy-h-full dy-flex-col">
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  className="dy-absolute dy-right-3 dy-top-3.5 dy-z-10 dy-rounded-md dy-p-1.5 dy-text-muted-foreground dy-transition-colors hover:dy-bg-muted"
+                  aria-label="Close menu"
+                >
+                  <X className="dy-h-4 dy-w-4" />
+                </button>
+                <SidebarInner
+                  schemas={schemas}
+                  isLoading={isLoading}
+                  location={location}
+                  logout={logout}
+                  isEmbedded={isEmbedded}
+                  collapsed={false}
+                  onNavigate={() => setMobileOpen(false)}
+                  updateInfo={updateInfo}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
 
           <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/95">
             {/* Mobile top header — hidden on desktop */}
             <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
               {/* Hamburger */}
               <button
+                type="button"
                 onClick={() => setMobileOpen(true)}
                 className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
                 aria-label="Open menu"

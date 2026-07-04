@@ -156,7 +156,7 @@ describe("external admin auth", () => {
                 id: "cloud",
                 type: "cloud",
                 displayName: "Dyrected Cloud",
-                startUrl: "https://cloud.dyrected.com/cloud/auth/admin/start",
+                startUrl: "https://dashboard.test/cloud/auth/admin/start",
                 secret: "provider-secret",
               },
             ],
@@ -178,7 +178,7 @@ describe("external admin auth", () => {
 
     expect(res.status).toBe(302);
     const location = new URL(res.headers.get("location")!);
-    expect(location.origin).toBe("https://cloud.dyrected.com");
+    expect(location.origin).toBe("https://dashboard.test");
     expect(location.pathname).toBe("/cloud/auth/admin/start");
     expect(location.searchParams.get("siteId")).toBe("site-a");
     expect(location.searchParams.get("provider")).toBe("cloud");
@@ -207,12 +207,12 @@ describe("external admin auth", () => {
     );
 
     const res = await app.request(
-      "https://cloud.dyrected.com/api/admin/auth/cloud/start?returnTo=http%3A%2F%2Flocalhost%3A3000%2Fadmin",
+      "https://dashboard.test/api/admin/auth/cloud/start?returnTo=http%3A%2F%2Flocalhost%3A3000%2Fadmin",
     );
 
     expect(res.status).toBe(302);
     const location = new URL(res.headers.get("location")!);
-    expect(location.origin).toBe("https://cloud.dyrected.com");
+    expect(location.origin).toBe("https://dashboard.test");
     expect(location.pathname).toBe("/cloud/auth/admin/start");
     expect(location.searchParams.get("provider")).toBe("cloud");
     expect(location.searchParams.get("returnTo")).toBe("http://localhost:3000/admin");
