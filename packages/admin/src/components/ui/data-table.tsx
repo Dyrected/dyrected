@@ -145,9 +145,9 @@ export function DataTable<TData, TValue>({
           </div>
         )}
       </div>
-      <div className="dy-overflow-x-auto dy-rounded-md dy-border dy-border-border/40">
+      <div className="dy-overflow-x-auto dy-rounded-md dy-border dy-border-border/40 dy-bg-card">
         <Table className="dy-min-w-[720px]">
-          <TableHeader>
+          <TableHeader className="dy-bg-primary/[0.05]">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -156,9 +156,9 @@ export function DataTable<TData, TValue>({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   )
                 })}
