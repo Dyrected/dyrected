@@ -22,7 +22,7 @@ const props = defineProps({
 const hasImage = computed(() => {
   const i = props.image
   if (!i) return false
-  return typeof i === 'object' ? Boolean(i.url) : /^(https?:\/\/|\/)/.test(i)
+  return typeof i === 'object' ? Boolean(i.url || i.filename) : /^(https?:\/\/|\/)/.test(i)
 })
 
 // Split hero places the image beside the copy; centered places it below.

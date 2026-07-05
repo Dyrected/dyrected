@@ -98,6 +98,7 @@ export const Pages = defineCollection({
             {
               name: "plans",
               type: "array",
+              drillIn: true,
               fields: [
                 { name: "name", type: "text", required: true },
                 { name: "price", type: "text" },
@@ -105,6 +106,7 @@ export const Pages = defineCollection({
                 { name: "ctaLabel", type: "text" },
                 { name: "ctaLink", type: "url" },
               ],
+              admin: { drillIn: true },
             },
           ],
         },
