@@ -27,7 +27,7 @@ import {
 } from "lucide-react"
 import { ScrollArea } from "../ui/scroll-area"
 import { Input } from "../ui/input"
-import { cn } from "../../lib/utils"
+import { cn, getDisplayFilename } from "../../lib/utils"
 import { getMediaPreviewUrl } from "../../lib/external-media"
 import { useAddMediaFromUrl } from "../../hooks/use-add-media-from-url"
 import type { Media } from "@dyrected/sdk"
@@ -290,7 +290,7 @@ export function MediaLibraryDialog({
                             </div>
                           )}
                           <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2.5 dy-bg-gradient-to-t dy-from-black/80 dy-via-black/40 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
-                            <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{item.filename}</p>
+                            <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-bold dy-uppercase dy-tracking-wider">{getDisplayFilename(item.filename)}</p>
                           </div>
                         </button>
                       ))}
@@ -322,7 +322,7 @@ export function MediaLibraryDialog({
                         </div>
                         <div className="dy-space-y-2">
                           <h4 className="dy-font-bold dy-text-sm dy-truncate dy-leading-tight" title={selectedItem.filename}>
-                            {selectedItem.filename}
+                            {getDisplayFilename(selectedItem.filename)}
                           </h4>
                           <div className="dy-flex dy-flex-wrap dy-items-center dy-gap-2">
                             <span className="dy-text-[9px] dy-font-black dy-uppercase dy-tracking-widest dy-bg-primary/10 dy-text-primary dy-px-2 dy-py-1 dy-rounded-md dy-border dy-border-primary/10">

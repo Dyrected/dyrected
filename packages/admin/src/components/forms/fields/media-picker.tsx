@@ -10,7 +10,7 @@ import {
   Loader2,
   Scissors,
 } from "lucide-react"
-import { cn, getMediaUrl } from "../../../lib/utils"
+import { cn, getMediaUrl, getDisplayFilename } from "../../../lib/utils"
 import { getMediaPreviewUrl } from "../../../lib/external-media"
 import { Progress } from "../../ui/progress"
 import { MediaLibraryDialog } from "../../media/media-library-dialog"
@@ -551,7 +551,7 @@ export function MediaPicker({
 
                   {item && (
                     <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
-                      <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item.filename}</p>
+                      <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{getDisplayFilename(item.filename)}</p>
                     </div>
                   )}
                 </div>
@@ -694,7 +694,7 @@ export function MediaPicker({
                     )}
 
                     <div className="dy-absolute dy-inset-x-0 dy-bottom-0 dy-p-2 dy-bg-gradient-to-t dy-from-black/60 dy-to-transparent dy-opacity-100 dy-transition-opacity sm:dy-opacity-0 sm:dy-group-hover:dy-opacity-100">
-                      <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{item?.filename || displayValue || "Media"}</p>
+                      <p className="dy-text-[10px] dy-text-white dy-truncate dy-font-medium">{getDisplayFilename(item?.filename) || displayValue || "Media"}</p>
                     </div>
                   </div>
                 )

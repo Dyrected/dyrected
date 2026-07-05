@@ -20,7 +20,7 @@ import { JsonEditor } from "../forms/fields/json-editor"
 import { RelationshipPicker } from "../forms/fields/relationship-picker"
 import { MediaPicker } from "../forms/fields/media-picker"
 import { IconPicker } from "../forms/fields/icon-picker"
-import { getMediaUrl, cn } from "../../lib/utils"
+import { getMediaUrl, cn, getDisplayFilename } from "../../lib/utils"
 import { Undo2, Save } from "lucide-react"
 import { FieldRenderer } from "../forms/field-renderer"
 
@@ -467,7 +467,7 @@ export function SpreadsheetEditor({
           let display = ""
           if (!isSelectOrRadio && !isMultiSelect && !isArray && !isObject && value !== null && value !== undefined) {
             if (typeof value === "object") {
-              display = (value as any).title || (value as any).name || (value as any).filename || JSON.stringify(value)
+              display = (value as any).title || (value as any).name || getDisplayFilename((value as any).filename) || JSON.stringify(value)
             } else {
               display = String(value)
             }

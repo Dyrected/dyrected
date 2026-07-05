@@ -171,7 +171,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="dy-border-none even:dy-bg-primary/[0.03] hover:dy-bg-primary/[0.06] dy-transition-colors dy-duration-200"
+                  className="hover:dy-bg-primary/[0.05] dy-transition-colors dy-duration-200"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="dy-py-4 dy-px-4 dy-border-none first:dy-pl-4 last:dy-pr-4">

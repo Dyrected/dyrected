@@ -7,7 +7,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ChevronLeft, Plus } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
-import { cn, getMediaUrl } from "../../lib/utils"
+import { cn, getMediaUrl, getDisplayFilename } from "../../lib/utils"
 import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "../../components/ui/popover"
@@ -791,7 +791,7 @@ export function EditEntryPage() {
                     <div className="dy-flex dy-items-start dy-gap-4">
                       <div className="dy-flex-1 dy-space-y-1">
                         <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Uploaded File</p>
-                        <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{(previewData || entry).filename}</h3>
+                        <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{getDisplayFilename((previewData || entry).filename)}</h3>
                         <p className="dy-text-xs dy-text-muted-foreground">
                           {(previewData || entry).filesize ? `${(((previewData || entry).filesize || 0) / 1024).toFixed(1)} KB` : 'N/A Size'} • {(previewData || entry).mimeType || 'Unknown Type'}
                         </p>

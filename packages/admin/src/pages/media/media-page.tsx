@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-context"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
-import { cn, getMediaUrl } from "../../lib/utils"
+import { cn, getMediaUrl, getDisplayFilename } from "../../lib/utils"
 import {
   Card,
   CardContent,
@@ -532,7 +532,7 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
                 )}
               </div>
               <div className="dy-min-w-0 dy-flex-1">
-                <p className="dy-truncate dy-text-sm dy-font-semibold dy-text-foreground/90" title={item.filename}>{item.filename}</p>
+                <p className="dy-truncate dy-text-sm dy-font-semibold dy-text-foreground/90" title={item.filename}>{getDisplayFilename(item.filename)}</p>
                 <p className="dy-truncate dy-text-[11px] dy-text-muted-foreground sm:dy-hidden">
                   {(item.mimeType?.split("/")[1] || "file")} · {formatBytes(item.filesize)}
                 </p>
@@ -630,7 +630,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
       </CardHeader>
       <CardContent className="!dy-p-3 dy-bg-card">
         <p className="dy-text-[11px] dy-font-bold dy-truncate dy-text-foreground/90 dy-mb-0.5" title={item.filename}>
-          {item.filename}
+          {getDisplayFilename(item.filename)}
         </p>
         <div className="dy-flex dy-items-center dy-justify-between">
           <p className="dy-text-[9px] dy-text-muted-foreground dy-font-bold dy-uppercase dy-tracking-wider">
@@ -780,7 +780,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                 {/* Core Info */}
                 <div className="dy-space-y-4">
                   <div>
-                    <h4 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{item.filename}</h4>
+                    <h4 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{getDisplayFilename(item.filename)}</h4>
                     <p className="dy-text-xs dy-text-muted-foreground">Uploaded on {item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A'}</p>
                   </div>
 
@@ -811,7 +811,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                   <div className="dy-space-y-2">
                     <label className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Filename</label>
                     <Input
-                      value={item.filename || ""}
+                      value={getDisplayFilename(item.filename) || ""}
                       readOnly
                       className="dy-h-10 dy-rounded-lg dy-bg-muted/10 dy-border-border/40 dy-text-muted-foreground focus-visible:dy-ring-0 focus-visible:dy-ring-offset-0 dy-cursor-not-allowed"
                     />

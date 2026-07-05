@@ -1,5 +1,7 @@
+import type { Media } from "@dyrected/sdk";
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
+import { object } from "zod";
 
 const customTwMerge = extendTailwindMerge({
   prefix: "dy-",
@@ -99,4 +101,14 @@ export function getMediaUrl(val: string | any, baseUrl: string) {
 
   // If it is a filename without a leading slash (like "default/Screenshot.jpg"), prepend "/media/"
   return prependBase(`/api/media/${targetUrl}`);
+}
+
+/**
+ * Strips the directory prefix from a filename / storage path, returning only the last component (the actual filename).
+ * E.g., "dyrected_cloud/j95sv/bcuul/WhatsApp Image 2026-06-20 at 12" -> "WhatsApp Image 2026-06-20 at 12"
+ */
+export function getDisplayFilename(filename?: string): string {
+  if (!filename) return "";
+  const parts = filename.split("/");
+  return parts[parts.length - 1];
 }
