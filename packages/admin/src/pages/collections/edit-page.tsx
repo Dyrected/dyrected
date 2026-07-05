@@ -7,7 +7,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ChevronLeft, Plus } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
-import { cn, getMediaUrl, getDisplayFilename } from "../../lib/utils"
+import { cn, getMediaUrl, getDisplayFilename, getSiteUrl } from "../../lib/utils"
 import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "../../components/ui/popover"
@@ -514,12 +514,13 @@ export function EditEntryPage() {
     ? schema.admin.previewUrl(previewData || entry, { locale: 'en' })
     : schema.admin?.previewUrl
 
+  const siteUrl = getSiteUrl(schemas?.admin?.siteUrl);
+
   if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
     previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => entry?.[key.trim()] || "")
   } else if (typeof previewUrl === 'string' && (previewData || entry)) {
     try {
       // Provide current window origin to Jexl context so users can use it in expressions
-      const siteUrl = schemas?.admin?.siteUrl || window.location.origin;
       const context = { ...(previewData || entry), siteUrl };
 
       if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
@@ -530,9 +531,9 @@ export function EditEntryPage() {
     }
   }
 
-  // If the resolved URL is relative, prepend the current origin
+  // If the resolved URL is relative, prepend the resolved site URL
   if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
-    previewUrl = `${schemas?.admin?.siteUrl || window.location.origin}${previewUrl}`
+    previewUrl = `${siteUrl}${previewUrl}`
   }
 
   // Evaluate collection-level read access

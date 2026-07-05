@@ -110,3 +110,16 @@ export function getDisplayFilename(filename?: string): string {
   const parts = filename.split("/");
   return parts[parts.length - 1];
 }
+
+/**
+ * Resolves the site URL, overriding it with the current origin during local development on localhost/127.0.0.1.
+ */
+export function getSiteUrl(configuredSiteUrl?: string): string {
+  if (typeof window !== "undefined") {
+    const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    if (isLocal) {
+      return window.location.origin;
+    }
+  }
+  return configuredSiteUrl || (typeof window !== "undefined" ? window.location.origin : "");
+}

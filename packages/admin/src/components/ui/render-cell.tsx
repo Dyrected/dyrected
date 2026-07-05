@@ -101,7 +101,19 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     )
   }
 
-  return <span className="dy-text-sm dy-font-medium">{typeof value === 'object' ? JSON.stringify(value).slice(0, 50) : String(value)}</span>
+  let text = String(value)
+  if (field.type === "richText") {
+    text = text.replace(/<[^>]*>/g, "")
+  }
+  const truncated = text.slice(0, 30)
+  const hasMore = text.length > 30
+
+  return (
+    <span className="dy-text-sm dy-font-medium" title={String(value)}>
+      {truncated}
+      {hasMore ? "..." : ""}
+    </span>
+  )
 }
 
 function isUploadCollection(slug: string | undefined, schemas: any) {

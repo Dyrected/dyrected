@@ -91,7 +91,7 @@ import { Pagination } from "../../components/ui/pagination"
 import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { CollectionListSlotProps } from "../../types/admin-components"
 import { MediaGrid } from "../../components/media/media-grid"
-import { getMediaUrl, cn } from "../../lib/utils"
+import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
 import jexl from 'jexl'
 import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
 
@@ -538,11 +538,12 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         ? schema.admin.previewUrl(item, { locale: 'en' })
         : schema.admin.previewUrl
 
+      const siteUrl = getSiteUrl(schemas?.admin?.siteUrl)
+
       if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
         previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => String(item[key.trim()] || ""))
       } else if (typeof previewUrl === 'string') {
         try {
-          const siteUrl = schemas?.admin?.siteUrl || window.location.origin
           const context = { ...item, siteUrl }
           if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
             previewUrl = jexl.evalSync(previewUrl, context)
@@ -553,7 +554,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       }
 
       if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
-        previewUrl = `${schemas?.admin?.siteUrl || window.location.origin}${previewUrl}`
+        previewUrl = `${siteUrl}${previewUrl}`
       }
 
       return typeof previewUrl === 'string' ? previewUrl : null
@@ -564,36 +565,36 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       const previewUrl = getPreviewUrl(item)
 
       return (
-        <div className="dy-flex dy-flex-col dy-gap-1">
+        <div className="dy-flex dy-flex-col dy-gap-1 dy-min-w-[240px] dy-flex-shrink-0">
           <Link
             to={`/collections/${slug}/edit/${String(item.id)}`}
             className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
           >
             {cell}
           </Link>
-          <div className="dy-flex dy-items-center dy-gap-2">
+          <div className="dy-flex dy-items-center dy-gap-2.5">
             {previewUrl && (
               <>
                 <a
                   href={previewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
+                  className="dy-text-xs dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
                 >
                   View
                 </a>
-                <span className="dy-text-muted-foreground/40 dy-text-[11px]">|</span>
+                <span className="dy-text-muted-foreground/40 dy-text-xs">|</span>
               </>
             )}
             <Link
               to={`/collections/${slug}/edit/${String(item.id)}`}
-              className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
+              className="dy-text-xs dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
             >
               Edit
             </Link>
-            <span className="dy-text-muted-foreground/40 dy-text-[11px]">|</span>
+            <span className="dy-text-muted-foreground/40 dy-text-xs">|</span>
             <button
-              className="dy-text-[11px] dy-text-muted-foreground hover:dy-text-destructive dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150 disabled:dy-opacity-40 disabled:dy-pointer-events-none"
+              className="dy-text-xs dy-text-muted-foreground hover:dy-text-destructive dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150 disabled:dy-opacity-40 disabled:dy-pointer-events-none"
               onClick={() => handleDelete(String(item.id))}
               disabled={deleteMutation.isPending || !canDelete || (schema.auth && item.id === user?.id)}
               title={!canDelete ? "You do not have permission to delete this entry" : (schema.auth && item.id === user?.id ? "You cannot delete your own account" : undefined)}

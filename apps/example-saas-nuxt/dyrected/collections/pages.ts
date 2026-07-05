@@ -105,7 +105,6 @@ export const Pages = defineCollection({
                 { name: "ctaLabel", type: "text" },
                 { name: "ctaLink", type: "url" },
               ],
-              admin: { drillIn: true },
             },
           ],
         },

@@ -15,7 +15,7 @@ import {
   PopoverTrigger,
 } from "../../ui/popover"
 import { Check } from "lucide-react"
-import { cn } from "../../../lib/utils"
+import { cn, getSiteUrl } from "../../../lib/utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 import { interpolateUrlPattern } from "../../../lib/url-pattern"
 import jexl from "jexl"
@@ -57,7 +57,7 @@ const parseValue = (val: any, siteUrl: string): { type: "custom" | "internal", u
 
 export function UrlField({ field, disabled }: UrlFieldProps) {
   const { client, schemas } = useDyrected()
-  const siteUrl = React.useMemo(() => schemas?.admin?.siteUrl || window.location.origin, [schemas?.admin?.siteUrl])
+  const siteUrl = React.useMemo(() => getSiteUrl(schemas?.admin?.siteUrl), [schemas?.admin?.siteUrl])
   const [openPopover, setOpenPopover] = React.useState(false)
   const [documents, setDocuments] = React.useState<any[]>([])
   const [docsLoading, setDocsLoading] = React.useState(false)
