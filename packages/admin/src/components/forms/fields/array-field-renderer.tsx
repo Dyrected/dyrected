@@ -341,6 +341,73 @@ function SortableArrayItem({
   )
 }
 
+function SimpleArrayItem({
+  id,
+  index,
+  field,
+  basePath,
+  remove,
+  renderField,
+}: {
+  id: string
+  index: number
+  field: FieldSchema
+  basePath: string
+  remove: (index: number) => void
+  renderField: (field: FieldSchema, basePath: string) => React.ReactNode
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 1,
+    opacity: isDragging ? 0.9 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "dy-group dy-flex dy-items-start dy-gap-2 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/70 dy-px-2 dy-py-2 dy-shadow-sm dy-transition-all sm:dy-px-3",
+        isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-muted/20 dy-border-primary/50" : "hover:dy-border-border hover:dy-shadow-md",
+      )}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="dy-mt-1 dy-flex dy-h-9 dy-w-9 dy-flex-shrink-0 dy-cursor-grab dy-items-center dy-justify-center dy-rounded-lg dy-text-muted-foreground/60 dy-transition-all hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
+        title="Drag to reorder"
+      >
+        <GripVertical className="dy-w-4 dy-h-4" />
+      </div>
+
+      <div className="dy-mt-1 dy-min-w-0 dy-flex-1">
+        {renderField(field, `${basePath}.${index}`)}
+      </div>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="dy-mt-1 dy-h-9 dy-w-9 dy-flex-shrink-0 dy-rounded-xl dy-text-muted-foreground/40 hover:dy-bg-destructive/10 hover:dy-text-destructive sm:dy-h-8 sm:dy-w-8"
+        onClick={() => remove(index)}
+        title="Remove item"
+      >
+        <Trash2 className="dy-w-4 dy-h-4" />
+      </Button>
+    </div>
+  )
+}
+
 function singularize(str: string) {
   if (str.endsWith("ies")) return str.slice(0, -3) + "y"
   if (str.endsWith("s") && !str.endsWith("ss")) return str.slice(0, -1)
@@ -358,6 +425,12 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
   // Drill-in opt-in: only when admin.drillIn === true AND drill-in is enabled
   // (i.e. the edit page's live-preview mode is on). Otherwise render inline.
   const isDrillIn = drillInEnabled && (schema.admin as Record<string, unknown>)?.drillIn === true
+
+  // When each item has a single sub-field, the accordion (header preview,
+  // collapse, actions menu) is pure overhead. Render a flat, reorderable list
+  // of the field instead. Drill-in never applies to a single-field array.
+  const singleField = schema.fields?.length === 1 ? schema.fields[0] : undefined
+  const isSimpleList = !!singleField && !isDrillIn
 
   // If drilled in, find the focused item for this array
   const focusedSegment = isDrillIn
@@ -547,25 +620,37 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
       <div className="dy-space-y-3">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={fields.map((field) => field.id)} strategy={verticalListSortingStrategy}>
-            <div className={cn(fields.length > 0 && "dy-space-y-3")}>
-              {fields.map((item, index) => (
-                <SortableArrayItem
-                  key={item.id}
-                  id={item.id}
-                  index={index}
-                  schema={schema}
-                  basePath={basePath}
-                  control={control}
-                  remove={remove}
-                  move={move}
-                  onDuplicate={duplicateItem}
-                  totalCount={fields.length}
-                  isExpanded={!!expandedIds[item.id]}
-                  onToggleExpand={() => toggleExpanded(item.id)}
-                  onDrillInto={handleDrillInto}
-                  renderField={renderField}
-                />
-              ))}
+            <div className={cn(fields.length > 0 && (isSimpleList ? "dy-space-y-2" : "dy-space-y-3"))}>
+              {fields.map((item, index) =>
+                isSimpleList && singleField ? (
+                  <SimpleArrayItem
+                    key={item.id}
+                    id={item.id}
+                    index={index}
+                    field={singleField}
+                    basePath={basePath}
+                    remove={remove}
+                    renderField={renderField}
+                  />
+                ) : (
+                  <SortableArrayItem
+                    key={item.id}
+                    id={item.id}
+                    index={index}
+                    schema={schema}
+                    basePath={basePath}
+                    control={control}
+                    remove={remove}
+                    move={move}
+                    onDuplicate={duplicateItem}
+                    totalCount={fields.length}
+                    isExpanded={!!expandedIds[item.id]}
+                    onToggleExpand={() => toggleExpanded(item.id)}
+                    onDrillInto={handleDrillInto}
+                    renderField={renderField}
+                  />
+                ),
+              )}
             </div>
           </SortableContext>
         </DndContext>
