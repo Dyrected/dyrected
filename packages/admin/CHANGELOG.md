@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.55
+
+### Patch Changes
+
+- 734bd81: Improve table cell rendering with default string truncation, protect primary title columns from shrinking, enlarge row actions layout, and resolve local origin preview overrides for development.
+  - @dyrected/core@2.5.55
+  - @dyrected/sdk@2.5.55
+
 ## 2.5.54
 
 ### Patch Changes

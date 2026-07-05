@@ -1,5 +1,11 @@
 # @dyrected/storage-local
 
+## 2.5.55
+
+### Patch Changes
+
+- @dyrected/core@2.5.55
+
 ## 2.5.54
 
 ### Patch Changes
