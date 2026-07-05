@@ -1,5 +1,19 @@
 # @dyrected/admin
 
+## 2.5.54
+
+### Patch Changes
+
+- feat: visual and functional enhancements to the Admin UI
+
+  - **Filenames**: Added a `getDisplayFilename` utility that strips directory path prefixes (e.g. `dyrected_cloud/...`) to show clean filenames in list views, media cards, and detail dialog inputs.
+  - **Collection Icons**: Resolved custom collection icons (`schema.admin?.icon`) on list page headers, falling back dynamically to `Users` or `Database`.
+  - **Data Table Layout**: Upgraded the `DataTable` visual presentation (borders, rounded corners, row heights, and backgrounds) to align with the media library's clean design aesthetics.
+  - **Field Labels**: Updated `DataTable` search placeholders and View Settings column checklists to render human-readable field labels instead of raw database keys.
+  - **Build Cleanups**: Suppressed Rollup `MODULE_LEVEL_DIRECTIVE` and sourcemap warnings for clean Vite/Nuxt client builds.
+  - @dyrected/core@2.5.54
+  - @dyrected/sdk@2.5.54
+
 ## 2.5.53
 
 ### Patch Changes

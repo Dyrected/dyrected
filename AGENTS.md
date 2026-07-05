@@ -1,6 +1,7 @@
 The goal is to always write production ready code, avoid patches unless there is absolutely no other way.
 
 React state/effect safety:
+
 - Do not call setState during render. Move route/page resets and other synchronization into guarded effects or event handlers.
 - Do not mirror props into state unless the component needs a local draft. Prefer deriving values during render or with useMemo.
 - Effects that set state must synchronize with an external system or a route/key transition, use stable dependencies, and guard no-op updates:

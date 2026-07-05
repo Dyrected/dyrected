@@ -1,5 +1,11 @@
 # @dyrected/db-postgres
 
+## 2.5.54
+
+### Patch Changes
+
+- @dyrected/core@2.5.54
+
 ## 2.5.53
 
 ### Patch Changes

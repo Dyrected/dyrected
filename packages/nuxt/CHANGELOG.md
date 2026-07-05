@@ -1,5 +1,34 @@
 # @dyrected/nuxt
 
+## 2.5.54
+
+### Patch Changes
+
+- feat: visual and functional enhancements to the Admin UI
+
+  - **Filenames**: Added a `getDisplayFilename` utility that strips directory path prefixes (e.g. `dyrected_cloud/...`) to show clean filenames in list views, media cards, and detail dialog inputs.
+  - **Collection Icons**: Resolved custom collection icons (`schema.admin?.icon`) on list page headers, falling back dynamically to `Users` or `Database`.
+  - **Data Table Layout**: Upgraded the `DataTable` visual presentation (borders, rounded corners, row heights, and backgrounds) to align with the media library's clean design aesthetics.
+  - **Field Labels**: Updated `DataTable` search placeholders and View Settings column checklists to render human-readable field labels instead of raw database keys.
+  - **Build Cleanups**: Suppressed Rollup `MODULE_LEVEL_DIRECTIVE` and sourcemap warnings for clean Vite/Nuxt client builds.
+
+- 8ffee2b: feat: add `DyrectedIcon` component for rendering `icon` field values
+
+  The `icon` field type stores a Lucide icon _name_ (e.g. `"ChartNoAxesCombined"`), not SVG markup. The new `DyrectedIcon` component resolves that name to the matching Lucide icon so `icon` field values can be rendered directly:
+
+  - `@dyrected/react` — `<DyrectedIcon name={feature.icon} className="w-6 h-6" />` (backed by `lucide-react`)
+  - `@dyrected/vue` — `<DyrectedIcon :name="feature.icon" class="w-6 h-6" />` (backed by `lucide-vue-next`)
+  - `@dyrected/nuxt` — auto-imported as `<DyrectedIcon>` (no import required)
+
+  All standard Lucide props (`size`, `color`, `strokeWidth`, `class`/`className`, …) are forwarded, plus an optional `fallback` icon name. Integration docs now document the component and include a full per-framework component reference.
+
+- Updated dependencies
+- Updated dependencies [8ffee2b]
+  - @dyrected/admin@2.5.54
+  - @dyrected/vue@2.5.54
+  - @dyrected/core@2.5.54
+  - @dyrected/sdk@2.5.54
+
 ## 2.5.53
 
 ### Patch Changes
