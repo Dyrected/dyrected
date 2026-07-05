@@ -23,7 +23,9 @@ import {
   GripVertical,
   FileUp,
   ArrowLeft,
+  Users,
 } from "lucide-react"
+import { resolveAdminIcon } from "../../lib/admin-icons"
 
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import type { DragEndEvent } from "@dnd-kit/core"
@@ -886,7 +888,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       <PageHeader
         title={schema.labels?.plural || schema.slug}
         description={`Manage your ${schema.labels?.plural || schema.slug} entries and update content.`}
-        icon={Database}
+        icon={resolveAdminIcon(schema.admin?.icon, schema.auth ? Users : Database)}
       >
         <div className="dy-flex dy-items-center dy-gap-2 dy-w-full sm:dy-w-auto">
           <Popover>
