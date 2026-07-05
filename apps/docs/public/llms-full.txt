@@ -10899,7 +10899,25 @@ async function submitForm(data: any) {
 | `useDyPath(field?)`               | ✅ Available | Returns `data-dy-path` attrs for click-to-edit        |
 | `provideDyPath(path)`             | ✅ Available | Scopes the base path for a section subtree            |
 
-The module also registers a `<DyrectedBlocks>` component for rendering block arrays with click-to-edit paths.
+### Auto-imported components
+
+The module registers these components globally — use them in any template with no `import`:
+
+| Component | Purpose |
+| --------- | ------- |
+| `<DyrectedBlocks>` | Renders block arrays by `blockType` with click-to-edit paths |
+| `<DyrectedMedia>`  | Renders image / video / YouTube / download by media type |
+| `<DyrectedIcon>`   | Renders an `icon` field value (a Lucide icon name) as an SVG icon |
+| `<DyrectedAdmin>`  | Embeds the Admin UI |
+
+```vue
+<template>
+  <!-- feature.icon === "ChartNoAxesCombined" -->
+  <DyrectedIcon :name="feature.icon" class="w-6 h-6 text-primary" />
+</template>
+```
+
+Every non-Nuxt-specific export (including `<DyrectedImage>`) is also available from `@dyrected/vue` — see the [Vue integration](/docs/integrations/vue#rendering-components) for the full component reference.
 
 ---
 
@@ -11280,6 +11298,61 @@ Renders the right element based on media type — YouTube embed, image, video, o
 <Note>
 If you are using **Next.js**, prefer `DyrectedImage` and `DyrectedMedia` from `@dyrected/next` — they use `next/image` for automatic optimisation.
 </Note>
+
+---
+
+## Icons — `DyrectedIcon`
+
+The `icon` field type stores the **name** of a [Lucide](https://lucide.dev) icon (e.g. `"ChartNoAxesCombined"`), not SVG markup. `DyrectedIcon` resolves that name to the matching Lucide icon so you can render an `icon` field value directly — no icon library wiring required.
+
+```tsx
+
+
+// feature.icon === "ChartNoAxesCombined"
+<DyrectedIcon name={feature.icon} className="w-6 h-6 text-primary" />
+```
+
+Any standard Lucide prop (`size`, `color`, `strokeWidth`, `className`, …) is forwarded to the underlying icon.
+
+<TypeTable
+  type={{
+    name: {
+      description: 'The `icon` field value — a Lucide icon name. Renders nothing (or the `fallback`) if unknown.',
+      type: 'string',
+      required: true,
+    },
+    fallback: {
+      description: 'Icon name to render when `name` is missing or not a known icon.',
+      type: 'string',
+    },
+    '...props': {
+      description: 'All other Lucide props (`size`, `color`, `strokeWidth`, `className`, …) forwarded to the icon.',
+      type: 'LucideProps',
+    },
+  }}
+/>
+
+<Note>
+Browse valid icon names at [lucide.dev/icons](https://lucide.dev/icons). The Admin UI's icon-picker field uses the same set, so any value an editor can choose will resolve here.
+</Note>
+
+---
+
+## Reference — everything `@dyrected/react` exports
+
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `DyrectedProvider` | Component | Provides the client + config to the tree. Wrap your app once. |
+| `DyPathProvider` | Component | Scopes a `data-dy-path` base for nested live-preview editing. |
+| `DyrectedAdmin` | Component | Embeds the full Admin UI (`@dyrected/react/admin`). |
+| `Blocks` | Component | Renders an array of blocks by `blockType` to your block components. |
+| `DyrectedImage` | Component | `<img>` wrapper for a `Media` object or URL. |
+| `DyrectedMedia` | Component | Renders image / video / YouTube / download by media type. |
+| `DyrectedIcon` | Component | Renders an `icon` field value as a Lucide icon. |
+| `useDyrected` | Hook | Fetch a document / collection / global. |
+| `useLivePreview` | Hook | Subscribe to Admin preview messages + inline editing. |
+| `useDyPath` | Hook | Read the current `data-dy-path` scope. |
+| `DyrectedClient`, `DyrectedError` | Re-export | SDK client + error type, for convenience. |
 
 ---
 
@@ -11891,13 +11964,108 @@ When the editor activates Edit Mode in the preview toolbar, clicking any marked 
 
 ---
 
+## Rendering components
+
+`@dyrected/vue` ships ready-to-use components for the most common content types, so you don't have to hand-render media or icons.
+
+### `<DyrectedImage>`
+
+A plain-`<img>` wrapper that accepts a Dyrected `Media` object or a URL string and handles `width`, `height`, and `alt` automatically.
+
+```vue
+<script setup lang="ts">
+
+</script>
+
+<template>
+  <DyrectedImage :media="post.coverImage" :width="800" :height="400" />
+</template>
+```
+
+### `<DyrectedMedia>`
+
+Renders the right element based on media type — YouTube embed, image, video, or a download link fallback.
+
+```vue
+<script setup lang="ts">
+
+</script>
+
+<template>
+  <DyrectedMedia :media="post.featuredMedia" :width="800" :height="450" />
+</template>
+```
+
+### `<DyrectedIcon>`
+
+The `icon` field type stores the **name** of a [Lucide](https://lucide.dev) icon (e.g. `"ChartNoAxesCombined"`), not SVG markup. `<DyrectedIcon>` resolves that name to the matching icon so you can render an `icon` field value directly.
+
+```vue
+<script setup lang="ts">
+
+</script>
+
+<template>
+  <!-- feature.icon === "ChartNoAxesCombined" -->
+  <DyrectedIcon :name="feature.icon" class="w-6 h-6 text-primary" />
+</template>
+```
+
+Standard Lucide attributes (`size`, `color`, `stroke-width`, `class`, …) fall through to the underlying icon.
+
+<TypeTable
+  type={{
+    name: {
+      description: 'The `icon` field value — a Lucide icon name. Renders nothing (or the `fallback`) if unknown.',
+      type: 'string',
+      required: true,
+    },
+    fallback: {
+      description: 'Icon name to render when `name` is missing or not a known icon.',
+      type: 'string',
+    },
+  }}
+/>
+
+<Note>
+Browse valid icon names at [lucide.dev/icons](https://lucide.dev/icons). The Admin UI's icon-picker field uses the same set, so any value an editor can choose will resolve here. In **Nuxt** these render components are auto-imported (`<DyrectedIcon>`, `<DyrectedMedia>`, `<DyrectedBlocks>`) — no `import` needed.
+</Note>
+
+### `<Blocks>`
+
+Renders an array of blocks by `blockType`, scoping each item's `data-dy-path` for click-to-edit. See [Building a page builder](/docs/guides/building-a-page-builder).
+
+---
+
+## Reference — everything `@dyrected/vue` exports
+
+| Export | Kind | Purpose |
+| --- | --- | --- |
+| `DyrectedAdmin` | Component | Embeds the React-based Admin UI via the React-in-Vue bridge. |
+| `DyrectedImage` | Component | `<img>` wrapper for a `Media` object or URL. |
+| `DyrectedMedia` | Component | Renders image / video / YouTube / download by media type. |
+| `DyrectedIcon` | Component | Renders an `icon` field value as a Lucide icon. |
+| `Blocks` | Component | Renders an array of blocks by `blockType` to your block components. |
+| `DyPathScope` | Component | Scopes a `data-dy-path` base for nested live-preview editing. |
+| `useDyrected` | Composable | Fetch a document / collection / global. |
+| `useLivePreview` | Composable | Subscribe to Admin preview messages + inline editing. |
+| `useDyrectedAuth` | Composable | Admin authentication state + actions. |
+| `useDyPath` | Composable | Read the current `data-dy-path` scope. |
+
+---
+
 ## Package Structure
 
 ```text
 packages/vue/
 ├── src/
 │   ├── components/
-│   │   └── DyrectedAdmin.vue      # React-in-Vue bridge component
+│   │   ├── DyrectedAdmin.vue      # React-in-Vue bridge component
+│   │   ├── DyrectedImage.vue      # <img> wrapper for Media
+│   │   ├── DyrectedMedia.vue      # Type-aware media renderer
+│   │   ├── DyrectedIcon.vue       # Lucide icon renderer for `icon` fields
+│   │   ├── Blocks.ts              # Block-array renderer
+│   │   └── DyPathScope.ts         # data-dy-path scoping
 │   ├── composables/
 │   │   ├── useDyrected.ts         # Content fetching
 │   │   └── useLivePreview.ts      # Live preview + inline editing

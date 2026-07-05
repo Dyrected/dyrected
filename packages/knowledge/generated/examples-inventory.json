@@ -2606,23 +2606,23 @@
   {
     "id": "/integrations/nuxt#example-19",
     "page": "/integrations/nuxt",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/integrations/nuxt#example-20",
-    "page": "/integrations/nuxt",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/integrations/nuxt#example-21",
+    "id": "/integrations/nuxt#example-20",
     "page": "/integrations/nuxt",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nuxt#example-21",
+    "page": "/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/integrations/nuxt#example-22",
@@ -2633,6 +2633,13 @@
   },
   {
     "id": "/integrations/nuxt#example-23",
+    "page": "/integrations/nuxt",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/nuxt#example-24",
     "page": "/integrations/nuxt",
     "language": "ts",
     "classification": "syntax-checked",
@@ -2696,6 +2703,13 @@
   },
   {
     "id": "/integrations/react#example-9",
+    "page": "/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/integrations/react#example-10",
     "page": "/integrations/react",
     "language": "tsx",
     "classification": "syntax-checked",
@@ -2892,6 +2906,27 @@
   },
   {
     "id": "/integrations/vue#example-14",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-15",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-16",
+    "page": "/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/integrations/vue#example-17",
     "page": "/integrations/vue",
     "language": "text",
     "classification": "illustrative",

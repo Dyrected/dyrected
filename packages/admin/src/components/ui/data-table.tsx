@@ -116,7 +116,7 @@ export function DataTable<TData, TValue>({
                         checked={column.getIsVisible()}
                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
-                        {column.id}
+                        {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
                       </DropdownMenuCheckboxItem>
                     )
                   })}
@@ -125,16 +125,20 @@ export function DataTable<TData, TValue>({
           )}
         </div>
 
-        {searchKey && (
-          <Input
-            placeholder={`Search ${searchKey}...`}
-            value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
-            }
-            className="dy-order-2 dy-h-9 dy-w-full sm:dy-order-1 sm:dy-max-w-sm"
-          />
-        )}
+        {searchKey && (() => {
+          const col = table.getColumn(searchKey)
+          const searchLabel = col && typeof col.columnDef.header === "string" ? col.columnDef.header : searchKey
+          return (
+            <Input
+              placeholder={`Search by ${searchLabel.toLowerCase()}...`}
+              value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
+              onChange={(event) =>
+                table.getColumn(searchKey)?.setFilterValue(event.target.value)
+              }
+              className="dy-order-2 dy-h-9 dy-w-full sm:dy-order-1 sm:dy-max-w-sm"
+            />
+          )
+        })()}
         {bulkActions && table.getFilteredSelectedRowModel().rows.length > 0 && (
           <div className="dy-order-3 dy-flex dy-w-full dy-items-center dy-gap-2 dy-animate-in dy-slide-in-from-left-2 sm:dy-order-2 sm:dy-w-auto">
             {bulkActions(

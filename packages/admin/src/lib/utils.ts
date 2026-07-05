@@ -1,7 +1,5 @@
-import type { Media } from "@dyrected/sdk";
 import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
-import { object } from "zod";
 
 const customTwMerge = extendTailwindMerge({
   prefix: "dy-",
