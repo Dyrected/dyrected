@@ -52,25 +52,25 @@ An upload collection is a normal collection with an `upload` config. That config
 <Step>
 ### Upload via the Admin UI
 
-The Admin UI renders a full-featured media manager and file picker for upload collections. Upload collections can use any slug and label — for example, a collection named `sermons` with `upload: true` will be presented using that collection's configured labels rather than always being called "media".
+Open `/admin` and your `media` collection now has a media manager and file picker. (Any upload collection gets this — it uses that collection's own labels, so a collection you name `sermons` shows as "Sermons," not "Media.")
 
-It supports three convenient upload methods:
-1. **Browse**: Click the upload container to pick files via the standard browser selector.
-2. **Drag & Drop**: Drag files from your computer and drop them anywhere on the Media page or Media Picker field preview to open the uploader.
-3. **Clipboard Paste**: Copy any file or screenshot to your clipboard and press `Cmd+V` / `Ctrl+V` on the page to instantly load it into the uploader.
+There are three ways to add a file:
+1. **Browse**: Click the upload container to pick files with the standard browser selector.
+2. **Drag & drop**: Drag files onto the Media page or a Media Picker field preview to open the uploader.
+3. **Clipboard paste**: Copy a file or screenshot, then press `Cmd+V` / `Ctrl+V` on the page to load it into the uploader.
 
-### Media Library and Picker UI
+### Media library and picker
 
-The Media Library page and form-level Media Picker use a consistent grid-based selection interface:
+The Media Library page and the form-level Media Picker share one grid-based selector:
 
-- Single and multiple pickers share the same thumbnail/card treatment.
-- The attachment detail dialog is responsive, scrollable, and keeps large previews inside the viewport.
-- Upload collection metadata fields, such as `alt` or `caption`, can be edited from the media detail flow.
+- Single and multiple pickers use the same thumbnail/card treatment.
+- The attachment detail dialog scrolls and keeps large previews inside the viewport.
+- Metadata fields like `alt` or `caption` are editable from the media detail view.
 
-### Client-side Image Cropping
+### Client-side image cropping
 
-Both the Media Library dashboard and form-level `MediaPicker` fields support client-side image cropping:
-- Hover over any image thumbnail in the forms to reveal a ✂️ **Scissors/Crop** button (shown for raster images like PNG, JPG, and WebP, but not SVGs or videos).
+The Media Library and the form-level `MediaPicker` both support cropping in the browser:
+- Hover an image thumbnail to reveal a crop (scissors) button, shown for raster images like PNG, JPG, and WebP, but not SVGs or videos.
 - Click the crop button on an image (or in the attachment details pane on the main media page) to open the crop dialog.
 - Pick an aspect ratio preset (Free-form, 1:1, 4:3, 3:2, 16:9) and adjust the cropping handles.
 - Click **Save** to apply the crop. The cropped version is uploaded as a new media document and the selection automatically updates to point to the cropped version. All image sizes are generated server-side automatically after upload.

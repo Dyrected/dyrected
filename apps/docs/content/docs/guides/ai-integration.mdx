@@ -3,7 +3,7 @@ title: Using Dyrected with AI Coding Tools
 description: How to set up AI coding agents to work correctly with Dyrected — a complete intent-to-pattern reference, schema rules, and critical DO NOTs.
 ---
 
-Dyrected is declarative and schema-driven, which makes it an unusually good fit for AI coding tools. Everything — collections, globals, fields, hooks, access control — is defined in a single TypeScript config file that any agent can read and modify.
+Dyrected is declarative and schema-driven, which fits AI coding tools well: everything — collections, globals, fields, hooks, access control — is defined in a single TypeScript config file that any agent can read and modify.
 
 This guide covers how to give your AI agent the context it needs to work correctly, and provides a complete intent-to-pattern reference so you can describe what you want in plain language without knowing Dyrected's terminology.
 
@@ -45,7 +45,7 @@ These rules prevent the most common and most damaging AI mistakes with Dyrected.
 - **Never delete a field from the config** — existing documents store data under that key; removing it orphans the data permanently
 - **Never rename a field directly** — use `renameTo` for a lazy, zero-downtime migration
 - **Never add a new field to an existing collection without `defaultValue`** — existing documents need a safe read fallback
-- **Never use function callbacks in `admin.condition`** if the project uses Dyrected Cloud — use Jexl string expressions; functions are stripped on cloud sync
+- **Never use function callbacks in `admin.condition`** if the project uses Dyrected Cloud — use Jexl string expressions (Jexl is a small, safe expression language that travels as a string); functions are stripped on cloud sync
 
 ---
 

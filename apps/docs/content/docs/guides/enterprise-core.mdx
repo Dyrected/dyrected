@@ -3,7 +3,7 @@ title: Using Core in Enterprise Environments
 description: A practical guide to running @dyrected/core in larger teams, regulated environments, and multi-tenant deployments.
 ---
 
-`@dyrected/core` is already structured for enterprise use, but enterprise projects usually fail on operating model, auth boundaries, and schema governance rather than on raw CRUD.
+`@dyrected/core` is already structured for enterprise use, but enterprise projects usually fail on operating model, auth boundaries, and schema governance rather than on basic create/read/update/delete.
 
 This guide focuses on the parts of `core` that matter when multiple teams, environments, and tenants are involved.
 
@@ -28,9 +28,9 @@ If your organization wants a managed control plane instead, start with [Dyrected
 For enterprise teams, treat `dyrected.config.ts` as a reviewed application contract, not as local setup glue.
 
 ```ts
-import { defineConfig } from '@dyrected/core'
-import { PostgresAdapter } from '@dyrected/db-postgres'
-import { S3StorageAdapter } from '@dyrected/storage-s3'
+import { defineConfig } from "@dyrected/core";
+import { PostgresAdapter } from "@dyrected/db-postgres";
+import { S3StorageAdapter } from "@dyrected/storage-s3";
 
 export default defineConfig({
   db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
@@ -45,15 +45,12 @@ export default defineConfig({
   collections: [],
   globals: [],
   cors: {
-    origins: [
-      'https://admin.example.com',
-      'https://www.example.com',
-    ],
+    origins: ["https://admin.example.com", "https://www.example.com"],
   },
   redis: {
     url: process.env.REDIS_URL!,
   },
-})
+});
 ```
 
 Recommended boundaries:
@@ -73,20 +70,17 @@ Collection-level `auth: true` is for application users. Admin access should use 
 
 ```ts
 export default defineConfig({
-  collections: [
-    Customers,
-    Orders,
-  ],
+  collections: [Customers, Orders],
   globals: [],
   adminAuth: {
-    mode: 'external',
-    collectionSlug: 'accounts',
-    provisioningMode: 'jit_plus_membership_management',
+    mode: "external",
+    collectionSlug: "accounts",
+    provisioningMode: "jit_plus_membership_management",
     providers: [
       {
-        id: 'okta',
-        type: 'oidc',
-        displayName: 'Okta',
+        id: "okta",
+        type: "oidc",
+        displayName: "Okta",
         issuer: process.env.OKTA_ISSUER!,
         clientId: process.env.OKTA_CLIENT_ID!,
         clientSecret: process.env.OKTA_CLIENT_SECRET!,
@@ -94,16 +88,16 @@ export default defineConfig({
       },
     ],
     resolveAccess: ({ identity, siteId }) => {
-      const roles = identity.roles ?? []
-      const allowed = roles.includes('cms-admin') || roles.includes('cms-editor')
+      const roles = identity.roles ?? [];
+      const allowed = roles.includes("cms-admin") || roles.includes("cms-editor");
       return {
         allowed,
         roles,
         data: { siteId },
-      }
+      };
     },
   },
-})
+});
 ```
 
 Why this matters:
@@ -120,11 +114,11 @@ See [Separating Admin Auth](/docs/guides/separating-admin-auth) for the local-co
 
 `adminAuth.provisioningMode` is not a cosmetic setting. It changes how identity is admitted into the Admin layer.
 
-| Mode | Use when | Tradeoff |
-| --- | --- | --- |
-| `jit_only` | Access is decided entirely at login time from external claims | Fastest to adopt, but membership is mostly owned by the identity provider |
-| `jit_plus_membership_management` | You want external login plus managed membership records in Dyrected | Better auditability and site-level control |
-| `preprovisioned_only` | Access must exist before first login | Strongest control, more operational overhead |
+| Mode                             | Use when                                                            | Tradeoff                                                                  |
+| -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `jit_only`                       | Access is decided entirely at login time from external claims       | Fastest to adopt, but membership is mostly owned by the identity provider |
+| `jit_plus_membership_management` | You want external login plus managed membership records in Dyrected | Better auditability and site-level control                                |
+| `preprovisioned_only`            | Access must exist before first login                                | Strongest control, more operational overhead                              |
 
 For larger organizations, `jit_plus_membership_management` is usually the practical middle ground.
 
@@ -140,16 +134,16 @@ export default defineConfig({
   collections: [],
   globals: [],
   onSchemaFetch: async (siteId) => {
-    const site = await siteRegistry.lookup(siteId)
-    if (!site) return {}
+    const site = await siteRegistry.lookup(siteId);
+    if (!site) return {};
 
     return {
       collections: buildCollectionsForSite(site),
       globals: buildGlobalsForSite(site),
       adminAuth: buildAdminAuthForSite(site),
-    }
+    };
   },
-})
+});
 ```
 
 Use this when:
@@ -174,23 +168,23 @@ Use these controls together:
 - `hooks` for validation, enrichment, and downstream side effects
 
 ```ts
-import { defineCollection, publishingWorkflow } from '@dyrected/core'
+import { defineCollection, publishingWorkflow } from "@dyrected/core";
 
 export const Policies = defineCollection({
-  slug: 'policies',
+  slug: "policies",
   audit: true,
   workflow: publishingWorkflow(),
   access: {
     read: ({ user }) => !!user,
-    create: ({ user }) => user?.roles?.includes('policy-author') ?? false,
-    update: ({ user }) => user?.roles?.some((role) => ['policy-author', 'publisher'].includes(role)) ?? false,
-    delete: ({ user }) => user?.roles?.includes('admin') ?? false,
+    create: ({ user }) => user?.roles?.includes("policy-author") ?? false,
+    update: ({ user }) => user?.roles?.some((role) => ["policy-author", "publisher"].includes(role)) ?? false,
+    delete: ({ user }) => user?.roles?.includes("admin") ?? false,
   },
   fields: [
-    { name: 'title', label: 'Title', type: 'text', required: true },
-    { name: 'body', label: 'Body', type: 'richText', required: true },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "body", label: "Body", type: "richText", required: true },
   ],
-})
+});
 ```
 
 Recommended discipline:
@@ -198,7 +192,7 @@ Recommended discipline:
 1. Use access rules for authorization, not hidden UI controls.
 2. Enable audit on regulated or operationally sensitive collections.
 3. Use workflows where publishing must be reviewed separately from editing.
-4. Keep `afterChange` and `afterDelete` hooks idempotent and failure-tolerant.
+4. Keep `afterChange` and `afterDelete` hooks idempotent (safe to run more than once) and failure-tolerant.
 
 Relevant docs:
 
@@ -223,13 +217,13 @@ export default defineConfig({
   events: {
     handlers: [
       async (event) => {
-        await enterpriseEventBus.publish(event)
+        await enterpriseEventBus.publish(event);
       },
     ],
     maxAttempts: 8,
     retryDelayMs: 1000,
   },
-})
+});
 ```
 
 This gives you:

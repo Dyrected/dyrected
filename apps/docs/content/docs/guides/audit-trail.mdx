@@ -9,7 +9,7 @@ Dyrected tracks document lifecycle through two complementary layers: **system me
 
 ## System metadata (always on)
 
-Every collection automatically gets the following fields. You do not need to declare them — Dyrected injects them at config normalisation time.
+Every collection automatically gets the following fields. You do not need to declare them — Dyrected injects them when it loads your config.
 
 | Field | Description |
 |---|---|
@@ -18,13 +18,13 @@ Every collection automatically gets the following fields. You do not need to dec
 | `createdBy` | ID of the user who created the document. |
 | `updatedBy` | ID of the user who last modified the document. |
 
-These fields are read-only and hidden in the Admin UI. They are populated from the authenticated user's JWT on every `POST` (create) and `PATCH` (update).
+These fields are read-only and hidden in the Admin UI. They are populated from the signed-in user's JWT (JSON Web Token — the signed session token from login) on every `POST` (create) and `PATCH` (update).
 
 ---
 
 ## Activity logging (`audit: true`)
 
-For a complete change history — including document snapshots and field-level diffs — enable audit logging on any collection:
+For a complete change history — including document snapshots (a full copy of the document at the moment of the change) and field-level diffs — enable audit logging on any collection:
 
 ```ts
 const posts = defineCollection({

@@ -3,7 +3,7 @@ title: Dynamic Pages in Nuxt
 description: Build a dynamic, block-based page builder in Nuxt 3 using catch-all routing and live previews.
 ---
 
-This guide walks you through setting up dynamic, block-based pages in a **Nuxt 3** application using **Dyrected CMS** (a self-hosted, headless, developer-first TypeScript CMS).
+Build pages your editors assemble from reusable blocks — a hero, a features grid, a pricing table — and render them on any URL in a **Nuxt 3** app, with live preview as they edit. Dyrected stores the content (it's a headless CMS: the content API and the frontend stay separate), and Nuxt's catch-all routing turns each page into a real URL.
 
 There are two ways to get started:
 
@@ -31,7 +31,7 @@ npx dyrected init
    - **Custom Setup**: Allows you to pick from other databases (PostgreSQL, MySQL, MongoDB) and cloud storage providers (S3, Backblaze B2, Cloudinary).
 4. **Installs Dependencies**: Installs the required `@dyrected` packages using your project's package manager (`npm`, `pnpm`, or `yarn`).
 5. **Writes Configuration Files**: Creates `dyrected.config.ts` and scaffolding code for admin/catch-all routes automatically.
-6. **Saves an AI Prompt**: Generates a custom `dyrected-ai-prompt.md` in your project containing your configuration details so you can share it with your AI assistant (e.g. Claude or Gemini) to easily build components.
+6. **Saves an AI Prompt**: Generates a custom `dyrected-ai-prompt.md` in your project containing your configuration details so you can share it with your AI assistant (e.g. Claude or Gemini) to help build components.
 
 ---
 
@@ -83,7 +83,7 @@ Choose a storage package to store uploaded media/images:
 | -------------------- | ------------------------------ | --------------------------------------------------------------- |
 | **Local Filesystem** | `@dyrected/storage-local`      | Local development, Docker mounts                                |
 | **AWS S3**           | `@dyrected/storage-s3`         | standard cloud storage, AWS ecosystems                          |
-| **Backblaze B2**     | `@dyrected/storage-b2`         | Highly affordable, high-performance S3-compatible cloud storage |
+| **Backblaze B2**     | `@dyrected/storage-b2`         | Low-cost S3-compatible cloud storage                            |
 | **Cloudinary**       | `@dyrected/storage-cloudinary` | Automatic image optimization, cropping, and dynamic resizing    |
 
 Install your selected storage adapter:
@@ -325,9 +325,9 @@ const SelectedBlock = computed(() => blockComponents[props.block.blockType]);
 
 </Step>
 <Step>
-### Create the Catch-All Route with Live Preview
+### Create the catch-all route with live preview
 
-Nuxt uses catch-all routes (`[...slug].vue`) to dynamically load any page created in the CMS. By wrapping page data in the `useLivePreview` composable, the page content updates instantly inside the admin editor panel!
+Nuxt uses catch-all routes (`[...slug].vue`) to load any page created in the CMS. Wrap the page data in the `useLivePreview` composable and the content updates inside the admin editor panel as you edit.
 
 Create the page at `pages/[...slug].vue`:
 

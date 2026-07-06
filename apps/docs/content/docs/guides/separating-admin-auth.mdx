@@ -11,7 +11,7 @@ The `__admins` collection solves this by giving the dashboard its own dedicated 
 
 ## Define the `__admins` collection
 
-Use the reserved slug `__admins` with `auth: true`:
+Use the reserved slug `__admins` — a slug Dyrected treats specially, wiring it up as the dashboard's login — with `auth: true`:
 
 ```ts
 const admins = defineCollection({

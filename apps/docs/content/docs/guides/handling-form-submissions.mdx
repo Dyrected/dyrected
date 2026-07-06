@@ -5,7 +5,7 @@ description: Learn how to build contact forms, lead captures, and waitlists usin
 
 Contact forms, lead captures, and waitlists all follow the same shape: take user input from your frontend and store it. Instead of standing up a separate backend or reaching for a service like Formspree, you can save submissions straight into a Dyrected collection. This guide builds a contact form end to end.
 
-## 1. Create a Submissions Collection
+## 1. Create a submissions collection
 
 First, define a collection in your `dyrected.config.ts` to store the data. The key is setting the `create` access to `true` (or a function that returns `true`) so that anyone can submit the form.
 
@@ -31,7 +31,7 @@ export default defineConfig({
 })
 ```
 
-## 2. Using the SDK (Recommended)
+## 2. Submit with the SDK (recommended)
 
 The most direct way to submit data is the `.create()` method on your collection.
 
@@ -40,7 +40,7 @@ import { createClient } from '@dyrected/sdk'
 
 const client = createClient({
   baseUrl: 'https://your-site.com/api',
-  siteId: '...' // Required for Cloud mode
+  siteId: 'your-site-id' // Required for Cloud mode
 })
 
 async function handleSubmit(data) {
@@ -57,9 +57,9 @@ async function handleSubmit(data) {
 }
 ```
 
-### Next.js & Nuxt.js Wrappers
+### Next.js and Nuxt wrappers
 
-If you are using the Next.js or Nuxt.js packages, you can use the built-in hooks:
+If you are using the Next.js or Nuxt package, grab the same client from the framework helper instead of constructing it yourself:
 
 ```tsx
 // Next.js example
@@ -69,7 +69,7 @@ const { client } = useDyrected()
 await client.collection('contact-requests').create(data)
 ```
 
-## 3. Using the REST API
+## 3. Submit with the REST API
 
 If you aren't using the SDK, you can send a standard `POST` request to your collection endpoint.
 
@@ -90,11 +90,11 @@ const response = await fetch('https://your-site.com/api/collections/contact-requ
 const result = await response.json()
 ```
 
-## 4. Managing Submissions
+## 4. Manage submissions
 
-Once submitted, your data appears instantly in the **Dyrected Admin**. 
+Once submitted, each entry shows up in the **Dyrected Admin** under your collection.
 
-- **Permissions**: Ensure your `read` access is restricted to admins so user data stays private.
-- **Validation**: Dyrected automatically validates the data against your schema before saving it. If the email is invalid or a required field is missing, you'll get a `400 Bad Request` with details.
-- **Emails**: You can use the `hooks` feature in your collection to send an email notification whenever a new submission is created.
+- **Permissions**: Keep `read` access restricted to admins so submitted data stays private.
+- **Validation**: Dyrected validates the data against your schema before saving. If the email is invalid or a required field is missing, the request fails with a `400 Bad Request` and the details.
+- **Notifications**: To email your team when a submission comes in, add an `afterChange` hook to the collection — see [Using Hooks](/docs/guides/using-hooks) and [Sending Email](/docs/guides/sending-email).
 

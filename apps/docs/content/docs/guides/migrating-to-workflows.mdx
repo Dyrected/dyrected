@@ -3,11 +3,9 @@ title: Migrating to Workflows
 description: Learn how to upgrade your existing string-based status fields to the new Editorial Approval Workflow.
 ---
 
-If you built your Dyrected project before the introduction of Workflows, you likely used a simple string field (e.g. `status` or `_status`) to manage document visibility, paired with access control rules to restrict who could read unpublished content.
+Move an existing `status` field over to Dyrected's built-in Workflows, and get draft/publish handling, per-role permissions, and a full change history without maintaining any of it yourself. This guide walks that migration step by step.
 
-With the new built-in Workflows feature, Dyrected now handles atomic draft saving, public snapshot materialisation, capability gating, and transition history out of the box.
-
-This guide explains how to migrate an existing `status` field to the new `workflow` system.
+If you built your project before Workflows existed, you probably used a string field (like `status` or `_status`) plus access rules to hide unpublished content. Workflows replace that pattern: Dyrected now keeps a separate published copy of each document (the "snapshot" that anonymous visitors see), records every state change, and enforces which roles may publish or reject — all built in.
 
 ---
 
