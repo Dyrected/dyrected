@@ -30,7 +30,7 @@ export default defineConfig({
       fields: [
         { name: 'title', label: 'Title',       type: 'text',     required: true },
         { name: 'slug', label: 'Slug',        type: 'text',     required: true },
-        { name: 'content', label: 'Content',     type: 'richtext' },
+        { name: 'content', label: 'Content',     type: 'richText' },
         { name: 'status', label: 'Status',      type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
         { name: 'publishedAt', label: 'Published At', type: 'date' },
       ],
@@ -112,7 +112,7 @@ export default async function BlogPage() {
 ```vue
 <!-- pages/blog/index.vue -->
 <script setup lang="ts">
-const { data } = await useDyrectedFind('posts', {
+const { data } = await useDyrectedCollection('posts', {
   where: { status: { equals: 'published' } },
   sort: '-publishedAt',
 })
@@ -137,7 +137,7 @@ export default async function BlogPage() {
   })
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?${query}`,
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/posts?${query}`,
     { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
   )
   const { docs } = await res.json()
@@ -216,7 +216,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   })
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?${query}`,
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/posts?${query}`,
     { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
   )
   const { docs } = await res.json()

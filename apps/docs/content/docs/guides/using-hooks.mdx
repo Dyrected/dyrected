@@ -320,7 +320,7 @@ Use a field `afterRead` hook to redact values that should not be visible to non-
   hooks: {
     afterRead: [
       ({ value, user }) => {
-        if (user?.role !== 'admin') return '••••••••'
+        if (!user?.roles?.includes('admin')) return '••••••••'
         return value
       },
     ],
@@ -336,7 +336,7 @@ The same pattern works for hiding a field entirely:
   type: 'textarea',
   hooks: {
     afterRead: [
-      ({ value, user }) => (user?.role === 'admin' ? value : undefined),
+      ({ value, user }) => (user?.roles?.includes('admin') ? value : undefined),
     ],
   },
 }

@@ -13,8 +13,8 @@ description: Restrict sign-up so new users can only join via invitation.
   access: {
     create: () => false,   // no self-registration
     read:   ({ user }) => !!user,
-    update: ({ user, doc }) => user?.sub === doc.id || user?.role === 'admin',
-    delete: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.sub === doc?.id || user?.roles?.includes('admin'),
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
   fields: [
     { name: 'name', label: 'Name', type: 'text' },

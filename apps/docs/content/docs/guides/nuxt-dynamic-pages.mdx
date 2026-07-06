@@ -197,14 +197,14 @@ export default defineConfig({
 >
 > ```ts
 > import { PostgresAdapter } from "@dyrected/db-postgres";
-> import { S3Adapter } from "@dyrected/storage-s3";
+> import { S3StorageAdapter } from "@dyrected/storage-s3";
 >
 > export default defineConfig({
 >   // ... collections ...
 >   db: new PostgresAdapter({
->     connectionString: process.env.DATABASE_URL,
+>     url: process.env.DATABASE_URL,
 >   }),
->   storage: new S3Adapter({
+>   storage: new S3StorageAdapter({
 >     bucket: process.env.S3_BUCKET,
 >     region: process.env.S3_REGION,
 >     credentials: {
@@ -288,6 +288,8 @@ defineProps<{
 ### 3. Dispatch Blocks with a `BlockRenderer.vue`
 
 The `BlockRenderer` resolves which Vue component should be loaded based on the CMS block type. It also adds the `data-dy-path` property which Dyrected needs to enable inline highlights in the editor.
+
+This section builds the dispatcher by hand so you can see exactly how block resolution and `data-dy-path` scoping work. If you'd rather not maintain it yourself, `@dyrected/nuxt` auto-imports a `<DyrectedBlocks>` component that does the same dispatch and path scoping for you — see [Building a Page Builder](/docs/guides/building-a-page-builder) for that higher-level approach. The rest of this guide uses the hand-written renderer.
 
 ```vue
 <!-- components/BlockRenderer.vue -->

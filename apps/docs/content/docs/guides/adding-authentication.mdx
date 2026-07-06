@@ -48,7 +48,7 @@ Logging in exchanges an email and password for a token and the user record. Stor
 ```ts
 import { createClient } from '@dyrected/sdk'
 
-const client = createClient({ baseUrl: '/dyrected' })
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
 
 const { token, user } = await client.collection('users').login(
   'jane@example.com',
@@ -112,8 +112,8 @@ With login working, restrict who can touch your data. Each collection takes an `
   access: {
     read:   ({ user }) => !!user,
     create: ({ user }) => !!user,
-    update: ({ user, doc }) => user?.sub === doc.userId,
-    delete: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.sub === doc?.userId,
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
 }
 ```

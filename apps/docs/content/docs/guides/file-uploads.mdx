@@ -104,7 +104,7 @@ const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
-const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/media`, {
+const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/media`, {
   method: 'POST',
   headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
   body: form,

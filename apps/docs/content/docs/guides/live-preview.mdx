@@ -5,7 +5,7 @@ description: Build a real landing page from blocks, then edit it visually — ty
 
 Imagine you're launching **SnackTrack Pro**, a SaaS product. Marketing needs a landing page they can reshape without a developer — swap the hero copy, add a pricing tier, drop in a testimonial — and _see the result as they type_. No publish, no reload, no guessing what the change will look like.
 
-That's live preview. Your frontend renders inside an iframe in the Admin, draft data streams in over `postMessage`, and the page re-renders instantly. With **click-to-edit**, an editor can also click the headline in the preview and the form scrolls to — and focuses — the exact field behind it.
+That's live preview. Your frontend renders inside an iframe in the Admin, draft data streams in over `postMessage` (the browser's built-in channel for sending data between a page and an iframe it hosts), and the page re-renders instantly. With **click-to-edit**, an editor can also click the headline in the preview and the form scrolls to — and focuses — the exact field behind it.
 
 This guide builds that page end to end: a landing page assembled from **five blocks**, wired for real-time preview and click-to-edit.
 
@@ -221,12 +221,17 @@ export default function PageBlocks({ layout }: { layout: any[] }) {
 import { useDyPath } from "@dyrected/next";
 
 export default function Hero({ heading, subheading, ctaLabel, ctaLink }: any) {
+  // useDyPath is a hook — call it unconditionally, never inside `subheading && ...`.
+  const dyHeading = useDyPath("heading");
+  const dySubheading = useDyPath("subheading");
+  const dyCtaLabel = useDyPath("ctaLabel");
+
   return (
     <section className="hero">
-      <h1 {...useDyPath("heading")}>{heading}</h1>
-      {subheading && <p {...useDyPath("subheading")}>{subheading}</p>}
+      <h1 {...dyHeading}>{heading}</h1>
+      {subheading && <p {...dySubheading}>{subheading}</p>}
       {ctaLabel && (
-        <a href={ctaLink} {...useDyPath("ctaLabel")}>
+        <a href={ctaLink} {...dyCtaLabel}>
           {ctaLabel}
         </a>
       )}
@@ -240,12 +245,16 @@ export default function Hero({ heading, subheading, ctaLabel, ctaLink }: any) {
 import { useDyPath } from "@dyrected/next";
 
 export default function Testimonial({ quote, author, role }: any) {
+  const dyQuote = useDyPath("quote");
+  const dyAuthor = useDyPath("author");
+  const dyRole = useDyPath("role");
+
   return (
     <figure className="testimonial">
-      <blockquote {...useDyPath("quote")}>{quote}</blockquote>
+      <blockquote {...dyQuote}>{quote}</blockquote>
       <figcaption>
-        <span {...useDyPath("author")}>{author}</span>
-        {role && <span {...useDyPath("role")}>{role}</span>}
+        <span {...dyAuthor}>{author}</span>
+        {role && <span {...dyRole}>{role}</span>}
       </figcaption>
     </figure>
   );
@@ -335,7 +344,7 @@ The `features` and `pricing` blocks follow the same pattern for their scalar fie
 Point `previewUrl` at the page's real URL (step 1 already does) and have that page use `useLivePreview`. The **same route serves both** the public page and the preview:
 
 - Server-side, the page fetches **published** data → what visitors see.
-- `useLivePreview` swaps in **draft** data only when a `postMessage` arrives from the Admin iframe. Outside the Admin, none arrives, so it just renders the published content.
+- `useLivePreview` swaps in **draft** data only when a `postMessage` arrives from the Admin iframe. Outside the Admin, none arrives, so it renders the published content.
 
 <Callout type="warn">
   `useLivePreview` accepts only `initialData` and `serverURL`. Relationship `depth` goes on the **data fetch**, not the

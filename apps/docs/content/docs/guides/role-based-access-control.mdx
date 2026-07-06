@@ -3,11 +3,11 @@ title: Role-Based Access Control
 description: Restrict what different users can read, create, edit, and delete based on their role.
 ---
 
-Access control in Dyrected comes down to two things: giving each user a role, then writing small `access` functions that decide what that role can do. This guide walks through both, from a single `role` field up to per-field restrictions and a frontend role check.
+Access control in Dyrected comes down to two things: giving each user roles, then writing small `access` functions that decide what those roles can do. This guide walks through both, from the `roles` field up to per-field restrictions and a frontend role check.
 
-## 1. Add a role field to your users collection
+## 1. Add a roles field to your users collection
 
-Roles live as a field on your users collection. Add a `role` field with the roles you want, and lock it down so only admins can reassign it:
+Every auth collection gets a `roles` field automatically — an array of role strings on each user. Declare it yourself when you want to set the available options and lock down who can change it, so only admins can reassign roles:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -17,13 +17,13 @@ Roles live as a field on your users collection. Add a `role` field with the role
   fields: [
     { name: 'name', label: 'Name', type: 'text', required: true },
     {
-      name: 'role',
-      label: 'Role',
-      type: 'select',
+      name: 'roles',
+      label: 'Roles',
+      type: 'multiSelect',
       options: ['admin', 'editor', 'viewer'],
-      defaultValue: 'viewer',
+      defaultValue: [],
       access: {
-        update: ({ user }) => user?.role === 'admin',  // only admins can change roles
+        update: ({ user }) => user?.roles?.includes('admin'),  // only admins can change roles
       },
     },
   ],
@@ -44,8 +44,8 @@ With roles in place, restrict the users collection itself so nobody can self-reg
   access: {
     read:   ({ user }) => !!user,
     create: () => false,                                    // use invite instead
-    update: ({ user, id }) => user?.role === 'admin' || user?.sub === id,
-    delete: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.roles?.includes('admin') || user?.sub === doc?.id,
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
 }
 ```
@@ -54,7 +54,7 @@ With roles in place, restrict the users collection itself so nobody can self-reg
 
 ## 3. Apply roles to a content collection
 
-Now put those roles to work on real content. This `posts` collection lets anyone read published posts, lets editors create and manage their own, and reserves full control for admins. The `beforeChange` hook stamps `createdBy` so the "edit own" rule has something to check:
+Now put those roles to work on real content. This `posts` collection lets anyone read published posts, lets editors create and manage their own, and reserves full control for admins. The "edit own" rule leans on `createdBy`, which Dyrected injects and stamps with the author's id automatically on create — you don't declare it:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -62,26 +62,17 @@ Now put those roles to work on real content. This `posts` collection lets anyone
   slug: 'posts',
   access: {
     read: ({ user, doc }) => doc?.status === 'published' || !!user,
-    create: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
+    create: ({ user }) => user?.roles?.includes('admin') || user?.roles?.includes('editor'),
     update: ({ user, doc }) => {
-      if (user?.role === 'admin') return true
-      return user?.role === 'editor' && doc?.createdBy === user?.sub
+      if (user?.roles?.includes('admin')) return true
+      return user?.roles?.includes('editor') && doc?.createdBy === user?.sub
     },
-    delete: ({ user }) => user?.role === 'admin',
-  },
-  hooks: {
-    beforeChange: [
-      ({ data, operation, user }) => {
-        if (operation === 'create') return { ...data, createdBy: user?.sub }
-        return data
-      },
-    ],
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
   fields: [
-    { name: 'title', label: 'Title',     type: 'text' },
-    { name: 'content', label: 'Content',   type: 'richtext' },
-    { name: 'status', label: 'Status',    type: 'select', options: ['draft', 'published'], defaultValue: 'draft' },
-    { name: 'createdBy', label: 'Created By', type: 'relationship', relationTo: 'users' },
+    { name: 'title', label: 'Title',   type: 'text' },
+    { name: 'content', label: 'Content', type: 'richText' },
+    { name: 'status', label: 'Status',  type: 'select', options: ['draft', 'published'], defaultValue: 'draft' },
   ],
 }
 ```
@@ -98,8 +89,8 @@ Access rules also work on a single field, not just the whole collection. Attach 
   name: 'internalNotes',
   type: 'textarea',
   access: {
-    read:   ({ user }) => user?.role === 'admin' || user?.role === 'editor',
-    update: ({ user }) => user?.role === 'admin',
+    read:   ({ user }) => user?.roles?.includes('admin') || user?.roles?.includes('editor'),
+    update: ({ user }) => user?.roles?.includes('admin'),
   },
 }
 ```
@@ -110,27 +101,31 @@ Fields stripped by `read` access never appear in API responses for that user —
 
 ## 5. Check the role on the frontend
 
-Access rules protect your data on the server. On the frontend you'll often want to match them — showing admin controls only to admins, for example. Read the signed-in user and check their role:
+Access rules protect your data on the server. On the frontend you'll often want to match them — showing admin controls only to admins, for example. Read the signed-in user and check their roles. Because `me()` reads the full user record, `roles` is always populated here:
 
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
 ```ts
 import { createClient } from '@dyrected/sdk'
 
-const client = createClient({ baseUrl: '/dyrected' })
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
 client.setToken(userToken)
 
 const user = await client.collection('users').me()
-// user.role === 'admin' | 'editor' | 'viewer'
+// user.roles is an array, e.g. ['editor']
 ```
 </Tab>
 <Tab value="Next.js">
 ```ts
 // Server action protection
-import { getDyrectedAuth } from '@dyrected/next'
+import { cookies } from 'next/headers'
+import { getDyrectedClient } from '@dyrected/next'
 
-const { user } = await getDyrectedAuth()
-if (user?.role !== 'admin') {
+const client = getDyrectedClient()
+client.setToken(cookies().get('dyrected-token')?.value ?? '')
+
+const user = await client.collection('users').me()
+if (!user?.roles?.includes('admin')) {
   throw new Error('Forbidden')
 }
 ```
@@ -142,8 +137,8 @@ const { user } = useDyrectedAuth('users')
 </script>
 
 <template>
-  <AdminControls v-if="user?.role === 'admin'" />
-  <EditorControls v-else-if="user?.role === 'editor'" />
+  <AdminControls v-if="user?.roles?.includes('admin')" />
+  <EditorControls v-else-if="user?.roles?.includes('editor')" />
 </template>
 ```
 </Tab>

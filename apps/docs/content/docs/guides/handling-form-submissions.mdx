@@ -18,7 +18,7 @@ export default defineConfig({
     {
       slug: 'contact-requests',
       access: {
-        read: ({ req }) => req.user?.role === 'admin', // Only admins can read
+        read: ({ user }) => user?.roles?.includes('admin'), // Only admins can read
         create: () => true,                            // Anyone can create
       },
       fields: [
@@ -65,7 +65,7 @@ If you are using the Next.js or Nuxt.js packages, you can use the built-in hooks
 // Next.js example
 import { useDyrected } from '@dyrected/next'
 
-const client = useDyrected()
+const { client } = useDyrected()
 await client.collection('contact-requests').create(data)
 ```
 

@@ -145,7 +145,7 @@ const nav      = await client.global('navigation').get()
 Globals are edited in the Admin UI, but you can also update them over the API with an admin token. Send a `PATCH` with only the fields you want to change:
 
 ```bash
-PATCH /dyrected/globals/site-settings
+PATCH /api/globals/site-settings
 Authorization: Bearer <admin-token>
 Content-Type: application/json
 

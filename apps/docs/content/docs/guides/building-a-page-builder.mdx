@@ -174,13 +174,19 @@ Each component receives its block's fields as props. Annotate editable elements 
 import { useDyPath } from '@dyrected/next'
 
 export function Hero({ heading, subheading, ctaLabel, ctaUrl, image }: any) {
+  // Call useDyPath unconditionally at the top — it's a hook, so it can't sit
+  // inside a conditional like `subheading && ...`.
+  const dyHeading = useDyPath('heading')
+  const dySubheading = useDyPath('subheading')
+  const dyCtaLabel = useDyPath('ctaLabel')
+
   return (
     <section className="py-24 text-center">
       {image && <img src={image.url} alt={image.alt} className="mx-auto mb-8" />}
-      <h1 {...useDyPath('heading')} className="text-5xl font-bold">{heading}</h1>
-      {subheading && <p {...useDyPath('subheading')} className="mt-4 text-xl">{subheading}</p>}
+      <h1 {...dyHeading} className="text-5xl font-bold">{heading}</h1>
+      {subheading && <p {...dySubheading} className="mt-4 text-xl">{subheading}</p>}
       {ctaLabel && (
-        <a href={ctaUrl} {...useDyPath('ctaLabel')} className="mt-8 inline-block rounded-md bg-black px-6 py-3 text-white">
+        <a href={ctaUrl} {...dyCtaLabel} className="mt-8 inline-block rounded-md bg-black px-6 py-3 text-white">
           {ctaLabel}
         </a>
       )}
@@ -290,12 +296,15 @@ The selected variant travels alongside `blockType` on each item:
 import { useDyPath } from '@dyrected/next'
 
 export function Hero({ variant = 'centered', heading, subheading, image }: any) {
+  const dyHeading = useDyPath('heading')
+  const dySubheading = useDyPath('subheading')
+
   return (
     <section className={variant === 'split' ? 'grid md:grid-cols-2 gap-8' : 'py-24 text-center'}>
       <div>
-        <h1 {...useDyPath('heading')} className="text-5xl font-bold">{heading}</h1>
+        <h1 {...dyHeading} className="text-5xl font-bold">{heading}</h1>
         {variant !== 'minimal' && subheading && (
-          <p {...useDyPath('subheading')} className="mt-4 text-xl">{subheading}</p>
+          <p {...dySubheading} className="mt-4 text-xl">{subheading}</p>
         )}
       </div>
       {variant === 'split' && image && <img src={image.url} alt={image.alt} />}
