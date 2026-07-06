@@ -4809,7 +4809,7 @@ Dyrected is designed to work well with AI coding agents. Because your CMS defini
 npx skills add dyrected/agent-skills@dyrected
 ```
 
-Then use `/dyrected-cms` at the start of any task. The skill covers setup, content modeling, hooks, access control, relationships, uploads, workflows, and more — all from plain-language descriptions, without needing to know Dyrected's internal terminology first.
+Then use `/dyrected` at the start of any task. The skill covers setup, content modeling, hooks, access control, relationships, uploads, workflows, and more — all from plain-language descriptions, without needing to know Dyrected's internal terminology first.
 
 → [Using Dyrected with AI Coding Tools](/docs/guides/ai-integration)
 
