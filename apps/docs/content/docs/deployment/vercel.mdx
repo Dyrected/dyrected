@@ -98,13 +98,13 @@ export async function POST(req: NextRequest) {
 The Dyrected Hono router is compatible with the Vercel Edge Runtime for lower latency. Update your catch-all route:
 
 ```ts
-// app/dyrected/[...route]/route.ts
+// app/api/[...route]/route.ts
 import { dyrectedNextHandler } from '@dyrected/next'
 import config from '@/dyrected.config'
 
 export const runtime = 'edge'
 
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config, { basePath: '' })
 ```
 
 > **Edge limitations:** The Edge Runtime does not support `better-sqlite3`. Use `@dyrected/db-postgres` with a Neon serverless driver, or keep the default Node.js runtime.

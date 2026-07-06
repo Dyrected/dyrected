@@ -89,14 +89,14 @@ export default defineConfig({
 ### App Router
 
 ```ts
-// app/dyrected/[...route]/route.ts  (or src/app/dyrected/[...route]/route.ts)
+// app/api/[...route]/route.ts  (or src/app/api/[...route]/route.ts)
 import { dyrectedNextHandler } from "@dyrected/next";
 import config from "../../../dyrected.config";
 
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config);
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config, { basePath: "" });
 ```
 
-All Dyrected REST endpoints are now available at `/dyrected/...`.
+All Dyrected REST endpoints are now available at `/api/...`.
 
 If your catch-all route uses another prefix, pass it explicitly—for example,
 `dyrectedNextHandler(config, { basePath: '/cms' })`.
@@ -202,7 +202,7 @@ When you run `npx dyrected init`, it generates an `instrumentation.ts` file at y
 
 ```
   ➜  Dyrected admin:  http://localhost:3000/admin
-  ➜  Dyrected API:    http://localhost:3000/dyrected
+  ➜  Dyrected API:    http://localhost:3000/api
 ```
 
 The base URL is read from `NEXT_PUBLIC_APP_URL`, falling back to `http://localhost:3000`. This works in both development and production.
@@ -215,8 +215,8 @@ The base URL is read from `NEXT_PUBLIC_APP_URL`, falling back to `http://localho
 # .env.local
 DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
 
-# Dyrected API base URL (the Next.js app URL + /dyrected)
-NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000/dyrected
+# Dyrected site URL (SDK methods append /api themselves)
+NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000
 
 # Server-side API key (never expose to browser)
 DYRECTED_API_KEY=sk_live_...

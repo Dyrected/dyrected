@@ -42,11 +42,11 @@ export default defineConfig({
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
-// app/dyrected/[...route]/route.ts
+// app/api/[...route]/route.ts
 import { dyrectedNextHandler } from '@dyrected/next'
 import config from '@/dyrected.config'
 
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config, { basePath: '' })
 ```
 </Tab>
 <Tab value="Nuxt.js">
@@ -56,7 +56,7 @@ import config from './dyrected.config'
 
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
-  dyrected: { ...config, apiBase: '/dyrected' },
+  dyrected: { ...config, apiBase: '/api' },
 })
 ```
 </Tab>

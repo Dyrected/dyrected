@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "api-doc-hitl": {
+      "source": "she-WritesCode/technical-writing-skill-pack",
+      "sourceType": "github",
+      "skillPath": "skills/api-doc-hitl/SKILL.md",
+      "computedHash": "8a926c956bc707bc84914ed32fc8853f0c2c830bd1df05ffbbc4723062cc0d0b"
+    }
+  }
+}

@@ -58,7 +58,7 @@ export default defineNuxtConfig({
   modules: [["@dyrected/nuxt", { adminPath: "admin" }]],
   dyrected: {
     ...config,
-    apiBase: "/dyrected",
+    apiBase: "/api",
   },
 });
 ```
@@ -69,7 +69,7 @@ The `adminPath` option tells the module where your admin page lives, so it can p
 
 ```
   ➜  Dyrected admin:  http://localhost:3000/admin
-  ➜  Dyrected API:    http://localhost:3000/dyrected
+  ➜  Dyrected API:    http://localhost:3000/api
 ```
 
 And your `dyrected.config.ts` (using SQLite as an example):

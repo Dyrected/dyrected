@@ -3,7 +3,9 @@ title: Introduction
 description: What Dyrected is, who it is for, and how the hosting options fit together.
 ---
 
-Dyrected is a code-first CMS for websites and apps that need a safe handoff. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates the API, admin, and SDK automatically. Your team or client updates content. Your codebase and layout stay under your control.
+Use this page to understand what Dyrected gives you, when it fits, and which setup path to choose first. If you are ready to install it now, jump to [Quickstart](/docs/getting-started/quickstart).
+
+Dyrected is a code-first CMS for websites and apps that need a safe content handoff. You define your content model in TypeScript — collections, fields, access rules, and hooks — and Dyrected generates the API, admin, and SDK automatically. Your team or client updates content. Your codebase and layout stay under your control.
 
 > **Philosophy**  
 > Dyrected handles the boring parts: storage, admin UI, access control, and relationship management. You own everything interesting: validation, business rules, emails, and concurrency. Collections define your data shape. API routes define your logic. The boundary is intentional and worth respecting from day one.
@@ -26,13 +28,15 @@ The engine can run **inside your existing Next.js or Nuxt.js app** as a route ha
 
 ## How it fits together
 
-**`@dyrected/core`** — the engine. Mount it as a catch-all route in Next.js or as a Nuxt.js module. It handles the database, REST API, file uploads, auth, and email.
+There are four moving parts. Once you know what each one does, the hosting choices are easier to understand.
+
+**`@dyrected/core`** — the engine. It handles the database, REST API, file uploads, auth, and email. Use **`@dyrected/next`** or **`@dyrected/nuxt`** to mount it inside your app.
 
 **Admin UI** — auto-generated from your config. Use the hosted admin at `app.dyrected.com`, or mount it inside your app at `/admin`. Your clients or teammates use this to edit content. You never have to build a dashboard.
 
 **`@dyrected/sdk`** — a typed TypeScript client for fetching content from your frontend, Node scripts, or any other environment.
 
-**Dyrected Cloud** — managed hosting for the backend: database, storage, auth, API, and multi-site workspaces. The fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
+**Dyrected Cloud** — managed hosting for the backend: database, storage, auth, API, and multi-site workspaces. This is the fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
 
 ---
 
@@ -47,7 +51,7 @@ The engine can run **inside your existing Next.js or Nuxt.js app** as a route ha
 | **Multi-site**           | Yes (Cloud workspaces)                         | Manual                  | Project-based | Organisation-based |
 | **License**              | BSL → Apache 2                                 | MIT                     | Proprietary   | Proprietary        |
 
-The short version: Dyrected gives you Payload's developer experience (config-as-code, no separate process) with the managed cloud option of Sanity or Contentful.
+The short version: Dyrected gives you config-as-code and an app-native runtime, with the option to stay self-hosted or move faster with a managed backend.
 
 ---
 
@@ -58,6 +62,13 @@ There are three separate decisions to understand:
 1. **Where the backend runs**: Dyrected Cloud backend or self-hosted backend
 2. **Where editors use the admin**: hosted admin or embedded admin
 3. **Who owns updates**: Dyrected for hosted surfaces, or your app deployment/package updates for embedded and self-hosted surfaces
+
+If you only need the quick rule:
+
+- Choose **Cloud** when you want the shortest path and the least infrastructure work.
+- Choose **Self-hosted** when you want Dyrected running inside your own app and infrastructure.
+- Choose **Hosted Admin** when you want the least maintenance for editors.
+- Choose **Embedded Admin** when you want the editing experience to live on your own domain.
 
 ### Backend location
 
@@ -95,13 +106,15 @@ There are three separate decisions to understand:
 - You need full control over deployment, networking, or data residency
 - You are comfortable owning backend upgrades and operational maintenance
 
-Both backend modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
+Both backend modes use the same `dyrected.config.ts`. You can move from self-hosted to Cloud, or back again, by syncing your schema and updating env vars. Your content model does not need to be rewritten.
 
 <SetupWizard />
 
 ---
 
 ## Which path is right for you?
+
+Use these shortcuts if you already know what you want to do next.
 
 **I want the fastest path to a live site** → [Deploy with Dyrected Cloud](/docs/deployment/cloud)
 
@@ -117,7 +130,7 @@ Both backend modes use the same `dyrected.config.ts`. You can migrate from self-
 
 ## Using Dyrected with AI coding tools
 
-Dyrected is designed to work well with AI coding agents. Because your entire CMS — collections, fields, hooks, access rules — lives in a single TypeScript file, any agent can read it, reason about it, and modify it.
+Dyrected is designed to work well with AI coding agents. Because your CMS definition — collections, fields, hooks, and access rules — lives in a TypeScript file, an agent can inspect it and make changes without reverse-engineering a separate admin system.
 
 **`.dyrected/ai-rules.md`** is generated automatically when you run `npx dyrected init`. It teaches any AI agent in your workspace (Claude, Cursor, Windsurf, Copilot) how to work correctly with Dyrected — the DO NOTs, schema evolution rules, and a plain-language intent-to-pattern reference.
 
@@ -127,6 +140,6 @@ Dyrected is designed to work well with AI coding agents. Because your entire CMS
 npx skills add dyrected/agent-skills@dyrected
 ```
 
-Then use `/dyrected` at the start of any task. The skill covers setup, content modeling, hooks, access control, relationships, uploads, workflows, and more — all from plain-language descriptions, without needing to know Dyrected's terminology.
+Then use `/dyrected-cms` at the start of any task. The skill covers setup, content modeling, hooks, access control, relationships, uploads, workflows, and more — all from plain-language descriptions, without needing to know Dyrected's internal terminology first.
 
 → [Using Dyrected with AI Coding Tools](/docs/guides/ai-integration)

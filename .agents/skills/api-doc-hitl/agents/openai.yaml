@@ -1,0 +1,4 @@
+interface:
+  display_name: "API Docs HITL"
+  short_description: "Draft API docs with human verification."
+  default_prompt: "Use $api-doc-hitl to draft or update API documentation from source material and prepare a human verification pass."
