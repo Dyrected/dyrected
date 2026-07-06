@@ -107,18 +107,25 @@ export function Dashboard() {
   });
 
   useEffect(() => {
-    if (!latestVersion) {
-      fetch("https://registry.npmjs.org/@dyrected/core/latest")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.version) {
-            setLatestVersion(data.version);
-            localStorage.setItem("dyrected_latest_release", data.version);
-            localStorage.setItem("dyrected_latest_release_timestamp", String(Date.now()));
-          }
-        })
-        .catch(() => {});
-    }
+    // Refresh the cached release at most once every 6h so the banner reflects
+    // newly published versions instead of freezing on the first value seen.
+    const STALE_MS = 6 * 60 * 60 * 1000;
+    const lastChecked = Number(localStorage.getItem("dyrected_latest_release_timestamp") || 0);
+    if (latestVersion && Date.now() - lastChecked < STALE_MS) return;
+
+    let cancelled = false;
+    fetch("https://registry.npmjs.org/@dyrected/core/latest")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled || !data?.version) return;
+        setLatestVersion((prev) => (prev === data.version ? prev : data.version));
+        localStorage.setItem("dyrected_latest_release", data.version);
+        localStorage.setItem("dyrected_latest_release_timestamp", String(Date.now()));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [latestVersion]);
 
   const hasUpdate = latestVersion && latestVersion !== currentVersion && (() => {

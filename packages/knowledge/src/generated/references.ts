@@ -101,7 +101,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface BaseFieldAdmin {\n  /** Placeholder text shown when the input has no value. */\n  placeholder?: string;\n  /** Custom component key registered in the Admin UI. */\n  component?: string;\n  /** Help text rendered below the field. */\n  description?: string;\n  /** Hides the field from the Admin form without deleting stored data. */\n  hidden?: boolean;\n  /** Excludes the field from Admin list filtering. */\n  filterable?: boolean;\n  /** Renders the field as non-editable in the Admin UI. */\n  readOnly?: boolean;\n  /** Reactive condition controlling whether the field is visible in the Admin UI. */\n  condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;\n  /** Tab name used when the edit form is rendered as tabs. */\n  tab?: string;\n  /** CSS width hint used when the field appears inside a `row`. */\n  width?: string;\n}",
+    "signature": "export interface BaseFieldAdmin {\n  /** Placeholder text shown when the input has no value. */\n  placeholder?: string;\n  /** Custom component key registered in the Admin UI. */\n  component?: string;\n  /** Help text rendered below the field. */\n  description?: string;\n  /** Hides the field from the Admin form without deleting stored data. */\n  hidden?: boolean;\n  /** Excludes the field from Admin list filtering. */\n  filterable?: boolean;\n  /** Renders the field as non-editable in the Admin UI. */\n  readOnly?: boolean;\n  /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */\n  hideLabel?: boolean;\n  /** Reactive condition controlling whether the field is visible in the Admin UI. */\n  condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;\n  /** Tab name used when the edit form is rendered as tabs. */\n  tab?: string;\n  /** CSS width hint used when the field appears inside a `row`. */\n  width?: string;\n}",
     "members": [
       {
         "name": "placeholder",
@@ -132,6 +132,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "readOnly",
         "signature": "readOnly?: boolean",
         "description": "Renders the field as non-editable in the Admin UI."
+      },
+      {
+        "name": "hideLabel",
+        "signature": "hideLabel?: boolean",
+        "description": "Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant)."
       },
       {
         "name": "condition",

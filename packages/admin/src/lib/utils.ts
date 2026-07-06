@@ -116,6 +116,15 @@ export function getDisplayFilename(filename?: string): string {
  */
 export function getSiteUrl(configuredSiteUrl?: string): string {
   if (typeof window !== "undefined") {
+    // Cloud Dashboard always serves site admin views under "/sites/[siteId]" paths.
+    // In this context, we must always use the site's configured domain name.
+    const isCloudDashboard = window.location.pathname.startsWith("/sites/");
+    if (isCloudDashboard) {
+      return configuredSiteUrl || "";
+    }
+
+    // In the consumer dashboard (running directly within the client app),
+    // the current host URL (window.location.origin) is the correct site URL.
     const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     if (isLocal) {
       return window.location.origin;

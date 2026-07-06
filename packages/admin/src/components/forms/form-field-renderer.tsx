@@ -309,6 +309,7 @@ function FormFieldRendererInner({
 
   const isBoolean = schema.type === "boolean"
   const isSwitchBoolean = isBoolean && schema.admin?.layout === "switch"
+  const hideLabel = schema.admin?.hideLabel === true
 
   return (
     <FormField
@@ -322,9 +323,12 @@ function FormFieldRendererInner({
               ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
               : isBoolean
                 ? "dy-flex dy-flex-row-reverse dy-items-start dy-justify-end dy-gap-3 dy-space-y-0"
-                : "dy-space-y-3"
+                : hideLabel
+                  ? "dy-space-y-0"
+                  : "dy-space-y-3"
           )}
         >
+          {!hideLabel && (
           <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-flex-wrap dy-gap-2 dy-mb-1")}>
             <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
               {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
@@ -344,6 +348,7 @@ function FormFieldRendererInner({
               </span>
             )}
           </div>
+          )}
           <FormControl>
             <FieldRenderer
               schema={schema}

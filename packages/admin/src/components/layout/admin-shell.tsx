@@ -688,21 +688,28 @@ export function AdminShell({
   // Mobile: open/close overlay
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  // Close mobile sidebar on navigation
+  // Close the mobile sidebar whenever the route changes. Depends only on the
+  // path (not mobileOpen) so opening the drawer never re-triggers this; the
+  // setter is a no-op when it is already closed.
   useEffect(() => {
-    if (mobileOpen) {
-      const timer = setTimeout(() => {
-        setMobileOpen(false);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [location.pathname, mobileOpen])
+    setMobileOpen(false)
+  }, [location.pathname])
 
   // Lock scroll on mobile when open
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : ""
     return () => { document.body.style.overflow = "" }
   }, [mobileOpen])
+
+  // When embedded, the host (cloud dashboard) hides the admin's own mobile
+  // header and drives the nav drawer via a window event so there is a single
+  // top bar on mobile. Toggle the drawer when the host dispatches it.
+  useEffect(() => {
+    if (!isEmbedded) return
+    const handleToggle = () => setMobileOpen((prev) => !prev)
+    window.addEventListener("dyrected:toggle-menu", handleToggle)
+    return () => window.removeEventListener("dyrected:toggle-menu", handleToggle)
+  }, [isEmbedded])
 
   const { data: schemas, isLoading } = useQuery({
     queryKey: ["schemas"],
@@ -774,8 +781,43 @@ export function AdminShell({
           </Sheet>
 
           <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/95">
-            {/* Mobile top header — hidden on desktop */}
-            <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
+            {/* Mobile top header — hidden on desktop, and hidden entirely when
+                embedded (the host dashboard renders the single mobile bar). */}
+            {!isEmbedded && (
+              <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
+
+
+                {/* Brand — centered */}
+                {!isEmbedded && (
+                  <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
+                    {mobileBranding?.logoText ? (
+                      <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
+                        {mobileBranding.logoText}
+                      </span>
+                    ) : mobileBranding?.logo ? (
+                      <img
+                        src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
+                        alt="Logo"
+                        className="dy-h-7 dy-w-auto dy-object-contain"
+                      />
+                    ) : (
+                      <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
+                    )}
+                  </div>
+                )}
+                <div className="dy-ml-auto dy-flex dy-items-center dy-gap-1.5">
+                  <ThemeSelector mobile />
+                  {user && (
+                    <div className="dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
+                      {((user.name || user.email || "?") as string).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </header>
+            )}
+
+            <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
+              {children}
               {/* Hamburger */}
               <button
                 type="button"
@@ -785,37 +827,6 @@ export function AdminShell({
               >
                 <Menu className="dy-h-5 dy-w-5" />
               </button>
-
-              {/* Brand — centered */}
-              {!isEmbedded && (
-                <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
-                  {mobileBranding?.logoText ? (
-                    <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
-                      {mobileBranding.logoText}
-                    </span>
-                  ) : mobileBranding?.logo ? (
-                    <img
-                      src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
-                      alt="Logo"
-                      className="dy-h-7 dy-w-auto dy-object-contain"
-                    />
-                  ) : (
-                    <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
-                  )}
-                </div>
-              )}
-              <div className="dy-ml-auto dy-flex dy-items-center dy-gap-1.5">
-                <ThemeSelector mobile />
-                {user && (
-                  <div className="dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-                    {((user.name || user.email || "?") as string).charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-            </header>
-
-            <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
-              {children}
             </div>
           </main>
         </div>

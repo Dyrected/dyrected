@@ -347,6 +347,9 @@ function SimpleArrayItem({
   field,
   basePath,
   remove,
+  move,
+  onDuplicate,
+  totalCount,
   renderField,
 }: {
   id: string
@@ -354,6 +357,9 @@ function SimpleArrayItem({
   field: FieldSchema
   basePath: string
   remove: (index: number) => void
+  move: (from: number, to: number) => void
+  onDuplicate: (index: number) => void
+  totalCount: number
   renderField: (field: FieldSchema, basePath: string) => React.ReactNode
 }) {
   const {
@@ -364,6 +370,15 @@ function SimpleArrayItem({
     transition,
     isDragging,
   } = useSortable({ id })
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
+
+  // The array header already labels the collection, so suppress the per-item
+  // field label to avoid repeating it on every row.
+  const unlabeledField = React.useMemo(
+    () => ({ ...field, admin: { ...field.admin, hideLabel: true } }) as FieldSchema,
+    [field],
+  )
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -377,33 +392,77 @@ function SimpleArrayItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "dy-group dy-flex dy-items-start dy-gap-2 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/70 dy-px-2 dy-py-2 dy-shadow-sm dy-transition-all sm:dy-px-3",
-        isDragging ? "dy-shadow-xl dy-ring-2 dy-ring-primary/40 dy-bg-muted/20 dy-border-primary/50" : "hover:dy-border-border hover:dy-shadow-md",
+        "dy-group dy-flex dy-items-center dy-gap-1.5 dy-rounded-xl dy-px-1 dy-py-1 dy-transition-colors",
+        isDragging ? "dy-bg-muted/40 dy-shadow-lg dy-ring-1 dy-ring-primary/30" : "hover:dy-bg-muted/30",
       )}
     >
       <div
         {...attributes}
         {...listeners}
-        className="dy-mt-1 dy-flex dy-h-9 dy-w-9 dy-flex-shrink-0 dy-cursor-grab dy-items-center dy-justify-center dy-rounded-lg dy-text-muted-foreground/60 dy-transition-all hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
+        className="dy-flex dy-h-9 dy-w-7 dy-flex-shrink-0 dy-cursor-grab dy-items-center dy-justify-center dy-rounded-lg dy-text-muted-foreground/40 dy-transition-all hover:dy-text-foreground sm:dy-h-8"
         title="Drag to reorder"
       >
         <GripVertical className="dy-w-4 dy-h-4" />
       </div>
 
-      <div className="dy-mt-1 dy-min-w-0 dy-flex-1">
-        {renderField(field, `${basePath}.${index}`)}
+      <div className="dy-min-w-0 dy-flex-1">
+        {renderField(unlabeledField, `${basePath}.${index}`)}
       </div>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="dy-mt-1 dy-h-9 dy-w-9 dy-flex-shrink-0 dy-rounded-xl dy-text-muted-foreground/40 hover:dy-bg-destructive/10 hover:dy-text-destructive sm:dy-h-8 sm:dy-w-8"
-        onClick={() => remove(index)}
-        title="Remove item"
-      >
-        <Trash2 className="dy-w-4 dy-h-4" />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="dy-h-9 dy-w-9 dy-flex-shrink-0 dy-rounded-xl dy-text-muted-foreground/50 dy-opacity-0 dy-transition-opacity group-hover:dy-opacity-100 focus:dy-opacity-100 data-[state=open]:dy-opacity-100 hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
+            title="Item actions"
+          >
+            <MoreHorizontal className="dy-w-4 dy-h-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="dy-min-w-44">
+          <DropdownMenuItem onClick={() => onDuplicate(index)}>
+            <Copy className="dy-mr-2 dy-h-4 dy-w-4" />
+            Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={index === 0} onClick={() => move(index, index - 1)}>
+            <ArrowUp className="dy-mr-2 dy-h-4 dy-w-4" />
+            Move up
+          </DropdownMenuItem>
+          <DropdownMenuItem disabled={index === totalCount - 1} onClick={() => move(index, index + 1)}>
+            <ArrowDown className="dy-mr-2 dy-h-4 dy-w-4" />
+            Move down
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="dy-text-destructive focus:dy-text-destructive"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="dy-mr-2 dy-h-4 dy-w-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:dy-max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this item? This action cannot be undone and you will lose any unsaved content in this block.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => { remove(index); setShowDeleteConfirm(false); }}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -630,6 +689,9 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
                     field={singleField}
                     basePath={basePath}
                     remove={remove}
+                    move={move}
+                    onDuplicate={duplicateItem}
+                    totalCount={fields.length}
                     renderField={renderField}
                   />
                 ) : (

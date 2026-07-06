@@ -147,6 +147,8 @@ export interface BaseFieldAdmin {
   filterable?: boolean;
   /** Renders the field as non-editable in the Admin UI. */
   readOnly?: boolean;
+  /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */
+  hideLabel?: boolean;
   /** Reactive condition controlling whether the field is visible in the Admin UI. */
   condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;
   /** Tab name used when the edit form is rendered as tabs. */

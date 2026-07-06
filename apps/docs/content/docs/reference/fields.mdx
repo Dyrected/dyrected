@@ -444,6 +444,8 @@ export interface BaseFieldAdmin {
   filterable?: boolean;
   /** Renders the field as non-editable in the Admin UI. */
   readOnly?: boolean;
+  /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */
+  hideLabel?: boolean;
   /** Reactive condition controlling whether the field is visible in the Admin UI. */
   condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;
   /** Tab name used when the edit form is rendered as tabs. */
@@ -461,6 +463,7 @@ export interface BaseFieldAdmin {
 | <code>hidden</code> | <code>hidden?: boolean</code> | Hides the field from the Admin form without deleting stored data. |
 | <code>filterable</code> | <code>filterable?: boolean</code> | Excludes the field from Admin list filtering. |
 | <code>readOnly</code> | <code>readOnly?: boolean</code> | Renders the field as non-editable in the Admin UI. |
+| <code>hideLabel</code> | <code>hideLabel?: boolean</code> | Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). |
 | <code>condition</code> | <code>condition?: ((data: Record&lt;string, unknown&gt;, siblingData: Record&lt;string, unknown&gt;) =&gt; boolean) &#124; string</code> | Reactive condition controlling whether the field is visible in the Admin UI. |
 | <code>tab</code> | <code>tab?: string</code> | Tab name used when the edit form is rendered as tabs. |
 | <code>width</code> | <code>width?: string</code> | CSS width hint used when the field appears inside a &#96;row&#96;. |
