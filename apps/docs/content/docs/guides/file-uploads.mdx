@@ -3,9 +3,13 @@ title: File Uploads
 description: Accept file uploads, store them locally or in S3/Cloudinary, and display images.
 ---
 
+File uploads in Dyrected come down to two decisions: where files are stored and which collection holds them. Once those are set, you get an Admin UI media manager and a programmatic upload API for free. This guide walks through both, starting with local storage for development.
+
 <Steps>
 <Step>
 ### Configure a storage adapter
+
+A storage adapter tells Dyrected where uploaded files live. For local development, `LocalStorageAdapter` writes them to a folder in your project and serves them from a URL prefix:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -24,6 +28,8 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
 </Step>
 <Step>
 ### Define an upload collection
+
+An upload collection is a normal collection with an `upload` config. That config controls which file types are accepted, the size limit, and any resized versions to generate. Add your own fields alongside it — here, an `alt` text field:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -71,6 +77,8 @@ Both the Media Library dashboard and form-level `MediaPicker` fields support cli
 </Step>
 <Step>
 ### Upload programmatically
+
+Beyond the Admin UI, you can upload from your own code — a custom uploader, a migration script, or a form. Build a `FormData` with the file and any metadata fields, then hand it to the collection's `upload()` method:
 
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">

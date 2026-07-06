@@ -7,12 +7,12 @@ This guide walks you through setting up dynamic, block-based pages in a **Nuxt 3
 
 There are two ways to get started:
 
-1. **The Automatic Way (Recommended)**: Use the interactive CLI tool to scaffold everything in seconds.
-2. **The Manual Way**: Build your files and install packages step-by-step.
+1. **With the CLI (recommended)**: Use the interactive setup tool to scaffold your config and routes for you. Pick this if you want a working starting point fast.
+2. **By hand**: Install the packages and write the files yourself. Pick this if you want to understand each piece or you're adding Dyrected to an existing setup.
 
 ---
 
-## 🚀 The Easiest Way: Get Started via the CLI
+## Set up with the CLI
 
 Dyrected comes with an interactive command-line setup wizard that detects your Nuxt project, asks for your database/storage preferences, installs the correct packages, and writes your config files automatically.
 
@@ -27,7 +27,7 @@ npx dyrected init
 1. **Detects your framework**: Auto-detects that you are using Nuxt 3.
 2. **Dashboard Mount Path**: Prompts you for where the CMS editor dashboard should live (defaults to `/admin` or `/cms`).
 3. **Asks for Database/Storage Adapters**:
-   - **Quick Setup**: Installs **SQLite** (local file database) and **Local Filesystem** (local upload storage). Great for testing!
+   - **Quick Setup**: Installs **SQLite** (local file database) and **Local Filesystem** (local upload storage) — a good choice for local development.
    - **Custom Setup**: Allows you to pick from other databases (PostgreSQL, MySQL, MongoDB) and cloud storage providers (S3, Backblaze B2, Cloudinary).
 4. **Installs Dependencies**: Installs the required `@dyrected` packages using your project's package manager (`npm`, `pnpm`, or `yarn`).
 5. **Writes Configuration Files**: Creates `dyrected.config.ts` and scaffolding code for admin/catch-all routes automatically.
@@ -35,9 +35,9 @@ npx dyrected init
 
 ---
 
-## 🛠️ The Manual Way
+## Set up by hand
 
-If you prefer configuring your stack by hand, follow these steps:
+If you prefer configuring your stack yourself, follow these steps:
 
 <Steps>
 <Step>
@@ -427,6 +427,6 @@ definePageMeta({ layout: false }); // Avoid nesting within your default site hea
    - Set **Slug** to `home`.
    - In the **Page Layout** tab, click **Add Block** and select `Hero Banner` or `Features Grid`. Enter your text.
 5. Save the document and click the **Live Preview** button on the top right.
-6. Watch your changes render in real time as you edit the fields!
+6. Edit the fields and watch the preview update as you type — no save or refresh needed.
 </Step>
 </Steps>

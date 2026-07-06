@@ -3,6 +3,8 @@ title: Building a Blog
 description: Create a posts collection, fetch content in your frontend, and let clients edit through the Admin UI.
 ---
 
+A blog is the clearest way to see Dyrected end to end: you define a `posts` collection, mount the API, read posts in your frontend, and hand editing off to the Admin UI. By the end of this guide you'll have all four working together.
+
 ## Prerequisites
 
 Before starting this guide, you should have:
@@ -11,6 +13,8 @@ Before starting this guide, you should have:
 - Installed `@dyrected/sdk` in your project
 
 ## 1. Define the collection
+
+Start with the shape of a post. This collection stores the title, URL slug, body content, a draft/published status, and a publish date — and `access: { read: () => true }` makes published posts publicly readable:
 
 ```ts
 // dyrected.config.ts
@@ -39,6 +43,8 @@ export default defineConfig({
 
 ## 2. Mount the API
 
+The collection needs an HTTP endpoint before your frontend can reach it. Each framework has a one-liner that wires your config into its routing:
+
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
@@ -65,6 +71,8 @@ export default defineNuxtConfig({
 ---
 
 ## 3. Fetch the post list
+
+With the API mounted, you can query posts from your frontend. This fetches published posts, newest first, and renders them as links. Use whichever access style fits your app — the SDK, the Nuxt composable, or a raw REST call:
 
 <Tabs items={['SDK (Next.js)', 'Nuxt.js', 'REST API']}>
 <Tab value="SDK (Next.js)">
@@ -150,6 +158,8 @@ export default async function BlogPage() {
 
 ## 4. Fetch a single post
 
+The post page looks up one post by its slug. Query with `where` on the slug, take the first result, and render its content:
+
 <Tabs items={['SDK (Next.js)', 'Nuxt.js', 'REST API']}>
 <Tab value="SDK (Next.js)">
 ```tsx
@@ -227,6 +237,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
 ---
 
 ## 5. Revalidate on publish
+
+Static pages won't reflect a new post until you rebuild them. Add an `afterChange` hook to the `posts` collection you defined in step 1 so publishing a post refreshes the affected pages automatically:
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">

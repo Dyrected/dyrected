@@ -3,7 +3,11 @@ title: Role-Based Access Control
 description: Restrict what different users can read, create, edit, and delete based on their role.
 ---
 
+Access control in Dyrected comes down to two things: giving each user a role, then writing small `access` functions that decide what that role can do. This guide walks through both, from a single `role` field up to per-field restrictions and a frontend role check.
+
 ## 1. Add a role field to your users collection
+
+Roles live as a field on your users collection. Add a `role` field with the roles you want, and lock it down so only admins can reassign it:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -30,6 +34,8 @@ description: Restrict what different users can read, create, edit, and delete ba
 
 ## 2. Lock down the users collection
 
+With roles in place, restrict the users collection itself so nobody can self-register or edit another person's account. Each `access` function receives the signed-in `user` and returns whether the action is allowed:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
 {
@@ -47,6 +53,8 @@ description: Restrict what different users can read, create, edit, and delete ba
 ---
 
 ## 3. Apply roles to a content collection
+
+Now put those roles to work on real content. This `posts` collection lets anyone read published posts, lets editors create and manage their own, and reserves full control for admins. The `beforeChange` hook stamps `createdBy` so the "edit own" rule has something to check:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -82,6 +90,8 @@ description: Restrict what different users can read, create, edit, and delete ba
 
 ## 4. Hide sensitive fields from lower roles
 
+Access rules also work on a single field, not just the whole collection. Attach `access` to a field to keep it out of reach for lower roles:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
 {
@@ -99,6 +109,8 @@ Fields stripped by `read` access never appear in API responses for that user —
 ---
 
 ## 5. Check the role on the frontend
+
+Access rules protect your data on the server. On the frontend you'll often want to match them — showing admin controls only to admins, for example. Read the signed-in user and check their role:
 
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
@@ -118,7 +130,7 @@ const user = await client.collection('users').me()
 import { getDyrectedAuth } from '@dyrected/next'
 
 const { user } = await getDyrectedAuth()
-if (!user?.role === 'admin') {
+if (user?.role !== 'admin') {
   throw new Error('Forbidden')
 }
 ```

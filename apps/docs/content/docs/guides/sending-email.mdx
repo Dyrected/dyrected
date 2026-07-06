@@ -9,21 +9,10 @@ Dyrected sends transactional emails automatically for auth events — welcome, i
 
 ## 1. Wire in your email provider
 
+Email runs through a single `send` callback in your config. Dyrected hands it the recipient, subject, and rendered HTML; you forward those to whatever provider you use. Here it is with [Resend](https://resend.com), a solid default:
+
 ```ts
 // dyrected.config.ts
-export default defineConfig({
-  email: {
-    from: 'noreply@mysite.com',
-    send: async ({ to, subject, html }) => {
-      // call your email library here
-    },
-  },
-})
-```
-
-### Resend
-
-```ts
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -38,7 +27,11 @@ export default defineConfig({
 })
 ```
 
+Every auth email now flows through Resend. Prefer a different provider? The `send` signature never changes — swap the body for the one you want.
+
 ### Nodemailer (SMTP)
+
+Nodemailer is the usual choice when you send through your own SMTP server. Create a transport once and call it from `send`:
 
 ```ts
 import nodemailer from 'nodemailer'
@@ -100,7 +93,9 @@ Override the HTML (and optionally the subject) for any built-in email by adding 
 export default defineConfig({
   email: {
     from: 'noreply@mysite.com',
-    send: async ({ to, subject, html }) => { /* ... */ },
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({ from: 'noreply@mysite.com', to, subject, html })
+    },
     templates: {
       welcome: ({ email }) => ({
         subject: 'Welcome to Acme',
@@ -110,7 +105,8 @@ export default defineConfig({
         subject: "You've been invited to Acme",
         html: `
           <p>Invited by <strong>${invitedByEmail}</strong>.</p>
-          <p>Your invite token: <pre>${token}</pre></p>
+          <p>Your invite token:</p>
+          <pre>${token}</pre>
         `,
       }),
       resetPassword: ({ token, url }) => ({

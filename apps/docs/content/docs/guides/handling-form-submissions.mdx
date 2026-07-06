@@ -3,7 +3,7 @@ title: Handling Form Submissions
 description: Learn how to build contact forms, lead captures, and waitlists using Dyrected collections.
 ---
 
-Dyrected makes it easy to capture user input from your frontend. Instead of setting up a separate backend or using a service like Formspree, you can save form submissions directly into a Dyrected collection.
+Contact forms, lead captures, and waitlists all follow the same shape: take user input from your frontend and store it. Instead of standing up a separate backend or reaching for a service like Formspree, you can save submissions straight into a Dyrected collection. This guide builds a contact form end to end.
 
 ## 1. Create a Submissions Collection
 
@@ -33,7 +33,7 @@ export default defineConfig({
 
 ## 2. Using the SDK (Recommended)
 
-The easiest way to submit data is using the `.create()` method on your collection.
+The most direct way to submit data is the `.create()` method on your collection.
 
 ```tsx
 import { createClient } from '@dyrected/sdk'

@@ -157,12 +157,20 @@ const { token, user } = await client.collection('users').acceptInvite(
 
 ## 4. Customise the invite email
 
+The invite email is a built-in template you can override. Provide an `invite` function under `email.templates` that receives the token and returns the HTML. The `send` callback is your email provider — see [Sending Email](/docs/guides/sending-email) for the full setup; here it is wired to Resend:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
 export default defineConfig({
   email: {
     from: 'no-reply@myapp.com',
-    send: async ({ to, subject, html }) => { /* your provider */ },
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({ from: 'no-reply@myapp.com', to, subject, html })
+    },
     templates: {
       invite: ({ token, invitedByEmail }) => ({
         subject: `You've been invited to MyApp`,

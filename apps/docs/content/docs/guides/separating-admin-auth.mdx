@@ -70,12 +70,14 @@ ALTER TABLE collection_users RENAME TO collection___admins;
 
 Then update your config:
 
+Only the `slug` changes — your fields and the rest of the config stay exactly as they were:
+
 ```ts
 // Before
-const admins = defineCollection({ slug: 'users', auth: true, fields: [...] })
+const admins = defineCollection({ slug: 'users', auth: true, fields: yourFields })
 
 // After
-const admins = defineCollection({ slug: '__admins', auth: true, fields: [...] })
+const admins = defineCollection({ slug: '__admins', auth: true, fields: yourFields })
 ```
 
 Restart your server. The Admin UI will authenticate against the existing records in `collection___admins`.

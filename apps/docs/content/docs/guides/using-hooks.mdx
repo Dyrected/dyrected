@@ -207,13 +207,17 @@ export const Posts = defineCollection({
       },
     ],
   },
-  fields: [...],
+  fields: [
+    { name: 'title', label: 'Title', type: 'text', required: true },
+  ],
 })
 ```
 
 ---
 
 ## Revalidate a Next.js page after a save
+
+The same `afterChange` timing is what you want for cache invalidation: once the document is saved, tell your site to rebuild the affected page. This hook posts the saved slug to a Next.js revalidation route:
 
 ```ts
 hooks: {
@@ -297,7 +301,9 @@ export const Categories = defineCollection({
       },
     ],
   },
-  fields: [...],
+  fields: [
+    { name: 'name', label: 'Name', type: 'text', required: true },
+  ],
 })
 ```
 
@@ -581,6 +587,8 @@ Workflow hooks are only available on collections that have a `workflow` config. 
 ---
 
 ## Sync a global setting after it changes
+
+Globals support the same `afterChange` hook as collections. Since globals often drive layout-wide content, this is a natural place to purge a CDN cache so the change shows up everywhere at once:
 
 ```ts
 export const SiteSettings = defineGlobal({

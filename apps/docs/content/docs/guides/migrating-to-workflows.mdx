@@ -69,7 +69,10 @@ async function migrateStatuses() {
 
   for (const post of posts.docs) {
     const isPublished = post.status === "published"
-    
+
+    // The public snapshot is every content field minus the old status and any internal keys.
+    const { id, status, __workflow, __published, ...publicFields } = post
+
     await db.update({
       collection: "posts",
       id: post.id,
@@ -82,12 +85,7 @@ async function migrateStatuses() {
             publishedAt: new Date().toISOString()
           } : {})
         },
-        ...(isPublished ? {
-          __published: {
-            title: post.title,
-            // Copy every public content field, excluding status and internal keys.
-          }
-        } : {})
+        ...(isPublished ? { __published: publicFields } : {})
       }
     })
   }

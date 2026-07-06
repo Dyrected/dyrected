@@ -3,19 +3,16 @@ title: Editorial Approval Workflow
 description: Guide on setting up a publishing chain with capability gates and comment requirements.
 ---
 
-This guide walks you through setting up a complete editorial approval workflow for a content management site.
-
-The configuration in this guide is also maintained as a type-checked integration fixture in the repository, so changes to the workflow API fail CI instead of silently making this example stale.
+This guide walks you through setting up a complete editorial approval workflow for a content management site — a chain where editors draft and submit, and publishers review, publish, or send work back with comments.
 
 ---
 
 ## 1. Define the Collection
 
-Add `publishingWorkflow()` to the collection config:
+Add `publishingWorkflow()` to the collection config. This one call replaces a hand-rolled status field with the full draft → submit → publish state machine:
 
 ```ts
-import { defineCollection } from "@dyrected/core"
-import { publishingWorkflow } from "@dyrected/core"
+import { defineCollection, publishingWorkflow } from "@dyrected/core"
 
 export const Posts = defineCollection({
   slug: "posts",
@@ -49,4 +46,30 @@ const doc = await client.collection('posts').transition(postId, 'reject', {
   comment: 'Needs better images.'
 })
 ```
+
+---
+
+## 4. Move a post through the workflow
+
+Every state change goes through the same `transition()` call — you just pass the capability you want to apply. In the Admin UI these map to buttons, but here is the happy path in code so you can see the full loop.
+
+An editor drafts a post and submits it for review:
+
+```ts
+await client.collection('posts').transition(postId, 'submit', {
+  expectedRevision: currentRevision,
+})
+```
+
+The post is now waiting for a publisher. A publisher who is happy with it publishes:
+
+```ts
+await client.collection('posts').transition(postId, 'publish', {
+  expectedRevision: currentRevision,
+})
+```
+
+At this point the public snapshot is live. If the publisher wants changes instead, they use `'reject'` with a comment (shown above), which sends the post back to the editor. Later, `'unpublish'` pulls a live post out of public view without deleting it.
+
+The `expectedRevision` you pass is the revision you last read for the document. If someone else changed it in the meantime, the transition is rejected instead of silently clobbering their edit — so read the current revision right before you transition.
 

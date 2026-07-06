@@ -3,7 +3,11 @@ title: Adding Authentication
 description: Add a users collection with login, JWT auth, and protected routes.
 ---
 
+Authentication in Dyrected starts with an auth-enabled collection and a signing secret. From there you get login, JWT sessions, and access rules you can apply to any collection or route. This guide sets all of that up and ends with protecting both your API and your frontend pages.
+
 ## 1. Add an auth collection
+
+Turn any collection into an auth collection by setting `auth: true`. Dyrected adds the `email` and `password` fields for you, so you only declare the extra fields you want — here, a display name:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -24,6 +28,8 @@ export default defineConfig({
 
 ## 2. Set the JWT secret
 
+Dyrected signs session tokens with a secret you provide. Set it in your environment before anyone logs in:
+
 ```bash
 # .env.local
 DYRECTED_JWT_SECRET=a-long-random-secret-at-least-32-chars
@@ -34,6 +40,8 @@ The same secret must be set in every environment. Rotating it invalidates all ex
 ---
 
 ## 3. Log in
+
+Logging in exchanges an email and password for a token and the user record. Store the token (a cookie is typical) and send it on future requests. Here it is in the plain SDK and wired into each framework:
 
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
@@ -95,6 +103,8 @@ async function submit(e: Event) {
 
 ## 4. Protect API routes
 
+With login working, restrict who can touch your data. Each collection takes an `access` block whose functions receive the signed-in `user` and return whether the action is allowed. This `orders` collection is readable and writable only by logged-in users, and each user can edit only their own orders:
+
 ```ts
 // dyrected.config.ts — access functions work the same in both frameworks
 {
@@ -111,6 +121,8 @@ async function submit(e: Event) {
 ---
 
 ## 5. Protect frontend routes
+
+Access rules guard your data, but you also want to keep signed-out visitors away from pages like a dashboard. Redirect them at the routing layer by checking for the token:
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
@@ -155,6 +167,8 @@ definePageMeta({ middleware: 'auth' })
 
 ## 6. Get the current user
 
+To show who's signed in, read the current user from the stored token. On the server you pass the token explicitly; in Nuxt the composable keeps it reactive for you:
+
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
@@ -190,8 +204,6 @@ const { user } = useDyrectedAuth('users')
 ```
 </Tab>
 </Tabs>
-
----
 
 ---
 
