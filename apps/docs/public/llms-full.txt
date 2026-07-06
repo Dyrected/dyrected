@@ -4635,13 +4635,13 @@ export async function POST(req: NextRequest) {
 The Dyrected Hono router is compatible with the Vercel Edge Runtime for lower latency. Update your catch-all route:
 
 ```ts
-// app/dyrected/[...route]/route.ts
+// app/api/[...route]/route.ts
 
 
 
 export const runtime = 'edge'
 
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config, { basePath: '' })
 ```
 
 > **Edge limitations:** The Edge Runtime does not support `better-sqlite3`. Use `@dyrected/db-postgres` with a Neon serverless driver, or keep the default Node.js runtime.
@@ -4672,7 +4672,9 @@ export default nextConfig
 
 Canonical URL: https://docs.dyrected.com/docs/getting-started/introduction
 
-Dyrected is a code-first CMS for websites and apps that need a safe handoff. You define your content model in TypeScript — collections, fields, access rules, hooks — and Dyrected generates the API, admin, and SDK automatically. Your team or client updates content. Your codebase and layout stay under your control.
+Use this page to understand what Dyrected gives you, when it fits, and which setup path to choose first. If you are ready to install it now, jump to [Quickstart](/docs/getting-started/quickstart).
+
+Dyrected is a code-first CMS for websites and apps that need a safe content handoff. You define your content model in TypeScript — collections, fields, access rules, and hooks — and Dyrected generates the API, admin, and SDK automatically. Your team or client updates content. Your codebase and layout stay under your control.
 
 > **Philosophy**  
 > Dyrected handles the boring parts: storage, admin UI, access control, and relationship management. You own everything interesting: validation, business rules, emails, and concurrency. Collections define your data shape. API routes define your logic. The boundary is intentional and worth respecting from day one.
@@ -4695,13 +4697,15 @@ The engine can run **inside your existing Next.js or Nuxt.js app** as a route ha
 
 ## How it fits together
 
-**`@dyrected/core`** — the engine. Mount it as a catch-all route in Next.js or as a Nuxt.js module. It handles the database, REST API, file uploads, auth, and email.
+There are four moving parts. Once you know what each one does, the hosting choices are easier to understand.
+
+**`@dyrected/core`** — the engine. It handles the database, REST API, file uploads, auth, and email. Use **`@dyrected/next`** or **`@dyrected/nuxt`** to mount it inside your app.
 
 **Admin UI** — auto-generated from your config. Use the hosted admin at `app.dyrected.com`, or mount it inside your app at `/admin`. Your clients or teammates use this to edit content. You never have to build a dashboard.
 
 **`@dyrected/sdk`** — a typed TypeScript client for fetching content from your frontend, Node scripts, or any other environment.
 
-**Dyrected Cloud** — managed hosting for the backend: database, storage, auth, API, and multi-site workspaces. The fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
+**Dyrected Cloud** — managed hosting for the backend: database, storage, auth, API, and multi-site workspaces. This is the fastest way to go live. If you'd rather manage your own infrastructure, self-hosting is free.
 
 ---
 
@@ -4716,7 +4720,7 @@ The engine can run **inside your existing Next.js or Nuxt.js app** as a route ha
 | **Multi-site**           | Yes (Cloud workspaces)                         | Manual                  | Project-based | Organisation-based |
 | **License**              | BSL → Apache 2                                 | MIT                     | Proprietary   | Proprietary        |
 
-The short version: Dyrected gives you Payload's developer experience (config-as-code, no separate process) with the managed cloud option of Sanity or Contentful.
+The short version: Dyrected gives you config-as-code and an app-native runtime, with the option to stay self-hosted or move faster with a managed backend.
 
 ---
 
@@ -4727,6 +4731,13 @@ There are three separate decisions to understand:
 1. **Where the backend runs**: Dyrected Cloud backend or self-hosted backend
 2. **Where editors use the admin**: hosted admin or embedded admin
 3. **Who owns updates**: Dyrected for hosted surfaces, or your app deployment/package updates for embedded and self-hosted surfaces
+
+If you only need the quick rule:
+
+- Choose **Cloud** when you want the shortest path and the least infrastructure work.
+- Choose **Self-hosted** when you want Dyrected running inside your own app and infrastructure.
+- Choose **Hosted Admin** when you want the least maintenance for editors.
+- Choose **Embedded Admin** when you want the editing experience to live on your own domain.
 
 ### Backend location
 
@@ -4764,13 +4775,15 @@ There are three separate decisions to understand:
 - You need full control over deployment, networking, or data residency
 - You are comfortable owning backend upgrades and operational maintenance
 
-Both backend modes use the same `dyrected.config.ts`. You can migrate from self-hosted to Cloud (or back) by syncing your schema and updating env vars — no code changes needed.
+Both backend modes use the same `dyrected.config.ts`. You can move from self-hosted to Cloud, or back again, by syncing your schema and updating env vars. Your content model does not need to be rewritten.
 
 <SetupWizard />
 
 ---
 
 ## Which path is right for you?
+
+Use these shortcuts if you already know what you want to do next.
 
 **I want the fastest path to a live site** → [Deploy with Dyrected Cloud](/docs/deployment/cloud)
 
@@ -4786,7 +4799,7 @@ Both backend modes use the same `dyrected.config.ts`. You can migrate from self-
 
 ## Using Dyrected with AI coding tools
 
-Dyrected is designed to work well with AI coding agents. Because your entire CMS — collections, fields, hooks, access rules — lives in a single TypeScript file, any agent can read it, reason about it, and modify it.
+Dyrected is designed to work well with AI coding agents. Because your CMS definition — collections, fields, hooks, and access rules — lives in a TypeScript file, an agent can inspect it and make changes without reverse-engineering a separate admin system.
 
 **`.dyrected/ai-rules.md`** is generated automatically when you run `npx dyrected init`. It teaches any AI agent in your workspace (Claude, Cursor, Windsurf, Copilot) how to work correctly with Dyrected — the DO NOTs, schema evolution rules, and a plain-language intent-to-pattern reference.
 
@@ -4796,7 +4809,7 @@ Dyrected is designed to work well with AI coding agents. Because your entire CMS
 npx skills add dyrected/agent-skills@dyrected
 ```
 
-Then use `/dyrected` at the start of any task. The skill covers setup, content modeling, hooks, access control, relationships, uploads, workflows, and more — all from plain-language descriptions, without needing to know Dyrected's terminology.
+Then use `/dyrected-cms` at the start of any task. The skill covers setup, content modeling, hooks, access control, relationships, uploads, workflows, and more — all from plain-language descriptions, without needing to know Dyrected's internal terminology first.
 
 → [Using Dyrected with AI Coding Tools](/docs/guides/ai-integration)
 
@@ -4858,6 +4871,8 @@ Dyrected parses common filter values, including booleans, across supported datab
 
 Canonical URL: https://docs.dyrected.com/docs/getting-started/quickstart
 
+Use this page to get to a working Dyrected setup quickly. Pick the path that matches where you want the backend to run, then follow one branch from start to finish.
+
 ## Prerequisites
 
 Before you start, ensure you have:
@@ -4866,38 +4881,32 @@ Before you start, ensure you have:
 - A package manager ([pnpm](https://pnpm.io) recommended, or `npm`/`yarn`/`bun`)
 - Basic familiarity with your chosen framework (Next.js or Nuxt.js)
 
----
+Pick one path:
 
-## First choose your setup
-
-Dyrected has three choices that are easy to blur together:
-
-- **Backend**: Dyrected Cloud backend or self-hosted backend
-- **Admin location**: hosted admin at `app.dyrected.com` or embedded admin in your app at `/admin`
-- **Update ownership**: hosted admin updates automatically; embedded admin ships with your app deploys; self-hosted backend upgrades are yours to manage
-
-If you want the shortest path with the least maintenance, start with a Cloud backend and hosted admin. If you want a white-label handoff, keep the Cloud backend and embed the admin into your app.
+- **Cloud backend** if you want the fastest setup and the least infrastructure
+- **Self-hosted Next.js** if you want Dyrected running inside a Next.js App Router app
+- **Self-hosted Nuxt.js** if you want Dyrected running inside a Nuxt 3 app
 
 ---
 
 ## Cloud Backend
 
-This path uses the **Dyrected Cloud backend**. Your content API, database, storage, and auth live on Dyrected's servers. You can then choose either the hosted admin at `app.dyrected.com` or an embedded admin route inside your own app.
+Use this path when you want the shortest route to a live CMS. Dyrected hosts the content API, database, storage, and auth. When you finish, you will have a connected Dyrected site and at least one real content edit flowing into your app.
 
 **Prerequisites & assumptions**
 
-- You already have a website or app repo, open in an AI coding tool such as Lovable, Bolt, v0, Cursor, Replit, or Windsurf.
+- You already have a website or app repo open in an AI coding tool such as Lovable, Bolt, v0, Cursor, Replit, or Windsurf.
 - You're willing to create a free [Dyrected Cloud](https://app.dyrected.com) account — no Postgres, S3, or server to provision.
 - No prior Dyrected knowledge assumed — the setup prompt below teaches your AI builder everything it needs.
 
 ### Easiest: paste the setup prompt
 
-Instead of writing integration code yourself, copy a setup prompt from Dyrected and paste it into your AI builder. The AI handles the entire integration in stages — including running `npx dyrected init` and `npx dyrected sync:schema` for you, so your Cloud database is ready without you touching the CLI. This is the recommended path over setting things up by hand.
+Paste the Dyrected setup prompt into your AI builder. It handles the integration in stages, including `npx dyrected init` and `npx dyrected sync:schema`, so your Cloud database is ready without a manual CLI setup. This is the recommended path.
 
 **Before you start**
 
 - Open the project in the AI builder that owns the website code.
-- [Create a Dyrected site](https://app.dyrected.com) and keep the site settings open. You will need the Site ID, Site API key, and Base URL — the prompt tells the AI when to ask for them.
+- [Create a Dyrected site](https://app.dyrected.com) and keep the site settings open. You will need the Site ID, Site API key, and Base URL. The prompt tells the AI when to ask for them.
 
 <Steps>
 <Step>
@@ -4922,7 +4931,7 @@ Read the checklist top to bottom. If something is missing or unnecessary, say wh
 <Step>
 ### Give the AI your Dyrected details
 
-The prompt makes the AI wait until the install stage before asking for credentials. When it asks, provide your Site ID, Site API key, and Base URL.
+The prompt waits until the install stage before asking for credentials. When it asks, provide your Site ID, Site API key, and Base URL.
 
 </Step>
 <Step>
@@ -4950,7 +4959,7 @@ Invite the client only after one Dyrected edit appears on the live website.
 
 ## Self-hosted Next.js
 
-This path uses a **self-hosted backend** inside your Next.js app. Your admin can still live at `/admin`, but backend upgrades and infrastructure remain your responsibility.
+Use this path when you want Dyrected running inside your Next.js app. When you finish, the public API will be available under `/api` and the admin will usually live at `/admin`.
 
 **Prerequisites & assumptions**
 
@@ -4960,15 +4969,15 @@ This path uses a **self-hosted backend** inside your Next.js app. Your admin can
 
 ### Easiest: paste the setup prompt
 
-Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx dyrected init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
+Paste the Dyrected setup prompt into an AI coding tool that has access to this repo. It will run `npx dyrected init`, model your content as collections and globals, mount the admin, and seed initial data in guided stages you approve one at a time.
 
 <CopyPromptButton mode="self-hosted" />
 
-When it reaches the install stage, it will ask for your **Site API key** and **Base URL** — self-hosted projects don't have a Site ID, so tell the AI that field doesn't apply.
+For self-hosted projects, the default base URL is `/`. Use a different base URL only if you intentionally mounted Dyrected somewhere else.
 
 ### Manual setup
 
-If you'd rather do this yourself, the CLI is the safest way to install — it detects your project layout and writes files in the right place, instead of you hand-assembling config that can drift from what the installed package actually supports.
+If you want to install manually, use the CLI. It detects your project layout and writes the files in the right place.
 
 <Steps>
 <Step>
@@ -4978,12 +4987,12 @@ If you'd rather do this yourself, the CLI is the safest way to install — it de
 npx dyrected init
 ```
 
-The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
+The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. When it finishes, you should have a config file, an API route, an admin route, and example env vars. It will:
 
 - Install `@dyrected/core`, `@dyrected/next`, `@dyrected/db-sqlite`, and `@dyrected/storage-local`.
 - Create a `dyrected.config.ts`.
 - Detect your App Router layout, including optional `src/` directory, and write files in the right place.
-- Mount the API route at `app/dyrected/[...route]/route.ts` or `src/app/dyrected/[...route]/route.ts`.
+- Mount the API route at `app/api/[...route]/route.ts` or `src/app/api/[...route]/route.ts`.
 - Mount the Admin UI at the path you choose during setup, defaulting to `app/admin/page.tsx` or `src/app/admin/page.tsx`.
 - Generate `instrumentation.ts` so your server logs the admin and API URLs on startup.
 - Generate a `.env.example`.
@@ -4992,7 +5001,7 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 
 ### Define your config: collections and globals
 
-Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
+Open `dyrected.config.ts` and describe your content model. Use **collections** for repeatable content such as blog posts or products, and **globals** for shared site-wide settings such as navigation, footer content, or SEO defaults. See [Collections and Globals](/docs/concepts/collections-and-globals) for the full model.
 
 </Step>
 <Step>
@@ -5007,13 +5016,13 @@ Open `dyrected.config.ts` and describe your content model — see [Collections a
 
 ### Seed initial data
 
-Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
+Add `initialData` to a collection or global in `dyrected.config.ts` so it is not empty on first load. See [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
 
 </Step>
 <Step>
 ### Integrate with your website
 
-Fetch content into your pages using the SDK or REST API — see [Next.js integration](/docs/integrations/nextjs).
+Fetch content into your pages using the SDK or REST API. See [Next.js integration](/docs/integrations/nextjs) when you are ready to wire real pages.
 
 </Step>
 </Steps>
@@ -5022,7 +5031,7 @@ Fetch content into your pages using the SDK or REST API — see [Next.js integra
 
 ## Self-hosted Nuxt.js
 
-This path uses a **self-hosted backend** inside your Nuxt.js app. Your admin can still live at `/admin`, but backend upgrades and infrastructure remain your responsibility.
+Use this path when you want Dyrected running inside your Nuxt 3 app. When you finish, the public API will be available under `/api` and the admin will usually live at `/admin`.
 
 **Prerequisites & assumptions**
 
@@ -5032,15 +5041,15 @@ This path uses a **self-hosted backend** inside your Nuxt.js app. Your admin can
 
 ### Easiest: paste the setup prompt
 
-Instead of wiring up config, collections, and the admin route by hand, copy the Dyrected setup prompt and paste it into an AI coding tool that has access to this repo (Claude Code, Cursor, Windsurf, etc.). It will run `npx dyrected init` for you, model your existing content as collections and globals, mount the admin, and seed initial data — all in guided stages you approve one at a time.
+Paste the Dyrected setup prompt into an AI coding tool that has access to this repo. It will run `npx dyrected init`, model your content as collections and globals, mount the admin, and seed initial data in guided stages you approve one at a time.
 
 <CopyPromptButton mode="self-hosted" />
 
-When it reaches the install stage, it will ask for your **Site API key** and **Base URL** — self-hosted projects don't have a Site ID, so tell the AI that field doesn't apply.
+For self-hosted projects, the default base URL is `/`. Use a different base URL only if you intentionally mounted Dyrected somewhere else.
 
 ### Manual setup
 
-If you'd rather do this yourself, the CLI is the safest way to install — it detects your project layout and writes files in the right place, instead of you hand-assembling config that can drift from what the installed package actually supports.
+If you want to install manually, use the CLI. It detects your project layout and writes the files in the right place.
 
 <Steps>
 <Step>
@@ -5050,7 +5059,7 @@ If you'd rather do this yourself, the CLI is the safest way to install — it de
 npx dyrected init
 ```
 
-The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. It will:
+The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** for SQLite + local file storage during local development. When it finishes, you should have a config file, a mounted module, an admin route, and example env vars. It will:
 
 - Install `@dyrected/core`, `@dyrected/nuxt`, `@dyrected/db-sqlite`, and `@dyrected/storage-local`, then create `dyrected.config.ts`.
 - Detect whether you use an `app/` directory and write the admin page to the path you choose during setup, defaulting to `app/pages/admin/index.vue` or `pages/admin/index.vue`.
@@ -5061,7 +5070,7 @@ The CLI auto-detects your framework from `package.json`. Choose **Quick Setup** 
 
 ### Define your config: collections and globals
 
-Open `dyrected.config.ts` and describe your content model — see [Collections and Globals](/docs/concepts/collections-and-globals). Use **collections** for repeatable content (blog posts, products) and **globals** for shared site-wide settings (nav, footer, SEO defaults).
+Open `dyrected.config.ts` and describe your content model. Use **collections** for repeatable content such as blog posts or products, and **globals** for shared site-wide settings such as navigation, footer content, or SEO defaults. See [Collections and Globals](/docs/concepts/collections-and-globals) for the full model.
 
 </Step>
 <Step>
@@ -5076,13 +5085,13 @@ Open `dyrected.config.ts` and describe your content model — see [Collections a
 
 ### Seed initial data
 
-Add `initialData` to a collection or global in `dyrected.config.ts` so it isn't empty on first load — see [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
+Add `initialData` to a collection or global in `dyrected.config.ts` so it is not empty on first load. See [Seeding initial data](/docs/concepts/schema#seeding-initial-data).
 
 </Step>
 <Step>
 ### Integrate with your website
 
-Fetch content into your pages using the SDK or REST API — see [Nuxt.js integration](/docs/integrations/nuxt).
+Fetch content into your pages using the SDK or REST API. See [Nuxt.js integration](/docs/integrations/nuxt) when you are ready to wire real pages.
 
 </Step>
 </Steps>
@@ -5098,7 +5107,7 @@ Fetch content into your pages using the SDK or REST API — see [Nuxt.js integra
 
 ---
 
-The `npx dyrected init` command generates `.dyrected/ai-rules.md` plus non-destructive instruction pointers for supported AI coding tools. Commit these files so agents can translate plain-language requests—such as “make the URL follow the title”—into the correct Dyrected patterns automatically.
+The `npx dyrected init` command generates `.dyrected/ai-rules.md` plus non-destructive instruction pointers for supported AI coding tools. Commit these files so agents can translate plain-language requests such as “make the URL follow the title” into the correct Dyrected patterns automatically.
 
 ---
 
@@ -5106,7 +5115,11 @@ The `npx dyrected init` command generates `.dyrected/ai-rules.md` plus non-destr
 
 Canonical URL: https://docs.dyrected.com/docs/guides/adding-authentication
 
+Authentication in Dyrected starts with an auth-enabled collection and a signing secret. From there you get login, JWT sessions (JWT is a JSON Web Token — a signed token the browser holds to prove who's logged in), and access rules you can apply to any collection or route. This guide sets all of that up and ends with protecting both your API and your frontend pages.
+
 ## 1. Add an auth collection
+
+Turn any collection into an auth collection by setting `auth: true`. Dyrected adds the `email` and `password` fields for you, so you only declare the extra fields you want — here, a display name:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -5127,6 +5140,8 @@ export default defineConfig({
 
 ## 2. Set the JWT secret
 
+Dyrected signs session tokens with a secret you provide. Set it in your environment before anyone logs in:
+
 ```bash
 # .env.local
 DYRECTED_JWT_SECRET=a-long-random-secret-at-least-32-chars
@@ -5138,12 +5153,14 @@ The same secret must be set in every environment. Rotating it invalidates all ex
 
 ## 3. Log in
 
+Logging in exchanges an email and password for a token and the user record. Store the token (a cookie is typical) and send it on future requests. Here it is in the plain SDK and wired into each framework:
+
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
 ```ts
 
 
-const client = createClient({ baseUrl: '/dyrected' })
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
 
 const { token, user } = await client.collection('users').login(
   'jane@example.com',
@@ -5198,6 +5215,8 @@ async function submit(e: Event) {
 
 ## 4. Protect API routes
 
+With login working, restrict who can touch your data. Each collection takes an `access` block whose functions receive the signed-in `user` and return whether the action is allowed. This `orders` collection is readable and writable only by logged-in users, and each user can edit only their own orders:
+
 ```ts
 // dyrected.config.ts — access functions work the same in both frameworks
 {
@@ -5205,8 +5224,8 @@ async function submit(e: Event) {
   access: {
     read:   ({ user }) => !!user,
     create: ({ user }) => !!user,
-    update: ({ user, doc }) => user?.sub === doc.userId,
-    delete: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.sub === doc?.userId,
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
 }
 ```
@@ -5214,6 +5233,8 @@ async function submit(e: Event) {
 ---
 
 ## 5. Protect frontend routes
+
+Access rules guard your data, but you also want to keep signed-out visitors away from pages like a dashboard. Redirect them at the routing layer by checking for the token:
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
@@ -5258,6 +5279,8 @@ definePageMeta({ middleware: 'auth' })
 
 ## 6. Get the current user
 
+To show who's signed in, read the current user from the stored token. On the server you pass the token explicitly; in Nuxt the composable keeps it reactive for you:
+
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
@@ -5296,8 +5319,6 @@ const { user } = useDyrectedAuth('users')
 
 ---
 
----
-
 ## Auth endpoint reference
 
 All endpoints are prefixed with `/api/collections/{slug}`.
@@ -5329,7 +5350,7 @@ The `password` field is always stripped from API read responses.
 
 Canonical URL: https://docs.dyrected.com/docs/guides/admin-sso
 
-Dyrected supports external Admin authentication through `adminAuth`. This lets your editorial or operations team sign into the Admin UI with an OIDC provider such as Okta, Azure AD, Google Workspace, or another standards-compliant identity system.
+Dyrected supports external Admin single sign-on (SSO) through `adminAuth`. This lets your editorial or operations team sign into the Admin UI with an OIDC (OpenID Connect, the standard identity layer built on OAuth) provider such as Okta, Azure AD, Google Workspace, or another standards-compliant identity system.
 
 This guide is about **Admin login**, not your application's end-user auth. Your application can continue using its own auth collections and login flows independently.
 
@@ -5909,7 +5930,7 @@ That gives you a clean split between:
 
 Canonical URL: https://docs.dyrected.com/docs/guides/ai-integration
 
-Dyrected is declarative and schema-driven, which makes it an unusually good fit for AI coding tools. Everything — collections, globals, fields, hooks, access control — is defined in a single TypeScript config file that any agent can read and modify.
+Dyrected is declarative and schema-driven, which fits AI coding tools well: everything — collections, globals, fields, hooks, access control — is defined in a single TypeScript config file that any agent can read and modify.
 
 This guide covers how to give your AI agent the context it needs to work correctly, and provides a complete intent-to-pattern reference so you can describe what you want in plain language without knowing Dyrected's terminology.
 
@@ -5937,7 +5958,7 @@ For Claude Code users, there is a dedicated skill that loads the full Dyrected k
 npx skills add dyrected/agent-skills@dyrected
 ```
 
-Once installed, use `/dyrected-cms` at the start of any Dyrected task. The skill encodes the same pattern vocabulary as the AI rules file, formatted as instructions the AI follows actively rather than reads passively. It is particularly useful when starting a session in a project that does not yet have a `.dyrected/ai-rules.md` file, or when working with a fresh codebase.
+Once installed, use `/dyrected` at the start of any Dyrected task. The skill encodes the same pattern vocabulary as the AI rules file, formatted as instructions the AI follows actively rather than reads passively. It is particularly useful when starting a session in a project that does not yet have a `.dyrected/ai-rules.md` file, or when working with a fresh codebase.
 
 ---
 
@@ -5951,7 +5972,7 @@ These rules prevent the most common and most damaging AI mistakes with Dyrected.
 - **Never delete a field from the config** — existing documents store data under that key; removing it orphans the data permanently
 - **Never rename a field directly** — use `renameTo` for a lazy, zero-downtime migration
 - **Never add a new field to an existing collection without `defaultValue`** — existing documents need a safe read fallback
-- **Never use function callbacks in `admin.condition`** if the project uses Dyrected Cloud — use Jexl string expressions; functions are stripped on cloud sync
+- **Never use function callbacks in `admin.condition`** if the project uses Dyrected Cloud — use Jexl string expressions (Jexl is a small, safe expression language that travels as a string); functions are stripped on cloud sync
 
 ---
 
@@ -6207,7 +6228,7 @@ Dyrected tracks document lifecycle through two complementary layers: **system me
 
 ## System metadata (always on)
 
-Every collection automatically gets the following fields. You do not need to declare them — Dyrected injects them at config normalisation time.
+Every collection automatically gets the following fields. You do not need to declare them — Dyrected injects them when it loads your config.
 
 | Field | Description |
 |---|---|
@@ -6216,13 +6237,13 @@ Every collection automatically gets the following fields. You do not need to dec
 | `createdBy` | ID of the user who created the document. |
 | `updatedBy` | ID of the user who last modified the document. |
 
-These fields are read-only and hidden in the Admin UI. They are populated from the authenticated user's JWT on every `POST` (create) and `PATCH` (update).
+These fields are read-only and hidden in the Admin UI. They are populated from the signed-in user's JWT (JSON Web Token — the signed session token from login) on every `POST` (create) and `PATCH` (update).
 
 ---
 
 ## Activity logging (`audit: true`)
 
-For a complete change history — including document snapshots and field-level diffs — enable audit logging on any collection:
+For a complete change history — including document snapshots (a full copy of the document at the moment of the change) and field-level diffs — enable audit logging on any collection:
 
 ```ts
 const posts = defineCollection({
@@ -6303,6 +6324,8 @@ const logs = await client.collection('__audit').find({
 
 Canonical URL: https://docs.dyrected.com/docs/guides/building-a-blog
 
+A blog is the clearest way to see Dyrected end to end: you define a `posts` collection, mount the API, read posts in your frontend, and hand editing off to the Admin UI. By the end of this guide you'll have all four working together.
+
 ## Prerequisites
 
 Before starting this guide, you should have:
@@ -6311,6 +6334,8 @@ Before starting this guide, you should have:
 - Installed `@dyrected/sdk` in your project
 
 ## 1. Define the collection
+
+Start with the shape of a post. This collection stores the title, URL slug, body content, a draft/published status, and a publish date — and `access: { read: () => true }` makes published posts publicly readable:
 
 ```ts
 // dyrected.config.ts
@@ -6326,7 +6351,7 @@ export default defineConfig({
       fields: [
         { name: 'title', label: 'Title',       type: 'text',     required: true },
         { name: 'slug', label: 'Slug',        type: 'text',     required: true },
-        { name: 'content', label: 'Content',     type: 'richtext' },
+        { name: 'content', label: 'Content',     type: 'richText' },
         { name: 'status', label: 'Status',      type: 'select',   options: ['draft', 'published'], defaultValue: 'draft' },
         { name: 'publishedAt', label: 'Published At', type: 'date' },
       ],
@@ -6339,14 +6364,16 @@ export default defineConfig({
 
 ## 2. Mount the API
 
+The collection needs an HTTP endpoint before your frontend can reach it. Each framework has a one-liner that wires your config into its routing:
+
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
 ```ts
-// app/dyrected/[...route]/route.ts
+// app/api/[...route]/route.ts
 
 
 
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config, { basePath: '' })
 ```
 </Tab>
 <Tab value="Nuxt.js">
@@ -6356,7 +6383,7 @@ export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(co
 
 export default defineNuxtConfig({
   modules: ['@dyrected/nuxt'],
-  dyrected: { ...config, apiBase: '/dyrected' },
+  dyrected: { ...config, apiBase: '/api' },
 })
 ```
 </Tab>
@@ -6365,6 +6392,8 @@ export default defineNuxtConfig({
 ---
 
 ## 3. Fetch the post list
+
+With the API mounted, you can query posts from your frontend. This fetches published posts, newest first, and renders them as links. Use whichever access style fits your app — the SDK, the Nuxt composable, or a raw REST call:
 
 <Tabs items={['SDK (Next.js)', 'Nuxt.js', 'REST API']}>
 <Tab value="SDK (Next.js)">
@@ -6404,7 +6433,7 @@ export default async function BlogPage() {
 ```vue
 <!-- pages/blog/index.vue -->
 <script setup lang="ts">
-const { data } = await useDyrectedFind('posts', {
+const { data } = await useDyrectedCollection('posts', {
   where: { status: { equals: 'published' } },
   sort: '-publishedAt',
 })
@@ -6429,7 +6458,7 @@ export default async function BlogPage() {
   })
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?${query}`,
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/posts?${query}`,
     { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
   )
   const { docs } = await res.json()
@@ -6449,6 +6478,8 @@ export default async function BlogPage() {
 ---
 
 ## 4. Fetch a single post
+
+The post page looks up one post by its slug. Query with `where` on the slug, take the first result, and render its content:
 
 <Tabs items={['SDK (Next.js)', 'Nuxt.js', 'REST API']}>
 <Tab value="SDK (Next.js)">
@@ -6506,7 +6537,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
   })
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/posts?${query}`,
+    `${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/posts?${query}`,
     { headers: { 'x-api-key': process.env.DYRECTED_API_KEY! } }
   )
   const { docs } = await res.json()
@@ -6527,6 +6558,8 @@ export default async function PostPage({ params }: { params: { slug: string } })
 ---
 
 ## 5. Revalidate on publish
+
+Static pages won't reflect a new post until you rebuild them. Add an `afterChange` hook to the `posts` collection you defined in step 1 so publishing a post refreshes the affected pages automatically:
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
@@ -6570,7 +6603,7 @@ hooks: {
 ## 6. Embed the Admin UI
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
-Create a catch-all page at `app/admin/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the mounting and routing isolation for you.
+Create a catch-all page at `app/admin/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that mounts the dashboard on that route and isolates its internal routing from the rest of your app.
 
 ```tsx
 // app/admin/page.tsx
@@ -6584,13 +6617,13 @@ export default function AdminPage() {
 ```
 </Tab>
 <Tab value="Nuxt.js">
-The Admin UI mounts automatically at `/admin` when you add the `@dyrected/nuxt` module. You can also create a custom admin page if you want to use a different route (like `/cms-admin`):
+Adding the `@dyrected/nuxt` module auto-imports the `<DyrectedAdmin>` component, but it does not create a route for you — you decide where the dashboard lives. Create a page and render `<DyrectedAdmin>` with a `basename` that matches that route. Here it is at `/admin`; use a different filename and `basename` (say `pages/cms-admin.vue` with `basename="/cms-admin"`) if you want a different path.
 
 ```vue
-<!-- pages/cms-admin.vue -->
+<!-- pages/admin.vue -->
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/cms-admin" />
+    <DyrectedAdmin basename="/admin" />
   </ClientOnly>
 </template>
 
@@ -6781,13 +6814,19 @@ Each component receives its block's fields as props. Annotate editable elements 
 
 
 export function Hero({ heading, subheading, ctaLabel, ctaUrl, image }: any) {
+  // Call useDyPath unconditionally at the top — it's a hook, so it can't sit
+  // inside a conditional like `subheading && ...`.
+  const dyHeading = useDyPath('heading')
+  const dySubheading = useDyPath('subheading')
+  const dyCtaLabel = useDyPath('ctaLabel')
+
   return (
     <section className="py-24 text-center">
       {image && <img src={image.url} alt={image.alt} className="mx-auto mb-8" />}
-      <h1 {...useDyPath('heading')} className="text-5xl font-bold">{heading}</h1>
-      {subheading && <p {...useDyPath('subheading')} className="mt-4 text-xl">{subheading}</p>}
+      <h1 {...dyHeading} className="text-5xl font-bold">{heading}</h1>
+      {subheading && <p {...dySubheading} className="mt-4 text-xl">{subheading}</p>}
       {ctaLabel && (
-        <a href={ctaUrl} {...useDyPath('ctaLabel')} className="mt-8 inline-block rounded-md bg-black px-6 py-3 text-white">
+        <a href={ctaUrl} {...dyCtaLabel} className="mt-8 inline-block rounded-md bg-black px-6 py-3 text-white">
           {ctaLabel}
         </a>
       )}
@@ -6897,12 +6936,15 @@ The selected variant travels alongside `blockType` on each item:
 
 
 export function Hero({ variant = 'centered', heading, subheading, image }: any) {
+  const dyHeading = useDyPath('heading')
+  const dySubheading = useDyPath('subheading')
+
   return (
     <section className={variant === 'split' ? 'grid md:grid-cols-2 gap-8' : 'py-24 text-center'}>
       <div>
-        <h1 {...useDyPath('heading')} className="text-5xl font-bold">{heading}</h1>
+        <h1 {...dyHeading} className="text-5xl font-bold">{heading}</h1>
         {variant !== 'minimal' && subheading && (
-          <p {...useDyPath('subheading')} className="mt-4 text-xl">{subheading}</p>
+          <p {...dySubheading} className="mt-4 text-xl">{subheading}</p>
         )}
       </div>
       {variant === 'split' && image && <img src={image.url} alt={image.alt} />}
@@ -6961,7 +7003,7 @@ The Admin UI picks up new block types automatically — no switch statement to m
 
 Canonical URL: https://docs.dyrected.com/docs/guides/configuring-storage
 
-This guide walks through setting up each storage provider from scratch — creating the bucket, configuring CORS, setting env vars, and wiring up the adapter.
+Point Dyrected's file uploads at the storage provider you want — S3, Cloudflare R2, DigitalOcean Spaces, or Cloudinary — by configuring a storage adapter (the small class that tells Dyrected where files live and how to serve them). This guide sets up each provider from scratch: creating the bucket, configuring CORS, setting env vars, and wiring up the adapter.
 
 ---
 
@@ -7244,18 +7286,15 @@ async resolve(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeTyp
 
 Canonical URL: https://docs.dyrected.com/docs/guides/editorial-approval-workflow
 
-This guide walks you through setting up a complete editorial approval workflow for a content management site.
-
-The configuration in this guide is also maintained as a type-checked integration fixture in the repository, so changes to the workflow API fail CI instead of silently making this example stale.
+Give your content a real review chain: editors draft and submit, publishers approve and publish or send work back with comments — and nothing goes public until someone with permission says so. This guide sets that up on a `posts` collection.
 
 ---
 
 ## 1. Define the Collection
 
-Add `publishingWorkflow()` to the collection config:
+Add `publishingWorkflow()` to the collection config. This one call replaces a hand-rolled status field with the full draft → submit → publish state machine:
 
 ```ts
-
 
 
 export const Posts = defineCollection({
@@ -7293,11 +7332,37 @@ const doc = await client.collection('posts').transition(postId, 'reject', {
 
 ---
 
+## 4. Move a post through the workflow
+
+Every state change goes through the same `transition()` call — you pass the capability you want to apply. In the Admin UI these map to buttons, but here is the happy path in code so you can see the full loop.
+
+An editor drafts a post and submits it for review:
+
+```ts
+await client.collection('posts').transition(postId, 'submit', {
+  expectedRevision: currentRevision,
+})
+```
+
+The post is now waiting for a publisher. A publisher who is happy with it publishes:
+
+```ts
+await client.collection('posts').transition(postId, 'publish', {
+  expectedRevision: currentRevision,
+})
+```
+
+At this point the public snapshot — the published copy of the post that anonymous visitors see — is live. If the publisher wants changes instead, they use `'reject'` with a comment (shown above), which sends the post back to the editor. Later, `'unpublish'` pulls a live post out of public view without deleting it.
+
+The `expectedRevision` you pass is the revision you last read for the document. If someone else changed it in the meantime, the transition is rejected instead of silently clobbering their edit — so read the current revision right before you transition.
+
+---
+
 ## Using Core in Enterprise Environments
 
 Canonical URL: https://docs.dyrected.com/docs/guides/enterprise-core
 
-`@dyrected/core` is already structured for enterprise use, but enterprise projects usually fail on operating model, auth boundaries, and schema governance rather than on raw CRUD.
+`@dyrected/core` is already structured for enterprise use, but enterprise projects usually fail on operating model, auth boundaries, and schema governance rather than on basic create/read/update/delete.
 
 This guide focuses on the parts of `core` that matter when multiple teams, environments, and tenants are involved.
 
@@ -7339,15 +7404,12 @@ export default defineConfig({
   collections: [],
   globals: [],
   cors: {
-    origins: [
-      'https://admin.example.com',
-      'https://www.example.com',
-    ],
+    origins: ["https://admin.example.com", "https://www.example.com"],
   },
   redis: {
     url: process.env.REDIS_URL!,
   },
-})
+});
 ```
 
 Recommended boundaries:
@@ -7367,20 +7429,17 @@ Collection-level `auth: true` is for application users. Admin access should use 
 
 ```ts
 export default defineConfig({
-  collections: [
-    Customers,
-    Orders,
-  ],
+  collections: [Customers, Orders],
   globals: [],
   adminAuth: {
-    mode: 'external',
-    collectionSlug: 'accounts',
-    provisioningMode: 'jit_plus_membership_management',
+    mode: "external",
+    collectionSlug: "accounts",
+    provisioningMode: "jit_plus_membership_management",
     providers: [
       {
-        id: 'okta',
-        type: 'oidc',
-        displayName: 'Okta',
+        id: "okta",
+        type: "oidc",
+        displayName: "Okta",
         issuer: process.env.OKTA_ISSUER!,
         clientId: process.env.OKTA_CLIENT_ID!,
         clientSecret: process.env.OKTA_CLIENT_SECRET!,
@@ -7388,16 +7447,16 @@ export default defineConfig({
       },
     ],
     resolveAccess: ({ identity, siteId }) => {
-      const roles = identity.roles ?? []
-      const allowed = roles.includes('cms-admin') || roles.includes('cms-editor')
+      const roles = identity.roles ?? [];
+      const allowed = roles.includes("cms-admin") || roles.includes("cms-editor");
       return {
         allowed,
         roles,
         data: { siteId },
-      }
+      };
     },
   },
-})
+});
 ```
 
 Why this matters:
@@ -7414,11 +7473,11 @@ See [Separating Admin Auth](/docs/guides/separating-admin-auth) for the local-co
 
 `adminAuth.provisioningMode` is not a cosmetic setting. It changes how identity is admitted into the Admin layer.
 
-| Mode | Use when | Tradeoff |
-| --- | --- | --- |
-| `jit_only` | Access is decided entirely at login time from external claims | Fastest to adopt, but membership is mostly owned by the identity provider |
-| `jit_plus_membership_management` | You want external login plus managed membership records in Dyrected | Better auditability and site-level control |
-| `preprovisioned_only` | Access must exist before first login | Strongest control, more operational overhead |
+| Mode                             | Use when                                                            | Tradeoff                                                                  |
+| -------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `jit_only`                       | Access is decided entirely at login time from external claims       | Fastest to adopt, but membership is mostly owned by the identity provider |
+| `jit_plus_membership_management` | You want external login plus managed membership records in Dyrected | Better auditability and site-level control                                |
+| `preprovisioned_only`            | Access must exist before first login                                | Strongest control, more operational overhead                              |
 
 For larger organizations, `jit_plus_membership_management` is usually the practical middle ground.
 
@@ -7434,16 +7493,16 @@ export default defineConfig({
   collections: [],
   globals: [],
   onSchemaFetch: async (siteId) => {
-    const site = await siteRegistry.lookup(siteId)
-    if (!site) return {}
+    const site = await siteRegistry.lookup(siteId);
+    if (!site) return {};
 
     return {
       collections: buildCollectionsForSite(site),
       globals: buildGlobalsForSite(site),
       adminAuth: buildAdminAuthForSite(site),
-    }
+    };
   },
-})
+});
 ```
 
 Use this when:
@@ -7471,20 +7530,20 @@ Use these controls together:
 
 
 export const Policies = defineCollection({
-  slug: 'policies',
+  slug: "policies",
   audit: true,
   workflow: publishingWorkflow(),
   access: {
     read: ({ user }) => !!user,
-    create: ({ user }) => user?.roles?.includes('policy-author') ?? false,
-    update: ({ user }) => user?.roles?.some((role) => ['policy-author', 'publisher'].includes(role)) ?? false,
-    delete: ({ user }) => user?.roles?.includes('admin') ?? false,
+    create: ({ user }) => user?.roles?.includes("policy-author") ?? false,
+    update: ({ user }) => user?.roles?.some((role) => ["policy-author", "publisher"].includes(role)) ?? false,
+    delete: ({ user }) => user?.roles?.includes("admin") ?? false,
   },
   fields: [
-    { name: 'title', label: 'Title', type: 'text', required: true },
-    { name: 'body', label: 'Body', type: 'richText', required: true },
+    { name: "title", label: "Title", type: "text", required: true },
+    { name: "body", label: "Body", type: "richText", required: true },
   ],
-})
+});
 ```
 
 Recommended discipline:
@@ -7492,7 +7551,7 @@ Recommended discipline:
 1. Use access rules for authorization, not hidden UI controls.
 2. Enable audit on regulated or operationally sensitive collections.
 3. Use workflows where publishing must be reviewed separately from editing.
-4. Keep `afterChange` and `afterDelete` hooks idempotent and failure-tolerant.
+4. Keep `afterChange` and `afterDelete` hooks idempotent (safe to run more than once) and failure-tolerant.
 
 Relevant docs:
 
@@ -7517,13 +7576,13 @@ export default defineConfig({
   events: {
     handlers: [
       async (event) => {
-        await enterpriseEventBus.publish(event)
+        await enterpriseEventBus.publish(event);
       },
     ],
     maxAttempts: 8,
     retryDelayMs: 1000,
   },
-})
+});
 ```
 
 This gives you:
@@ -7603,9 +7662,13 @@ That baseline keeps the system understandable while still covering the requireme
 
 Canonical URL: https://docs.dyrected.com/docs/guides/file-uploads
 
+File uploads in Dyrected come down to two decisions: where files are stored and which collection holds them. Once those are set, you get an Admin UI media manager and a programmatic upload API for free. This guide walks through both, starting with local storage for development.
+
 <Steps>
 <Step>
 ### Configure a storage adapter
+
+A storage adapter tells Dyrected where uploaded files live. For local development, `LocalStorageAdapter` writes them to a folder in your project and serves them from a URL prefix:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -7624,6 +7687,8 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
 </Step>
 <Step>
 ### Define an upload collection
+
+An upload collection is a normal collection with an `upload` config. That config controls which file types are accepted, the size limit, and any resized versions to generate. Add your own fields alongside it — here, an `alt` text field:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -7646,31 +7711,33 @@ See [Configuring Storage](/docs/guides/configuring-storage) for S3, R2, and Clou
 <Step>
 ### Upload via the Admin UI
 
-The Admin UI renders a full-featured media manager and file picker for upload collections. Upload collections can use any slug and label — for example, a collection named `sermons` with `upload: true` will be presented using that collection's configured labels rather than always being called "media".
+Open `/admin` and your `media` collection now has a media manager and file picker. (Any upload collection gets this — it uses that collection's own labels, so a collection you name `sermons` shows as "Sermons," not "Media.")
 
-It supports three convenient upload methods:
-1. **Browse**: Click the upload container to pick files via the standard browser selector.
-2. **Drag & Drop**: Drag files from your computer and drop them anywhere on the Media page or Media Picker field preview to open the uploader.
-3. **Clipboard Paste**: Copy any file or screenshot to your clipboard and press `Cmd+V` / `Ctrl+V` on the page to instantly load it into the uploader.
+There are three ways to add a file:
+1. **Browse**: Click the upload container to pick files with the standard browser selector.
+2. **Drag & drop**: Drag files onto the Media page or a Media Picker field preview to open the uploader.
+3. **Clipboard paste**: Copy a file or screenshot, then press `Cmd+V` / `Ctrl+V` on the page to load it into the uploader.
 
-### Media Library and Picker UI
+### Media library and picker
 
-The Media Library page and form-level Media Picker use a consistent grid-based selection interface:
+The Media Library page and the form-level Media Picker share one grid-based selector:
 
-- Single and multiple pickers share the same thumbnail/card treatment.
-- The attachment detail dialog is responsive, scrollable, and keeps large previews inside the viewport.
-- Upload collection metadata fields, such as `alt` or `caption`, can be edited from the media detail flow.
+- Single and multiple pickers use the same thumbnail/card treatment.
+- The attachment detail dialog scrolls and keeps large previews inside the viewport.
+- Metadata fields like `alt` or `caption` are editable from the media detail view.
 
-### Client-side Image Cropping
+### Client-side image cropping
 
-Both the Media Library dashboard and form-level `MediaPicker` fields support client-side image cropping:
-- Hover over any image thumbnail in the forms to reveal a ✂️ **Scissors/Crop** button (shown for raster images like PNG, JPG, and WebP, but not SVGs or videos).
+The Media Library and the form-level `MediaPicker` both support cropping in the browser:
+- Hover an image thumbnail to reveal a crop (scissors) button, shown for raster images like PNG, JPG, and WebP, but not SVGs or videos.
 - Click the crop button on an image (or in the attachment details pane on the main media page) to open the crop dialog.
 - Pick an aspect ratio preset (Free-form, 1:1, 4:3, 3:2, 16:9) and adjust the cropping handles.
 - Click **Save** to apply the crop. The cropped version is uploaded as a new media document and the selection automatically updates to point to the cropped version. All image sizes are generated server-side automatically after upload.
 </Step>
 <Step>
 ### Upload programmatically
+
+Beyond the Admin UI, you can upload from your own code — a custom uploader, a migration script, or a form. Build a `FormData` with the file and any metadata fields, then hand it to the collection's `upload()` method:
 
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
@@ -7696,7 +7763,7 @@ const form = new FormData()
 form.append('file', file)
 form.append('alt', file.name)
 
-const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/collections/media`, {
+const res = await fetch(`${process.env.NEXT_PUBLIC_DYRECTED_URL}/api/collections/media`, {
   method: 'POST',
   headers: { 'x-api-key': process.env.DYRECTED_API_KEY! },
   body: form,
@@ -7802,8 +7869,12 @@ Globals are for content that only has one instance — site name, navigation men
 
 ## 1. Define globals
 
+You declare globals in the same config file as your collections, under a `globals` array. Each entry has a `slug`, a `label`, and the fields an editor will fill in. Here are two common ones — site settings and a navigation menu:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
+
+
 export default defineConfig({
   globals: [
     {
@@ -7920,6 +7991,8 @@ useHead({
 
 ## 3. Fetch with the SDK
 
+Outside of a framework layout, reach for the SDK client directly. Each global is retrieved by its slug, and `depth` controls how deep related media is resolved:
+
 ```ts
 const settings = await client.global('site-settings').get({ depth: 1 })
 const nav      = await client.global('navigation').get()
@@ -7929,8 +8002,10 @@ const nav      = await client.global('navigation').get()
 
 ## 4. Update a global
 
+Globals are edited in the Admin UI, but you can also update them over the API with an admin token. Send a `PATCH` with only the fields you want to change:
+
 ```bash
-PATCH /dyrected/globals/site-settings
+PATCH /api/globals/site-settings
 Authorization: Bearer <admin-token>
 Content-Type: application/json
 
@@ -7940,6 +8015,8 @@ Content-Type: application/json
 ---
 
 ## 5. Revalidate when a global changes
+
+Because globals feed layout-level content like the header and footer, you'll usually want the frontend to refresh when one changes. Add an `afterChange` hook to the global and have it ping your framework's revalidation endpoint:
 
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
@@ -7958,7 +8035,7 @@ Content-Type: application/json
       },
     ],
   },
-  fields: [...],
+  // keep the site-settings fields you defined in step 1
 }
 ```
 </Tab>
@@ -7970,12 +8047,12 @@ Content-Type: application/json
   hooks: {
     afterChange: [
       async () => {
-        // Nuxt.js uses event-driven cache invalidation
+        // call your Nuxt route that clears the cached page
         await $fetch('/api/revalidate', { method: 'POST' })
       },
     ],
   },
-  fields: [...],
+  // keep the site-settings fields you defined in step 1
 }
 ```
 </Tab>
@@ -7999,9 +8076,9 @@ Content-Type: application/json
 
 Canonical URL: https://docs.dyrected.com/docs/guides/handling-form-submissions
 
-Dyrected makes it easy to capture user input from your frontend. Instead of setting up a separate backend or using a service like Formspree, you can save form submissions directly into a Dyrected collection.
+Contact forms, lead captures, and waitlists all follow the same shape: take user input from your frontend and store it. Instead of standing up a separate backend or reaching for a service like Formspree, you can save submissions straight into a Dyrected collection. This guide builds a contact form end to end.
 
-## 1. Create a Submissions Collection
+## 1. Create a submissions collection
 
 First, define a collection in your `dyrected.config.ts` to store the data. The key is setting the `create` access to `true` (or a function that returns `true`) so that anyone can submit the form.
 
@@ -8014,7 +8091,7 @@ export default defineConfig({
     {
       slug: 'contact-requests',
       access: {
-        read: ({ req }) => req.user?.role === 'admin', // Only admins can read
+        read: ({ user }) => user?.roles?.includes('admin'), // Only admins can read
         create: () => true,                            // Anyone can create
       },
       fields: [
@@ -8027,16 +8104,16 @@ export default defineConfig({
 })
 ```
 
-## 2. Using the SDK (Recommended)
+## 2. Submit with the SDK (recommended)
 
-The easiest way to submit data is using the `.create()` method on your collection.
+The most direct way to submit data is the `.create()` method on your collection.
 
 ```tsx
 
 
 const client = createClient({
   baseUrl: 'https://your-site.com/api',
-  siteId: '...' // Required for Cloud mode
+  siteId: 'your-site-id' // Required for Cloud mode
 })
 
 async function handleSubmit(data) {
@@ -8053,19 +8130,19 @@ async function handleSubmit(data) {
 }
 ```
 
-### Next.js & Nuxt.js Wrappers
+### Next.js and Nuxt wrappers
 
-If you are using the Next.js or Nuxt.js packages, you can use the built-in hooks:
+If you are using the Next.js or Nuxt package, grab the same client from the framework helper instead of constructing it yourself:
 
 ```tsx
 // Next.js example
 
 
-const client = useDyrected()
+const { client } = useDyrected()
 await client.collection('contact-requests').create(data)
 ```
 
-## 3. Using the REST API
+## 3. Submit with the REST API
 
 If you aren't using the SDK, you can send a standard `POST` request to your collection endpoint.
 
@@ -8086,13 +8163,13 @@ const response = await fetch('https://your-site.com/api/collections/contact-requ
 const result = await response.json()
 ```
 
-## 4. Managing Submissions
+## 4. Manage submissions
 
-Once submitted, your data appears instantly in the **Dyrected Admin**. 
+Once submitted, each entry shows up in the **Dyrected Admin** under your collection.
 
-- **Permissions**: Ensure your `read` access is restricted to admins so user data stays private.
-- **Validation**: Dyrected automatically validates the data against your schema before saving it. If the email is invalid or a required field is missing, you'll get a `400 Bad Request` with details.
-- **Emails**: You can use the `hooks` feature in your collection to send an email notification whenever a new submission is created.
+- **Permissions**: Keep `read` access restricted to admins so submitted data stays private.
+- **Validation**: Dyrected validates the data against your schema before saving. If the email is invalid or a required field is missing, the request fails with a `400 Bad Request` and the details.
+- **Notifications**: To email your team when a submission comes in, add an `afterChange` hook to the collection — see [Using Hooks](/docs/guides/using-hooks) and [Sending Email](/docs/guides/sending-email).
 
 ---
 
@@ -8100,7 +8177,11 @@ Once submitted, your data appears instantly in the **Dyrected Admin**.
 
 Canonical URL: https://docs.dyrected.com/docs/guides/invite-only-registration
 
+Lock sign-up so people can only join through an invitation you send — no public registration form. You'll turn off self-registration, send invites from an admin, and let invitees set their password from an emailed link.
+
 ## 1. Disable open registration
+
+The first step is to stop anyone from creating their own account. Set the users collection's `create` access to always return `false`, so the only way in is an invite:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -8110,12 +8191,12 @@ Canonical URL: https://docs.dyrected.com/docs/guides/invite-only-registration
   access: {
     create: () => false,   // no self-registration
     read:   ({ user }) => !!user,
-    update: ({ user, doc }) => user?.sub === doc.id || user?.role === 'admin',
-    delete: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.sub === doc?.id || user?.roles?.includes('admin'),
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
   fields: [
     { name: 'name', label: 'Name', type: 'text' },
-    { name: 'role', label: 'Role', type: 'select', options: ['member', 'admin'], defaultValue: 'member' },
+    { name: 'roles', label: 'Roles', type: 'multiSelect', options: ['member', 'admin'], defaultValue: ['member'] },
   ],
 }
 ```
@@ -8165,7 +8246,7 @@ async function inviteUser(email: string) {
 </Tab>
 </Tabs>
 
-Dyrected signs a 7-day JWT with `purpose: 'invite'` and emails it. In development the link is logged to the console via Ethereal — no email config needed.
+Dyrected signs a 7-day token (a JWT — a tamper-proof signed token) marked `purpose: 'invite'` and emails it. In development, when you haven't configured an email provider yet, the link is printed to the console via Ethereal, a built-in dev mail catcher — so you can test the flow without sending real email.
 
 ---
 
@@ -8254,12 +8335,20 @@ const { token, user } = await client.collection('users').acceptInvite(
 
 ## 4. Customise the invite email
 
+The invite email is a built-in template you can override. Provide an `invite` function under `email.templates` that receives the token and returns the HTML. The `send` callback is your email provider — see [Sending Email](/docs/guides/sending-email) for the full setup; here it is wired to Resend:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
+
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
 export default defineConfig({
   email: {
     from: 'no-reply@myapp.com',
-    send: async ({ to, subject, html }) => { /* your provider */ },
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({ from: 'no-reply@myapp.com', to, subject, html })
+    },
     templates: {
       invite: ({ token, invitedByEmail }) => ({
         subject: `You've been invited to MyApp`,
@@ -8284,7 +8373,7 @@ Canonical URL: https://docs.dyrected.com/docs/guides/live-preview
 
 Imagine you're launching **SnackTrack Pro**, a SaaS product. Marketing needs a landing page they can reshape without a developer — swap the hero copy, add a pricing tier, drop in a testimonial — and _see the result as they type_. No publish, no reload, no guessing what the change will look like.
 
-That's live preview. Your frontend renders inside an iframe in the Admin, draft data streams in over `postMessage`, and the page re-renders instantly. With **click-to-edit**, an editor can also click the headline in the preview and the form scrolls to — and focuses — the exact field behind it.
+That's live preview. Your frontend renders inside an iframe in the Admin, draft data streams in over `postMessage` (the browser's built-in channel for sending data between a page and an iframe it hosts), and the page re-renders instantly. With **click-to-edit**, an editor can also click the headline in the preview and the form scrolls to — and focuses — the exact field behind it.
 
 This guide builds that page end to end: a landing page assembled from **five blocks**, wired for real-time preview and click-to-edit.
 
@@ -8338,7 +8427,7 @@ Before wiring preview, make sure the following are in place:
 - [ ] **Environment variables** for the API base URL and the Admin origin:
   ```bash
   # Next.js (.env.local)
-  NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000/dyrected
+  NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000
   NEXT_PUBLIC_ADMIN_URL=http://localhost:3000/admin
   SITE_URL=http://localhost:3000
   ```
@@ -8468,10 +8557,6 @@ export default defineConfig({
 
 Restart the dev server, open `/admin`, create a **Page** with slug `snacktrack`, and add the five blocks. You now have content to preview.
 
-> 📸 **Screenshot to add:** `/images/live-preview/01-blocks-list.png` — the edit
-> page showing the five blocks stacked in the `layout` field. Capture the block
-> list with the "Add Block" library open so readers see the five choices.
-
 </Step>
 
 <Step>
@@ -8504,12 +8589,17 @@ export default function PageBlocks({ layout }: { layout: any[] }) {
 
 
 export default function Hero({ heading, subheading, ctaLabel, ctaLink }: any) {
+  // useDyPath is a hook — call it unconditionally, never inside `subheading && ...`.
+  const dyHeading = useDyPath("heading");
+  const dySubheading = useDyPath("subheading");
+  const dyCtaLabel = useDyPath("ctaLabel");
+
   return (
     <section className="hero">
-      <h1 {...useDyPath("heading")}>{heading}</h1>
-      {subheading && <p {...useDyPath("subheading")}>{subheading}</p>}
+      <h1 {...dyHeading}>{heading}</h1>
+      {subheading && <p {...dySubheading}>{subheading}</p>}
       {ctaLabel && (
-        <a href={ctaLink} {...useDyPath("ctaLabel")}>
+        <a href={ctaLink} {...dyCtaLabel}>
           {ctaLabel}
         </a>
       )}
@@ -8523,12 +8613,16 @@ export default function Hero({ heading, subheading, ctaLabel, ctaLink }: any) {
 
 
 export default function Testimonial({ quote, author, role }: any) {
+  const dyQuote = useDyPath("quote");
+  const dyAuthor = useDyPath("author");
+  const dyRole = useDyPath("role");
+
   return (
     <figure className="testimonial">
-      <blockquote {...useDyPath("quote")}>{quote}</blockquote>
+      <blockquote {...dyQuote}>{quote}</blockquote>
       <figcaption>
-        <span {...useDyPath("author")}>{author}</span>
-        {role && <span {...useDyPath("role")}>{role}</span>}
+        <span {...dyAuthor}>{author}</span>
+        {role && <span {...dyRole}>{role}</span>}
       </figcaption>
     </figure>
   );
@@ -8618,7 +8712,7 @@ The `features` and `pricing` blocks follow the same pattern for their scalar fie
 Point `previewUrl` at the page's real URL (step 1 already does) and have that page use `useLivePreview`. The **same route serves both** the public page and the preview:
 
 - Server-side, the page fetches **published** data → what visitors see.
-- `useLivePreview` swaps in **draft** data only when a `postMessage` arrives from the Admin iframe. Outside the Admin, none arrives, so it just renders the published content.
+- `useLivePreview` swaps in **draft** data only when a `postMessage` arrives from the Admin iframe. Outside the Admin, none arrives, so it renders the published content.
 
 <Callout type="warn">
   `useLivePreview` accepts only `initialData` and `serverURL`. Relationship `depth` goes on the **data fetch**, not the
@@ -8774,11 +8868,9 @@ See [`previewUrl` and `previewMode`](/docs/reference/configuration) for all coll
 
 Canonical URL: https://docs.dyrected.com/docs/guides/migrating-to-workflows
 
-If you built your Dyrected project before the introduction of Workflows, you likely used a simple string field (e.g. `status` or `_status`) to manage document visibility, paired with access control rules to restrict who could read unpublished content.
+Move an existing `status` field over to Dyrected's built-in Workflows, and get draft/publish handling, per-role permissions, and a full change history without maintaining any of it yourself. This guide walks that migration step by step.
 
-With the new built-in Workflows feature, Dyrected now handles atomic draft saving, public snapshot materialisation, capability gating, and transition history out of the box.
-
-This guide explains how to migrate an existing `status` field to the new `workflow` system.
+If you built your project before Workflows existed, you probably used a string field (like `status` or `_status`) plus access rules to hide unpublished content. Workflows replace that pattern: Dyrected now keeps a separate published copy of each document (the "snapshot" that anonymous visitors see), records every state change, and enforces which roles may publish or reject — all built in.
 
 ---
 
@@ -8840,7 +8932,10 @@ async function migrateStatuses() {
 
   for (const post of posts.docs) {
     const isPublished = post.status === "published"
-    
+
+    // The public snapshot is every content field minus the old status and any internal keys.
+    const { id, status, __workflow, __published, ...publicFields } = post
+
     await db.update({
       collection: "posts",
       id: post.id,
@@ -8853,12 +8948,7 @@ async function migrateStatuses() {
             publishedAt: new Date().toISOString()
           } : {})
         },
-        ...(isPublished ? {
-          __published: {
-            title: post.title,
-            // Copy every public content field, excluding status and internal keys.
-          }
-        } : {})
+        ...(isPublished ? { __published: publicFields } : {})
       }
     })
   }
@@ -8877,16 +8967,16 @@ Remember to run this data migration script before updating the collection config
 
 Canonical URL: https://docs.dyrected.com/docs/guides/nuxt-dynamic-pages
 
-This guide walks you through setting up dynamic, block-based pages in a **Nuxt 3** application using **Dyrected CMS** (a self-hosted, headless, developer-first TypeScript CMS).
+Build pages your editors assemble from reusable blocks — a hero, a features grid, a pricing table — and render them on any URL in a **Nuxt 3** app, with live preview as they edit. Dyrected stores the content (it's a headless CMS: the content API and the frontend stay separate), and Nuxt's catch-all routing turns each page into a real URL.
 
 There are two ways to get started:
 
-1. **The Automatic Way (Recommended)**: Use the interactive CLI tool to scaffold everything in seconds.
-2. **The Manual Way**: Build your files and install packages step-by-step.
+1. **With the CLI (recommended)**: Use the interactive setup tool to scaffold your config and routes for you. Pick this if you want a working starting point fast.
+2. **By hand**: Install the packages and write the files yourself. Pick this if you want to understand each piece or you're adding Dyrected to an existing setup.
 
 ---
 
-## 🚀 The Easiest Way: Get Started via the CLI
+## Set up with the CLI
 
 Dyrected comes with an interactive command-line setup wizard that detects your Nuxt project, asks for your database/storage preferences, installs the correct packages, and writes your config files automatically.
 
@@ -8901,17 +8991,17 @@ npx dyrected init
 1. **Detects your framework**: Auto-detects that you are using Nuxt 3.
 2. **Dashboard Mount Path**: Prompts you for where the CMS editor dashboard should live (defaults to `/admin` or `/cms`).
 3. **Asks for Database/Storage Adapters**:
-   - **Quick Setup**: Installs **SQLite** (local file database) and **Local Filesystem** (local upload storage). Great for testing!
+   - **Quick Setup**: Installs **SQLite** (local file database) and **Local Filesystem** (local upload storage) — a good choice for local development.
    - **Custom Setup**: Allows you to pick from other databases (PostgreSQL, MySQL, MongoDB) and cloud storage providers (S3, Backblaze B2, Cloudinary).
 4. **Installs Dependencies**: Installs the required `@dyrected` packages using your project's package manager (`npm`, `pnpm`, or `yarn`).
 5. **Writes Configuration Files**: Creates `dyrected.config.ts` and scaffolding code for admin/catch-all routes automatically.
-6. **Saves an AI Prompt**: Generates a custom `dyrected-ai-prompt.md` in your project containing your configuration details so you can share it with your AI assistant (e.g. Claude or Gemini) to easily build components.
+6. **Saves an AI Prompt**: Generates a custom `dyrected-ai-prompt.md` in your project containing your configuration details so you can share it with your AI assistant (e.g. Claude or Gemini) to help build components.
 
 ---
 
-## 🛠️ The Manual Way
+## Set up by hand
 
-If you prefer configuring your stack by hand, follow these steps:
+If you prefer configuring your stack yourself, follow these steps:
 
 <Steps>
 <Step>
@@ -8957,7 +9047,7 @@ Choose a storage package to store uploaded media/images:
 | -------------------- | ------------------------------ | --------------------------------------------------------------- |
 | **Local Filesystem** | `@dyrected/storage-local`      | Local development, Docker mounts                                |
 | **AWS S3**           | `@dyrected/storage-s3`         | standard cloud storage, AWS ecosystems                          |
-| **Backblaze B2**     | `@dyrected/storage-b2`         | Highly affordable, high-performance S3-compatible cloud storage |
+| **Backblaze B2**     | `@dyrected/storage-b2`         | Low-cost S3-compatible cloud storage                            |
 | **Cloudinary**       | `@dyrected/storage-cloudinary` | Automatic image optimization, cropping, and dynamic resizing    |
 
 Install your selected storage adapter:
@@ -9071,14 +9161,14 @@ export default defineConfig({
 >
 > ```ts
 > import { PostgresAdapter } from "@dyrected/db-postgres";
-> import { S3Adapter } from "@dyrected/storage-s3";
+> import { S3StorageAdapter } from "@dyrected/storage-s3";
 >
 > export default defineConfig({
 >   // ... collections ...
 >   db: new PostgresAdapter({
->     connectionString: process.env.DATABASE_URL,
+>     url: process.env.DATABASE_URL,
 >   }),
->   storage: new S3Adapter({
+>   storage: new S3StorageAdapter({
 >     bucket: process.env.S3_BUCKET,
 >     region: process.env.S3_REGION,
 >     credentials: {
@@ -9099,7 +9189,7 @@ Register the `@dyrected/nuxt` module in your `nuxt.config.ts`:
 export default defineNuxtConfig({
   modules: ["@dyrected/nuxt"],
   dyrected: {
-    apiBase: "/dyrected", // Handles dashboard endpoints under /dyrected
+    apiBase: "/api", // Exposes the public API under /api
   },
 });
 ```
@@ -9163,6 +9253,8 @@ defineProps<{
 
 The `BlockRenderer` resolves which Vue component should be loaded based on the CMS block type. It also adds the `data-dy-path` property which Dyrected needs to enable inline highlights in the editor.
 
+This section builds the dispatcher by hand so you can see exactly how block resolution and `data-dy-path` scoping work. If you'd rather not maintain it yourself, `@dyrected/nuxt` auto-imports a `<DyrectedBlocks>` component that does the same dispatch and path scoping for you — see [Building a Page Builder](/docs/guides/building-a-page-builder) for that higher-level approach. The rest of this guide uses the hand-written renderer.
+
 ```vue
 <!-- components/BlockRenderer.vue -->
 <script setup lang="ts">
@@ -9197,9 +9289,9 @@ const SelectedBlock = computed(() => blockComponents[props.block.blockType]);
 
 </Step>
 <Step>
-### Create the Catch-All Route with Live Preview
+### Create the catch-all route with live preview
 
-Nuxt uses catch-all routes (`[...slug].vue`) to dynamically load any page created in the CMS. By wrapping page data in the `useLivePreview` composable, the page content updates instantly inside the admin editor panel!
+Nuxt uses catch-all routes (`[...slug].vue`) to load any page created in the CMS. Wrap the page data in the `useLivePreview` composable and the content updates inside the admin editor panel as you edit.
 
 Create the page at `pages/[...slug].vue`:
 
@@ -9301,7 +9393,7 @@ definePageMeta({ layout: false }); // Avoid nesting within your default site hea
    - Set **Slug** to `home`.
    - In the **Page Layout** tab, click **Add Block** and select `Hero Banner` or `Features Grid`. Enter your text.
 5. Save the document and click the **Live Preview** button on the top right.
-6. Watch your changes render in real time as you edit the fields!
+6. Edit the fields and watch the preview update as you type — no save or refresh needed.
 </Step>
 </Steps>
 
@@ -9311,7 +9403,11 @@ definePageMeta({ layout: false }); // Avoid nesting within your default site hea
 
 Canonical URL: https://docs.dyrected.com/docs/guides/role-based-access-control
 
-## 1. Add a role field to your users collection
+Access control in Dyrected comes down to two things: giving each user roles, then writing small `access` functions that decide what those roles can do. This guide walks through both, from the `roles` field up to per-field restrictions and a frontend role check.
+
+## 1. Add a roles field to your users collection
+
+Every auth collection gets a `roles` field automatically — an array of role strings on each user. Declare it yourself when you want to set the available options and lock down who can change it, so only admins can reassign roles:
 
 ```ts
 // dyrected.config.ts  (same for both frameworks)
@@ -9321,13 +9417,13 @@ Canonical URL: https://docs.dyrected.com/docs/guides/role-based-access-control
   fields: [
     { name: 'name', label: 'Name', type: 'text', required: true },
     {
-      name: 'role',
-      label: 'Role',
-      type: 'select',
+      name: 'roles',
+      label: 'Roles',
+      type: 'multiSelect',
       options: ['admin', 'editor', 'viewer'],
-      defaultValue: 'viewer',
+      defaultValue: [],
       access: {
-        update: ({ user }) => user?.role === 'admin',  // only admins can change roles
+        update: ({ user }) => user?.roles?.includes('admin'),  // only admins can change roles
       },
     },
   ],
@@ -9338,6 +9434,8 @@ Canonical URL: https://docs.dyrected.com/docs/guides/role-based-access-control
 
 ## 2. Lock down the users collection
 
+With roles in place, restrict the users collection itself so nobody can self-register or edit another person's account. Each `access` function receives the signed-in `user` and returns whether the action is allowed:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
 {
@@ -9346,8 +9444,8 @@ Canonical URL: https://docs.dyrected.com/docs/guides/role-based-access-control
   access: {
     read:   ({ user }) => !!user,
     create: () => false,                                    // use invite instead
-    update: ({ user, id }) => user?.role === 'admin' || user?.sub === id,
-    delete: ({ user }) => user?.role === 'admin',
+    update: ({ user, doc }) => user?.roles?.includes('admin') || user?.sub === doc?.id,
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
 }
 ```
@@ -9356,32 +9454,25 @@ Canonical URL: https://docs.dyrected.com/docs/guides/role-based-access-control
 
 ## 3. Apply roles to a content collection
 
+Now put those roles to work on real content. This `posts` collection lets anyone read published posts, lets editors create and manage their own, and reserves full control for admins. The "edit own" rule leans on `createdBy`, which Dyrected injects and stamps with the author's id automatically on create — you don't declare it:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
 {
   slug: 'posts',
   access: {
     read: ({ user, doc }) => doc?.status === 'published' || !!user,
-    create: ({ user }) => user?.role === 'admin' || user?.role === 'editor',
+    create: ({ user }) => user?.roles?.includes('admin') || user?.roles?.includes('editor'),
     update: ({ user, doc }) => {
-      if (user?.role === 'admin') return true
-      return user?.role === 'editor' && doc?.createdBy === user?.sub
+      if (user?.roles?.includes('admin')) return true
+      return user?.roles?.includes('editor') && doc?.createdBy === user?.sub
     },
-    delete: ({ user }) => user?.role === 'admin',
-  },
-  hooks: {
-    beforeChange: [
-      ({ data, operation, user }) => {
-        if (operation === 'create') return { ...data, createdBy: user?.sub }
-        return data
-      },
-    ],
+    delete: ({ user }) => user?.roles?.includes('admin'),
   },
   fields: [
-    { name: 'title', label: 'Title',     type: 'text' },
-    { name: 'content', label: 'Content',   type: 'richtext' },
-    { name: 'status', label: 'Status',    type: 'select', options: ['draft', 'published'], defaultValue: 'draft' },
-    { name: 'createdBy', label: 'Created By', type: 'relationship', relationTo: 'users' },
+    { name: 'title', label: 'Title',   type: 'text' },
+    { name: 'content', label: 'Content', type: 'richText' },
+    { name: 'status', label: 'Status',  type: 'select', options: ['draft', 'published'], defaultValue: 'draft' },
   ],
 }
 ```
@@ -9390,14 +9481,16 @@ Canonical URL: https://docs.dyrected.com/docs/guides/role-based-access-control
 
 ## 4. Hide sensitive fields from lower roles
 
+Access rules also work on a single field, not just the whole collection. Attach `access` to a field to keep it out of reach for lower roles:
+
 ```ts
 // dyrected.config.ts  (same for both frameworks)
 {
   name: 'internalNotes',
   type: 'textarea',
   access: {
-    read:   ({ user }) => user?.role === 'admin' || user?.role === 'editor',
-    update: ({ user }) => user?.role === 'admin',
+    read:   ({ user }) => user?.roles?.includes('admin') || user?.roles?.includes('editor'),
+    update: ({ user }) => user?.roles?.includes('admin'),
   },
 }
 ```
@@ -9408,16 +9501,18 @@ Fields stripped by `read` access never appear in API responses for that user —
 
 ## 5. Check the role on the frontend
 
+Access rules protect your data on the server. On the frontend you'll often want to match them — showing admin controls only to admins, for example. Read the signed-in user and check their roles. Because `me()` reads the full user record, `roles` is always populated here:
+
 <Tabs items={['SDK (any)', 'Next.js', 'Nuxt.js']}>
 <Tab value="SDK (any)">
 ```ts
 
 
-const client = createClient({ baseUrl: '/dyrected' })
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
 client.setToken(userToken)
 
 const user = await client.collection('users').me()
-// user.role === 'admin' | 'editor' | 'viewer'
+// user.roles is an array, e.g. ['editor']
 ```
 </Tab>
 <Tab value="Next.js">
@@ -9425,8 +9520,12 @@ const user = await client.collection('users').me()
 // Server action protection
 
 
-const { user } = await getDyrectedAuth()
-if (!user?.role === 'admin') {
+
+const client = getDyrectedClient()
+client.setToken(cookies().get('dyrected-token')?.value ?? '')
+
+const user = await client.collection('users').me()
+if (!user?.roles?.includes('admin')) {
   throw new Error('Forbidden')
 }
 ```
@@ -9438,8 +9537,8 @@ const { user } = useDyrectedAuth('users')
 </script>
 
 <template>
-  <AdminControls v-if="user?.role === 'admin'" />
-  <EditorControls v-else-if="user?.role === 'editor'" />
+  <AdminControls v-if="user?.roles?.includes('admin')" />
+  <EditorControls v-else-if="user?.roles?.includes('editor')" />
 </template>
 ```
 </Tab>
@@ -9470,21 +9569,10 @@ Dyrected sends transactional emails automatically for auth events — welcome, i
 
 ## 1. Wire in your email provider
 
+Email runs through a single `send` callback in your config. Dyrected hands it the recipient, subject, and rendered HTML; you forward those to whatever provider you use. Here it is with [Resend](https://resend.com), a solid default:
+
 ```ts
 // dyrected.config.ts
-export default defineConfig({
-  email: {
-    from: 'noreply@mysite.com',
-    send: async ({ to, subject, html }) => {
-      // call your email library here
-    },
-  },
-})
-```
-
-### Resend
-
-```ts
 
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -9499,7 +9587,11 @@ export default defineConfig({
 })
 ```
 
+Every auth email now flows through Resend. Prefer a different provider? The `send` signature never changes — swap the body for the one you want.
+
 ### Nodemailer (SMTP)
+
+Nodemailer is the usual choice when you send through your own SMTP server. Create a transport once and call it from `send`:
 
 ```ts
 
@@ -9561,7 +9653,9 @@ Override the HTML (and optionally the subject) for any built-in email by adding 
 export default defineConfig({
   email: {
     from: 'noreply@mysite.com',
-    send: async ({ to, subject, html }) => { /* ... */ },
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({ from: 'noreply@mysite.com', to, subject, html })
+    },
     templates: {
       welcome: ({ email }) => ({
         subject: 'Welcome to Acme',
@@ -9571,7 +9665,8 @@ export default defineConfig({
         subject: "You've been invited to Acme",
         html: `
           <p>Invited by <strong>${invitedByEmail}</strong>.</p>
-          <p>Your invite token: <pre>${token}</pre></p>
+          <p>Your invite token:</p>
+          <pre>${token}</pre>
         `,
       }),
       resetPassword: ({ token, url }) => ({
@@ -9649,7 +9744,7 @@ The `__admins` collection solves this by giving the dashboard its own dedicated 
 
 ## Define the `__admins` collection
 
-Use the reserved slug `__admins` with `auth: true`:
+Use the reserved slug `__admins` — a slug Dyrected treats specially, wiring it up as the dashboard's login — with `auth: true`:
 
 ```ts
 const admins = defineCollection({
@@ -9708,12 +9803,14 @@ ALTER TABLE collection_users RENAME TO collection___admins;
 
 Then update your config:
 
+Only the `slug` changes — your fields and the rest of the config stay exactly as they were:
+
 ```ts
 // Before
-const admins = defineCollection({ slug: 'users', auth: true, fields: [...] })
+const admins = defineCollection({ slug: 'users', auth: true, fields: yourFields })
 
 // After
-const admins = defineCollection({ slug: '__admins', auth: true, fields: [...] })
+const admins = defineCollection({ slug: '__admins', auth: true, fields: yourFields })
 ```
 
 Restart your server. The Admin UI will authenticate against the existing records in `collection___admins`.
@@ -9728,7 +9825,7 @@ If you restart before renaming the table, Dyrected will create a new empty `coll
 
 Canonical URL: https://docs.dyrected.com/docs/guides/using-hooks
 
-This guide covers the most common real-world uses for hooks. Each pattern is self-contained so you can jump directly to what you need.
+Hooks are functions Dyrected runs at set points in a document's lifecycle — before a save, after a save, before a delete — so you can reshape data, enforce rules, or trigger side effects. This guide is a cookbook of the patterns you'll reach for most, from auto-slugs to cascading dropdowns. Each one is self-contained, so jump straight to what you need.
 
 For the full API reference see [Core Concepts → Hooks](/docs/concepts/hooks).
 
@@ -9932,13 +10029,17 @@ export const Posts = defineCollection({
       },
     ],
   },
-  fields: [...],
+  fields: [
+    { name: 'title', label: 'Title', type: 'text', required: true },
+  ],
 })
 ```
 
 ---
 
 ## Revalidate a Next.js page after a save
+
+The same `afterChange` timing is what you want for cache invalidation: once the document is saved, tell your site to rebuild the affected page. This hook posts the saved slug to a Next.js revalidation route:
 
 ```ts
 hooks: {
@@ -10022,7 +10123,9 @@ export const Categories = defineCollection({
       },
     ],
   },
-  fields: [...],
+  fields: [
+    { name: 'name', label: 'Name', type: 'text', required: true },
+  ],
 })
 ```
 
@@ -10039,7 +10142,7 @@ Use a field `afterRead` hook to redact values that should not be visible to non-
   hooks: {
     afterRead: [
       ({ value, user }) => {
-        if (user?.role !== 'admin') return '••••••••'
+        if (!user?.roles?.includes('admin')) return '••••••••'
         return value
       },
     ],
@@ -10055,7 +10158,7 @@ The same pattern works for hiding a field entirely:
   type: 'textarea',
   hooks: {
     afterRead: [
-      ({ value, user }) => (user?.role === 'admin' ? value : undefined),
+      ({ value, user }) => (user?.roles?.includes('admin') ? value : undefined),
     ],
   },
 }
@@ -10307,6 +10410,8 @@ Workflow hooks are only available on collections that have a `workflow` config. 
 
 ## Sync a global setting after it changes
 
+Globals support the same `afterChange` hook as collections. Since globals often drive layout-wide content, this is a natural place to purge a CDN cache so the change shows up everywhere at once:
+
 ```ts
 export const SiteSettings = defineGlobal({
   slug: "site-settings",
@@ -10421,14 +10526,14 @@ export default defineConfig({
 ### App Router
 
 ```ts
-// app/dyrected/[...route]/route.ts  (or src/app/dyrected/[...route]/route.ts)
+// app/api/[...route]/route.ts  (or src/app/api/[...route]/route.ts)
 
 
 
-export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config);
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config, { basePath: "" });
 ```
 
-All Dyrected REST endpoints are now available at `/dyrected/...`.
+All Dyrected REST endpoints are now available at `/api/...`.
 
 If your catch-all route uses another prefix, pass it explicitly—for example,
 `dyrectedNextHandler(config, { basePath: '/cms' })`.
@@ -10534,7 +10639,7 @@ When you run `npx dyrected init`, it generates an `instrumentation.ts` file at y
 
 ```
   ➜  Dyrected admin:  http://localhost:3000/admin
-  ➜  Dyrected API:    http://localhost:3000/dyrected
+  ➜  Dyrected API:    http://localhost:3000/api
 ```
 
 The base URL is read from `NEXT_PUBLIC_APP_URL`, falling back to `http://localhost:3000`. This works in both development and production.
@@ -10547,8 +10652,8 @@ The base URL is read from `NEXT_PUBLIC_APP_URL`, falling back to `http://localho
 # .env.local
 DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
 
-# Dyrected API base URL (the Next.js app URL + /dyrected)
-NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000/dyrected
+# Dyrected site URL (SDK methods append /api themselves)
+NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000
 
 # Server-side API key (never expose to browser)
 DYRECTED_API_KEY=sk_live_...
@@ -10749,7 +10854,7 @@ export default defineNuxtConfig({
   modules: [["@dyrected/nuxt", { adminPath: "admin" }]],
   dyrected: {
     ...config,
-    apiBase: "/dyrected",
+    apiBase: "/api",
   },
 });
 ```
@@ -10760,7 +10865,7 @@ The `adminPath` option tells the module where your admin page lives, so it can p
 
 ```
   ➜  Dyrected admin:  http://localhost:3000/admin
-  ➜  Dyrected API:    http://localhost:3000/dyrected
+  ➜  Dyrected API:    http://localhost:3000/api
 ```
 
 And your `dyrected.config.ts` (using SQLite as an example):

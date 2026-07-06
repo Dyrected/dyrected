@@ -89,7 +89,7 @@ function serializeFieldForApi(f: any): any {
 export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfig) {
   // 1. Schema Endpoints
   // Used by the SDK and Admin to understand the content structure
-  app.get("/api/schemas", optionalAuth(), async (c) => {
+  app.get("/api/schemas", optionalAuth(config), async (c) => {
     const siteId = c.req.header("X-Site-Id");
 
     let collections = [...config.collections];
@@ -210,7 +210,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     });
   });
 
-  app.get("/api/dyrected/options/:collection/:field", optionalAuth(), async (c) => {
+  app.get("/api/dyrected/options/:collection/:field", optionalAuth(config), async (c) => {
     const { collection: colSlug, field: fieldName } = c.req.param();
     const siteId = c.req.header("X-Site-Id");
 
@@ -305,7 +305,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.html(getSwaggerHtml());
   });
 
-  app.get("/api/preferences/:key", requireAuth(), async (c) => {
+  app.get("/api/preferences/:key", requireAuth(config), async (c) => {
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
@@ -340,7 +340,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.json({ key, value: globalValue });
   });
 
-  app.put("/api/preferences/:key", requireAuth(), async (c) => {
+  app.put("/api/preferences/:key", requireAuth(config), async (c) => {
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
@@ -392,7 +392,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.json({ key, value: body.value });
   });
 
-  app.delete("/api/preferences/:key", requireAuth(), async (c) => {
+  app.delete("/api/preferences/:key", requireAuth(config), async (c) => {
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
@@ -476,11 +476,11 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.get(`${path}/init`, (c) => authController.init(c));
     app.post(`${path}/first-user`, (c) => authController.registerFirstUser(c));
     // /me and /refresh-token require a valid token
-    app.get(`${path}/me`, requireAuth(), (c) => authController.me(c));
-    app.post(`${path}/refresh-token`, requireAuth(), (c) => authController.refreshToken(c));
+    app.get(`${path}/me`, requireAuth(config), (c) => authController.me(c));
+    app.post(`${path}/refresh-token`, requireAuth(config), (c) => authController.refreshToken(c));
     app.post(`${path}/forgot-password`, (c) => authController.forgotPassword(c));
     app.post(`${path}/reset-password`, (c) => authController.resetPassword(c));
-    app.post(`${path}/invite`, requireAuth(), (c) => authController.invite(c));
+    app.post(`${path}/invite`, requireAuth(config), (c) => authController.invite(c));
     app.post(`${path}/accept-invite`, (c) => authController.acceptInvite(c));
   }
 
@@ -500,12 +500,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.post(`${path}/seed`, (c) => controller.seed(c));
     // Dedicated password-change endpoint (auth collections only)
     if (collection.auth) {
-      app.post(`${path}/:id/change-password`, requireAuth(), (c) => controller.changePassword(c));
+      app.post(`${path}/:id/change-password`, requireAuth(config), (c) => controller.changePassword(c));
     }
     // Workflow routes — only registered when the collection has a workflow configured
     if (collection.workflow) {
-      app.post(`${path}/:id/transitions/:transition`, requireAuth(), (c) => controller.transition(c));
-      app.get(`${path}/:id/workflow-history`, requireAuth(), (c) => controller.workflowHistory(c));
+      app.post(`${path}/:id/transitions/:transition`, requireAuth(config), (c) => controller.transition(c));
+      app.get(`${path}/:id/workflow-history`, requireAuth(config), (c) => controller.workflowHistory(c));
     }
   }
 
@@ -521,7 +521,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
   // 6. Preview Routes
   const previewController = new PreviewController();
-  app.post("/api/preview-token", requireAuth(), (c) => previewController.createToken(c));
+  app.post("/api/preview-token", requireAuth(config), (c) => previewController.createToken(c));
   app.get("/api/preview-data", (c) => previewController.getData(c));
 
   // 7. Dynamic Routes (Tenant-specific)
@@ -535,7 +535,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   // Must be registered BEFORE the /:id? catch-all so Hono doesn't swallow deeper paths.
   // Pattern: POST /api/collections/:slug/:id/transitions/:transition
   //          GET  /api/collections/:slug/:id/workflow-history
-  app.post("/api/collections/:slug/:id/transitions/:transition", requireAuth(), async (c) => {
+  app.post("/api/collections/:slug/:id/transitions/:transition", requireAuth(config), async (c) => {
     const slug = c.req.param("slug");
     const siteId = c.req.header("X-Site-Id") || c.get("siteId");
     const config = c.get("config");
@@ -560,7 +560,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return controller.transition(c);
   });
 
-  app.get("/api/collections/:slug/:id/workflow-history", requireAuth(), async (c) => {
+  app.get("/api/collections/:slug/:id/workflow-history", requireAuth(config), async (c) => {
     const slug = c.req.param("slug");
     const siteId = c.req.header("X-Site-Id") || c.get("siteId");
     const config = c.get("config");

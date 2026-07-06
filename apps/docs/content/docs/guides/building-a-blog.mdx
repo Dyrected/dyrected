@@ -282,7 +282,7 @@ hooks: {
 ## 6. Embed the Admin UI
 <Tabs items={['Next.js', 'Nuxt.js']}>
 <Tab value="Next.js">
-Create a catch-all page at `app/admin/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that handles all the mounting and routing isolation for you.
+Create a catch-all page at `app/admin/page.tsx`. The `@dyrected/next` package provides a `<DyrectedAdmin />` component that mounts the dashboard on that route and isolates its internal routing from the rest of your app.
 
 ```tsx
 // app/admin/page.tsx
@@ -296,13 +296,13 @@ export default function AdminPage() {
 ```
 </Tab>
 <Tab value="Nuxt.js">
-The Admin UI mounts automatically at `/admin` when you add the `@dyrected/nuxt` module. You can also create a custom admin page if you want to use a different route (like `/cms-admin`):
+Adding the `@dyrected/nuxt` module auto-imports the `<DyrectedAdmin>` component, but it does not create a route for you — you decide where the dashboard lives. Create a page and render `<DyrectedAdmin>` with a `basename` that matches that route. Here it is at `/admin`; use a different filename and `basename` (say `pages/cms-admin.vue` with `basename="/cms-admin"`) if you want a different path.
 
 ```vue
-<!-- pages/cms-admin.vue -->
+<!-- pages/admin.vue -->
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/cms-admin" />
+    <DyrectedAdmin basename="/admin" />
   </ClientOnly>
 </template>
 

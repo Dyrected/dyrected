@@ -11,10 +11,15 @@ export interface DyrectedContext {
     config: DyrectedConfig;
     siteId?: string;
     workspaceId?: string;
-    /** Decoded JWT payload set by requireAuth() or optionalAuth() middleware. */
+    /**
+     * The authenticated user set by requireAuth() or optionalAuth() middleware.
+     * Hydrated from the full user record (minus password) when a db adapter is
+     * configured, so collection fields like `roles` are available; falls back to
+     * the token's identity claims otherwise.
+     */
     user?: {
       sub: string;
-      email: string;
+      email?: string;
       collection: string;
       [key: string]: any;
     };
@@ -35,8 +40,9 @@ export async function createDyrectedApp(rawConfig: DyrectedConfig) {
 
   // 1. Standard Middleware
   app.use('*', requestId());
-  // Decode bearer token if present so user is available in CRUD hooks and audit logging.
-  app.use('*', optionalAuth());
+  // Resolve bearer token if present so the full user (incl. roles and other collection
+  // fields) is available in access functions, CRUD hooks, and audit logging.
+  app.use('*', optionalAuth(config));
   app.use('*', async (c, next) => {
     const start = Date.now();
     await next();

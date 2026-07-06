@@ -1638,6 +1638,20 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/guides/editorial-approval-workflow#example-3",
+    "page": "/guides/editorial-approval-workflow",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/guides/editorial-approval-workflow#example-4",
+    "page": "/guides/editorial-approval-workflow",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/guides/enterprise-core#example-1",
     "page": "/guides/enterprise-core",
     "language": "ts",
@@ -1795,8 +1809,8 @@
     "id": "/guides/handling-form-submissions#example-2",
     "page": "/guides/handling-form-submissions",
     "language": "tsx",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/guides/handling-form-submissions#example-3",
@@ -2151,26 +2165,19 @@
   {
     "id": "/guides/sending-email#example-3",
     "page": "/guides/sending-email",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/guides/sending-email#example-4",
-    "page": "/guides/sending-email",
     "language": "",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/sending-email#example-5",
+    "id": "/guides/sending-email#example-4",
     "page": "/guides/sending-email",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/sending-email#example-6",
+    "id": "/guides/sending-email#example-5",
     "page": "/guides/sending-email",
     "language": "ts",
     "classification": "syntax-checked",
@@ -2201,8 +2208,8 @@
     "id": "/guides/separating-admin-auth#example-4",
     "page": "/guides/separating-admin-auth",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/guides/using-hooks#example-1",
@@ -2257,8 +2264,8 @@
     "id": "/guides/using-hooks#example-8",
     "page": "/guides/using-hooks",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/guides/using-hooks#example-9",
@@ -2285,8 +2292,8 @@
     "id": "/guides/using-hooks#example-12",
     "page": "/guides/using-hooks",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/guides/using-hooks#example-13",
