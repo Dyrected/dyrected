@@ -1,5 +1,14 @@
 # @dyrected/next
 
+## 2.5.56
+
+### Patch Changes
+
+- Updated dependencies [9cb41d8]
+  - @dyrected/core@2.5.56
+  - @dyrected/react@2.5.56
+  - @dyrected/sdk@2.5.56
+
 ## 2.5.55
 
 ### Patch Changes
