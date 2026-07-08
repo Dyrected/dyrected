@@ -38,12 +38,16 @@ export default async function Page({ params }: Props) {
     >
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
-          <DocsTitle>{page.data.title}</DocsTitle>
-          <DocsDescription>{page.data.description}</DocsDescription>
+          <DocsTitle style={{ fontFamily: 'var(--font-display, serif)', fontWeight: 500 }}>
+            {page.data.title}
+          </DocsTitle>
+          <DocsDescription style={{ fontFamily: 'var(--font-sans, sans-serif)' }}>
+            {page.data.description}
+          </DocsDescription>
         </div>
         <CopyPageButton content={rawContent} />
       </div>
-      <DocsBody>
+      <DocsBody style={{ fontFamily: 'var(--font-sans, sans-serif)' }}>
         <MDX
           components={{
             ...defaultMdxComponents,

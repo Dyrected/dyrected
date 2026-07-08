@@ -250,6 +250,16 @@ body {
   transform: skewX(-18deg);
 }
 
+.prose {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.prose :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
 .dark .brand-logo-light { display: none; }
 .dark .brand-logo-dark { display: flex; }
 

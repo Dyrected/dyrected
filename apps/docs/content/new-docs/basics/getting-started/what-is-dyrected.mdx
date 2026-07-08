@@ -1,3 +1,51 @@
 ---
 title: What is Dyrected?
+description: Dyrected gives agencies a simple CMS dashboard for custom websites.
 ---
+
+import { Card } from '@/components/ui/card'
+
+Dyrected gives agencies a simple CMS dashboard for custom websites, so clients can safely update approved text, images, FAQs, testimonials, services, and pages without touching code or breaking the design.
+
+You define your content model in TypeScript with collections, globals, fields, access rules, and hooks. Dyrected uses that config to generate the API, the Admin UI, and the SDK automatically. Editors can update content through a controlled admin experience while your frontend code, layout, and business logic stay in your repo.
+
+You can run Dyrected inside a Next.js or Nuxt app, or use Dyrected Cloud for the backend while keeping the same schema in your codebase. Editors can work in Dyrected's hosted admin or in an embedded admin route inside your own app, usually at `/admin`.
+
+Dyrected is strongest when you want developers to keep control of structure and behavior, while clients, marketers, or internal teams take over day-to-day content updates.
+
+## Start here
+
+Use these pages to move from orientation into setup, modeling, and real content work.
+
+<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+  <Card
+    title="Use Cases"
+    description="See where Dyrected fits best, including client websites, SaaS apps, marketing content, and multi-site setups."
+    href="/new-docs/basics/getting-started/use-cases"
+  />
+  <Card
+    title="Core Concepts"
+    description="Learn the core ideas behind collections, globals, fields, schema, and how Dyrected structures content."
+    href="/new-docs/basics/getting-started/concepts"
+  />
+  <Card
+    title="Installation"
+    description="Start with the recommended installation path and get to a working Dyrected setup quickly."
+    href="/new-docs/basics/getting-started/installation"
+  />
+  <Card
+    title="Configuration"
+    description="See how Dyrected is configured in code and how that config drives the rest of the system."
+    href="/new-docs/basics/configuration/overview"
+  />
+  <Card
+    title="Admin"
+    description="See how editors manage content and how the admin can be hosted by Dyrected or embedded in your app."
+    href="/new-docs/features/admin/overview"
+  />
+  <Card
+    title="SDK API"
+    description="Fetch and update content from your frontend, server code, or scripts using the Dyrected SDK."
+    href="/new-docs/managing-data/sdk-api/overview"
+  />
+</div>
