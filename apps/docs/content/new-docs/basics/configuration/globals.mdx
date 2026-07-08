@@ -12,16 +12,16 @@ Typical globals include site settings, navigation, footer content, legal copy, a
 A global is a single document identified by a slug. Editors open it directly and update the current value instead of creating multiple records.
 
 ```ts
-import { defineGlobal } from '@dyrected/core'
+import { defineGlobal } from "@dyrected/core";
 
 export const SiteSettings = defineGlobal({
-  slug: 'site-settings',
-  label: 'Site settings',
+  slug: "site-settings",
+  label: "Site settings",
   fields: [
-    { name: 'siteName', type: 'text', label: 'Site name', required: true },
-    { name: 'tagline', type: 'text', label: 'Tagline', defaultValue: '' },
+    { name: "siteName", type: "text", label: "Site name", required: true },
+    { name: "tagline", type: "text", label: "Tagline", defaultValue: "" },
   ],
-})
+});
 ```
 
 If a collection answers "many documents," a global answers "exactly one current document."
@@ -50,59 +50,85 @@ Common examples:
 - SEO defaults
 - theme settings
 
-If editors should be able to create many entries of the same thing, use a collection instead.
+If you are unsure whether something should be a global or a collection, see [Global vs collection](#global-vs-collection) below.
 
-## Common global options
+## The shape of a global
 
-### `slug`
+Most globals come down to the same few decisions. If you can answer these, the rest of the config usually follows.
 
-The slug identifies the global in the API, SDK, and admin routes.
+### Start with `slug`
 
-### `label`
+`slug` is the global's stable machine name. Dyrected uses it in the API path (`/api/globals/:slug`), the admin route, and SDK calls through `client.global('slug')`.
 
-Use `label` to give the singleton a clear human-readable name in the dashboard.
+That makes `slug` part of the long-term data contract, not display text. Choose a name you can keep, such as `site-settings`, `navigation`, or `footer`.
 
-### `fields`
+### Name it with `label`
 
-The `fields` array defines the shape of the document editors can update.
+`label` is the human-readable name Dyrected shows in the admin sidebar. Set it so editors see "Site settings" rather than the raw slug.
 
-### `access`
+### Define the document in `fields`
 
-Global access rules control who can read or update the singleton.
+`fields` is where the shape of the singleton lives. This array defines what editors can update, how values are validated, and what the API returns.
 
-### `hooks`
+Because a global is one document, think of `fields` as the shape of that single record rather than a template for many. For the full field system, read [Fields](/new-docs/basics/fields/overview).
 
-Use hooks when changing the global should trigger side effects, such as cache revalidation after a site-settings change.
+### Control who can edit with `access`
 
-### `admin`
+Shared settings usually should not be editable by everyone. Global `access` has two rules, `read` and `update`, that decide who can view and who can change the singleton.
 
-Global admin options are smaller than collection admin options. The main controls are:
+Reach for this whenever a global holds settings only certain roles should touch, such as letting anyone read navigation while only editors change it. For the full model, see [Access Control](/new-docs/basics/access-control/overview).
 
-- `icon`
-- `group`
-- `hidden`
+### Trigger side effects with `hooks`
 
-## A common pattern
+Use `hooks` when changing a global should do something beyond saving the value. The most common case is refreshing cached pages after site settings change, in an `afterChange` hook:
 
-Many projects start with one or more globals for shared site chrome:
+```ts
+import { defineGlobal } from "@dyrected/core";
 
-- `site-settings` for the site name, logo, and metadata
-- `navigation` for header links
-- `footer` for shared footer links and legal copy
+export const SiteSettings = defineGlobal({
+  slug: "site-settings",
+  label: "Site settings",
+  fields: [
+    { name: "siteName", type: "text", label: "Site name", required: true },
+    { name: "tagline", type: "text", label: "Tagline", defaultValue: "" },
+  ],
+  hooks: {
+    afterChange: [({ doc }) => revalidateTag("site-settings")],
+  },
+});
+```
 
-That keeps shared content in one predictable place and avoids duplicating it across pages.
+Globals support `beforeRead`, `afterRead`, `beforeChange`, and `afterChange`. There are no delete hooks, because a global cannot be deleted.
 
-## Related pages
+### Seed first-run defaults with `initialData`
 
-- See [Collections](/new-docs/basics/configuration/collections) for repeatable content.
-- See [Overview](/new-docs/basics/configuration/overview) for the full root config shape.
-- See [Environment Variables](/new-docs/basics/configuration/environment-variables) before wiring SDK access and secrets.
+`initialData` gives the global a starting value the first time it is fetched and found empty. Use it so a fresh project opens with sensible defaults instead of a blank form:
 
-## Generated reference
+```ts
+import { defineGlobal } from "@dyrected/core";
 
-The `GlobalConfig` contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so every option stays in sync with the package. The prose above explains when to reach for a global; this region is the exact source of truth for the shape you pass to `defineGlobal`.
+export const SiteSettings = defineGlobal({
+  slug: "site-settings",
+  label: "Site settings",
+  fields: [
+    { name: "siteName", type: "text", label: "Site name", required: true },
+    { name: "tagline", type: "text", label: "Tagline", defaultValue: "" },
+  ],
+  initialData: {
+    siteName: "My site",
+    tagline: "Welcome",
+  },
+});
+```
+
+After that first fetch, editors own the value and `initialData` no longer applies.
+
+### Scope with `siteId` and `shared`
+
+Skip these unless you run a multi-site deployment. `siteId` restricts a global to one site, and `shared: true` makes one global common to every site. In a single-site project, leave both unset.
 
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:START */}
+
 ## GlobalConfig
 
 Defines a Dyrected global — a singleton document without pagination or IDs.
@@ -178,15 +204,79 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 }
 ```
 
-| Option | Description |
-| --- | --- |
-| <code>slug</code> (required) | Unique identifier for this global. Used as the URL segment (&#96;/api/globals/:slug&#96;) and the storage key. |
-| <code>siteId</code> (optional) | Restricts this global to a specific site in a multi-tenant deployment. |
-| <code>shared</code> (optional) | If &#96;true&#96;, this global is shared across all sites in a multi-tenant deployment. |
-| <code>label</code> (optional) | Human-readable label shown in the Admin UI sidebar. |
-| <code>fields</code> (required) | Field definitions for this global's document schema. |
-| <code>access</code> (optional) | Access control for reading and updating this global. |
-| <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
-| <code>admin</code> (optional) | Admin UI configuration for this global. |
-| <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
+| Option                              | Description                                                                                                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <code>slug</code> (required)        | Unique identifier for this global. Used as the URL segment (&#96;/api/globals/:slug&#96;) and the storage key.                                                                                         |
+| <code>siteId</code> (optional)      | Restricts this global to a specific site in a multi-tenant deployment.                                                                                                                                 |
+| <code>shared</code> (optional)      | If &#96;true&#96;, this global is shared across all sites in a multi-tenant deployment.                                                                                                                |
+| <code>label</code> (optional)       | Human-readable label shown in the Admin UI sidebar.                                                                                                                                                    |
+| <code>fields</code> (required)      | Field definitions for this global's document schema.                                                                                                                                                   |
+| <code>access</code> (optional)      | Access control for reading and updating this global.                                                                                                                                                   |
+| <code>hooks</code> (optional)       | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
+| <code>admin</code> (optional)       | Admin UI configuration for this global.                                                                                                                                                                |
+| <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty.                                                                                                              |
+
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:END */}
+
+## Global options in practice
+
+The generated contract above lists every option. A few carry more nuance than a one-line description shows and are worth expanding.
+
+### `access`
+
+Global access rules run on the server and decide who can read or update the singleton. Because there is nothing to create or delete, a global only has `read` and `update`.
+
+Use `update` to keep shared settings in trusted hands, for example letting any signed-in user read navigation while only editors change it. See [Access Control](/new-docs/basics/access-control/overview) for the full model.
+
+### `hooks`
+
+Global hooks run around reads and writes of the singleton. Since a global is never created or deleted, its lifecycle is smaller than a collection's: `beforeRead`, `afterRead`, `beforeChange`, and `afterChange`.
+
+The most common use is an `afterChange` hook that revalidates cached pages when settings change, as shown above. Errors in `after*` hooks are isolated, so a failed revalidation never turns a successful save into an error. See [Hooks](/new-docs/basics/hooks/overview) for the full lifecycle.
+
+### `admin`
+
+Global admin options are smaller than collection admin options, because there is no list view to configure. The controls are:
+
+- `icon` — a Lucide icon beside the global in the sidebar
+- `group` — a named section to group related globals under
+- `hidden` — hides the global from the sidebar while keeping it in the system
+
+## Global vs collection
+
+The most useful decision when modeling content is whether a piece of it is a global or a collection.
+
+- Use a **global** when there is exactly one current value for the whole site, such as `site-settings`, `navigation`, or `footer`.
+- Use a **collection** when you have many entries of the same shape, such as `posts`, `products`, or `authors`.
+- If editors will ever need to create more than one record, start with a **collection**. Growing from one global into many records later is more work than starting with a collection that happens to hold a single entry today.
+
+When in doubt, ask "how many of these will exist?" One means a global. More than one, now or later, means a collection.
+
+See [Collections](/new-docs/basics/configuration/collections) for the repeatable side of the model.
+
+## Common global patterns
+
+Most projects start with a small set of globals for shared site chrome. Each one stays narrow and holds a single clear kind of content:
+
+- `site-settings` — site name, logo, and default metadata
+- `navigation` — header links and menu structure
+- `footer` — footer links and legal copy
+- `seo-defaults` — default title, description, and social image
+- `theme-settings` — colors, fonts, and other presentation defaults
+
+Keeping these separate makes each global easy to find and safe to edit without disturbing unrelated settings.
+
+## Practical habits
+
+- Keep each global narrow and purpose-specific.
+- Set `admin.icon` to an appropriate icon for the collection.
+- Do not let one global grow into a dumping ground for unrelated settings.
+- Split unrelated concerns into separate globals rather than one large one.
+- Model content shape in `fields`, not ad hoc JSON blobs.
+- Reach for a collection the moment you need more than one record.
+
+## Related pages
+
+- See [Collections](/new-docs/basics/configuration/collections) for repeatable content.
+- See [Overview](/new-docs/basics/configuration/overview) for the full root config shape.
+- See [Environment Variables](/new-docs/basics/configuration/environment-variables) before wiring SDK access and secrets.

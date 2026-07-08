@@ -4,8 +4,8 @@
     "overview",
     "collections",
     "globals",
-    "i18n",
-    "localization",
+    "__i18n",
+    "__localization",
     "environment-variables"
   ]
 }

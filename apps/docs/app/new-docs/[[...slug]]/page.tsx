@@ -15,6 +15,7 @@ import { Note, Warning } from '@/components/callouts'
 import { Mermaid } from '@/components/mermaid'
 import { SafeScriptTag } from '@/components/safe-script-tag'
 import { newDocsSource } from '@/app/source'
+import { isUnpublishedSlug, showUnpublished } from '@/lib/unpublished'
 
 interface Props {
   params: Promise<{ slug?: string[] }>
@@ -22,6 +23,7 @@ interface Props {
 
 export default async function Page({ params }: Props) {
   const { slug } = await params
+  if (isUnpublishedSlug(slug) && !showUnpublished) notFound()
   const page = newDocsSource.getPage(slug)
   if (!page) notFound()
 
@@ -75,11 +77,14 @@ export default async function Page({ params }: Props) {
 }
 
 export async function generateStaticParams() {
-  return newDocsSource.generateParams()
+  const params = newDocsSource.generateParams()
+  if (showUnpublished) return params
+  return params.filter((param) => !isUnpublishedSlug(param.slug))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
+  if (isUnpublishedSlug(slug) && !showUnpublished) notFound()
   const page = newDocsSource.getPage(slug)
   if (!page) notFound()
 

@@ -478,6 +478,46 @@ Use this for collections like `media`, `documents`, or brand asset libraries.
 
 For storage behavior and adapter-level upload setup, read [Upload Overview](/new-docs/features/upload/overview). For the field-level side of file relationships, read [Upload Field](/new-docs/basics/fields/upload).
 
+## `initialData`
+
+Set `initialData` when a collection should start with a few records instead of empty. Dyrected seeds these documents the first time the collection is fetched and found empty, so a fresh project or a new environment opens with content already in place.
+
+Because a collection holds many documents, `initialData` is an array, and each entry becomes one starter document:
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const Categories = defineCollection({
+  slug: "categories",
+  labels: { singular: "Category", plural: "Categories" },
+  fields: [
+    { name: "name", type: "text", label: "Name", required: true },
+    { name: "slug", type: "text", label: "Slug", required: true, unique: true },
+  ],
+  initialData: [
+    { name: "News", slug: "news" },
+    { name: "Guides", slug: "guides" },
+    { name: "Changelog", slug: "changelog" },
+  ],
+});
+```
+
+This is handy for reference data most projects need on day one, such as categories, tags, default pages, or demo content you want visible before an editor creates anything.
+
+Seeding only happens while the collection is still empty. Once any document exists, `initialData` no longer applies, so editors can add, edit, or delete records without Dyrected re-seeding them. Treat it as a starting point, not an ongoing sync.
+
+## `workflow`
+
+Set `workflow` when a collection needs editorial review or staged publishing. A workflow-enabled collection keeps an editable working revision separate from the public snapshot, so editing a document never changes live content until you transition it to a published state.
+
+This is a larger feature with its own states, transitions, and roles, so it lives on its own page. For the full model, read [Workflows Overview](/new-docs/features/workflows/overview).
+
+## `audit`
+
+Set `audit: true` when changes to a collection need accountability. Dyrected then logs every create, update, and delete to a hidden audit collection, each entry capturing a before-and-after snapshot and the acting user.
+
+For what gets recorded and how it works, read [Audit Overview](/new-docs/features/audit/overview).
+
 ## Routable collections
 
 Some collections are not just stored records. They also map to real frontend URLs, such as pages, posts, case studies, projects, or products.
@@ -572,6 +612,7 @@ Treat those changes as URL migrations, not just content edits.
 
 - Use explicit human-readable labels for named fields.
 - Set `admin.useAsTitle` to the field editors will recognize fastest.
+- Set `admin.icon` to an appropriate icon for the collection.
 - Keep routable collections aligned with real frontend routes through `previewUrl` and `urlPattern`.
 - Treat field renames and slug changes as schema migrations, not cosmetic edits.
 

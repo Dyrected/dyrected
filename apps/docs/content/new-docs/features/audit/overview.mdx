@@ -1,0 +1,39 @@
+---
+title: Overview
+description: Audit logging records every create, update, and delete on a collection, with before-and-after snapshots and the acting user, for accountability and review.
+---
+
+Audit logging keeps a durable record of who changed what in a collection. When you enable it, Dyrected writes an entry for every create, update, and delete, including a before-and-after snapshot and the acting user, so you can answer "who changed this, and what did it look like before?" later.
+
+Use it on collections where changes need accountability, such as content that goes through compliance review, records that support operational auditing, or anything where you want a reliable history of edits.
+
+## Enabling audit
+
+Set `audit: true` on any collection. That is all it takes — Dyrected handles the logging for you.
+
+```ts
+import { defineCollection } from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  audit: true,
+  fields: [
+    { name: "reference", type: "text", label: "Reference", required: true },
+    { name: "status", type: "text", label: "Status", required: true },
+  ],
+});
+```
+
+The first time any collection turns on `audit`, Dyrected registers a hidden `__audit` collection to store the entries. You do not define or manage it yourself.
+
+## What gets logged
+
+Each entry records:
+
+- the collection slug and document id the change applied to
+- the operation — `create`, `update`, or `delete`
+- the acting user's id, when the request is authenticated
+- a timestamp
+- the change itself, as a before-and-after snapshot (`before` is empty on create, `after` is empty on delete)
+
+Audit writes run in the background and never block the operation being logged. If a log write fails, the original create, update, or delete still succeeds.
