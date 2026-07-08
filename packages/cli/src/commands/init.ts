@@ -37,7 +37,7 @@ Examples:
 After running init:
   1. Fill in the values in .env
   2. Start your dev server
-  3. Open the admin path you chose (default: /cms)
+  3. Open the admin path you chose (default: /admin)
 `,
     )
     .action(
@@ -356,10 +356,11 @@ ${storageImport}
 // Reserved collection — sole login gateway for the Dyrected dashboard.
 // Email + password are auto-managed; declare only extra fields here.
 
-const admins = defineCollection({
+const Admins = defineCollection({
   slug: '__admins',
   labels: { singular: 'Admin', plural: 'Admins' },
   auth: true,
+  admin: { icon: 'Users', useAsTitle: 'name' },
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'role', type: 'select', options: ['admin', 'editor'], defaultValue: 'admin' },
@@ -368,18 +369,26 @@ const admins = defineCollection({
 
 // ── Collections ──────────────────────────────────────────────────────────
 
-const media = defineCollection({
+const Media = defineCollection({
   slug: 'media',
   labels: { singular: 'Media', plural: 'Media' },
   upload: true,
+  admin: { icon: 'Image', useAsTitle: 'alt' },
   fields: [
     { name: 'alt', type: 'text' },
   ],
 })
 
-const pages = defineCollection({
+const Pages = defineCollection({
   slug: 'pages',
   labels: { singular: 'Page', plural: 'Pages' },
+  admin: {
+    icon: 'FileText',
+    useAsTitle: 'title',
+    // Jexl expression evaluated against the document (+ siteUrl). Relative
+    // results are prefixed with your site URL automatically.
+    previewUrl: "slug == 'home' ? '/' : '/' + slug",
+  },
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true },
@@ -388,9 +397,10 @@ const pages = defineCollection({
   ],
 })
 
-const posts = defineCollection({
+const Posts = defineCollection({
   slug: 'posts',
   labels: { singular: 'Post', plural: 'Posts' },
+  admin: { icon: 'Newspaper', useAsTitle: 'title' },
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'content', type: 'richText' },
@@ -400,9 +410,10 @@ const posts = defineCollection({
 
 // ── Globals ───────────────────────────────────────────────────────────────
 
-const navigation = defineGlobal({
+const Navigation = defineGlobal({
   slug: 'navigation',
   label: 'Navigation',
+  admin: { icon: 'Menu' },
   fields: [
     {
       name: 'menuItems',
@@ -415,9 +426,10 @@ const navigation = defineGlobal({
   ],
 })
 
-const settings = defineGlobal({
+const Settings = defineGlobal({
   slug: 'settings',
   label: 'Site Settings',
+  admin: { icon: 'Settings' },
   fields: [
     { name: 'siteName', type: 'text' },
     { name: 'logo', type: 'relationship', relationTo: 'media' },
@@ -428,8 +440,8 @@ const settings = defineGlobal({
 // ── Config ────────────────────────────────────────────────────────────────
 
 export default defineConfig({
-  collections: [admins, media, pages, posts],
-  globals: [navigation, settings],
+  collections: [Admins, Media, Pages, Posts],
+  globals: [Navigation, Settings],
   db: ${dbConfig},
   storage: ${storageConfig},
 })

@@ -107,15 +107,17 @@ export type UrlField = UrlFieldValue | string;
             "url",
             "width",
             "height",
+            "focalPoint",
+            "blurhash",
+            "sizes",
             "createdAt",
             "updatedAt",
           ].includes(f.name),
       );
       if (extraFields.length > 0) {
-        const insertionPoint = code.indexOf(
-          "}",
-          code.indexOf("export interface Media {"),
-        );
+        const mediaStart = code.indexOf("export interface Media {");
+        const updatedAtIndex = code.indexOf("updatedAt: string;", mediaStart);
+        const insertionPoint = code.indexOf("}", updatedAtIndex);
         const fieldsCode = extraFields
           .map(
             (f: any) =>

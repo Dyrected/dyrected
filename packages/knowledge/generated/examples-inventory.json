@@ -164,8 +164,8 @@
     "id": "/admin/configuration#example-8",
     "page": "/admin/configuration",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/admin/configuration#example-9",
@@ -184,16 +184,16 @@
   {
     "id": "/admin/configuration#example-11",
     "page": "/admin/configuration",
-    "language": "vue",
-    "classification": "syntax-checked",
-    "validation": "Inventoried vue example"
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/admin/configuration#example-12",
     "page": "/admin/configuration",
-    "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/admin/configuration#example-13",
@@ -240,9 +240,9 @@
   {
     "id": "/admin/configuration#example-19",
     "page": "/admin/configuration",
-    "language": "tsx",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/admin/configuration#example-20",
@@ -254,9 +254,9 @@
   {
     "id": "/admin/configuration#example-21",
     "page": "/admin/configuration",
-    "language": "vue",
+    "language": "tsx",
     "classification": "syntax-checked",
-    "validation": "Inventoried vue example"
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/admin/configuration#example-22",
@@ -268,9 +268,9 @@
   {
     "id": "/admin/configuration#example-23",
     "page": "/admin/configuration",
-    "language": "css",
+    "language": "vue",
     "classification": "syntax-checked",
-    "validation": "Inventoried css example"
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/admin/configuration#example-24",
@@ -303,19 +303,26 @@
   {
     "id": "/admin/configuration#example-28",
     "page": "/admin/configuration",
+    "language": "css",
+    "classification": "syntax-checked",
+    "validation": "Inventoried css example"
+  },
+  {
+    "id": "/admin/configuration#example-29",
+    "page": "/admin/configuration",
     "language": "html",
     "classification": "syntax-checked",
     "validation": "Inventoried html example"
   },
   {
-    "id": "/admin/configuration#example-29",
+    "id": "/admin/configuration#example-30",
     "page": "/admin/configuration",
     "language": "css",
     "classification": "syntax-checked",
     "validation": "Inventoried css example"
   },
   {
-    "id": "/admin/configuration#example-30",
+    "id": "/admin/configuration#example-31",
     "page": "/admin/configuration",
     "language": "ts",
     "classification": "illustrative",

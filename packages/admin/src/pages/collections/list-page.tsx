@@ -91,6 +91,7 @@ import { Pagination } from "../../components/ui/pagination"
 import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { CollectionListSlotProps } from "../../types/admin-components"
 import { MediaGrid } from "../../components/media/media-grid"
+import { resolvePreviewUrl } from "../../lib/preview-url"
 import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
 import jexl from 'jexl'
 import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
@@ -533,31 +534,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
 
     const getPreviewUrl = (item: Record<string, unknown>) => {
-      if (!schema?.admin?.previewUrl) return null
-      let previewUrl = typeof schema.admin.previewUrl === 'function'
-        ? schema.admin.previewUrl(item, { locale: 'en' })
-        : schema.admin.previewUrl
-
       const siteUrl = getSiteUrl(schemas?.admin?.siteUrl)
-
-      if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
-        previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => String(item[key.trim()] || ""))
-      } else if (typeof previewUrl === 'string') {
-        try {
-          const context = { ...item, siteUrl }
-          if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
-            previewUrl = jexl.evalSync(previewUrl, context)
-          }
-        } catch (e) {
-          console.warn("Preview URL eval failed:", e)
-        }
-      }
-
-      if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
-        previewUrl = `${siteUrl}${previewUrl}`
-      }
-
-      return typeof previewUrl === 'string' ? previewUrl : null
+      return resolvePreviewUrl(schema?.admin?.previewUrl, item, siteUrl)
     }
 
     const renderLinkedCell = (item: Record<string, unknown>, cell: React.ReactNode) => {

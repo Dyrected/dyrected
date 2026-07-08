@@ -28,11 +28,7 @@ export function buildStorageConfig(storage: string): string {
   }
 }
 
-export function buildEnvTemplate(
-  db: string,
-  storage: string,
-  framework: string,
-): string {
+export function buildEnvTemplate(db: string, storage: string, framework: string): string {
   const lines = [
     `# Dyrected CMS — Environment Variables`,
     `DATABASE_URL=${
@@ -48,35 +44,17 @@ export function buildEnvTemplate(
   ];
 
   if (storage === "s3") {
-    lines.push(
-      `S3_BUCKET=my-bucket`,
-      `S3_REGION=us-east-1`,
-      `S3_ACCESS_KEY_ID=`,
-      `S3_SECRET_ACCESS_KEY=`,
-    );
+    lines.push(`S3_BUCKET=my-bucket`, `S3_REGION=us-east-1`, `S3_ACCESS_KEY_ID=`, `S3_SECRET_ACCESS_KEY=`);
   } else if (storage === "b2") {
-    lines.push(
-      `B2_BUCKET_ID=`,
-      `B2_BUCKET_NAME=`,
-      `B2_KEY_ID=`,
-      `B2_APPLICATION_KEY=`,
-    );
+    lines.push(`B2_BUCKET_ID=`, `B2_BUCKET_NAME=`, `B2_KEY_ID=`, `B2_APPLICATION_KEY=`);
   } else if (storage === "cloudinary") {
-    lines.push(
-      `CLOUDINARY_CLOUD_NAME=`,
-      `CLOUDINARY_API_KEY=`,
-      `CLOUDINARY_API_SECRET=`,
-    );
+    lines.push(`CLOUDINARY_CLOUD_NAME=`, `CLOUDINARY_API_KEY=`, `CLOUDINARY_API_SECRET=`);
   }
 
   if (db === "mongodb") lines.push(`MONGODB_DB_NAME=dyrected`);
 
   const prefix = framework === "next" ? "NEXT_PUBLIC_" : "NUXT_PUBLIC_";
-  lines.push(
-    ``,
-    `${prefix}DYRECTED_URL=http://localhost:3000`,
-    `${prefix}DYRECTED_API_KEY=local-dev`,
-  );
+  lines.push(``, `${prefix}DYRECTED_URL=http://localhost:3000`, `${prefix}DYRECTED_API_KEY=local-dev`);
   return lines.join("\n") + "\n";
 }
 
@@ -85,7 +63,7 @@ export function buildViteEnvTemplate(): string {
     [
       `# Dyrected CMS — Environment Variables`,
       `# Connect to Dyrected Cloud or a self-hosted instance`,
-      `VITE_DYRECTED_URL=https://api.dyrected.cloud`,
+      `VITE_DYRECTED_URL=https://cloud.dyrected.cloud`,
       `VITE_DYRECTED_API_KEY=sk_live_...`,
       `VITE_DYRECTED_SITE_ID=site_...`,
     ].join("\n") + "\n"

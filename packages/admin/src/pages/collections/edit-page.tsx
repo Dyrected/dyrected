@@ -8,6 +8,7 @@ import { ChevronLeft, Plus } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl, getDisplayFilename, getSiteUrl } from "../../lib/utils"
+import { resolvePreviewUrl } from "../../lib/preview-url"
 import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "../../components/ui/popover"
@@ -510,31 +511,8 @@ export function EditEntryPage() {
   const hasStatus = schema?.fields.some((f: { name?: string }) => f.name === "status")
   const currentStatus = entry?.status || "draft"
 
-  let previewUrl = typeof schema.admin?.previewUrl === 'function'
-    ? schema.admin.previewUrl(previewData || entry, { locale: 'en' })
-    : schema.admin?.previewUrl
-
   const siteUrl = getSiteUrl(schemas?.admin?.siteUrl);
-
-  if (typeof previewUrl === 'string' && previewUrl.includes('{{')) {
-    previewUrl = previewUrl.replace(/{{(.*?)}}/g, (_, key) => entry?.[key.trim()] || "")
-  } else if (typeof previewUrl === 'string' && (previewData || entry)) {
-    try {
-      // Provide current window origin to Jexl context so users can use it in expressions
-      const context = { ...(previewData || entry), siteUrl };
-
-      if (previewUrl.includes('+') || previewUrl.includes('?') || previewUrl.includes('==') || previewUrl.includes('siteUrl')) {
-        previewUrl = jexl.evalSync(previewUrl, context)
-      }
-    } catch (e) {
-      console.error("[PreviewDebug] Jexl Evaluation Failed:", e)
-    }
-  }
-
-  // If the resolved URL is relative, prepend the resolved site URL
-  if (typeof previewUrl === 'string' && previewUrl.startsWith('/')) {
-    previewUrl = `${siteUrl}${previewUrl}`
-  }
+  const previewUrl = resolvePreviewUrl(schema.admin?.previewUrl, previewData || entry, siteUrl)
 
   // Evaluate collection-level read access
   const readAccess = (schema.access as Record<string, unknown> | undefined)?.read

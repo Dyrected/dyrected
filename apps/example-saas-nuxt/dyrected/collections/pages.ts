@@ -14,7 +14,7 @@ export const Pages = defineCollection({
     icon: "ListCheck",
   },
   audit: true,
-  workflow: publishingWorkflow(),
+  // workflow: publishingWorkflow(),
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },

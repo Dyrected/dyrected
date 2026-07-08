@@ -162,7 +162,7 @@ export async function patchNuxtConfig(cwd: string, adminPath?: string) {
 
   if (!configPath) {
     console.log(chalk.yellow("\n⚠  No nuxt.config.ts found. Add the module manually:"));
-    console.log(chalk.dim(`  modules: [['@dyrected/nuxt', { adminPath: '${adminPath || "cms"}' }]]`));
+    console.log(chalk.dim(`  modules: [['@dyrected/nuxt', { adminPath: '${adminPath || "admin"}' }]]`));
     return;
   }
 

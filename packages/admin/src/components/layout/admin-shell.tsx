@@ -812,21 +812,21 @@ export function AdminShell({
                       {((user.name || user.email || "?") as string).charAt(0).toUpperCase()}
                     </div>
                   )}
+                  {/* Hamburger */}
+                  <button
+                    type="button"
+                    onClick={() => setMobileOpen(true)}
+                    className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+                    aria-label="Open menu"
+                  >
+                    <Menu className="dy-h-5 dy-w-5" />
+                  </button>
                 </div>
               </header>
             )}
 
             <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">
               {children}
-              {/* Hamburger */}
-              <button
-                type="button"
-                onClick={() => setMobileOpen(true)}
-                className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
-                aria-label="Open menu"
-              >
-                <Menu className="dy-h-5 dy-w-5" />
-              </button>
             </div>
           </main>
         </div>
