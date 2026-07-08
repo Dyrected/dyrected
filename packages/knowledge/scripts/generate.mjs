@@ -28,6 +28,7 @@ const promptSnapshotsRoot = path.join(packageRoot, "src/prompt-snapshots");
 const testFixturesRoot = path.join(packageRoot, "src/test-fixtures");
 const docsRoot = path.join(repositoryRoot, "apps/docs/content/docs/recipes");
 const allDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
+const newDocsRoot = path.join(repositoryRoot, "apps/docs/content/new-docs");
 const docsPublicRoot = path.join(repositoryRoot, "apps/docs/public");
 const checkOnly = process.argv.includes("--check");
 const categories = new Set([
@@ -117,10 +118,38 @@ function validateRecipeSource(directory, source) {
   visit(file);
 }
 
-function nodeDescription(node) {
+function formatSeeTag(tag, sourceFile) {
+  const raw = tag.getText(sourceFile);
+  const linkMatch = raw.match(/@see\s+\{\@link\s+(\S+)(?:\s+([^}]+))?\}/);
+  if (linkMatch) {
+    const [, href, label] = linkMatch;
+    return `[${(label ?? href).trim()}](${href})`;
+  }
+
+  const plainMatch = raw.match(/@see\s+(.+)$/);
+  if (plainMatch) return plainMatch[1].trim();
+  return "";
+}
+
+function nodeDescription(node, sourceFile) {
   return (node.jsDoc ?? [])
-    .map((doc) => (typeof doc.comment === "string" ? doc.comment : ""))
-    .filter(Boolean)
+    .flatMap((doc) => {
+      const parts = [];
+      if (typeof doc.comment === "string" && doc.comment.trim()) {
+        parts.push(doc.comment.trim());
+      }
+
+      const seeLinks = (doc.tags ?? [])
+        .filter((tag) => tag.tagName?.escapedText === "see")
+        .map((tag) => formatSeeTag(tag, sourceFile))
+        .filter(Boolean);
+
+      if (seeLinks.length) {
+        parts.push(`See: ${seeLinks.join(", ")}`);
+      }
+
+      return parts;
+    })
     .join("\n\n");
 }
 
@@ -205,7 +234,7 @@ function extractReferences(sourcePath, options) {
             .map((member) => ({
               name: declarationName(member) ?? "member",
               signature: memberSignature(member, sourceFile),
-              description: nodeDescription(member),
+              description: nodeDescription(member, sourceFile),
             }))
             .filter((member) => member.name !== "member")
         : [];
@@ -230,7 +259,7 @@ function extractReferences(sourcePath, options) {
       kind,
       category: options.category,
       sourcePackage: options.sourcePackage,
-      description: nodeDescription(node),
+      description: nodeDescription(node, sourceFile),
       signature,
       members,
     });
@@ -618,87 +647,161 @@ function escapeTable(value) {
     .replaceAll("\n", " ");
 }
 
-function renderReferenceSections(entries) {
+function isOptionalMember(signature) {
+  return typeof signature === "string" && signature.includes("?:");
+}
+
+function renderMemberLabel(member) {
+  const optionality = isOptionalMember(member.signature)
+    ? "optional"
+    : "required";
+  return `<code>${escapeTable(member.name)}</code> (${optionality})`;
+}
+
+function docsUrlForTargetFile(targetFile) {
+  return `https://dyrected.com/new-docs/${targetFile.replace(/\.mdx$/, "")}`;
+}
+
+function stripSelfSeeReference(description, pageUrl) {
+  if (!description || !pageUrl) return description;
+
+  const paragraphs = description.split(/\n\n+/);
+  const last = paragraphs.at(-1);
+  if (!last?.startsWith("See: ")) return description;
+
+  const links = [...last.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)];
+  if (links.length === 0) return description;
+
+  const kept = links.filter(([, , href]) => href !== pageUrl);
+  if (kept.length === links.length) return description;
+
+  if (kept.length === 0) {
+    return paragraphs.slice(0, -1).join("\n\n").trim();
+  }
+
+  const nextLast = `See: ${kept
+    .map(([, label, href]) => `[${label}](${href})`)
+    .join(", ")}`;
+  return [...paragraphs.slice(0, -1), nextLast].join("\n\n").trim();
+}
+
+function renderReferenceSections(entries, targetFile) {
+  const pageUrl = docsUrlForTargetFile(targetFile);
   return entries
     .map((entry) => {
       const members = entry.members.length
-        ? `\n| Member | Signature | Description |\n| --- | --- | --- |\n${entry.members
+        ? `\n| Option | Description |\n| --- | --- |\n${entry.members
             .map(
               (member) =>
-                `| <code>${escapeTable(member.name)}</code> | <code>${escapeTable(member.signature)}</code> | ${escapeTable(member.description)} |`,
+                `| ${renderMemberLabel(member)} | ${escapeTable(stripSelfSeeReference(member.description, pageUrl))} |`,
             )
             .join("\n")}\n`
         : "";
-      return `## ${entry.name}\n\n${entry.description || `Exported ${entry.kind} from ${entry.sourcePackage}.`}\n\n\`\`\`ts\n${entry.signature}\n\`\`\`\n${members}`;
+      const entryDescription = stripSelfSeeReference(
+        entry.description || `Exported ${entry.kind} from ${entry.sourcePackage}.`,
+        pageUrl,
+      );
+      return `## ${entry.name}\n\n${entryDescription}\n\n\`\`\`ts\n${entry.signature}\n\`\`\`\n${members}`;
     })
     .join("\n\n")
     .trimEnd();
 }
 
-const referencePages = [
-  [
-    "reference/configuration.mdx",
-    "Configuration reference",
-    "Canonical configuration contracts exported by @dyrected/core.",
-    ["configuration"],
-  ],
-  [
-    "reference/fields.mdx",
-    "Field reference",
-    "Canonical field types, properties, and inferred document values.",
-    ["fields", "hooks"],
-  ],
-  [
-    "reference/sdk.mdx",
-    "SDK reference",
-    "Public classes, methods, options, and return contracts exported by @dyrected/sdk.",
-    ["sdk"],
-  ],
-  [
-    "adapters/databases.mdx",
-    "Database adapters",
-    "The database adapter contract and shared pagination shape.",
-    ["adapters"],
-  ],
-  [
-    "adapters/storage.mdx",
-    "Storage adapters",
-    "The storage adapter, file-data, and image-service contracts.",
-    ["adapters"],
-  ],
-  [
-    "reference/generated-workflows.mdx",
-    "Workflow reference",
-    "Workflow types, lifecycle events, helpers, and transition contracts.",
-    ["workflows"],
-  ],
+// Concrete field-type contracts are embedded in their own field pages. Every
+// name listed here is routed to that page; field-category entries not listed
+// here fall back to the fields overview page.
+const fieldPageContracts = {
+  "text.mdx": ["TextField", "TextFieldAdmin"],
+  "textarea.mdx": ["TextareaField", "TextareaFieldAdmin"],
+  "email.mdx": ["EmailField", "EmailFieldAdmin"],
+  "number.mdx": ["NumberField"],
+  "date.mdx": ["DateField", "DateTimeField", "TimeField"],
+  "select.mdx": ["SelectField", "SelectFieldAdmin"],
+  "radio-group.mdx": ["RadioField", "RadioFieldAdmin"],
+  "checkbox.mdx": ["BooleanField", "BooleanFieldAdmin"],
+  "relationship.mdx": ["RelationshipField"],
+  "upload.mdx": ["ImageField"],
+  "rich-text.mdx": ["RichTextField"],
+  "json.mdx": ["JsonField"],
+  "group.mdx": ["ObjectField"],
+  "array.mdx": ["ArrayField"],
+  "blocks.mdx": ["BlocksField", "Block", "BlockVariant"],
+  "join.mdx": ["JoinField"],
+  "row.mdx": ["RowField"],
+};
+const fieldPageByName = new Map();
+for (const [file, names] of Object.entries(fieldPageContracts)) {
+  for (const name of names) fieldPageByName.set(name, file);
+}
+const isDatabaseAdapter = (entry) =>
+  entry.name.includes("Database") || entry.name === "PaginatedResult";
+
+// Canonical routing of generated reference material into authored new-docs
+// pages. Each target owns exactly one generated region; when a category cannot
+// be classified onto a leaf page it falls back to the topic overview page.
+const referenceTargets = [
+  {
+    file: "basics/configuration/overview.mdx",
+    region: "REFERENCE-CONFIGURATION",
+    select: (entry) =>
+      entry.category === "configuration" &&
+      entry.name !== "CollectionConfig" &&
+      entry.name !== "GlobalConfig",
+  },
+  {
+    file: "basics/configuration/collections.mdx",
+    region: "REFERENCE-CONFIGURATION-COLLECTIONS",
+    select: (entry) => entry.name === "CollectionConfig",
+  },
+  {
+    file: "basics/configuration/globals.mdx",
+    region: "REFERENCE-CONFIGURATION-GLOBALS",
+    select: (entry) => entry.name === "GlobalConfig",
+  },
+  {
+    file: "basics/fields/overview.mdx",
+    region: "REFERENCE-FIELDS",
+    select: (entry) =>
+      entry.category === "fields" && !fieldPageByName.has(entry.name),
+  },
+  ...Object.entries(fieldPageContracts).map(([file, names]) => ({
+    file: `basics/fields/${file}`,
+    region: `REFERENCE-FIELD-${file.replace(/\.mdx$/, "").toUpperCase()}`,
+    select: (entry) => names.includes(entry.name),
+  })),
+  {
+    file: "basics/hooks/overview.mdx",
+    region: "REFERENCE-HOOKS",
+    select: (entry) => entry.category === "hooks",
+  },
+  {
+    file: "managing-data/sdk-api/overview.mdx",
+    region: "REFERENCE-SDK",
+    select: (entry) => entry.category === "sdk",
+  },
+  {
+    file: "basics/database/overview.mdx",
+    region: "REFERENCE-DATABASE-ADAPTERS",
+    select: (entry) => entry.category === "adapters" && isDatabaseAdapter(entry),
+  },
+  {
+    file: "features/upload/storage-adapters.mdx",
+    region: "REFERENCE-STORAGE-ADAPTERS",
+    select: (entry) =>
+      entry.category === "adapters" && !isDatabaseAdapter(entry),
+  },
+  {
+    file: "features/workflows/overview.mdx",
+    region: "REFERENCE-WORKFLOWS",
+    select: (entry) => entry.category === "workflows",
+  },
 ];
-for (const [
-  relativePath,
-  title,
-  description,
-  pageCategories,
-] of referencePages) {
-  let pageEntries = references.filter((entry) =>
-    pageCategories.includes(entry.category),
-  );
-  if (relativePath.includes("databases"))
-    pageEntries = pageEntries.filter(
-      (entry) =>
-        entry.name.includes("Database") || entry.name === "PaginatedResult",
-    );
-  if (relativePath.includes("storage"))
-    pageEntries = pageEntries.filter(
-      (entry) =>
-        !entry.name.includes("Database") && entry.name !== "PaginatedResult",
-    );
+for (const target of referenceTargets) {
+  const pageEntries = references.filter(target.select);
   outputGeneratedRegion(
-    path.join(allDocsRoot, relativePath),
-    relativePath
-      .replace(/\.mdx$/, "")
-      .replaceAll("/", "-")
-      .toUpperCase(),
-    renderReferenceSections(pageEntries),
+    path.join(newDocsRoot, target.file),
+    target.region,
+    renderReferenceSections(pageEntries, target.file),
   );
 }
 
@@ -709,13 +812,15 @@ const endpointRows = endpoints
   )
   .join("\n");
 const restInventory = `| Method | Path | Summary | Authentication |\n| --- | --- | --- | --- |\n${endpointRows}`;
+// The REST inventory and OpenAPI/codegen guidance share the canonical REST API
+// page, so both regions live in managing-data/rest-api/overview.mdx.
 outputGeneratedRegion(
-  path.join(allDocsRoot, "reference/rest-api.mdx"),
+  path.join(newDocsRoot, "managing-data/rest-api/overview.mdx"),
   "REFERENCE-REST-API",
   restInventory,
 );
 outputGeneratedRegion(
-  path.join(allDocsRoot, "reference/openapi.mdx"),
+  path.join(newDocsRoot, "managing-data/rest-api/overview.mdx"),
   "REFERENCE-OPENAPI",
   `The representative document currently contains **${endpoints.length} operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.`,
 );
@@ -867,13 +972,14 @@ const generatedSections = {
     .join("\n"),
   INTENTS: intentLines.join("\n"),
   REFERENCES: [
-    "- [Configuration](https://docs.dyrected.com/docs/reference/configuration)",
-    "- [Fields and hooks](https://docs.dyrected.com/docs/reference/fields)",
-    "- [Database adapters](https://docs.dyrected.com/docs/adapters/databases)",
-    "- [Storage adapters](https://docs.dyrected.com/docs/adapters/storage)",
-    "- [SDK](https://docs.dyrected.com/docs/reference/sdk)",
-    "- [Workflows](https://docs.dyrected.com/docs/reference/generated-workflows)",
-    "- [REST and OpenAPI](https://docs.dyrected.com/docs/reference/rest-api)",
+    "- [Configuration](https://docs.dyrected.com/new-docs/basics/configuration/overview)",
+    "- [Fields](https://docs.dyrected.com/new-docs/basics/fields/overview)",
+    "- [Hooks](https://docs.dyrected.com/new-docs/basics/hooks/overview)",
+    "- [Database adapters](https://docs.dyrected.com/new-docs/basics/database/overview)",
+    "- [Storage adapters](https://docs.dyrected.com/new-docs/features/upload/storage-adapters)",
+    "- [SDK](https://docs.dyrected.com/new-docs/managing-data/sdk-api/overview)",
+    "- [Workflows](https://docs.dyrected.com/new-docs/features/workflows/overview)",
+    "- [REST and OpenAPI](https://docs.dyrected.com/new-docs/managing-data/rest-api/overview)",
   ].join("\n"),
 };
 

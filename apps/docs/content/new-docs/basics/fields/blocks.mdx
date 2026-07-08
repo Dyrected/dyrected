@@ -1,3 +1,109 @@
 ---
 title: Blocks
+description: Flexible content built from a controlled set of typed block variants.
 ---
+
+The blocks field lets editors build content from a controlled set of block types, each with its own fields. It is how you model flexible page layouts while keeping the frontend on known structures: each row records its `blockType` plus that block's fields. Use it for landing pages, marketing pages, and structured articles.
+
+```ts
+{
+  name: 'sections',
+  type: 'blocks',
+  label: 'Sections',
+  blocks: [
+    {
+      slug: 'hero',
+      labels: { singular: 'Hero', plural: 'Heroes' },
+      fields: [{ name: 'heading', type: 'text', label: 'Heading' }],
+    },
+    {
+      slug: 'richText',
+      labels: { singular: 'Rich text', plural: 'Rich text' },
+      fields: [{ name: 'body', type: 'richText', label: 'Body' }],
+    },
+  ],
+}
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-BLOCKS:START */}
+## Block
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface Block {
+  /** Stable identifier stored in each block row as `blockType`. */
+  slug: string;
+  /** Human-readable labels shown in the Admin block picker. */
+  labels?: {
+    /** Singular label, for example `Hero`. */
+    singular: string;
+    /** Plural label, for example `Heroes`. */
+    plural: string;
+  };
+  /**
+   * Lucide icon name shown on the block card and in the block library.
+   * Falls back to a generic layout icon when omitted.
+   */
+  icon?: AdminIconName;
+  /** Short one-line summary shown under the block name (block card subtitle). */
+  description?: string;
+  /**
+   * Presentation variants for this block. All variants share the same `fields`;
+   * only the rendered layout differs. The chosen variant is stored on each block
+   * row under the reserved `variant` key and passed to the render component as a
+   * `variant` prop. Switching variant preserves the author's content.
+   */
+  variants?: BlockVariant[];
+  /** Fields that make up this block's payload. */
+  fields: Field[];
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) | Stable identifier stored in each block row as &#96;blockType&#96;. |
+| <code>labels</code> (optional) | Human-readable labels shown in the Admin block picker. |
+| <code>icon</code> (optional) | Lucide icon name shown on the block card and in the block library. Falls back to a generic layout icon when omitted. |
+| <code>description</code> (optional) | Short one-line summary shown under the block name (block card subtitle). |
+| <code>variants</code> (optional) | Presentation variants for this block. All variants share the same &#96;fields&#96;; only the rendered layout differs. The chosen variant is stored on each block row under the reserved &#96;variant&#96; key and passed to the render component as a &#96;variant&#96; prop. Switching variant preserves the author's content. |
+| <code>fields</code> (required) | Fields that make up this block's payload. |
+
+
+## BlocksField
+
+Exported type from @dyrected/core.
+
+```ts
+export type BlocksField = TypedField<"blocks", unknown>;
+```
+
+
+## BlockVariant
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface BlockVariant {
+  /** Stable identifier stored on the block row as `variant`. */
+  slug: string;
+  /** Human-readable label shown in the variant switcher. Defaults to `slug`. */
+  label?: string;
+  /** Lucide icon name shown beside the variant label. */
+  icon?: AdminIconName;
+  /** Short one-line summary of what this variant looks like. */
+  description?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) | Stable identifier stored on the block row as &#96;variant&#96;. |
+| <code>label</code> (optional) | Human-readable label shown in the variant switcher. Defaults to &#96;slug&#96;. |
+| <code>icon</code> (optional) | Lucide icon name shown beside the variant label. |
+| <code>description</code> (optional) | Short one-line summary of what this variant looks like. |
+{/* GENERATED:REFERENCE-FIELD-BLOCKS:END */}

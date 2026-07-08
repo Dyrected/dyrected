@@ -1,3 +1,33 @@
 ---
 title: Email
+description: A text field that validates its value as an email address.
 ---
+
+The email field is a text field that validates its value looks like an email address. Use it for contact emails, notification addresses, and similar fields where you want the format checked.
+
+```ts
+{ name: 'contactEmail', type: 'email', label: 'Contact email', required: true }
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-EMAIL:START */}
+## EmailField
+
+Exported type from @dyrected/core.
+
+```ts
+export type EmailField = TypedField<"email", string, EmailFieldAdmin> & CharacterLimitFieldConfig;
+```
+
+
+## EmailFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type EmailFieldAdmin = CharacterLimitFieldAdmin;
+```
+{/* GENERATED:REFERENCE-FIELD-EMAIL:END */}

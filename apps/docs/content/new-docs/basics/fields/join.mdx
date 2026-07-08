@@ -1,3 +1,30 @@
 ---
 title: Join
+description: A virtual reverse relationship that surfaces documents pointing back at this one.
 ---
+
+The join field is a virtual, read-only reverse lookup. It does not store data; instead it surfaces the documents in another collection whose relationship field points back at the current document. Use it to show a post's comments or an author's posts without maintaining the link on both sides.
+
+```ts
+{
+  name: 'comments',
+  type: 'join',
+  label: 'Comments',
+  collection: 'comments',
+  on: 'post',
+}
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-JOIN:START */}
+## JoinField
+
+Exported type from @dyrected/core.
+
+```ts
+export type JoinField = TypedField<"join", unknown>;
+```
+{/* GENERATED:REFERENCE-FIELD-JOIN:END */}

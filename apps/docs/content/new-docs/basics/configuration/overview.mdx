@@ -98,3 +98,208 @@ Use `cors` to allow browser requests from the origins that should be able to cal
 - Read [Globals](/new-docs/basics/configuration/globals) when the content should exist once.
 - Read [Environment Variables](/new-docs/basics/configuration/environment-variables) before wiring secrets and framework-specific URLs.
 - Go back to [Concepts](/new-docs/basics/getting-started/concepts) if you want the high-level mental model first.
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so their signatures stay in sync with the package you install. Use the prose above to learn how the config works, and use this region as the exact source of truth for `DyrectedConfig` and admin options. The `CollectionConfig` and `GlobalConfig` contracts live on their own pages.
+
+{/* GENERATED:REFERENCE-CONFIGURATION:START */}
+## AdminConfig
+
+Branding and metadata options for the Dyrected Admin UI.
+
+```ts
+export interface AdminConfig {
+  /** Custom component slots around the built-in dashboard. */
+  components?: AdminDashboardComponentSlots;
+  branding?: {
+    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
+    logo?: string;
+    /** Compact logo mark used in the collapsed sidebar state. */
+    logoMark?: string;
+    /** Text alternative or addition to the logo image. */
+    logoText?: string;
+    /**
+     * Primary accent colour as any CSS colour value.
+     * @example '#6366f1'
+     * @example 'hsl(240 50% 60%)'
+     */
+    primaryColor?: string;
+    /** Browser tab favicon URL. */
+    favicon?: string;
+    /** Font family for body and UI text. Must be loaded separately. */
+    fontSans?: string;
+    /** Font family for headings. Must be loaded separately. */
+    fontSerif?: string;
+  };
+  meta?: {
+    /**
+     * String appended to every Admin page's `<title>`.
+     * @default '- Dyrected'
+     */
+    titleSuffix?: string;
+  };
+  /**
+   * The canonical/base URL of the frontend website for links and iframe live previews.
+   */
+  siteUrl?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>components</code> (optional) | Custom component slots around the built-in dashboard. |
+| <code>branding</code> (optional) |  |
+| <code>meta</code> (optional) |  |
+| <code>siteUrl</code> (optional) | The canonical/base URL of the frontend website for links and iframe live previews. |
+
+
+## DyrectedConfig
+
+The root configuration object passed to `createDyrectedApp`.
+
+This is the single source of truth for your entire Dyrected instance —
+collections, globals, database adapter, storage, email, and more.
+
+```ts
+export interface DyrectedConfig {
+  /** Collection definitions. Each collection maps to a database table/collection. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  collections: CollectionConfig<any>[];
+
+  /** Global (singleton) definitions. Each global maps to a single document. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  globals: GlobalConfig<any>[];
+
+  /**
+   * The database adapter. Required for all data operations.
+   * @see DatabaseAdapter
+   */
+  db?: DatabaseAdapter;
+
+  /**
+   * The storage adapter for file uploads.
+   * Required when any collection has `upload: true`.
+   * @see StorageAdapter
+   */
+  storage?: StorageAdapter;
+
+  /**
+   * The image processing service. Required when any upload collection
+   * defines `imageSizes`.
+   * @see ImageService
+   */
+  image?: ImageService;
+
+  /** Admin UI branding and metadata. */
+  admin?: AdminConfig;
+
+  /**
+   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).
+   * This is separate from collection-level `auth: true`, which continues to
+   * power application/customer auth independently.
+   */
+  adminAuth?: AdminAuthConfig;
+
+  /**
+   * Email transport configuration. Required for welcome emails, password
+   * resets, and invite links.
+   *
+   * @example
+   * email: {
+   *   from: 'no-reply@myapp.com',
+   *   send: async ({ to, subject, html }) => {
+   *     await resend.emails.send({ from, to, subject, html })
+   *   },
+   * }
+   */
+  email?: {
+    /** The `From` address for all outbound emails. */
+    from: string;
+
+    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
+    send: (args: { to: string; subject: string; html: string }) => Promise<void>;
+
+    /** Override the default email templates. */
+    templates?: {
+      welcome?: (args: { email: string }) => { subject?: string; html: string };
+      invite?: (args: { token: string; invitedByEmail?: string }) => {
+        subject?: string;
+        html: string;
+      };
+      resetPassword?: (args: { token: string; url?: string }) => {
+        subject?: string;
+        html: string;
+      };
+      passwordChanged?: (args: { email: string }) => {
+        subject?: string;
+        html: string;
+      };
+    };
+  };
+
+  /**
+   * Redis connection URL. Required for distributed caching of dynamic option
+   * resolvers and other server-side caches in multi-instance deployments.
+   *
+   * @example
+   * redis: { url: process.env.REDIS_URL }
+   */
+  redis?: {
+    url: string;
+  };
+
+  /** Durable lifecycle-event delivery configuration. */
+  events?: {
+    handlers: LifecycleEventHandler[];
+
+    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */
+    maxAttempts?: number;
+
+    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */
+    retryDelayMs?: number;
+  };
+
+  /**
+   * Cross-Origin Resource Sharing (CORS) configuration.
+   * List all origins that are allowed to call the Dyrected API.
+   *
+   * @example
+   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }
+   */
+  cors?: {
+    origins: string[];
+  };
+
+  /**
+   * Callback to dynamically fetch additional collections and globals for a
+   * given site ID at request time. Used in multi-tenant deployments where each
+   * site has its own schema stored in the database.
+   */
+  onSchemaFetch?: (
+    siteId: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<{
+    collections?: CollectionConfig<any>[];
+    globals?: GlobalConfig<any>[];
+    admin?: AdminConfig;
+    adminAuth?: AdminAuthConfig;
+  }>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>collections</code> (required) | Collection definitions. Each collection maps to a database table/collection. |
+| <code>globals</code> (required) | Global (singleton) definitions. Each global maps to a single document. |
+| <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
+| <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
+| <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>admin</code> (optional) | Admin UI branding and metadata. |
+| <code>adminAuth</code> (optional) | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
+| <code>email</code> (optional) | Email transport configuration. Required for welcome emails, password resets, and invite links. |
+| <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
+| <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |
+| <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
+| <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
+{/* GENERATED:REFERENCE-CONFIGURATION:END */}

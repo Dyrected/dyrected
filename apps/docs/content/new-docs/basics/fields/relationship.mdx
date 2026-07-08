@@ -1,3 +1,29 @@
 ---
 title: Relationship
+description: A reference to one or more documents in another collection.
 ---
+
+The relationship field links a document to one or more documents in another collection. Use it for authors on a post, products in an order, or any connection between content types. Set `hasMany: true` for a list of references, and control how deeply related documents are hydrated with [depth](/new-docs/managing-data/sdk-api/depth).
+
+```ts
+{
+  name: 'author',
+  type: 'relationship',
+  label: 'Author',
+  relationTo: 'users',
+}
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-RELATIONSHIP:START */}
+## RelationshipField
+
+Exported type from @dyrected/core.
+
+```ts
+export type RelationshipField = TypedField<"relationship", string | string[]>;
+```
+{/* GENERATED:REFERENCE-FIELD-RELATIONSHIP:END */}

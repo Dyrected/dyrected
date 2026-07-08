@@ -530,16 +530,16 @@ Schema and initialData:
 https://docs.dyrected.com/docs/concepts/schema
 
 Fields:
-https://docs.dyrected.com/docs/reference/fields
+https://docs.dyrected.com/new-docs/basics/fields/overview
 
 Configuration, admin options, useAsTitle, previewUrl, previewMode, and urlPattern:
-https://docs.dyrected.com/docs/reference/configuration
+https://docs.dyrected.com/new-docs/basics/configuration/overview
 
 Admin and Live Preview:
 https://docs.dyrected.com/docs/admin/overview
 
 Storage and media:
-https://docs.dyrected.com/docs/adapters/storage
+https://docs.dyrected.com/new-docs/features/upload/storage-adapters
 
 Inspect:
 

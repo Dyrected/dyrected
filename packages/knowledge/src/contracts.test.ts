@@ -91,28 +91,158 @@ describe("generated knowledge contracts", () => {
     expect(SKILL).toContain("allowedMimeTypes");
   });
 
-  it("updates documentation through generated regions instead of replacing pages", () => {
+  const newDocsRoot = path.join(
+    repositoryRoot,
+    "apps/docs/content/new-docs",
+  );
+  const fieldPageSlugs = [
+    "text",
+    "textarea",
+    "email",
+    "number",
+    "date",
+    "select",
+    "radio-group",
+    "checkbox",
+    "relationship",
+    "upload",
+    "rich-text",
+    "json",
+    "group",
+    "array",
+    "blocks",
+    "join",
+    "row",
+  ];
+  const referenceTargets = [
+    { file: "basics/configuration/overview.mdx", region: "REFERENCE-CONFIGURATION" },
+    {
+      file: "basics/configuration/collections.mdx",
+      region: "REFERENCE-CONFIGURATION-COLLECTIONS",
+    },
+    {
+      file: "basics/configuration/globals.mdx",
+      region: "REFERENCE-CONFIGURATION-GLOBALS",
+    },
+    { file: "basics/fields/overview.mdx", region: "REFERENCE-FIELDS" },
+    ...fieldPageSlugs.map((slug) => ({
+      file: `basics/fields/${slug}.mdx`,
+      region: `REFERENCE-FIELD-${slug.toUpperCase()}`,
+    })),
+    { file: "basics/hooks/overview.mdx", region: "REFERENCE-HOOKS" },
+    { file: "managing-data/sdk-api/overview.mdx", region: "REFERENCE-SDK" },
+    {
+      file: "basics/database/overview.mdx",
+      region: "REFERENCE-DATABASE-ADAPTERS",
+    },
+    {
+      file: "features/upload/storage-adapters.mdx",
+      region: "REFERENCE-STORAGE-ADAPTERS",
+    },
+    { file: "features/workflows/overview.mdx", region: "REFERENCE-WORKFLOWS" },
+    { file: "managing-data/rest-api/overview.mdx", region: "REFERENCE-REST-API" },
+    { file: "managing-data/rest-api/overview.mdx", region: "REFERENCE-OPENAPI" },
+  ];
+
+  const stripGeneratedRegions = (source: string) =>
+    source
+      .replace(/^---[\s\S]*?---/, "")
+      .replace(
+        /\{\/\* GENERATED:[A-Z-]+:START \*\/\}[\s\S]*?\{\/\* GENERATED:[A-Z-]+:END \*\/\}/g,
+        "",
+      )
+      .trim();
+
+  it("routes generated reference material into authored new-docs pages", () => {
     const generator = fs.readFileSync(
       path.join(packageRoot, "scripts/generate.mjs"),
       "utf8",
     );
     expect(generator).toContain("function outputGeneratedRegion");
-    for (const target of [
-      "reference/configuration.mdx",
-      "reference/fields.mdx",
-      "reference/sdk.mdx",
-      "reference/generated-workflows.mdx",
-      "adapters/databases.mdx",
-      "adapters/storage.mdx",
-    ]) {
-      const source = fs.readFileSync(
-        path.join(repositoryRoot, "apps/docs/content/docs", target),
-        "utf8",
-      );
-      expect(source).toMatch(/\{\/\* GENERATED:[A-Z-]+:START \*\/\}/);
-      expect(source).toMatch(/\{\/\* GENERATED:[A-Z-]+:END \*\/\}/);
-      expect(source).toContain("## Generated");
+    // Generation targets the new-docs tree through region replacement, not
+    // full-page overwrites, and no longer targets the old reference tree.
+    expect(generator).toContain("newDocsRoot");
+    expect(generator).toContain("apps/docs/content/new-docs");
+    expect(generator).toContain("referenceTargets");
+    expect(generator).not.toContain('"reference/configuration.mdx"');
+    expect(generator).not.toContain('"adapters/databases.mdx"');
+
+    for (const { file, region } of referenceTargets) {
+      const source = fs.readFileSync(path.join(newDocsRoot, file), "utf8");
+      // Exactly one generated region pair for this content.
+      expect(
+        source.split(`{/* GENERATED:${region}:START */}`).length - 1,
+        `${file} is missing the ${region} start marker`,
+      ).toBe(1);
+      expect(
+        source.split(`{/* GENERATED:${region}:END */}`).length - 1,
+        `${file} is missing the ${region} end marker`,
+      ).toBe(1);
+      // Authored prose survives outside every generated region.
+      expect(
+        stripGeneratedRegions(source).length,
+        `${file} must keep authored content outside its generated region`,
+      ).toBeGreaterThan(40);
     }
+  });
+
+  it("renders generated member docs as option descriptions without a signature column", () => {
+    const collectionsPage = fs.readFileSync(
+      path.join(newDocsRoot, "basics/configuration/collections.mdx"),
+      "utf8",
+    );
+
+    expect(collectionsPage).toContain("| Option | Description |");
+    expect(collectionsPage).not.toContain("| Member | Signature | Description |");
+    expect(collectionsPage).toContain("<code>slug</code> (required)");
+    expect(collectionsPage).toContain("<code>siteId</code> (optional)");
+  });
+
+  it("gives the workflow reference one canonical home in new-docs", () => {
+    const page = path.join(newDocsRoot, "features/workflows/overview.mdx");
+    expect(fs.existsSync(page), "workflow page is missing").toBe(true);
+    const source = fs.readFileSync(page, "utf8");
+    expect(source).toContain("{/* GENERATED:REFERENCE-WORKFLOWS:START */}");
+    expect(source).toContain("{/* GENERATED:REFERENCE-WORKFLOWS:END */}");
+    // The workflow page is registered in the Features navigation.
+    const featuresMeta = JSON.parse(
+      fs.readFileSync(path.join(newDocsRoot, "features/meta.json"), "utf8"),
+    );
+    expect(featuresMeta.pages).toContain("workflows");
+    // Workflow contracts are actually generated.
+    const workflowRefs = references.filter(
+      (reference) => reference.category === "workflows",
+    );
+    expect(workflowRefs.length).toBeGreaterThan(0);
+  });
+
+  it("makes the REST API overview the canonical home for OpenAPI guidance", () => {
+    const restApi = fs.readFileSync(
+      path.join(newDocsRoot, "managing-data/rest-api/overview.mdx"),
+      "utf8",
+    );
+    // Endpoint inventory and OpenAPI facts both live on the one REST page.
+    expect(restApi).toContain("{/* GENERATED:REFERENCE-REST-API:START */}");
+    expect(restApi).toContain("{/* GENERATED:REFERENCE-OPENAPI:START */}");
+    // OpenAPI is documented here rather than on a separate reference page.
+    expect(fs.existsSync(path.join(newDocsRoot, "managing-data/rest-api/openapi.mdx"))).toBe(false);
+  });
+
+  it("publishes the raw OpenAPI artifact from the knowledge output", () => {
+    const generated = JSON.parse(
+      fs.readFileSync(
+        path.join(packageRoot, "generated", "openapi.json"),
+        "utf8",
+      ),
+    );
+    const published = JSON.parse(
+      fs.readFileSync(
+        path.join(repositoryRoot, "apps/docs/public/openapi.json"),
+        "utf8",
+      ),
+    );
+    expect(generated.openapi).toBeTruthy();
+    expect(published).toEqual(generated);
   });
 
   it("does not expose private SDK implementation members", () => {

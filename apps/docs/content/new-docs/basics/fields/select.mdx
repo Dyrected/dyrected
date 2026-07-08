@@ -1,3 +1,50 @@
 ---
 title: Select
+description: A single choice from a fixed set of options, shown as a dropdown.
 ---
+
+The select field lets editors pick one value from a fixed list of options, shown as a dropdown. Use it for statuses, categories, and other closed sets of choices. For a small set you want visible at a glance, consider a [Radio Group](/new-docs/basics/fields/radio-group).
+
+```ts
+{
+  name: 'status',
+  type: 'select',
+  label: 'Status',
+  options: [
+    { label: 'Draft', value: 'draft' },
+    { label: 'Published', value: 'published' },
+  ],
+}
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-SELECT:START */}
+## SelectField
+
+Exported type from @dyrected/core.
+
+```ts
+export type SelectField = TypedField<"select", string, SelectFieldAdmin>;
+```
+
+
+## SelectFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type SelectFieldAdmin = {
+  /** Select presentation style. */
+  layout?: "radio" | "select";
+  /** Radio orientation when `layout: 'radio'` is used. */
+  direction?: "horizontal" | "vertical";
+  hooks?: {
+    /** Client-side option recalculation for dependent dropdowns or radios. */
+    options?: FieldAdminOptionsHook;
+  };
+};
+```
+{/* GENERATED:REFERENCE-FIELD-SELECT:END */}

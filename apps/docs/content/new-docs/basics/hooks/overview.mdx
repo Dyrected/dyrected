@@ -1,3 +1,454 @@
 ---
 title: Overview
+description: Hooks let you run server-side logic before and after documents are read and written.
 ---
+
+Hooks are functions Dyrected runs at defined points in a document's lifecycle. They are the right place to validate input, derive values, enforce invariants, and trigger side effects such as cache revalidation or notifications.
+
+Every hook runs on the server, so they are safe to use for logic you never want a client to bypass.
+
+## Where hooks run
+
+Hooks are configured per collection, per global, and per field. Collection and global hooks share the same lifecycle shape:
+
+- `beforeRead` runs before the database is queried.
+- `afterRead` runs on each document after it is fetched.
+- `beforeChange` runs before a create or update is written.
+- `afterChange` runs after a write is committed, for side effects.
+- `beforeDelete` and `afterDelete` bracket deletions (collections only).
+
+```ts
+import { defineCollection } from '@dyrected/core'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  fields: [{ name: 'title', type: 'text', label: 'Title' }],
+  hooks: {
+    beforeChange: [({ data }) => ({ ...data, slug: slugify(data.title) })],
+    afterChange: [({ doc }) => revalidateTag(`post-${doc.id}`)],
+  },
+})
+```
+
+Hooks in an array run in order, and each hook's return value feeds the next. Throwing inside a `before*` hook aborts the operation; `after*` hooks are for side effects and their errors are isolated so a failed webhook never turns a successful write into a `500`.
+
+## Field hooks
+
+Field-level hooks let you transform a single field's value as it is read or written, without touching the rest of the document. They are useful for encryption, formatting, and computed field values.
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so every hook signature stays in sync with the package. Use them to see exactly what arguments each hook receives and what it may return.
+
+{/* GENERATED:REFERENCE-HOOKS:START */}
+## AuthenticatedUser
+
+Base shape of an authenticated user as decoded from the JWT.
+
+The actual shape will include every field on your auth collection — this
+interface only guarantees the properties that Dyrected always stamps on the
+token. Extend it in your own codebase for stronger typing:
+
+```ts
+export interface AuthenticatedUser {
+  /** The user's document ID in the database. */
+  sub: string;
+  /** The user's email address. */
+  email?: string;
+  /** Slug of the collection this user was authenticated against. */
+  collection: string;
+  /** Array of role strings, if your auth collection has a `roles` field. */
+  roles?: string[];
+  /** Any additional fields from the auth collection document. */
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>sub</code> (required) | The user's document ID in the database. |
+| <code>email</code> (optional) | The user's email address. |
+| <code>collection</code> (required) | Slug of the collection this user was authenticated against. |
+| <code>roles</code> (optional) | Array of role strings, if your auth collection has a &#96;roles&#96; field. |
+
+
+## CollectionAfterChangeHook
+
+Runs **after** a document is created or updated in the database.
+
+```ts
+export type CollectionAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
+  doc: TDoc;
+  previousDoc?: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  operation: "create" | "update";
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## CollectionAfterDeleteHook
+
+Runs **after** a document has been deleted from the database.
+
+```ts
+export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## CollectionAfterReadHook
+
+Runs after a document (or list of documents) is fetched from the database,
+before the response is sent to the client.
+
+```ts
+export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => TDoc | Promise<TDoc>;
+```
+
+
+## CollectionBeforeChangeHook
+
+Runs **before** a document is created or updated in the database.
+
+```ts
+export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
+  data: Partial<TDoc>;
+  doc?: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  operation: "create" | "update";
+  db: ReadonlyDatabaseAdapter;
+}) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
+```
+
+
+## CollectionBeforeDeleteHook
+
+Runs **before** a document is deleted from the database.
+
+```ts
+export type CollectionBeforeDeleteHook<TDoc extends object = Record<string, unknown>> = (args: {
+  id: string;
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## CollectionBeforeReadHook
+
+Runs before Dyrected queries the database for a list or single-document fetch.
+
+Return a new `where` query object to override or extend the current filter.
+Return `undefined` (or nothing) to leave the query unchanged.
+
+```ts
+export type CollectionBeforeReadHook = (args: {
+  req: HookRequestContext;
+  query?: Record<string, unknown>;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => Record<string, unknown> | void | Promise<Record<string, unknown> | void>;
+```
+
+
+## FieldAdminHooks
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAdminHooks<TValue> = {
+  admin?: {
+    hooks?: {
+      onChange?: FieldAdminOnChangeHook<TValue>;
+    };
+  };
+};
+```
+
+
+## FieldAdminOnChangeHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAdminOnChangeHook<TValue = unknown> = (args: FieldAdminOnChangeHookArgs<TValue>) => unknown;
+```
+
+
+## FieldAdminOnChangeHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
+  /** Current field value in the form state. */
+  value: TValue;
+  /** Current values for sibling fields at the same nesting level. */
+  siblingData: Record<string, unknown>;
+  /** Current values for the entire form. */
+  data: Record<string, unknown>;
+  /** Imperative setter for async or derived updates. */
+  setValue: (value: unknown) => void;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>value</code> (required) | Current field value in the form state. |
+| <code>siblingData</code> (required) | Current values for sibling fields at the same nesting level. |
+| <code>data</code> (required) | Current values for the entire form. |
+| <code>setValue</code> (required) | Imperative setter for async or derived updates. |
+
+
+## FieldAdminOptionsHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAdminOptionsHook = (
+  args: FieldAdminOptionsHookArgs,
+) => FieldAdminOptionsHookResult | Promise<FieldAdminOptionsHookResult>;
+```
+
+
+## FieldAdminOptionsHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldAdminOptionsHookArgs {
+  /** Current values for sibling fields at the same nesting level. */
+  siblingData: Record<string, unknown>;
+  /** Current values for the entire form. */
+  data: Record<string, unknown>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>siblingData</code> (required) | Current values for sibling fields at the same nesting level. |
+| <code>data</code> (required) | Current values for the entire form. |
+
+
+## FieldAdminOptionsHookResult
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAdminOptionsHookResult = Array<string | { label: string; value: unknown }>;
+```
+
+
+## FieldAfterReadHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
+  args: FieldAfterReadHookArgs<TValue, TDoc>,
+) => unknown;
+```
+
+
+## FieldAfterReadHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldAfterReadHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+  /** Raw stored field value before this hook transforms it. */
+  value: TValue;
+  /** Full document currently being returned to the caller. */
+  doc: TDoc;
+  /** Authenticated user requesting the document, if any. */
+  user?: AuthenticatedUser;
+  /** Read-only database adapter for related lookups. */
+  db: ReadonlyDatabaseAdapter;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>value</code> (required) | Raw stored field value before this hook transforms it. |
+| <code>doc</code> (required) | Full document currently being returned to the caller. |
+| <code>user</code> (optional) | Authenticated user requesting the document, if any. |
+| <code>db</code> (required) | Read-only database adapter for related lookups. |
+
+
+## FieldBeforeChangeHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
+  args: FieldBeforeChangeHookArgs<TValue, TDoc>,
+) => unknown;
+```
+
+
+## FieldBeforeChangeHookArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldBeforeChangeHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+  /** Current field value after previous hooks in the chain. */
+  value: TValue;
+  /** Existing stored document before the write, if this is an update. */
+  originalDoc?: TDoc;
+  /** Full incoming payload being written. */
+  data: Record<string, unknown>;
+  /** Authenticated user performing the write, if any. */
+  user?: AuthenticatedUser;
+  /** Read-only database adapter for related lookups. */
+  db: ReadonlyDatabaseAdapter;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>value</code> (required) | Current field value after previous hooks in the chain. |
+| <code>originalDoc</code> (optional) | Existing stored document before the write, if this is an update. |
+| <code>data</code> (required) | Full incoming payload being written. |
+| <code>user</code> (optional) | Authenticated user performing the write, if any. |
+| <code>db</code> (required) | Read-only database adapter for related lookups. |
+
+
+## FieldHook
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldHook<TDoc extends object = Record<string, unknown>, TValue = unknown> = FieldBeforeChangeHook<
+  TValue,
+  TDoc
+>;
+```
+
+
+## FieldHooks
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldHooks<TValue> = {
+  hooks?: {
+    beforeChange?: Array<FieldBeforeChangeHook<TValue>>;
+    afterRead?: Array<FieldAfterReadHook<TValue>>;
+  };
+};
+```
+
+
+## GlobalAfterChangeHook
+
+Runs after the global document is updated. Side-effects only.
+
+```ts
+export type GlobalAfterChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
+  doc: TDoc;
+  previousDoc?: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  operation: "update";
+  db: DatabaseAdapter;
+}) => void | Promise<void>;
+```
+
+
+## GlobalAfterReadHook
+
+Runs after the global document is fetched, before the response is sent.
+
+```ts
+export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> = (args: {
+  doc: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  db: ReadonlyDatabaseAdapter;
+}) => TDoc | Promise<TDoc>;
+```
+
+
+## GlobalBeforeChangeHook
+
+Runs before the global document is updated.
+Operation is always `'update'` (globals cannot be created or deleted).
+
+```ts
+export type GlobalBeforeChangeHook<TDoc extends object = Record<string, unknown>> = (args: {
+  data: Partial<TDoc>;
+  doc?: TDoc;
+  req: HookRequestContext;
+  user?: AuthenticatedUser;
+  operation: "update";
+  db: ReadonlyDatabaseAdapter;
+}) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
+```
+
+
+## GlobalBeforeReadHook
+
+See: [CollectionBeforeReadHook](CollectionBeforeReadHook)
+
+```ts
+export type GlobalBeforeReadHook = CollectionBeforeReadHook;
+```
+
+
+## HookFunction
+
+Exported type from @dyrected/core.
+
+```ts
+export type HookFunction<TDoc extends object = Record<string, unknown>> = (args: {
+  data?: Partial<TDoc>;
+  doc?: TDoc;
+  user?: AuthenticatedUser;
+  req?: HookRequestContext;
+  operation?: "create" | "update" | "delete";
+  db?: DatabaseAdapter;
+  [key: string]: unknown;
+}) => unknown | Promise<unknown>;
+```
+
+
+## HookRequestContext
+
+Minimum HTTP request context passed to every server-side hook and resolver.
+
+The full Web Standard `Request` is available as `raw` when you need it, but
+most hooks only need `query` (URL search parameters).
+
+```ts
+export interface HookRequestContext {
+  /** Parsed URL query-string parameters, e.g. `{ page: '2', search: 'hello' }`. */
+  query: Record<string, string>;
+  /** Incoming HTTP headers, lowercased. */
+  headers: Record<string, string>;
+  /** The raw Web Standard `Request` object. Useful for streaming or advanced header inspection. */
+  raw?: Request;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>query</code> (required) | Parsed URL query-string parameters, e.g. &#96;&#123; page: '2', search: 'hello' &#125;&#96;. |
+| <code>headers</code> (required) | Incoming HTTP headers, lowercased. |
+| <code>raw</code> (optional) | The raw Web Standard &#96;Request&#96; object. Useful for streaming or advanced header inspection. |
+{/* GENERATED:REFERENCE-HOOKS:END */}

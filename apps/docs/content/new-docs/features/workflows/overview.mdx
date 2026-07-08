@@ -1,0 +1,421 @@
+---
+title: Overview
+description: Workflows add editorial state and a public snapshot to a collection, so editing never changes live content until you transition it.
+---
+
+Workflows turn a collection into a state machine with editorial review. A workflow-enabled collection keeps two things for each document: an editable working revision and an independent public snapshot. Editing the working revision never changes what the live API returns until you transition the document to a published state.
+
+Use workflows when content needs review, staged publishing, or an audit trail of who moved what and when — editorial publishing, approval flows, or any "draft then publish" lifecycle.
+
+## Enabling a workflow
+
+Attach a `workflow` to a collection. Dyrected ships a ready-made publishing workflow, and you can define your own states, transitions, and roles.
+
+```ts
+import { defineCollection } from '@dyrected/core'
+import { publishingWorkflow } from '@dyrected/core'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  workflow: publishingWorkflow,
+  fields: [
+    { name: 'title', type: 'text', label: 'Title', required: true },
+    { name: 'body', type: 'richText', label: 'Body' },
+  ],
+})
+```
+
+## What you get
+
+- A working revision editors change freely, plus a public snapshot the live API serves.
+- Named states and transitions, each with its own roles and optional required comments.
+- An atomic transition route and paginated workflow history for every document.
+- Durable lifecycle events you can handle to trigger side effects when documents move between states.
+
+## How transitions work
+
+A transition moves a document from one state to another. Transitions run on the server, respect the roles configured for that transition, and can require a comment. Clients that must reject stale moves can pass an expected revision so a concurrent edit does not get overwritten.
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so the workflow types, lifecycle events, helpers, and transition contracts stay in sync with the package.
+
+{/* GENERATED:REFERENCE-WORKFLOWS:START */}
+## availableWorkflowTransitions
+
+Exported function from @dyrected/core.
+
+```ts
+export function availableWorkflowTransitions(
+  workflow: WorkflowConfig,
+  state: string,
+  user?: AuthenticatedUser,
+): WorkflowTransition[]
+```
+
+
+## canViewWorkflowDraft
+
+Exported function from @dyrected/core.
+
+```ts
+export function canViewWorkflowDraft(workflow: WorkflowConfig, user?: AuthenticatedUser): boolean
+```
+
+
+## createLifecycleEvent
+
+Exported function from @dyrected/core.
+
+```ts
+export function createLifecycleEvent(args: {
+  name: LifecycleEventName;
+  collection: string;
+  documentId: string;
+  actorId?: string;
+  payload: Record<string, unknown>;
+}): LifecycleEvent
+```
+
+
+## createWorkflowDocument
+
+Exported function from @dyrected/core.
+
+```ts
+export async function createWorkflowDocument(args: {
+  config: DyrectedConfig;
+  collection: CollectionConfig;
+  data: Record<string, unknown>;
+  user?: AuthenticatedUser;
+}): Promise<{ doc: BaseDocument; event: LifecycleEvent }>
+```
+
+
+## dispatchLifecycleEvent
+
+Exported function from @dyrected/core.
+
+```ts
+export async function dispatchLifecycleEvent(config: DyrectedConfig, event: LifecycleEvent): Promise<void>
+```
+
+
+## dispatchPendingLifecycleEvents
+
+Exported function from @dyrected/core.
+
+```ts
+export async function dispatchPendingLifecycleEvents(config: DyrectedConfig, limit = 50): Promise<number>
+```
+
+
+## initializeWorkflowDocument
+
+Exported function from @dyrected/core.
+
+```ts
+export function initializeWorkflowDocument(data: Record<string, unknown>, workflow: WorkflowConfig)
+```
+
+
+## LIFECYCLE_EVENTS_COLLECTION
+
+Exported constant from @dyrected/core.
+
+```ts
+export const LIFECYCLE_EVENTS_COLLECTION = "__lifecycle_events";
+```
+
+
+## LifecycleEvent
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface LifecycleEvent<TPayload = Record<string, unknown>> {
+  id: string;
+  name: LifecycleEventName;
+  collection: string;
+  documentId: string;
+  occurredAt: string;
+  actorId?: string;
+  payload: TPayload;
+  attempts: number;
+  status: "pending" | "processing" | "delivered" | "failed";
+  nextAttemptAt?: string;
+  deliveredAt?: string;
+  lastError?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>name</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>documentId</code> (required) |  |
+| <code>occurredAt</code> (required) |  |
+| <code>actorId</code> (optional) |  |
+| <code>payload</code> (required) |  |
+| <code>attempts</code> (required) |  |
+| <code>status</code> (required) |  |
+| <code>nextAttemptAt</code> (optional) |  |
+| <code>deliveredAt</code> (optional) |  |
+| <code>lastError</code> (optional) |  |
+
+
+## LifecycleEventHandler
+
+Exported type from @dyrected/core.
+
+```ts
+export type LifecycleEventHandler = (
+  event: LifecycleEvent,
+) => void | Promise<void>;
+```
+
+
+## LifecycleEventName
+
+Exported type from @dyrected/core.
+
+```ts
+export type LifecycleEventName = (typeof LIFECYCLE_EVENT_NAMES)[number];
+```
+
+
+## materializeWorkflowDocument
+
+Exported function from @dyrected/core.
+
+```ts
+export function materializeWorkflowDocument(
+  doc: BaseDocument,
+  workflow: WorkflowConfig,
+  user?: AuthenticatedUser,
+): BaseDocument | null
+```
+
+
+## publishingWorkflow
+
+Exported function from @dyrected/core.
+
+```ts
+export function publishingWorkflow(): WorkflowConfig
+```
+
+
+## saveWorkflowDraft
+
+Exported function from @dyrected/core.
+
+```ts
+export async function saveWorkflowDraft(args: {
+  config: DyrectedConfig;
+  collection: CollectionConfig;
+  id: string;
+  originalDoc: BaseDocument;
+  data: Record<string, unknown>;
+  user?: AuthenticatedUser;
+}): Promise<{ doc: BaseDocument; event: LifecycleEvent }>
+```
+
+
+## transitionWorkflow
+
+Exported function from @dyrected/core.
+
+```ts
+export async function transitionWorkflow(args: {
+  config: DyrectedConfig;
+  collection: CollectionConfig;
+  id: string;
+  transitionName: string;
+  expectedRevision?: number;
+  comment?: string;
+  user?: AuthenticatedUser;
+  req: HookRequestContext;
+}): Promise<BaseDocument>
+```
+
+
+## WORKFLOW_HISTORY_COLLECTION
+
+Exported constant from @dyrected/core.
+
+```ts
+export const WORKFLOW_HISTORY_COLLECTION = "__workflow_history";
+```
+
+
+## workflowCapabilities
+
+Exported function from @dyrected/core.
+
+```ts
+export function workflowCapabilities(workflow: WorkflowConfig, user?: AuthenticatedUser): Set<string>
+```
+
+
+## WorkflowConfig
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WorkflowConfig<TDoc extends object = Record<string, unknown>> {
+  initialState: string;
+  /** State used for a new working revision created from published content. */
+  draftState?: string;
+  states: WorkflowState[];
+  transitions: WorkflowTransition[];
+  /** Maps values in `user.roles` to workflow capabilities. */
+  roles?: WorkflowRole[];
+  hooks?: {
+    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];
+    afterTransition?: CollectionAfterTransitionHook<TDoc>[];
+  };
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>initialState</code> (required) |  |
+| <code>draftState</code> (optional) | State used for a new working revision created from published content. |
+| <code>states</code> (required) |  |
+| <code>transitions</code> (required) |  |
+| <code>roles</code> (optional) | Maps values in &#96;user.roles&#96; to workflow capabilities. |
+| <code>hooks</code> (optional) |  |
+
+
+## WorkflowMetadata
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WorkflowMetadata {
+  state: string;
+  revision: number;
+  publishedRevision?: number;
+  publishedAt?: string;
+  publishedBy?: string;
+  /** Transitions currently allowed for the requesting user. Response-only. */
+  availableTransitions?: string[];
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>state</code> (required) |  |
+| <code>revision</code> (required) |  |
+| <code>publishedRevision</code> (optional) |  |
+| <code>publishedAt</code> (optional) |  |
+| <code>publishedBy</code> (optional) |  |
+| <code>availableTransitions</code> (optional) | Transitions currently allowed for the requesting user. Response-only. |
+
+
+## WorkflowRole
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WorkflowRole {
+  /** Existing user role value, for example `editor` or `publisher`. */
+  role: string;
+  capabilities: string[];
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>role</code> (required) | Existing user role value, for example &#96;editor&#96; or &#96;publisher&#96;. |
+| <code>capabilities</code> (required) |  |
+
+
+## WorkflowState
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WorkflowState {
+  /** Stable machine-readable state key. */
+  name: string;
+  /** Label rendered in the Admin UI. */
+  label: string;
+  /** Marks the state whose revision is visible to public readers. */
+  published?: boolean;
+  /** Optional visual tone used by the Admin UI. */
+  color?: "neutral" | "warning" | "success" | "danger" | "info";
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>name</code> (required) | Stable machine-readable state key. |
+| <code>label</code> (required) | Label rendered in the Admin UI. |
+| <code>published</code> (optional) | Marks the state whose revision is visible to public readers. |
+| <code>color</code> (optional) | Optional visual tone used by the Admin UI. |
+
+
+## WorkflowTransition
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WorkflowTransition {
+  /** Stable transition key used by the REST and SDK APIs. */
+  name: string;
+  label: string;
+  from: string | string[];
+  to: string;
+  /** Every listed capability is required. */
+  requiredCapabilities?: string[];
+  /** Require a non-empty comment when performing the transition. */
+  requireComment?: boolean;
+  /** Remove the public snapshot after this transition commits. */
+  unpublish?: boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>name</code> (required) | Stable transition key used by the REST and SDK APIs. |
+| <code>label</code> (required) |  |
+| <code>from</code> (required) |  |
+| <code>to</code> (required) |  |
+| <code>requiredCapabilities</code> (optional) | Every listed capability is required. |
+| <code>requireComment</code> (optional) | Require a non-empty comment when performing the transition. |
+| <code>unpublish</code> (optional) | Remove the public snapshot after this transition commits. |
+
+
+## WorkflowTransitionContext
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WorkflowTransitionContext<
+  TDoc extends object = Record<string, unknown>,
+> {
+  transition: WorkflowTransition;
+  from: string;
+  to: string;
+  doc: TDoc;
+  user?: AuthenticatedUser;
+  comment?: string;
+  req: HookRequestContext;
+  db: DatabaseAdapter;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>transition</code> (required) |  |
+| <code>from</code> (required) |  |
+| <code>to</code> (required) |  |
+| <code>doc</code> (required) |  |
+| <code>user</code> (optional) |  |
+| <code>comment</code> (optional) |  |
+| <code>req</code> (required) |  |
+| <code>db</code> (required) |  |
+{/* GENERATED:REFERENCE-WORKFLOWS:END */}

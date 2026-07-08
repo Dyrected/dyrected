@@ -1,3 +1,48 @@
 ---
 title: Radio Group
+description: A single choice from a small set of options, shown as radio buttons.
 ---
+
+The radio field is like a [Select](/new-docs/basics/fields/select), but it shows every option at once as radio buttons. Use it when the set of choices is small and you want editors to see all options without opening a dropdown.
+
+```ts
+{
+  name: 'layout',
+  type: 'radio',
+  label: 'Layout',
+  options: [
+    { label: 'Standard', value: 'standard' },
+    { label: 'Wide', value: 'wide' },
+  ],
+}
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-RADIO-GROUP:START */}
+## RadioField
+
+Exported type from @dyrected/core.
+
+```ts
+export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;
+```
+
+
+## RadioFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type RadioFieldAdmin = {
+  /** Radio group orientation. */
+  direction?: "horizontal" | "vertical";
+  hooks?: {
+    /** Client-side option recalculation for dependent radio groups. */
+    options?: FieldAdminOptionsHook;
+  };
+};
+```
+{/* GENERATED:REFERENCE-FIELD-RADIO-GROUP:END */}

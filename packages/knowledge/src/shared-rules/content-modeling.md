@@ -48,16 +48,16 @@ Schema and initialData:
 https://docs.dyrected.com/docs/concepts/schema
 
 Fields:
-https://docs.dyrected.com/docs/reference/fields
+https://docs.dyrected.com/new-docs/basics/fields/overview
 
 Configuration, admin options, useAsTitle, previewUrl, previewMode, and urlPattern:
-https://docs.dyrected.com/docs/reference/configuration
+https://docs.dyrected.com/new-docs/basics/configuration/overview
 
 Admin and Live Preview:
 https://docs.dyrected.com/docs/admin/overview
 
 Storage and media:
-https://docs.dyrected.com/docs/adapters/storage
+https://docs.dyrected.com/new-docs/features/upload/storage-adapters
 
 Use only APIs, configuration options, field types, hooks, preview options, media options, and behaviour supported by the installed Dyrected package and the current documentation.
 
@@ -1236,7 +1236,7 @@ Generated content must be internally consistent across the whole site.
 
 Trace the generated site as a whole before finishing. A link that points nowhere, an author with no posts, or a second page that contradicts the first is an incomplete result.
 
-Reference: https://docs.dyrected.com/docs/reference/fields
+Reference: https://docs.dyrected.com/new-docs/basics/fields/overview
 
 ---
 
@@ -1264,7 +1264,7 @@ initialData does not behave identically for globals and collections. Know the tr
 - Seeding writes documents directly and does not run field change hooks. Provide already-valid values in seed data: lowercase and unique slugs, correctly shaped link and media values, and any value a hook would normally derive.
 - initialData is a seed, not the runtime source. The frontend still reads live content from Dyrected. Do not overwrite existing content with initialData; it applies only while the target is empty.
 
-Reference: https://docs.dyrected.com/docs/concepts/schema and https://docs.dyrected.com/docs/reference/rest-api
+Reference: https://docs.dyrected.com/docs/concepts/schema and https://docs.dyrected.com/new-docs/managing-data/rest-api/overview
 
 ---
 
@@ -1276,7 +1276,7 @@ An `icon` field stores the name of an icon from the icon set the project renders
 - Do not invent icon names. An unknown name renders nothing.
 - Do not store arbitrary text, emoji, or file paths in an icon field.
 
-Reference: https://docs.dyrected.com/docs/reference/fields
+Reference: https://docs.dyrected.com/new-docs/basics/fields/overview
 
 ---
 
@@ -1289,7 +1289,7 @@ How the configuration file is written affects whether it type-checks and loads.
 - A large configuration may be split into modules — one file per collection and global, imported into the main config. Keep cross-references (a collection referencing a media collection, a blog referencing an authors collection) as direct imports and avoid import cycles.
 - When splitting into modules, relative imports in the configuration must use the explicit file extension the config loader expects, because the configuration file is not part of the application's TypeScript project.
 
-Reference: https://docs.dyrected.com/docs/reference/configuration
+Reference: https://docs.dyrected.com/new-docs/basics/configuration/overview
 
 ---
 
@@ -1303,4 +1303,4 @@ Choose database and storage adapters from the deployment target, not habit.
 - Confirm the deployment target before finalizing adapters. If the project uses Dyrected Cloud, follow the Cloud guidance rather than configuring custom database or storage adapters.
 - Drive adapter choice from environment configuration so local development and production can differ without code changes.
 
-Reference: https://docs.dyrected.com/docs/adapters/databases and https://docs.dyrected.com/docs/adapters/storage
+Reference: https://docs.dyrected.com/new-docs/basics/database/overview and https://docs.dyrected.com/new-docs/features/upload/storage-adapters

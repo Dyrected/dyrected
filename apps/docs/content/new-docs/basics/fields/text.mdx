@@ -1,3 +1,33 @@
 ---
 title: Text
+description: A single-line string field for short values like titles, names, and slugs.
 ---
+
+The text field stores a single line of plain text. It is the field you reach for most often: titles, names, slugs, short labels, and any short free-form value.
+
+```ts
+{ name: 'title', type: 'text', label: 'Title', required: true }
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-TEXT:START */}
+## TextField
+
+Exported type from @dyrected/core.
+
+```ts
+export type TextField = TypedField<"text", string, TextFieldAdmin> & CharacterLimitFieldConfig & WordLimitFieldConfig;
+```
+
+
+## TextFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
+```
+{/* GENERATED:REFERENCE-FIELD-TEXT:END */}

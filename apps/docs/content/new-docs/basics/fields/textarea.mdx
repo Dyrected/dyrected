@@ -1,3 +1,35 @@
 ---
 title: Textarea
+description: A multi-line plain-text field for longer, unformatted content.
 ---
+
+The textarea field stores multiple lines of plain text. Use it for summaries, descriptions, and other longer content that does not need formatting. When you need bold, links, or headings, use [Rich Text](/new-docs/basics/fields/rich-text) instead.
+
+```ts
+{ name: 'excerpt', type: 'textarea', label: 'Excerpt' }
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-TEXTAREA:START */}
+## TextareaField
+
+Exported type from @dyrected/core.
+
+```ts
+export type TextareaField = TypedField<"textarea", string, TextareaFieldAdmin> &
+  CharacterLimitFieldConfig &
+  WordLimitFieldConfig;
+```
+
+
+## TextareaFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
+```
+{/* GENERATED:REFERENCE-FIELD-TEXTAREA:END */}

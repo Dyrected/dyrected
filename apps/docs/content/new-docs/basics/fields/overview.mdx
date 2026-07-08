@@ -1,3 +1,476 @@
 ---
 title: Overview
+description: Fields define the shape of every document. Learn the shared field model before reaching for a specific type.
 ---
+
+Fields are how you describe the shape of a document in Dyrected. Every collection and global has a `fields` array, and each entry defines one piece of content: its `name`, its `type`, its label, and any type-specific options.
+
+You will spend most of your modeling time here, so it helps to learn the shared model once and then reach for the specific field pages when you need them.
+
+## The shared field shape
+
+Every field is an object with at least a `type`. Named fields also carry a `name` that becomes the stored key, and a `label` that editors see in the admin UI.
+
+```ts
+import { defineCollection } from '@dyrected/core'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  fields: [
+    { name: 'title', type: 'text', label: 'Title', required: true },
+    { name: 'body', type: 'richText', label: 'Body' },
+    { name: 'author', type: 'relationship', label: 'Author', relationTo: 'users' },
+  ],
+})
+```
+
+Give every named field an explicit `label`. It keeps internal camelCase names out of the editing interface and makes the admin UI feel deliberate.
+
+## Shared options you will use everywhere
+
+Most field types accept a common set of base options:
+
+- `name` — the persisted key. Treat renames as data migrations.
+- `label` — the human-readable name shown to editors.
+- `required` — whether the field must have a value.
+- `defaultValue` — the value used when none is provided.
+- `unique` and `index` — storage constraints on relational adapters.
+- `admin` — per-field admin options such as descriptions and conditional display.
+
+## Choosing a field type
+
+Each field type has its own page with a focused example and its generated contract:
+
+- Text-like content: [Text](/new-docs/basics/fields/text), [Textarea](/new-docs/basics/fields/textarea), [Email](/new-docs/basics/fields/email), [Rich Text](/new-docs/basics/fields/rich-text)
+- Choices and toggles: [Select](/new-docs/basics/fields/select), [Radio Group](/new-docs/basics/fields/radio-group), [Checkbox](/new-docs/basics/fields/checkbox)
+- Numbers and dates: [Number](/new-docs/basics/fields/number), [Date](/new-docs/basics/fields/date)
+- Structure and nesting: [Group](/new-docs/basics/fields/group), [Array](/new-docs/basics/fields/array), [Blocks](/new-docs/basics/fields/blocks), [Row](/new-docs/basics/fields/row)
+- Relationships and files: [Relationship](/new-docs/basics/fields/relationship), [Upload](/new-docs/basics/fields/upload), [Join](/new-docs/basics/fields/join)
+- Data and layout: [JSON](/new-docs/basics/fields/json)
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`. This region holds the shared field interfaces and admin option types; the contract for each concrete field type lives on that type's own page.
+
+{/* GENERATED:REFERENCE-FIELDS:START */}
+## AuthDocFields
+
+Exported type from @dyrected/core.
+
+```ts
+export type AuthDocFields = {
+  email: string;
+  password?: string;
+  roles?: string[];
+};
+```
+
+
+## BaseFieldAdmin
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface BaseFieldAdmin {
+  /** Placeholder text shown when the input has no value. */
+  placeholder?: string;
+  /** Custom component key registered in the Admin UI. */
+  component?: string;
+  /** Help text rendered below the field. */
+  description?: string;
+  /** Hides the field from the Admin form without deleting stored data. */
+  hidden?: boolean;
+  /** Excludes the field from Admin list filtering. */
+  filterable?: boolean;
+  /** Renders the field as non-editable in the Admin UI. */
+  readOnly?: boolean;
+  /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */
+  hideLabel?: boolean;
+  /** Reactive condition controlling whether the field is visible in the Admin UI. */
+  condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;
+  /** Tab name used when the edit form is rendered as tabs. */
+  tab?: string;
+  /** CSS width hint used when the field appears inside a `row`. */
+  width?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>placeholder</code> (optional) | Placeholder text shown when the input has no value. |
+| <code>component</code> (optional) | Custom component key registered in the Admin UI. |
+| <code>description</code> (optional) | Help text rendered below the field. |
+| <code>hidden</code> (optional) | Hides the field from the Admin form without deleting stored data. |
+| <code>filterable</code> (optional) | Excludes the field from Admin list filtering. |
+| <code>readOnly</code> (optional) | Renders the field as non-editable in the Admin UI. |
+| <code>hideLabel</code> (optional) | Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). |
+| <code>condition</code> (optional) | Reactive condition controlling whether the field is visible in the Admin UI. |
+| <code>tab</code> (optional) | Tab name used when the edit form is rendered as tabs. |
+| <code>width</code> (optional) | CSS width hint used when the field appears inside a &#96;row&#96;. |
+
+
+## CharacterLimitFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type CharacterLimitFieldAdmin = {
+  /** Admin-only compatibility alias for `field.maxLength`. Prefer the top-level field property. */
+  maxLength?: number;
+};
+```
+
+
+## CharacterLimitFieldConfig
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface CharacterLimitFieldConfig {
+  /** Advisory maximum character count exposed to editors and client tooling. */
+  maxLength?: number;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>maxLength</code> (optional) | Advisory maximum character count exposed to editors and client tooling. |
+
+
+## DynamicOptionItem
+
+Exported type from @dyrected/core.
+
+```ts
+export type DynamicOptionItem = string | { label: string; value: unknown };
+```
+
+
+## DynamicOptionsConfig
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface DynamicOptionsConfig {
+  /** Resolver function executed on the server to produce option items. */
+  resolve: DynamicOptionsResolver;
+  /** Cache duration in seconds for identical resolver calls. */
+  cacheTTL?: number;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>resolve</code> (required) | Resolver function executed on the server to produce option items. |
+| <code>cacheTTL</code> (optional) | Cache duration in seconds for identical resolver calls. |
+
+
+## DynamicOptionsResolver
+
+Exported type from @dyrected/core.
+
+```ts
+export type DynamicOptionsResolver = (
+  args: DynamicOptionsResolverArgs,
+) => Promise<DynamicOptionItem[]> | DynamicOptionItem[];
+```
+
+
+## DynamicOptionsResolverArgs
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface DynamicOptionsResolverArgs {
+  /** Database adapter available to server-side option resolvers. */
+  db?: DatabaseAdapter;
+  /** Authenticated user making the request, if any. */
+  user?: AuthenticatedUser;
+  /** Current HTTP request context, including query parameters. */
+  req: HookRequestContext;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>db</code> (optional) | Database adapter available to server-side option resolvers. |
+| <code>user</code> (optional) | Authenticated user making the request, if any. |
+| <code>req</code> (required) | Current HTTP request context, including query parameters. |
+
+
+## Field
+
+Exported type from @dyrected/core.
+
+```ts
+export type Field =
+  | TextField
+  | TextareaField
+  | EmailField
+  | UrlField
+  | IconField
+  | DateField
+  | DateTimeField
+  | TimeField
+  | SelectField
+  | RadioField
+  | NumberField
+  | BooleanField
+  | MultiSelectField
+  | RelationshipField
+  | ImageField
+  | RichTextField
+  | JsonField
+  | ObjectField
+  | ArrayField
+  | BlocksField
+  | JoinField
+  | RowField;
+```
+
+
+## FieldBase
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface FieldBase {
+  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */
+  name?: string;
+  /** Human-readable label shown in the Admin UI. */
+  label?: string;
+  /** Whether the field must have a value when saving. */
+  required?: boolean;
+  /** Whether values for this field must be unique across the collection. */
+  unique?: boolean;
+  /** Default value used when a new document omits this field. */
+  defaultValue?: unknown;
+  /** Static or dynamic option source for supported selection fields. */
+  options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig;
+  /** Target collection slug for `relationship` fields. */
+  relationTo?: string;
+  /** Whether the field stores multiple values instead of one. */
+  hasMany?: boolean;
+  /** Child fields for `object` and `array` field types. */
+  fields?: Field[];
+  /** Allowed block definitions for a `blocks` field. */
+  blocks?: Block[];
+  /** Target collection slug for `join` fields. */
+  collection?: string;
+  /** Back-reference field name on the joined collection. */
+  on?: string;
+  /** Maximum number of joined documents returned by a `join` field. */
+  limit?: number;
+  /** Field-level read and update access rules. */
+  access?: {
+    /** Controls whether this field is returned in API responses. */
+    read?: AccessFunction | string;
+    /** Controls whether incoming writes may change this field. */
+    update?: AccessFunction | string;
+  };
+  /** Admin-only presentation options for this field. */
+  admin?: BaseFieldAdmin;
+  /** Previous storage key to migrate from during schema sync. */
+  renameTo?: string;
+  /** Whether SQL adapters should promote this field into a first-class column. */
+  promoted?: boolean;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>name</code> (optional) | Stored key for this field. Omit only for layout-only fields such as &#96;row&#96; or &#96;join&#96;. |
+| <code>label</code> (optional) | Human-readable label shown in the Admin UI. |
+| <code>required</code> (optional) | Whether the field must have a value when saving. |
+| <code>unique</code> (optional) | Whether values for this field must be unique across the collection. |
+| <code>defaultValue</code> (optional) | Default value used when a new document omits this field. |
+| <code>options</code> (optional) | Static or dynamic option source for supported selection fields. |
+| <code>relationTo</code> (optional) | Target collection slug for &#96;relationship&#96; fields. |
+| <code>hasMany</code> (optional) | Whether the field stores multiple values instead of one. |
+| <code>fields</code> (optional) | Child fields for &#96;object&#96; and &#96;array&#96; field types. |
+| <code>blocks</code> (optional) | Allowed block definitions for a &#96;blocks&#96; field. |
+| <code>collection</code> (optional) | Target collection slug for &#96;join&#96; fields. |
+| <code>on</code> (optional) | Back-reference field name on the joined collection. |
+| <code>limit</code> (optional) | Maximum number of joined documents returned by a &#96;join&#96; field. |
+| <code>access</code> (optional) | Field-level read and update access rules. |
+| <code>admin</code> (optional) | Admin-only presentation options for this field. |
+| <code>renameTo</code> (optional) | Previous storage key to migrate from during schema sync. |
+| <code>promoted</code> (optional) | Whether SQL adapters should promote this field into a first-class column. |
+
+
+## FieldType
+
+Exported type from @dyrected/core.
+
+```ts
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "richText"
+  | "number"
+  | "boolean"
+  | "date"
+  | "datetime"
+  | "time"
+  | "select"
+  | "multiSelect"
+  | "radio"
+  | "relationship"
+  | "array"
+  | "object"
+  | "json"
+  | "blocks"
+  | "image"
+  | "email"
+  | "url"
+  | "icon"
+  | "join"
+  | "row";
+```
+
+
+## IconField
+
+Exported type from @dyrected/core.
+
+```ts
+export type IconField = TypedField<"icon", string, IconFieldAdmin> & CharacterLimitFieldConfig;
+```
+
+
+## IconFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type IconFieldAdmin = CharacterLimitFieldAdmin;
+```
+
+
+## InferDocShape
+
+Exported type from @dyrected/core.
+
+```ts
+export type InferDocShape<Fields extends readonly Field[]> = Fields extends readonly []
+  ? Record<never, never>
+  : Fields extends readonly [infer Head extends Field, ...infer Tail extends readonly Field[]]
+    ? InferFieldEntry<Head> & InferDocShape<Tail>
+    : Record<string, unknown>;
+```
+
+
+## MultiSelectField
+
+Exported type from @dyrected/core.
+
+```ts
+export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
+```
+
+
+## MultiSelectFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type MultiSelectFieldAdmin = {
+  hooks?: {
+    /** Client-side option recalculation for dependent multi-select fields. */
+    options?: FieldAdminOptionsHook;
+  };
+};
+```
+
+
+## SystemDocFields
+
+Exported type from @dyrected/core.
+
+```ts
+export type SystemDocFields = {
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+};
+```
+
+
+## TypedField
+
+Exported type from @dyrected/core.
+
+```ts
+export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<never, never>> = Omit<FieldBase, "admin"> & {
+  type: TType;
+  admin?: BaseFieldAdmin & TAdminExtra;
+} & FieldHooks<TValue> &
+  FieldAdminHooks<TValue>;
+```
+
+
+## UploadDocFields
+
+Exported type from @dyrected/core.
+
+```ts
+export type UploadDocFields = {
+  filename: string;
+  filesize?: number;
+  mimeType: string;
+  url: string;
+  width?: number;
+  height?: number;
+  focalPoint?: { x: number; y: number };
+  blurhash?: string;
+  sizes?: Record<string, { filename?: string; url?: string; width?: number; height?: number }>;
+};
+```
+
+
+## UrlField
+
+Exported type from @dyrected/core.
+
+```ts
+export type UrlField = TypedField<"url", string, UrlFieldAdmin> & CharacterLimitFieldConfig;
+```
+
+
+## UrlFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type UrlFieldAdmin = CharacterLimitFieldAdmin;
+```
+
+
+## WordLimitFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type WordLimitFieldAdmin = {
+  /** Admin-only compatibility alias for `field.maxWords`. Prefer the top-level field property. */
+  maxWords?: number;
+};
+```
+
+
+## WordLimitFieldConfig
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface WordLimitFieldConfig {
+  /** Advisory maximum word count exposed to editors and client tooling. */
+  maxWords?: number;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>maxWords</code> (optional) | Advisory maximum word count exposed to editors and client tooling. |
+{/* GENERATED:REFERENCE-FIELDS:END */}

@@ -1,3 +1,24 @@
 ---
 title: Number
+description: A numeric field for integers and decimals.
 ---
+
+The number field stores a numeric value. Use it for prices, quantities, ratings, ordering weights, and any value you want to store and query as a number rather than text.
+
+```ts
+{ name: 'price', type: 'number', label: 'Price', required: true }
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-NUMBER:START */}
+## NumberField
+
+Exported type from @dyrected/core.
+
+```ts
+export type NumberField = TypedField<"number", number>;
+```
+{/* GENERATED:REFERENCE-FIELD-NUMBER:END */}

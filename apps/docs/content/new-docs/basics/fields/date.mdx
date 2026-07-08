@@ -1,3 +1,42 @@
 ---
 title: Date
+description: A field for dates and times, stored as an ISO string and shown with a picker.
 ---
+
+The date field stores a point in time and shows editors a date or date-and-time picker. Dates cross the API as ISO strings, so parse them at your application boundary when you need to do date arithmetic. Related `datetime` and `time` types cover finer-grained needs.
+
+```ts
+{ name: 'publishedAt', type: 'date', label: 'Published at' }
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-DATE:START */}
+## DateField
+
+Exported type from @dyrected/core.
+
+```ts
+export type DateField = TypedField<"date", string>;
+```
+
+
+## DateTimeField
+
+Exported type from @dyrected/core.
+
+```ts
+export type DateTimeField = TypedField<"datetime", string>;
+```
+
+
+## TimeField
+
+Exported type from @dyrected/core.
+
+```ts
+export type TimeField = TypedField<"time", string>;
+```
+{/* GENERATED:REFERENCE-FIELD-DATE:END */}

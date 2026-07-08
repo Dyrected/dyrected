@@ -1,3 +1,29 @@
 ---
 title: Upload
+description: A reference to a document in an upload-enabled collection, such as an image or file.
 ---
+
+The upload field references a document in an upload-enabled collection, such as your media library. Use it for images, documents, and other files. The referenced document exposes a resolved `url` you consume directly rather than reconstructing storage paths. See [Storage Adapters](/new-docs/features/upload/storage-adapters) for where those files live.
+
+```ts
+{
+  name: 'coverImage',
+  type: 'image',
+  label: 'Cover image',
+  relationTo: 'media',
+}
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-UPLOAD:START */}
+## ImageField
+
+Exported type from @dyrected/core.
+
+```ts
+export type ImageField = TypedField<"image", string | string[]>;
+```
+{/* GENERATED:REFERENCE-FIELD-UPLOAD:END */}

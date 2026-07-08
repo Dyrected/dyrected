@@ -1,3 +1,141 @@
 ---
 title: Storage Adapters
+description: Storage adapters decide where uploaded files live and how their URLs are resolved.
 ---
+
+When a collection enables uploads, Dyrected needs somewhere to put the files. That is the storage adapter's job. You pass it as the `storage` key in `dyrected.config.ts`, and Dyrected uses it whenever an upload document is created, read, or deleted. In Dyrected Cloud, storage is managed for you.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { S3Adapter } from '@dyrected/storage-s3'
+
+export default defineConfig({
+  storage: new S3Adapter({ bucket: process.env.S3_BUCKET! }),
+  collections: [Media],
+  globals: [],
+})
+```
+
+## What a storage adapter does
+
+A storage adapter persists file bytes and resolves the public URL that upload documents expose through `doc.url`. Always consume that resolved URL rather than reconstructing storage paths yourself — local storage serves bytes through the app, while cloud adapters usually return a provider or CDN URL.
+
+Image-enabled uploads can also use an image service to generate the resized variants defined by a collection's `imageSizes`.
+
+## Choosing storage
+
+Use local disk for development and single-node deployments, and an object-store adapter such as S3 for production and multi-instance deployments where files must be shared across servers.
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so the storage, file-data, and image-service interfaces stay in sync with the package. Use them when writing a custom storage or image adapter.
+
+{/* GENERATED:REFERENCE-STORAGE-ADAPTERS:START */}
+## FileData
+
+Metadata returned after a file is uploaded and stored.
+Stored on the document in upload collections.
+
+```ts
+export interface FileData {
+  filename: string;
+  filesize?: number;
+  mimeType: string;
+  /** Public URL of the stored file. */
+  url: string;
+  width?: number;
+  height?: number;
+  focalPoint?: { x: number; y: number };
+  /** Base64-encoded BlurHash string for progressive image loading. */
+  blurhash?: string;
+  /** `'upload'` for server-stored files; `'external'` for provider-managed files. */
+  type?: "upload" | "external";
+  provider?: string;
+  provider_metadata?: unknown;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>filename</code> (required) |  |
+| <code>filesize</code> (optional) |  |
+| <code>mimeType</code> (required) |  |
+| <code>url</code> (required) | Public URL of the stored file. |
+| <code>width</code> (optional) |  |
+| <code>height</code> (optional) |  |
+| <code>focalPoint</code> (optional) |  |
+| <code>blurhash</code> (optional) | Base64-encoded BlurHash string for progressive image loading. |
+| <code>type</code> (optional) | &#96;'upload'&#96; for server-stored files; &#96;'external'&#96; for provider-managed files. |
+| <code>provider</code> (optional) |  |
+| <code>provider_metadata</code> (optional) |  |
+
+
+## ImageService
+
+Processes uploaded images — generates metadata (dimensions, BlurHash) and
+produces resized variants defined in `UploadConfig.imageSizes`.
+
+```ts
+export interface ImageService {
+  process(args: {
+    buffer: Uint8Array;
+    mimeType: string;
+    config?: boolean | UploadConfig;
+    focalPoint?: { x: number; y: number };
+  }): Promise<{
+    metadata: {
+      width?: number;
+      height?: number;
+      /** Base64-encoded BlurHash for progressive loading. */
+      blurhash?: string;
+    };
+    /** Generated image sizes keyed by their `name`. */
+    sizes?: Record<string, { buffer: Uint8Array; width: number; height: number; filename: string }>;
+  }>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>process</code> (optional) |  |
+
+
+## StorageAdapter
+
+The interface every storage adapter must implement.
+
+Dyrected ships adapters for local disk, S3, Cloudflare R2, Cloudinary, and
+Backblaze B2. Implement this interface to use any other storage provider.
+
+```ts
+export interface StorageAdapter {
+  /**
+   * Upload a file and return its metadata (URL, dimensions, etc.).
+   * The `prefix` is a path prefix used for multi-tenant setups.
+   */
+  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;
+
+  /** Delete a file by its stored filename. */
+  delete(args: { filename: string }): Promise<void>;
+
+  /** Return the public URL for a stored file. */
+  getURL(args: { filename: string }): string;
+
+  /**
+   * Retrieve the file's raw bytes and MIME type for serving via the API.
+   * Only needed by adapters that serve files through the Dyrected API
+   * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on
+   * direct CDN URLs instead.
+   */
+  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>upload</code> (optional) | Upload a file and return its metadata (URL, dimensions, etc.). The &#96;prefix&#96; is a path prefix used for multi-tenant setups. |
+| <code>delete</code> (required) | Delete a file by its stored filename. |
+| <code>getURL</code> (required) | Return the public URL for a stored file. |
+| <code>resolve</code> (required) | Retrieve the file's raw bytes and MIME type for serving via the API. Only needed by adapters that serve files through the Dyrected API (e.g. &#96;LocalStorage&#96;). Cloud adapters return &#96;null&#96; here and rely on direct CDN URLs instead. |
+{/* GENERATED:REFERENCE-STORAGE-ADAPTERS:END */}
