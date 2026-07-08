@@ -171,25 +171,46 @@ Collections with no `group` are listed at the top of the sidebar ungrouped.
 
 ### `previewUrl`
 
-When set, the Edit page renders a split-pane layout: the form on the left, a live preview iframe on the right.
+URL to open in the Live Preview pane when editing a document. There are two ways to define the preview URL: using a **JavaScript function** or a **Jexl string expression**.
 
+**When to use which:**
+- **Jexl String (Recommended):** The safest and most robust approach. It works locally and is **required** if you use Dyrected Cloud Sync. The Admin automatically evaluates strings containing `+`, `?`, `==`, or `siteUrl` using [Jexl](https://github.com/TomFrost/Jexl), which is a safe, sandboxed expression language.
+- **JavaScript Function:** Works well for complex local-only configurations where you don't need to sync your schema to the cloud.
+
+<Callout type="warn">
+  **Dyrected Cloud Sync limitation**
+  If you use Dyrected Cloud Sync, your schema is serialized to JSON before being sent to the cloud. Because JSON cannot serialize JavaScript functions, any function passed to `previewUrl` will be stringified and break the Admin UI. Cloud users **must** use Jexl strings.
+</Callout>
+
+#### Example 1: Jexl String (Recommended)
 ```ts
-// Static URL
-admin: {
-  previewUrl: "https://mysite.com/api/preview";
-}
-
-// Dynamic URL based on document fields
-admin: {
-  previewUrl: (doc, { locale }) => {
-    if (!doc?.slug) return null;
-    const base = process.env.NEXT_PUBLIC_SITE_URL;
-    return `${base}/posts/${doc.slug}?preview=true`;
-  };
-}
+export default defineConfig({
+  collections: [{
+    slug: "posts",
+    admin: {
+      // Safely resolves slug and maps 'home' to '/'
+      previewUrl: "slug ? (slug == 'home' ? '/' : '/' + slug) : null",
+    }
+  }]
+})
 ```
 
-If `previewUrl` returns `null` or `undefined`, the preview pane is hidden.
+#### Example 2: JavaScript Function (Local only)
+```ts
+export default defineConfig({
+  collections: [{
+    slug: "posts",
+    admin: {
+      previewUrl: (doc, { locale }) => {
+        if (!doc?.slug) return null;
+        return `https://mysite.com/posts/${doc.slug}`;
+      }
+    }
+  }]
+})
+```
+
+If `previewUrl` evaluates to `null` or `undefined`, the preview pane is hidden.
 
 ---
 

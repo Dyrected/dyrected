@@ -1,0 +1,12 @@
+{
+  "title": "Next.js Quick Start",
+  "pages": [
+    "overview",
+    "setting-up-your-cloud-site",
+    "installing-dyrected",
+    "defining-a-schema",
+    "setting-up-initial-data",
+    "displaying-content-in-nextjs",
+    "inviting-editors"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Authentication",
+  "pages": [
+    "overview",
+    "operations",
+    "email-verification",
+    "jwt-strategy",
+    "cookie-strategy",
+    "api-key-strategy",
+    "custom-strategies",
+    "token-data"
+  ]
+}

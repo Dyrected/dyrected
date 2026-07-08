@@ -1,0 +1,11 @@
+{
+  "title": "React.js Quick Start",
+  "pages": [
+    "setting-up-your-cloud-site",
+    "installing-dyrected",
+    "defining-a-schema",
+    "setting-up-initial-data",
+    "displaying-content-in-react",
+    "inviting-editors"
+  ]
+}

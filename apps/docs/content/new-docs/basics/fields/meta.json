@@ -1,0 +1,28 @@
+{
+  "title": "Fields",
+  "pages": [
+    "overview",
+    "array",
+    "blocks",
+    "checkbox",
+    "json",
+    "code",
+    "collapsible",
+    "date",
+    "email",
+    "group",
+    "number",
+    "point",
+    "radio-group",
+    "relationship",
+    "rich-text",
+    "join",
+    "row",
+    "select",
+    "tabs",
+    "text",
+    "textarea",
+    "ui",
+    "upload"
+  ]
+}

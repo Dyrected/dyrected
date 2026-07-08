@@ -1,0 +1,16 @@
+{
+  "title": "Features",
+  "pages": [
+    "admin",
+    "custom-components",
+    "authentication",
+    "rich-text",
+    "live-preview",
+    "versions",
+    "upload",
+    "folders",
+    "email",
+    "troubleshooting",
+    "typescript"
+  ]
+}

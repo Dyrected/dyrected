@@ -1,0 +1,11 @@
+{
+  "title": "Configuration",
+  "pages": [
+    "overview",
+    "collections",
+    "globals",
+    "i18n",
+    "localization",
+    "environment-variables"
+  ]
+}

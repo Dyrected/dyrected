@@ -1,0 +1,13 @@
+{
+  "title": "Custom Components",
+  "pages": [
+    "overview",
+    "root-components",
+    "custom-providers",
+    "customizing-views",
+    "dashboard",
+    "document-views",
+    "edit-view",
+    "list-view"
+  ]
+}

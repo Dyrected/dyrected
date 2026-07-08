@@ -104,7 +104,9 @@ export default defineConfig({
         // Point this at the page's REAL URL — the same route serves the public
         // page and the preview. A separate /preview route is optional (see the
         // callout in step 3), not required.
-        previewUrl: (doc) => (doc?.slug ? `${process.env.SITE_URL}/${doc.slug}` : null),
+        // We use a Jexl string instead of a function here because Dyrected Cloud Sync 
+        // stringifies configurations. (https://github.com/TomFrost/Jexl)
+        previewUrl: "slug ? siteUrl + '/' + slug : null",
         previewMode: "postMessage", // default
       },
       fields: [

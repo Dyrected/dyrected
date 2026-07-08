@@ -1,0 +1,14 @@
+{
+  "title": "Admin",
+  "pages": [
+    "overview",
+    "preview",
+    "custom-admin-panel-location",
+    "document-locking",
+    "accessibility",
+    "react-hooks",
+    "customizing-css",
+    "preferences",
+    "metadata"
+  ]
+}

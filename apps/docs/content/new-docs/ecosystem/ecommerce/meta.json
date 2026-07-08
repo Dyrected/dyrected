@@ -1,0 +1,10 @@
+{
+  "title": "Ecommerce",
+  "pages": [
+    "overview",
+    "plugin",
+    "frontend",
+    "payment-adapters",
+    "advanced"
+  ]
+}

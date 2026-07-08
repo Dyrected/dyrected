@@ -1,0 +1,11 @@
+{
+  "title": "Docs",
+  "pages": [
+    "basics",
+    "quick-start-guides",
+    "managing-data",
+    "features",
+    "ecosystem",
+    "deployment"
+  ]
+}

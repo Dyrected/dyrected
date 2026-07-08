@@ -1,0 +1,10 @@
+{
+  "title": "Quick Start Guides",
+  "pages": [
+    "coding-agents-and-ai-app-builders",
+    "nextjs-quick-start",
+    "nuxtjs-quick-start",
+    "vuejs-quick-start",
+    "reactjs-quick-start"
+  ]
+}

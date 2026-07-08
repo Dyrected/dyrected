@@ -1,0 +1,18 @@
+{
+  "title": "Plugins",
+  "pages": [
+    "overview",
+    "build-your-own",
+    "advanced-plugin-api",
+    "form-builder",
+    "import-export",
+    "mcp",
+    "multi-tenant",
+    "nested-docs",
+    "redirects",
+    "search",
+    "sentry",
+    "seo",
+    "stripe"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Basics",
+  "pages": [
+    "getting-started",
+    "configuration",
+    "database",
+    "fields",
+    "access-control",
+    "hooks"
+  ]
+}

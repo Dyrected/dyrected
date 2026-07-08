@@ -13,6 +13,7 @@ import { CopyPromptButton } from '@/components/copy-prompt-button'
 import { SetupWizard } from '@/components/setup-wizard'
 import { Note, Warning } from '@/components/callouts'
 import { Mermaid } from '@/components/mermaid'
+import { SafeScriptTag } from '@/components/safe-script-tag'
 import { source } from '@/app/source'
 
 interface Props {
@@ -61,6 +62,7 @@ export default async function Page({ params }: Props) {
             Note,
             Warning,
             Mermaid,
+            script: SafeScriptTag,
           }}
         />
       </DocsBody>
