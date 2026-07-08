@@ -94,6 +94,18 @@ function validateRecipeSource(directory, source) {
     return undefined;
   };
 
+  // Matches the field builder helpers: `defineField` and every `define<Type>Field`
+  // (e.g. defineTextField, defineRichTextField). Excludes `defineBlock`, which
+  // is keyed on `slug` rather than `name`/`label`.
+  const isFieldDefinerName = (name) => /^define(?:[A-Z][A-Za-z]*)?Field$/.test(name);
+
+  const requireLabel = (node) => {
+    const position = file.getLineAndCharacterOfPosition(node.getStart(file));
+    throw new Error(
+      `${directory}/recipe.ts:${position.line + 1} every named Dyrected field must define an explicit label`,
+    );
+  };
+
   const visit = (node) => {
     if (ts.isObjectLiteralExpression(node)) {
       const properties = new Map(
@@ -104,12 +116,25 @@ function validateRecipeSource(directory, source) {
         properties.has("type") &&
         !properties.has("label")
       ) {
-        const position = file.getLineAndCharacterOfPosition(
-          node.getStart(file),
+        requireLabel(node);
+      }
+    }
+    // Fields authored with a `define<Type>Field(...)` helper carry no `type`
+    // property (the helper injects it), so inspect the helper's config object
+    // directly to keep the explicit-label rule enforced.
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      isFieldDefinerName(node.expression.text)
+    ) {
+      const [config] = node.arguments;
+      if (config && ts.isObjectLiteralExpression(config)) {
+        const properties = new Map(
+          config.properties.map((property) => [propertyName(property), property]),
         );
-        throw new Error(
-          `${directory}/recipe.ts:${position.line + 1} every named Dyrected field must define an explicit label`,
-        );
+        if (properties.has("name") && !properties.has("label")) {
+          requireLabel(node);
+        }
       }
     }
     ts.forEachChild(node, visit);

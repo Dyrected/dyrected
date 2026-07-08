@@ -12,20 +12,19 @@ If you're coming from other tools, note there is no `index: true` field property
 On the SQL adapters (Postgres, SQLite, MySQL), set `promoted: true` on a field to lift it out of the JSON blob and into its own typed column:
 
 ```ts
-import { defineCollection } from '@dyrected/core'
+import { defineCollection, defineTextField, defineSelectField } from '@dyrected/core'
 
 export const Posts = defineCollection({
   slug: 'posts',
   fields: [
-    { name: 'title', type: 'text', label: 'Title', required: true },
-    {
+    defineTextField({ name: 'title', label: 'Title', required: true }),
+    defineTextField({
       name: 'slug',
-      type: 'text',
       label: 'Slug',
       unique: true,
       promoted: true,
-    },
-    { name: 'status', type: 'select', label: 'Status', options: ['draft', 'published'] },
+    }),
+    defineSelectField({ name: 'status', label: 'Status', options: ['draft', 'published'] }),
   ],
 })
 ```
@@ -49,7 +48,7 @@ Promotion gives the database a real column to work with, which is already a mean
 Mark a field with `unique: true` when its values should never repeat across a collection — a slug, an email, an external reference:
 
 ```ts
-{ name: 'slug', type: 'text', label: 'Slug', unique: true, promoted: true }
+defineTextField({ name: 'slug', label: 'Slug', unique: true, promoted: true })
 ```
 
 Here's the important part to understand: `unique: true` is a declaration of intent, not a database constraint. Dyrected does not create a unique index and does not reject a duplicate write on its own — this holds both self-hosted and on Dyrected Cloud. The admin panel shows a "Unique" badge next to the field as a hint, but it doesn't block duplicates either.

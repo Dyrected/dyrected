@@ -6,15 +6,14 @@ description: A single choice from a fixed set of options, shown as a dropdown.
 The select field lets editors pick one value from a fixed list of options, shown as a dropdown. Use it for statuses, categories, and other closed sets of choices. For a small set you want visible at a glance, consider a [Radio Group](/new-docs/basics/fields/radio-group).
 
 ```ts
-{
+defineSelectField({
   name: 'status',
-  type: 'select',
   label: 'Status',
   options: [
     { label: 'Draft', value: 'draft' },
     { label: 'Published', value: 'published' },
   ],
-}
+})
 ```
 
 ## Generated reference

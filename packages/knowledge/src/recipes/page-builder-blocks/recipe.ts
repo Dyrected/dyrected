@@ -1,33 +1,31 @@
-import { defineCollection } from "@dyrected/core";
-import type { Block } from "@dyrected/core";
+import { defineBlock, defineBlocksField, defineCollection, defineTextField, defineTextareaField, defineUrlField } from "@dyrected/core";
 
-export const HeroBlock = {
+export const HeroBlock = defineBlock({
   slug: "hero",
   labels: { singular: "Hero", plural: "Heroes" },
   fields: [
-    { name: "heading", type: "text", label: "Heading", required: true },
-    { name: "body", type: "textarea", label: "Body" },
+    defineTextField({ name: "heading", label: "Heading", required: true }),
+    defineTextareaField({ name: "body", label: "Body" }),
   ],
-} satisfies Block;
+});
 
-export const CallToActionBlock = {
+export const CallToActionBlock = defineBlock({
   slug: "callToAction",
   labels: { singular: "Call to action", plural: "Calls to action" },
   fields: [
-    { name: "label", type: "text", label: "Link label", required: true },
-    { name: "url", type: "url", label: "URL", required: true },
+    defineTextField({ name: "label", label: "Link label", required: true }),
+    defineUrlField({ name: "url", label: "URL", required: true }),
   ],
-} satisfies Block;
+});
 
 export const Pages = defineCollection({
   slug: "pages",
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineBlocksField({
       name: "layout",
-      type: "blocks",
       label: "Page layout",
       blocks: [HeroBlock, CallToActionBlock],
-    },
+    }),
   ],
 });

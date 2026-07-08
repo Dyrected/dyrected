@@ -12,15 +12,15 @@ Use workflows when content needs review, staged publishing, or an audit trail of
 Attach a `workflow` to a collection. Dyrected ships a ready-made publishing workflow, and you can define your own states, transitions, and roles.
 
 ```ts
-import { defineCollection } from '@dyrected/core'
+import { defineCollection, defineTextField, defineRichTextField } from '@dyrected/core'
 import { publishingWorkflow } from '@dyrected/core'
 
 export const Posts = defineCollection({
   slug: 'posts',
   workflow: publishingWorkflow,
   fields: [
-    { name: 'title', type: 'text', label: 'Title', required: true },
-    { name: 'body', type: 'richText', label: 'Body' },
+    defineTextField({ name: 'title', label: 'Title', required: true }),
+    defineRichTextField({ name: 'body', label: 'Body' }),
   ],
 })
 ```

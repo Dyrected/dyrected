@@ -12,14 +12,14 @@ Typical globals include site settings, navigation, footer content, legal copy, a
 A global is a single document identified by a slug. Editors open it directly and update the current value instead of creating multiple records.
 
 ```ts
-import { defineGlobal } from "@dyrected/core";
+import { defineGlobal, defineTextField } from "@dyrected/core";
 
 export const SiteSettings = defineGlobal({
   slug: "site-settings",
   label: "Site settings",
   fields: [
-    { name: "siteName", type: "text", label: "Site name", required: true },
-    { name: "tagline", type: "text", label: "Tagline", defaultValue: "" },
+    defineTextField({ name: "siteName", label: "Site name", required: true }),
+    defineTextField({ name: "tagline", label: "Tagline", defaultValue: "" }),
   ],
 });
 ```
@@ -83,14 +83,14 @@ Reach for this whenever a global holds settings only certain roles should touch,
 Use `hooks` when changing a global should do something beyond saving the value. The most common case is refreshing cached pages after site settings change, in an `afterChange` hook:
 
 ```ts
-import { defineGlobal } from "@dyrected/core";
+import { defineGlobal, defineTextField } from "@dyrected/core";
 
 export const SiteSettings = defineGlobal({
   slug: "site-settings",
   label: "Site settings",
   fields: [
-    { name: "siteName", type: "text", label: "Site name", required: true },
-    { name: "tagline", type: "text", label: "Tagline", defaultValue: "" },
+    defineTextField({ name: "siteName", label: "Site name", required: true }),
+    defineTextField({ name: "tagline", label: "Tagline", defaultValue: "" }),
   ],
   hooks: {
     afterChange: [({ doc }) => revalidateTag("site-settings")],
@@ -105,14 +105,14 @@ Globals support `beforeRead`, `afterRead`, `beforeChange`, and `afterChange`. Th
 `initialData` gives the global a starting value the first time it is fetched and found empty. Use it so a fresh project opens with sensible defaults instead of a blank form:
 
 ```ts
-import { defineGlobal } from "@dyrected/core";
+import { defineGlobal, defineTextField } from "@dyrected/core";
 
 export const SiteSettings = defineGlobal({
   slug: "site-settings",
   label: "Site settings",
   fields: [
-    { name: "siteName", type: "text", label: "Site name", required: true },
-    { name: "tagline", type: "text", label: "Tagline", defaultValue: "" },
+    defineTextField({ name: "siteName", label: "Site name", required: true }),
+    defineTextField({ name: "tagline", label: "Tagline", defaultValue: "" }),
   ],
   initialData: {
     siteName: "My site",

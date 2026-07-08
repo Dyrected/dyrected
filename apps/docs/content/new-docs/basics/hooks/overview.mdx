@@ -18,11 +18,11 @@ Hooks are configured per collection, per global, and per field. Collection and g
 - `beforeDelete` and `afterDelete` bracket deletions (collections only).
 
 ```ts
-import { defineCollection } from '@dyrected/core'
+import { defineCollection, defineTextField } from '@dyrected/core'
 
 export const Posts = defineCollection({
   slug: 'posts',
-  fields: [{ name: 'title', type: 'text', label: 'Title' }],
+  fields: [defineTextField({ name: 'title', label: 'Title' })],
   hooks: {
     beforeChange: [({ data }) => ({ ...data, slug: slugify(data.title) })],
     afterChange: [({ doc }) => revalidateTag(`post-${doc.id}`)],

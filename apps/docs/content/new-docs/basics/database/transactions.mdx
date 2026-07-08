@@ -18,13 +18,13 @@ Because of this, workflows require a transaction-capable database adapter. Every
 The full database adapter is available in the write-side hooks — `afterChange`, `afterDelete`, and their global and workflow-transition equivalents — and it exposes a `transaction` method. Grouping writes is always explicit in Dyrected: there's no request-level transaction and no SDK transaction to reach for, so you call `db.transaction` at the point you need it. Pass it a callback; every operation you run on the adapter it hands back (`tx` below) is part of one atomic unit. Return normally to commit, or throw to roll everything back.
 
 ```ts
-import { defineCollection } from '@dyrected/core'
+import { defineCollection, defineTextField, defineSelectField } from '@dyrected/core'
 
 export const Posts = defineCollection({
   slug: 'posts',
   fields: [
-    { name: 'title', type: 'text', label: 'Title', required: true },
-    { name: 'status', type: 'select', label: 'Status', options: ['draft', 'published'] },
+    defineTextField({ name: 'title', label: 'Title', required: true }),
+    defineSelectField({ name: 'status', label: 'Status', options: ['draft', 'published'] }),
   ],
   hooks: {
     afterChange: [

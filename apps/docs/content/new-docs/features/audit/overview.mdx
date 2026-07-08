@@ -12,14 +12,14 @@ Use it on collections where changes need accountability, such as content that go
 Set `audit: true` on any collection. That is all it takes — Dyrected handles the logging for you.
 
 ```ts
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField } from "@dyrected/core";
 
 export const Orders = defineCollection({
   slug: "orders",
   audit: true,
   fields: [
-    { name: "reference", type: "text", label: "Reference", required: true },
-    { name: "status", type: "text", label: "Status", required: true },
+    defineTextField({ name: "reference", label: "Reference", required: true }),
+    defineTextField({ name: "status", label: "Status", required: true }),
   ],
 });
 ```

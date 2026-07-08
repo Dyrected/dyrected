@@ -1,4 +1,4 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField } from "@dyrected/core";
 
 export const toSlug = (value: unknown) =>
   String(value ?? "")
@@ -20,10 +20,9 @@ export const Posts = defineCollection({
     ],
   },
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({
       name: "slug",
-      type: "text",
       label: "Slug",
       required: true,
       unique: true,
@@ -33,6 +32,6 @@ export const Posts = defineCollection({
           onChange: ({ siblingData }) => toSlug(siblingData.title),
         },
       },
-    },
+    }),
   ],
 });

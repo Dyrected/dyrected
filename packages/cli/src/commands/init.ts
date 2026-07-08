@@ -348,7 +348,17 @@ After running init:
 }
 
 function buildDyrectedConfig(dbImport: string, storageImport: string, dbConfig: string, storageConfig: string): string {
-  return `import { defineCollection, defineGlobal, defineConfig } from '@dyrected/core'
+  return `import {
+  defineCollection,
+  defineGlobal,
+  defineConfig,
+  defineTextField,
+  defineTextareaField,
+  defineSelectField,
+  defineRichTextField,
+  defineRelationshipField,
+  defineArrayField,
+} from '@dyrected/core'
 ${dbImport}
 ${storageImport}
 
@@ -362,8 +372,8 @@ const Admins = defineCollection({
   auth: true,
   admin: { icon: 'Users', useAsTitle: 'name' },
   fields: [
-    { name: 'name', type: 'text', required: true },
-    { name: 'role', type: 'select', options: ['admin', 'editor'], defaultValue: 'admin' },
+    defineTextField({ name: 'name', required: true }),
+    defineSelectField({ name: 'roles', options: ['admin', 'editor'], defaultValue: 'admin' }),
   ],
 })
 
@@ -375,7 +385,7 @@ const Media = defineCollection({
   upload: true,
   admin: { icon: 'Image', useAsTitle: 'alt' },
   fields: [
-    { name: 'alt', type: 'text' },
+    defineTextField({ name: 'alt' }),
   ],
 })
 
@@ -390,10 +400,10 @@ const Pages = defineCollection({
     previewUrl: "slug == 'home' ? '/' : '/' + slug",
   },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'slug', type: 'text', required: true },
-    { name: 'content', type: 'richText' },
-    { name: 'featuredImage', type: 'relationship', relationTo: 'media' },
+    defineTextField({ name: 'title', required: true }),
+    defineTextField({ name: 'slug', required: true }),
+    defineRichTextField({ name: 'content' }),
+    defineRelationshipField({ name: 'featuredImage', relationTo: 'media' }),
   ],
 })
 
@@ -402,9 +412,9 @@ const Posts = defineCollection({
   labels: { singular: 'Post', plural: 'Posts' },
   admin: { icon: 'Newspaper', useAsTitle: 'title' },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'content', type: 'richText' },
-    { name: 'featuredImage', type: 'relationship', relationTo: 'media' },
+    defineTextField({ name: 'title', required: true }),
+    defineRichTextField({ name: 'content' }),
+    defineRelationshipField({ name: 'featuredImage', relationTo: 'media' }),
   ],
 })
 
@@ -415,14 +425,13 @@ const Navigation = defineGlobal({
   label: 'Navigation',
   admin: { icon: 'Menu' },
   fields: [
-    {
+    defineArrayField({
       name: 'menuItems',
-      type: 'array',
       fields: [
-        { name: 'label', type: 'text' },
-        { name: 'link', type: 'relationship', relationTo: 'pages' },
+        defineTextField({ name: 'label' }),
+        defineRelationshipField({ name: 'link', relationTo: 'pages' }),
       ],
-    },
+    }),
   ],
 })
 
@@ -431,9 +440,9 @@ const Settings = defineGlobal({
   label: 'Site Settings',
   admin: { icon: 'Settings' },
   fields: [
-    { name: 'siteName', type: 'text' },
-    { name: 'logo', type: 'relationship', relationTo: 'media' },
-    { name: 'footerText', type: 'textarea' },
+    defineTextField({ name: 'siteName' }),
+    defineRelationshipField({ name: 'logo', relationTo: 'media' }),
+    defineTextareaField({ name: 'footerText' }),
   ],
 })
 

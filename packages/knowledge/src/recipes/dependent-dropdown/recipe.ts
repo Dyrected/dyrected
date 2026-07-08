@@ -1,21 +1,19 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineSelectField } from "@dyrected/core";
 
 export const Locations = defineCollection({
   slug: "locations",
   fields: [
-    {
+    defineSelectField({
       name: "country",
-      type: "select",
       label: "Country",
       required: true,
       options: [
         { label: "Nigeria", value: "ng" },
         { label: "United States", value: "us" },
       ],
-    },
-    {
+    }),
+    defineSelectField({
       name: "region",
-      type: "select",
       label: "State or region",
       required: true,
       options: [],
@@ -29,6 +27,6 @@ export const Locations = defineCollection({
           },
         },
       },
-    },
+    }),
   ],
 });

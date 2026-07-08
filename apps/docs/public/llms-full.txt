@@ -12253,10 +12253,9 @@ export const Posts = defineCollection({
     ],
   },
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({
       name: "slug",
-      type: "text",
       label: "Slug",
       required: true,
       unique: true,
@@ -12266,7 +12265,7 @@ export const Posts = defineCollection({
           onChange: ({ siblingData }) => toSlug(siblingData.title),
         },
       },
-    },
+    }),
   ],
 });
 ```
@@ -12317,13 +12316,12 @@ This is the canonical source compiled and behavior-tested by `@dyrected/knowledg
 export const Orders = defineCollection({
   slug: "orders",
   fields: [
-    { name: "couponCode", type: "text", label: "Coupon code" },
-    {
+    defineTextField({ name: "couponCode", label: "Coupon code" }),
+    defineNumberField({
       name: "discountPercent",
-      type: "number",
       label: "Discount percentage",
       admin: { condition: "couponCode != null && couponCode != ''" },
-    },
+    }),
   ],
 });
 ```
@@ -12396,19 +12394,17 @@ export const Events = defineCollection({
     ],
   },
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineDateTimeField({
       name: "startsAt",
-      type: "datetime",
       label: "Starts at",
       required: true,
-    },
-    {
+    }),
+    defineDateTimeField({
       name: "endsAt",
-      type: "datetime",
       label: "Ends at",
       required: true,
-    },
+    }),
   ],
 });
 ```
@@ -12457,19 +12453,17 @@ This is the canonical source compiled and behavior-tested by `@dyrected/knowledg
 export const Locations = defineCollection({
   slug: "locations",
   fields: [
-    {
+    defineSelectField({
       name: "country",
-      type: "select",
       label: "Country",
       required: true,
       options: [
         { label: "Nigeria", value: "ng" },
         { label: "United States", value: "us" },
       ],
-    },
-    {
+    }),
+    defineSelectField({
       name: "region",
-      type: "select",
       label: "State or region",
       required: true,
       options: [],
@@ -12483,7 +12477,7 @@ export const Locations = defineCollection({
           },
         },
       },
-    },
+    }),
   ],
 });
 ```
@@ -12530,8 +12524,8 @@ export const Posts = defineCollection({
   slug: "posts",
   workflow: publishingWorkflow(),
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    { name: "body", type: "richText", label: "Body", required: true },
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineRichTextField({ name: "body", label: "Body", required: true }),
   ],
 });
 ```
@@ -12629,15 +12623,14 @@ export const Projects = defineCollection({
     ],
   },
   fields: [
-    { name: "name", type: "text", label: "Project name", required: true },
-    {
+    defineTextField({ name: "name", label: "Project name", required: true }),
+    defineRelationshipField({
       name: "owner",
-      type: "relationship",
       label: "Owner",
       relationTo: "users",
       required: true,
       admin: { readOnly: true },
-    },
+    }),
   ],
 });
 ```
@@ -12684,35 +12677,33 @@ This is the canonical source compiled and behavior-tested by `@dyrected/knowledg
 ```ts
 
 
-
-export const HeroBlock = {
+export const HeroBlock = defineBlock({
   slug: "hero",
   labels: { singular: "Hero", plural: "Heroes" },
   fields: [
-    { name: "heading", type: "text", label: "Heading", required: true },
-    { name: "body", type: "textarea", label: "Body" },
+    defineTextField({ name: "heading", label: "Heading", required: true }),
+    defineTextareaField({ name: "body", label: "Body" }),
   ],
-} satisfies Block;
+});
 
-export const CallToActionBlock = {
+export const CallToActionBlock = defineBlock({
   slug: "callToAction",
   labels: { singular: "Call to action", plural: "Calls to action" },
   fields: [
-    { name: "label", type: "text", label: "Link label", required: true },
-    { name: "url", type: "url", label: "URL", required: true },
+    defineTextField({ name: "label", label: "Link label", required: true }),
+    defineUrlField({ name: "url", label: "URL", required: true }),
   ],
-} satisfies Block;
+});
 
 export const Pages = defineCollection({
   slug: "pages",
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineBlocksField({
       name: "layout",
-      type: "blocks",
       label: "Page layout",
       blocks: [HeroBlock, CallToActionBlock],
-    },
+    }),
   ],
 });
 ```
@@ -12762,29 +12753,27 @@ export const Users = defineCollection({
   slug: "users",
   auth: true,
   fields: [
-    { name: "name", type: "text", label: "Name", required: true },
-    {
+    defineTextField({ name: "name", label: "Name", required: true }),
+    defineJoinField({
       name: "posts",
-      type: "join",
       label: "Posts",
       collection: "posts",
       on: "author",
       limit: 20,
-    },
+    }),
   ],
 });
 
 export const Posts = defineCollection({
   slug: "posts",
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineRelationshipField({
       name: "author",
-      type: "relationship",
       label: "Author",
       relationTo: "users",
       required: true,
-    },
+    }),
   ],
 });
 ```
@@ -12838,7 +12827,7 @@ export const Articles = defineCollection({
     update: ({ user }) => user?.roles?.some((role) => role === "editor" || role === "admin") ?? false,
     delete: ({ user }) => user?.roles?.includes("admin") ?? false,
   },
-  fields: [{ name: "title", type: "text", label: "Title", required: true }],
+  fields: [defineTextField({ name: "title", label: "Title", required: true })],
 });
 ```
 
@@ -12886,14 +12875,13 @@ This is the canonical source compiled and behavior-tested by `@dyrected/knowledg
 export const Customers = defineCollection({
   slug: "customers",
   fields: [
-    {
+    defineTextField({
       name: "fullName",
-      type: "text",
       label: "Full name",
       renameTo: "name",
       defaultValue: "",
       required: true,
-    },
+    }),
   ],
 });
 ```
@@ -12946,8 +12934,8 @@ export const Media = defineCollection({
     maxFileSize: 10 * 1024 * 1024,
   },
   fields: [
-    { name: "alt", type: "text", label: "Alternative text", required: true },
-    { name: "caption", type: "textarea", label: "Caption" },
+    defineTextField({ name: "alt", label: "Alternative text", required: true }),
+    defineTextareaField({ name: "caption", label: "Caption" }),
   ],
 });
 ```

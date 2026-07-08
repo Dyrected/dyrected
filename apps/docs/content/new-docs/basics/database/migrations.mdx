@@ -23,19 +23,18 @@ Renaming a field is the classic risky change: the new name has no data, and the 
 Set the field's `name` to the **new** key, and point `renameTo` at the **previous** key it should fall back to:
 
 ```ts
-import { defineCollection } from '@dyrected/core'
+import { defineCollection, defineTextField } from '@dyrected/core'
 
 export const Customers = defineCollection({
   slug: 'customers',
   fields: [
-    {
+    defineTextField({
       name: 'fullName',
-      type: 'text',
       label: 'Full name',
       renameTo: 'name',
       defaultValue: '',
       required: true,
-    },
+    }),
   ],
 })
 ```
@@ -49,7 +48,7 @@ Keep `renameTo` until you've confirmed every production document has been writte
 `defaultValue` fills in a value when a document doesn't have one, which makes it the natural partner to a rename and a safe way to introduce a new required field:
 
 ```ts
-{ name: 'status', type: 'select', label: 'Status', options: ['draft', 'published'], defaultValue: 'draft' }
+defineSelectField({ name: 'status', label: 'Status', options: ['draft', 'published'], defaultValue: 'draft' })
 ```
 
 Some field types also fall back to a sensible empty value when nothing is set — booleans default to `false` and array fields default to an empty list — so existing documents read predictably even before they're rewritten.

@@ -1,4 +1,4 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineRelationshipField, defineTextField } from "@dyrected/core";
 
 export const Projects = defineCollection({
   slug: "projects",
@@ -18,14 +18,13 @@ export const Projects = defineCollection({
     ],
   },
   fields: [
-    { name: "name", type: "text", label: "Project name", required: true },
-    {
+    defineTextField({ name: "name", label: "Project name", required: true }),
+    defineRelationshipField({
       name: "owner",
-      type: "relationship",
       label: "Owner",
       relationTo: "users",
       required: true,
       admin: { readOnly: true },
-    },
+    }),
   ],
 });

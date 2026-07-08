@@ -6,23 +6,22 @@ description: Flexible content built from a controlled set of typed block variant
 The blocks field lets editors build content from a controlled set of block types, each with its own fields. It is how you model flexible page layouts while keeping the frontend on known structures: each row records its `blockType` plus that block's fields. Use it for landing pages, marketing pages, and structured articles.
 
 ```ts
-{
+defineBlocksField({
   name: 'sections',
-  type: 'blocks',
   label: 'Sections',
   blocks: [
-    {
+    defineBlock({
       slug: 'hero',
       labels: { singular: 'Hero', plural: 'Heroes' },
-      fields: [{ name: 'heading', type: 'text', label: 'Heading' }],
-    },
-    {
+      fields: [defineTextField({ name: 'heading', label: 'Heading' })],
+    }),
+    defineBlock({
       slug: 'richText',
       labels: { singular: 'Rich text', plural: 'Rich text' },
-      fields: [{ name: 'body', type: 'richText', label: 'Body' }],
-    },
+      fields: [defineRichTextField({ name: 'body', label: 'Body' })],
+    }),
   ],
-}
+})
 ```
 
 ## Generated reference

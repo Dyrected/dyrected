@@ -6,15 +6,14 @@ description: A nested object that groups related fields under a single key.
 The group field (type `object`) nests a set of fields under a single key, storing them as an embedded object on the document. Use it to keep related fields together — an address, an SEO block, or a set of dimensions — without creating a separate collection. Reach for a [Relationship](/new-docs/basics/fields/relationship) instead when the nested content needs its own lifecycle or reuse.
 
 ```ts
-{
+defineObjectField({
   name: 'seo',
-  type: 'object',
   label: 'SEO',
   fields: [
-    { name: 'title', type: 'text', label: 'Meta title' },
-    { name: 'description', type: 'textarea', label: 'Meta description' },
+    defineTextField({ name: 'title', label: 'Meta title' }),
+    defineTextareaField({ name: 'description', label: 'Meta description' }),
   ],
-}
+})
 ```
 
 ## Generated reference

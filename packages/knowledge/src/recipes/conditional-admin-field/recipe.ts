@@ -1,14 +1,13 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineNumberField, defineTextField } from "@dyrected/core";
 
 export const Orders = defineCollection({
   slug: "orders",
   fields: [
-    { name: "couponCode", type: "text", label: "Coupon code" },
-    {
+    defineTextField({ name: "couponCode", label: "Coupon code" }),
+    defineNumberField({
       name: "discountPercent",
-      type: "number",
       label: "Discount percentage",
       admin: { condition: "couponCode != null && couponCode != ''" },
-    },
+    }),
   ],
 });

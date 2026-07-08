@@ -14,7 +14,7 @@ This page is the main home for how collections work in Dyrected. It should expla
 A collection stores many documents under one slug. Each document gets its own `id`, and each document follows the same field definition.
 
 ```ts
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField } from "@dyrected/core";
 
 export const Posts = defineCollection({
   slug: "posts",
@@ -25,8 +25,8 @@ export const Posts = defineCollection({
     urlPattern: "/blog/{slug}",
   },
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    { name: "slug", type: "text", label: "Slug", unique: true },
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", unique: true }),
   ],
 });
 ```
@@ -483,14 +483,14 @@ Set `initialData` when a collection should start with a few records instead of e
 Because a collection holds many documents, `initialData` is an array, and each entry becomes one starter document:
 
 ```ts
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField } from "@dyrected/core";
 
 export const Categories = defineCollection({
   slug: "categories",
   labels: { singular: "Category", plural: "Categories" },
   fields: [
-    { name: "name", type: "text", label: "Name", required: true },
-    { name: "slug", type: "text", label: "Slug", required: true, unique: true },
+    defineTextField({ name: "name", label: "Name", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
   initialData: [
     { name: "News", slug: "news" },
@@ -545,7 +545,7 @@ previewUrl: "slug == 'home' ? '/' : '/' + slug";
 Here is a typical blog-style example using Jexl:
 
 ```ts
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField } from "@dyrected/core";
 
 export const Posts = defineCollection({
   slug: "posts",
@@ -555,8 +555,8 @@ export const Posts = defineCollection({
     urlPattern: "/blog/{slug}",
   },
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    { name: "slug", type: "text", label: "Slug", required: true, unique: true },
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
 ```

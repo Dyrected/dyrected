@@ -52,7 +52,6 @@ These pages cover the parts of database behavior that come up as your project gr
 - [Indexes](/new-docs/basics/database/indexes) — promoting the fields you query for speed, and how uniqueness fits in.
 
 {/* GENERATED:REFERENCE-DATABASE-ADAPTERS:START */}
-
 ## DatabaseAdapter
 
 The interface every database adapter must implement.
@@ -110,18 +109,19 @@ export interface DatabaseAdapter {
 }
 ```
 
-| Option                               | Description                                                                                                                                                                                                  |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <code>find</code> (optional)         | Find a paginated list of documents in a collection.                                                                                                                                                          |
-| <code>findOne</code> (required)      | Find a single document by its ID. Returns &#96;null&#96; if not found.                                                                                                                                       |
-| <code>create</code> (required)       | Insert a new document and return it with its generated &#96;id&#96;.                                                                                                                                         |
-| <code>update</code> (required)       | Update a document by ID and return the updated document.                                                                                                                                                     |
-| <code>delete</code> (required)       | Delete a document by ID. Return value is intentionally untyped — callers do not use it.                                                                                                                      |
-| <code>getGlobal</code> (required)    | Fetch the singleton document for a global. Returns an empty object if not yet initialised.                                                                                                                   |
-| <code>updateGlobal</code> (required) | Create or replace the singleton document for a global.                                                                                                                                                       |
-| <code>sync</code> (required)         | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
-| <code>execute</code> (optional)      | Execute a raw SQL query or database command. Optional — not all adapters support raw access.                                                                                                                 |
-| <code>transaction</code> (required)  | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it.                                                                |
+| Option | Description |
+| --- | --- |
+| <code>find</code> (optional) | Find a paginated list of documents in a collection. |
+| <code>findOne</code> (required) | Find a single document by its ID. Returns &#96;null&#96; if not found. |
+| <code>create</code> (required) | Insert a new document and return it with its generated &#96;id&#96;. |
+| <code>update</code> (required) | Update a document by ID and return the updated document. |
+| <code>delete</code> (required) | Delete a document by ID. Return value is intentionally untyped — callers do not use it. |
+| <code>getGlobal</code> (required) | Fetch the singleton document for a global. Returns an empty object if not yet initialised. |
+| <code>updateGlobal</code> (required) | Create or replace the singleton document for a global. |
+| <code>sync</code> (required) | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
+| <code>execute</code> (optional) | Execute a raw SQL query or database command. Optional — not all adapters support raw access. |
+| <code>transaction</code> (required) | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it. |
+
 
 ## PaginatedResult
 
@@ -146,15 +146,16 @@ export interface PaginatedResult<T = Record<string, any>> {
 }
 ```
 
-| Option                              | Description                                                      |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| <code>docs</code> (required)        | The documents on the current page.                               |
-| <code>total</code> (required)       | Total number of documents matching the query (across all pages). |
-| <code>limit</code> (required)       | Maximum number of documents per page as requested.               |
-| <code>page</code> (required)        | The current page number (1-indexed).                             |
-| <code>totalPages</code> (required)  | Total number of pages given the current &#96;limit&#96;.         |
-| <code>hasNextPage</code> (required) | Whether a next page exists.                                      |
-| <code>hasPrevPage</code> (required) | Whether a previous page exists.                                  |
+| Option | Description |
+| --- | --- |
+| <code>docs</code> (required) | The documents on the current page. |
+| <code>total</code> (required) | Total number of documents matching the query (across all pages). |
+| <code>limit</code> (required) | Maximum number of documents per page as requested. |
+| <code>page</code> (required) | The current page number (1-indexed). |
+| <code>totalPages</code> (required) | Total number of pages given the current &#96;limit&#96;. |
+| <code>hasNextPage</code> (required) | Whether a next page exists. |
+| <code>hasPrevPage</code> (required) | Whether a previous page exists. |
+
 
 ## ReadonlyDatabaseAdapter
 
@@ -163,5 +164,4 @@ Exported type from @dyrected/core.
 ```ts
 export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal">;
 ```
-
 {/* GENERATED:REFERENCE-DATABASE-ADAPTERS:END */}

@@ -1,4 +1,4 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField, defineTextareaField } from "@dyrected/core";
 
 export const Media = defineCollection({
   slug: "media",
@@ -7,7 +7,7 @@ export const Media = defineCollection({
     maxFileSize: 10 * 1024 * 1024,
   },
   fields: [
-    { name: "alt", type: "text", label: "Alternative text", required: true },
-    { name: "caption", type: "textarea", label: "Caption" },
+    defineTextField({ name: "alt", label: "Alternative text", required: true }),
+    defineTextareaField({ name: "caption", label: "Caption" }),
   ],
 });

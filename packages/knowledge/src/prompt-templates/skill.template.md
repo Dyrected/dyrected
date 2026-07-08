@@ -45,7 +45,15 @@ Read `dyrected.config.ts`, the installed `@dyrected/core` version and its public
 Import public APIs from package entry points:
 
 ```ts
-import { defineCollection, defineConfig, defineGlobal } from "@dyrected/core";
+import {
+  defineCollection,
+  defineConfig,
+  defineGlobal,
+  defineTextField,
+  defineSelectField,
+  defineRelationshipField,
+  defineJoinField,
+} from "@dyrected/core";
 import { createClient, type InferSchema } from "@dyrected/sdk";
 ```
 
@@ -68,13 +76,12 @@ Never import from a monorepo source path such as `packages/core/src`. Verify the
 The current `name` is the new key and `renameTo` is the previous stored key:
 
 ```ts
-{
+defineTextField({
   name: "fullName",
-  type: "text",
   label: "Full name",
   renameTo: "name",
   defaultValue: "",
-}
+})
 ```
 
 Keep the fallback until production documents are migrated and verified. For relational adapters, test promoted or unique changes in staging before synchronization.
@@ -112,15 +119,14 @@ Do not convert authentication, validation, or network failures into empty succes
 `relationship` is the stored owning reference. `join` is a virtual reverse lookup.
 
 ```ts
-{ name: "author", type: "relationship", label: "Author", relationTo: "users" }
-{
+defineRelationshipField({ name: "author", label: "Author", relationTo: "users" })
+defineJoinField({
   name: "posts",
-  type: "join",
   label: "Posts",
   collection: "posts",
   on: "author",
   limit: 20,
-}
+})
 ```
 
 Use `depth: 0` for lightweight lists and increase depth only when related values are needed. Bound joins and account for their query cost.
@@ -134,13 +140,12 @@ export const Users = defineCollection({
   slug: "users",
   auth: true,
   fields: [
-    { name: "name", type: "text", label: "Name" },
-    {
+    defineTextField({ name: "name", label: "Name" }),
+    defineSelectField({
       name: "roles",
-      type: "select",
       label: "Role",
       options: ["member", "editor", "admin"],
-    },
+    }),
   ],
 });
 ```
@@ -157,7 +162,7 @@ export const Media = defineCollection({
     maxFileSize: 5_000_000,
   },
   fields: [
-    { name: "alt", type: "text", label: "Alternative text", required: true },
+    defineTextField({ name: "alt", label: "Alternative text", required: true }),
   ],
 });
 ```

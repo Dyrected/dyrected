@@ -1,15 +1,14 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField } from "@dyrected/core";
 
 export const Customers = defineCollection({
   slug: "customers",
   fields: [
-    {
+    defineTextField({
       name: "fullName",
-      type: "text",
       label: "Full name",
       renameTo: "name",
       defaultValue: "",
       required: true,
-    },
+    }),
   ],
 });

@@ -21,8 +21,8 @@ import type {
  * export const Posts = defineCollection({
  *   slug: 'posts',
  *   fields: [
- *     { name: 'title', type: 'text', required: true },
- *     { name: 'status', type: 'select', options: ['draft', 'published'], required: true },
+ *     defineTextField({ name: 'title', required: true }),
+ *     defineSelectField({ name: 'status', options: ['draft', 'published'], required: true }),
  *   ],
  *   hooks: {
  *     beforeChange: [({ data }) => {
@@ -77,8 +77,8 @@ export function defineCollection(config: unknown): unknown {
  * export const Settings = defineGlobal({
  *   slug: 'site-settings',
  *   fields: [
- *     { name: 'siteName', type: 'text', required: true },
- *     { name: 'maintenanceMode', type: 'boolean' },
+ *     defineTextField({ name: 'siteName', required: true }),
+ *     defineBooleanField({ name: 'maintenanceMode' }),
  *   ],
  *   hooks: {
  *     afterChange: [({ doc }) => {

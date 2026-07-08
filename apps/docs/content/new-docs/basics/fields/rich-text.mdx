@@ -6,7 +6,7 @@ description: A structured rich-text field that stores formatted content as JSON.
 The rich text field stores formatted content — headings, bold, links, lists, and embedded blocks — as structured JSON rather than an HTML string. Render it on your frontend with the Dyrected converters. Reach for it whenever content needs real formatting instead of plain text.
 
 ```ts
-{ name: 'body', type: 'richText', label: 'Body' }
+defineRichTextField({ name: 'body', label: 'Body' })
 ```
 
 ## Generated reference
@@ -19,6 +19,6 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 Exported type from @dyrected/core.
 
 ```ts
-export type RichTextField = TypedField<"richText", Record<string, unknown>>;
+export type RichTextField = TypedField<"richText", Record<string, unknown>> & RichTextFieldConfig;
 ```
 {/* GENERATED:REFERENCE-FIELD-RICH-TEXT:END */}

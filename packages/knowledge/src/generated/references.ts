@@ -1566,7 +1566,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type RichTextField = TypedField<\"richText\", Record<string, unknown>>;",
+    "signature": "export type RichTextField = TypedField<\"richText\", Record<string, unknown>> & RichTextFieldConfig;",
     "members": []
   },
   {

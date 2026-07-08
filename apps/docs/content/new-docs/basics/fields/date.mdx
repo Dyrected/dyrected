@@ -6,7 +6,7 @@ description: A field for dates and times, stored as an ISO string and shown with
 The date field stores a point in time and shows editors a date or date-and-time picker. Dates cross the API as ISO strings, so parse them at your application boundary when you need to do date arithmetic. Related `datetime` and `time` types cover finer-grained needs.
 
 ```ts
-{ name: 'publishedAt', type: 'date', label: 'Published at' }
+defineDateField({ name: 'publishedAt', label: 'Published at' })
 ```
 
 ## Generated reference

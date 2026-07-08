@@ -17,7 +17,7 @@
       "unique"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"slug\",\n      type: \"text\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange: ({ siblingData }) => toSlug(siblingData.title),\n        },\n      },\n    },\n  ],\n});",
+    "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({\n      name: \"slug\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange: ({ siblingData }) => toSlug(siblingData.title),\n        },\n      },\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/auto-slug"
   },
   {
@@ -37,7 +37,7 @@
       "conditional fields"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    { name: \"couponCode\", type: \"text\", label: \"Coupon code\" },\n    {\n      name: \"discountPercent\",\n      type: \"number\",\n      label: \"Discount percentage\",\n      admin: { condition: \"couponCode != null && couponCode != ''\" },\n    },\n  ],\n});",
+    "source": "import { defineCollection, defineNumberField, defineTextField } from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    defineTextField({ name: \"couponCode\", label: \"Coupon code\" }),\n    defineNumberField({\n      name: \"discountPercent\",\n      label: \"Discount percentage\",\n      admin: { condition: \"couponCode != null && couponCode != ''\" },\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/conditional-admin-field"
   },
   {
@@ -57,7 +57,7 @@
       "throw to abort"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Events = defineCollection({\n  slug: \"events\",\n  hooks: {\n    beforeChange: [\n      ({ data, doc }) => {\n        const startsAt = data.startsAt ?? doc?.startsAt;\n        const endsAt = data.endsAt ?? doc?.endsAt;\n\n        const start = startsAt ? new Date(startsAt) : undefined;\n        const end = endsAt ? new Date(endsAt) : undefined;\n\n        if (start && Number.isNaN(start.getTime())) {\n          throw new Error(\"The event start time must be a valid date.\");\n        }\n        if (end && Number.isNaN(end.getTime())) {\n          throw new Error(\"The event end time must be a valid date.\");\n        }\n        if (start && end && end <= start) {\n          throw new Error(\"The event end time must be after its start time.\");\n        }\n\n        return data;\n      },\n    ],\n  },\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"startsAt\",\n      type: \"datetime\",\n      label: \"Starts at\",\n      required: true,\n    },\n    {\n      name: \"endsAt\",\n      type: \"datetime\",\n      label: \"Ends at\",\n      required: true,\n    },\n  ],\n});",
+    "source": "import { defineCollection, defineDateTimeField, defineTextField } from \"@dyrected/core\";\n\nexport const Events = defineCollection({\n  slug: \"events\",\n  hooks: {\n    beforeChange: [\n      ({ data, doc }) => {\n        const startsAt = data.startsAt ?? doc?.startsAt;\n        const endsAt = data.endsAt ?? doc?.endsAt;\n\n        const start = startsAt ? new Date(startsAt) : undefined;\n        const end = endsAt ? new Date(endsAt) : undefined;\n\n        if (start && Number.isNaN(start.getTime())) {\n          throw new Error(\"The event start time must be a valid date.\");\n        }\n        if (end && Number.isNaN(end.getTime())) {\n          throw new Error(\"The event end time must be a valid date.\");\n        }\n        if (start && end && end <= start) {\n          throw new Error(\"The event end time must be after its start time.\");\n        }\n\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineDateTimeField({\n      name: \"startsAt\",\n      label: \"Starts at\",\n      required: true,\n    }),\n    defineDateTimeField({\n      name: \"endsAt\",\n      label: \"Ends at\",\n      required: true,\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/cross-field-validation"
   },
   {
@@ -77,7 +77,7 @@
       "siblingData"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Locations = defineCollection({\n  slug: \"locations\",\n  fields: [\n    {\n      name: \"country\",\n      type: \"select\",\n      label: \"Country\",\n      required: true,\n      options: [\n        { label: \"Nigeria\", value: \"ng\" },\n        { label: \"United States\", value: \"us\" },\n      ],\n    },\n    {\n      name: \"region\",\n      type: \"select\",\n      label: \"State or region\",\n      required: true,\n      options: [],\n      admin: {\n        hooks: {\n          options: ({ siblingData }) => {\n            if (siblingData.country === \"ng\") return [\"Lagos\", \"Abuja\", \"Oyo\"];\n            if (siblingData.country === \"us\")\n              return [\"California\", \"New York\", \"Texas\"];\n            return [];\n          },\n        },\n      },\n    },\n  ],\n});",
+    "source": "import { defineCollection, defineSelectField } from \"@dyrected/core\";\n\nexport const Locations = defineCollection({\n  slug: \"locations\",\n  fields: [\n    defineSelectField({\n      name: \"country\",\n      label: \"Country\",\n      required: true,\n      options: [\n        { label: \"Nigeria\", value: \"ng\" },\n        { label: \"United States\", value: \"us\" },\n      ],\n    }),\n    defineSelectField({\n      name: \"region\",\n      label: \"State or region\",\n      required: true,\n      options: [],\n      admin: {\n        hooks: {\n          options: ({ siblingData }) => {\n            if (siblingData.country === \"ng\") return [\"Lagos\", \"Abuja\", \"Oyo\"];\n            if (siblingData.country === \"us\")\n              return [\"California\", \"New York\", \"Texas\"];\n            return [];\n          },\n        },\n      },\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/dependent-dropdown"
   },
   {
@@ -97,7 +97,7 @@
       "capabilities"
     ],
     "requires": [],
-    "source": "import { defineCollection, publishingWorkflow } from \"@dyrected/core\";\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  workflow: publishingWorkflow(),\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    { name: \"body\", type: \"richText\", label: \"Body\", required: true },\n  ],\n});",
+    "source": "import { defineCollection, defineRichTextField, defineTextField, publishingWorkflow } from \"@dyrected/core\";\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  workflow: publishingWorkflow(),\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRichTextField({ name: \"body\", label: \"Body\", required: true }),\n  ],\n});",
     "docsPath": "/docs/recipes/editorial-publishing-workflow"
   },
   {
@@ -117,7 +117,7 @@
       "row-level access"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Projects = defineCollection({\n  slug: \"projects\",\n  access: {\n    read: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    create: ({ user }) => Boolean(user),\n    update: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    delete: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        if (!user) throw new Error(\"Authentication is required to create a project.\");\n        return { ...data, owner: user.sub };\n      },\n    ],\n  },\n  fields: [\n    { name: \"name\", type: \"text\", label: \"Project name\", required: true },\n    {\n      name: \"owner\",\n      type: \"relationship\",\n      label: \"Owner\",\n      relationTo: \"users\",\n      required: true,\n      admin: { readOnly: true },\n    },\n  ],\n});",
+    "source": "import { defineCollection, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Projects = defineCollection({\n  slug: \"projects\",\n  access: {\n    read: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    create: ({ user }) => Boolean(user),\n    update: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    delete: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        if (!user) throw new Error(\"Authentication is required to create a project.\");\n        return { ...data, owner: user.sub };\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"name\", label: \"Project name\", required: true }),\n    defineRelationshipField({\n      name: \"owner\",\n      label: \"Owner\",\n      relationTo: \"users\",\n      required: true,\n      admin: { readOnly: true },\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/owner-scoped-access"
   },
   {
@@ -137,7 +137,7 @@
       "content modeling"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\nimport type { Block } from \"@dyrected/core\";\n\nexport const HeroBlock = {\n  slug: \"hero\",\n  labels: { singular: \"Hero\", plural: \"Heroes\" },\n  fields: [\n    { name: \"heading\", type: \"text\", label: \"Heading\", required: true },\n    { name: \"body\", type: \"textarea\", label: \"Body\" },\n  ],\n} satisfies Block;\n\nexport const CallToActionBlock = {\n  slug: \"callToAction\",\n  labels: { singular: \"Call to action\", plural: \"Calls to action\" },\n  fields: [\n    { name: \"label\", type: \"text\", label: \"Link label\", required: true },\n    { name: \"url\", type: \"url\", label: \"URL\", required: true },\n  ],\n} satisfies Block;\n\nexport const Pages = defineCollection({\n  slug: \"pages\",\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"layout\",\n      type: \"blocks\",\n      label: \"Page layout\",\n      blocks: [HeroBlock, CallToActionBlock],\n    },\n  ],\n});",
+    "source": "import { defineBlock, defineBlocksField, defineCollection, defineTextField, defineTextareaField, defineUrlField } from \"@dyrected/core\";\n\nexport const HeroBlock = defineBlock({\n  slug: \"hero\",\n  labels: { singular: \"Hero\", plural: \"Heroes\" },\n  fields: [\n    defineTextField({ name: \"heading\", label: \"Heading\", required: true }),\n    defineTextareaField({ name: \"body\", label: \"Body\" }),\n  ],\n});\n\nexport const CallToActionBlock = defineBlock({\n  slug: \"callToAction\",\n  labels: { singular: \"Call to action\", plural: \"Calls to action\" },\n  fields: [\n    defineTextField({ name: \"label\", label: \"Link label\", required: true }),\n    defineUrlField({ name: \"url\", label: \"URL\", required: true }),\n  ],\n});\n\nexport const Pages = defineCollection({\n  slug: \"pages\",\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineBlocksField({\n      name: \"layout\",\n      label: \"Page layout\",\n      blocks: [HeroBlock, CallToActionBlock],\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/page-builder-blocks"
   },
   {
@@ -158,7 +158,7 @@
       "depth"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Users = defineCollection({\n  slug: \"users\",\n  auth: true,\n  fields: [\n    { name: \"name\", type: \"text\", label: \"Name\", required: true },\n    {\n      name: \"posts\",\n      type: \"join\",\n      label: \"Posts\",\n      collection: \"posts\",\n      on: \"author\",\n      limit: 20,\n    },\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  fields: [\n    { name: \"title\", type: \"text\", label: \"Title\", required: true },\n    {\n      name: \"author\",\n      type: \"relationship\",\n      label: \"Author\",\n      relationTo: \"users\",\n      required: true,\n    },\n  ],\n});",
+    "source": "import { defineCollection, defineJoinField, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Users = defineCollection({\n  slug: \"users\",\n  auth: true,\n  fields: [\n    defineTextField({ name: \"name\", label: \"Name\", required: true }),\n    defineJoinField({\n      name: \"posts\",\n      label: \"Posts\",\n      collection: \"posts\",\n      on: \"author\",\n      limit: 20,\n    }),\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRelationshipField({\n      name: \"author\",\n      label: \"Author\",\n      relationTo: \"users\",\n      required: true,\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/relationship-and-reverse-join"
   },
   {
@@ -178,7 +178,7 @@
       "roles"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Articles = defineCollection({\n  slug: \"articles\",\n  access: {\n    read: () => true,\n    create: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    update: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    delete: ({ user }) => user?.roles?.includes(\"admin\") ?? false,\n  },\n  fields: [{ name: \"title\", type: \"text\", label: \"Title\", required: true }],\n});",
+    "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Articles = defineCollection({\n  slug: \"articles\",\n  access: {\n    read: () => true,\n    create: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    update: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    delete: ({ user }) => user?.roles?.includes(\"admin\") ?? false,\n  },\n  fields: [defineTextField({ name: \"title\", label: \"Title\", required: true })],\n});",
     "docsPath": "/docs/recipes/role-based-access"
   },
   {
@@ -198,7 +198,7 @@
       "schema evolution"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Customers = defineCollection({\n  slug: \"customers\",\n  fields: [\n    {\n      name: \"fullName\",\n      type: \"text\",\n      label: \"Full name\",\n      renameTo: \"name\",\n      defaultValue: \"\",\n      required: true,\n    },\n  ],\n});",
+    "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Customers = defineCollection({\n  slug: \"customers\",\n  fields: [\n    defineTextField({\n      name: \"fullName\",\n      label: \"Full name\",\n      renameTo: \"name\",\n      defaultValue: \"\",\n      required: true,\n    }),\n  ],\n});",
     "docsPath": "/docs/recipes/safe-field-rename"
   },
   {
@@ -218,7 +218,7 @@
       "media"
     ],
     "requires": [],
-    "source": "import { defineCollection } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n  },\n  fields: [\n    { name: \"alt\", type: \"text\", label: \"Alternative text\", required: true },\n    { name: \"caption\", type: \"textarea\", label: \"Caption\" },\n  ],\n});",
+    "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n  },\n  fields: [\n    defineTextField({ name: \"alt\", label: \"Alternative text\", required: true }),\n    defineTextareaField({ name: \"caption\", label: \"Caption\" }),\n  ],\n});",
     "docsPath": "/docs/recipes/upload-collection"
   }
 ]

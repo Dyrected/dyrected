@@ -6,15 +6,14 @@ description: A repeatable list where each row shares the same set of fields.
 The array field stores an ordered, repeatable list of rows, where every row has the same fields. Use it for lists of the same shape: gallery items, feature bullets, or link lists. When rows need to differ in shape, use [Blocks](/new-docs/basics/fields/blocks) instead.
 
 ```ts
-{
+defineArrayField({
   name: 'links',
-  type: 'array',
   label: 'Links',
   fields: [
-    { name: 'label', type: 'text', label: 'Label' },
-    { name: 'url', type: 'text', label: 'URL' },
+    defineTextField({ name: 'label', label: 'Label' }),
+    defineTextField({ name: 'url', label: 'URL' }),
   ],
-}
+})
 ```
 
 ## Generated reference

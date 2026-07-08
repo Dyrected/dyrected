@@ -1,4 +1,4 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineTextField } from "@dyrected/core";
 
 export const Articles = defineCollection({
   slug: "articles",
@@ -8,5 +8,5 @@ export const Articles = defineCollection({
     update: ({ user }) => user?.roles?.some((role) => role === "editor" || role === "admin") ?? false,
     delete: ({ user }) => user?.roles?.includes("admin") ?? false,
   },
-  fields: [{ name: "title", type: "text", label: "Title", required: true }],
+  fields: [defineTextField({ name: "title", label: "Title", required: true })],
 });

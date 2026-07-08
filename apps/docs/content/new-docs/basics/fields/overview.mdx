@@ -12,14 +12,14 @@ You will spend most of your modeling time here, so it helps to learn the shared 
 Every field is an object with at least a `type`. Named fields also carry a `name` that becomes the stored key, and a `label` that editors see in the admin UI.
 
 ```ts
-import { defineCollection } from '@dyrected/core'
+import { defineCollection, defineTextField, defineRichTextField, defineRelationshipField } from '@dyrected/core'
 
 export const Posts = defineCollection({
   slug: 'posts',
   fields: [
-    { name: 'title', type: 'text', label: 'Title', required: true },
-    { name: 'body', type: 'richText', label: 'Body' },
-    { name: 'author', type: 'relationship', label: 'Author', relationTo: 'users' },
+    defineTextField({ name: 'title', label: 'Title', required: true }),
+    defineRichTextField({ name: 'body', label: 'Body' }),
+    defineRelationshipField({ name: 'author', label: 'Author', relationTo: 'users' }),
   ],
 })
 ```

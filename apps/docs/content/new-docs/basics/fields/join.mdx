@@ -6,13 +6,12 @@ description: A virtual reverse relationship that surfaces documents pointing bac
 The join field is a virtual, read-only reverse lookup. It does not store data; instead it surfaces the documents in another collection whose relationship field points back at the current document. Use it to show a post's comments or an author's posts without maintaining the link on both sides.
 
 ```ts
-{
+defineJoinField({
   name: 'comments',
-  type: 'join',
   label: 'Comments',
   collection: 'comments',
   on: 'post',
-}
+})
 ```
 
 ## Generated reference

@@ -6,12 +6,11 @@ description: A reference to a document in an upload-enabled collection, such as 
 The upload field references a document in an upload-enabled collection, such as your media library. Use it for images, documents, and other files. The referenced document exposes a resolved `url` you consume directly rather than reconstructing storage paths. See [Storage Adapters](/new-docs/features/upload/storage-adapters) for where those files live.
 
 ```ts
-{
+defineImageField({
   name: 'coverImage',
-  type: 'image',
   label: 'Cover image',
   relationTo: 'media',
-}
+})
 ```
 
 ## Generated reference

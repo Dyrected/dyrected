@@ -1,4 +1,4 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineDateTimeField, defineTextField } from "@dyrected/core";
 
 export const Events = defineCollection({
   slug: "events",
@@ -26,18 +26,16 @@ export const Events = defineCollection({
     ],
   },
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineDateTimeField({
       name: "startsAt",
-      type: "datetime",
       label: "Starts at",
       required: true,
-    },
-    {
+    }),
+    defineDateTimeField({
       name: "endsAt",
-      type: "datetime",
       label: "Ends at",
       required: true,
-    },
+    }),
   ],
 });

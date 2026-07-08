@@ -26,18 +26,17 @@ Use a serializable Admin condition to reveal a field from the editor's current f
 This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
 
 ```ts
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineNumberField, defineTextField } from "@dyrected/core";
 
 export const Orders = defineCollection({
   slug: "orders",
   fields: [
-    { name: "couponCode", type: "text", label: "Coupon code" },
-    {
+    defineTextField({ name: "couponCode", label: "Coupon code" }),
+    defineNumberField({
       name: "discountPercent",
-      type: "number",
       label: "Discount percentage",
       admin: { condition: "couponCode != null && couponCode != ''" },
-    },
+    }),
   ],
 });
 ```

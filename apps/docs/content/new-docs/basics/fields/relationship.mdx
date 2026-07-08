@@ -6,12 +6,11 @@ description: A reference to one or more documents in another collection.
 The relationship field links a document to one or more documents in another collection. Use it for authors on a post, products in an order, or any connection between content types. Set `hasMany: true` for a list of references, and control how deeply related documents are hydrated with [depth](/new-docs/managing-data/sdk-api/depth).
 
 ```ts
-{
+defineRelationshipField({
   name: 'author',
-  type: 'relationship',
   label: 'Author',
   relationTo: 'users',
-}
+})
 ```
 
 ## Generated reference

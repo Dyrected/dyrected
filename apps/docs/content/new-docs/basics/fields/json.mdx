@@ -6,7 +6,7 @@ description: A field for arbitrary JSON values.
 The JSON field stores an arbitrary JSON value. Use it for structured data that does not fit the other field types, such as third-party payloads or configuration blobs. Prefer typed fields when you can, because JSON values are not validated against a schema.
 
 ```ts
-{ name: 'metadata', type: 'json', label: 'Metadata' }
+defineJsonField({ name: 'metadata', label: 'Metadata' })
 ```
 
 ## Generated reference

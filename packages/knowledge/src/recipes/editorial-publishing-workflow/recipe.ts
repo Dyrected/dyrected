@@ -1,10 +1,10 @@
-import { defineCollection, publishingWorkflow } from "@dyrected/core";
+import { defineCollection, defineRichTextField, defineTextField, publishingWorkflow } from "@dyrected/core";
 
 export const Posts = defineCollection({
   slug: "posts",
   workflow: publishingWorkflow(),
   fields: [
-    { name: "title", type: "text", label: "Title", required: true },
-    { name: "body", type: "richText", label: "Body", required: true },
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineRichTextField({ name: "body", label: "Body", required: true }),
   ],
 });

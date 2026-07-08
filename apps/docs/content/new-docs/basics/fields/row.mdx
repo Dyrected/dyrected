@@ -6,13 +6,12 @@ description: A layout-only field that arranges its child fields horizontally in 
 The row field is layout only. It groups its child fields onto a single horizontal row in the admin editor and writes their values at the parent level, so it changes presentation without adding a nesting key to your document. Use it to place related fields — like a first and last name — side by side.
 
 ```ts
-{
-  type: 'row',
+defineRowField({
   fields: [
-    { name: 'firstName', type: 'text', label: 'First name' },
-    { name: 'lastName', type: 'text', label: 'Last name' },
+    defineTextField({ name: 'firstName', label: 'First name' }),
+    defineTextField({ name: 'lastName', label: 'Last name' }),
   ],
-}
+})
 ```
 
 ## Generated reference
