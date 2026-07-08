@@ -1,3 +1,120 @@
 ---
 title: Collections
+description: Use collections for repeatable content such as posts, products, users, and submissions.
 ---
+
+Collections are the repeatable side of a Dyrected content model. Use them when you expect more than one document with the same shape, such as blog posts, products, authors, events, form submissions, or users.
+
+Each collection lives in your `dyrected.config.ts` and automatically shapes the admin UI, API routes, and SDK methods for that content type.
+
+This page is the main home for how collections work in Dyrected. It should explain the collection model in prose and also hold the generated `@dyrected/knowledge` reference material for the collection contract.
+
+## What a collection is
+
+A collection stores many documents under one slug. Each document gets its own `id`, and each document follows the same field definition.
+
+```ts
+import { defineCollection } from '@dyrected/core'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  labels: { singular: 'Post', plural: 'Posts' },
+  admin: {
+    useAsTitle: 'title',
+    defaultColumns: ['title', 'status', 'updatedAt'],
+    urlPattern: '/blog/{slug}',
+  },
+  fields: [
+    { name: 'title', type: 'text', label: 'Title', required: true },
+    { name: 'slug', type: 'text', label: 'Slug', unique: true },
+  ],
+})
+```
+
+In practice, the `slug` becomes a stable identifier for API paths, admin routes, and SDK calls.
+
+## What you get automatically
+
+When you define a collection, Dyrected generates the main content surfaces around it:
+
+- list, read, create, update, and delete collection endpoints
+- a generated admin list view and edit form
+- typed SDK access through `client.collection('slug')`
+- hooks and access points that run on the server
+
+Collections can also opt into behaviors such as authentication, uploads, workflows, and audit logging.
+
+## When to choose a collection
+
+Choose a collection when the answer to "how many of these exist?" is "more than one" or "probably more than one later."
+
+Common examples:
+
+- posts
+- products
+- pages
+- team members
+- FAQs
+- contact submissions
+- upload libraries
+
+If the content should exist once for the whole site, it likely belongs in a global instead.
+
+## Collection options
+
+### `slug`
+
+The slug is the collection identifier. It appears in API paths and becomes part of the persisted content contract, so treat slug changes as deliberate migrations.
+
+### `labels`
+
+Use `labels` to give editors clean singular and plural names in the admin UI.
+
+### `fields`
+
+The `fields` array defines the document shape. This is the main schema contract for the collection.
+
+### `blocks`
+
+When a collection needs flexible page-like content, you typically model that through a `blocks` field inside `fields`. In practice, blocks are how you define reusable page sections: each entry can choose from a set of approved section shapes while the frontend stays on known structures.
+
+### `admin`
+
+Use `admin` options to shape how the collection appears in the dashboard. Common options include:
+
+- `useAsTitle`
+- `defaultColumns`
+- `group`
+- `icon`
+- `hidden`
+- `filterable`
+- `previewUrl`
+- `previewMode`
+- `urlPattern`
+
+### `access`
+
+Collection access rules run on the server. They decide who can read, create, update, or delete documents.
+
+### `hooks`
+
+Hooks let you validate data, derive fields, trigger revalidation, or run other side effects before or after reads and writes.
+
+### `auth`
+
+Set `auth: true` when the collection should issue login and token flows for application users.
+
+### `upload`
+
+Set `upload: true` or pass an upload config when the collection should store files and expose upload fields such as `url` and `filename`.
+
+## Practical habits
+
+- Use explicit human-readable labels for named fields.
+- Set `admin.useAsTitle` to the field editors will recognize fastest.
+- Keep routable collections aligned with real frontend routes through `previewUrl` and `urlPattern`.
+- Treat field renames and slug changes as schema migrations, not cosmetic edits.
+
+## Relationship to the rest of the config
+
+Collections are one part of the root Dyrected config. Use [Globals](/new-docs/basics/configuration/globals) for singleton content, and use [Overview](/new-docs/basics/configuration/overview) for the top-level `dyrected.config.ts` picture.

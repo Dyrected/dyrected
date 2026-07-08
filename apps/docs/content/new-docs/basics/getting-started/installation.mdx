@@ -20,7 +20,9 @@ Next.js projects must use the **App Router**. Dyrected mounts its API as a route
 </Note>
 
 <Note>
-React and Vue apps install as a **frontend and admin that talk to a Dyrected backend** running elsewhere (Dyrected Cloud or a separate self-hosted deployment). They do not run the engine, database, or storage locally. Next.js and Nuxt can run the full backend inside your app.
+**Dyrected Cloud is the fastest way to go live** and works with every framework — it hosts the database, storage, and API for you, with no infrastructure to provision. See [Setting up your Cloud site](/new-docs/quick-start-guides/nextjs-quick-start/setting-up-your-cloud-site).
+
+**Next.js and Nuxt** can also self-host the full backend inside your app when you want full control — that is the path this page walks through. **React and Vue** are a frontend and admin only, so they always connect to a Dyrected Cloud backend.
 </Note>
 
 ## Quick install
@@ -66,7 +68,14 @@ npx dyrected init -y -f next -d postgres -s s3 -p admin
 
 ## What the CLI creates
 
-For a Next.js project, `init` writes these files (it detects a `src/` directory and adjusts the paths automatically):
+Every project gets the same three shared files: `.env` and `.env.example` (environment variable templates for your database, storage, and secrets) and `.dyrected/ai-rules.md`, which teaches AI coding agents how to work with Dyrected. `init` also drops pointer files for common agents (`AGENTS.md`, `CLAUDE.md`, Copilot, and Cursor) — commit these so agents follow the right patterns.
+
+The rest depends on your framework. `init` detects a `src/` directory and adjusts the paths automatically.
+
+<Tabs items={['Next.js', 'Nuxt', 'React', 'Vue']}>
+<Tab value="Next.js">
+
+Next.js runs the full backend inside your app, so `init` writes a config plus the API and admin routes. The Next.js **App Router** is required.
 
 <Files>
   <File name="dyrected.config.ts" />
@@ -79,27 +88,70 @@ For a Next.js project, `init` writes these files (it detects a `src/` directory 
     </Folder>
   </Folder>
   <File name="instrumentation.ts" />
-  <File name=".env.example" />
-  <File name=".env" />
-  <Folder name=".dyrected">
-    <File name="ai-rules.md" />
-  </Folder>
 </Files>
 
 - **`dyrected.config.ts`** — your content model plus database and storage settings (see below).
 - **`app/dyrected/[...route]/route.ts`** — the content API, served under `/dyrected`.
 - **`app/admin/page.tsx`** — the admin panel, served at the path you chose.
 - **`instrumentation.ts`** — logs the admin and API URLs to your console on server start.
-- **`.env.example` and `.env`** — environment variable templates for your database, storage, and secrets.
-- **`.dyrected/ai-rules.md`** — teaches AI coding agents how to work with Dyrected. `init` also drops pointer files for common agents (`AGENTS.md`, `CLAUDE.md`, Copilot, and Cursor). Commit these so agents follow the right patterns.
 
-<Note>
-Other frameworks differ slightly. **Nuxt** writes the admin page under `pages/admin/index.vue` and adds `@dyrected/nuxt` to your `nuxt.config.ts` modules. **React** and **Vue** write a single admin component and ask you to add a route for it in your router, and they read their connection settings from `VITE_DYRECTED_URL` and `VITE_DYRECTED_API_KEY`.
-</Note>
+Connection variables use the `NEXT_PUBLIC_DYRECTED_URL` and `NEXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `JWT_SECRET`, and `ENCRYPTION_KEY`.
+
+</Tab>
+<Tab value="Nuxt">
+
+Nuxt also runs the full backend inside your app, so `init` writes a config and the admin page, then registers the module.
+
+<Files>
+  <File name="dyrected.config.ts" />
+  <File name="nuxt.config.ts" />
+  <Folder name="pages" defaultOpen>
+    <Folder name="admin">
+      <File name="index.vue" />
+    </Folder>
+  </Folder>
+</Files>
+
+- **`dyrected.config.ts`** — your content model plus database and storage settings (see below).
+- **`pages/admin/index.vue`** — the admin panel (written under `app/pages/` if you use an `app/` directory).
+- **`nuxt.config.ts`** — `init` adds `@dyrected/nuxt` to your `modules`, which mounts the content API.
+
+Connection variables use the `NUXT_PUBLIC_DYRECTED_URL` and `NUXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `JWT_SECRET`, and `ENCRYPTION_KEY`.
+
+</Tab>
+<Tab value="React">
+
+React installs `@dyrected/react` only — it connects to a **Dyrected Cloud** backend, so there is **no local `dyrected.config.ts`**.
+
+<Files>
+  <File name="admin.tsx" />
+</Files>
+
+- **`admin.tsx`** — an admin component (written under `src/` when present). `init` does **not** register this route for you. You must add a router entry for `/admin` yourself and point it at this component before the admin is reachable.
+
+Connection settings come from Vite env vars: `VITE_DYRECTED_URL`, `VITE_DYRECTED_API_KEY`, and `VITE_DYRECTED_SITE_ID`.
+
+</Tab>
+<Tab value="Vue">
+
+Vue installs `@dyrected/vue` only — it connects to a **Dyrected Cloud** backend, so there is **no local `dyrected.config.ts`**.
+
+<Files>
+  <Folder name="views" defaultOpen>
+    <File name="AdminView.vue" />
+  </Folder>
+</Files>
+
+- **`views/AdminView.vue`** — an admin component (written under `src/` when present). `init` does **not** register this route for you. You must add a router entry for `/admin` yourself and point it at this view before the admin is reachable.
+
+Connection settings come from Vite env vars: `VITE_DYRECTED_URL`, `VITE_DYRECTED_API_KEY`, and `VITE_DYRECTED_SITE_ID`.
+
+</Tab>
+</Tabs>
 
 ## The generated config
 
-`dyrected.config.ts` is the source of truth for your CMS. With Quick Setup, the starter config wires SQLite and local storage and defines example collections and globals so you have something to see on first load:
+For Next.js and Nuxt projects, `dyrected.config.ts` is the source of truth for your CMS. (React and Vue apps connect to a Dyrected Cloud backend that owns this config.) With Quick Setup, the starter config wires SQLite and local storage and defines example collections and globals so you have something to see on first load:
 
 ```ts
 import { defineCollection, defineGlobal, defineConfig } from '@dyrected/core'

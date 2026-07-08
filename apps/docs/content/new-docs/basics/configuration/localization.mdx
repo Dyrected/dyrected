@@ -1,3 +1,30 @@
 ---
-title: Localization
+title: Localization (Coming Soon)
+description: Review status for multilingual content configuration in the current public Dyrected surface.
 ---
+
+This page is a review marker rather than a full guide. The current public Dyrected configuration surface does not document a top-level `localization` config equivalent to Payload's multilingual content configuration.
+
+## What is verified today
+
+- The public `DyrectedConfig` interface does not define a `localization` key.
+- The canonical docs under `apps/docs/content/docs/` do not currently describe locale-based content storage, locale fallback rules, or localized field behavior.
+- The current codebase shows a limited `locale` context in preview URL helpers, but that does not establish supported multilingual content storage or retrieval.
+
+## Why this page stays narrow
+
+Documenting localization as if it already exists would invent product behavior. For now, the safest review-ready state is to record the gap clearly and wait for one of these to exist:
+
+- public `@dyrected/core` types for multilingual content configuration
+- canonical docs describing locale definitions, default locale behavior, and API behavior
+- verified package-level support for localized fields or locale-aware documents
+
+## Review questions
+
+1. Does Dyrected currently support multilingual content in a public, documented way?
+2. If yes, which package and public config keys define it?
+3. What are the fallback and API rules that must be documented before this page becomes public?
+
+## Current status
+
+`ready-for-sme-review`

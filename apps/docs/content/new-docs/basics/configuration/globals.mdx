@@ -1,3 +1,99 @@
 ---
 title: Globals
+description: Use globals for singleton content such as site settings, navigation, footer content, and SEO defaults.
 ---
+
+Globals are the singleton side of a Dyrected content model. Use them when there should be one shared document instead of a list of entries.
+
+Typical globals include site settings, navigation, footer content, legal copy, announcement banners, and SEO defaults.
+
+## What a global is
+
+A global is a single document identified by a slug. Editors open it directly and update the current value instead of creating multiple records.
+
+```ts
+import { defineGlobal } from '@dyrected/core'
+
+export const SiteSettings = defineGlobal({
+  slug: 'site-settings',
+  label: 'Site settings',
+  fields: [
+    { name: 'siteName', type: 'text', label: 'Site name', required: true },
+    { name: 'tagline', type: 'text', label: 'Tagline', defaultValue: '' },
+  ],
+})
+```
+
+If a collection answers "many documents," a global answers "exactly one current document."
+
+## What you get automatically
+
+Defining a global gives you:
+
+- a generated admin edit view for that singleton
+- `GET` and `PATCH` global API operations
+- typed SDK access through `client.global('slug')`
+- global access rules and lifecycle hooks
+
+Globals do not create list views, pagination, or document deletion flows, because there is only one record to manage.
+
+## When to choose a global
+
+Choose a global when the content is shared across the whole site or application and should not branch into multiple entries.
+
+Common examples:
+
+- site settings
+- navigation
+- footer
+- announcement banner
+- SEO defaults
+- theme settings
+
+If editors should be able to create many entries of the same thing, use a collection instead.
+
+## Common global options
+
+### `slug`
+
+The slug identifies the global in the API, SDK, and admin routes.
+
+### `label`
+
+Use `label` to give the singleton a clear human-readable name in the dashboard.
+
+### `fields`
+
+The `fields` array defines the shape of the document editors can update.
+
+### `access`
+
+Global access rules control who can read or update the singleton.
+
+### `hooks`
+
+Use hooks when changing the global should trigger side effects, such as cache revalidation after a site-settings change.
+
+### `admin`
+
+Global admin options are smaller than collection admin options. The main controls are:
+
+- `icon`
+- `group`
+- `hidden`
+
+## A common pattern
+
+Many projects start with one or more globals for shared site chrome:
+
+- `site-settings` for the site name, logo, and metadata
+- `navigation` for header links
+- `footer` for shared footer links and legal copy
+
+That keeps shared content in one predictable place and avoids duplicating it across pages.
+
+## Related pages
+
+- See [Collections](/new-docs/basics/configuration/collections) for repeatable content.
+- See [Overview](/new-docs/basics/configuration/overview) for the full root config shape.
+- See [Environment Variables](/new-docs/basics/configuration/environment-variables) before wiring SDK access and secrets.

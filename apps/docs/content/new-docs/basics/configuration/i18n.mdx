@@ -1,3 +1,32 @@
 ---
-title: I18n
+title: I18n (Coming Soon)
+description: Review status for Dyrected admin interface translation support in the current public configuration surface.
 ---
+
+This page is intentionally narrow because the current public Dyrected configuration surface does not expose a documented top-level `i18n` setting equivalent to Payload's `i18n` config.
+
+Based on the current `@dyrected/core` public types, `DyrectedConfig` includes keys such as `collections`, `globals`, `db`, `storage`, `admin`, `adminAuth`, `email`, `redis`, `events`, `cors`, and `onSchemaFetch`, but not a root `i18n` option.
+
+## What is verified today
+
+- There is no documented top-level `i18n` key in the public `DyrectedConfig` interface.
+- The current configuration reference source under `apps/docs/content/docs/` does not define an admin-interface translation workflow.
+- The current package surface does include a narrow `locale` context in preview-related helpers, but that is not enough to document full admin interface internationalization.
+
+## What this means for docs
+
+This page should stay review-only until Dyrected publishes one of these:
+
+- a public `i18n` config contract in `@dyrected/core`
+- canonical docs describing supported admin translation behavior
+- framework-specific guidance for loading or selecting admin UI languages
+
+## Review questions
+
+1. Is admin interface translation support planned but not yet documented?
+2. If it exists internally, which package and public config key own it?
+3. Should this page remain unpublished until the feature contract is stable?
+
+## Current status
+
+`ready-for-sme-review`

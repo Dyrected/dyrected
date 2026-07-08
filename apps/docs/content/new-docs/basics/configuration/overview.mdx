@@ -1,3 +1,100 @@
 ---
 title: Overview
+description: Learn what lives in `dyrected.config.ts` and how the root config shapes your content model, admin, and runtime.
 ---
+
+Your `dyrected.config.ts` is the source of truth for a Dyrected project. It defines the content model, the admin shape, the infrastructure adapters, and the runtime rules Dyrected uses to generate APIs and editing surfaces.
+
+If you only remember one thing from this section, make it this: most Dyrected setup decisions flow from one typed config object.
+
+## What the config controls
+
+The root config brings together a few major areas:
+
+- `collections` for repeatable content
+- `globals` for singleton content
+- `db`, `storage`, and `image` for self-hosted infrastructure
+- `admin` and `adminAuth` for dashboard behavior
+- `email`, `redis`, `events`, and `cors` for runtime services
+
+In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
+
+## A minimal config
+
+Start with the smallest useful shape and grow from there:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { PostgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+})
+```
+
+This file is typed, so your editor can guide you while you add collections, globals, hooks, and admin options.
+
+As your project grows, you can keep collections and globals in separate files and import them into `dyrected.config.ts`. The root config stays the place where everything is assembled.
+
+## Collections and globals come first
+
+Most Dyrected projects begin by deciding what belongs in `collections` and what belongs in `globals`.
+
+- Use a collection when the content has many entries, like posts, products, users, or submissions.
+- Use a global when the content has one shared document, like navigation, site settings, or footer content.
+
+That content model then drives the generated admin UI, the REST API, and the SDK types.
+
+## Common top-level keys
+
+### `collections`
+
+Collections define repeatable documents with shared fields, hooks, access rules, and admin options.
+
+See [Collections](/new-docs/basics/configuration/collections).
+
+### `globals`
+
+Globals define singleton documents such as navigation, SEO defaults, or theme settings.
+
+See [Globals](/new-docs/basics/configuration/globals).
+
+### `db`
+
+The `db` key connects Dyrected to a database adapter in self-hosted projects. The adapter you choose depends on your deployment target and infrastructure.
+
+### `storage`
+
+Use `storage` when you have upload-enabled collections and need Dyrected to persist files.
+
+### `admin`
+
+The top-level `admin` config controls branding and metadata for the dashboard. Collection- and global-level `admin` options control sidebar behavior, labels, previews, and list presentation.
+
+### `adminAuth`
+
+Use `adminAuth` when you need to control how people log in to the dashboard itself. This is separate from collection-level `auth: true`, which powers application authentication.
+
+### `email`
+
+The `email` config wires transactional messages such as invites and password resets to your provider.
+
+### `cors`
+
+Use `cors` to allow browser requests from the origins that should be able to call your Dyrected API.
+
+## Practical rules
+
+- Keep collection slugs, global slugs, and persisted field names stable once content exists.
+- Keep provider credentials in environment variables, not in the config source.
+- Treat config changes like application changes, because they affect data shape, API behavior, and editor workflows.
+- Prefer small, reviewable config edits instead of large schema rewrites.
+
+## Where to go next
+
+- Read [Collections](/new-docs/basics/configuration/collections) when the content has many entries.
+- Read [Globals](/new-docs/basics/configuration/globals) when the content should exist once.
+- Read [Environment Variables](/new-docs/basics/configuration/environment-variables) before wiring secrets and framework-specific URLs.
+- Go back to [Concepts](/new-docs/basics/getting-started/concepts) if you want the high-level mental model first.

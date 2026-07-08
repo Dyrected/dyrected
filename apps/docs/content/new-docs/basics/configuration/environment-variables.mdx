@@ -1,3 +1,112 @@
 ---
 title: Environment Variables
+description: Configure Dyrected URLs, API keys, database connections, and other secrets through environment variables.
 ---
+
+Dyrected uses environment variables for URLs, API keys, database connections, JWT secrets, and provider credentials. Keep those values outside your config file so the same code can run safely across local, staging, and production environments.
+
+If you install with `npx dyrected init`, the CLI writes a `.env.example` for you. The exact variables depend on your framework and whether you are self-hosting or connecting to Dyrected Cloud.
+
+## Start with an env file
+
+In most projects, you define Dyrected variables in your framework's normal env file:
+
+- `.env` or `.env.local` for Next.js
+- `.env` for Nuxt
+- `.env` for other server or build setups
+
+The main rule is simple: public values can be prefixed for browser use, but secrets stay server-side.
+
+## Core categories
+
+### API base URL
+
+The base URL tells SDK and framework helpers where Dyrected is running.
+
+Common examples:
+
+- `NEXT_PUBLIC_DYRECTED_URL`
+- `NUXT_PUBLIC_DYRECTED_URL`
+- `DYRECTED_URL`
+
+In Next.js, `@dyrected/next` reads `NEXT_PUBLIC_DYRECTED_URL` and falls back to `DYRECTED_URL` or `http://localhost:3000`.
+
+In Nuxt, `@dyrected/nuxt` reads `NUXT_PUBLIC_DYRECTED_URL`.
+
+### API keys
+
+Dyrected uses API keys for authenticated SDK and HTTP access.
+
+Common examples:
+
+- `DYRECTED_API_KEY` for server-side use
+- `NEXT_PUBLIC_DYRECTED_API_KEY` for browser-safe reads when your access rules allow them
+- `NUXT_PUBLIC_DYRECTED_API_KEY` for Nuxt public runtime config
+
+Keep the server key private. Only expose a public key when the client-side read path actually needs one.
+
+### Site ID
+
+Cloud or multi-site setups may also require a site identifier:
+
+- `DYRECTED_SITE_ID`
+- `NEXT_PUBLIC_SITE_ID`
+- `NUXT_PUBLIC_DYRECTED_SITE_ID`
+
+Use the variable shape your integration expects.
+
+### Database and provider secrets
+
+Self-hosted projects also need infrastructure variables such as:
+
+- `DATABASE_URL`
+- `DYRECTED_JWT_SECRET`
+- storage provider credentials such as S3, B2, or Cloudinary keys
+- provider-specific secrets for email, revalidation, or admin SSO
+
+The exact list depends on your database adapter, storage adapter, and auth setup.
+
+## Next.js example
+
+```bash
+# .env.local
+DATABASE_URL=postgresql://user:pass@localhost:5432/mydb
+
+# Dyrected site URL
+NEXT_PUBLIC_DYRECTED_URL=http://localhost:3000
+
+# Server-side API key
+DYRECTED_API_KEY=sk_live_...
+
+# Optional browser-safe read key
+NEXT_PUBLIC_DYRECTED_API_KEY=pk_live_...
+
+# Optional site identifier
+NEXT_PUBLIC_SITE_ID=site_...
+```
+
+`DyrectedAdmin` can read the standard Next.js variables automatically, so you usually do not need to pass them manually unless you want to override the defaults.
+
+## Nuxt example
+
+```bash
+# .env
+NUXT_PUBLIC_DYRECTED_URL=https://api.dyrected.cloud
+NUXT_PUBLIC_DYRECTED_API_KEY=sk_live_...
+NUXT_PUBLIC_DYRECTED_SITE_ID=site_...
+```
+
+For self-hosted Nuxt projects, you also add your database and secret values in the same env file.
+
+## Practical rules
+
+- Keep secrets out of `dyrected.config.ts`.
+- Use framework-prefixed public variables only for values that must reach the browser.
+- Use server-only variables for API keys, JWT signing, database access, and provider credentials.
+- Update env values when you move between local and production environments instead of hardcoding environment-specific URLs in code.
+
+## Related pages
+
+- Read [Overview](/new-docs/basics/configuration/overview) for the root config shape.
+- Read [Collections](/new-docs/basics/configuration/collections) and [Globals](/new-docs/basics/configuration/globals) once your environment is in place.
+- Go back to [Installation](/new-docs/basics/getting-started/installation) if you want the CLI-generated setup path first.
