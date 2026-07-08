@@ -8,23 +8,26 @@ In a self-hosted Dyrected project, the database adapter is what connects your ap
 Dyrected ships official adapters, and the same adapter contract lets you support other databases.
 
 ```ts
-import { defineConfig } from '@dyrected/core'
-import { PostgresAdapter } from '@dyrected/db-postgres'
+import { defineConfig } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
 
 export default defineConfig({
-  db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
   collections: [],
   globals: [],
-})
+});
 ```
 
 ## Choosing an adapter
 
+Most of the choice comes down to relational versus document storage. The relational adapters store your documents in tables and are the common production choice; MongoDB stores them as native documents. All of them expose the same Dyrected features, so this is mainly a fit-and-hosting decision.
+
 Pick the adapter that matches your deployment target:
 
-- [Postgres](/new-docs/basics/database/postgres) for most relational deployments.
-- [SQLite](/new-docs/basics/database/sqlite) for local development and small single-node apps.
+- [Postgres](/new-docs/basics/database/postgres) for most relational deployments, and the recommended production default.
+- [SQLite](/new-docs/basics/database/sqlite) for local development and small single-server apps.
 - [MongoDB](/new-docs/basics/database/mongodb) for document-oriented storage.
+- [MySQL](/new-docs/basics/database/mysql) for MySQL deployments; it behaves like the Postgres adapter.
 
 Each adapter page covers connection setup and behavior specific to that database. This page describes the contract every adapter implements.
 
@@ -32,11 +35,24 @@ Each adapter page covers connection setup and behavior specific to that database
 
 An adapter is responsible for translating Dyrected's document operations — find, create, update, delete, and paginated queries — into the underlying database. Because they all implement the same contract, you can switch databases without changing your collections, fields, or application code.
 
-## Generated reference
+## How your data is stored
 
-The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so the adapter interfaces stay in sync with the package. Use them when writing a custom adapter or when you need the exact shape of a paginated result.
+You mostly don't need to think about the physical layout, but a quick mental model explains a lot of the behavior on the other pages in this section.
+
+On the relational adapters (Postgres, SQLite, MySQL), each collection is a table named `collection_<slug>`. A document is stored as one JSON column, `data`, alongside `id`, `created_at`, and `updated_at`. Because the body is JSON, you can filter and sort on any field without declaring it first. Fields you mark [`promoted`](/new-docs/basics/database/indexes) are also lifted into their own real columns for faster queries. Globals live in a small internal table.
+
+On MongoDB, documents are stored natively, so there are no tables to create and no columns to promote.
+
+## Behaviors worth knowing
+
+These pages cover the parts of database behavior that come up as your project grows:
+
+- [Migrations](/new-docs/basics/database/migrations) — how schema changes are applied, and how to rename fields safely.
+- [Transactions](/new-docs/basics/database/transactions) — grouping writes so they all commit or all roll back.
+- [Indexes](/new-docs/basics/database/indexes) — promoting the fields you query for speed, and how uniqueness fits in.
 
 {/* GENERATED:REFERENCE-DATABASE-ADAPTERS:START */}
+
 ## DatabaseAdapter
 
 The interface every database adapter must implement.
@@ -94,19 +110,18 @@ export interface DatabaseAdapter {
 }
 ```
 
-| Option | Description |
-| --- | --- |
-| <code>find</code> (optional) | Find a paginated list of documents in a collection. |
-| <code>findOne</code> (required) | Find a single document by its ID. Returns &#96;null&#96; if not found. |
-| <code>create</code> (required) | Insert a new document and return it with its generated &#96;id&#96;. |
-| <code>update</code> (required) | Update a document by ID and return the updated document. |
-| <code>delete</code> (required) | Delete a document by ID. Return value is intentionally untyped — callers do not use it. |
-| <code>getGlobal</code> (required) | Fetch the singleton document for a global. Returns an empty object if not yet initialised. |
-| <code>updateGlobal</code> (required) | Create or replace the singleton document for a global. |
-| <code>sync</code> (required) | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
-| <code>execute</code> (optional) | Execute a raw SQL query or database command. Optional — not all adapters support raw access. |
-| <code>transaction</code> (required) | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it. |
-
+| Option                               | Description                                                                                                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <code>find</code> (optional)         | Find a paginated list of documents in a collection.                                                                                                                                                          |
+| <code>findOne</code> (required)      | Find a single document by its ID. Returns &#96;null&#96; if not found.                                                                                                                                       |
+| <code>create</code> (required)       | Insert a new document and return it with its generated &#96;id&#96;.                                                                                                                                         |
+| <code>update</code> (required)       | Update a document by ID and return the updated document.                                                                                                                                                     |
+| <code>delete</code> (required)       | Delete a document by ID. Return value is intentionally untyped — callers do not use it.                                                                                                                      |
+| <code>getGlobal</code> (required)    | Fetch the singleton document for a global. Returns an empty object if not yet initialised.                                                                                                                   |
+| <code>updateGlobal</code> (required) | Create or replace the singleton document for a global.                                                                                                                                                       |
+| <code>sync</code> (required)         | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
+| <code>execute</code> (optional)      | Execute a raw SQL query or database command. Optional — not all adapters support raw access.                                                                                                                 |
+| <code>transaction</code> (required)  | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it.                                                                |
 
 ## PaginatedResult
 
@@ -131,16 +146,15 @@ export interface PaginatedResult<T = Record<string, any>> {
 }
 ```
 
-| Option | Description |
-| --- | --- |
-| <code>docs</code> (required) | The documents on the current page. |
-| <code>total</code> (required) | Total number of documents matching the query (across all pages). |
-| <code>limit</code> (required) | Maximum number of documents per page as requested. |
-| <code>page</code> (required) | The current page number (1-indexed). |
-| <code>totalPages</code> (required) | Total number of pages given the current &#96;limit&#96;. |
-| <code>hasNextPage</code> (required) | Whether a next page exists. |
-| <code>hasPrevPage</code> (required) | Whether a previous page exists. |
-
+| Option                              | Description                                                      |
+| ----------------------------------- | ---------------------------------------------------------------- |
+| <code>docs</code> (required)        | The documents on the current page.                               |
+| <code>total</code> (required)       | Total number of documents matching the query (across all pages). |
+| <code>limit</code> (required)       | Maximum number of documents per page as requested.               |
+| <code>page</code> (required)        | The current page number (1-indexed).                             |
+| <code>totalPages</code> (required)  | Total number of pages given the current &#96;limit&#96;.         |
+| <code>hasNextPage</code> (required) | Whether a next page exists.                                      |
+| <code>hasPrevPage</code> (required) | Whether a previous page exists.                                  |
 
 ## ReadonlyDatabaseAdapter
 
@@ -149,4 +163,5 @@ Exported type from @dyrected/core.
 ```ts
 export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal">;
 ```
+
 {/* GENERATED:REFERENCE-DATABASE-ADAPTERS:END */}

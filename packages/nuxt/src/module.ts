@@ -249,7 +249,8 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     // Combine baseUrl and apiBase if necessary
     const apiBase = options.apiBase || "/dyrected";
-    let baseUrl = process.env.NUXT_PUBLIC_DYRECTED_URL || options.baseUrl || apiBase;
+    let baseUrl =
+      process.env.NUXT_PUBLIC_DYRECTED_URL || process.env.DYRECTED_URL || options.baseUrl || apiBase;
 
     // If baseUrl is an absolute URL and doesn't already include apiBase, append it
     if (baseUrl.startsWith("http") && apiBase.startsWith("/") && !baseUrl.endsWith(apiBase)) {
@@ -259,8 +260,8 @@ export default defineNitroPlugin(async (nitroApp) => {
     // 5. Public config for client-side
     nuxt.options.runtimeConfig.public.dyrected = {
       baseUrl,
-      apiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY || options.apiKey || "local-dev",
-      siteId: process.env.NUXT_PUBLIC_DYRECTED_SITE_ID || options.siteId || "default",
+      apiKey: process.env.NUXT_PUBLIC_DYRECTED_API_KEY || process.env.DYRECTED_API_KEY || options.apiKey || "local-dev",
+      siteId: process.env.NUXT_PUBLIC_DYRECTED_SITE_ID || process.env.DYRECTED_SITE_ID || options.siteId || "default",
     };
 
     // 6. Ensure @dyrected/admin is resolved by Vite/Nuxt

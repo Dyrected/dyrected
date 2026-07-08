@@ -38,7 +38,7 @@ export function buildEnvTemplate(db: string, storage: string, framework: string)
           ? "mysql://user:pass@localhost:3306/dyrected"
           : "postgres://user:pass@localhost:5432/dyrected"
     }`,
-    `JWT_SECRET=change-me-32-characters-minimum`,
+    `DYRECTED_JWT_SECRET=change-me-32-characters-minimum`,
     `ENCRYPTION_KEY=change-me-aes-256-key`,
     ``,
   ];

@@ -5,7 +5,7 @@ import { TextEncoder } from 'node:util';
 
 export class PreviewController {
   private getSecret(): Uint8Array {
-    const secret = process.env.DYRECTED_JWT_SECRET || process.env.JWT_SECRET || 'dyrected-preview-secret-change-me';
+    const secret = process.env.DYRECTED_JWT_SECRET || 'dyrected-preview-secret-change-me';
     return new TextEncoder().encode(secret);
   }
 

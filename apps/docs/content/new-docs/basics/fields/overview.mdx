@@ -270,7 +270,7 @@ export interface FieldBase {
   };
   /** Admin-only presentation options for this field. */
   admin?: BaseFieldAdmin;
-  /** Previous storage key to migrate from during schema sync. */
+  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */
   renameTo?: string;
   /** Whether SQL adapters should promote this field into a first-class column. */
   promoted?: boolean;
@@ -294,7 +294,7 @@ export interface FieldBase {
 | <code>limit</code> (optional) | Maximum number of joined documents returned by a &#96;join&#96; field. |
 | <code>access</code> (optional) | Field-level read and update access rules. |
 | <code>admin</code> (optional) | Admin-only presentation options for this field. |
-| <code>renameTo</code> (optional) | Previous storage key to migrate from during schema sync. |
+| <code>renameTo</code> (optional) | Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. |
 | <code>promoted</code> (optional) | Whether SQL adapters should promote this field into a first-class column. |
 
 

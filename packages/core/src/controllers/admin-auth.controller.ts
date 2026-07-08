@@ -502,7 +502,7 @@ export class AdminAuthController {
   }
 
   private getStateSecret() {
-    const secret = process.env.DYRECTED_JWT_SECRET || process.env.JWT_SECRET;
+    const secret = process.env.DYRECTED_JWT_SECRET;
     if (!secret) {
       throw new Error("[dyrected/core] DYRECTED_JWT_SECRET is not set.");
     }

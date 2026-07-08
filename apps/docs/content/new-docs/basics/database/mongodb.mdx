@@ -1,3 +1,61 @@
 ---
 title: MongoDB
+description: Connect a self-hosted Dyrected app to MongoDB for document-oriented storage, and understand what changes compared to the relational adapters.
 ---
+
+MongoDB is the adapter to choose when you want document-oriented storage. Install `@dyrected/db-mongodb`, give it a connection URL and a database name, and pass it as the `db` key in `dyrected.config.ts`.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { mongodbAdapter } from '@dyrected/db-mongodb'
+
+export default defineConfig({
+  db: mongodbAdapter({
+    url: process.env.DATABASE_URL!,
+    dbName: process.env.MONGODB_DB_NAME || 'dyrected',
+  }),
+  collections: [],
+  globals: [],
+})
+```
+
+Set `DATABASE_URL` to a standard connection string (for example `mongodb://localhost:27017/dyrected`) and `MONGODB_DB_NAME` to the database to use within it. These are the same variable names `dyrected init` scaffolds, so a generated project already has them wired up. On startup Dyrected connects and is ready to read and write. This works with self-managed MongoDB and managed services like MongoDB Atlas.
+
+> **Dyrected Cloud manages the database for you.** You only configure a `db` adapter when you self-host. Cloud projects normally omit `db`. See the [Database overview](/new-docs/basics/database/overview).
+
+## Configuration
+
+The MongoDB adapter takes two options:
+
+```ts
+mongodbAdapter({
+  url: process.env.DATABASE_URL!,
+  dbName: process.env.MONGODB_DB_NAME || 'dyrected',
+})
+```
+
+| Option | Description |
+| --- | --- |
+| `url` | The MongoDB connection string. Read from `DATABASE_URL`. |
+| `dbName` | The database to use within that connection. Read from `MONGODB_DB_NAME`, defaulting to `dyrected`. |
+
+## How your data is stored
+
+Each collection maps to a MongoDB collection named `collection_<slug>`, and your documents are stored natively as BSON. Dyrected maps Mongo's `_id` to the `id` field your app and API work with. Globals are stored in a `dyrected_globals` collection.
+
+Because MongoDB is schema-flexible, there are no tables to create and no columns to add. Two ideas that matter on the relational adapters don't apply here:
+
+- **Field promotion is a no-op.** `promoted: true` exists for SQL adapters that store documents in a JSON column; MongoDB already stores every field natively, so there's nothing to promote.
+- **There's no startup schema sync.** Adding a collection or field needs no migration step because MongoDB doesn't enforce a table shape.
+
+That flexibility doesn't remove the need to keep your content contract compatible. Renamed fields, new defaults, and changed shapes still have to line up with the documents already in your database. See [Migrations](/new-docs/basics/database/migrations) for the field-level tools that handle this.
+
+## Query performance and indexes
+
+Since there are no promoted columns, query performance comes from MongoDB's own indexes. Dyrected does not create secondary indexes for you. If a query gets slow on a large collection, add the index you need directly in MongoDB (for example with `createIndex` or MongoDB Compass) against the `collection_<slug>` collection. See [Indexes](/new-docs/basics/database/indexes) for how this compares to field promotion on the SQL adapters.
+
+The `unique: true` field option is not enforced on MongoDB either — same as on every other adapter, it's a declaration rather than a database constraint, so enforce uniqueness in your own logic if you rely on it. See [Enforcing uniqueness](/new-docs/basics/database/indexes#enforcing-uniqueness).
+
+## Transactions
+
+The MongoDB adapter supports transactions using MongoDB sessions, and workflow transitions rely on them. One requirement to plan for: **multi-document transactions require a replica set or sharded cluster.** A standalone `mongod` cannot run them. MongoDB Atlas and most managed offerings already run as replica sets, so this usually only bites on a bare local `mongod`. See [Transactions](/new-docs/basics/database/transactions).

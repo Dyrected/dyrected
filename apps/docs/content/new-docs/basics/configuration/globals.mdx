@@ -128,7 +128,6 @@ After that first fetch, editors own the value and `initialData` no longer applie
 Skip these unless you run a multi-site deployment. `siteId` restricts a global to one site, and `shared: true` makes one global common to every site. In a single-site project, leave both unset.
 
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:START */}
-
 ## GlobalConfig
 
 Defines a Dyrected global — a singleton document without pagination or IDs.
@@ -204,18 +203,17 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 }
 ```
 
-| Option                              | Description                                                                                                                                                                                            |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <code>slug</code> (required)        | Unique identifier for this global. Used as the URL segment (&#96;/api/globals/:slug&#96;) and the storage key.                                                                                         |
-| <code>siteId</code> (optional)      | Restricts this global to a specific site in a multi-tenant deployment.                                                                                                                                 |
-| <code>shared</code> (optional)      | If &#96;true&#96;, this global is shared across all sites in a multi-tenant deployment.                                                                                                                |
-| <code>label</code> (optional)       | Human-readable label shown in the Admin UI sidebar.                                                                                                                                                    |
-| <code>fields</code> (required)      | Field definitions for this global's document schema.                                                                                                                                                   |
-| <code>access</code> (optional)      | Access control for reading and updating this global.                                                                                                                                                   |
-| <code>hooks</code> (optional)       | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
-| <code>admin</code> (optional)       | Admin UI configuration for this global.                                                                                                                                                                |
-| <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty.                                                                                                              |
-
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) | Unique identifier for this global. Used as the URL segment (&#96;/api/globals/:slug&#96;) and the storage key. |
+| <code>siteId</code> (optional) | Restricts this global to a specific site in a multi-tenant deployment. |
+| <code>shared</code> (optional) | If &#96;true&#96;, this global is shared across all sites in a multi-tenant deployment. |
+| <code>label</code> (optional) | Human-readable label shown in the Admin UI sidebar. |
+| <code>fields</code> (required) | Field definitions for this global's document schema. |
+| <code>access</code> (optional) | Access control for reading and updating this global. |
+| <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
+| <code>admin</code> (optional) | Admin UI configuration for this global. |
+| <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:END */}
 
 ## Global options in practice

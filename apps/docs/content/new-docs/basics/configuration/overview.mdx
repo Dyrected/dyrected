@@ -25,10 +25,10 @@ Start with the smallest useful shape and grow from there:
 
 ```ts
 import { defineConfig } from '@dyrected/core'
-import { PostgresAdapter } from '@dyrected/db-postgres'
+import { postgresAdapter } from '@dyrected/db-postgres'
 
 export default defineConfig({
-  db: new PostgresAdapter({ url: process.env.DATABASE_URL! }),
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
   collections: [],
   globals: [],
 })

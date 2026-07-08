@@ -95,7 +95,7 @@ Next.js runs the full backend inside your app, so `init` writes a config plus th
 - **`app/admin/page.tsx`** — the admin panel, served at the path you chose.
 - **`instrumentation.ts`** — logs the admin and API URLs to your console on server start.
 
-Connection variables use the `NEXT_PUBLIC_DYRECTED_URL` and `NEXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `JWT_SECRET`, and `ENCRYPTION_KEY`.
+Connection variables use the `NEXT_PUBLIC_DYRECTED_URL` and `NEXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `DYRECTED_JWT_SECRET`, and `ENCRYPTION_KEY`.
 
 </Tab>
 <Tab value="Nuxt">
@@ -116,7 +116,7 @@ Nuxt also runs the full backend inside your app, so `init` writes a config and t
 - **`pages/admin/index.vue`** — the admin panel (written under `app/pages/` if you use an `app/` directory).
 - **`nuxt.config.ts`** — `init` adds `@dyrected/nuxt` to your `modules`, which mounts the content API.
 
-Connection variables use the `NUXT_PUBLIC_DYRECTED_URL` and `NUXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `JWT_SECRET`, and `ENCRYPTION_KEY`.
+Connection variables use the `NUXT_PUBLIC_DYRECTED_URL` and `NUXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `DYRECTED_JWT_SECRET`, and `ENCRYPTION_KEY`.
 
 </Tab>
 <Tab value="React">
@@ -257,7 +257,7 @@ The reserved `__admins` collection is the login gateway for the dashboard — em
 
 ## Launch the app
 
-1. Copy `.env.example` to `.env` and fill in the values. At minimum, set `JWT_SECRET` and `ENCRYPTION_KEY` to your own secrets. Also set `DATABASE_URL` when you're not using SQLite, plus any storage credentials for S3, B2, or Cloudinary.
+1. Copy `.env.example` to `.env` and fill in the values. At minimum, set `DYRECTED_JWT_SECRET` and `ENCRYPTION_KEY` to your own secrets. Also set `DATABASE_URL` when you're not using SQLite, plus any storage credentials for S3, B2, or Cloudinary.
 2. Start your dev server, for example `pnpm dev`.
 3. Open the admin URL printed in your console — by default `http://localhost:3000/admin` — and create your first admin account.
 

@@ -128,7 +128,7 @@ export interface FieldBase {
   };
   /** Admin-only presentation options for this field. */
   admin?: BaseFieldAdmin;
-  /** Previous storage key to migrate from during schema sync. */
+  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */
   renameTo?: string;
   /** Whether SQL adapters should promote this field into a first-class column. */
   promoted?: boolean;
