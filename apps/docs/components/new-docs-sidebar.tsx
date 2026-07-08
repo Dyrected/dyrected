@@ -6,6 +6,7 @@ import { usePathname } from 'fumadocs-core/framework'
 import { useDocsLayout } from 'fumadocs-ui/layouts/docs'
 import type { SidebarProps } from 'fumadocs-ui/layouts/docs/slots/sidebar'
 import {
+  SidebarCollapseTrigger,
   SidebarContent,
   SidebarDrawerContent,
   SidebarDrawerOverlay,
@@ -13,6 +14,7 @@ import {
   SidebarViewport,
   useSidebar,
 } from 'fumadocs-ui/components/sidebar/base'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type TreePageNode = {
@@ -95,36 +97,30 @@ function GroupsNav({
 }: {
   groups: Group[]
   pathname: string
-  openTopics: Record<string, string | null>
+  openTopics: Record<string, boolean>
   onToggleTopic: (groupKey: string, topicKey: string) => void
 }) {
   return (
     <div className="flex flex-col gap-6">
       {groups.map((group) => (
-        <section key={group.key} className="flex flex-col gap-2">
+        <section key={group.key} className="flex flex-col gap-3">
           <h2 className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-fd-muted-foreground">
             {group.title}
           </h2>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             {group.topics.map((topic) => {
-              const isOpen = openTopics[group.key] === topic.key
+              const isOpen = openTopics[topic.key] ?? false
               const hasActivePage = topic.pages.some((page) =>
                 isPageActive(pathname, page.url),
               )
 
               return (
-                <div
-                  key={topic.key}
-                  className={cn(
-                    'rounded-xl border border-transparent bg-fd-card/40',
-                    (isOpen || hasActivePage) && 'border-fd-border bg-fd-card',
-                  )}
-                >
+                <div key={topic.key} className="flex flex-col gap-0.5">
                   <button
                     type="button"
                     onClick={() => onToggleTopic(group.key, topic.key)}
                     className={cn(
-                      'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-fd-foreground transition-colors hover:bg-fd-accent/40',
+                      'flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm text-fd-foreground transition-colors hover:bg-fd-accent/40',
                       hasActivePage && 'text-fd-primary',
                     )}
                   >
@@ -141,7 +137,7 @@ function GroupsNav({
                   </button>
 
                   {isOpen ? (
-                    <div className="flex flex-col gap-1 px-2 pb-2">
+                    <div className="flex flex-col gap-1 border-s border-fd-border ms-3 ps-3">
                       {topic.pages.map((page) => {
                         const active = isPageActive(pathname, page.url)
 
@@ -151,8 +147,8 @@ function GroupsNav({
                             href={page.url}
                             data-active={active}
                             className={cn(
-                              'rounded-lg px-3 py-2 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent/50 hover:text-fd-accent-foreground',
-                              active && 'bg-fd-primary/10 font-medium text-fd-primary',
+                              'rounded-md px-2 py-1.5 text-sm text-fd-muted-foreground transition-colors hover:bg-fd-accent/40 hover:text-fd-accent-foreground',
+                              active && 'font-medium text-fd-primary',
                             )}
                           >
                             {page.name}
@@ -183,27 +179,38 @@ function SidebarInner({
   footer?: ReactNode
 }) {
   const { slots } = useDocsLayout()
-  const [openTopics, setOpenTopics] = useState<Record<string, string | null>>(() =>
-    getActiveTopicKeys(groups, pathname),
-  )
+  const [openTopics, setOpenTopics] = useState<Record<string, boolean>>(() => {
+    const active = getActiveTopicKeys(groups, pathname)
+    const initial: Record<string, boolean> = {}
+
+    for (const group of groups) {
+      for (const topic of group.topics) {
+        initial[topic.key] = active[group.key] === topic.key
+      }
+    }
+
+    return initial
+  })
 
   useEffect(() => {
     const next = getActiveTopicKeys(groups, pathname)
     setOpenTopics((prev) => {
-      const merged = { ...prev }
+      const merged: Record<string, boolean> = { ...prev }
 
       for (const group of groups) {
-        if (next[group.key]) merged[group.key] = next[group.key]
+        const activeKey = next[group.key]
+
+        if (activeKey) merged[activeKey] = true
       }
 
       return merged
     })
   }, [groups, pathname])
 
-  const handleToggleTopic = (groupKey: string, topicKey: string) => {
+  const handleToggleTopic = (_groupKey: string, topicKey: string) => {
     setOpenTopics((prev) => ({
       ...prev,
-      [groupKey]: prev[groupKey] === topicKey ? null : topicKey,
+      [topicKey]: !prev[topicKey],
     }))
   }
 
@@ -214,8 +221,15 @@ function SidebarInner({
           {slots.navTitle ? (
             <slots.navTitle className="inline-flex items-center gap-2.5 text-[0.9375rem] font-medium" />
           ) : null}
-          <div className="md:hidden">
-            <SidebarTrigger className="rounded-lg border px-2 py-1 text-xs text-fd-muted-foreground" />
+          <div className="flex items-center gap-2">
+            <div className="md:hidden">
+              <SidebarTrigger className="rounded-lg border px-2 py-1 text-xs text-fd-muted-foreground" />
+            </div>
+            <div className="max-md:hidden">
+              <SidebarCollapseTrigger className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-fd-muted-foreground transition-colors hover:bg-fd-accent/40">
+                <PanelLeftClose className="h-4 w-4" />
+              </SidebarCollapseTrigger>
+            </div>
           </div>
         </div>
         {slots.searchTrigger ? (
@@ -250,29 +264,60 @@ export function NewDocsSidebar({
   const pathname = usePathname()
   const groups = useMemo(() => buildGroups(tree), [tree])
   const { mode } = useSidebar()
+  const { slots } = useDocsLayout()
 
   return (
     <>
       <SidebarContent mode="full">
-        {() => (
+        {({ collapsed, hovered, ref, onPointerEnter, onPointerLeave }) => (
           <div
             data-sidebar-placeholder=""
-            className="sticky top-(--fd-docs-row-1) z-20 h-[calc(var(--fd-docs-height)-var(--fd-docs-row-1))] [grid-area:sidebar] max-md:hidden md:layout:[--fd-sidebar-width:288px]"
+            className="pointer-events-none sticky top-(--fd-docs-row-1) z-20 h-[calc(var(--fd-docs-height)-var(--fd-docs-row-1))] [grid-area:sidebar] max-md:hidden md:layout:[--fd-sidebar-width:288px]"
           >
+            {collapsed && !hovered ? (
+              <div className="pointer-events-auto absolute start-3 top-3 z-30 flex flex-col gap-2">
+                <SidebarCollapseTrigger className="inline-flex h-9 w-9 items-center justify-center rounded-xl border bg-fd-background text-fd-muted-foreground shadow-sm transition-colors hover:bg-fd-accent/40 hover:text-fd-foreground">
+                  <PanelLeftOpen className="h-4 w-4" />
+                </SidebarCollapseTrigger>
+                {slots.searchTrigger ? (
+                  <slots.searchTrigger.sm
+                    hideIfDisabled={true}
+                    className="h-9 w-9 rounded-xl border bg-fd-background text-fd-muted-foreground shadow-sm transition-colors hover:bg-fd-accent/40 hover:text-fd-foreground"
+                  />
+                ) : null}
+              </div>
+            ) : null}
+            {collapsed ? (
+              <div
+                className="pointer-events-auto absolute inset-y-0 inset-s-0 w-4"
+                onPointerEnter={onPointerEnter}
+                onPointerLeave={onPointerLeave}
+              />
+            ) : null}
             <aside
               id="nd-sidebar"
+              ref={ref}
+              data-collapsed={collapsed}
+              data-hovered={collapsed && hovered}
+              onPointerEnter={onPointerEnter}
+              onPointerLeave={onPointerLeave}
               className={cn(
-                'flex h-full w-(--fd-sidebar-width) flex-col border-e bg-fd-card text-sm',
+                'pointer-events-auto absolute inset-y-0 inset-s-0 flex h-full w-(--fd-sidebar-width) flex-col border-e bg-fd-card text-sm transition-[transform,box-shadow,border-radius,top,bottom] duration-200',
+                collapsed &&
+                'inset-y-2 -translate-x-(--fd-sidebar-width) rounded-xl border shadow-none',
+                collapsed && hovered && 'translate-x-2 shadow-lg rtl:-translate-x-2',
                 className,
               )}
               {...rest}
             >
-              <SidebarInner
-                groups={groups}
-                pathname={pathname}
-                banner={banner}
-                footer={footer}
-              />
+              {!collapsed || hovered ? (
+                <SidebarInner
+                  groups={groups}
+                  pathname={pathname}
+                  banner={banner}
+                  footer={footer}
+                />
+              ) : null}
             </aside>
           </div>
         )}
