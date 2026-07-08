@@ -2,6 +2,7 @@ import type { AdminAuthConfig } from "./admin-auth.js";
 import type { AdminConfig } from "./admin.js";
 import type { AccessPolicyResolver } from "./access.js";
 import type { DatabaseAdapter, ImageService, StorageAdapter } from "./adapters.js";
+import type { AuthenticatedUser } from "./request.js";
 import type { LifecycleEventHandler } from "./workflows.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
 
@@ -21,7 +22,7 @@ import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
  *   globals: [SiteSettings],
  * })
  */
-export interface DyrectedConfig {
+export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedUser> {
   /** Collection definitions. Each collection maps to a database table/collection. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   collections: CollectionConfig<any>[];
@@ -64,7 +65,7 @@ export interface DyrectedConfig {
    * Named access policies available to collection, global, and field access
    * rules via `{ policy: 'name' }`.
    */
-  accessPolicies?: Record<string, AccessPolicyResolver>;
+  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser>>;
 
   /**
    * Email transport configuration. Required for welcome emails, password

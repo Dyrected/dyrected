@@ -1,5 +1,5 @@
-import type { HookRequestContext, Field, DyrectedConfig } from "../types/index.js";
-import type { AccessResult, AccessRule } from "../types/access.js";
+import type { HookRequestContext, Field, DyrectedConfig, AuthenticatedUser } from "../types/index.js";
+import type { AccessFunctionArgs, AccessResult, AccessRule } from "../types/access.js";
 import { resolveAccess } from "../auth/access.js";
 
 type RequestLike = {
@@ -8,11 +8,8 @@ type RequestLike = {
   raw?: Request;
 };
 
-type AccessArgs<TDoc extends object = Record<string, unknown>> = {
-  user: unknown;
-  req: HookRequestContext;
-  doc?: TDoc;
-  data?: Partial<TDoc>;
+type AccessArgs<TDoc extends object = Record<string, unknown>> = AccessFunctionArgs<TDoc> & {
+  id?: string;
 };
 
 function isConstraintResult(value: AccessResult | undefined): value is Record<string, unknown> {
@@ -81,11 +78,17 @@ export async function resolveCollectionAccess<TDoc extends object = Record<strin
 type FieldAccessContext = {
   config: DyrectedConfig;
   fields: Field[];
-  user: unknown;
+  user: AuthenticatedUser | undefined;
   req: HookRequestContext;
   doc?: Record<string, unknown>;
   data?: Record<string, unknown>;
+  id?: string;
 };
+
+function resolveFieldAccessId(context: FieldAccessContext): string | undefined {
+  const candidate = context.id ?? context.doc?.id ?? context.data?.id;
+  return typeof candidate === "string" && candidate.length > 0 ? candidate : undefined;
+}
 
 export async function applyFieldReadAccess(
   context: FieldAccessContext,
@@ -109,6 +112,7 @@ export async function applyFieldReadAccess(
       req: context.req,
       doc: context.doc,
       data: context.data,
+      id: resolveFieldAccessId(context),
     });
 
     if (!canRead) {
@@ -124,10 +128,11 @@ export async function applyFieldReadAccess(
     }
 
     if (field.type === "array" && field.fields && Array.isArray(value)) {
+      const childFields = field.fields;
       result[field.name] = await Promise.all(
         value.map((item) =>
           typeof item === "object" && item !== null
-            ? applyFieldReadAccess({ ...context, fields: field.fields }, item as Record<string, unknown>)
+            ? applyFieldReadAccess({ ...context, fields: childFields }, item as Record<string, unknown>)
             : item,
         ),
       );
@@ -140,7 +145,7 @@ export async function applyFieldReadAccess(
           if (typeof item !== "object" || item === null) return item;
           const typedItem = item as Record<string, unknown>;
           const block = field.blocks?.find((candidate) => candidate.slug === typedItem.blockType);
-          if (!block) return item;
+          if (!block || !block.fields) return item;
           return applyFieldReadAccess({ ...context, fields: block.fields }, typedItem);
         }),
       );
@@ -171,6 +176,7 @@ export async function applyFieldWriteAccess(
       req: context.req,
       doc: context.doc,
       data: context.data,
+      id: resolveFieldAccessId(context),
     });
 
     if (!canUpdate) {
@@ -187,10 +193,11 @@ export async function applyFieldWriteAccess(
     }
 
     if (field.type === "array" && field.fields && Array.isArray(value)) {
+      const childFields = field.fields;
       result[field.name] = await Promise.all(
         value.map((item) =>
           typeof item === "object" && item !== null
-            ? applyFieldWriteAccess({ ...context, fields: field.fields }, item as Record<string, unknown>)
+            ? applyFieldWriteAccess({ ...context, fields: childFields }, item as Record<string, unknown>)
             : item,
         ),
       );
@@ -203,7 +210,7 @@ export async function applyFieldWriteAccess(
           if (typeof item !== "object" || item === null) return item;
           const typedItem = item as Record<string, unknown>;
           const block = field.blocks?.find((candidate) => candidate.slug === typedItem.blockType);
-          if (!block) return item;
+          if (!block || !block.fields) return item;
           return applyFieldWriteAccess({ ...context, fields: block.fields }, typedItem);
         }),
       );

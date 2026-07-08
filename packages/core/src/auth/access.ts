@@ -1,15 +1,18 @@
-import type { DyrectedConfig } from "../types/index.js";
-import type { AccessFunctionArgs, AccessResult, AccessRule, NamedAccessPolicy } from "../types/access.js";
+import type { AuthenticatedUser, DyrectedConfig } from "../types/index.js";
+import type { AccessFunctionArgs, AccessPolicyResolver, AccessResult, AccessRule, NamedAccessPolicy } from "../types/access.js";
 import { evaluateAccess } from "./jexl.js";
 
 function isNamedAccessPolicy(value: unknown): value is NamedAccessPolicy {
   return !!value && typeof value === "object" && "policy" in value && typeof (value as { policy?: unknown }).policy === "string";
 }
 
-export async function resolveAccess<TDoc extends object = Record<string, unknown>>(
-  config: DyrectedConfig,
-  access: AccessRule<TDoc> | undefined | null,
-  args: AccessFunctionArgs<TDoc>,
+export async function resolveAccess<
+  TDoc extends object = Record<string, unknown>,
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+>(
+  config: DyrectedConfig<TUser>,
+  access: AccessRule<TDoc, TUser> | undefined | null,
+  args: AccessFunctionArgs<TDoc, TUser>,
 ): Promise<AccessResult | undefined> {
   if (access === undefined || access === null) return undefined;
 
@@ -27,7 +30,7 @@ export async function resolveAccess<TDoc extends object = Record<string, unknown
   }
 
   if (isNamedAccessPolicy(access)) {
-    const resolver = config.accessPolicies?.[access.policy];
+    const resolver = config.accessPolicies?.[access.policy] as AccessPolicyResolver<TDoc, TUser> | undefined;
     if (!resolver) {
       console.error(`[dyrected/core] Unknown access policy "${access.policy}".`);
       return false;
@@ -44,10 +47,13 @@ export async function resolveAccess<TDoc extends object = Record<string, unknown
   return false;
 }
 
-export async function isAccessAllowed<TDoc extends object = Record<string, unknown>>(
-  config: DyrectedConfig,
-  access: AccessRule<TDoc> | undefined | null,
-  args: AccessFunctionArgs<TDoc>,
+export async function isAccessAllowed<
+  TDoc extends object = Record<string, unknown>,
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+>(
+  config: DyrectedConfig<TUser>,
+  access: AccessRule<TDoc, TUser> | undefined | null,
+  args: AccessFunctionArgs<TDoc, TUser>,
 ): Promise<boolean> {
   const result = await resolveAccess(config, access, args);
   if (result === undefined) return true;

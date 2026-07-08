@@ -1,7 +1,10 @@
 import type { AuthenticatedUser, HookRequestContext } from "./request.js";
 
-export interface AccessFunctionArgs<TDoc extends object = Record<string, unknown>> {
-  user: AuthenticatedUser | undefined;
+export interface AccessFunctionArgs<
+  TDoc extends object = Record<string, unknown>,
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+> {
+  user: TUser | undefined;
   doc?: TDoc;
   data?: Partial<TDoc>;
   req: HookRequestContext;
@@ -44,16 +47,25 @@ export type AccessResult = boolean | Record<string, unknown>;
  *   update: "user.roles contains 'editor'",
  * }
  */
-export type AccessFunction<TDoc extends object = Record<string, unknown>> = (
-  args: AccessFunctionArgs<TDoc>,
+export type AccessFunction<
+  TDoc extends object = Record<string, unknown>,
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+> = (
+  args: AccessFunctionArgs<TDoc, TUser>,
 ) => AccessResult | Promise<AccessResult>;
 
-export type AccessRule<TDoc extends object = Record<string, unknown>> =
+export type AccessRule<
+  TDoc extends object = Record<string, unknown>,
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+> =
   | boolean
   | string
-  | AccessFunction<TDoc>
+  | AccessFunction<TDoc, TUser>
   | NamedAccessPolicy<TDoc>;
 
-export type AccessPolicyResolver<TDoc extends object = Record<string, unknown>> = (
-  args: AccessFunctionArgs<TDoc> & { params?: Record<string, unknown> },
+export type AccessPolicyResolver<
+  TDoc extends object = Record<string, unknown>,
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+> = (
+  args: AccessFunctionArgs<TDoc, TUser> & { params?: Record<string, unknown> },
 ) => AccessResult | Promise<AccessResult>;

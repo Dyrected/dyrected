@@ -118,9 +118,9 @@ Access rules attach at three levels, each with its own set of operations:
 |---|---|---|
 | [Collections](/new-docs/basics/access-control/collections) | `read`, `create`, `update`, `delete` | The API, on every request |
 | [Globals](/new-docs/basics/access-control/globals) | `read`, `update` | The API, on every request |
-| [Fields](/new-docs/basics/access-control/fields) | `read`, `update` | The admin panel |
+| [Fields](/new-docs/basics/access-control/fields) | `read`, `update` | The API and the admin panel |
 
-Collection and global rules are your real authorization boundary — they run in the API before any database work. Field rules are different: they shape how the admin panel displays a field (hidden or read-only) and are not a server-side security check. The [Fields](/new-docs/basics/access-control/fields) page explains that distinction and how to enforce field-level rules on the server when you need to.
+Collection and global rules are still the main authorization boundary because they decide whether an operation can happen at all. Field rules are narrower: they decide which fields can be read back or written, and Dyrected now enforces them on both the API and the admin UI. The [Fields](/new-docs/basics/access-control/fields) page explains where that is useful and where collection or global access is still the better fit.
 
 ## Default access
 
@@ -145,5 +145,5 @@ access: {
 
 - [Collection access control](/new-docs/basics/access-control/collections) — the four operations, with recipes for common setups.
 - [Global access control](/new-docs/basics/access-control/globals) — read and update rules for single-document config.
-- [Field access control](/new-docs/basics/access-control/fields) — hiding and locking fields in the admin panel.
+- [Field access control](/new-docs/basics/access-control/fields) — hiding and locking fields in both the admin panel and the API.
 - [Hooks](/new-docs/basics/hooks/overview) — where to put ownership checks and other logic that needs the document itself.

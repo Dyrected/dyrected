@@ -212,6 +212,56 @@ describe("access-control parity", () => {
     expect(fetched.settings).toEqual({ visible: "still-ok" });
   });
 
+  it("passes document id into field access rules on API updates", async () => {
+    const db = new InMemoryAdapter();
+
+    const app = await createDyrectedApp(defineConfig({
+      db,
+      collections: [
+        defineCollection({
+          slug: "posts",
+          fields: [
+            { name: "title", type: "text" },
+            {
+              name: "slug",
+              type: "text",
+              access: {
+                update: "!id",
+              },
+            },
+          ],
+        }),
+      ],
+      globals: [],
+    }));
+
+    const createRes = await app.request("/api/collections/posts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "Post",
+        slug: "original",
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const created = await createRes.json();
+    expect(created.slug).toBe("original");
+
+    const updateRes = await app.request(`/api/collections/posts/${created.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: "changed",
+      }),
+    });
+    expect(updateRes.status).toBe(200);
+    const updated = await updateRes.json();
+    expect(updated.slug).toBe("original");
+
+    const stored = await db.findOne({ collection: "posts", id: created.id });
+    expect(stored?.slug).toBe("original");
+  });
+
   it("evaluates global access against doc and incoming data", async () => {
     const db = new InMemoryAdapter();
     await db.updateGlobal({

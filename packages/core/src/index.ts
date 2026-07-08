@@ -1,4 +1,5 @@
 import type {
+  AuthenticatedUser,
   Block,
   CollectionConfig,
   DyrectedConfig,
@@ -113,7 +114,9 @@ export function defineGlobal(config: unknown): unknown {
  * the database adapter, collections, globals, storage, email, and all other
  * server-level configuration.
  */
-export function defineConfig(config: DyrectedConfig): DyrectedConfig {
+export function defineConfig<TUser extends AuthenticatedUser = AuthenticatedUser>(
+  config: DyrectedConfig<TUser>,
+): DyrectedConfig<TUser> {
   return config;
 }
 
