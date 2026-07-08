@@ -1,5 +1,21 @@
 # @dyrected/admin
 
+## 2.5.58
+
+### Patch Changes
+
+- Add a production-ready access control model that supports booleans, Jexl strings, direct self-hosted functions, and named policies across collections, globals, and field access.
+
+  Introduce top-level `accessPolicies` resolution in core, enforce collection/global/field access on the server, and preserve object-based Jexl filter results for row-level access constraints.
+
+  Make Cloud schema sync safe by stripping function-based access rules from synced payloads, preserving only booleans, Jexl strings, and named policies, with clear warnings for unsupported rules.
+
+  Harden the admin hooks sandbox message listener so it only accepts messages from the expected iframe source.
+
+- Updated dependencies
+  - @dyrected/core@2.5.58
+  - @dyrected/sdk@2.5.58
+
 ## 2.5.57
 
 ### Patch Changes

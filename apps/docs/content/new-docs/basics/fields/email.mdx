@@ -3,11 +3,17 @@ title: Email
 description: A text field that validates its value as an email address.
 ---
 
-The email field is a text field that validates its value looks like an email address. Use it for contact emails, notification addresses, and similar fields where you want the format checked.
+The email field is a text field that checks its value looks like an email address before it saves. Use it for editor-supplied addresses — a contact email, a notification recipient — where you want the format validated without writing your own check.
 
 ```ts
 defineEmailField({ name: 'contactEmail', label: 'Contact email', required: true })
 ```
+
+The format check is built in, so you don't need extra validation for the common case. Like other text fields, it accepts an advisory `maxLength`.
+
+<Note>
+Don't add an `email` (or `password`) field to an authentication collection. Dyrected injects those automatically, and redefining them collides with the built-in auth fields.
+</Note>
 
 ## Generated reference
 

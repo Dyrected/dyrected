@@ -3,11 +3,25 @@ title: Text
 description: A single-line string field for short values like titles, names, and slugs.
 ---
 
-The text field stores a single line of plain text. It is the field you reach for most often: titles, names, slugs, short labels, and any short free-form value.
+The text field stores a single line of plain text. It is the field you reach for most often: titles, names, slugs, short labels, and any short free-form value. When the value needs line breaks, use [Textarea](/new-docs/basics/fields/textarea); when it needs formatting like bold or links, use [Rich Text](/new-docs/basics/fields/rich-text); when it comes from a fixed set of choices, use [Select](/new-docs/basics/fields/select).
 
 ```ts
 defineTextField({ name: 'title', label: 'Title', required: true })
 ```
+
+## Guiding entry with length limits
+
+Text fields accept two advisory limits: `maxLength` (characters) and `maxWords`. Both show a live counter in the admin editor, so writers can see where they stand as they type.
+
+```ts
+defineTextField({ name: 'summary', label: 'Summary', maxLength: 160 })
+```
+
+These limits guide the editing experience but do not reject an over-length value on their own. When you need a hard cap enforced on every write, add a [hook](/new-docs/basics/hooks/overview) that validates the value.
+
+## Filtering and sorting
+
+If you filter or sort on a text field often — a `slug` or a status-like label — mark it `promoted` so it becomes an indexed column instead of living inside the JSON document. See [Database indexes](/new-docs/basics/database/indexes) for when that trade-off is worth it.
 
 ## Generated reference
 

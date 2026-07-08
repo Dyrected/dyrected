@@ -33,6 +33,10 @@ function initSandbox() {
   document.body.appendChild(sandboxIframe)
 
   window.addEventListener("message", (event) => {
+    if (!sandboxIframe?.contentWindow || event.source !== sandboxIframe.contentWindow) {
+      return
+    }
+
     if (event.data && typeof event.data === "object" && "hookId" in event.data) {
       const { hookId, result, error } = event.data
       const handler = messageHandlers.get(hookId)

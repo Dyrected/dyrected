@@ -6,6 +6,98 @@ import { createJiti } from "jiti";
 import { runGenerateTypes } from "../utils/type-generator.js";
 import { loadCommandEnv } from "../utils/env.js";
 
+function isNamedPolicy(value: unknown): value is { policy: string; params?: Record<string, unknown> } {
+  return !!value && typeof value === "object" && "policy" in value && typeof (value as { policy?: unknown }).policy === "string";
+}
+
+function sanitizeAccessValue(value: unknown, location: string, warnings: string[]): unknown {
+  if (value === undefined || value === null) return value;
+  if (typeof value === "boolean" || typeof value === "string") return value;
+  if (isNamedPolicy(value)) return value;
+
+  if (typeof value === "function") {
+    warnings.push(location);
+    return undefined;
+  }
+
+  return value;
+}
+
+function sanitizeField(field: Record<string, any>, location: string, warnings: string[]) {
+  const sanitized = { ...field };
+
+  if (sanitized.access) {
+    sanitized.access = {
+      ...(sanitized.access.read !== undefined ? { read: sanitizeAccessValue(sanitized.access.read, `${location}.access.read`, warnings) } : {}),
+      ...(sanitized.access.update !== undefined ? { update: sanitizeAccessValue(sanitized.access.update, `${location}.access.update`, warnings) } : {}),
+    };
+  }
+
+  if (Array.isArray(sanitized.fields)) {
+    sanitized.fields = sanitized.fields.map((child: Record<string, any>, index: number) =>
+      sanitizeField(child, `${location}.fields[${index}]`, warnings),
+    );
+  }
+
+  if (Array.isArray(sanitized.blocks)) {
+    sanitized.blocks = sanitized.blocks.map((block: Record<string, any>, blockIndex: number) => ({
+      ...block,
+      fields: Array.isArray(block.fields)
+        ? block.fields.map((child: Record<string, any>, fieldIndex: number) =>
+            sanitizeField(child, `${location}.blocks[${blockIndex}].fields[${fieldIndex}]`, warnings),
+          )
+        : block.fields,
+    }));
+  }
+
+  return sanitized;
+}
+
+export function sanitizeSchemaForCloudSync(config: {
+  collections: Record<string, any>[];
+  globals?: Record<string, any>[];
+  admin?: Record<string, any>;
+}) {
+  const warnings: string[] = [];
+
+  const collections = config.collections.map((collection, index) => ({
+    ...collection,
+    access: {
+      ...(collection.access?.read !== undefined ? { read: sanitizeAccessValue(collection.access.read, `collections[${index}].access.read`, warnings) } : {}),
+      ...(collection.access?.create !== undefined ? { create: sanitizeAccessValue(collection.access.create, `collections[${index}].access.create`, warnings) } : {}),
+      ...(collection.access?.update !== undefined ? { update: sanitizeAccessValue(collection.access.update, `collections[${index}].access.update`, warnings) } : {}),
+      ...(collection.access?.delete !== undefined ? { delete: sanitizeAccessValue(collection.access.delete, `collections[${index}].access.delete`, warnings) } : {}),
+    },
+    fields: Array.isArray(collection.fields)
+      ? collection.fields.map((field: Record<string, any>, fieldIndex: number) =>
+          sanitizeField(field, `collections[${index}].fields[${fieldIndex}]`, warnings),
+        )
+      : collection.fields,
+  }));
+
+  const globals = (config.globals || []).map((global, index) => ({
+    ...global,
+    access: {
+      ...(global.access?.read !== undefined ? { read: sanitizeAccessValue(global.access.read, `globals[${index}].access.read`, warnings) } : {}),
+      ...(global.access?.update !== undefined ? { update: sanitizeAccessValue(global.access.update, `globals[${index}].access.update`, warnings) } : {}),
+    },
+    fields: Array.isArray(global.fields)
+      ? global.fields.map((field: Record<string, any>, fieldIndex: number) =>
+          sanitizeField(field, `globals[${index}].fields[${fieldIndex}]`, warnings),
+        )
+      : global.fields,
+  }));
+
+  return {
+    payload: {
+      collections,
+      globals,
+      admin: config.admin || {},
+    },
+    warnings,
+  };
+}
+
 export function registerSyncSchema(program: Command) {
   program
     .command("sync:schema")
@@ -68,6 +160,24 @@ Examples:
 
         console.log(chalk.blue(`Syncing schema to ${apiUrl}...`));
 
+        const { payload, warnings } = sanitizeSchemaForCloudSync({
+          collections: config.collections,
+          globals: config.globals || [],
+          admin: config.admin || {},
+        });
+
+        if (warnings.length > 0) {
+          console.warn(chalk.yellow("\n⚠  Cloud sync stripped unsupported function-based access rules at these paths:"));
+          for (const warning of warnings) {
+            console.warn(chalk.yellow(`   - ${warning}`));
+          }
+          console.warn(
+            chalk.yellow(
+              "   Cloud will not enforce stripped rules. Replace them with a Jexl string or a named policy before relying on Cloud access control.\n",
+            ),
+          );
+        }
+
         const response = await fetch(`${apiUrl}/cloud/workspaces/sites/${siteId}/schema/sync`, {
           method: "POST",
           headers: {
@@ -75,11 +185,7 @@ Examples:
             Authorization: `Bearer ${apiKey}`,
             "X-API-Key": apiKey,
           },
-          body: JSON.stringify({
-            collections: config.collections,
-            globals: config.globals || [],
-            admin: config.admin || {},
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {

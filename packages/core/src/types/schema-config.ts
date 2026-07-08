@@ -1,5 +1,5 @@
 import type { AdminIconName, CollectionListComponentSlots } from "./admin.js";
-import type { AccessFunction } from "./access.js";
+import type { AccessRule } from "./access.js";
 import type {
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
@@ -183,9 +183,10 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   /**
    * Collection-level access control.
    *
-   * Each key is an operation; the value is a function or Jexl string that
-   * returns `true` to allow or `false` to deny. Returning a `where`-style
-   * object grants access only to matching documents.
+   * Each key is an operation; the value can be a function, a Jexl string, a
+   * boolean, or a named policy reference. Returning `true` allows access and
+   * `false` denies it. Returning a `where`-style object grants access only to
+   * matching documents.
    *
    * @example
    * access: {
@@ -198,10 +199,10 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * @see {@link https://dyrected.com/new-docs/basics/access-control/overview Access control overview}
    */
   access?: {
-    read?: AccessFunction<TDoc> | string;
-    create?: AccessFunction<TDoc> | string;
-    update?: AccessFunction<TDoc> | string;
-    delete?: AccessFunction<TDoc> | string;
+    read?: AccessRule<TDoc>;
+    create?: AccessRule<TDoc>;
+    update?: AccessRule<TDoc>;
+    delete?: AccessRule<TDoc>;
   };
 
   /**
@@ -392,8 +393,8 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 
   /** Access control for reading and updating this global. */
   access?: {
-    read?: AccessFunction<TDoc>;
-    update?: AccessFunction<TDoc>;
+    read?: AccessRule<TDoc>;
+    update?: AccessRule<TDoc>;
   };
 
   /**

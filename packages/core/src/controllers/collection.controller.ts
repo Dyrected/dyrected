@@ -9,8 +9,15 @@ import { hashPassword, verifyPassword } from '../auth/password.js';
 import { runCollectionHooks, executeFieldBeforeChange, executeFieldAfterRead } from '../utils/hooks.js';
 import { createReadonlyDb } from '../utils/readonly-db.js';
 import { validateUpload } from '../utils/upload-validation.js';
-import { evaluateAccess } from '../auth/jexl.js';
+import { resolveAccess } from '../auth/access.js';
 import { getAdminAuthCollection } from '../utils/admin-auth.js';
+import {
+  applyFieldReadAccess,
+  applyFieldWriteAccess,
+  mergeWhereConstraint,
+  resolveCollectionAccess,
+  toHookRequestContext,
+} from '../utils/access-control.js';
 import {
   WORKFLOW_HISTORY_COLLECTION,
   createWorkflowDocument,
@@ -38,11 +45,32 @@ export class CollectionController {
   }
 
   private toHookRequestContext(c: Context<DyrectedContext>): HookRequestContext {
-    return {
-      query: c.req.query(),
-      headers: c.req.header(),
-      raw: c.req.raw,
-    };
+    return toHookRequestContext(c.req);
+  }
+
+  private async evaluateAccess(
+    c: Context<DyrectedContext>,
+    action: 'read' | 'create' | 'update' | 'delete',
+    options: {
+      id?: string;
+      doc?: Record<string, unknown> | null;
+      data?: Record<string, unknown>;
+    } = {},
+  ) {
+    const config = c.get('config');
+    return resolveCollectionAccess(
+      config,
+      this.collection.slug,
+      action,
+      this.collection.access?.[action],
+      {
+        id: options.id,
+        user: c.get('user'),
+        req: this.toHookRequestContext(c),
+        doc: options.doc ?? undefined,
+        data: options.data,
+      },
+    );
   }
 
   async find(c: Context<DyrectedContext>) {
@@ -137,6 +165,14 @@ export class CollectionController {
         : { __published: { exists: true } };
     }
 
+    const access = await this.evaluateAccess(c, 'read');
+    if (!access.allowed) {
+      return c.json({ error: true, message: `Access denied: read on ${this.collection.slug}` }, 403);
+    }
+    if (access.constraint) {
+      where = mergeWhereConstraint(where, access.constraint);
+    }
+
     let result = await db!.find({
       collection: this.collection.slug,
       limit,
@@ -177,7 +213,14 @@ export class CollectionController {
         db: readonlyDb,
       });
       const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user, readonlyDb);
-      processedDocs.push(docWithFieldHooks);
+      const docWithFieldAccess = await applyFieldReadAccess({
+        config,
+        fields: this.collection.fields,
+        user,
+        req: this.toHookRequestContext(c),
+        doc: docWithFieldHooks,
+      }, docWithFieldHooks);
+      processedDocs.push(docWithFieldAccess);
     }
     result.docs = processedDocs;
 
@@ -233,6 +276,11 @@ export class CollectionController {
       if (!doc) return c.json({ message: 'Not Found' }, 404);
     }
 
+    const access = await this.evaluateAccess(c, 'read', { id, doc });
+    if (!access.allowed) {
+      return c.json({ error: true, message: `Access denied: read on ${this.collection.slug}` }, 403);
+    }
+
     const docWithDefaults = DefaultsService.apply(this.collection.fields, doc);
 
     // Run afterRead hooks
@@ -243,11 +291,18 @@ export class CollectionController {
       db: readonlyDb,
     });
     const docWithFieldHooks = await executeFieldAfterRead(this.collection.fields, docWithCollectionHooks, user, readonlyDb);
+    const docWithFieldAccess = await applyFieldReadAccess({
+      config,
+      fields: this.collection.fields,
+      user,
+      req: this.toHookRequestContext(c),
+      doc: docWithFieldHooks,
+    }, docWithFieldHooks);
 
-    if (depth > 0 && docWithFieldHooks) {
+    if (depth > 0 && docWithFieldAccess) {
       const populationService = new PopulationService(db!, config.collections);
       const populatedDoc = await populationService.populate({
-        data: docWithFieldHooks,
+        data: docWithFieldAccess,
         fields: this.collection.fields,
         currentDepth: 0,
         maxDepth: depth,
@@ -255,7 +310,7 @@ export class CollectionController {
       return c.json(populatedDoc);
     }
 
-    return c.json(docWithFieldHooks);
+    return c.json(docWithFieldAccess);
   }
 
   async create(c: Context<DyrectedContext>) {
@@ -302,9 +357,22 @@ export class CollectionController {
       data = initializeWorkflowDocument(data, this.collection.workflow);
     }
 
+    const createAccess = await this.evaluateAccess(c, 'create', { data });
+    if (!createAccess.allowed) {
+      return c.json({ error: true, message: `Access denied: create on ${this.collection.slug}` }, 403);
+    }
+
     if (this.collection.auth && data.password) {
       data.password = await hashPassword(data.password);
     }
+
+    data = await applyFieldWriteAccess({
+      config,
+      fields: this.collection.fields,
+      user,
+      req: this.toHookRequestContext(c),
+      data,
+    }, data);
 
     // Run beforeChange hooks (field-level then collection-level)
     data = await executeFieldBeforeChange(this.collection.fields, data, null, user, readonlyDb);
@@ -351,8 +419,15 @@ export class CollectionController {
       db: readonlyDb,
     });
     const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user, readonlyDb);
+    const accessibleDoc = await applyFieldReadAccess({
+      config,
+      fields: this.collection.fields,
+      user,
+      req: this.toHookRequestContext(c),
+      doc: finalDoc,
+    }, finalDoc);
 
-    return c.json(finalDoc, 201);
+    return c.json(accessibleDoc, 201);
   }
 
   async upload(c: Context<DyrectedContext>) {
@@ -407,6 +482,19 @@ export class CollectionController {
       updatedBy: user?.sub ?? null,
     };
 
+    const createAccess = await this.evaluateAccess(c, 'create', { data });
+    if (!createAccess.allowed) {
+      return c.json({ error: true, message: `Access denied: create on ${this.collection.slug}` }, 403);
+    }
+
+    data = await applyFieldWriteAccess({
+      config,
+      fields: this.collection.fields,
+      user,
+      req: this.toHookRequestContext(c),
+      data,
+    }, data);
+
     // Run beforeChange hooks for upload too
     data = await executeFieldBeforeChange(this.collection.fields, data, null, user, readonlyDb);
     data = await runCollectionHooks(this.collection.hooks?.beforeChange, {
@@ -442,8 +530,15 @@ export class CollectionController {
       db: readonlyDb,
     });
     const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user, readonlyDb);
+    const accessibleDoc = await applyFieldReadAccess({
+      config,
+      fields: this.collection.fields,
+      user,
+      req: this.toHookRequestContext(c),
+      doc: finalDoc,
+    }, finalDoc);
 
-    return c.json(finalDoc, 201);
+    return c.json(accessibleDoc, 201);
   }
 
   async update(c: Context<DyrectedContext>) {
@@ -492,10 +587,24 @@ export class CollectionController {
     const originalDoc = await db!.findOne({ collection: this.collection.slug, id });
     if (!originalDoc) return c.json({ message: 'Not Found' }, 404);
 
+    const updateAccess = await this.evaluateAccess(c, 'update', { id, doc: originalDoc, data });
+    if (!updateAccess.allowed) {
+      return c.json({ error: true, message: `Access denied: update on ${this.collection.slug}` }, 403);
+    }
+
     let before: any = null;
     if (this.collection.audit) {
       before = originalDoc;
     }
+
+    data = await applyFieldWriteAccess({
+      config,
+      fields: this.collection.fields,
+      user,
+      req: this.toHookRequestContext(c),
+      doc: originalDoc,
+      data,
+    }, data);
 
     // Run beforeChange hooks (field-level then collection-level)
     data = await executeFieldBeforeChange(this.collection.fields, data, originalDoc, user, readonlyDb);
@@ -541,8 +650,15 @@ export class CollectionController {
       db: readonlyDb,
     });
     const finalDoc = await executeFieldAfterRead(this.collection.fields, readDoc, user, readonlyDb);
+    const accessibleDoc = await applyFieldReadAccess({
+      config,
+      fields: this.collection.fields,
+      user,
+      req: this.toHookRequestContext(c),
+      doc: finalDoc,
+    }, finalDoc);
 
-    return c.json(finalDoc);
+    return c.json(accessibleDoc);
   }
 
   async transition(c: Context<DyrectedContext>) {
@@ -584,9 +700,7 @@ export class CollectionController {
     const readAccess = this.collection.access?.read;
     if (readAccess !== undefined && readAccess !== null) {
       const args = { user: c.get('user'), req: c.req as any, doc: document };
-      const result = typeof readAccess === 'function'
-        ? await readAccess(args)
-        : await evaluateAccess(readAccess, args);
+      const result = await resolveAccess(config, readAccess, args);
       let allowed = result === true;
       if (result && typeof result === 'object') {
         const match = await config.db.find({
@@ -720,6 +834,11 @@ export class CollectionController {
     const doc = await db!.findOne({ collection: this.collection.slug, id });
     if (!doc) return c.json({ message: 'Not Found' }, 404);
 
+    const deleteAccess = await this.evaluateAccess(c, 'delete', { id, doc });
+    if (!deleteAccess.allowed) {
+      return c.json({ error: true, message: `Access denied: delete on ${this.collection.slug}` }, 403);
+    }
+
     let before: any = null;
     if (this.collection.audit) {
       before = doc;
@@ -793,6 +912,12 @@ export class CollectionController {
         const doc = await db.findOne({ collection: this.collection.slug, id });
         if (!doc) {
           failed.push({ id, error: 'Not Found' });
+          continue;
+        }
+
+        const deleteAccess = await this.evaluateAccess(c, 'delete', { id, doc });
+        if (!deleteAccess.allowed) {
+          failed.push({ id, error: 'Access denied' });
           continue;
         }
 

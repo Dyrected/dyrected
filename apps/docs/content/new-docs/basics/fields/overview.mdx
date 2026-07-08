@@ -30,12 +30,14 @@ Give every named field an explicit `label`. It keeps internal camelCase names ou
 
 Most field types accept a common set of base options:
 
-- `name` — the persisted key. Treat renames as data migrations.
-- `label` — the human-readable name shown to editors.
-- `required` — whether the field must have a value.
-- `defaultValue` — the value used when none is provided.
-- `unique` and `index` — storage constraints on relational adapters.
-- `admin` — per-field admin options such as descriptions and conditional display.
+- `name` — the persisted key. A rename is a data migration, so plan it with [database migrations](/new-docs/basics/database/migrations) or the `renameTo` fallback.
+- `label` — the human-readable name shown to editors. Defaults to a title-cased `name`.
+- `required` — whether the field must have a value. A missing value fails validation with a `400`.
+- `unique` — enforces a database uniqueness constraint. A duplicate write fails with a `409`.
+- `defaultValue` — the value used when a new document omits the field. It is evaluated on the server.
+- `promoted` — pulls the field out of the JSON document into its own indexed column so you can filter and sort on it quickly. See [Database indexes](/new-docs/basics/database/indexes).
+- `access` — per-field `read` and `update` rules that hide or lock the field for some users. See [Field access control](/new-docs/basics/access-control/fields).
+- `admin` — per-field admin options such as descriptions, placeholders, and conditional display.
 
 ## Choosing a field type
 
@@ -47,6 +49,8 @@ Each field type has its own page with a focused example and its generated contra
 - Structure and nesting: [Group](/new-docs/basics/fields/group), [Array](/new-docs/basics/fields/array), [Blocks](/new-docs/basics/fields/blocks), [Row](/new-docs/basics/fields/row)
 - Relationships and files: [Relationship](/new-docs/basics/fields/relationship), [Upload](/new-docs/basics/fields/upload), [Join](/new-docs/basics/fields/join)
 - Data and layout: [JSON](/new-docs/basics/fields/json)
+
+A few related types don't have their own page yet. `datetime` and `time` are finer-grained relatives of [Date](/new-docs/basics/fields/date) and appear in its reference. `multiSelect` is the multi-value form of [Select](/new-docs/basics/fields/select). And `url` and `icon` cover links and Lucide icon names. Reach for each one the way you would its closest listed relative.
 
 ## Generated reference
 

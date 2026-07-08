@@ -3,11 +3,15 @@ title: Number
 description: A numeric field for integers and decimals.
 ---
 
-The number field stores a numeric value. Use it for prices, quantities, ratings, ordering weights, and any value you want to store and query as a number rather than text.
+The number field stores a numeric value — integers or decimals. Use it for prices, quantities, ratings, ordering weights, and any value you want to store, filter, and sort as a number rather than text.
 
 ```ts
 defineNumberField({ name: 'price', label: 'Price', required: true })
 ```
+
+Dyrected keeps the number field deliberately small: there are no built-in `min`, `max`, or `step` options. When you need range checks, rounding, or a computed total, add a [collection hook](/new-docs/basics/hooks/overview) that runs on write. Keeping the rule in a hook enforces it on every path, not just the admin form.
+
+If you filter or sort on a number often, mark it `promoted` so it becomes an indexed column. See [Database indexes](/new-docs/basics/database/indexes).
 
 ## Generated reference
 

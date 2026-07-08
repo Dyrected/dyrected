@@ -3,11 +3,13 @@ title: Textarea
 description: A multi-line plain-text field for longer, unformatted content.
 ---
 
-The textarea field stores multiple lines of plain text. Use it for summaries, descriptions, and other longer content that does not need formatting. When you need bold, links, or headings, use [Rich Text](/new-docs/basics/fields/rich-text) instead.
+The textarea field stores multiple lines of plain text. Use it for summaries, meta descriptions, plain-text notes, and other longer content that does not need formatting. When you need bold, links, headings, or embedded media, reach for [Rich Text](/new-docs/basics/fields/rich-text) instead; for a single short line, use [Text](/new-docs/basics/fields/text).
 
 ```ts
 defineTextareaField({ name: 'excerpt', label: 'Excerpt' })
 ```
+
+Like [Text](/new-docs/basics/fields/text), a textarea accepts advisory `maxLength` and `maxWords` limits that show a live counter in the editor. They guide writers but do not hard-reject an over-length value; enforce a strict cap with a [hook](/new-docs/basics/hooks/overview) when you need one.
 
 ## Generated reference
 

@@ -1,3 +1,149 @@
 ---
 title: Overview
+description: How Dyrected decides who can read and write your data — the allow/deny rules you attach to collections, globals, and fields.
 ---
+
+Access control is how you decide who is allowed to do what with your data. In Dyrected you express that as small rules attached directly to a collection, a global, or a field. There is no separate permissions table and no global role registry to keep in sync — the rule lives next to the thing it protects, and Dyrected checks it on every request.
+
+This page explains the model: what a rule is, when it runs, and what it can see. The pages that follow show exactly where to put rules for [collections](/new-docs/basics/access-control/collections), [globals](/new-docs/basics/access-control/globals), and [fields](/new-docs/basics/access-control/fields).
+
+## The mental model
+
+An access rule answers one question: *should this request be allowed?* Dyrected runs the rule on the server, before it touches the database, and reads the result as a simple yes or no.
+
+- A truthy result **allows** the operation and the request continues.
+- A falsy result **denies** it, and Dyrected responds with `403 Forbidden`.
+
+A denied request comes back in a consistent shape, so your frontend can detect it reliably:
+
+```json
+{ "error": true, "message": "Access denied: read on posts" }
+```
+
+Because the check happens before the database call, a denied read never loads the document and a denied write never persists anything.
+
+## Writing a rule
+
+Dyrected supports four rule shapes:
+
+- a **boolean** for always allow or always deny
+- a **Jexl string** for serializable rule logic
+- a **JavaScript function** for self-hosted server logic
+- a **named policy** for shared server-side rules such as `{ policy: 'isAdmin' }`
+
+The simplest rules are plain booleans:
+
+```ts
+access: {
+  read: true,    // anyone can read
+  create: false, // nobody can create through the API
+}
+```
+
+Most real rules check the current user. This one allows the operation only for signed-in admins:
+
+```ts
+access: {
+  delete: "'admin' in user.roles",
+}
+```
+
+Jexl looks like ordinary JavaScript comparison syntax, but it is a restricted expression language, not full JavaScript. That restriction is deliberate: rules stay serializable, so the same rule can be evaluated on the server and understood by the admin panel.
+
+When you need full server logic in a self-hosted app, use a function:
+
+```ts
+access: {
+  update: ({ user, doc }) => user?.roles?.includes('admin') || user?.sub === doc?.authorId,
+}
+```
+
+When you want a shared reusable rule, register it once in `accessPolicies` and reference it by name:
+
+```ts
+export default defineConfig({
+  accessPolicies: {
+    isAdmin: ({ user }) => user?.roles?.includes('admin') ?? false,
+  },
+  collections: [
+    defineCollection({
+      slug: 'posts',
+      access: {
+        delete: { policy: 'isAdmin' },
+      },
+      fields: [{ name: 'title', type: 'text' }],
+    }),
+  ],
+  globals: [],
+})
+```
+
+<Warning>
+Dyrected Cloud sync only carries **booleans, Jexl strings, and named policies**. If you sync a raw function rule to Cloud, the CLI strips it from the payload and warns you. Rewrite Cloud-bound rules as Jexl or named policies before relying on them.
+</Warning>
+
+## What a rule can see
+
+Every rule is evaluated with two values in scope:
+
+| Variable | What it is |
+|---|---|
+| `user` | The authenticated user, or `undefined` if the request is anonymous |
+| `req` | The incoming request context (headers and query parameters) |
+
+The `user` object is the caller's own record, loaded fresh from the database on each request, so it includes whatever fields your auth collection defines. A few properties are always present:
+
+| Property | Type | Meaning |
+|---|---|---|
+| `user.sub` / `user.id` | `string` | The user's document ID |
+| `user.email` | `string` | The user's email address |
+| `user.collection` | `string` | The auth collection the user signed in against |
+| `user.roles` | `string[]` | Role strings, when your auth collection has a `roles` field |
+
+The scaffolded auth collection ships with a `roles` field offering `admin`, `editor`, and `viewer`, which is why `'admin' in user.roles` is the idiom you will see most often. For the full picture of what lands on `user`, see [Token data](/new-docs/features/authentication/token-data).
+
+Guarding against anonymous requests is a matter of checking whether `user` exists:
+
+```ts
+access: {
+  read: "user != null",   // any signed-in user
+}
+```
+
+## Where rules live
+
+Access rules attach at three levels, each with its own set of operations:
+
+| Level | Operations | Enforced by |
+|---|---|---|
+| [Collections](/new-docs/basics/access-control/collections) | `read`, `create`, `update`, `delete` | The API, on every request |
+| [Globals](/new-docs/basics/access-control/globals) | `read`, `update` | The API, on every request |
+| [Fields](/new-docs/basics/access-control/fields) | `read`, `update` | The admin panel |
+
+Collection and global rules are your real authorization boundary — they run in the API before any database work. Field rules are different: they shape how the admin panel displays a field (hidden or read-only) and are not a server-side security check. The [Fields](/new-docs/basics/access-control/fields) page explains that distinction and how to enforce field-level rules on the server when you need to.
+
+## Default access
+
+If you do not set a rule for an operation, that operation is **open**. A collection with no `access` block can be read, created, updated, and deleted by anyone who can reach the API.
+
+<Warning>
+Access is open by default, not locked down. Set explicit rules on any collection or global that holds data you would not publish publicly, and treat a missing rule as "public" while you review your config.
+</Warning>
+
+A practical habit is to start every collection from a closed position and open up only what a given operation needs:
+
+```ts
+access: {
+  read: "user != null",
+  create: "'admin' in user.roles",
+  update: "'admin' in user.roles",
+  delete: "'admin' in user.roles",
+}
+```
+
+## Where to go next
+
+- [Collection access control](/new-docs/basics/access-control/collections) — the four operations, with recipes for common setups.
+- [Global access control](/new-docs/basics/access-control/globals) — read and update rules for single-document config.
+- [Field access control](/new-docs/basics/access-control/fields) — hiding and locking fields in the admin panel.
+- [Hooks](/new-docs/basics/hooks/overview) — where to put ownership checks and other logic that needs the document itself.

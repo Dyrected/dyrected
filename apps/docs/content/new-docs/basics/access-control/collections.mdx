@@ -1,3 +1,241 @@
 ---
 title: Collections
+description: Read, create, update, and delete rules that decide who can touch a collection's documents.
 ---
+
+Collection access control is where you lock down a collection's data. You attach up to four rules — one for each operation — to the `access` key of a collection, and Dyrected checks the matching rule on every API request before it runs the operation.
+
+If you have not yet, read the [Access Control overview](/new-docs/basics/access-control/overview) first. It covers the shared model: a rule can be a boolean, a Jexl string, a function, or a named policy. This page focuses on what each collection operation means and how to use collection rules in real projects.
+
+## The shape
+
+All four rules live under `access`. Here is a collection that lets any signed-in user read, restricts writing to editors, and reserves deletion for admins:
+
+```ts
+import { defineCollection } from '@dyrected/core'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  access: {
+    read: 'user != null',
+    create: "'admin' in user.roles || 'editor' in user.roles",
+    update: "'admin' in user.roles || 'editor' in user.roles",
+    delete: "'admin' in user.roles",
+  },
+  fields: [
+    // ...
+  ],
+})
+```
+
+Each key is optional. Any operation you leave out is **open** — see [Default access](#default-access) below.
+
+## How operations map to requests
+
+Each rule guards a specific operation, which maps to an HTTP method on the collection's API:
+
+| Operation | HTTP method | Access key |
+|---|---|---|
+| List documents and fetch one by ID | `GET` | `read` |
+| Create a document | `POST` | `create` |
+| Update a document | `PATCH` | `update` |
+| Delete a document | `DELETE` | `delete` |
+
+Listing and fetching a single document share the same `read` rule. If your `read` rule returns a filter object instead of `true`, Dyrected applies that filter to list queries and checks single-document requests against it.
+
+## The four operations
+
+### Read
+
+`read` decides who can list a collection and fetch its documents. Use it to draw the line between public content and content that requires a login.
+
+```ts
+access: {
+  read: true, // published content anyone can fetch
+}
+```
+
+To require authentication instead, check for a user:
+
+```ts
+access: {
+  read: 'user != null',
+}
+```
+
+### Create
+
+`create` decides who can add new documents. A common pattern is to open creation to the public for something like a contact form, while keeping everything else staff-only:
+
+```ts
+access: {
+  create: true, // e.g. a public submission form
+}
+```
+
+Or restrict it to a role:
+
+```ts
+access: {
+  create: "'admin' in user.roles || 'editor' in user.roles",
+}
+```
+
+### Update
+
+`update` decides who can modify existing documents:
+
+```ts
+access: {
+  update: "'admin' in user.roles || 'editor' in user.roles",
+}
+```
+
+### Delete
+
+`delete` decides who can remove documents. Deletion is usually the most restricted operation, so reserving it for admins is a sensible default:
+
+```ts
+access: {
+  delete: "'admin' in user.roles",
+}
+```
+
+## What a collection rule receives
+
+Collection rules run on the server and receive the standard access context from the [overview](/new-docs/basics/access-control/overview#what-a-rule-can-see):
+
+- `user` for the authenticated caller
+- `req` for request metadata
+- `doc` when Dyrected is checking a specific existing document
+- `data` when Dyrected is checking an incoming create or update payload
+
+That means collection access can handle both broad role checks and document-aware rules.
+
+## Document-aware rules
+
+If you need ownership or tenant scoping, return a `where`-style object from a function or named policy:
+
+```ts
+access: {
+  read: ({ user }) => ({
+    author: { equals: user?.sub },
+  }),
+  update: ({ user }) => ({
+    author: { equals: user?.sub },
+  }),
+}
+```
+
+On list requests, Dyrected merges that filter into the query. On single-document update or delete requests, Dyrected checks whether the target document matches the returned constraint before continuing.
+
+If you need to inspect the incoming payload directly, use `data`:
+
+```ts
+access: {
+  create: ({ user, data }) =>
+    'editor' in (user?.roles ?? []) && data?.status !== 'published',
+}
+```
+
+## Common setups
+
+<Tabs items={['Public blog', 'Contact form', 'Role tiers', 'Locked down']}>
+<Tab value="Public blog">
+
+Anyone can read. Editors and admins can create and update. Only admins can delete.
+
+```ts
+export const Posts = defineCollection({
+  slug: 'posts',
+  access: {
+    read: true,
+    create: "'admin' in user.roles || 'editor' in user.roles",
+    update: "'admin' in user.roles || 'editor' in user.roles",
+    delete: "'admin' in user.roles",
+  },
+  fields: [
+    // ...
+  ],
+})
+```
+
+</Tab>
+<Tab value="Contact form">
+
+Anyone can submit. Only signed-in staff can read submissions. Nobody edits or deletes through the API.
+
+```ts
+export const Inquiries = defineCollection({
+  slug: 'inquiries',
+  access: {
+    create: true,
+    read: 'user != null',
+    update: false,
+    delete: "'admin' in user.roles",
+  },
+  fields: [
+    { name: 'name', label: 'Name', type: 'text', required: true },
+    { name: 'email', label: 'Email', type: 'email', required: true },
+    { name: 'message', label: 'Message', type: 'textarea' },
+  ],
+})
+```
+
+</Tab>
+<Tab value="Role tiers">
+
+A three-tier model: viewers read, editors write, admins delete. The scaffolded auth collection already offers these three roles.
+
+```ts
+export const Articles = defineCollection({
+  slug: 'articles',
+  access: {
+    read: 'user != null',
+    create: "'admin' in user.roles || 'editor' in user.roles",
+    update: "'admin' in user.roles || 'editor' in user.roles",
+    delete: "'admin' in user.roles",
+  },
+  fields: [
+    // ...
+  ],
+})
+```
+
+</Tab>
+<Tab value="Locked down">
+
+Nothing is public. Every operation requires the right role. This is a good starting point to open up from.
+
+```ts
+export const Secrets = defineCollection({
+  slug: 'secrets',
+  access: {
+    read: "'admin' in user.roles",
+    create: "'admin' in user.roles",
+    update: "'admin' in user.roles",
+    delete: "'admin' in user.roles",
+  },
+  fields: [
+    // ...
+  ],
+})
+```
+
+</Tab>
+</Tabs>
+
+## Default access
+
+Any operation without a rule is **open**. A collection with no `access` block at all can be read, created, updated, and deleted by anyone who can reach the API.
+
+<Warning>
+Access is open by default. Set explicit rules on every collection that holds data you would not publish publicly. If you want an operation off entirely, set it to `false` rather than omitting it.
+</Warning>
+
+## Related pages
+
+- [Access control overview](/new-docs/basics/access-control/overview) — the model behind these rules.
+- [Field access control](/new-docs/basics/access-control/fields) — control field-level reads and writes.
+- [Collection configuration](/new-docs/basics/configuration/collections) — everything else you can set on a collection.
+- [Collection hooks](/new-docs/basics/hooks/collections) — run logic with access to the document itself.

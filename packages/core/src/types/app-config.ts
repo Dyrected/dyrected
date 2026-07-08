@@ -1,5 +1,6 @@
 import type { AdminAuthConfig } from "./admin-auth.js";
 import type { AdminConfig } from "./admin.js";
+import type { AccessPolicyResolver } from "./access.js";
 import type { DatabaseAdapter, ImageService, StorageAdapter } from "./adapters.js";
 import type { LifecycleEventHandler } from "./workflows.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
@@ -58,6 +59,12 @@ export interface DyrectedConfig {
    * power application/customer auth independently.
    */
   adminAuth?: AdminAuthConfig;
+
+  /**
+   * Named access policies available to collection, global, and field access
+   * rules via `{ policy: 'name' }`.
+   */
+  accessPolicies?: Record<string, AccessPolicyResolver>;
 
   /**
    * Email transport configuration. Required for welcome emails, password

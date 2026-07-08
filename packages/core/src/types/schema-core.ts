@@ -1,5 +1,5 @@
 import type { AuthenticatedUser, HookRequestContext } from "./request.js";
-import type { AccessFunction } from "./access.js";
+import type { AccessRule } from "./access.js";
 import type { DatabaseAdapter, ReadonlyDatabaseAdapter } from "./adapters.js";
 import type { AdminIconName } from "./admin.js";
 
@@ -119,12 +119,12 @@ export interface FieldBase {
   on?: string;
   /** Maximum number of joined documents returned by a `join` field. */
   limit?: number;
-  /** Field-level read and update access rules. */
+  /** Field-level read and update access rules. Supports functions, Jexl strings, booleans, and named policies. */
   access?: {
     /** Controls whether this field is returned in API responses. */
-    read?: AccessFunction | string;
+    read?: AccessRule;
     /** Controls whether incoming writes may change this field. */
-    update?: AccessFunction | string;
+    update?: AccessRule;
   };
   /** Admin-only presentation options for this field. */
   admin?: BaseFieldAdmin;

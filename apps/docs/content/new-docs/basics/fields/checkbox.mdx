@@ -3,10 +3,23 @@ title: Checkbox
 description: A boolean true/false toggle.
 ---
 
-The checkbox field stores a boolean value. Use it for on/off flags such as `featured`, `published`, or `acceptsTerms`.
+The checkbox field stores a boolean — `true` or `false`. Use it for on/off flags such as `featured`, `published`, or `acceptsTerms`. The helper is `defineBooleanField` and the stored type is `boolean`; "checkbox" names the default admin control, not the value.
 
 ```ts
 defineBooleanField({ name: 'featured', label: 'Featured', defaultValue: false })
+```
+
+Set a `defaultValue` so new documents start in a known state instead of an empty one.
+
+By default the admin panel renders a checkbox. Switch it to a toggle when that reads better for the flag — both store the same boolean:
+
+```ts
+defineBooleanField({
+  name: 'published',
+  label: 'Published',
+  defaultValue: false,
+  admin: { layout: 'switch' },
+})
 ```
 
 ## Generated reference

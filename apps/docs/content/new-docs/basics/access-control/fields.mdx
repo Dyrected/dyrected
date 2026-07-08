@@ -1,3 +1,120 @@
 ---
 title: Fields
+description: Control whether individual fields can be read or written, in the admin panel and on the API.
 ---
+
+Field access control lets you control a single field instead of the whole document. You can hide an internal note from everyone except admins, or make a slug editable only while the document is being created. You set this with `read` and `update` rules on a field's `access` key.
+
+Field access now affects both the admin UI and the server API:
+
+- `read` removes the field from API responses when access fails
+- `update` strips incoming writes to that field before the document is saved
+- the admin panel uses the same rules to hide or lock the field in the form
+
+Read the [Access Control overview](/new-docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.
+
+## The shape
+
+Add an `access` object with `read` and/or `update` to any field. Each rule is a Jexl expression string, or the literal `false` to always apply the restriction:
+
+```ts
+{
+  name: 'internalNotes',
+  type: 'textarea',
+  access: {
+    read: "'admin' in user.roles",
+    update: "'admin' in user.roles",
+  },
+}
+```
+
+Omit a rule (or set it to `true`) to leave the field fully available. Set a Jexl string to make it conditional, or `false` to always hide or lock it.
+
+## What each rule does
+
+### Read
+
+`read` decides whether the field appears in the edit form. When it evaluates to false, the admin panel **hides the field entirely** — the person editing never sees it.
+
+```ts
+{
+  name: 'internalNotes',
+  type: 'textarea',
+  access: {
+    read: "'admin' in user.roles", // only admins see this field
+  },
+}
+```
+
+### Update
+
+`update` decides whether the field can be changed. When it evaluates to false, the admin panel renders the field **read-only** — it is visible but cannot be edited.
+
+```ts
+{
+  name: 'slug',
+  type: 'text',
+  access: {
+    update: '!id', // editable while creating, locked once the document exists
+  },
+}
+```
+
+That `!id` rule is a useful pattern in the admin UI: `id` is only present once a document has been saved, so the field is editable during creation and becomes read-only afterward.
+
+## What a field rule can see
+
+Field rules are used in two places:
+
+- in the admin panel, where they see the form state
+- on the server, where they are evaluated during reads and writes
+
+In practice, the common inputs are:
+
+| Variable | What it is |
+|---|---|
+| `user` | The signed-in user |
+| `id` | The document's ID in admin form contexts |
+| `doc` | The current stored document on server-side checks |
+| `data` | The incoming write payload on server-side checks |
+| *(field values)* | The current form values in admin contexts |
+
+That split is useful to keep in mind: a rule can make the form feel right, and the same rule can still be enforced when a request comes in directly through the API.
+
+## A realistic example
+
+The scaffolded auth collection uses field access to manage its `roles` field: an admin can change other people's roles, but not their own, which prevents self-elevation. It expresses that with the form's `id` and the current `user`:
+
+```ts
+{
+  name: 'roles',
+  type: 'select',
+  options: [
+    { value: 'admin', label: 'Admin' },
+    { value: 'editor', label: 'Editor' },
+    { value: 'viewer', label: 'Viewer' },
+  ],
+  access: {
+    // an admin editing someone else's record — but not their own
+    update: "'admin' in user.roles && user.id != id",
+  },
+}
+```
+
+In the admin panel, a non-admin never gets an editable roles field, and an admin cannot edit their own. The same rule also protects the API write path, because Dyrected strips that field from unauthorized updates before saving.
+
+## When to still use hooks
+
+Field access is good for "this field should disappear" or "this field should not be writable." Hooks are still the right tool when you need to do more than allow or deny:
+
+- throw a custom error message
+- transform the incoming value
+- compare multiple fields and rewrite data
+- trigger side effects when a forbidden change is attempted
+
+## Related pages
+
+- [Access control overview](/new-docs/basics/access-control/overview) — the model behind these rules.
+- [Collection access control](/new-docs/basics/access-control/collections) — the API-enforced layer.
+- [Field configuration](/new-docs/basics/fields/overview) — the options every field accepts.
+- [Field hooks](/new-docs/basics/hooks/fields) — server-side logic per field.
