@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/core",
-  "version": "2.5.56",
+  "version": "2.5.57",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

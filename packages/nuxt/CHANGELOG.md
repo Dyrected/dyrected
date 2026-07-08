@@ -1,5 +1,24 @@
 # @dyrected/nuxt
 
+## 2.5.57
+
+### Patch Changes
+
+- 8e03174: Add type-safe field builder helpers and related updates.
+
+  - Add `defineField`, `defineBlock`, and a dedicated `define<Type>Field` helper for every field type (`defineTextField`, `defineRichTextField`, `defineRelationshipField`, …) to `@dyrected/core`. Each is an identity helper that injects the field `type` and preserves full document-shape inference through `defineCollection`/`defineGlobal`.
+  - Add configurable `features` and `headingLevels` to rich-text fields. The Admin rich-text editor now enables only the configured toolbar controls and editor capabilities (disabling a feature also removes its keyboard shortcut and paste handling).
+  - Migrate documentation examples, the `dyrected init` scaffold, and the `@dyrected/knowledge` recipes and prompt templates to use the new `define*Field` helpers.
+  - Rename the `JWT_SECRET` environment variable to `DYRECTED_JWT_SECRET` — update your `.env` accordingly.
+  - Filter unpublished documents out of public read responses.
+
+- Updated dependencies [44663d4]
+- Updated dependencies [8e03174]
+  - @dyrected/admin@2.5.57
+  - @dyrected/core@2.5.57
+  - @dyrected/vue@2.5.57
+  - @dyrected/sdk@2.5.57
+
 ## 2.5.56
 
 ### Patch Changes

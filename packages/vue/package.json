@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/vue",
-  "version": "2.5.56",
+  "version": "2.5.57",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

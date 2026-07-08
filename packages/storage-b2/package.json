@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/storage-b2",
-  "version": "2.5.56",
+  "version": "2.5.57",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
