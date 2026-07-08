@@ -7,6 +7,7 @@ import type {
   TextareaField as TextareaFieldSchema,
   UrlField as UrlFieldSchema,
   RelationshipField as RelationFieldSchema,
+  RichTextField as RichTextFieldSchema,
   CollectionConfig,
   GlobalConfig,
 } from "@dyrected/core"
@@ -140,8 +141,19 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       )
     }
     case "richText": {
-      const richTextMediaColl = (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
-      return <RichTextEditor collection={richTextMediaColl} value={field.value} onChange={field.onChange} disabled={disabled} />
+      const rtSchema = schema as RichTextFieldSchema
+      const richTextMediaColl =
+        rtSchema.uploadCollection || (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
+      return (
+        <RichTextEditor
+          collection={richTextMediaColl}
+          value={field.value}
+          onChange={field.onChange}
+          disabled={disabled}
+          features={rtSchema.features}
+          headingLevels={rtSchema.headingLevels}
+        />
+      )
     }
     case "json":
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />

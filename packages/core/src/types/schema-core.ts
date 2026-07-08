@@ -294,6 +294,49 @@ export type EmailFieldAdmin = CharacterLimitFieldAdmin;
 export type UrlFieldAdmin = CharacterLimitFieldAdmin;
 export type IconFieldAdmin = CharacterLimitFieldAdmin;
 
+/**
+ * Editor capabilities available on a `richText` field. Each feature maps to a
+ * formatting control in the Admin editor toolbar and to the underlying editor
+ * schema, so disabling a feature removes both its toolbar button and the
+ * capability itself (including keyboard shortcuts and paste handling).
+ */
+export type RichTextFeature =
+  | "bold"
+  | "italic"
+  | "underline"
+  | "strike"
+  | "heading"
+  | "bulletList"
+  | "orderedList"
+  | "blockquote"
+  | "align"
+  | "link"
+  | "table"
+  | "image";
+
+/** Heading levels offered by the `heading` rich-text feature. */
+export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface RichTextFieldConfig {
+  /**
+   * Editor capabilities to enable, in toolbar order. When omitted, every
+   * {@link RichTextFeature} is enabled (the default toolbar). Provide a subset
+   * to restrict what editors can do — for example `['bold', 'italic', 'link']`
+   * for a lightweight inline editor.
+   */
+  features?: RichTextFeature[];
+  /**
+   * Heading levels offered when the `heading` feature is enabled.
+   * Defaults to `[1, 2, 3]`.
+   */
+  headingLevels?: HeadingLevel[];
+  /**
+   * Upload collection slug used by the `image` feature's media picker.
+   * Defaults to the first collection configured with `upload: true`.
+   */
+  uploadCollection?: string;
+}
+
 export type TextField = TypedField<"text", string, TextFieldAdmin> & CharacterLimitFieldConfig & WordLimitFieldConfig;
 export type TextareaField = TypedField<"textarea", string, TextareaFieldAdmin> &
   CharacterLimitFieldConfig &
@@ -311,7 +354,7 @@ export type BooleanField = TypedField<"boolean", boolean, BooleanFieldAdmin>;
 export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
 export type RelationshipField = TypedField<"relationship", string | string[]>;
 export type ImageField = TypedField<"image", string | string[]>;
-export type RichTextField = TypedField<"richText", Record<string, unknown>>;
+export type RichTextField = TypedField<"richText", Record<string, unknown>> & RichTextFieldConfig;
 export type JsonField = TypedField<"json", Record<string, unknown>>;
 export type ObjectField = TypedField<"object", unknown>;
 export type ArrayField = TypedField<"array", unknown>;
