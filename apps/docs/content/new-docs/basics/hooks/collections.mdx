@@ -1,3 +1,210 @@
 ---
 title: Collections
+description: Use collection hooks to shape reads, validate writes, and run side effects around a collection document's lifecycle.
 ---
+
+Collection hooks are the document-level lifecycle hooks for repeatable content. Use them when the logic belongs to the whole document or to the operation itself: filtering reads, validating a write against several fields, stamping derived data, checking references before delete, or kicking off follow-up work after a save succeeds.
+
+By the end of this page, you should know what each collection hook sees, what it is allowed to change, and which phase is the safest fit for the job.
+
+## The shape
+
+Collection hooks live under the collection's `hooks` key:
+
+```ts
+import { defineCollection, defineTextField } from '@dyrected/core'
+
+export const Posts = defineCollection({
+  slug: 'posts',
+  fields: [
+    defineTextField({ name: 'title', label: 'Title', required: true }),
+    defineTextField({ name: 'slug', label: 'Slug' }),
+  ],
+  hooks: {
+    beforeRead: [],
+    afterRead: [],
+    beforeChange: [],
+    afterChange: [],
+    beforeDelete: [],
+    afterDelete: [],
+  },
+})
+```
+
+Each key accepts an array of sync or async functions. Hooks run in array order.
+
+## The six lifecycle phases
+
+### `beforeRead`
+
+`beforeRead` runs before Dyrected queries the database for a list or a single document. It receives the current query object and can return a replacement filter.
+
+Use it when you want to narrow or rewrite reads at the hook layer:
+
+```ts
+hooks: {
+  beforeRead: [
+    ({ query, user }) => {
+      if (user?.roles?.includes('admin')) return query
+      return {
+        AND: [
+          query ?? {},
+          { status: { equals: 'published' } },
+        ],
+      }
+    },
+  ],
+}
+```
+
+This is the right place to adjust what is fetched. It is not the right place for side effects.
+
+<Note>
+Reach for [access control](/new-docs/basics/access-control/collections) first when the question is who is allowed to see a document at all. Reach for `beforeRead` when the question is how an already-allowed read should be shaped or narrowed at the hook layer.
+</Note>
+
+### `afterRead`
+
+`afterRead` runs after a document is fetched and before it is returned from the API. On list endpoints, it runs once per document.
+
+Use it when the stored data is correct as-is, but the response should be shaped differently:
+
+```ts
+hooks: {
+  afterRead: [
+    ({ doc, user }) => {
+      if (user?.roles?.includes('admin')) return doc
+      return { ...doc, internalNotes: undefined }
+    },
+  ],
+}
+```
+
+`afterRead` receives a read-only database adapter. It can look things up, but it cannot write.
+
+### `beforeChange`
+
+`beforeChange` runs before a create or update is written. It receives the incoming `data`, the existing `doc` on updates, and the `operation` (`'create'` or `'update'`).
+
+This is the main server-side normalization and validation phase:
+
+```ts
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+hooks: {
+  beforeChange: [
+    ({ data, operation, doc }) => {
+      const title = typeof data.title === 'string' ? data.title : doc?.title
+      if (!title) return data
+
+      return {
+        ...data,
+        slug: slugify(title),
+        updatedAtLabel: operation === 'create' ? 'created' : 'updated',
+      }
+    },
+  ],
+}
+```
+
+Throw from `beforeChange` to stop the write entirely.
+
+### `afterChange`
+
+`afterChange` runs after a create or update is committed. It receives the saved `doc`, the `previousDoc` on updates, the operation, and a writable database adapter.
+
+Use it for side effects that should only happen after the document is real:
+
+```ts
+async function notifySearchIndex(doc: { id: string }) {
+  await fetch(`https://example.com/search/reindex/${doc.id}`, { method: 'POST' })
+}
+
+hooks: {
+  afterChange: [
+    async ({ doc, operation, previousDoc }) => {
+      if (operation === 'update' && previousDoc?.title === doc.title) return
+      await notifySearchIndex(doc)
+    },
+  ],
+}
+```
+
+If an `afterChange` hook fails, Dyrected logs the error and keeps the write. That makes it the safe place for webhooks, cache busting, emails, and follow-up writes.
+
+### `beforeDelete`
+
+`beforeDelete` runs before a document is removed. Use it to enforce invariants such as "this record cannot be deleted while something else still points at it."
+
+```ts
+hooks: {
+  beforeDelete: [
+    async ({ id, db }) => {
+      const refs = await db.find({
+        collection: 'posts',
+        where: { category: { equals: id } },
+        limit: 1,
+      })
+
+      if (refs.total > 0) {
+        throw new Error('Delete the related posts first.')
+      }
+    },
+  ],
+}
+```
+
+Like `beforeChange`, this phase gets a read-only database adapter and can abort the operation by throwing.
+
+### `afterDelete`
+
+`afterDelete` runs after the deletion has already happened. Use it for cleanup work that should not block the delete itself.
+
+```ts
+hooks: {
+  afterDelete: [
+    async ({ doc, db }) => {
+      await db.create({
+        collection: 'audit-log',
+        data: {
+          action: 'deleted-category',
+          deletedId: doc.id,
+        },
+      })
+    },
+  ],
+}
+```
+
+This phase gets a writable database adapter, and its errors are isolated the same way as `afterChange`.
+
+## What the phases can safely do
+
+| Hook | Reads from DB | Writes to DB | Return value used | Best use |
+|---|---|---|---|---|
+| `beforeRead` | Yes, read-only | No | Yes | Rewrite the query before fetch |
+| `afterRead` | Yes, read-only | No | Yes | Reshape the returned document; on list reads, runs once per document |
+| `beforeChange` | Yes, read-only | No | Yes | Validate and normalize incoming data |
+| `afterChange` | Yes | Yes | No | Side effects after save |
+| `beforeDelete` | Yes, read-only | No | No | Block unsafe deletes |
+| `afterDelete` | Yes | Yes | No | Cleanup after delete |
+
+## A few practical rules
+
+- Prefer `beforeChange` for anything that must affect the stored data.
+- Prefer `afterChange` for anything that talks to another system.
+- Use `previousDoc` in `afterChange` when the side effect depends on what changed.
+- Keep access decisions in [access control](/new-docs/basics/access-control/collections) when the question is allow or deny. Use hooks when the question is transform, validate, react, or reshape an already-authorized operation.
+
+## Related pages
+
+- [Hooks overview](/new-docs/basics/hooks/overview) for the full map of hook families.
+- [Global hooks](/new-docs/basics/hooks/globals) for the singleton lifecycle.
+- [Field hooks](/new-docs/basics/hooks/fields) for value-level transforms.
+- [Hook context](/new-docs/basics/hooks/context) for the `req`, `user`, and `db` arguments these hooks receive.

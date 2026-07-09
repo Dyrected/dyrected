@@ -3,42 +3,136 @@ title: Overview
 description: Hooks let you run server-side logic before and after documents are read and written.
 ---
 
-Hooks are functions Dyrected runs at defined points in a document's lifecycle. They are the right place to validate input, derive values, enforce invariants, and trigger side effects such as cache revalidation or notifications.
+Hooks are where you put logic that should run as part of Dyrected's data lifecycle itself, not as an optional extra around it. They are the right tool when a value must be normalized before save, a response must be reshaped before it leaves the API, or a successful write should trigger follow-up work such as cache revalidation, notifications, or audit records.
 
-Every hook runs on the server, so they are safe to use for logic you never want a client to bypass.
+By the end of this page, you should know which kind of hook to reach for, what each phase is good at, and where to go next for the exact lifecycle you need.
 
-## Where hooks run
+## The mental model
 
-Hooks are configured per collection, per global, and per field. Collection and global hooks share the same lifecycle shape:
+Dyrected has three hook surfaces:
 
-- `beforeRead` runs before the database is queried.
-- `afterRead` runs on each document after it is fetched.
-- `beforeChange` runs before a create or update is written.
-- `afterChange` runs after a write is committed, for side effects.
-- `beforeDelete` and `afterDelete` bracket deletions (collections only).
+- **Collection hooks** for document-level logic on repeatable content.
+- **Global hooks** for document-level logic on singleton data such as site settings.
+- **Field hooks** for logic that belongs to one field value rather than the whole document.
+
+There is also a small set of **admin field hooks** that run in the browser to make forms reactive. Those are useful for editor experience, but they are not a security boundary. If a rule must hold on every write path, put it in a server hook.
+
+## Where each hook family fits
+
+### Collections
+
+Collection hooks wrap the full lifecycle of a document in a collection:
+
+- `beforeRead`
+- `afterRead`
+- `beforeChange`
+- `afterChange`
+- `beforeDelete`
+- `afterDelete`
+
+Reach for them when the logic depends on several fields, the whole document, or the surrounding operation.
+
+### Globals
+
+Global hooks work the same way, but globals only support the phases that make sense for a singleton document:
+
+- `beforeRead`
+- `afterRead`
+- `beforeChange`
+- `afterChange`
+
+There are no delete hooks because globals are updated in place rather than removed.
+
+### Fields
+
+Field hooks stay close to one value:
+
+- `beforeChange`
+- `afterRead`
+
+They are a good fit for value-level normalization, masking, formatting, and recursive behavior inside nested fields.
+
+### Admin field hooks
+
+Admin field hooks run in the form UI:
+
+- `admin.hooks.onChange`
+- `admin.hooks.options`
+
+Use them to derive a slug, recalculate a total, or update select options as editors change related fields.
+
+## The recommended decision tree
+
+- Use a **field hook** when one field can be transformed on its own.
+- Use a **collection or global hook** when the logic depends on several fields or on the operation itself.
+- Use an **admin hook** when the goal is immediate editor feedback in the dashboard.
+- Use **access control** instead of hooks when the question is simply who can read or write.
+
+## A complete example
+
+This collection uses both sides of the lifecycle: `beforeChange` prepares the data that should be stored, and `afterChange` reacts only after the write has succeeded.
 
 ```ts
 import { defineCollection, defineTextField } from '@dyrected/core'
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+async function revalidateTag(tag: string) {
+  await fetch(`https://example.com/api/revalidate?tag=${tag}`, { method: 'POST' })
+}
+
 export const Posts = defineCollection({
   slug: 'posts',
-  fields: [defineTextField({ name: 'title', label: 'Title' })],
+  fields: [
+    defineTextField({ name: 'title', label: 'Title', required: true }),
+    defineTextField({ name: 'slug', label: 'Slug' }),
+  ],
   hooks: {
-    beforeChange: [({ data }) => ({ ...data, slug: slugify(data.title) })],
-    afterChange: [({ doc }) => revalidateTag(`post-${doc.id}`)],
+    beforeChange: [
+      ({ data }) => {
+        if (!data.title || typeof data.title !== 'string') return data
+        return { ...data, slug: slugify(data.title) }
+      },
+    ],
+    afterChange: [
+      async ({ doc }) => {
+        await revalidateTag(`post-${doc.id}`)
+      },
+    ],
   },
 })
 ```
 
-Hooks in an array run in order, and each hook's return value feeds the next. Throwing inside a `before*` hook aborts the operation; `after*` hooks are for side effects and their errors are isolated so a failed webhook never turns a successful write into a `500`.
+What this gives you:
 
-## Field hooks
+- The slug is derived on the server, so every write path gets the same result.
+- The page revalidation only happens after the document is committed.
+- A failed revalidation does not undo the saved document.
 
-Field-level hooks let you transform a single field's value as it is read or written, without touching the rest of the document. They are useful for encryption, formatting, and computed field values.
+## Runtime rules worth remembering
+
+- Hooks in an array run in order.
+- When a `before*` hook returns a value, that value becomes the input to the next hook in the chain.
+- Throwing inside `beforeRead`, `beforeChange`, or `beforeDelete` stops the operation.
+- `afterChange` and `afterDelete` are for side effects after persistence. Their return values are ignored, and their errors are isolated so a successful write is not turned into a `500`.
+- Server hooks receive a database adapter, but only `afterChange` and `afterDelete` get a writable one.
+
+## What to read next
+
+- [Collection hooks](/new-docs/basics/hooks/collections) for the full document lifecycle on collections.
+- [Global hooks](/new-docs/basics/hooks/globals) for singleton settings and site-wide config.
+- [Field hooks](/new-docs/basics/hooks/fields) for value-level transforms and admin form reactivity.
+- [Hook context](/new-docs/basics/hooks/context) for the `req`, `user`, and `db` values hooks receive.
 
 ## Generated reference
 
-The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so every hook signature stays in sync with the package. Use them to see exactly what arguments each hook receives and what it may return.
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so every hook signature stays in sync with the package. Use them when you need the exact argument and return types behind the guidance above.
 
 {/* GENERATED:REFERENCE-HOOKS:START */}
 ## AuthenticatedUser

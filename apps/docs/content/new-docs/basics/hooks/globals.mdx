@@ -1,3 +1,136 @@
 ---
 title: Globals
+description: Use global hooks to shape reads and updates for singleton documents such as site settings.
 ---
+
+Global hooks give you the same document-level control as collection hooks, but for singleton documents. They are the right fit for site settings, navigation, feature flags, or any other record that exists once and is updated in place.
+
+By the end of this page, you should know which global hook to use for read shaping, validation, and post-update side effects.
+
+## The shape
+
+Globals support four lifecycle phases:
+
+```ts
+import { defineGlobal, defineTextField } from '@dyrected/core'
+
+export const SiteSettings = defineGlobal({
+  slug: 'site-settings',
+  fields: [
+    defineTextField({ name: 'siteName', label: 'Site name' }),
+  ],
+  hooks: {
+    beforeRead: [],
+    afterRead: [],
+    beforeChange: [],
+    afterChange: [],
+  },
+})
+```
+
+There are no delete hooks because globals are not deleted through the API.
+
+## The four lifecycle phases
+
+### `beforeRead`
+
+`beforeRead` runs before Dyrected fetches the global. Use it when the read should depend on request metadata or the caller before the stored document is returned.
+
+Its shape matches collection `beforeRead`, so it is most useful when you want to inspect `req`, `user`, or the incoming query parameters consistently across reads.
+
+### `afterRead`
+
+`afterRead` runs after the global document is fetched and before the response is sent.
+
+Use it to shape what callers receive without changing what is stored:
+
+```ts
+hooks: {
+  afterRead: [
+    ({ doc, user }) => {
+      if (user?.roles?.includes('admin')) return doc
+      return { ...doc, internalBannerText: undefined }
+    },
+  ],
+}
+```
+
+As with collection hooks, this phase gets a read-only database adapter.
+
+### `beforeChange`
+
+`beforeChange` runs before the global is updated. Its `operation` is always `'update'`, because globals are updated in place.
+
+Use it for normalization and guardrails:
+
+```ts
+hooks: {
+  beforeChange: [
+    ({ data, doc }) => {
+      const siteName = typeof data.siteName === 'string' ? data.siteName.trim() : doc?.siteName
+      return {
+        ...data,
+        siteName,
+      }
+    },
+  ],
+}
+```
+
+Throwing here cancels the update.
+
+### `afterChange`
+
+`afterChange` runs after the global update is committed. This is the right place for cache revalidation, search-index sync, or notifying another system that site-wide config changed.
+
+```ts
+import { defineGlobal, defineTextField } from '@dyrected/core'
+
+async function revalidateRoute(path: string) {
+  await fetch(`https://example.com/api/revalidate?path=${encodeURIComponent(path)}`, {
+    method: 'POST',
+  })
+}
+
+export const SiteSettings = defineGlobal({
+  slug: 'site-settings',
+  fields: [
+    defineTextField({ name: 'siteName', label: 'Site name' }),
+  ],
+  hooks: {
+    afterChange: [
+      async () => {
+        await Promise.all([
+          revalidateRoute('/'),
+          revalidateRoute('/about'),
+        ])
+      },
+    ],
+  },
+})
+```
+
+This phase receives the updated `doc`, the `previousDoc`, and a writable database adapter. Like collection `afterChange`, its errors are isolated from the already-successful write.
+
+## What globals are especially good at
+
+Global hooks are most useful when one change has broad frontend impact:
+
+- refreshing header or footer data after an update
+- invalidating cached layout pages
+- keeping a mirror of site settings in another service
+- normalizing editor-entered config values before they become canonical
+
+## What differs from collections
+
+- No `beforeDelete` or `afterDelete`
+- `operation` is always `'update'`
+
+If you need per-document logic on many records, that belongs on a [collection hook](/new-docs/basics/hooks/collections), not a global.
+
+## Related pages
+
+- [Hooks overview](/new-docs/basics/hooks/overview) for the shared mental model.
+- [Collection hooks](/new-docs/basics/hooks/collections) for repeatable content.
+- [Global configuration](/new-docs/basics/configuration/globals) for the rest of the global config surface.
+- [Hook context](/new-docs/basics/hooks/context) for the request and user data hook functions receive.
