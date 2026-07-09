@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/storage-cloudinary",
-  "version": "2.5.58",
+  "version": "2.5.59",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

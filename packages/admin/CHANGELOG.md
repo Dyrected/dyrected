@@ -1,5 +1,13 @@
 # @dyrected/admin
 
+## 2.5.59
+
+### Patch Changes
+
+- Updated dependencies [8fe08dc]
+  - @dyrected/core@2.5.59
+  - @dyrected/sdk@2.5.59
+
 ## 2.5.58
 
 ### Patch Changes
