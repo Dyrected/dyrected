@@ -5,7 +5,7 @@ description: Read and update rules for a global — the single-document config o
 
 A global is a single document rather than a collection of many — site settings, a header menu, a homepage layout. Because there is only ever one document and you never create or delete it through the API, globals have just two access rules: `read` and `update`.
 
-If you have not read the [Access Control overview](/new-docs/basics/access-control/overview) yet, start there. It covers the shared model: rules can be booleans, strings, functions, or named policies, and they run server-side before the operation. This page covers the two rules a global supports.
+Read the [Access Control overview](/new-docs/basics/access-control/overview) first for the shared model — the four rule shapes and the context a rule receives. This page covers the two rules a global supports.
 
 ## The shape
 
@@ -67,14 +67,24 @@ access: {
 
 ## What a global rule receives
 
-Like collection rules, global rules run before the operation and can inspect:
+Global rules run on the server with the standard [access context](/new-docs/basics/access-control/overview#what-a-rule-can-see). The useful values here are:
 
-- `user`
-- `req`
-- `doc` for the current stored global value
-- `data` for the incoming update payload
+- `user` and `req`, as always
+- `doc` — the current stored global
+- `data` — the incoming update payload
 
-That makes globals practical for rules like "allow reads only when this global is public" or "deny updates that try to change a protected flag."
+That makes globals practical for rules that depend on the stored value or the change being made. For example, allow updates only while the global is unlocked, and inspect the incoming payload with `data`:
+
+```ts
+access: {
+  read: ({ doc }) => doc?.visibility === 'public',
+  update: ({ doc, data }) => !doc?.locked && data?.locked !== true,
+}
+```
+
+<Note>
+A global rule should return `true` or `false`. Row-level filter objects, which collections use to scope a query, do not apply to a global — there is only one document — so a global rule that returns an object is treated as a denial.
+</Note>
 
 ## Default access
 
@@ -88,4 +98,4 @@ Access is open by default. Set an explicit `update` rule on every global — an 
 
 - [Access control overview](/new-docs/basics/access-control/overview) — the model behind these rules.
 - [Global configuration](/new-docs/basics/configuration/globals) — everything else you can set on a global.
-- [Global hooks](/new-docs/basics/hooks/globals) — run logic with access to the document itself.
+- [Global hooks](/new-docs/basics/hooks/globals) — for logic that transforms data or raises custom errors, beyond allow/deny.

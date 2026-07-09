@@ -2,54 +2,44 @@
 
 ## Review summary
 
-- Document: Field Access Control (configuration guide; the most behavior-sensitive of the four).
-- Goal: Reader knows field `read`/`update` rules shape the **admin panel** (hidden / read-only), understands they are **not** a server boundary, knows the variables a field rule can see, and knows to use collection rules or hooks for server-side enforcement.
-- Audience: Developers tailoring the admin editing experience.
-- Starting point: Empty stub (`title: Fields`). From-scratch draft.
-- Structure source: Payload `access-control/fields` (Config Options → Create → Read → Update). Adapted: Dyrected fields expose only `read`/`update` (no separate `create` rule), and enforcement is UI-side, so the page leads with that distinction instead of Payload's "stripped/discarded" server semantics.
-
-> The five cross-cutting security-relevant findings are documented in full in **access-control-overview.md**. Finding #4 (field access is UI-only) is the defining fact of this page.
+- Document: Field Access Control (configuration guide).
+- Goal: Reader knows field `read`/`update` rules are enforced on the API (strip from responses / drop from writes) **and** in the admin panel (hide / read-only), what context a field rule sees (incl. server-side `id`), that field rules are boolean-only, that they apply to nested fields, and when to use hooks instead.
+- Fresh rewrite. This page changed the most: field access is now a real server-side boundary, and the `id`-context fix means `!id`-style rules behave the same server-side and in the admin.
+- Structure source: Payload `access-control/fields` (adapted — Dyrected has `read`/`update`, no separate field `create` rule).
 
 ## Source inventory
 
 | Source | Type | Trust | Notes |
 | --- | --- | --- | --- |
-| `packages/admin/src/components/forms/form-field-renderer.tsx` L45-137 | code | high | The only enforcement point. `read` false → field hidden (`return null` L121); `update` false → read-only (L124-137). Context = `{ user, ...conditionData }` where `conditionData` = form values + sibling data + `id` (when `documentId` present) — L45-49, 114, 132. |
-| `packages/core/src/router.ts` L147-149, 198-200 | code | high | Field `access.read`/`access.update` serialized into the `/schema` endpoint (the signal the admin UI consumes). No API-data enforcement. |
-| `packages/core/src/utils/hooks.ts` | code | high | `executeFieldBeforeChange`/`executeFieldAfterRead` run field **hooks**, not field access — no `access` reference at all. Confirms no server-side field-access enforcement. |
-| `packages/core/src/utils/config.ts` L138-190 | code | high | Real-world field-access examples: `roles.update: "'admin' in user.roles && user.id != id"`, `email.update: "!id"`, `password.update: "!id \|\| user.id == id"`. Source of the page's `!id` and self-elevation examples. |
-| Payload `access-control/fields` | external | medium | Structure only. |
+| `packages/core/src/utils/access-control.ts` (`applyFieldReadAccess`, `applyFieldWriteAccess`, `resolveFieldAccessId`) | code | high | read-deny → strip; update-deny → drop; recurses object/array/blocks/row; `id` = `context.id ?? doc?.id ?? data?.id`. |
+| `packages/admin/src/components/forms/form-field-renderer.tsx:52-137` | code | high | Admin evaluates **string/`false`** rules only (functions/policies are not compiled client-side); read-deny → hide, update-deny → read-only. |
+| `packages/core/src/controllers/*.controller.ts` | code | high | Field access applied on create/update writes and on read responses (collection + global). |
+| `packages/core/src/__tests__/access-parity.test.ts:145-213` + id-gap regression | tests | high | Field read/write stripping incl. nested `object`; `!id`/`id`-based rules now enforced server-side. |
 
-## Uncertainty register — this page
+## Uncertainty register
 
-| Section | Claim or gap | Why uncertain | Reviewer needed |
-| --- | --- | --- | --- |
-| Lead `<Warning>` | "Field access is not a server-side authorization boundary; a direct API request can read/write the field regardless." (finding #4) | Verified across core (no enforcement) + admin (only enforcement). Reviewers must confirm this is acceptable to state publicly, since it means the scaffolded `roles`/`email` field rules are **not** enforced against direct API writes (self-role-elevation is possible via the API). | **SME — security** |
-| What a field rule can see | Variables are `user`, `id` (edit only), and current form values. | These come from the admin renderer's client-side Jexl context (`form-field-renderer.tsx:48-49,114,132`), which differs from the server `{ user, req, doc }` context. Confirm we want to document the client context, since that is where field rules actually run. | SME |
-| The shape | Only a Jexl **string** or literal `false` is honored; functions are inert in the renderer, `true`/omitted = no restriction. | Verified: renderer compiles only `typeof === "string"`; `=== false` hides/locks; otherwise defaults to allowed (L107-137). | Confirm we present `false` + string as the two real options. |
-
-## Placeholder sweep
-
-One intentional `{/* NEEDS-HUMAN-VERIFY … */}` comment in the lead `<Warning>` (finding #4). Invisible when rendered.
+| Section | Claim | Status |
+| --- | --- | --- |
+| Intro / What each rule does | read → strip from API + hide in form; update → drop from write + read-only | VERIFIED. |
+| Context | `id` available server-side (from doc/data), matching admin | VERIFIED (`resolveFieldAccessId`; regression test). |
+| `<Note>` on functions | functions/named policies on fields are **server-only**; admin evaluates string/`false` | VERIFIED (`form-field-renderer.tsx` compiles only `typeof === "string"`; `=== false` handled). |
+| Boolean-only | object result → denial for fields | VERIFIED (`resolveBooleanAccess`). |
+| Nested | rules enforced inside group/array/blocks | VERIFIED (recursion in access-control.ts; nested-object test). |
 
 ## Reviewer questions
 
-1. **Security (finding #4):** the scaffolded auth collection's `roles`/`email` field rules are enforced only in the admin UI, so a direct `PATCH` to the API could set `roles: ['admin']` on one's own account. Is that the current accepted behavior, and do we want the docs to (a) state it plainly, (b) recommend a `beforeChange` hook to enforce it, and/or (c) is a server-side field-access fix planned that would change this page?
-2. Is documenting the client-side field-rule context (`user`, `id`, form values) the right level of detail, or should we keep it to `user` + `id` only?
-3. Should this page include a ready-made `beforeChange` hook snippet that enforces the roles rule server-side, or link out to the hooks page (current choice)?
+1. The `<Note>` says function/named-policy field rules run server-side only (the admin won't reflect them). Is that the intended long-term behavior, or should the admin gain the ability to evaluate named policies so the form matches the API? This is the one real behavior asymmetry left on this page.
+2. Dyrected fields have `read`/`update` but no field-level `create` rule (Payload has all three). On create, the `update` rule is what governs field writes. Confirm we do not want a separate field `create` rule for parity.
+3. The roles example asserts an admin "cannot change their own roles" on the API. This now holds because `id` is resolved server-side — confirm that is the desired product behavior (it also means an admin cannot fix their own roles via the API, only another admin can).
 
-## Example consistency
+## Placeholder sweep
 
-- Examples build on the scaffolded auth collection (`roles`, `!id`) so they match the framework's own real usage. Consistent `user.roles` idiom throughout.
+No `NEEDS-*` markers. The earlier "admin-panel only / not a server boundary" framing is removed — it no longer matches the code.
 
 ## High-risk areas
 
-- This entire page hinges on finding #4. If server-side field-access enforcement is added later, the lead warning and the "Enforcing on the server" section must be rewritten. Flag for re-review on any change to field access handling.
-
-## Canonical links
-
-- Links inward to overview and collections; outward to fields/overview and field hooks. Correct.
+- Question 1 (function/policy field rules are server-only) is the only spot where the admin form and the API can diverge. The page steers readers to strings/`false` to avoid it, but a reviewer should confirm the framing.
 
 ## Suggested status label
 
-`ready-for-sme-review` — blocked on question 1 (security) before final.
+`ready-for-review`

@@ -1,64 +1,84 @@
 ---
 title: Overview
-description: How Dyrected decides who can read and write your data — the allow/deny rules you attach to collections, globals, and fields.
+description: How Dyrected decides who can read and write your data — the rules you attach to collections, globals, and fields.
 ---
 
-Access control is how you decide who is allowed to do what with your data. In Dyrected you express that as small rules attached directly to a collection, a global, or a field. There is no separate permissions table and no global role registry to keep in sync — the rule lives next to the thing it protects, and Dyrected checks it on every request.
+Access control is how you decide who can do what with your data. In Dyrected you write that as small rules attached directly to a collection, a global, or a field. There is no separate permissions table and no global role registry to keep in sync — the rule lives next to the thing it protects, and Dyrected runs it on the server for every request.
 
-This page explains the model: what a rule is, when it runs, and what it can see. The pages that follow show exactly where to put rules for [collections](/new-docs/basics/access-control/collections), [globals](/new-docs/basics/access-control/globals), and [fields](/new-docs/basics/access-control/fields).
+This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/new-docs/basics/access-control/collections), [globals](/new-docs/basics/access-control/globals), and [fields](/new-docs/basics/access-control/fields).
 
 ## The mental model
 
-An access rule answers one question: *should this request be allowed?* Dyrected runs the rule on the server, before it touches the database, and reads the result as a simple yes or no.
+An access rule answers one question: *should this request be allowed?* Dyrected evaluates the rule on the server, before it touches the database, and reads the result in three ways:
 
-- A truthy result **allows** the operation and the request continues.
-- A falsy result **denies** it, and Dyrected responds with `403 Forbidden`.
+- A **truthy** result allows the operation.
+- A **`false`** result denies it — Dyrected responds with `403 Forbidden`.
+- An **object** result allows the operation but scopes it to matching documents — a row-level filter, covered in [Collections](/new-docs/basics/access-control/collections#document-aware-rules).
 
-A denied request comes back in a consistent shape, so your frontend can detect it reliably:
+A denied request always comes back in the same shape, so your frontend can detect it reliably:
 
 ```json
 { "error": true, "message": "Access denied: read on posts" }
 ```
 
-Because the check happens before the database call, a denied read never loads the document and a denied write never persists anything.
+Because the check runs before the database call, a denied read never loads the document and a denied write never persists anything.
 
-## Writing a rule
+## The four rule shapes
 
-Dyrected supports four rule shapes:
-
-- a **boolean** for always allow or always deny
-- a **Jexl string** for serializable rule logic
-- a **JavaScript function** for self-hosted server logic
-- a **named policy** for shared server-side rules such as `{ policy: 'isAdmin' }`
-
-The simplest rules are plain booleans:
+Every access rule can be written in one of four ways. They all produce the same allow / deny / filter result, so you can mix them freely across a project — and even across operations on the same collection.
 
 ```ts
 access: {
-  read: true,    // anyone can read
-  create: false, // nobody can create through the API
+  read: true,                                       // 1. boolean
+  create: "'admin' in user.roles",                  // 2. Jexl string
+  update: ({ user, doc }) =>                          // 3. function
+    user?.roles?.includes('admin') || user?.sub === doc?.authorId,
+  delete: { policy: 'isAdmin' },                    // 4. named policy
 }
 ```
 
-Most real rules check the current user. This one allows the operation only for signed-in admins:
+Pick the shape by what the rule needs to do and where it needs to run:
+
+| Shape | Reach for it when | Runs on |
+|---|---|---|
+| **Boolean** | The answer never changes — always open or always closed. | — |
+| **Jexl string** | A serializable check like a role test or field comparison. Safe to sync to Dyrected Cloud. | Server |
+| **Function** | You need full server logic — async lookups, complex conditions, computed filters. | Self-hosted server only |
+| **Named policy** | You want a reusable rule you can name once and reference everywhere. Serializable, so it works with Cloud. | Server |
+
+Booleans and Jexl strings cover most day-to-day rules. Reach for functions when a self-hosted app needs real logic, and named policies when you catch yourself repeating the same rule.
+
+### Jexl strings
+
+A Jexl string is a restricted expression — it looks like JavaScript comparison syntax but cannot run arbitrary code, which is what keeps it safe to store and sync. It can return a boolean or, for row-level access, an object:
 
 ```ts
 access: {
-  delete: "'admin' in user.roles",
+  read: "'admin' in user.roles",                 // boolean result
+  update: "{ owner: { equals: user.sub } }",      // filter result — see Collections
 }
 ```
 
-Jexl looks like ordinary JavaScript comparison syntax, but it is a restricted expression language, not full JavaScript. That restriction is deliberate: rules stay serializable, so the same rule can be evaluated on the server and understood by the admin panel.
+### Functions
 
-When you need full server logic in a self-hosted app, use a function:
+A function gives you the full server runtime, including `async` work. It receives the same context as every other rule and can return a boolean or a filter object:
 
 ```ts
 access: {
-  update: ({ user, doc }) => user?.roles?.includes('admin') || user?.sub === doc?.authorId,
+  update: async ({ user, doc }) => {
+    if (!user) return false
+    return user.roles?.includes('admin') || doc?.authorId === user.sub
+  },
 }
 ```
 
-When you want a shared reusable rule, register it once in `accessPolicies` and reference it by name:
+<Warning>
+Functions run only in your self-hosted server — they are **not** synced to Dyrected Cloud. When you run `sync-schema`, the CLI strips function rules from the payload and warns you with their exact paths. For any rule that needs to reach Cloud, use a **Jexl string** or a **named policy** instead.
+</Warning>
+
+### Named policies
+
+When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. Because the reference is just data, it syncs to Cloud while the logic stays on your server:
 
 ```ts
 export default defineConfig({
@@ -69,6 +89,7 @@ export default defineConfig({
     defineCollection({
       slug: 'posts',
       access: {
+        create: { policy: 'isAdmin' },
         delete: { policy: 'isAdmin' },
       },
       fields: [{ name: 'title', type: 'text' }],
@@ -78,18 +99,19 @@ export default defineConfig({
 })
 ```
 
-<Warning>
-Dyrected Cloud sync only carries **booleans, Jexl strings, and named policies**. If you sync a raw function rule to Cloud, the CLI strips it from the payload and warns you. Rewrite Cloud-bound rules as Jexl or named policies before relying on them.
-</Warning>
+You can pass `params` for a parameterized policy — `{ policy: 'hasRole', params: { role: 'editor' } }` — and read them inside the resolver as `params`. If a rule references a policy that is not registered, Dyrected fails closed and denies the request.
 
 ## What a rule can see
 
-Every rule is evaluated with two values in scope:
+Every rule is evaluated with this context in scope:
 
-| Variable | What it is |
-|---|---|
-| `user` | The authenticated user, or `undefined` if the request is anonymous |
-| `req` | The incoming request context (headers and query parameters) |
+| Variable | What it is | Available on |
+|---|---|---|
+| `user` | The authenticated user, or `undefined` if the request is anonymous | Always |
+| `req` | The request context (headers, query parameters) | Always |
+| `doc` | The existing document | Reads and writes of a specific document |
+| `data` | The incoming payload | Create and update |
+| `id` | The target document's ID | Operations on a specific document |
 
 The `user` object is the caller's own record, loaded fresh from the database on each request, so it includes whatever fields your auth collection defines. A few properties are always present:
 
@@ -112,25 +134,25 @@ access: {
 
 ## Where rules live
 
-Access rules attach at three levels, each with its own set of operations:
+Access rules attach at three levels, each with its own operations. All three are enforced on the server, on every request:
 
-| Level | Operations | Enforced by |
+| Level | Operations | What it protects |
 |---|---|---|
-| [Collections](/new-docs/basics/access-control/collections) | `read`, `create`, `update`, `delete` | The API, on every request |
-| [Globals](/new-docs/basics/access-control/globals) | `read`, `update` | The API, on every request |
-| [Fields](/new-docs/basics/access-control/fields) | `read`, `update` | The API and the admin panel |
+| [Collections](/new-docs/basics/access-control/collections) | `read`, `create`, `update`, `delete` | Whole documents in a collection |
+| [Globals](/new-docs/basics/access-control/globals) | `read`, `update` | A single global document |
+| [Fields](/new-docs/basics/access-control/fields) | `read`, `update` | Individual fields — stripped from responses or dropped on writes |
 
-Collection and global rules are still the main authorization boundary because they decide whether an operation can happen at all. Field rules are narrower: they decide which fields can be read back or written, and Dyrected now enforces them on both the API and the admin UI. The [Fields](/new-docs/basics/access-control/fields) page explains where that is useful and where collection or global access is still the better fit.
+Field rules also drive the admin panel, hiding or locking fields in the edit form, but the enforcement is real: a field a reader cannot see is removed from the API response, and a field a writer cannot set is dropped before the document is saved.
 
 ## Default access
 
 If you do not set a rule for an operation, that operation is **open**. A collection with no `access` block can be read, created, updated, and deleted by anyone who can reach the API.
 
 <Warning>
-Access is open by default, not locked down. Set explicit rules on any collection or global that holds data you would not publish publicly, and treat a missing rule as "public" while you review your config.
+Access is open by default, not locked down. Set explicit rules on anything that holds data you would not publish publicly, and treat a missing rule as "public" while you review your config. To turn an operation off entirely, set it to `false` rather than omitting it.
 </Warning>
 
-A practical habit is to start every collection from a closed position and open up only what a given operation needs:
+A good habit is to start each collection closed and open up only what an operation needs:
 
 ```ts
 access: {
@@ -143,7 +165,7 @@ access: {
 
 ## Where to go next
 
-- [Collection access control](/new-docs/basics/access-control/collections) — the four operations, with recipes for common setups.
+- [Collection access control](/new-docs/basics/access-control/collections) — the four operations, row-level filtering, and common recipes.
 - [Global access control](/new-docs/basics/access-control/globals) — read and update rules for single-document config.
-- [Field access control](/new-docs/basics/access-control/fields) — hiding and locking fields in both the admin panel and the API.
-- [Hooks](/new-docs/basics/hooks/overview) — where to put ownership checks and other logic that needs the document itself.
+- [Field access control](/new-docs/basics/access-control/fields) — hiding and locking individual fields.
+- [Hooks](/new-docs/basics/hooks/overview) — for logic that needs to transform data or raise custom errors, not just allow or deny.

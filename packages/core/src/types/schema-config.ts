@@ -145,8 +145,9 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   fields: Field[];
 
   /**
-   * If `true`, Dyrected automatically adds `createdAt` and `updatedAt`
-   * timestamp fields to every document. Defaults to `true`.
+   * If `true`, Dyrected automatically adds the built-in system fields
+   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.
+   * Defaults to `true`.
    */
   timestamps?: boolean;
 

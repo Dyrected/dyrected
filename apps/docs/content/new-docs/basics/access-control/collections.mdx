@@ -3,9 +3,9 @@ title: Collections
 description: Read, create, update, and delete rules that decide who can touch a collection's documents.
 ---
 
-Collection access control is where you lock down a collection's data. You attach up to four rules — one for each operation — to the `access` key of a collection, and Dyrected checks the matching rule on every API request before it runs the operation.
+Collection access control is where you lock down a collection's data. You attach up to four rules — one per operation — to the `access` key of a collection, and Dyrected runs the matching rule on the server before every request.
 
-If you have not yet, read the [Access Control overview](/new-docs/basics/access-control/overview) first. It covers the shared model: a rule can be a boolean, a Jexl string, a function, or a named policy. This page focuses on what each collection operation means and how to use collection rules in real projects.
+Read the [Access Control overview](/new-docs/basics/access-control/overview) first for the shared model — the four rule shapes, the context a rule receives, and the allow / deny / filter result. This page focuses on the four collection operations and how to use them in real projects.
 
 ## The shape
 
@@ -32,7 +32,7 @@ Each key is optional. Any operation you leave out is **open** — see [Default a
 
 ## How operations map to requests
 
-Each rule guards a specific operation, which maps to an HTTP method on the collection's API:
+Each rule guards one operation, which maps to an HTTP method on the collection's API:
 
 | Operation | HTTP method | Access key |
 |---|---|---|
@@ -41,7 +41,7 @@ Each rule guards a specific operation, which maps to an HTTP method on the colle
 | Update a document | `PATCH` | `update` |
 | Delete a document | `DELETE` | `delete` |
 
-Listing and fetching a single document share the same `read` rule. If your `read` rule returns a filter object instead of `true`, Dyrected applies that filter to list queries and checks single-document requests against it.
+Listing and fetching a single document share the same `read` rule, so a reader either can or cannot see the collection's documents through the API.
 
 ## The four operations
 
@@ -65,7 +65,7 @@ access: {
 
 ### Create
 
-`create` decides who can add new documents. A common pattern is to open creation to the public for something like a contact form, while keeping everything else staff-only:
+`create` decides who can add new documents. A common pattern is to open creation to the public for something like a contact form while keeping everything else staff-only:
 
 ```ts
 access: {
@@ -103,44 +103,46 @@ access: {
 
 ## What a collection rule receives
 
-Collection rules run on the server and receive the standard access context from the [overview](/new-docs/basics/access-control/overview#what-a-rule-can-see):
+Collection rules run on the server with the standard [access context](/new-docs/basics/access-control/overview#what-a-rule-can-see):
 
-- `user` for the authenticated caller
-- `req` for request metadata
-- `doc` when Dyrected is checking a specific existing document
-- `data` when Dyrected is checking an incoming create or update payload
+- `user` — the authenticated caller
+- `req` — request metadata
+- `doc` — the existing document, when Dyrected is checking a specific one (fetch, update, delete)
+- `data` — the incoming payload, on create and update
+- `id` — the target document's ID, on operations against a specific document
 
-That means collection access can handle both broad role checks and document-aware rules.
+That is enough for both broad role checks and document-aware rules.
 
 ## Document-aware rules
 
-If you need ownership or tenant scoping, return a `where`-style object from a function or named policy:
+For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean. Any of the rule shapes can do this: a function, a named policy, or a Jexl string that evaluates to an object.
 
 ```ts
 access: {
-  read: ({ user }) => ({
-    author: { equals: user?.sub },
-  }),
-  update: ({ user }) => ({
-    author: { equals: user?.sub },
-  }),
+  // A user can only read and modify documents they own
+  read: ({ user }) => ({ author: { equals: user?.sub } }),
+  update: ({ user }) => ({ author: { equals: user?.sub } }),
+  delete: ({ user }) => ({ author: { equals: user?.sub } }),
 }
 ```
 
-On list requests, Dyrected merges that filter into the query. On single-document update or delete requests, Dyrected checks whether the target document matches the returned constraint before continuing.
+Dyrected applies the returned filter differently per operation:
 
-If you need to inspect the incoming payload directly, use `data`:
+- **List** — merges the filter into the query, so the response only contains matching documents.
+- **Fetch one, update, delete** — checks whether the target document matches the filter; if it does not, the request is denied with `403`.
+
+Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean:
 
 ```ts
 access: {
   create: ({ user, data }) =>
-    'editor' in (user?.roles ?? []) && data?.status !== 'published',
+    (user?.roles?.includes('editor') ?? false) && data?.status !== 'published',
 }
 ```
 
 ## Common setups
 
-<Tabs items={['Public blog', 'Contact form', 'Role tiers', 'Locked down']}>
+<Tabs items={['Public blog', 'Contact form', 'Role tiers', 'Owner-scoped']}>
 <Tab value="Public blog">
 
 Anyone can read. Editors and admins can create and update. Only admins can delete.
@@ -203,21 +205,22 @@ export const Articles = defineCollection({
 ```
 
 </Tab>
-<Tab value="Locked down">
+<Tab value="Owner-scoped">
 
-Nothing is public. Every operation requires the right role. This is a good starting point to open up from.
+Each user only sees and edits their own documents; admins are not special-cased here, so add a role check if they need to see everything.
 
 ```ts
-export const Secrets = defineCollection({
-  slug: 'secrets',
+export const Orders = defineCollection({
+  slug: 'orders',
   access: {
-    read: "'admin' in user.roles",
-    create: "'admin' in user.roles",
-    update: "'admin' in user.roles",
-    delete: "'admin' in user.roles",
+    read: ({ user }) => ({ customer: { equals: user?.sub } }),
+    create: 'user != null',
+    update: ({ user }) => ({ customer: { equals: user?.sub } }),
+    delete: ({ user }) => ({ customer: { equals: user?.sub } }),
   },
   fields: [
-    // ...
+    { name: 'customer', type: 'text' },
+    { name: 'total', type: 'number' },
   ],
 })
 ```
@@ -230,7 +233,7 @@ export const Secrets = defineCollection({
 Any operation without a rule is **open**. A collection with no `access` block at all can be read, created, updated, and deleted by anyone who can reach the API.
 
 <Warning>
-Access is open by default. Set explicit rules on every collection that holds data you would not publish publicly. If you want an operation off entirely, set it to `false` rather than omitting it.
+Access is open by default. Set explicit rules on every collection that holds data you would not publish publicly. To turn an operation off entirely, set it to `false` rather than omitting it.
 </Warning>
 
 ## Related pages
@@ -238,4 +241,4 @@ Access is open by default. Set explicit rules on every collection that holds dat
 - [Access control overview](/new-docs/basics/access-control/overview) — the model behind these rules.
 - [Field access control](/new-docs/basics/access-control/fields) — control field-level reads and writes.
 - [Collection configuration](/new-docs/basics/configuration/collections) — everything else you can set on a collection.
-- [Collection hooks](/new-docs/basics/hooks/collections) — run logic with access to the document itself.
+- [Collection hooks](/new-docs/basics/hooks/collections) — for logic that transforms data or raises custom errors, beyond allow/deny.

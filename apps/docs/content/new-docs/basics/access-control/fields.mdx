@@ -1,21 +1,20 @@
 ---
 title: Fields
-description: Control whether individual fields can be read or written, in the admin panel and on the API.
+description: Control whether individual fields can be read or written — enforced on the API and reflected in the admin panel.
 ---
 
-Field access control lets you control a single field instead of the whole document. You can hide an internal note from everyone except admins, or make a slug editable only while the document is being created. You set this with `read` and `update` rules on a field's `access` key.
+Field access control lets you protect a single field instead of the whole document. You can hide an internal note from everyone except admins, or make a slug editable only while a document is being created. You set this with `read` and `update` rules on a field's `access` key.
 
-Field access now affects both the admin UI and the server API:
+Field rules are enforced in two places at once:
 
-- `read` removes the field from API responses when access fails
-- `update` strips incoming writes to that field before the document is saved
-- the admin panel uses the same rules to hide or lock the field in the form
+- **On the API** — a read-denied field is stripped from responses, and an update-denied field is dropped from the payload before the document is saved.
+- **In the admin panel** — the same rules hide a read-denied field and render an update-denied field read-only.
 
-Read the [Access Control overview](/new-docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.
+So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](/new-docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.
 
 ## The shape
 
-Add an `access` object with `read` and/or `update` to any field. Each rule is a Jexl expression string, or the literal `false` to always apply the restriction:
+Add an `access` object with `read` and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
 {
@@ -28,27 +27,31 @@ Add an `access` object with `read` and/or `update` to any field. Each rule is a 
 }
 ```
 
-Omit a rule (or set it to `true`) to leave the field fully available. Set a Jexl string to make it conditional, or `false` to always hide or lock it.
+Omit a rule (or set it to `true`) to leave the field fully available.
+
+<Note>
+Field rules also accept functions and named policies, but those run on the **server only** — the admin panel evaluates string and `false` rules to decide what to show. For a field rule that should behave the same in the form and on the API, use a **Jexl string** or `false`.
+</Note>
 
 ## What each rule does
 
 ### Read
 
-`read` decides whether the field appears in the edit form. When it evaluates to false, the admin panel **hides the field entirely** — the person editing never sees it.
+`read` controls whether the field's value is returned. When it fails, the API **omits the field from the response** and the admin panel **hides it** from the edit form:
 
 ```ts
 {
   name: 'internalNotes',
   type: 'textarea',
   access: {
-    read: "'admin' in user.roles", // only admins see this field
+    read: "'admin' in user.roles", // only admins get this field back
   },
 }
 ```
 
 ### Update
 
-`update` decides whether the field can be changed. When it evaluates to false, the admin panel renders the field **read-only** — it is visible but cannot be edited.
+`update` controls whether the field can be written. When it fails, the API **drops the field from the incoming write** (the stored value is unchanged) and the admin panel renders it **read-only**:
 
 ```ts
 {
@@ -60,30 +63,29 @@ Omit a rule (or set it to `true`) to leave the field fully available. Set a Jexl
 }
 ```
 
-That `!id` rule is a useful pattern in the admin UI: `id` is only present once a document has been saved, so the field is editable during creation and becomes read-only afterward.
+`id` is only present once a document has been saved, so `!id` allows the field on create and locks it on every later update — on the API and in the form alike.
 
 ## What a field rule can see
 
-Field rules are used in two places:
-
-- in the admin panel, where they see the form state
-- on the server, where they are evaluated during reads and writes
-
-In practice, the common inputs are:
+Field rules are evaluated with the standard [access context](/new-docs/basics/access-control/overview#what-a-rule-can-see), plus the form's live values when they run in the admin panel:
 
 | Variable | What it is |
 |---|---|
 | `user` | The signed-in user |
-| `id` | The document's ID in admin form contexts |
-| `doc` | The current stored document on server-side checks |
-| `data` | The incoming write payload on server-side checks |
-| *(field values)* | The current form values in admin contexts |
+| `id` | The document's ID — present for existing documents, absent on create |
+| `doc` | The stored document (server-side checks) |
+| `data` | The incoming write payload (server-side checks) |
+| *(field values)* | The current form values, in the admin panel |
 
-That split is useful to keep in mind: a rule can make the form feel right, and the same rule can still be enforced when a request comes in directly through the API.
+Because `id` is resolved on the server too, `!id` and `user.id != id` behave the same whether the request comes from the admin panel or straight from the API.
+
+A field rule should evaluate to a boolean. Row-level filter objects, which collections use to scope a query, do not apply to a single field, so an object result is treated as a denial.
+
+Rules apply at every level of nesting. A `read` or `update` rule on a field inside a [group](/new-docs/basics/fields/overview), array, or blocks field is enforced on that nested value too.
 
 ## A realistic example
 
-The scaffolded auth collection uses field access to manage its `roles` field: an admin can change other people's roles, but not their own, which prevents self-elevation. It expresses that with the form's `id` and the current `user`:
+The scaffolded auth collection uses field access on its `roles` field so an admin can change other people's roles but not their own — which prevents self-elevation:
 
 ```ts
 {
@@ -101,20 +103,20 @@ The scaffolded auth collection uses field access to manage its `roles` field: an
 }
 ```
 
-In the admin panel, a non-admin never gets an editable roles field, and an admin cannot edit their own. The same rule also protects the API write path, because Dyrected strips that field from unauthorized updates before saving.
+A non-admin never gets an editable roles field, and an admin cannot change their own roles — and because it is a Jexl string, that rule holds in the admin form and on a direct API `PATCH`. An attempt to set `roles` that fails the check is dropped before the document is saved.
 
-## When to still use hooks
+## When to reach for hooks instead
 
-Field access is good for "this field should disappear" or "this field should not be writable." Hooks are still the right tool when you need to do more than allow or deny:
+Field access answers a yes/no question: can this field be read or written? Reach for a [field hook](/new-docs/basics/hooks/fields) when you need to do more than allow or deny:
 
-- throw a custom error message
+- raise a custom error instead of silently dropping the value
 - transform the incoming value
-- compare multiple fields and rewrite data
-- trigger side effects when a forbidden change is attempted
+- compare several fields and rewrite the data
+- trigger a side effect when a forbidden change is attempted
 
 ## Related pages
 
 - [Access control overview](/new-docs/basics/access-control/overview) — the model behind these rules.
-- [Collection access control](/new-docs/basics/access-control/collections) — the API-enforced layer.
+- [Collection access control](/new-docs/basics/access-control/collections) — whole-document rules.
 - [Field configuration](/new-docs/basics/fields/overview) — the options every field accepts.
 - [Field hooks](/new-docs/basics/hooks/fields) — server-side logic per field.
