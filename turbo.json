@@ -5,9 +5,19 @@
       "dependsOn": [
         "^build"
       ],
+      "env": [
+        "ENABLE_EXPERIMENTAL_COREPACK",
+        "DYRECTED_URL",
+        "DYRECTED_API_KEY",
+        "DYRECTED_SITE_ID",
+        "NEXT_PUBLIC_DYRECTED_URL",
+        "NUXT_PUBLIC_DYRECTED_URL",
+        "VITE_DYRECTED_URL"
+      ],
       "outputs": [
         "dist/**",
-        ".next/**"
+        ".next/**",
+        ".output/**"
       ]
     },
     "dev": {
