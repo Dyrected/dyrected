@@ -9,7 +9,7 @@ The rich text field stores formatted content — headings, bold, links, lists, t
 defineRichTextField({ name: 'body', label: 'Body' })
 ```
 
-Because the value is JSON, not HTML, you render it on your frontend with the framework's `RichText` component, which walks the document and outputs the matching markup. Storing structured JSON keeps the content portable — you decide how each mark and node looks at render time.
+Because the value is JSON, not HTML, you render it on your frontend from that structured document — walking its nodes and marks and mapping them to your own components, or passing it through a Tiptap/ProseMirror-compatible renderer. Storing structured JSON keeps the content portable: you decide how each heading, link, and block looks at render time.
 
 ## Choosing which controls editors get
 

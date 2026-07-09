@@ -21,7 +21,7 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 Exported type from @dyrected/core.
 
 ```ts
-export type UrlField = TypedField<"url", string, UrlFieldAdmin> & CharacterLimitFieldConfig;
+export type UrlField = TypedField<"url", string | UrlLinkValue, UrlFieldAdmin> & CharacterLimitFieldConfig;
 ```
 
 
@@ -32,4 +32,32 @@ Exported type from @dyrected/core.
 ```ts
 export type UrlFieldAdmin = CharacterLimitFieldAdmin;
 ```
+
+
+## UrlLinkValue
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface UrlLinkValue {
+  /** Whether the link is a custom URL or a reference to an internal document. */
+  type: "custom" | "internal";
+  /** The link URL. Absolute for custom links; may be a site-relative path for internal links. */
+  url?: string;
+  /** For internal links, the collection slug of the referenced document. */
+  relationTo?: string;
+  /** For internal links, the ID of the referenced document. */
+  value?: string;
+  /** Optional display label shown for the link. */
+  label?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>type</code> (required) | Whether the link is a custom URL or a reference to an internal document. |
+| <code>url</code> (optional) | The link URL. Absolute for custom links; may be a site-relative path for internal links. |
+| <code>relationTo</code> (optional) | For internal links, the collection slug of the referenced document. |
+| <code>value</code> (optional) | For internal links, the ID of the referenced document. |
+| <code>label</code> (optional) | Optional display label shown for the link. |
 {/* GENERATED:REFERENCE-FIELD-URL:END */}

@@ -20,7 +20,8 @@ export class GlobalController {
     if (!db) return c.json({ message: "Database not configured" }, 500);
 
     const readonlyDb = createReadonlyDb(db);
-    const depth = c.req.query("depth") !== undefined ? Number(c.req.query("depth")) : 10;
+    // Default relationship depth is 1, matching the SDK default.
+    const depth = c.req.query("depth") !== undefined ? Number(c.req.query("depth")) : 1;
     const user = c.get("user");
 
     // Run beforeRead collection hook

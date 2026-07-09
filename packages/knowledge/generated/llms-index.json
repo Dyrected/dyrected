@@ -742,6 +742,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:UrlLinkValue",
+      "name": "UrlLinkValue",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:WordLimitFieldAdmin",
       "name": "WordLimitFieldAdmin",
       "category": "fields",

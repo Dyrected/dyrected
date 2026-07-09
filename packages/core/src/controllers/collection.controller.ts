@@ -119,7 +119,8 @@ export class CollectionController {
     const readonlyDb = createReadonlyDb(db);
     const limit = Number(c.req.query('limit')) || 10;
     const page = Number(c.req.query('page')) || 1;
-    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 2;
+    // Default relationship depth is 1, matching the SDK default.
+    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
     const sort = c.req.query('sort') || undefined;
     const user = c.get('user');
 
@@ -264,7 +265,8 @@ export class CollectionController {
 
     const readonlyDb = createReadonlyDb(db);
     const id = c.req.param('id');
-    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 10;
+    // Default relationship depth is 1, matching the SDK default.
+    const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
     const user = c.get('user');
 
     if (!id) return c.json({ message: 'Missing ID' }, 400);

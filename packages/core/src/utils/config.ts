@@ -160,6 +160,12 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
         if (field.name === "email") {
           return {
             ...field,
+            // Email is the login identifier. Keep the integrity constraints
+            // auth relies on even when the field is explicitly redefined, so a
+            // custom `email` field can never silently drop uniqueness.
+            required: true,
+            unique: true,
+            promoted: true,
             access: {
               ...(field.access || {}),
               update: "!id",
@@ -169,6 +175,9 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
         if (field.name === "password") {
           return {
             ...field,
+            // Password is required to authenticate; enforce it regardless of
+            // how the field was declared.
+            required: true,
             admin: { ...(field.admin || {}) },
             access: {
               ...(field.access || {}),

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defineConfig, defineCollection, defineGlobal, type AdminIconName } from '../index.js';
+import { defineConfig, defineCollection, defineGlobal, normalizeConfig, type AdminIconName } from '../index.js';
 import { MockDatabaseAdapter } from './mocks.js';
 
 describe('Configuration Helpers', () => {
@@ -44,6 +44,40 @@ describe('Configuration Helpers', () => {
 
     expect(config.collections).toEqual([]);
     expect(config.db).toBeInstanceOf(MockDatabaseAdapter);
+  });
+
+  it('re-asserts email/password integrity constraints on an auth collection even when redefined', () => {
+    const normalized = normalizeConfig(
+      defineConfig({
+        collections: [
+          defineCollection({
+            slug: 'users',
+            auth: true,
+            fields: [
+              // Developer redefines email without `unique` — it must not be silently dropped.
+              { name: 'email', type: 'email', label: 'Work email' },
+              { name: 'password', type: 'text' },
+            ],
+          }),
+        ],
+        globals: [],
+        db: new MockDatabaseAdapter(),
+      }),
+    );
+
+    const users = normalized.collections.find((c) => c.slug === 'users')!;
+    const email = users.fields.find((f) => f.name === 'email')!;
+    const password = users.fields.find((f) => f.name === 'password')!;
+
+    expect(email.unique).toBe(true);
+    expect(email.required).toBe(true);
+    expect(email.promoted).toBe(true);
+    expect(email.access?.update).toBe('!id');
+    // Developer customization (label) is preserved.
+    expect(email.label).toBe('Work email');
+
+    expect(password.required).toBe(true);
+    expect(password.access?.update).toBe('!id || user.id == id');
   });
 
   it('rejects components passed directly into admin.components configuration (type test)', () => {

@@ -1780,7 +1780,7 @@
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type UrlField = TypedField<\"url\", string, UrlFieldAdmin> & CharacterLimitFieldConfig;",
+    "signature": "export type UrlField = TypedField<\"url\", string | UrlLinkValue, UrlFieldAdmin> & CharacterLimitFieldConfig;",
     "members": []
   },
   {
@@ -1792,6 +1792,42 @@
     "description": "",
     "signature": "export type UrlFieldAdmin = CharacterLimitFieldAdmin;",
     "members": []
+  },
+  {
+    "id": "@dyrected/core:UrlLinkValue",
+    "name": "UrlLinkValue",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface UrlLinkValue {\n  /** Whether the link is a custom URL or a reference to an internal document. */\n  type: \"custom\" | \"internal\";\n  /** The link URL. Absolute for custom links; may be a site-relative path for internal links. */\n  url?: string;\n  /** For internal links, the collection slug of the referenced document. */\n  relationTo?: string;\n  /** For internal links, the ID of the referenced document. */\n  value?: string;\n  /** Optional display label shown for the link. */\n  label?: string;\n}",
+    "members": [
+      {
+        "name": "type",
+        "signature": "type: \"custom\" | \"internal\"",
+        "description": "Whether the link is a custom URL or a reference to an internal document."
+      },
+      {
+        "name": "url",
+        "signature": "url?: string",
+        "description": "The link URL. Absolute for custom links; may be a site-relative path for internal links."
+      },
+      {
+        "name": "relationTo",
+        "signature": "relationTo?: string",
+        "description": "For internal links, the collection slug of the referenced document."
+      },
+      {
+        "name": "value",
+        "signature": "value?: string",
+        "description": "For internal links, the ID of the referenced document."
+      },
+      {
+        "name": "label",
+        "signature": "label?: string",
+        "description": "Optional display label shown for the link."
+      }
+    ]
   },
   {
     "id": "@dyrected/core:WordLimitFieldAdmin",

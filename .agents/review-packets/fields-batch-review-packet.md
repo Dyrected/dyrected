@@ -38,6 +38,11 @@ Per-page detail lives in the sub-batch packets:
 - **O-4 (`UrlField` type):** typed `TypedField<"url", string>` but the field returns a structured link object (`url-field.tsx:30`). Tightening the core type would make the generated `url.mdx` contract reflect the real shape.
 - **datetime/time aliases** carry no JSDoc, so their generated blocks show only a signature. A one-line JSDoc on each would enrich them.
 
+## Resolved in code (follow-up fixes)
+- **O-2 (depth default) — FIXED.** REST controllers defaulted inconsistently (list `2`, findOne `10`, global `10`) while the SDK defaulted to `1`. Set all three REST defaults to `1` (`collection.controller.ts:122,267`, `global.controller.ts:23`), matching the SDK. `depth.test.ts` passes; `relationship.mdx` now states the default is `1`.
+- **O-4 (UrlField type) — FIXED.** Added `UrlLinkValue` interface and widened `UrlField` value to `string | UrlLinkValue` (`schema-core.ts`); registered `UrlLinkValue` in the generator so `url.mdx` now documents the structured shape. core/sdk/admin all build.
+- **Email footgun — FIXED.** `config.ts` enforcement pass now re-asserts `required`/`unique`/`promoted` on a redefined `email` and `required` on `password`, so a custom `email` can never silently drop uniqueness. Regression test added (`config.test.ts`).
+
 ## Open factual questions for human review
 - **O-2 (blocking a factual claim):** depth default is inconsistent across source docs (`concepts/depth.mdx` says `1`; `concepts/relationships.mdx` implies `0`). The relationship page deliberately states no numeric default until this is settled in code.
 - **O-3:** confirm `min`/`max` (and `maxLength`) should stay advisory (admin + hint only), not server-validated — current behavior and the consistent choice.

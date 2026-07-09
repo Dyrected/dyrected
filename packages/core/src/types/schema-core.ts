@@ -311,6 +311,19 @@ export type UrlFieldAdmin = CharacterLimitFieldAdmin;
 export type IconFieldAdmin = CharacterLimitFieldAdmin;
 export type NumberFieldAdmin = NumberLimitFieldAdmin;
 
+export interface UrlLinkValue {
+  /** Whether the link is a custom URL or a reference to an internal document. */
+  type: "custom" | "internal";
+  /** The link URL. Absolute for custom links; may be a site-relative path for internal links. */
+  url?: string;
+  /** For internal links, the collection slug of the referenced document. */
+  relationTo?: string;
+  /** For internal links, the ID of the referenced document. */
+  value?: string;
+  /** Optional display label shown for the link. */
+  label?: string;
+}
+
 /**
  * Editor capabilities available on a `richText` field. Each feature maps to a
  * formatting control in the Admin editor toolbar and to the underlying editor
@@ -359,7 +372,7 @@ export type TextareaField = TypedField<"textarea", string, TextareaFieldAdmin> &
   CharacterLimitFieldConfig &
   WordLimitFieldConfig;
 export type EmailField = TypedField<"email", string, EmailFieldAdmin> & CharacterLimitFieldConfig;
-export type UrlField = TypedField<"url", string, UrlFieldAdmin> & CharacterLimitFieldConfig;
+export type UrlField = TypedField<"url", string | UrlLinkValue, UrlFieldAdmin> & CharacterLimitFieldConfig;
 export type IconField = TypedField<"icon", string, IconFieldAdmin> & CharacterLimitFieldConfig;
 export type DateField = TypedField<"date", string>;
 export type DateTimeField = TypedField<"datetime", string>;
