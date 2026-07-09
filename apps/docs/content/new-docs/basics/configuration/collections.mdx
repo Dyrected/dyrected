@@ -206,8 +206,9 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   fields: Field[];
 
   /**
-   * If `true`, Dyrected automatically adds `createdAt` and `updatedAt`
-   * timestamp fields to every document. Defaults to `true`.
+   * If `true`, Dyrected automatically adds the built-in system fields
+   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.
+   * Defaults to `true`.
    */
   timestamps?: boolean;
 
@@ -244,9 +245,10 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   /**
    * Collection-level access control.
    *
-   * Each key is an operation; the value is a function or Jexl string that
-   * returns `true` to allow or `false` to deny. Returning a `where`-style
-   * object grants access only to matching documents.
+   * Each key is an operation; the value can be a function, a Jexl string, a
+   * boolean, or a named policy reference. Returning `true` allows access and
+   * `false` denies it. Returning a `where`-style object grants access only to
+   * matching documents.
    *
    * @example
    * access: {
@@ -259,10 +261,10 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * @see {@link https://dyrected.com/new-docs/basics/access-control/overview Access control overview}
    */
   access?: {
-    read?: AccessFunction<TDoc> | string;
-    create?: AccessFunction<TDoc> | string;
-    update?: AccessFunction<TDoc> | string;
-    delete?: AccessFunction<TDoc> | string;
+    read?: AccessRule<TDoc>;
+    create?: AccessRule<TDoc>;
+    update?: AccessRule<TDoc>;
+    delete?: AccessRule<TDoc>;
   };
 
   /**
@@ -407,11 +409,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>auth</code> (optional) | If &#96;true&#96;, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  See: [Authentication overview](https://dyrected.com/new-docs/features/authentication/overview) |
 | <code>upload</code> (optional) | If &#96;true&#96; or a config object, this collection supports file uploads. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;.  Turn this on when each document in the collection should represent a stored file, such as an image, PDF, video, or downloadable asset.  See: [Upload overview](https://dyrected.com/new-docs/features/upload/overview) |
 | <code>fields</code> (required) | Field definitions that make up the document schema for this collection.  This is the main schema contract for every document in the collection. It decides what editors can fill in, how data is validated, how records are stored, and what the API and SDK return.  In practice, fields are where you model the actual content structure of the collection: simple values such as text and dates, relationships to other collections, nested objects and arrays, and flexible &#96;blocks&#96; fields for reusable page sections or long-form layouts.  See: [Fields overview](https://dyrected.com/new-docs/basics/fields/overview), [Blocks and page sections](https://dyrected.com/new-docs/basics/fields/blocks) |
-| <code>timestamps</code> (optional) | If &#96;true&#96;, Dyrected automatically adds &#96;createdAt&#96; and &#96;updatedAt&#96; timestamp fields to every document. Defaults to &#96;true&#96;. |
+| <code>timestamps</code> (optional) | If &#96;true&#96;, Dyrected automatically adds the built-in system fields &#96;createdAt&#96;, &#96;updatedAt&#96;, &#96;createdBy&#96;, and &#96;updatedBy&#96; to every document. Defaults to &#96;true&#96;. |
 | <code>initialData</code> (optional) | Initial documents to seed into this collection the first time it is fetched and found to be empty.  Use this for starter records, demo content, or sensible defaults that should appear automatically before editors create anything themselves. |
 | <code>audit</code> (optional) | If &#96;true&#96;, every create, update, and delete operation on this collection is logged to the &#96;__audit&#96; collection with before/after snapshots and the acting user's identity.  Turn this on when you need accountability around changes, such as knowing who changed what, inspecting before-and-after state, or supporting compliance and operational review. |
 | <code>workflow</code> (optional) | Optional state-machine workflow for this collection. Workflow-enabled entries keep an editable working revision and an independent public snapshot, so editing published content never changes the live response.  Use this when content moves through stages such as draft, review, and published, or when teams need an approval process before changes go live. |
-| <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value is a function or Jexl string that returns &#96;true&#96; to allow or &#96;false&#96; to deny. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://dyrected.com/new-docs/basics/access-control/overview) |
+| <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://dyrected.com/new-docs/basics/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://dyrected.com/new-docs/basics/hooks/overview), [Collection hooks](https://dyrected.com/new-docs/basics/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/new-docs/basics/configuration/collections#admin-options) |
 {/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:END */}

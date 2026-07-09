@@ -162,7 +162,7 @@ This is the single source of truth for your entire Dyrected instance —
 collections, globals, database adapter, storage, email, and more.
 
 ```ts
-export interface DyrectedConfig {
+export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedUser> {
   /** Collection definitions. Each collection maps to a database table/collection. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   collections: CollectionConfig<any>[];
@@ -200,6 +200,12 @@ export interface DyrectedConfig {
    * power application/customer auth independently.
    */
   adminAuth?: AdminAuthConfig;
+
+  /**
+   * Named access policies available to collection, global, and field access
+   * rules via `{ policy: 'name' }`.
+   */
+  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser>>;
 
   /**
    * Email transport configuration. Required for welcome emails, password
@@ -297,6 +303,7 @@ export interface DyrectedConfig {
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |
 | <code>adminAuth</code> (optional) | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
+| <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;. |
 | <code>email</code> (optional) | Email transport configuration. Required for welcome emails, password resets, and invite links. |
 | <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
 | <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |

@@ -164,8 +164,8 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 
   /** Access control for reading and updating this global. */
   access?: {
-    read?: AccessFunction<TDoc>;
-    update?: AccessFunction<TDoc>;
+    read?: AccessRule<TDoc>;
+    update?: AccessRule<TDoc>;
   };
 
   /**
