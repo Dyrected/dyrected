@@ -81,6 +81,17 @@ export interface WorkflowHistoryEntry {
   createdAt: string;
 }
 
+/** A single audit entry returned by `client.audit()` or `client.collection(slug).audit()`. */
+export interface AuditEntry {
+  id: string;
+  collection: string;
+  documentId: string | null;
+  operation: string;
+  user: string | null;
+  timestamp: string;
+  changes?: string | Record<string, unknown> | null;
+}
+
 type ExtractDoc<T> = T extends CollectionConfig<infer TDoc> ? TDoc : T extends GlobalConfig<infer TDoc> ? TDoc : never;
 
 /**
@@ -443,6 +454,12 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
        * @param args - Optional `limit` (default 50, max 100).
        */
       workflowHistory: (id: string, args: { limit?: number } = {}) => this.workflowHistory(slug, id, args),
+      /**
+       * Fetch audit entries for this collection.
+       *
+       * Sends `GET /api/collections/:collection/__audit`.
+       */
+      audit: (args: QueryArgs<AuditEntry> = {}) => this.collectionAudit(slug, args),
     };
   }
 
@@ -547,6 +564,29 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
   ): Promise<PaginatedResult<WorkflowHistoryEntry>> {
     const query = args.limit ? `?limit=${args.limit}` : "";
     return this.request(`/api/collections/${collection}/${id}/workflow-history${query}`);
+  }
+
+  /**
+   * Fetch audit entries across every audited collection the current caller can read.
+   *
+   * Sends `GET /api/audit`.
+   */
+  async audit(args: QueryArgs<AuditEntry> = {}): Promise<PaginatedResult<AuditEntry>> {
+    const query = stringifyQuery(normalizeQueryArgs(args), { addQueryPrefix: true });
+    return this.request(`/api/audit${query}`);
+  }
+
+  /**
+   * Fetch audit entries for a single collection.
+   *
+   * Sends `GET /api/collections/:collection/__audit`.
+   */
+  async collectionAudit(
+    collection: string,
+    args: QueryArgs<AuditEntry> = {},
+  ): Promise<PaginatedResult<AuditEntry>> {
+    const query = stringifyQuery(normalizeQueryArgs(args), { addQueryPrefix: true });
+    return this.request(`/api/collections/${collection}/__audit${query}`);
   }
 
   async deleteMany(collection: string, ids: string[]): Promise<{ message: string }> {

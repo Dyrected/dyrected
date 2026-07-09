@@ -53,9 +53,11 @@ describe("generated knowledge contracts", () => {
     const paths = endpoints.map((endpoint) => endpoint.path);
     for (const fragment of [
       "/api/openapi.json",
+      "/api/audit",
       "/api/globals/",
       "/login",
       "/media",
+      "/__audit",
       "/transitions/",
       "/api/preferences/",
       "/api/preview-token",

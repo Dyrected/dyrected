@@ -45,6 +45,33 @@ SDK calls throw a typed `DyrectedError` when the API returns a non-success statu
 The contracts below are generated from the public `@dyrected/sdk` exports by `@dyrected/knowledge`, so the client, factory, options, and error types stay in sync with the package. Query-shaping details live on the [sort](/new-docs/managing-data/sdk-api/sort), [filter](/new-docs/managing-data/sdk-api/filter), [depth](/new-docs/managing-data/sdk-api/depth), and [pagination](/new-docs/managing-data/sdk-api/pagination) pages.
 
 {/* GENERATED:REFERENCE-SDK:START */}
+## AuditEntry
+
+A single audit entry returned by `client.audit()` or `client.collection(slug).audit()`.
+
+```ts
+export interface AuditEntry {
+  id: string;
+  collection: string;
+  documentId: string | null;
+  operation: string;
+  user: string | null;
+  timestamp: string;
+  changes?: string | Record<string, unknown> | null;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>documentId</code> (required) |  |
+| <code>operation</code> (required) |  |
+| <code>user</code> (required) |  |
+| <code>timestamp</code> (required) |  |
+| <code>changes</code> (optional) |  |
+
+
 ## BaseSchema
 
 Exported interface from @dyrected/sdk.
@@ -104,6 +131,8 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
 | <code>delete</code> (required) |  |
 | <code>transition</code> (required) | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
 | <code>workflowHistory</code> (optional) | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
+| <code>audit</code> (required) | Fetch audit entries across every audited collection the current caller can read.  Sends &#96;GET /api/audit&#96;. |
+| <code>collectionAudit</code> (required) | Fetch audit entries for a single collection.  Sends &#96;GET /api/collections/:collection/__audit&#96;. |
 | <code>deleteMany</code> (required) |  |
 | <code>getGlobal</code> (optional) |  |
 | <code>updateGlobal</code> (required) |  |

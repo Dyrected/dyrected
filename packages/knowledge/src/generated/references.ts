@@ -2033,6 +2033,52 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/sdk:AuditEntry",
+    "name": "AuditEntry",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "A single audit entry returned by `client.audit()` or `client.collection(slug).audit()`.",
+    "signature": "export interface AuditEntry {\n  id: string;\n  collection: string;\n  documentId: string | null;\n  operation: string;\n  user: string | null;\n  timestamp: string;\n  changes?: string | Record<string, unknown> | null;\n}",
+    "members": [
+      {
+        "name": "id",
+        "signature": "id: string",
+        "description": ""
+      },
+      {
+        "name": "collection",
+        "signature": "collection: string",
+        "description": ""
+      },
+      {
+        "name": "documentId",
+        "signature": "documentId: string | null",
+        "description": ""
+      },
+      {
+        "name": "operation",
+        "signature": "operation: string",
+        "description": ""
+      },
+      {
+        "name": "user",
+        "signature": "user: string | null",
+        "description": ""
+      },
+      {
+        "name": "timestamp",
+        "signature": "timestamp: string",
+        "description": ""
+      },
+      {
+        "name": "changes",
+        "signature": "changes?: string | Record<string, unknown> | null",
+        "description": ""
+      }
+    ]
+  },
+  {
     "id": "@dyrected/sdk:BaseSchema",
     "name": "BaseSchema",
     "kind": "interface",
@@ -2171,6 +2217,16 @@ export const references: readonly ReferenceEntry[] = [
         "name": "workflowHistory",
         "signature": "workflowHistory(collection: string, id: string, args: { limit?: number } = {}): Promise<PaginatedResult<WorkflowHistoryEntry>>",
         "description": "Fetch the workflow history for a document.\n\nSends `GET /api/collections/:collection/:id/workflow-history`."
+      },
+      {
+        "name": "audit",
+        "signature": "audit(args: QueryArgs<AuditEntry> = {}): Promise<PaginatedResult<AuditEntry>>",
+        "description": "Fetch audit entries across every audited collection the current caller can read.\n\nSends `GET /api/audit`."
+      },
+      {
+        "name": "collectionAudit",
+        "signature": "collectionAudit(collection: string, args: QueryArgs<AuditEntry> = {}): Promise<PaginatedResult<AuditEntry>>",
+        "description": "Fetch audit entries for a single collection.\n\nSends `GET /api/collections/:collection/__audit`."
       },
       {
         "name": "deleteMany",
@@ -2404,12 +2460,48 @@ export const references: readonly ReferenceEntry[] = [
 
 export const endpoints: readonly EndpointReference[] = [
   {
+    "id": "GET /api/audit",
+    "method": "GET",
+    "path": "/api/audit",
+    "summary": "Get audit entries across all readable audited collections",
+    "tags": [
+      "Audit"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "where",
+        "in": "query",
+        "required": false,
+        "description": "JSON filter"
+      },
+      {
+        "name": "sort",
+        "in": "query",
+        "required": false
+      }
+    ],
+    "responses": [
+      "200"
+    ]
+  },
+  {
     "id": "GET /api/collections/media",
     "method": "GET",
     "path": "/api/collections/media",
     "summary": "Find Media",
     "tags": [
-      "Collections"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2446,7 +2538,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media",
     "summary": "Create Media item",
     "tags": [
-      "Collections"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2460,7 +2552,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/{id}",
     "summary": "Delete Media item",
     "tags": [
-      "Collections"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2480,7 +2572,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/{id}",
     "summary": "Get a single Media item",
     "tags": [
-      "Collections"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2500,7 +2592,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/{id}",
     "summary": "Update Media item",
     "tags": [
-      "Collections"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2520,7 +2612,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/delete-many",
     "summary": "Delete multiple Media",
     "tags": [
-      "Collections"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2534,7 +2626,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/media",
     "summary": "List Media",
     "tags": [
-      "Media"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2548,7 +2640,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/media",
     "summary": "Upload Media item",
     "tags": [
-      "Media"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2562,7 +2654,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/media/{filename}",
     "summary": "Serve Media item bytes",
     "tags": [
-      "Media"
+      "Media Collection"
     ],
     "authenticated": false,
     "parameters": [
@@ -2583,7 +2675,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/seed",
     "summary": "Seed initial Media",
     "tags": [
-      "Collections"
+      "Media Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2597,7 +2689,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts",
     "summary": "Find Posts",
     "tags": [
-      "Collections"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2634,7 +2726,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts",
     "summary": "Create Post",
     "tags": [
-      "Collections"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2643,12 +2735,50 @@ export const endpoints: readonly EndpointReference[] = [
     ]
   },
   {
+    "id": "GET /api/collections/posts/__audit",
+    "method": "GET",
+    "path": "/api/collections/posts/__audit",
+    "summary": "Get Post audit entries",
+    "tags": [
+      "Posts Collection"
+    ],
+    "authenticated": true,
+    "parameters": [
+      {
+        "name": "limit",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "page",
+        "in": "query",
+        "required": false
+      },
+      {
+        "name": "where",
+        "in": "query",
+        "required": false,
+        "description": "JSON filter"
+      },
+      {
+        "name": "sort",
+        "in": "query",
+        "required": false
+      }
+    ],
+    "responses": [
+      "200",
+      "403",
+      "404"
+    ]
+  },
+  {
     "id": "DELETE /api/collections/posts/{id}",
     "method": "DELETE",
     "path": "/api/collections/posts/{id}",
     "summary": "Delete Post",
     "tags": [
-      "Collections"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2668,7 +2798,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}",
     "summary": "Get a single Post",
     "tags": [
-      "Collections"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2688,7 +2818,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}",
     "summary": "Update Post",
     "tags": [
-      "Collections"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2708,7 +2838,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}/transitions/{transition}",
     "summary": "Transition Post workflow",
     "tags": [
-      "Workflows"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2736,7 +2866,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}/workflow-history",
     "summary": "Get Post workflow history",
     "tags": [
-      "Workflows"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2762,7 +2892,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/delete-many",
     "summary": "Delete multiple Posts",
     "tags": [
-      "Collections"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2776,7 +2906,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/seed",
     "summary": "Seed initial Posts",
     "tags": [
-      "Collections"
+      "Posts Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2790,7 +2920,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users",
     "summary": "Find Users",
     "tags": [
-      "Collections"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2827,7 +2957,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users",
     "summary": "Create User",
     "tags": [
-      "Collections"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2841,7 +2971,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}",
     "summary": "Delete User",
     "tags": [
-      "Collections"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2861,7 +2991,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}",
     "summary": "Get a single User",
     "tags": [
-      "Collections"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2881,7 +3011,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}",
     "summary": "Update User",
     "tags": [
-      "Collections"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2901,7 +3031,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}/change-password",
     "summary": "Change a User password",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [
@@ -2921,7 +3051,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/accept-invite",
     "summary": "Accept an invitation",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": false,
     "parameters": [],
@@ -2936,7 +3066,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/delete-many",
     "summary": "Delete multiple Users",
     "tags": [
-      "Collections"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2950,7 +3080,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/first-user",
     "summary": "Register the first User",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": false,
     "parameters": [],
@@ -2965,7 +3095,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/forgot-password",
     "summary": "Request a password reset",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": false,
     "parameters": [],
@@ -2980,7 +3110,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/init",
     "summary": "Get Users initialization state",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": false,
     "parameters": [],
@@ -2994,7 +3124,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/invite",
     "summary": "Invite a User",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3008,7 +3138,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/login",
     "summary": "Log in to Users",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3023,7 +3153,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/logout",
     "summary": "Log out of Users",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3037,7 +3167,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/me",
     "summary": "Get the current User",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3051,7 +3181,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/refresh-token",
     "summary": "Refresh an authentication token",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3065,7 +3195,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/reset-password",
     "summary": "Reset a password",
     "tags": [
-      "Authentication"
+      "Users Collection"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3080,7 +3210,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/seed",
     "summary": "Seed initial Users",
     "tags": [
-      "Collections"
+      "Users Collection"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3133,7 +3263,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/globals/settings",
     "summary": "Get Site settings",
     "tags": [
-      "Globals"
+      "Site settings Global"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3147,7 +3277,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/globals/settings",
     "summary": "Update Site settings",
     "tags": [
-      "Globals"
+      "Site settings Global"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3161,7 +3291,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/globals/settings/seed",
     "summary": "Seed Site settings",
     "tags": [
-      "Globals"
+      "Site settings Global"
     ],
     "authenticated": true,
     "parameters": [],

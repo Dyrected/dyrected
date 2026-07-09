@@ -17,6 +17,7 @@ const config = defineConfig({
     }),
     defineCollection({
       slug: "posts",
+      audit: true,
       workflow: publishingWorkflow(),
       fields: [{ name: "title", type: "text", label: "Title" }],
     }),
@@ -52,7 +53,9 @@ describe("OpenAPI generation", () => {
         "/api/preferences/{key}",
         "/api/preview-token",
         "/api/preview-data",
+        "/api/audit",
         "/api/collections/posts",
+        "/api/collections/posts/__audit",
         "/api/collections/posts/{id}",
         "/api/collections/posts/delete-many",
         "/api/collections/posts/seed",
@@ -68,6 +71,10 @@ describe("OpenAPI generation", () => {
         "/api/media/{filename}",
       ]),
     );
+
+    expect(spec.paths["/api/collections/posts"]?.get?.tags).toEqual(["Collection: posts"]);
+    expect(spec.paths["/api/collections/users/login"]?.post?.tags).toEqual(["Collection: users"]);
+    expect(spec.paths["/api/globals/settings"]?.get?.tags).toEqual(["Global: settings"]);
   });
 
   it("describes all FieldType variants used by the schema generator", () => {

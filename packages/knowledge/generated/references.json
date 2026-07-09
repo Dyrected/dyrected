@@ -2030,6 +2030,52 @@
     ]
   },
   {
+    "id": "@dyrected/sdk:AuditEntry",
+    "name": "AuditEntry",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "A single audit entry returned by `client.audit()` or `client.collection(slug).audit()`.",
+    "signature": "export interface AuditEntry {\n  id: string;\n  collection: string;\n  documentId: string | null;\n  operation: string;\n  user: string | null;\n  timestamp: string;\n  changes?: string | Record<string, unknown> | null;\n}",
+    "members": [
+      {
+        "name": "id",
+        "signature": "id: string",
+        "description": ""
+      },
+      {
+        "name": "collection",
+        "signature": "collection: string",
+        "description": ""
+      },
+      {
+        "name": "documentId",
+        "signature": "documentId: string | null",
+        "description": ""
+      },
+      {
+        "name": "operation",
+        "signature": "operation: string",
+        "description": ""
+      },
+      {
+        "name": "user",
+        "signature": "user: string | null",
+        "description": ""
+      },
+      {
+        "name": "timestamp",
+        "signature": "timestamp: string",
+        "description": ""
+      },
+      {
+        "name": "changes",
+        "signature": "changes?: string | Record<string, unknown> | null",
+        "description": ""
+      }
+    ]
+  },
+  {
     "id": "@dyrected/sdk:BaseSchema",
     "name": "BaseSchema",
     "kind": "interface",
@@ -2168,6 +2214,16 @@
         "name": "workflowHistory",
         "signature": "workflowHistory(collection: string, id: string, args: { limit?: number } = {}): Promise<PaginatedResult<WorkflowHistoryEntry>>",
         "description": "Fetch the workflow history for a document.\n\nSends `GET /api/collections/:collection/:id/workflow-history`."
+      },
+      {
+        "name": "audit",
+        "signature": "audit(args: QueryArgs<AuditEntry> = {}): Promise<PaginatedResult<AuditEntry>>",
+        "description": "Fetch audit entries across every audited collection the current caller can read.\n\nSends `GET /api/audit`."
+      },
+      {
+        "name": "collectionAudit",
+        "signature": "collectionAudit(collection: string, args: QueryArgs<AuditEntry> = {}): Promise<PaginatedResult<AuditEntry>>",
+        "description": "Fetch audit entries for a single collection.\n\nSends `GET /api/collections/:collection/__audit`."
       },
       {
         "name": "deleteMany",

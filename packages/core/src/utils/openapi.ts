@@ -1,9 +1,16 @@
-import type {
-  DyrectedConfig,
-  Field,
-  CollectionConfig,
-  GlobalConfig,
-} from "../types/index.js";
+import type { DyrectedConfig, Field, CollectionConfig, GlobalConfig } from "../types/index.js";
+
+function getCollectionLabels(collection: CollectionConfig) {
+  return collection.labels || { singular: collection.slug, plural: collection.slug };
+}
+
+function getCollectionTag(collection: CollectionConfig) {
+  return `${getCollectionLabels(collection).plural} Collection`;
+}
+
+function getGlobalTag(global: GlobalConfig) {
+  return `${global.label || global.slug} Global`;
+}
 
 /**
  * Generate an OpenAPI 3.0 specification based on the Dyrected configuration.
@@ -14,8 +21,7 @@ export function generateOpenApi(config: DyrectedConfig) {
     info: {
       title: "Dyrected API",
       version: "1.0.0",
-      description:
-        "Automatically generated OpenAPI specification for the Dyrected project.",
+      description: "Automatically generated OpenAPI specification for the Dyrected project.",
     },
     components: {
       schemas: {
@@ -40,15 +46,7 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
         WorkflowHistoryEntry: {
           type: "object",
-          required: [
-            "collection",
-            "documentId",
-            "transition",
-            "from",
-            "to",
-            "revision",
-            "createdAt",
-          ],
+          required: ["collection", "documentId", "transition", "from", "to", "revision", "createdAt"],
           properties: {
             id: { type: "string" },
             collection: { type: "string" },
@@ -60,6 +58,21 @@ export function generateOpenApi(config: DyrectedConfig) {
             comment: { type: "string", nullable: true },
             actorId: { type: "string", nullable: true },
             createdAt: { type: "string", format: "date-time" },
+          },
+        },
+        AuditEntry: {
+          type: "object",
+          required: ["collection", "operation", "timestamp"],
+          properties: {
+            id: { type: "string" },
+            collection: { type: "string" },
+            documentId: { type: "string", nullable: true },
+            operation: { type: "string" },
+            user: { type: "string", nullable: true },
+            timestamp: { type: "string", format: "date-time" },
+            changes: {
+              oneOf: [{ type: "string" }, { type: "object", additionalProperties: true }, { type: "null" }],
+            },
           },
         },
         Error: {
@@ -151,17 +164,13 @@ export function generateOpenApi(config: DyrectedConfig) {
     get: {
       tags: ["Preferences"],
       summary: "Get an authenticated user preference",
-      parameters: [
-        { name: "key", in: "path", required: true, schema: { type: "string" } },
-      ],
+      parameters: [{ name: "key", in: "path", required: true, schema: { type: "string" } }],
       responses: { 200: { description: "Preference value" } },
     },
     put: {
       tags: ["Preferences"],
       summary: "Set an authenticated user preference",
-      parameters: [
-        { name: "key", in: "path", required: true, schema: { type: "string" } },
-      ],
+      parameters: [{ name: "key", in: "path", required: true, schema: { type: "string" } }],
       requestBody: {
         required: true,
         content: { "application/json": { schema: { type: "object" } } },
@@ -192,6 +201,39 @@ export function generateOpenApi(config: DyrectedConfig) {
       responses: { 200: { description: "Preview document data" } },
     },
   };
+  spec.paths["/api/audit"] = {
+    get: {
+      tags: ["Audit"],
+      summary: "Get audit entries across all readable audited collections",
+      parameters: [
+        { name: "limit", in: "query", schema: { type: "integer", default: 50, maximum: 100 } },
+        { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+        { name: "where", in: "query", schema: { type: "string" }, description: "JSON filter" },
+        { name: "sort", in: "query", schema: { type: "string", default: "-timestamp" } },
+      ],
+      responses: {
+        200: {
+          description: "Audit entries",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  docs: {
+                    type: "array",
+                    items: { $ref: "#/components/schemas/AuditEntry" },
+                  },
+                  total: { type: "integer" },
+                  limit: { type: "integer" },
+                  page: { type: "integer" },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
 
   // 1. Generate Schemas for Collections
   for (const collection of config.collections) {
@@ -207,11 +249,12 @@ export function generateOpenApi(config: DyrectedConfig) {
   for (const collection of config.collections) {
     const slug = collection.slug;
     const path = `/api/collections/${slug}`;
-    const labels = collection.labels || { singular: slug, plural: `${slug}s` };
+    const labels = getCollectionLabels(collection);
+    const collectionTag = getCollectionTag(collection);
 
     spec.paths[path] = {
       get: {
-        tags: ["Collections"],
+        tags: [collectionTag],
         summary: `Find ${labels.plural}`,
         parameters: [
           {
@@ -260,7 +303,7 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
       },
       post: {
-        tags: ["Collections"],
+        tags: [collectionTag],
         summary: `Create ${labels.singular}`,
         requestBody: {
           required: true,
@@ -285,7 +328,7 @@ export function generateOpenApi(config: DyrectedConfig) {
 
     spec.paths[`${path}/{id}`] = {
       get: {
-        tags: ["Collections"],
+        tags: [collectionTag],
         summary: `Get a single ${labels.singular}`,
         parameters: [
           {
@@ -307,7 +350,7 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
       },
       patch: {
-        tags: ["Collections"],
+        tags: [collectionTag],
         summary: `Update ${labels.singular}`,
         parameters: [
           {
@@ -337,7 +380,7 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
       },
       delete: {
-        tags: ["Collections"],
+        tags: [collectionTag],
         summary: `Delete ${labels.singular}`,
         parameters: [
           {
@@ -355,7 +398,7 @@ export function generateOpenApi(config: DyrectedConfig) {
 
     spec.paths[`${path}/delete-many`] = {
       delete: {
-        tags: ["Collections"],
+        tags: [collectionTag],
         summary: `Delete multiple ${labels.plural}`,
         requestBody: {
           required: true,
@@ -374,9 +417,46 @@ export function generateOpenApi(config: DyrectedConfig) {
         responses: { 200: { description: "Deleted and failed document IDs" } },
       },
     };
+    if (collection.audit) {
+      spec.paths[`${path}/__audit`] = {
+        get: {
+          tags: [collectionTag],
+          summary: `Get ${labels.singular} audit entries`,
+          parameters: [
+            { name: "limit", in: "query", schema: { type: "integer", default: 50, maximum: 100 } },
+            { name: "page", in: "query", schema: { type: "integer", default: 1 } },
+            { name: "where", in: "query", schema: { type: "string" }, description: "JSON filter" },
+            { name: "sort", in: "query", schema: { type: "string", default: "-timestamp" } },
+          ],
+          responses: {
+            200: {
+              description: "Audit entries for this collection",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      docs: {
+                        type: "array",
+                        items: { $ref: "#/components/schemas/AuditEntry" },
+                      },
+                      total: { type: "integer" },
+                      limit: { type: "integer" },
+                      page: { type: "integer" },
+                    },
+                  },
+                },
+              },
+            },
+            403: { description: "Collection read access denied" },
+            404: { description: "Audit is not enabled for this collection" },
+          },
+        },
+      };
+    }
     spec.paths[`${path}/seed`] = {
       post: {
-        tags: ["Collections"],
+        tags: [collectionTag],
         summary: `Seed initial ${labels.plural}`,
         responses: { 200: { description: "Seeded documents" } },
       },
@@ -385,12 +465,12 @@ export function generateOpenApi(config: DyrectedConfig) {
     if (collection.upload) {
       spec.paths[`${path}/media`] = {
         get: {
-          tags: ["Media"],
+          tags: [collectionTag],
           summary: `List ${labels.plural}`,
           responses: { 200: { description: "Paginated media documents" } },
         },
         post: {
-          tags: ["Media"],
+          tags: [collectionTag],
           summary: `Upload ${labels.singular}`,
           requestBody: {
             required: true,
@@ -409,7 +489,7 @@ export function generateOpenApi(config: DyrectedConfig) {
       };
       spec.paths[`${path}/media/{filename}`] = {
         get: {
-          tags: ["Media"],
+          tags: [collectionTag],
           summary: `Serve ${labels.singular} bytes`,
           parameters: [
             {
@@ -430,7 +510,7 @@ export function generateOpenApi(config: DyrectedConfig) {
 
     if (collection.auth) {
       const publicAuthPost = (summary: string) => ({
-        tags: ["Authentication"],
+        tags: [collectionTag],
         summary,
         security: [],
         requestBody: {
@@ -472,14 +552,14 @@ export function generateOpenApi(config: DyrectedConfig) {
       };
       spec.paths[`${path}/logout`] = {
         post: {
-          tags: ["Authentication"],
+          tags: [collectionTag],
           summary: `Log out of ${labels.plural}`,
           responses: { 200: { description: "Logged out" } },
         },
       };
       spec.paths[`${path}/init`] = {
         get: {
-          tags: ["Authentication"],
+          tags: [collectionTag],
           summary: `Get ${labels.plural} initialization state`,
           security: [],
           responses: { 200: { description: "Initialization state" } },
@@ -490,14 +570,14 @@ export function generateOpenApi(config: DyrectedConfig) {
       };
       spec.paths[`${path}/me`] = {
         get: {
-          tags: ["Authentication"],
+          tags: [collectionTag],
           summary: `Get the current ${labels.singular}`,
           responses: { 200: { description: "Authenticated user" } },
         },
       };
       spec.paths[`${path}/refresh-token`] = {
         post: {
-          tags: ["Authentication"],
+          tags: [collectionTag],
           summary: "Refresh an authentication token",
           responses: { 200: { description: "Refreshed token" } },
         },
@@ -510,7 +590,7 @@ export function generateOpenApi(config: DyrectedConfig) {
       };
       spec.paths[`${path}/invite`] = {
         post: {
-          tags: ["Authentication"],
+          tags: [collectionTag],
           summary: `Invite a ${labels.singular}`,
           responses: { 200: { description: "Invitation sent" } },
         },
@@ -520,7 +600,7 @@ export function generateOpenApi(config: DyrectedConfig) {
       };
       spec.paths[`${path}/{id}/change-password`] = {
         post: {
-          tags: ["Authentication"],
+          tags: [collectionTag],
           summary: `Change a ${labels.singular} password`,
           parameters: [
             {
@@ -538,7 +618,7 @@ export function generateOpenApi(config: DyrectedConfig) {
     if (collection.workflow) {
       spec.paths[`${path}/{id}/transitions/{transition}`] = {
         post: {
-          tags: ["Workflows"],
+          tags: [collectionTag],
           summary: `Transition ${labels.singular} workflow`,
           parameters: [
             {
@@ -583,7 +663,7 @@ export function generateOpenApi(config: DyrectedConfig) {
       };
       spec.paths[`${path}/{id}/workflow-history`] = {
         get: {
-          tags: ["Workflows"],
+          tags: [collectionTag],
           summary: `Get ${labels.singular} workflow history`,
           parameters: [
             {
@@ -631,10 +711,11 @@ export function generateOpenApi(config: DyrectedConfig) {
   for (const global of config.globals) {
     const slug = global.slug;
     const path = `/api/globals/${slug}`;
+    const globalTag = getGlobalTag(global);
 
     spec.paths[path] = {
       get: {
-        tags: ["Globals"],
+        tags: [globalTag],
         summary: `Get ${global.label || slug}`,
         responses: {
           200: {
@@ -648,7 +729,7 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
       },
       patch: {
-        tags: ["Globals"],
+        tags: [globalTag],
         summary: `Update ${global.label || slug}`,
         requestBody: {
           required: true,
@@ -672,7 +753,7 @@ export function generateOpenApi(config: DyrectedConfig) {
     };
     spec.paths[`${path}/seed`] = {
       post: {
-        tags: ["Globals"],
+        tags: [globalTag],
         summary: `Seed ${global.label || slug}`,
         responses: { 200: { description: "Seeded global" } },
       },
@@ -713,9 +794,7 @@ function collectionToSchema(collection: CollectionConfig) {
       id: { type: "string" },
       createdAt: { type: "string", format: "date-time" },
       updatedAt: { type: "string", format: "date-time" },
-      ...(collection.workflow
-        ? { _workflow: { $ref: "#/components/schemas/WorkflowMetadata" } }
-        : {}),
+      ...(collection.workflow ? { _workflow: { $ref: "#/components/schemas/WorkflowMetadata" } } : {}),
       ...properties,
     },
     required: ["id", ...required],
@@ -763,10 +842,7 @@ function fieldToSchema(field: Field): any {
       break;
     case "url":
       schema = {
-        oneOf: [
-          { type: "string" },
-          { type: "object", additionalProperties: true },
-        ],
+        oneOf: [{ type: "string" }, { type: "object", additionalProperties: true }],
       };
       break;
     case "icon":
@@ -813,9 +889,7 @@ function fieldToSchema(field: Field): any {
         type: "string",
         description: `ID of a ${field.relationTo} record`,
       };
-      schema = field.hasMany
-        ? { type: "array", items: valueSchema }
-        : valueSchema;
+      schema = field.hasMany ? { type: "array", items: valueSchema } : valueSchema;
       break;
     }
     case "join":

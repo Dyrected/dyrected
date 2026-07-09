@@ -99,6 +99,51 @@
           }
         }
       },
+      "AuditEntry": {
+        "type": "object",
+        "required": [
+          "collection",
+          "operation",
+          "timestamp"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string",
+            "nullable": true
+          },
+          "operation": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "changes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "Error": {
         "type": "object",
         "properties": {
@@ -415,10 +460,82 @@
         }
       }
     },
+    "/api/audit": {
+      "get": {
+        "tags": [
+          "Audit"
+        ],
+        "summary": "Get audit entries across all readable audited collections",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON filter"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "-timestamp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AuditEntry"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/collections/users": {
       "get": {
         "tags": [
-          "Collections"
+          "Users Collection"
         ],
         "summary": "Find Users",
         "parameters": [
@@ -487,7 +604,7 @@
       },
       "post": {
         "tags": [
-          "Collections"
+          "Users Collection"
         ],
         "summary": "Create User",
         "requestBody": {
@@ -517,7 +634,7 @@
     "/api/collections/users/{id}": {
       "get": {
         "tags": [
-          "Collections"
+          "Users Collection"
         ],
         "summary": "Get a single User",
         "parameters": [
@@ -545,7 +662,7 @@
       },
       "patch": {
         "tags": [
-          "Collections"
+          "Users Collection"
         ],
         "summary": "Update User",
         "parameters": [
@@ -583,7 +700,7 @@
       },
       "delete": {
         "tags": [
-          "Collections"
+          "Users Collection"
         ],
         "summary": "Delete User",
         "parameters": [
@@ -606,7 +723,7 @@
     "/api/collections/users/delete-many": {
       "delete": {
         "tags": [
-          "Collections"
+          "Users Collection"
         ],
         "summary": "Delete multiple Users",
         "requestBody": {
@@ -640,7 +757,7 @@
     "/api/collections/users/seed": {
       "post": {
         "tags": [
-          "Collections"
+          "Users Collection"
         ],
         "summary": "Seed initial Users",
         "responses": {
@@ -653,7 +770,7 @@
     "/api/collections/users/login": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Log in to Users",
         "security": [],
@@ -687,7 +804,7 @@
     "/api/collections/users/logout": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Log out of Users",
         "responses": {
@@ -700,7 +817,7 @@
     "/api/collections/users/init": {
       "get": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Get Users initialization state",
         "security": [],
@@ -714,7 +831,7 @@
     "/api/collections/users/first-user": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Register the first User",
         "security": [],
@@ -742,7 +859,7 @@
     "/api/collections/users/me": {
       "get": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Get the current User",
         "responses": {
@@ -755,7 +872,7 @@
     "/api/collections/users/refresh-token": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Refresh an authentication token",
         "responses": {
@@ -768,7 +885,7 @@
     "/api/collections/users/forgot-password": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Request a password reset",
         "security": [],
@@ -796,7 +913,7 @@
     "/api/collections/users/reset-password": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Reset a password",
         "security": [],
@@ -824,7 +941,7 @@
     "/api/collections/users/invite": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Invite a User",
         "responses": {
@@ -837,7 +954,7 @@
     "/api/collections/users/accept-invite": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Accept an invitation",
         "security": [],
@@ -865,7 +982,7 @@
     "/api/collections/users/{id}/change-password": {
       "post": {
         "tags": [
-          "Authentication"
+          "Users Collection"
         ],
         "summary": "Change a User password",
         "parameters": [
@@ -888,7 +1005,7 @@
     "/api/collections/media": {
       "get": {
         "tags": [
-          "Collections"
+          "Media Collection"
         ],
         "summary": "Find Media",
         "parameters": [
@@ -957,7 +1074,7 @@
       },
       "post": {
         "tags": [
-          "Collections"
+          "Media Collection"
         ],
         "summary": "Create Media item",
         "requestBody": {
@@ -987,7 +1104,7 @@
     "/api/collections/media/{id}": {
       "get": {
         "tags": [
-          "Collections"
+          "Media Collection"
         ],
         "summary": "Get a single Media item",
         "parameters": [
@@ -1015,7 +1132,7 @@
       },
       "patch": {
         "tags": [
-          "Collections"
+          "Media Collection"
         ],
         "summary": "Update Media item",
         "parameters": [
@@ -1053,7 +1170,7 @@
       },
       "delete": {
         "tags": [
-          "Collections"
+          "Media Collection"
         ],
         "summary": "Delete Media item",
         "parameters": [
@@ -1076,7 +1193,7 @@
     "/api/collections/media/delete-many": {
       "delete": {
         "tags": [
-          "Collections"
+          "Media Collection"
         ],
         "summary": "Delete multiple Media",
         "requestBody": {
@@ -1110,7 +1227,7 @@
     "/api/collections/media/seed": {
       "post": {
         "tags": [
-          "Collections"
+          "Media Collection"
         ],
         "summary": "Seed initial Media",
         "responses": {
@@ -1123,7 +1240,7 @@
     "/api/collections/media/media": {
       "get": {
         "tags": [
-          "Media"
+          "Media Collection"
         ],
         "summary": "List Media",
         "responses": {
@@ -1134,7 +1251,7 @@
       },
       "post": {
         "tags": [
-          "Media"
+          "Media Collection"
         ],
         "summary": "Upload Media item",
         "requestBody": {
@@ -1166,7 +1283,7 @@
     "/api/collections/media/media/{filename}": {
       "get": {
         "tags": [
-          "Media"
+          "Media Collection"
         ],
         "summary": "Serve Media item bytes",
         "parameters": [
@@ -1193,7 +1310,7 @@
     "/api/collections/posts": {
       "get": {
         "tags": [
-          "Collections"
+          "Posts Collection"
         ],
         "summary": "Find Posts",
         "parameters": [
@@ -1262,7 +1379,7 @@
       },
       "post": {
         "tags": [
-          "Collections"
+          "Posts Collection"
         ],
         "summary": "Create Post",
         "requestBody": {
@@ -1292,7 +1409,7 @@
     "/api/collections/posts/{id}": {
       "get": {
         "tags": [
-          "Collections"
+          "Posts Collection"
         ],
         "summary": "Get a single Post",
         "parameters": [
@@ -1320,7 +1437,7 @@
       },
       "patch": {
         "tags": [
-          "Collections"
+          "Posts Collection"
         ],
         "summary": "Update Post",
         "parameters": [
@@ -1358,7 +1475,7 @@
       },
       "delete": {
         "tags": [
-          "Collections"
+          "Posts Collection"
         ],
         "summary": "Delete Post",
         "parameters": [
@@ -1381,7 +1498,7 @@
     "/api/collections/posts/delete-many": {
       "delete": {
         "tags": [
-          "Collections"
+          "Posts Collection"
         ],
         "summary": "Delete multiple Posts",
         "requestBody": {
@@ -1412,10 +1529,88 @@
         }
       }
     },
+    "/api/collections/posts/__audit": {
+      "get": {
+        "tags": [
+          "Posts Collection"
+        ],
+        "summary": "Get Post audit entries",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "where",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "JSON filter"
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "-timestamp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit entries for this collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "docs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AuditEntry"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Collection read access denied"
+          },
+          "404": {
+            "description": "Audit is not enabled for this collection"
+          }
+        }
+      }
+    },
     "/api/collections/posts/seed": {
       "post": {
         "tags": [
-          "Collections"
+          "Posts Collection"
         ],
         "summary": "Seed initial Posts",
         "responses": {
@@ -1428,7 +1623,7 @@
     "/api/collections/posts/{id}/transitions/{transition}": {
       "post": {
         "tags": [
-          "Workflows"
+          "Posts Collection"
         ],
         "summary": "Transition Post workflow",
         "parameters": [
@@ -1490,7 +1685,7 @@
     "/api/collections/posts/{id}/workflow-history": {
       "get": {
         "tags": [
-          "Workflows"
+          "Posts Collection"
         ],
         "summary": "Get Post workflow history",
         "parameters": [
@@ -1549,7 +1744,7 @@
     "/api/globals/settings": {
       "get": {
         "tags": [
-          "Globals"
+          "Site settings Global"
         ],
         "summary": "Get Site settings",
         "responses": {
@@ -1567,7 +1762,7 @@
       },
       "patch": {
         "tags": [
-          "Globals"
+          "Site settings Global"
         ],
         "summary": "Update Site settings",
         "requestBody": {
@@ -1597,7 +1792,7 @@
     "/api/globals/settings/seed": {
       "post": {
         "tags": [
-          "Globals"
+          "Site settings Global"
         ],
         "summary": "Seed Site settings",
         "responses": {

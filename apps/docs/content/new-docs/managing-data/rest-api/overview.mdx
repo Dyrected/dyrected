@@ -79,6 +79,7 @@ The table below is generated from a representative maximal configuration so it c
 {/* GENERATED:REFERENCE-REST-API:START */}
 | Method | Path | Summary | Authentication |
 | --- | --- | --- | --- |
+| GET | `/api/audit` | Get audit entries across all readable audited collections | Required |
 | GET | `/api/collections/media` | Find Media | Required |
 | POST | `/api/collections/media` | Create Media item | Required |
 | DELETE | `/api/collections/media/{id}` | Delete Media item | Required |
@@ -91,6 +92,7 @@ The table below is generated from a representative maximal configuration so it c
 | POST | `/api/collections/media/seed` | Seed initial Media | Required |
 | GET | `/api/collections/posts` | Find Posts | Required |
 | POST | `/api/collections/posts` | Create Post | Required |
+| GET | `/api/collections/posts/__audit` | Get Post audit entries | Required |
 | DELETE | `/api/collections/posts/{id}` | Delete Post | Required |
 | GET | `/api/collections/posts/{id}` | Get a single Post | Required |
 | PATCH | `/api/collections/posts/{id}` | Update Post | Required |
@@ -133,5 +135,5 @@ The table below is generated from a representative maximal configuration so it c
 ## Representative facts
 
 {/* GENERATED:REFERENCE-OPENAPI:START */}
-The representative document currently contains **49 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+The representative document currently contains **51 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
 {/* GENERATED:REFERENCE-OPENAPI:END */}

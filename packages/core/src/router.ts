@@ -7,6 +7,7 @@ import { MediaController } from "./controllers/media.controller.js";
 import { AuthController } from "./controllers/auth.controller.js";
 import { AdminAuthController } from "./controllers/admin-auth.controller.js";
 import { PreviewController } from "./controllers/preview.controller.js";
+import { AuditController } from "./controllers/audit.controller.js";
 import { requireAuth, optionalAuth } from "./middleware/auth.js";
 import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
@@ -478,6 +479,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   }
 
   // 4. Collection Routes (Static)
+  const auditController = new AuditController();
   for (const collection of config.collections) {
     const path = `/api/collections/${collection.slug}`;
     const controller = new CollectionController(collection);
@@ -487,6 +489,9 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     app.post(`${path}/media`, (c) => controller.create(c));
     // delete-many must be registered before /:id to avoid the wildcard swallowing it
     app.delete(`${path}/delete-many`, (c) => controller.deleteMany(c));
+    if (collection.audit) {
+      app.get(`${path}/__audit`, (c) => auditController.findForCollection(c, collection));
+    }
     app.get(`${path}/:id`, (c) => controller.findOne(c));
     app.patch(`${path}/:id`, (c) => controller.update(c));
     app.delete(`${path}/:id`, (c) => controller.delete(c));
@@ -516,18 +521,38 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   const previewController = new PreviewController();
   app.post("/api/preview-token", requireAuth(config), (c) => previewController.createToken(c));
   app.get("/api/preview-data", (c) => previewController.getData(c));
+  app.get("/api/audit", (c) => auditController.findAll(c));
 
   // 7. Dynamic Routes (Tenant-specific)
   // This handles collections/globals defined via sync:schema and fetched via onSchemaFetch
 
-  // 7a. Workflow sub-routes for dynamic tenant collections.
+  // 7a. Audit and workflow sub-routes for dynamic tenant collections.
   // Must be registered BEFORE the /:id? catch-all so Hono doesn't swallow deeper paths.
-  // Pattern: POST /api/collections/:slug/:id/transitions/:transition
+  // Pattern: GET  /api/collections/:slug/__audit
+  //          POST /api/collections/:slug/:id/transitions/:transition
   //          GET  /api/collections/:slug/:id/workflow-history
-  // 7a. Workflow sub-routes for dynamic tenant collections.
-  // Must be registered BEFORE the /:id? catch-all so Hono doesn't swallow deeper paths.
-  // Pattern: POST /api/collections/:slug/:id/transitions/:transition
-  //          GET  /api/collections/:slug/:id/workflow-history
+  app.get("/api/collections/:slug/__audit", async (c) => {
+    const slug = c.req.param("slug");
+    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const config = c.get("config");
+
+    if (config.collections.some((col) => col.slug === slug)) {
+      return c.json({ message: "Not Found" }, 404);
+    }
+
+    if (!config.onSchemaFetch || !siteId) {
+      return c.json({ message: `Collection "${slug}" not found` }, 404);
+    }
+
+    const dynamic = await config.onSchemaFetch(siteId);
+    const collection = dynamic.collections?.find((col) => col.slug === slug);
+    if (!collection?.audit) {
+      return c.json({ message: `Collection "${slug}" not found or has no audit log` }, 404);
+    }
+
+    return auditController.findForCollection(c, collection);
+  });
+
   app.post("/api/collections/:slug/:id/transitions/:transition", requireAuth(config), async (c) => {
     const slug = c.req.param("slug");
     const siteId = c.req.header("X-Site-Id") || c.get("siteId");

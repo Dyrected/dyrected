@@ -31,6 +31,7 @@ export const Media = defineCollection({
 export const Posts = defineCollection({
   slug: "posts",
   labels: { singular: "Post", plural: "Posts" },
+  audit: true,
   workflow: publishingWorkflow(),
   fields: [
     { name: "title", type: "text", label: "Title", required: true },

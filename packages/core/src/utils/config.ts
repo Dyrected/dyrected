@@ -42,6 +42,7 @@ const AUDIT_COLLECTION: CollectionConfig = {
     { name: "timestamp", type: "date", label: "Timestamp", required: true },
     { name: "changes", type: "json", label: "Changes" },
   ],
+  access: { read: () => false, create: () => false, update: () => false, delete: () => false },
   admin: { hidden: true },
 };
 
