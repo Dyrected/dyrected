@@ -98,7 +98,7 @@ function Calendar({
           defaultClassNames.week_number
         ),
         day: cn(
-          "dy-group/day dy-relative dy-flex dy-items-center dy-justify-center dy-h-[--cell-size] dy-w-full dy-select-none dy-p-0 dy-text-center",
+          "dy-group/day dy-relative dy-flex dy-items-center dy-justify-center dy-h-[--cell-size] dy-w-full dy-select-none dy-p-0 dy-text-center dy-z-50 dy-pointer-events-auto",
           defaultClassNames.day
         ),
         range_start: cn(

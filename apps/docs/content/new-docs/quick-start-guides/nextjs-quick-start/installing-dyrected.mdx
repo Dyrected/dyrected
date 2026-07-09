@@ -1,3 +1,228 @@
 ---
 title: Installing Dyrected
 ---
+
+Use this page when you are ready to mount Dyrected into an existing Next.js app and want one setup path that covers both the backend decision and the actual integration work.
+
+By the end, you should know whether the backend will run in Dyrected Cloud or inside your Next.js app, have the right credentials ready, and have a working install with a clear success signal: your app starts, the admin loads at `/admin`, and the Dyrected route handler is mounted correctly for the path you chose.
+
+In the quick-start flow, this is the first implementation step. Once it works, the next page is about narrowing the starter config into the schema your site actually needs.
+
+## Start with the backend decision
+
+In Next.js, the first setup choice is where the Dyrected backend should live.
+
+You have two valid paths:
+
+- **Dyrected Cloud** hosts the content API, database, storage, and admin authentication for you.
+- **Self-hosted in Next.js** keeps the backend inside your own app, where the CLI scaffolds the config, route handler, and local infrastructure wiring.
+
+Your app still owns the frontend either way. This choice changes the backend and editor handoff model, not the fact that your Next.js routes and components stay in your repo.
+
+## Which path to choose
+
+Choose **Dyrected Cloud** when:
+
+- you want the fastest route to a real editor handoff
+- you do not want to provision database and storage services first
+- you want to decide later whether editors use hosted admin or your own `/admin` route
+
+Choose **self-hosted in Next.js** when:
+
+- you want the backend to run inside the app from day one
+- you already know your database and storage choices
+- you want the full setup to stay inside your own deployment boundary
+
+If you already know you are using Dyrected Cloud, collect these three values before you run the install:
+
+- `Site ID`
+- `Site API key`
+- `Base URL`
+
+Those are the values the app will need when you wire the integration.
+
+## What gets installed into a Next.js app
+
+In Next.js, Dyrected runs inside your application rather than beside it. The CLI installs the framework integration, writes a starter `dyrected.config.ts`, mounts the route handler, and adds an admin page.
+
+That means one command gives you both halves of the setup:
+
+- the CMS backend
+- the editor entry point
+
+## Requirements
+
+Before you run anything, make sure:
+
+- your project uses the **Next.js App Router**
+- Node.js 22 or newer is installed
+- you are running the command from the root of the Next.js project
+
+<Note>
+The current Next.js integration requires the App Router. The CLI stops with an error if it only finds a Pages Router project without an `app/` directory.
+</Note>
+
+## Run the installer
+
+From the root of your project, run:
+
+```bash
+npx dyrected init
+```
+
+The CLI detects the framework, asks where the admin should live, and offers a quick local setup with SQLite and local storage.
+
+For a first pass, the recommended path is to accept the defaults unless you already know you need a different database or object storage provider.
+
+If you are using Dyrected Cloud, keep the Cloud credentials nearby before you start filling in the generated environment files.
+
+## What the CLI writes
+
+In a Next.js App Router project, `init` writes these files:
+
+```text
+dyrected.config.ts
+app/dyrected/[...route]/route.ts
+app/admin/page.tsx
+instrumentation.ts
+.env.example
+```
+
+Each one exists for a specific reason:
+
+- `dyrected.config.ts` becomes the source of truth for collections, globals, database, storage, and admin behavior.
+- `app/dyrected/[...route]/route.ts` mounts Dyrected inside the app.
+- `app/admin/page.tsx` gives editors a route to sign in and manage content.
+- `instrumentation.ts` logs the admin and API URLs on server start.
+- `.env.example` records the variables the scaffold expects.
+
+If your app uses `src/`, the CLI writes the route and page under `src/app/` instead.
+
+## What the current scaffold puts in `.env.example`
+
+The current Next.js scaffold writes these core variables into `.env.example`:
+
+- `DATABASE_URL`
+- `DYRECTED_JWT_SECRET`
+- `ENCRYPTION_KEY`
+- `DYRECTED_URL`
+- `DYRECTED_API_KEY`
+- `DYRECTED_SITE_ID`
+- `NEXT_PUBLIC_DYRECTED_URL`
+- `NEXT_PUBLIC_DYRECTED_API_KEY`
+
+Two things are worth noticing:
+
+- the CLI currently writes `DYRECTED_SITE_ID` for server-side use
+- it does **not** currently write `NEXT_PUBLIC_DYRECTED_SITE_ID`
+
+That distinction matters most on the Cloud-backed path. This page only calls a variable CLI-generated when the current scaffold actually emits it.
+
+## Which generated variables matter on each path
+
+The scaffold writes one shared `.env.example`, but not every value matters equally on day one.
+
+### Self-hosted in Next.js
+
+For a self-hosted quick start, the first values that matter most are the local runtime basics:
+
+- `DATABASE_URL`
+- `DYRECTED_JWT_SECRET`
+- `ENCRYPTION_KEY`
+
+Those are the values that let the backend boot inside your Next.js app.
+
+The scaffold still writes Dyrected connection variables alongside them, but a self-hosted reader should not mistake that for "Cloud is required first." It is shared scaffold output, not a signal that the local path is incomplete.
+
+## What changes on the Cloud-backed path
+
+If Dyrected Cloud is hosting the backend, the values you place into the generated env files come from the site you created in `app.dyrected.com`:
+
+- `DYRECTED_URL` should point at the Cloud site's base URL
+- `DYRECTED_API_KEY` should use the Cloud site API key
+- `DYRECTED_SITE_ID` should use the Cloud site ID
+
+The public Next.js values stay relevant for the frontend-facing integration surfaces the scaffold uses:
+
+- `NEXT_PUBLIC_DYRECTED_URL`
+- `NEXT_PUBLIC_DYRECTED_API_KEY`
+
+The current scaffold does not write `NEXT_PUBLIC_DYRECTED_SITE_ID`, so do not describe it as CLI-generated in this quick start.
+
+In other words:
+
+- self-hosted setup starts by making the local backend boot correctly
+- Cloud-backed setup starts by replacing the scaffold placeholders with your Cloud site values
+
+## The sync script the CLI adds
+
+For non-SPA installs such as Next.js, the CLI also updates `package.json` with a `dyrected:sync-schema` script and adds a postbuild hook that runs the same sync runner with `--skip-on-error --skip-types`.
+
+That matters most on the Cloud-backed path. Your schema still lives in `dyrected.config.ts`, but Cloud needs that schema synced so the hosted backend knows about your collections, globals, and admin config.
+
+For a quick start, you do not need to stop here and learn the full sync workflow. You do need to know why those package scripts appeared: they are part of keeping a Cloud-backed project aligned with the schema in your repo.
+
+## Choose the editor entry point
+
+If the backend is on Dyrected Cloud, you still need one more practical decision: where editors sign in.
+
+### Hosted admin
+
+Choose the hosted admin when:
+
+- you want the fastest handoff
+- you want Dyrected to own admin updates
+- editors do not need the UI under your own domain
+
+### Embedded admin
+
+Choose the embedded admin when:
+
+- editors should work in your app, usually at `/admin`
+- the client expects the editor on the same domain as the site
+- you want tighter control over the entry point and branding
+
+Both options use the same Cloud backend. You are choosing the editor surface, not a different content store.
+
+## What the starter config gives you
+
+The generated config is intentionally simple. It creates:
+
+- a reserved `__admins` auth collection for dashboard users
+- a `media` upload collection
+- `pages` and `posts` collections
+- `navigation` and `settings` globals
+
+That starter model is not meant to be your final information architecture. It is there so the admin has something real to show immediately and so your first render path is easy to prove.
+
+## Recommended first boot
+
+After `init` finishes:
+
+1. Fill in the required values in `.env`.
+2. Start your Next.js dev server.
+3. Open `/admin`.
+4. Create the first admin account.
+
+If you only do one verification step before changing the schema, make it this one. A working sign-in and dashboard route tell you the integration is mounted correctly before you spend time modeling content.
+
+## Escape hatches
+
+If you already know your deployment shape, you can skip the prompts:
+
+```bash
+npx dyrected init -y -f next -d postgres -s s3 -p admin
+```
+
+That is useful for scripted setup, repeatable demos, or AI-assisted installation runs where you want the exact same scaffold every time.
+
+## Success check
+
+You are ready for the next step when:
+
+- you know whether the backend is Cloud-backed or self-hosted in Next.js
+- the project has a `dyrected.config.ts`
+- `/admin` loads
+- the route handler exists under `app/dyrected/[...route]/route.ts` or `src/app/dyrected/[...route]/route.ts`
+
+Once those are true, continue to [Defining a Schema](/new-docs/quick-start-guides/nextjs-quick-start/defining-a-schema).

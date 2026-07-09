@@ -1,3 +1,144 @@
 ---
 title: Defining a Schema
 ---
+
+Use this page when Dyrected is installed and you are ready to decide what editors can actually change.
+
+By the end, you should understand how to shape a small Next.js-friendly schema, what belongs in a collection versus a global, and which top-level config options matter most for a first handoff.
+
+This page comes right after installation. The next step is to give that schema enough starter content that a fresh environment can render something real immediately.
+
+## Start with the site you already have
+
+In Dyrected, the schema lives in `dyrected.config.ts`. That file is not just an API contract. It also controls:
+
+- which forms editors see
+- which API routes exist
+- which SDK methods your Next.js code can call
+- which documents can preview real frontend routes
+
+So the first schema decision is not "what could be editable?" It is "what should be editable without putting the frontend at risk?"
+
+## The recommended first shape
+
+For a typical content-managed Next.js site, a strong first schema is:
+
+- one `pages` collection for routable pages
+- one `media` upload collection for files and images
+- one `navigation` global for shared menus
+- one `settings` global for site-wide values
+
+That is close to what the current CLI starter already gives you, and it is a good reason to keep the first pass small instead of designing every future content type up front.
+
+## Collections versus globals
+
+Use a **collection** when many documents can share the same shape:
+
+- pages
+- posts
+- authors
+- case studies
+
+Use a **global** when there should only be one shared record:
+
+- site settings
+- navigation
+- footer content
+- SEO defaults
+
+If the answer to "how many of these should exist?" is "probably more than one," start with a collection.
+
+## The top-level collection options that matter first
+
+Most quick-start schemas become clear once you decide four things:
+
+### `slug`
+
+`slug` is the stable machine name for the collection. It affects API paths, admin URLs, and SDK calls, so treat it as part of the long-term contract rather than a cosmetic label.
+
+### `fields`
+
+`fields` is the actual document shape. This is where you decide what editors can enter, what gets validated, and what your Next.js pages will receive back.
+
+### `admin.useAsTitle`
+
+This chooses the human-readable field editors will see in lists and breadcrumbs. Pick the field people recognize fastest, usually `title` or `name`.
+
+### `admin.previewUrl`
+
+For routable content, this tells Dyrected which frontend URL to open while editing. In a Next.js site, that is what makes preview follow the real route structure instead of dropping editors into a disconnected admin-only experience.
+
+## A practical first example
+
+This kind of `pages` collection is enough to prove the whole loop:
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineRichTextField,
+  defineRelationshipField,
+} from "@dyrected/core";
+
+export const Pages = defineCollection({
+  slug: "pages",
+  labels: { singular: "Page", plural: "Pages" },
+  admin: {
+    useAsTitle: "title",
+    previewUrl: "slug == 'home' ? '/' : '/' + slug",
+    urlPattern: "/{slug}",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true }),
+    defineRichTextField({ name: "content", label: "Content" }),
+    defineRelationshipField({
+      name: "featuredImage",
+      label: "Featured image",
+      relationTo: "media",
+    }),
+  ],
+});
+```
+
+This is a good first step because it covers the main content concerns without forcing a page-builder architecture too early.
+
+## When to add more complexity
+
+Only add the next layer when the frontend is ready for it:
+
+- add `blocks` when editors truly need flexible page sections
+- add access rules when more than one role will edit the content
+- add workflows when publishing needs approval states
+- add custom preview logic when one simple route pattern is no longer enough
+
+The schema should stay slightly behind the frontend's capabilities, not ahead of them.
+
+## Recommended path
+
+For a first Next.js handoff:
+
+1. Keep the schema close to the real routes you already render.
+2. Model shared site chrome as globals.
+3. Add `previewUrl` for every routable collection.
+4. Avoid flexible blocks until the frontend renderer for those blocks already exists.
+
+That approach gives editors useful control without asking them to create layouts the app cannot render safely.
+
+## Where to go deeper
+
+Use this page for the quick-start shape. For the fuller model and generated contract details, continue to:
+
+- [Collections](/new-docs/basics/configuration/collections)
+- [Globals](/new-docs/basics/configuration/globals)
+- [Concepts](/new-docs/basics/getting-started/concepts)
+
+## Success check
+
+You are ready for the next step when:
+
+- the schema has at least one routable collection
+- shared site content is separated into globals where that makes sense
+- your routable collection has a `previewUrl`
+
+Once that is true, continue to [Setting Up Initial Data](/new-docs/quick-start-guides/nextjs-quick-start/setting-up-initial-data).

@@ -24,13 +24,15 @@ function InlinePicker({
 }) {
   React.useEffect(() => {
     if (!open) return
-    const handle = (e: MouseEvent) => {
+    const handle = (e: PointerEvent) => {
+      // If the element is no longer in the document, it was removed by a React re-render. Ignore it.
+      if (e.target && !document.contains(e.target as Node)) return;
       if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
     }
-    document.addEventListener("mousedown", handle)
-    return () => document.removeEventListener("mousedown", handle)
+    document.addEventListener("pointerdown", handle, { capture: true })
+    return () => document.removeEventListener("pointerdown", handle, { capture: true })
   }, [open, setOpen, triggerRef])
 
   return (
