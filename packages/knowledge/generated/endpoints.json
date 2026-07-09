@@ -41,7 +41,7 @@
     "path": "/api/collections/media",
     "summary": "Find Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -78,7 +78,7 @@
     "path": "/api/collections/media",
     "summary": "Create Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -92,7 +92,7 @@
     "path": "/api/collections/media/{id}",
     "summary": "Delete Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -112,7 +112,7 @@
     "path": "/api/collections/media/{id}",
     "summary": "Get a single Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -132,7 +132,7 @@
     "path": "/api/collections/media/{id}",
     "summary": "Update Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -152,7 +152,7 @@
     "path": "/api/collections/media/delete-many",
     "summary": "Delete multiple Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -166,7 +166,7 @@
     "path": "/api/collections/media/media",
     "summary": "List Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -180,7 +180,7 @@
     "path": "/api/collections/media/media",
     "summary": "Upload Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -194,7 +194,7 @@
     "path": "/api/collections/media/media/{filename}",
     "summary": "Serve Media item bytes",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": false,
     "parameters": [
@@ -215,7 +215,7 @@
     "path": "/api/collections/media/seed",
     "summary": "Seed initial Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -229,7 +229,7 @@
     "path": "/api/collections/posts",
     "summary": "Find Posts",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -266,7 +266,7 @@
     "path": "/api/collections/posts",
     "summary": "Create Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [],
@@ -280,7 +280,7 @@
     "path": "/api/collections/posts/__audit",
     "summary": "Get Post audit entries",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -318,7 +318,7 @@
     "path": "/api/collections/posts/{id}",
     "summary": "Delete Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -338,7 +338,7 @@
     "path": "/api/collections/posts/{id}",
     "summary": "Get a single Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -358,7 +358,7 @@
     "path": "/api/collections/posts/{id}",
     "summary": "Update Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -378,7 +378,7 @@
     "path": "/api/collections/posts/{id}/transitions/{transition}",
     "summary": "Transition Post workflow",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -406,7 +406,7 @@
     "path": "/api/collections/posts/{id}/workflow-history",
     "summary": "Get Post workflow history",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -432,7 +432,7 @@
     "path": "/api/collections/posts/delete-many",
     "summary": "Delete multiple Posts",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [],
@@ -446,7 +446,7 @@
     "path": "/api/collections/posts/seed",
     "summary": "Seed initial Posts",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [],
@@ -460,7 +460,7 @@
     "path": "/api/collections/users",
     "summary": "Find Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -497,7 +497,7 @@
     "path": "/api/collections/users",
     "summary": "Create User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -511,7 +511,7 @@
     "path": "/api/collections/users/{id}",
     "summary": "Delete User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -531,7 +531,7 @@
     "path": "/api/collections/users/{id}",
     "summary": "Get a single User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -551,7 +551,7 @@
     "path": "/api/collections/users/{id}",
     "summary": "Update User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -571,7 +571,7 @@
     "path": "/api/collections/users/{id}/change-password",
     "summary": "Change a User password",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -591,7 +591,7 @@
     "path": "/api/collections/users/accept-invite",
     "summary": "Accept an invitation",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -606,7 +606,7 @@
     "path": "/api/collections/users/delete-many",
     "summary": "Delete multiple Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -620,7 +620,7 @@
     "path": "/api/collections/users/first-user",
     "summary": "Register the first User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -635,7 +635,7 @@
     "path": "/api/collections/users/forgot-password",
     "summary": "Request a password reset",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -650,7 +650,7 @@
     "path": "/api/collections/users/init",
     "summary": "Get Users initialization state",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -664,7 +664,7 @@
     "path": "/api/collections/users/invite",
     "summary": "Invite a User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -678,7 +678,7 @@
     "path": "/api/collections/users/login",
     "summary": "Log in to Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -693,7 +693,7 @@
     "path": "/api/collections/users/logout",
     "summary": "Log out of Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -707,7 +707,7 @@
     "path": "/api/collections/users/me",
     "summary": "Get the current User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -721,7 +721,7 @@
     "path": "/api/collections/users/refresh-token",
     "summary": "Refresh an authentication token",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -735,7 +735,7 @@
     "path": "/api/collections/users/reset-password",
     "summary": "Reset a password",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -750,7 +750,7 @@
     "path": "/api/collections/users/seed",
     "summary": "Seed initial Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -803,7 +803,7 @@
     "path": "/api/globals/settings",
     "summary": "Get Site settings",
     "tags": [
-      "Site settings Global"
+      "Global: Site settings"
     ],
     "authenticated": true,
     "parameters": [],
@@ -817,7 +817,7 @@
     "path": "/api/globals/settings",
     "summary": "Update Site settings",
     "tags": [
-      "Site settings Global"
+      "Global: Site settings"
     ],
     "authenticated": true,
     "parameters": [],
@@ -831,7 +831,7 @@
     "path": "/api/globals/settings/seed",
     "summary": "Seed Site settings",
     "tags": [
-      "Site settings Global"
+      "Global: Site settings"
     ],
     "authenticated": true,
     "parameters": [],

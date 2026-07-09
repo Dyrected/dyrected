@@ -265,11 +265,13 @@ export interface FieldBase {
   on?: string;
   /** Maximum number of joined documents returned by a `join` field. */
   limit?: number;
-  /** Field-level read and update access rules. Supports functions, Jexl strings, booleans, and named policies. */
+  /** Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. */
   access?: {
     /** Controls whether this field is returned in API responses. */
     read?: AccessRule;
-    /** Controls whether incoming writes may change this field. */
+    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */
+    create?: AccessRule;
+    /** Controls whether incoming writes may change this field on update. */
     update?: AccessRule;
   };
   /** Admin-only presentation options for this field. */
@@ -296,7 +298,7 @@ export interface FieldBase {
 | <code>collection</code> (optional) | Target collection slug for &#96;join&#96; fields. |
 | <code>on</code> (optional) | Back-reference field name on the joined collection. |
 | <code>limit</code> (optional) | Maximum number of joined documents returned by a &#96;join&#96; field. |
-| <code>access</code> (optional) | Field-level read and update access rules. Supports functions, Jexl strings, booleans, and named policies. |
+| <code>access</code> (optional) | Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. |
 | <code>admin</code> (optional) | Admin-only presentation options for this field. |
 | <code>renameTo</code> (optional) | Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. |
 | <code>promoted</code> (optional) | Whether SQL adapters should promote this field into a first-class column. |

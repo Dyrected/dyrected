@@ -360,7 +360,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "Use this contract when you want the exact shape of a collection config.\n\nMost collection work comes down to a small set of top-level options: giving\nthe collection a stable slug, defining its fields, deciding how it should\nappear in the Admin UI, and choosing whether it also handles access, hooks,\nauth, uploads, workflows, or other optional behavior.\n\nPass your document's TypeScript type as the generic parameter `TDoc` to get\nfully typed hooks and access functions.\n\nSee: [Collections documentation](https://dyrected.com/new-docs/basics/configuration/collections)",
-    "signature": "export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this collection.\n   *\n   * Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the\n   * underlying database table or collection name. Treat it as part of the\n   * long-term data contract rather than a cosmetic label.\n   *\n   * Use kebab-case, for example `'blog-posts'`, `'team-members'`, or\n   * `'contact-submissions'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to one specific site in a multi-tenant setup.\n   *\n   * Use this when the collection should belong to a single site rather than\n   * the whole installation. When set, only requests bearing a matching\n   * `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * setup and accessible regardless of the `X-Site-Id` header.\n   *\n   * Use this for content that should stay common across sites, such as shared\n   * taxonomies, reusable assets, or centrally managed reference data.\n   */\n  shared?: boolean;\n\n  /**\n   * Human-readable names for documents in this collection, shown in the Admin UI.\n   *\n   * Use this when the slug is technical or when you want the dashboard to read\n   * more naturally. For example, `slug: 'people'` might use\n   * `labels: { singular: 'Person', plural: 'People' }`.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/configuration/collections#labels Collections labels}\n   */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true`, this collection is an auth collection. It gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   *\n   * Turn this on when each document should behave like an account that can log\n   * in, hold credentials, and participate in user flows. Typical examples are\n   * `users`, `admins`, `members`, or `customers`.\n   *\n   * @see {@link https://dyrected.com/new-docs/features/authentication/overview Authentication overview}\n   */\n  auth?: boolean;\n\n  /**\n   * If `true` or a config object, this collection supports file uploads.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   *\n   * Turn this on when each document in the collection should represent a\n   * stored file, such as an image, PDF, video, or downloadable asset.\n   *\n   * @see {@link https://dyrected.com/new-docs/features/upload/overview Upload overview}\n   */\n  upload?: boolean | UploadConfig;\n\n  /**\n   * Field definitions that make up the document schema for this collection.\n   *\n   * This is the main schema contract for every document in the collection. It\n   * decides what editors can fill in, how data is validated, how records are\n   * stored, and what the API and SDK return.\n   *\n   * In practice, fields are where you model the actual content structure of the\n   * collection: simple values such as text and dates, relationships to other\n   * collections, nested objects and arrays, and flexible `blocks` fields for\n   * reusable page sections or long-form layouts.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/fields/overview Fields overview}\n   * @see {@link https://dyrected.com/new-docs/basics/fields/blocks Blocks and page sections}\n   */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds the built-in system fields\n   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.\n   * Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty.\n   *\n   * Use this for starter records, demo content, or sensible defaults that\n   * should appear automatically before editors create anything themselves.\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   *\n   * Turn this on when you need accountability around changes, such as knowing\n   * who changed what, inspecting before-and-after state, or supporting\n   * compliance and operational review.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   *\n   * Use this when content moves through stages such as draft, review, and\n   * published, or when teams need an approval process before changes go live.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value can be a function, a Jexl string, a\n   * boolean, or a named policy reference. Returning `true` allows access and\n   * `false` denies it. Returning a `where`-style object grants access only to\n   * matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,\n   *   create: ({ user }) => !!user,\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/access-control/overview Access control overview}\n   */\n  access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the Hooks reference for the full lifecycle diagram.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/hooks/overview Hooks overview}\n   * @see {@link https://dyrected.com/new-docs/basics/hooks/collections Collection hooks}\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHook[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHook<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHook<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only:\n     * webhooks, cache busting, and notifications. Return value is ignored.\n     *\n     * Errors are isolated: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /** Runs before a document is deleted. Throw to cancel the deletion. */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are isolated: caught, logged, and discarded. The deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /**\n   * Admin UI configuration for this collection.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/configuration/collections#admin-options Admin options}\n   */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/blog/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/blog/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  };\n}",
+    "signature": "export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {\n  /**\n   * Unique identifier for this collection.\n   *\n   * Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the\n   * underlying database table or collection name. Treat it as part of the\n   * long-term data contract rather than a cosmetic label.\n   *\n   * Use kebab-case, for example `'blog-posts'`, `'team-members'`, or\n   * `'contact-submissions'`.\n   */\n  slug: string;\n\n  /**\n   * Restricts this collection to one specific site in a multi-tenant setup.\n   *\n   * Use this when the collection should belong to a single site rather than\n   * the whole installation. When set, only requests bearing a matching\n   * `X-Site-Id` header can access it.\n   */\n  siteId?: string;\n\n  /**\n   * If `true`, this collection is shared across all sites in a multi-tenant\n   * setup and accessible regardless of the `X-Site-Id` header.\n   *\n   * Use this for content that should stay common across sites, such as shared\n   * taxonomies, reusable assets, or centrally managed reference data.\n   */\n  shared?: boolean;\n\n  /**\n   * Human-readable names for documents in this collection, shown in the Admin UI.\n   *\n   * Use this when the slug is technical or when you want the dashboard to read\n   * more naturally. For example, `slug: 'people'` might use\n   * `labels: { singular: 'Person', plural: 'People' }`.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/configuration/collections#labels Collections labels}\n   */\n  labels?: {\n    singular: string;\n    plural: string;\n  };\n\n  /**\n   * If `true`, this collection is an auth collection. It gains\n   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`\n   * endpoints, and documents are expected to have a `password` field.\n   *\n   * Turn this on when each document should behave like an account that can log\n   * in, hold credentials, and participate in user flows. Typical examples are\n   * `users`, `admins`, `members`, or `customers`.\n   *\n   * @see {@link https://dyrected.com/new-docs/features/authentication/overview Authentication overview}\n   */\n  auth?: boolean;\n\n  /**\n   * If `true` or a config object, this collection supports file uploads.\n   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)\n   * and the create endpoint accepts `multipart/form-data`.\n   *\n   * Turn this on when each document in the collection should represent a\n   * stored file, such as an image, PDF, video, or downloadable asset.\n   *\n   * @see {@link https://dyrected.com/new-docs/features/upload/overview Upload overview}\n   */\n  upload?: boolean | UploadConfig;\n\n  /**\n   * Field definitions that make up the document schema for this collection.\n   *\n   * This is the main schema contract for every document in the collection. It\n   * decides what editors can fill in, how data is validated, how records are\n   * stored, and what the API and SDK return.\n   *\n   * In practice, fields are where you model the actual content structure of the\n   * collection: simple values such as text and dates, relationships to other\n   * collections, nested objects and arrays, and flexible `blocks` fields for\n   * reusable page sections or long-form layouts.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/fields/overview Fields overview}\n   * @see {@link https://dyrected.com/new-docs/basics/fields/blocks Blocks and page sections}\n   */\n  fields: Field[];\n\n  /**\n   * If `true`, Dyrected automatically adds the built-in system fields\n   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.\n   * Defaults to `true`.\n   */\n  timestamps?: boolean;\n\n  /**\n   * Initial documents to seed into this collection the first time it is\n   * fetched and found to be empty.\n   *\n   * Use this for starter records, demo content, or sensible defaults that\n   * should appear automatically before editors create anything themselves.\n   */\n  initialData?: Partial<TDoc>[];\n\n  /**\n   * If `true`, every create, update, and delete operation on this collection\n   * is logged to the `__audit` collection with before/after snapshots and the\n   * acting user's identity.\n   *\n   * Turn this on when you need accountability around changes, such as knowing\n   * who changed what, inspecting before-and-after state, or supporting\n   * compliance and operational review.\n   */\n  audit?: boolean;\n\n  /**\n   * Optional state-machine workflow for this collection. Workflow-enabled\n   * entries keep an editable working revision and an independent public\n   * snapshot, so editing published content never changes the live response.\n   *\n   * Use this when content moves through stages such as draft, review, and\n   * published, or when teams need an approval process before changes go live.\n   */\n  workflow?: WorkflowConfig<TDoc>;\n\n  /**\n   * Collection-level access control.\n   *\n   * Each key is an operation; the value can be a function, a Jexl string, a\n   * boolean, or a named policy reference. Returning `true` allows access and\n   * `false` denies it. Returning a `where`-style object grants access only to\n   * matching documents.\n   *\n   * @example\n   * access: {\n   *   read: () => true,\n   *   create: ({ user }) => !!user,\n   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,\n   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,\n   * }\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/access-control/overview Access control overview}\n   */\n  access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n    /**\n     * Controls who can read this collection's audit log (`GET /:slug/__audit`),\n     * for collections with `audit` enabled. Falls back to the `read` rule when\n     * omitted, so the audit trail is visible to whoever can read the documents.\n     * Set it explicitly to gate the audit log separately — for example, admins\n     * only, even on a collection anyone can read.\n     */\n    readAudit?: AccessRule<TDoc>;\n  };\n\n  /**\n   * Collection-level lifecycle hooks.\n   *\n   * Hooks run in the order they appear in the array. The return value of each\n   * hook is passed as the input to the next. Throwing inside any hook aborts\n   * the operation and returns a `500` error.\n   *\n   * See the Hooks reference for the full lifecycle diagram.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/hooks/overview Hooks overview}\n   * @see {@link https://dyrected.com/new-docs/basics/hooks/collections Collection hooks}\n   */\n  hooks?: {\n    /**\n     * Runs before the database is queried. Return a modified `where` object\n     * to override the query filter.\n     */\n    beforeRead?: CollectionBeforeReadHook[];\n\n    /**\n     * Runs after documents are fetched. Return a modified doc to change what\n     * the client receives. Runs on every document in a list response.\n     */\n    afterRead?: CollectionAfterReadHook<TDoc>[];\n\n    /**\n     * Runs before create or update. Return modified data to change what is\n     * written to the database. Throw to abort the write entirely.\n     */\n    beforeChange?: CollectionBeforeChangeHook<TDoc>[];\n\n    /**\n     * Runs after create or update is committed. For side-effects only:\n     * webhooks, cache busting, and notifications. Return value is ignored.\n     *\n     * Errors are isolated: caught, logged, and discarded so a failing\n     * side-effect never turns a successful write into an HTTP 500.\n     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.\n     */\n    afterChange?: CollectionAfterChangeHook<TDoc>[];\n\n    /** Runs before a document is deleted. Throw to cancel the deletion. */\n    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];\n\n    /**\n     * Runs after a document has been deleted. For cleanup side-effects only.\n     *\n     * Errors are isolated: caught, logged, and discarded. The deletion is\n     * already committed and will not be undone.\n     */\n    afterDelete?: CollectionAfterDeleteHook<TDoc>[];\n  };\n\n  /**\n   * Admin UI configuration for this collection.\n   *\n   * @see {@link https://dyrected.com/new-docs/basics/configuration/collections#admin-options Admin options}\n   */\n  admin?: {\n    /**\n     * Lucide icon displayed beside this collection in the Admin sidebar.\n     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.\n     */\n    icon?: AdminIconName;\n\n    /** Custom component slots for this collection's list view. */\n    components?: CollectionListComponentSlots;\n\n    /**\n     * The field name used as the document's display title in the Admin list\n     * view and breadcrumbs. Defaults to `'title'` if the field exists.\n     */\n    useAsTitle?: string;\n\n    /**\n     * Field names to show as columns in the Admin list view.\n     * Defaults to a sensible set of the first few non-structural fields.\n     */\n    defaultColumns?: string[];\n\n    /**\n     * Groups this collection under a named section in the Admin sidebar.\n     * Collections with the same `group` are visually grouped together.\n     */\n    group?: string;\n\n    /** If `true`, this collection is not shown in the Admin UI sidebar. */\n    hidden?: boolean;\n\n    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */\n    filterable?: boolean;\n\n    /**\n     * URL to open in the Live Preview pane when editing a document.\n     *\n     * Pass a Jexl string to keep the config serializable, for example\n     * `'slug == \"home\" ? \"/\" : \"/blog/\" + slug'`. This is usually the best\n     * default, especially when the schema needs to stay portable across\n     * environments such as Dyrected Cloud.\n     *\n     * Pass a function when you need custom runtime logic in a self-hosted\n     * project.\n     *\n     * @example\n     * previewUrl: 'slug == \"home\" ? \"/\" : \"/blog/\" + slug'\n     *\n     * @example\n     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`\n     */\n    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);\n\n    /**\n     * How the Live Preview pane communicates with the frontend.\n     * - `postMessage` sends a `postMessage` with the current doc data.\n     * - `token` passes a short-lived preview token as a query parameter.\n     */\n    previewMode?: \"postMessage\" | \"token\";\n\n    /**\n     * Frontend URL pattern for this collection, used by `url` fields to\n     * resolve internal links. Use `{fieldName}` placeholders.\n     *\n     * This is a plain route pattern string, not a Jexl expression.\n     *\n     * @example\n     * urlPattern: '/blog/{slug}' // /blog/my-post\n     * urlPattern: '/{slug}' // /about\n     */\n    urlPattern?: string;\n  };\n}",
     "members": [
       {
         "name": "slug",
@@ -419,7 +419,7 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "access",
-        "signature": "access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n  }",
+        "signature": "access?: {\n    read?: AccessRule<TDoc>;\n    create?: AccessRule<TDoc>;\n    update?: AccessRule<TDoc>;\n    delete?: AccessRule<TDoc>;\n    /**\n     * Controls who can read this collection's audit log (`GET /:slug/__audit`),\n     * for collections with `audit` enabled. Falls back to the `read` rule when\n     * omitted, so the audit trail is visible to whoever can read the documents.\n     * Set it explicitly to gate the audit log separately — for example, admins\n     * only, even on a collection anyone can read.\n     */\n    readAudit?: AccessRule<TDoc>;\n  }",
         "description": "Collection-level access control.\n\nEach key is an operation; the value can be a function, a Jexl string, a\nboolean, or a named policy reference. Returning `true` allows access and\n`false` denies it. Returning a `where`-style object grants access only to\nmatching documents.\n\nSee: [Access control overview](https://dyrected.com/new-docs/basics/access-control/overview)"
       },
       {
@@ -629,7 +629,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "The root configuration object passed to `createDyrectedApp`.\n\nThis is the single source of truth for your entire Dyrected instance —\ncollections, globals, database adapter, storage, email, and more.",
-    "signature": "export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedUser> {\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   */\n  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser>>;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: { to: string; subject: string; html: string }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
+    "signature": "export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedUser> {\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean>;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: { to: string; subject: string; html: string }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
     "members": [
       {
         "name": "collections",
@@ -668,8 +668,8 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "accessPolicies",
-        "signature": "accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser>>",
-        "description": "Named access policies available to collection, global, and field access\nrules via `{ policy: 'name' }`."
+        "signature": "accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean>",
+        "description": "Named access policies available to collection, global, and field access\nrules via `{ policy: 'name' }`.\n\nA policy can be a **function** (full server logic, evaluated to a static\nboolean when serialized for the admin panel) or a **Jexl string** (or\nboolean). String policies are inlined when the schema is sent to the admin,\nso the admin panel evaluates them live against the current form — the same\nway it evaluates inline Jexl rules."
       },
       {
         "name": "email",
@@ -868,7 +868,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldBase {\n  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */\n  name?: string;\n  /** Human-readable label shown in the Admin UI. */\n  label?: string;\n  /** Whether the field must have a value when saving. */\n  required?: boolean;\n  /** Whether values for this field must be unique across the collection. */\n  unique?: boolean;\n  /** Default value used when a new document omits this field. */\n  defaultValue?: unknown;\n  /** Static or dynamic option source for supported selection fields. */\n  options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig;\n  /** Target collection slug for `relationship` fields. */\n  relationTo?: string;\n  /** Whether the field stores multiple values instead of one. */\n  hasMany?: boolean;\n  /** Child fields for `object` and `array` field types. */\n  fields?: Field[];\n  /** Allowed block definitions for a `blocks` field. */\n  blocks?: Block[];\n  /** Target collection slug for `join` fields. */\n  collection?: string;\n  /** Back-reference field name on the joined collection. */\n  on?: string;\n  /** Maximum number of joined documents returned by a `join` field. */\n  limit?: number;\n  /** Field-level read and update access rules. Supports functions, Jexl strings, booleans, and named policies. */\n  access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether incoming writes may change this field. */\n    update?: AccessRule;\n  };\n  /** Admin-only presentation options for this field. */\n  admin?: BaseFieldAdmin;\n  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */\n  renameTo?: string;\n  /** Whether SQL adapters should promote this field into a first-class column. */\n  promoted?: boolean;\n}",
+    "signature": "export interface FieldBase {\n  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */\n  name?: string;\n  /** Human-readable label shown in the Admin UI. */\n  label?: string;\n  /** Whether the field must have a value when saving. */\n  required?: boolean;\n  /** Whether values for this field must be unique across the collection. */\n  unique?: boolean;\n  /** Default value used when a new document omits this field. */\n  defaultValue?: unknown;\n  /** Static or dynamic option source for supported selection fields. */\n  options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig;\n  /** Target collection slug for `relationship` fields. */\n  relationTo?: string;\n  /** Whether the field stores multiple values instead of one. */\n  hasMany?: boolean;\n  /** Child fields for `object` and `array` field types. */\n  fields?: Field[];\n  /** Allowed block definitions for a `blocks` field. */\n  blocks?: Block[];\n  /** Target collection slug for `join` fields. */\n  collection?: string;\n  /** Back-reference field name on the joined collection. */\n  on?: string;\n  /** Maximum number of joined documents returned by a `join` field. */\n  limit?: number;\n  /** Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. */\n  access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */\n    create?: AccessRule;\n    /** Controls whether incoming writes may change this field on update. */\n    update?: AccessRule;\n  };\n  /** Admin-only presentation options for this field. */\n  admin?: BaseFieldAdmin;\n  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */\n  renameTo?: string;\n  /** Whether SQL adapters should promote this field into a first-class column. */\n  promoted?: boolean;\n}",
     "members": [
       {
         "name": "name",
@@ -937,8 +937,8 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "access",
-        "signature": "access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether incoming writes may change this field. */\n    update?: AccessRule;\n  }",
-        "description": "Field-level read and update access rules. Supports functions, Jexl strings, booleans, and named policies."
+        "signature": "access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */\n    create?: AccessRule;\n    /** Controls whether incoming writes may change this field on update. */\n    update?: AccessRule;\n  }",
+        "description": "Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies."
       },
       {
         "name": "admin",
@@ -2501,7 +2501,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media",
     "summary": "Find Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -2538,7 +2538,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media",
     "summary": "Create Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2552,7 +2552,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/{id}",
     "summary": "Delete Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -2572,7 +2572,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/{id}",
     "summary": "Get a single Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -2592,7 +2592,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/{id}",
     "summary": "Update Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [
@@ -2612,7 +2612,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/delete-many",
     "summary": "Delete multiple Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2626,7 +2626,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/media",
     "summary": "List Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2640,7 +2640,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/media",
     "summary": "Upload Media item",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2654,7 +2654,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/media/{filename}",
     "summary": "Serve Media item bytes",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": false,
     "parameters": [
@@ -2675,7 +2675,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/media/seed",
     "summary": "Seed initial Media",
     "tags": [
-      "Media Collection"
+      "Collection: Media"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2689,7 +2689,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts",
     "summary": "Find Posts",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -2726,7 +2726,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts",
     "summary": "Create Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2740,7 +2740,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/__audit",
     "summary": "Get Post audit entries",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -2778,7 +2778,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}",
     "summary": "Delete Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -2798,7 +2798,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}",
     "summary": "Get a single Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -2818,7 +2818,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}",
     "summary": "Update Post",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -2838,7 +2838,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}/transitions/{transition}",
     "summary": "Transition Post workflow",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -2866,7 +2866,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/{id}/workflow-history",
     "summary": "Get Post workflow history",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [
@@ -2892,7 +2892,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/delete-many",
     "summary": "Delete multiple Posts",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2906,7 +2906,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/posts/seed",
     "summary": "Seed initial Posts",
     "tags": [
-      "Posts Collection"
+      "Collection: Posts"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2920,7 +2920,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users",
     "summary": "Find Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -2957,7 +2957,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users",
     "summary": "Create User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -2971,7 +2971,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}",
     "summary": "Delete User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -2991,7 +2991,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}",
     "summary": "Get a single User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -3011,7 +3011,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}",
     "summary": "Update User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -3031,7 +3031,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/{id}/change-password",
     "summary": "Change a User password",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [
@@ -3051,7 +3051,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/accept-invite",
     "summary": "Accept an invitation",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3066,7 +3066,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/delete-many",
     "summary": "Delete multiple Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3080,7 +3080,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/first-user",
     "summary": "Register the first User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3095,7 +3095,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/forgot-password",
     "summary": "Request a password reset",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3110,7 +3110,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/init",
     "summary": "Get Users initialization state",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3124,7 +3124,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/invite",
     "summary": "Invite a User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3138,7 +3138,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/login",
     "summary": "Log in to Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3153,7 +3153,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/logout",
     "summary": "Log out of Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3167,7 +3167,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/me",
     "summary": "Get the current User",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3181,7 +3181,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/refresh-token",
     "summary": "Refresh an authentication token",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3195,7 +3195,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/reset-password",
     "summary": "Reset a password",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": false,
     "parameters": [],
@@ -3210,7 +3210,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/collections/users/seed",
     "summary": "Seed initial Users",
     "tags": [
-      "Users Collection"
+      "Collection: Users"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3263,7 +3263,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/globals/settings",
     "summary": "Get Site settings",
     "tags": [
-      "Site settings Global"
+      "Global: Site settings"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3277,7 +3277,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/globals/settings",
     "summary": "Update Site settings",
     "tags": [
-      "Site settings Global"
+      "Global: Site settings"
     ],
     "authenticated": true,
     "parameters": [],
@@ -3291,7 +3291,7 @@ export const endpoints: readonly EndpointReference[] = [
     "path": "/api/globals/settings/seed",
     "summary": "Seed Site settings",
     "tags": [
-      "Site settings Global"
+      "Global: Site settings"
     ],
     "authenticated": true,
     "parameters": [],

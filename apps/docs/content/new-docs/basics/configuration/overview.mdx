@@ -204,8 +204,14 @@ export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedU
   /**
    * Named access policies available to collection, global, and field access
    * rules via `{ policy: 'name' }`.
+   *
+   * A policy can be a **function** (full server logic, evaluated to a static
+   * boolean when serialized for the admin panel) or a **Jexl string** (or
+   * boolean). String policies are inlined when the schema is sent to the admin,
+   * so the admin panel evaluates them live against the current form — the same
+   * way it evaluates inline Jexl rules.
    */
-  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser>>;
+  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean>;
 
   /**
    * Email transport configuration. Required for welcome emails, password
@@ -303,7 +309,7 @@ export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedU
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |
 | <code>adminAuth</code> (optional) | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
-| <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;. |
+| <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;.  A policy can be a **function** (full server logic, evaluated to a static boolean when serialized for the admin panel) or a **Jexl string** (or boolean). String policies are inlined when the schema is sent to the admin, so the admin panel evaluates them live against the current form — the same way it evaluates inline Jexl rules. |
 | <code>email</code> (optional) | Email transport configuration. Required for welcome emails, password resets, and invite links. |
 | <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
 | <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |

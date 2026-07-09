@@ -50,14 +50,39 @@ Booleans and Jexl strings cover most day-to-day rules. Reach for functions when 
 
 ### Jexl strings
 
-A Jexl string is a restricted expression — it looks like JavaScript comparison syntax but cannot run arbitrary code, which is what keeps it safe to store and sync. It can return a boolean or, for row-level access, an object:
+A Jexl string is a small expression that Dyrected evaluates on the server. It reads like JavaScript comparison syntax, but it is a restricted, sandboxed language: it cannot call functions, import anything, or reach outside the values you hand it — which is exactly what makes it safe to store and sync to Cloud.
+
+Your rule has the [access context](#what-a-rule-can-see) in scope (`user`, `req`, `doc`, `data`, `id`), plus these building blocks:
+
+| You want to | Write | Example |
+|---|---|---|
+| Compare values | `==` `!=` `>` `>=` `<` `<=` | `doc.status == 'published'` |
+| Combine conditions | `&&` `\|\|` `!` | `user != null && !doc.locked` |
+| Check membership | `in` | `'admin' in user.roles` |
+| Read a property | `.` or `['key']` | `user.roles`, `doc['status']` |
+| Pick between values | `cond ? a : b` | `user ? true : false` |
+
+Two things to remember: use `==` and `!=` (not `===`), and Dyrected registers no custom Jexl functions or transforms, so stick to the operators above.
+
+A rule that evaluates to a **boolean** allows or denies:
 
 ```ts
 access: {
-  read: "'admin' in user.roles",                 // boolean result
-  update: "{ owner: { equals: user.sub } }",      // filter result — see Collections
+  read: "user != null",                                     // any signed-in user
+  update: "'admin' in user.roles || 'editor' in user.roles",
 }
 ```
+
+A rule that evaluates to an **object** becomes a row-level `where` filter — `"{ owner: { equals: user.sub } }"` limits the operation to the caller's own documents (covered in [Collections](/new-docs/basics/access-control/collections#document-aware-rules)). A ternary lets one rule return either shape, so it can hand signed-in users everything and scope everyone else:
+
+```ts
+access: {
+  // signed-in users see everything; anonymous readers only see published docs
+  read: "user != null ? true : { status: { equals: 'published' } }",
+}
+```
+
+For the complete expression syntax, see the [Jexl reference](https://github.com/TomFrost/Jexl).
 
 ### Functions
 
@@ -102,6 +127,52 @@ export default defineConfig({
 A policy can be a **function** (as above) or a **Jexl string** — `accessPolicies: { isAdmin: "'admin' in user.roles" }`. String policies are inlined when the schema is sent to the admin panel, so a field or collection rule that references one stays reactive in the edit form, exactly like an inline Jexl rule. Function policies run on the server only.
 
 You can pass `params` for a parameterized policy — `{ policy: 'hasRole', params: { role: 'editor' } }` — and read them inside the resolver as `params`. If a rule references a policy that is not registered, Dyrected fails closed and denies the request.
+
+### The same rule, three ways
+
+These rules are equivalent — each one says "a user can only touch their own documents." The result is identical; the shapes differ in where they can run and how reusable they are.
+
+<Tabs items={['Jexl string', 'Named policy', 'Function']}>
+<Tab value="Jexl string">
+
+Serializable and Cloud-safe — a good default.
+
+```ts
+access: {
+  read: "{ owner: { equals: user.sub } }",
+}
+```
+
+</Tab>
+<Tab value="Named policy">
+
+Defined once, referenced everywhere. A string policy is inlined for the admin panel; a function policy stays on the server.
+
+```ts
+// defineConfig({ accessPolicies: { ownDocs: "{ owner: { equals: user.sub } }" } })
+
+access: {
+  read: { policy: 'ownDocs' },
+}
+```
+
+</Tab>
+<Tab value="Function">
+
+Full server logic, including `async` work and lookups.
+
+```ts
+access: {
+  read: ({ user }) => ({ owner: { equals: user?.sub } }),
+}
+```
+
+</Tab>
+</Tabs>
+
+<Note>
+Function rules run only in a **self-hosted** app, where your own server executes your config. They are never sent to Dyrected Cloud — `sync-schema` strips them and warns you. For a Cloud-hosted backend, use a Jexl string or a named policy instead.
+</Note>
 
 ## What a rule can see
 

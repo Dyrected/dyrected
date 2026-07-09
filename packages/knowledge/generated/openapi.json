@@ -535,7 +535,7 @@
     "/api/collections/users": {
       "get": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Find Users",
         "parameters": [
@@ -604,7 +604,7 @@
       },
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Create User",
         "requestBody": {
@@ -634,7 +634,7 @@
     "/api/collections/users/{id}": {
       "get": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Get a single User",
         "parameters": [
@@ -662,7 +662,7 @@
       },
       "patch": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Update User",
         "parameters": [
@@ -700,7 +700,7 @@
       },
       "delete": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Delete User",
         "parameters": [
@@ -723,7 +723,7 @@
     "/api/collections/users/delete-many": {
       "delete": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Delete multiple Users",
         "requestBody": {
@@ -757,7 +757,7 @@
     "/api/collections/users/seed": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Seed initial Users",
         "responses": {
@@ -770,7 +770,7 @@
     "/api/collections/users/login": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Log in to Users",
         "security": [],
@@ -804,7 +804,7 @@
     "/api/collections/users/logout": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Log out of Users",
         "responses": {
@@ -817,7 +817,7 @@
     "/api/collections/users/init": {
       "get": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Get Users initialization state",
         "security": [],
@@ -831,7 +831,7 @@
     "/api/collections/users/first-user": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Register the first User",
         "security": [],
@@ -859,7 +859,7 @@
     "/api/collections/users/me": {
       "get": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Get the current User",
         "responses": {
@@ -872,7 +872,7 @@
     "/api/collections/users/refresh-token": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Refresh an authentication token",
         "responses": {
@@ -885,7 +885,7 @@
     "/api/collections/users/forgot-password": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Request a password reset",
         "security": [],
@@ -913,7 +913,7 @@
     "/api/collections/users/reset-password": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Reset a password",
         "security": [],
@@ -941,7 +941,7 @@
     "/api/collections/users/invite": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Invite a User",
         "responses": {
@@ -954,7 +954,7 @@
     "/api/collections/users/accept-invite": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Accept an invitation",
         "security": [],
@@ -982,7 +982,7 @@
     "/api/collections/users/{id}/change-password": {
       "post": {
         "tags": [
-          "Users Collection"
+          "Collection: Users"
         ],
         "summary": "Change a User password",
         "parameters": [
@@ -1005,7 +1005,7 @@
     "/api/collections/media": {
       "get": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Find Media",
         "parameters": [
@@ -1074,7 +1074,7 @@
       },
       "post": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Create Media item",
         "requestBody": {
@@ -1104,7 +1104,7 @@
     "/api/collections/media/{id}": {
       "get": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Get a single Media item",
         "parameters": [
@@ -1132,7 +1132,7 @@
       },
       "patch": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Update Media item",
         "parameters": [
@@ -1170,7 +1170,7 @@
       },
       "delete": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Delete Media item",
         "parameters": [
@@ -1193,7 +1193,7 @@
     "/api/collections/media/delete-many": {
       "delete": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Delete multiple Media",
         "requestBody": {
@@ -1227,7 +1227,7 @@
     "/api/collections/media/seed": {
       "post": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Seed initial Media",
         "responses": {
@@ -1240,7 +1240,7 @@
     "/api/collections/media/media": {
       "get": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "List Media",
         "responses": {
@@ -1251,7 +1251,7 @@
       },
       "post": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Upload Media item",
         "requestBody": {
@@ -1283,7 +1283,7 @@
     "/api/collections/media/media/{filename}": {
       "get": {
         "tags": [
-          "Media Collection"
+          "Collection: Media"
         ],
         "summary": "Serve Media item bytes",
         "parameters": [
@@ -1310,7 +1310,7 @@
     "/api/collections/posts": {
       "get": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Find Posts",
         "parameters": [
@@ -1379,7 +1379,7 @@
       },
       "post": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Create Post",
         "requestBody": {
@@ -1409,7 +1409,7 @@
     "/api/collections/posts/{id}": {
       "get": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Get a single Post",
         "parameters": [
@@ -1437,7 +1437,7 @@
       },
       "patch": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Update Post",
         "parameters": [
@@ -1475,7 +1475,7 @@
       },
       "delete": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Delete Post",
         "parameters": [
@@ -1498,7 +1498,7 @@
     "/api/collections/posts/delete-many": {
       "delete": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Delete multiple Posts",
         "requestBody": {
@@ -1532,7 +1532,7 @@
     "/api/collections/posts/__audit": {
       "get": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Get Post audit entries",
         "parameters": [
@@ -1610,7 +1610,7 @@
     "/api/collections/posts/seed": {
       "post": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Seed initial Posts",
         "responses": {
@@ -1623,7 +1623,7 @@
     "/api/collections/posts/{id}/transitions/{transition}": {
       "post": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Transition Post workflow",
         "parameters": [
@@ -1685,7 +1685,7 @@
     "/api/collections/posts/{id}/workflow-history": {
       "get": {
         "tags": [
-          "Posts Collection"
+          "Collection: Posts"
         ],
         "summary": "Get Post workflow history",
         "parameters": [
@@ -1744,7 +1744,7 @@
     "/api/globals/settings": {
       "get": {
         "tags": [
-          "Site settings Global"
+          "Global: Site settings"
         ],
         "summary": "Get Site settings",
         "responses": {
@@ -1762,7 +1762,7 @@
       },
       "patch": {
         "tags": [
-          "Site settings Global"
+          "Global: Site settings"
         ],
         "summary": "Update Site settings",
         "requestBody": {
@@ -1792,7 +1792,7 @@
     "/api/globals/settings/seed": {
       "post": {
         "tags": [
-          "Site settings Global"
+          "Global: Site settings"
         ],
         "summary": "Seed Site settings",
         "responses": {

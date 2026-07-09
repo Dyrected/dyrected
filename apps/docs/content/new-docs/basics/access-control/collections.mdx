@@ -40,6 +40,7 @@ Each rule guards one operation, which maps to an HTTP method on the collection's
 | Create a document | `POST` | `create` |
 | Update a document | `PATCH` | `update` |
 | Delete a document | `DELETE` | `delete` |
+| Read the audit log (audit-enabled collections) | `GET /__audit` | `readAudit` |
 
 Listing and fetching a single document share the same `read` rule, so a reader either can or cannot see the collection's documents through the API. For the full set of endpoints and their query parameters, see the [REST API overview](/new-docs/managing-data/rest-api/overview).
 
@@ -162,7 +163,7 @@ export const Posts = defineCollection({
 
 ## Common setups
 
-<Tabs items={['Public blog', 'Contact form', 'Role tiers', 'Owner-scoped']}>
+<Tabs items={['Public blog', 'Contact form', 'Role tiers', 'Owner-scoped', 'Published or draft', 'Multi-tenant']}>
 <Tab value="Public blog">
 
 Anyone can read. Editors and admins can create and update. Only admins can delete.
@@ -241,6 +242,55 @@ export const Orders = defineCollection({
   fields: [
     { name: 'customer', type: 'text' },
     { name: 'total', type: 'number' },
+  ],
+})
+```
+
+</Tab>
+<Tab value="Published or draft">
+
+The public sees only published documents; signed-in staff see every status. A Jexl **string** can return a boolean *or* a filter object, so a ternary handles both cases without a function:
+
+```ts
+export const Guides = defineCollection({
+  slug: 'guides',
+  access: {
+    // signed-in → everything; anonymous → only published documents
+    read: "user != null ? true : { status: { equals: 'published' } }",
+    create: "'editor' in user.roles || 'admin' in user.roles",
+    update: "'editor' in user.roles || 'admin' in user.roles",
+    delete: "'admin' in user.roles",
+  },
+  fields: [
+    { name: 'title', type: 'text' },
+    { name: 'status', type: 'select', options: ['draft', 'published'] },
+  ],
+})
+```
+
+</Tab>
+<Tab value="Multi-tenant">
+
+Every operation is scoped to the caller's tenant through a reusable **named policy**, registered once and referenced by name. Deletion is reserved for admins with a second policy:
+
+```ts
+// Registered once in defineConfig:
+// accessPolicies: {
+//   sameTenant: "{ tenant: { equals: user.tenant } }",
+//   isAdmin: "'admin' in user.roles",
+// }
+
+export const Invoices = defineCollection({
+  slug: 'invoices',
+  access: {
+    read: { policy: 'sameTenant' },
+    create: 'user != null',
+    update: { policy: 'sameTenant' },
+    delete: { policy: 'isAdmin' },
+  },
+  fields: [
+    { name: 'tenant', type: 'text' },
+    { name: 'amount', type: 'number' },
   ],
 })
 ```
