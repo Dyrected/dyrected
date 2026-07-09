@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/next",
-  "version": "2.5.59",
+  "version": "2.5.60",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
