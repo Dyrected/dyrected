@@ -40,6 +40,9 @@ export function buildEnvTemplate(db: string, storage: string, framework: string)
     }`,
     `DYRECTED_JWT_SECRET=change-me-32-characters-minimum`,
     `ENCRYPTION_KEY=change-me-aes-256-key`,
+    `DYRECTED_URL=https://cloud.dyrected.com`,
+    `DYRECTED_API_KEY=`,
+    `DYRECTED_SITE_ID=`,
     ``,
   ];
 

@@ -16,7 +16,7 @@ program
     `
 Commands:
   init              Bootstrap Dyrected in your project (interactive)
-  upgrade           Upgrade all Dyrected packages to the latest version
+  upgrade           Upgrade Dyrected packages in the current package or the whole workspace
   generate:types    Generate TypeScript types from your schema
   generate:ai-rules Generate canonical instructions for AI coding tools
   sync:schema       Push your local schema to Dyrected Cloud

@@ -5,11 +5,11 @@ function getCollectionLabels(collection: CollectionConfig) {
 }
 
 function getCollectionTag(collection: CollectionConfig) {
-  return `${getCollectionLabels(collection).plural} Collection`;
+  return `Collection: ${getCollectionLabels(collection).plural}`;
 }
 
 function getGlobalTag(global: GlobalConfig) {
-  return `${global.label || global.slug} Global`;
+  return `Global: ${global.label || global.slug}`;
 }
 
 /**

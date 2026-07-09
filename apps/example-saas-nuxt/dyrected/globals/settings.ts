@@ -4,6 +4,10 @@ import { Media } from "../collections/media.ts";
 export const Settings = defineGlobal({
   slug: "settings",
   label: "Site Settings",
+  access: {
+    read: true,
+    update: { policy: "hasRole", params: { role: "admin" } },
+  },
   fields: [
     { name: "siteName", type: "text", label: "Site Name" },
     { name: "tagline", type: "text", label: "Tagline" },

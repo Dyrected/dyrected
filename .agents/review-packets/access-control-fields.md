@@ -40,6 +40,15 @@ No `NEEDS-*` markers. The earlier "admin-panel only / not a server boundary" fra
 
 - Question 1 (function/policy field rules are server-only) is the only spot where the admin form and the API can diverge. The page steers readers to strings/`false` to avoid it, but a reviewer should confirm the framing.
 
+## Implementation update (shipped after this review)
+
+Two earlier open questions were resolved by code changes, and the page now documents them:
+
+- **Field-level `create` rule added.** Fields now accept `access.create`; it governs writes on create and falls back to `update` when omitted. Enforced in `applyFieldWriteAccess` (operation-aware), serialized for the admin, and applied in the admin form (create form uses `create`, edit form uses `update`). Test: `access-features.test.ts` "field create access".
+- **Admin now evaluates string-based named policies.** Named policies may be Jexl strings; `serializeAccess` inlines a string/boolean policy so the admin evaluates it live. Function policies remain server-only. The `<Note>` on this page reflects the split. Test: `access-features.test.ts` "inlines a string policy into the admin schema".
+
+Remaining note: function-based field rules are still not reflected in the admin form (the admin cannot execute functions). The page steers readers to strings / string-policies / `false`.
+
 ## Suggested status label
 
 `ready-for-review`

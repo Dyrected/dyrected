@@ -41,7 +41,7 @@ Each rule guards one operation, which maps to an HTTP method on the collection's
 | Update a document | `PATCH` | `update` |
 | Delete a document | `DELETE` | `delete` |
 
-Listing and fetching a single document share the same `read` rule, so a reader either can or cannot see the collection's documents through the API.
+Listing and fetching a single document share the same `read` rule, so a reader either can or cannot see the collection's documents through the API. For the full set of endpoints and their query parameters, see the [REST API overview](/new-docs/managing-data/rest-api/overview).
 
 ## The four operations
 
@@ -139,6 +139,26 @@ access: {
     (user?.roles?.includes('editor') ?? false) && data?.status !== 'published',
 }
 ```
+
+## Audit log access
+
+When a collection has `audit` enabled, Dyrected records every change and exposes it at `GET /:slug/__audit`. By default that log follows the collection's `read` rule — whoever can read the documents can read their history. To gate the audit trail separately, add a `readAudit` rule:
+
+```ts
+export const Posts = defineCollection({
+  slug: 'posts',
+  audit: true,
+  access: {
+    read: true,                          // anyone can read posts
+    readAudit: "'admin' in user.roles",  // but only admins can read the audit log
+  },
+  fields: [
+    // ...
+  ],
+})
+```
+
+`readAudit` takes the same shapes as any other rule and, like `read`, honors a returned filter object — the audit log is scoped to the documents the caller is allowed to see. Leave it out and the audit log simply inherits `read`.
 
 ## Common setups
 

@@ -39,6 +39,11 @@ No `NEEDS-*` markers. The earlier "row-level not implemented" and "no doc/data" 
 
 - The "create returning an object = deny" rule is easy to trip over. It is stated explicitly; keep it if the runtime behavior stays.
 
+## Implementation update (shipped after this review)
+
+- **`readAudit` access key added.** New collection access key gating `GET /:slug/__audit` for `audit`-enabled collections; resolves `readAudit ?? read`, honors a returned filter object (audit scoped to visible docs). Enforced in `audit.controller.ts`, serialized for Cloud sync. Documented in the new "Audit log access" section. Test: `access-features.test.ts` "readAudit access".
+- **Method table now links to the REST API overview** (`/new-docs/managing-data/rest-api/overview`).
+
 ## Suggested status label
 
 `ready-for-review`

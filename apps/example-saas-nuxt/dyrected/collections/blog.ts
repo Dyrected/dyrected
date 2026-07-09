@@ -6,6 +6,12 @@ import { blogSeed } from "../seed.ts";
 export const Blog = defineCollection({
   slug: "blog",
   labels: { plural: "Articles", singular: "Article" },
+  access: {
+    read: true,
+    create: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
+    update: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
+    delete: { policy: "hasRole", params: { role: "admin" } },
+  },
   admin: {
     useAsTitle: "title",
     group: "Content",

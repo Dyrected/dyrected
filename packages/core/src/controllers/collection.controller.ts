@@ -372,6 +372,7 @@ export class CollectionController {
       user,
       req: this.toHookRequestContext(c),
       data,
+      operation: 'create',
     }, data);
 
     // Run beforeChange hooks (field-level then collection-level)
@@ -493,6 +494,7 @@ export class CollectionController {
       user,
       req: this.toHookRequestContext(c),
       data,
+      operation: 'create',
     }, data);
 
     // Run beforeChange hooks for upload too

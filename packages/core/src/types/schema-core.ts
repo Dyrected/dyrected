@@ -119,11 +119,13 @@ export interface FieldBase {
   on?: string;
   /** Maximum number of joined documents returned by a `join` field. */
   limit?: number;
-  /** Field-level read and update access rules. Supports functions, Jexl strings, booleans, and named policies. */
+  /** Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. */
   access?: {
     /** Controls whether this field is returned in API responses. */
     read?: AccessRule;
-    /** Controls whether incoming writes may change this field. */
+    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */
+    create?: AccessRule;
+    /** Controls whether incoming writes may change this field on update. */
     update?: AccessRule;
   };
   /** Admin-only presentation options for this field. */

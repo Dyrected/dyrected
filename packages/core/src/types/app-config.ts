@@ -64,8 +64,14 @@ export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedU
   /**
    * Named access policies available to collection, global, and field access
    * rules via `{ policy: 'name' }`.
+   *
+   * A policy can be a **function** (full server logic, evaluated to a static
+   * boolean when serialized for the admin panel) or a **Jexl string** (or
+   * boolean). String policies are inlined when the schema is sent to the admin,
+   * so the admin panel evaluates them live against the current form — the same
+   * way it evaluates inline Jexl rules.
    */
-  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser>>;
+  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean>;
 
   /**
    * Email transport configuration. Required for welcome emails, password

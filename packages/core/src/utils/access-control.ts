@@ -83,6 +83,8 @@ type FieldAccessContext = {
   doc?: Record<string, unknown>;
   data?: Record<string, unknown>;
   id?: string;
+  /** Which write is being checked. `create` uses the field's `create` rule (falling back to `update`); anything else uses `update`. Defaults to `update`. */
+  operation?: "create" | "update";
 };
 
 function resolveFieldAccessId(context: FieldAccessContext): string | undefined {
@@ -171,7 +173,13 @@ export async function applyFieldWriteAccess(
 
     if (!field.name || !(field.name in result)) continue;
 
-    const canUpdate = await resolveBooleanAccess(context.config, field.access?.update, {
+    // On create, the field's `create` rule governs the write, falling back to
+    // `update` when it is not set. On update (the default), `update` governs.
+    const writeRule = context.operation === "create"
+      ? (field.access?.create ?? field.access?.update)
+      : field.access?.update;
+
+    const canWrite = await resolveBooleanAccess(context.config, writeRule, {
       user: context.user,
       req: context.req,
       doc: context.doc,
@@ -179,7 +187,7 @@ export async function applyFieldWriteAccess(
       id: resolveFieldAccessId(context),
     });
 
-    if (!canUpdate) {
+    if (!canWrite) {
       delete result[field.name];
       continue;
     }

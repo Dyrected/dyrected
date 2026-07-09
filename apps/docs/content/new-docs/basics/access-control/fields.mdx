@@ -7,14 +7,14 @@ Field access control lets you protect a single field instead of the whole docume
 
 Field rules are enforced in two places at once:
 
-- **On the API** — a read-denied field is stripped from responses, and an update-denied field is dropped from the payload before the document is saved.
-- **In the admin panel** — the same rules hide a read-denied field and render an update-denied field read-only.
+- **On the API** — a read-denied field is stripped from responses, and a write-denied field is dropped from the payload before the document is saved.
+- **In the admin panel** — the same rules hide a read-denied field and render a write-denied field read-only.
 
 So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](/new-docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.
 
 ## The shape
 
-Add an `access` object with `read` and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
+Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
 
 ```ts
 {
@@ -30,7 +30,7 @@ Add an `access` object with `read` and/or `update` to any field. Use a Jexl stri
 Omit a rule (or set it to `true`) to leave the field fully available.
 
 <Note>
-Field rules also accept functions and named policies, but those run on the **server only** — the admin panel evaluates string and `false` rules to decide what to show. For a field rule that should behave the same in the form and on the API, use a **Jexl string** or `false`.
+Field rules also accept functions and named policies. **Functions** (and function-based policies) run on the **server only** — the admin panel cannot execute them, so it will not hide or lock the field based on one. **Jexl strings**, `false`, and **string-based named policies** are enforced in both places: the server evaluates them, and the admin inlines them into the form. For a field rule that should behave the same in the form and on the API, use a Jexl string, a string named policy, or `false`.
 </Note>
 
 ## What each rule does
@@ -49,9 +49,24 @@ Field rules also accept functions and named policies, but those run on the **ser
 }
 ```
 
+### Create
+
+`create` controls whether the field can be set when a document is **created**. When it fails, the field is dropped from the create payload. If you do not set a `create` rule, the field falls back to its `update` rule on create — so `update: false` alone blocks writes in both cases.
+
+```ts
+{
+  name: 'referenceCode',
+  type: 'text',
+  access: {
+    create: "'admin' in user.roles", // only an admin can set it, and only at creation
+    update: false,                    // nobody can change it afterward
+  },
+}
+```
+
 ### Update
 
-`update` controls whether the field can be written. When it fails, the API **drops the field from the incoming write** (the stored value is unchanged) and the admin panel renders it **read-only**:
+`update` controls whether the field can be written on an **existing** document. When it fails, the API **drops the field from the incoming write** (the stored value is unchanged) and the admin panel renders it **read-only**:
 
 ```ts
 {

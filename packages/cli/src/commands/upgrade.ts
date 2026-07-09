@@ -8,6 +8,25 @@ import { detectPackageManager } from "../utils/detect.js";
 type PackageManager = "npm" | "pnpm" | "yarn" | "bun";
 type DependencyBucket = "dependencies" | "devDependencies";
 type PackageVersionMap = Record<string, string>;
+type WorkspacePackage = {
+  cwd: string;
+  pkgPath: string;
+  pkg: Record<string, any>;
+  buckets: Record<DependencyBucket, string[]>;
+};
+
+const SKIP_DIRS = new Set([
+  ".git",
+  ".hg",
+  ".next",
+  ".nuxt",
+  ".turbo",
+  ".vercel",
+  "coverage",
+  "dist",
+  "build",
+  "node_modules",
+]);
 
 function getDyrectedDeps(pkg: Record<string, any>) {
   const dependencies = Object.keys(pkg.dependencies || {}).filter((dep) => dep.startsWith("@dyrected/") || dep === "dyrected");
@@ -26,6 +45,58 @@ function getLatestVersion(pkgName: string): string {
   }
 
   return version;
+}
+
+function findWorkspaceRoot(startDir: string): string | null {
+  let dir = startDir;
+
+  while (true) {
+    if (fs.existsSync(path.join(dir, "pnpm-workspace.yaml"))) return dir;
+
+    const pkgPath = path.join(dir, "package.json");
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkg = fs.readJsonSync(pkgPath) as { workspaces?: unknown };
+        if (Array.isArray(pkg.workspaces) || (pkg.workspaces && typeof pkg.workspaces === "object")) {
+          return dir;
+        }
+      } catch {}
+    }
+
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+
+  return null;
+}
+
+function findWorkspacePackages(rootDir: string): WorkspacePackage[] {
+  const packages: WorkspacePackage[] = [];
+
+  const visit = (dir: string) => {
+    const pkgPath = path.join(dir, "package.json");
+    if (fs.existsSync(pkgPath)) {
+      try {
+        const pkg = fs.readJsonSync(pkgPath) as Record<string, any>;
+        const buckets = getDyrectedDeps(pkg);
+        if (buckets.dependencies.length > 0 || buckets.devDependencies.length > 0) {
+          packages.push({ cwd: dir, pkgPath, pkg, buckets });
+        }
+      } catch {}
+    }
+
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      if (SKIP_DIRS.has(entry.name)) continue;
+      if (entry.name.startsWith(".")) continue;
+      visit(path.join(dir, entry.name));
+    }
+  };
+
+  visit(rootDir);
+
+  return packages.sort((left, right) => left.cwd.localeCompare(right.cwd));
 }
 
 function resolveLatestVersions(packageNames: string[]): PackageVersionMap {
@@ -130,34 +201,72 @@ async function verifyUpgrade(
   }
 }
 
+async function upgradePackage(
+  workspacePackage: WorkspacePackage,
+  packageManager: PackageManager,
+  latestVersions: PackageVersionMap,
+) {
+  const { cwd, pkgPath, buckets } = workspacePackage;
+  const label = path.relative(process.cwd(), cwd) || ".";
+
+  console.log(chalk.cyan(`\nUpgrading ${label}`));
+  runInstall(cwd, packageManager, buckets.dependencies, latestVersions, "dependencies");
+  runInstall(cwd, packageManager, buckets.devDependencies, latestVersions, "devDependencies");
+  await verifyUpgrade(cwd, pkgPath, latestVersions, buckets);
+}
+
 export function registerUpgrade(program: Command) {
   program
     .command("upgrade")
     .description("Upgrade all Dyrected packages to the latest published version")
-    .action(async () => {
+    .option("-w, --workspace", "Upgrade every workspace package under the current repository root")
+    .action(async (options: { workspace?: boolean }) => {
       const cwd = process.cwd();
-      const pkgPath = path.join(cwd, "package.json");
+      let packages: WorkspacePackage[] = [];
 
-      if (!(await fs.pathExists(pkgPath))) {
-        console.error(chalk.red("Error: No package.json found in the current directory."));
-        process.exit(1);
+      if (options.workspace) {
+        const workspaceRoot = findWorkspaceRoot(cwd);
+        if (!workspaceRoot) {
+          console.error(chalk.red("Error: No workspace root found from the current directory."));
+          process.exit(1);
+        }
+
+        packages = findWorkspacePackages(workspaceRoot);
+        if (packages.length === 0) {
+          console.log(chalk.yellow("No Dyrected dependencies found in any workspace package."));
+          return;
+        }
+
+        console.log(chalk.blue(`Found ${packages.length} workspace package(s) with Dyrected dependencies under ${workspaceRoot}`));
+      } else {
+        const pkgPath = path.join(cwd, "package.json");
+
+        if (!(await fs.pathExists(pkgPath))) {
+          console.error(chalk.red("Error: No package.json found in the current directory."));
+          process.exit(1);
+        }
+
+        let pkg: any;
+        try {
+          pkg = await fs.readJson(pkgPath);
+        } catch {
+          console.error(chalk.red("Error: Failed to read package.json."));
+          process.exit(1);
+        }
+
+        const buckets = getDyrectedDeps(pkg);
+        if (buckets.dependencies.length === 0 && buckets.devDependencies.length === 0) {
+          console.log(chalk.yellow("No Dyrected dependencies found in package.json."));
+          return;
+        }
+
+        packages = [{ cwd, pkgPath, pkg, buckets }];
       }
 
-      let pkg: any;
-      try {
-        pkg = await fs.readJson(pkgPath);
-      } catch {
-        console.error(chalk.red("Error: Failed to read package.json."));
-        process.exit(1);
-      }
-
-      const buckets = getDyrectedDeps(pkg);
-      const dyrectedDeps = [...buckets.dependencies, ...buckets.devDependencies];
-
-      if (dyrectedDeps.length === 0) {
-        console.log(chalk.yellow("No Dyrected dependencies found in package.json."));
-        return;
-      }
+      const dyrectedDeps = [...new Set(packages.flatMap((workspacePackage) => [
+        ...workspacePackage.buckets.dependencies,
+        ...workspacePackage.buckets.devDependencies,
+      ]))];
 
       console.log(chalk.blue(`Found Dyrected packages to upgrade: ${dyrectedDeps.join(", ")}`));
 
@@ -178,10 +287,14 @@ export function registerUpgrade(program: Command) {
       const packageManager = detectPackageManager(cwd) as PackageManager;
 
       try {
-        runInstall(cwd, packageManager, buckets.dependencies, latestVersions, "dependencies");
-        runInstall(cwd, packageManager, buckets.devDependencies, latestVersions, "devDependencies");
-        await verifyUpgrade(cwd, pkgPath, latestVersions, buckets);
-        console.log(chalk.green("\n✔  All Dyrected packages successfully upgraded to the latest published version!"));
+        for (const workspacePackage of packages) {
+          await upgradePackage(workspacePackage, packageManager, latestVersions);
+        }
+        console.log(
+          chalk.green(
+            `\n✔  All Dyrected packages successfully upgraded to the latest published version${options.workspace ? " across the workspace" : ""}!`,
+          ),
+        );
       } catch (error: any) {
         console.error(chalk.red(`\nFailed to upgrade packages: ${error.message}`));
         process.exit(1);

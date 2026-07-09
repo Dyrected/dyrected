@@ -23,6 +23,10 @@ export const Admin = defineCollection({
       name: "roles",
       type: "radio",
       label: "Roles",
+      access: {
+        read: { policy: "hasRole", params: { role: "admin" } },
+        update: { policy: "hasRole", params: { role: "admin" } },
+      },
       options: [
         { label: "Admin", value: "admin" },
         { label: "Editor", value: "editor" },

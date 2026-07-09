@@ -30,13 +30,20 @@ export async function resolveAccess<
   }
 
   if (isNamedAccessPolicy(access)) {
-    const resolver = config.accessPolicies?.[access.policy] as AccessPolicyResolver<TDoc, TUser> | undefined;
-    if (!resolver) {
+    const policy = config.accessPolicies?.[access.policy];
+    if (policy === undefined) {
       console.error(`[dyrected/core] Unknown access policy "${access.policy}".`);
       return false;
     }
 
+    // A policy defined as a Jexl string or boolean is evaluated the same way as
+    // an inline rule of that shape.
+    if (typeof policy === "string" || typeof policy === "boolean") {
+      return evaluateAccess(policy, args);
+    }
+
     try {
+      const resolver = policy as AccessPolicyResolver<TDoc, TUser>;
       return await resolver({ ...args, params: access.params });
     } catch (err) {
       console.error(`[dyrected/core] Access policy "${access.policy}" failed:`, err);

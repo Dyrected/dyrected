@@ -5,6 +5,12 @@ import { pagesSeed } from "../seed.ts";
 export const Pages = defineCollection({
   slug: "pages",
   labels: { plural: "Pages", singular: "Page" },
+  access: {
+    read: true,
+    create: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
+    update: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
+    delete: { policy: "hasRole", params: { role: "admin" } },
+  },
   admin: {
     useAsTitle: "title",
     group: "Content",

@@ -14,6 +14,38 @@ import {
 } from "../utils/config-templates.js";
 import { writeNextFiles, writeNuxtFiles, writeReactFiles, writeVueFiles } from "../utils/writers.js";
 
+function buildAddCommand(packageManager: string, deps: string[], dev = false): string {
+  if (deps.length === 0) return "";
+
+  const joined = deps.join(" ");
+  if (packageManager === "npm") return `npm install ${dev ? "--save-dev " : ""}${joined}`.trim();
+  if (packageManager === "yarn") return `yarn add ${dev ? "--dev " : ""}${joined}`.trim();
+  if (packageManager === "bun") return `bun add ${dev ? "--dev " : ""}${joined}`.trim();
+  return `pnpm add ${dev ? "-D " : ""}${joined}`.trim();
+}
+
+async function ensureCloudSyncScripts(cwd: string) {
+  const packageJsonPath = path.join(cwd, "package.json");
+  if (!(await fs.pathExists(packageJsonPath))) return;
+
+  const pkg = await fs.readJson(packageJsonPath);
+  const scripts = { ...(pkg.scripts || {}) } as Record<string, string>;
+  const syncScriptName = "dyrected:sync-schema";
+  const syncScriptCommand = "dyrected sync:schema";
+  const buildSyncCommand = "dyrected sync:schema --skip-on-error --skip-types";
+
+  scripts[syncScriptName] = syncScriptCommand;
+  if (scripts.postbuild !== buildSyncCommand && !scripts.postbuild?.includes(buildSyncCommand)) {
+    scripts.postbuild = scripts.postbuild
+      ? `${scripts.postbuild} && ${buildSyncCommand}`
+      : buildSyncCommand;
+  }
+
+  pkg.scripts = scripts;
+  await fs.writeJson(packageJsonPath, pkg, { spaces: 2 });
+  console.log(chalk.green("✔  package.json updated with Dyrected Cloud sync scripts"));
+}
+
 export function registerInit(program: Command) {
   program
     .command("init")
@@ -169,6 +201,7 @@ After running init:
 
         // ── 1. Install dependencies ────────────────────────────────────────────
         let deps: string;
+        const devDeps: string[] = [];
         if (isSpa) {
           const frameworkPkg = framework === "react" ? "@dyrected/react" : "@dyrected/vue";
           deps = frameworkPkg;
@@ -177,14 +210,23 @@ After running init:
           const dbPkg = `@dyrected/db-${db}`;
           const storagePkg = `@dyrected/storage-${storage}`;
           deps = ["@dyrected/core", frameworkPkg, dbPkg, storagePkg].join(" ");
+          devDeps.push("dyrected");
         }
 
         console.log(chalk.blue(`\nInstalling ${deps}...`));
         try {
-          execSync(`${packageManager} add ${deps}`, { cwd, stdio: "inherit" });
+          execSync(buildAddCommand(packageManager, deps.split(" ")), { cwd, stdio: "inherit" });
+          if (devDeps.length > 0) {
+            console.log(chalk.blue(`Installing ${devDeps.join(" ")} as a dev dependency...`));
+            execSync(buildAddCommand(packageManager, devDeps, true), { cwd, stdio: "inherit" });
+          }
         } catch {
           console.log(chalk.yellow("\nCould not auto-install. Run the following manually:"));
-          console.log(chalk.cyan(`  ${packageManager} add ${deps}\n`));
+          console.log(chalk.cyan(`  ${buildAddCommand(packageManager, deps.split(" "))}`));
+          if (devDeps.length > 0) {
+            console.log(chalk.cyan(`  ${buildAddCommand(packageManager, devDeps, true)}`));
+          }
+          console.log("");
         }
 
         // ── 2. Write dyrected.config.ts (full-stack only) ─────────────────────
@@ -239,6 +281,10 @@ After running init:
           await writeReactFiles(cwd, adminPath);
         } else if (framework === "vue") {
           await writeVueFiles(cwd, adminPath);
+        }
+
+        if (!isSpa) {
+          await ensureCloudSyncScripts(cwd);
         }
 
         // ── 4. .env setup ──────────────────────────────────────────────────────

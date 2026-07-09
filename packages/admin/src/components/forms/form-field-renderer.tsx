@@ -51,6 +51,10 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
   const condition = schema.admin?.condition
   const readAccess = (schema.access as Record<string, unknown> | undefined)?.read
   const updateAccess = (schema.access as Record<string, unknown> | undefined)?.update
+  const createAccess = (schema.access as Record<string, unknown> | undefined)?.create
+  // A new document (no id yet) is governed by the field's create rule, falling
+  // back to update; an existing document is governed by update.
+  const writeAccess = documentId ? updateAccess : (createAccess ?? updateAccess)
 
   // Memoize compilation of JEXL conditions to avoid parsing overhead on every keystroke
   const compiledCondition = React.useMemo(() => {
@@ -73,13 +77,13 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
   }, [readAccess])
 
   const compiledUpdateAccess = React.useMemo(() => {
-    if (typeof updateAccess !== "string") return null
+    if (typeof writeAccess !== "string") return null
     try {
-      return { expr: jexl.compile(updateAccess), error: null }
+      return { expr: jexl.compile(writeAccess), error: null }
     } catch (e: unknown) {
       return { expr: null, error: `Update access compile error: ${(e as Error).message || String(e)}` }
     }
-  }, [updateAccess])
+  }, [writeAccess])
 
   if (schema.admin?.hidden) return null
 
@@ -122,7 +126,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
 
   // Evaluate Update/Write Access
   let canUpdate = true
-  if (updateAccess === false) {
+  if (writeAccess === false) {
     canUpdate = false
   } else if (compiledUpdateAccess) {
     if (compiledUpdateAccess.error) {

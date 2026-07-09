@@ -87,11 +87,14 @@ export class AuditController {
     collection: CollectionConfig,
   ): Promise<{ denied: boolean; where: Record<string, unknown> }> {
     const config = c.get("config");
+    // The audit log is gated by `readAudit` when set, otherwise it inherits the
+    // collection's `read` rule so the trail follows document visibility.
+    const auditAccess = collection.access?.readAudit ?? collection.access?.read;
     const access = await resolveCollectionAccess(
       config,
       collection.slug,
       "read",
-      collection.access?.read,
+      auditAccess,
       {
         user: c.get("user"),
         req: toHookRequestContext(c.req),

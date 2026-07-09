@@ -29,6 +29,7 @@ function sanitizeField(field: Record<string, any>, location: string, warnings: s
   if (sanitized.access) {
     sanitized.access = {
       ...(sanitized.access.read !== undefined ? { read: sanitizeAccessValue(sanitized.access.read, `${location}.access.read`, warnings) } : {}),
+      ...(sanitized.access.create !== undefined ? { create: sanitizeAccessValue(sanitized.access.create, `${location}.access.create`, warnings) } : {}),
       ...(sanitized.access.update !== undefined ? { update: sanitizeAccessValue(sanitized.access.update, `${location}.access.update`, warnings) } : {}),
     };
   }
@@ -67,6 +68,7 @@ export function sanitizeSchemaForCloudSync(config: {
       ...(collection.access?.create !== undefined ? { create: sanitizeAccessValue(collection.access.create, `collections[${index}].access.create`, warnings) } : {}),
       ...(collection.access?.update !== undefined ? { update: sanitizeAccessValue(collection.access.update, `collections[${index}].access.update`, warnings) } : {}),
       ...(collection.access?.delete !== undefined ? { delete: sanitizeAccessValue(collection.access.delete, `collections[${index}].access.delete`, warnings) } : {}),
+      ...(collection.access?.readAudit !== undefined ? { readAudit: sanitizeAccessValue(collection.access.readAudit, `collections[${index}].access.readAudit`, warnings) } : {}),
     },
     fields: Array.isArray(collection.fields)
       ? collection.fields.map((field: Record<string, any>, fieldIndex: number) =>
@@ -135,7 +137,13 @@ Examples:
 
         const apiKey = options.apiKey || process.env.DYRECTED_API_KEY;
         const siteId = options.siteId || process.env.DYRECTED_SITE_ID;
-        const apiUrl = options.url || process.env.DYRECTED_URL || "https://cloud.dyrected.com";
+        const apiUrl =
+          options.url ||
+          process.env.DYRECTED_URL ||
+          process.env.NEXT_PUBLIC_DYRECTED_URL ||
+          process.env.NUXT_PUBLIC_DYRECTED_URL ||
+          process.env.VITE_DYRECTED_URL ||
+          "https://cloud.dyrected.com";
         const configPath = path.resolve(process.cwd(), options.config);
 
         if (!apiKey || !siteId) {

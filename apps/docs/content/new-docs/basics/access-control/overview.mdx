@@ -99,6 +99,8 @@ export default defineConfig({
 })
 ```
 
+A policy can be a **function** (as above) or a **Jexl string** — `accessPolicies: { isAdmin: "'admin' in user.roles" }`. String policies are inlined when the schema is sent to the admin panel, so a field or collection rule that references one stays reactive in the edit form, exactly like an inline Jexl rule. Function policies run on the server only.
+
 You can pass `params` for a parameterized policy — `{ policy: 'hasRole', params: { role: 'editor' } }` — and read them inside the resolver as `params`. If a rule references a policy that is not registered, Dyrected fails closed and denies the request.
 
 ## What a rule can see
@@ -138,9 +140,9 @@ Access rules attach at three levels, each with its own operations. All three are
 
 | Level | Operations | What it protects |
 |---|---|---|
-| [Collections](/new-docs/basics/access-control/collections) | `read`, `create`, `update`, `delete` | Whole documents in a collection |
+| [Collections](/new-docs/basics/access-control/collections) | `read`, `create`, `update`, `delete`, `readAudit` | Whole documents in a collection, plus the audit log |
 | [Globals](/new-docs/basics/access-control/globals) | `read`, `update` | A single global document |
-| [Fields](/new-docs/basics/access-control/fields) | `read`, `update` | Individual fields — stripped from responses or dropped on writes |
+| [Fields](/new-docs/basics/access-control/fields) | `read`, `create`, `update` | Individual fields — stripped from responses or dropped on writes |
 
 Field rules also drive the admin panel, hiding or locking fields in the edit form, but the enforcement is real: a field a reader cannot see is removed from the API response, and a field a writer cannot set is dropped before the document is saved.
 

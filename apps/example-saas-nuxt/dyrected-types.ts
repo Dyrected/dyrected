@@ -11,6 +11,12 @@ export interface Media {
   url: string;
   width?: number;
   height?: number;
+  focalPoint?: { x: number; y: number };
+  blurhash?: string;
+  sizes?: Record<
+    string,
+    { filename?: string; url?: string; width?: number; height?: number }
+  >;
   createdAt: string;
   updatedAt: string;
   alt?: string;
@@ -34,15 +40,21 @@ export type UrlFieldValue =
 // Backward compatibility for simple string URLs
 export type UrlField = UrlFieldValue | string;
 
+export interface Admin {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  roles?: "admin" | "editor" | "viewer";
+  email: string;
+  roles?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Pages {
   id: string;
   title: string;
   slug: string;
-  seo?: {
-    metaTitle?: string;
-    metaDescription?: string;
-    ogImage?: Media | string;
-  };
   layout?: Array<
     | {
         blockType: "hero";
@@ -63,7 +75,7 @@ export interface Pages {
       }
     | {
         blockType: "richContent";
-        content: string;
+        content: Record<string, unknown>;
       }
     | {
         blockType: "cta";
@@ -156,6 +168,11 @@ export interface Pages {
         subheading?: string;
       }
   >;
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    ogImage?: Media | string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -164,7 +181,7 @@ export interface Blog {
   id: string;
   title: string;
   slug: string;
-  content: string;
+  content: Record<string, unknown>;
   featuredImage?: Media | string;
   author?: Authors | string;
   publishedDate?: string;
@@ -178,7 +195,7 @@ export interface Products {
   slug: string;
   description?: string;
   price?: number;
-  image?: Media | string;
+  image?: Array<Media | string>;
   featured?: boolean;
   publishedAt?: string;
   createdAt: string;
@@ -190,6 +207,8 @@ export interface Authors {
   name: string;
   bio?: string;
   avatar?: Media | string;
+  country?: string;
+  state?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -198,6 +217,7 @@ export interface SettingsGlobal {
   siteName?: string;
   tagline?: string;
   logo?: Media | string;
+  logoInitials?: string;
   footerText?: string;
 }
 
@@ -209,8 +229,23 @@ export interface NavigationGlobal {
   ctaButton?: UrlField;
 }
 
+export interface FooterGlobal {
+  description?: string;
+  columns?: Array<{
+    heading?: string;
+    links?: Array<{
+      link?: UrlField;
+    }>;
+  }>;
+  copyright?: string;
+  badges?: Array<{
+    text?: string;
+  }>;
+}
+
 export interface DyrectedSchema {
   collections: {
+    admin: Admin;
     media: Media;
     pages: Pages;
     blog: Blog;
@@ -220,5 +255,6 @@ export interface DyrectedSchema {
   globals: {
     settings: SettingsGlobal;
     navigation: NavigationGlobal;
+    footer: FooterGlobal;
   };
 }

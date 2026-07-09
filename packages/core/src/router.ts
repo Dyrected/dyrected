@@ -104,6 +104,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     const serializeAccess = async (access: any): Promise<any> => {
       if (typeof access === 'string') return access;
       if (typeof access === 'boolean') return access;
+      // Named policies: inline a string/boolean policy so the admin evaluates it
+      // live against the form; resolve function policies to a static boolean.
+      if (access && typeof access === 'object' && typeof access.policy === 'string') {
+        const policy = config.accessPolicies?.[access.policy];
+        if (typeof policy === 'string' || typeof policy === 'boolean') return policy;
+      }
       return resolveBooleanAccess(config, access, accessArgs);
     };
 
@@ -135,6 +141,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           admin: f.admin,
           access: {
             read: await serializeAccess(f.access?.read),
+            create: await serializeAccess(f.access?.create),
             update: await serializeAccess(f.access?.update),
           },
         }))),

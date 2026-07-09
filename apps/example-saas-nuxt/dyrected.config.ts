@@ -1,4 +1,5 @@
 import { defineConfig } from "@dyrected/core";
+import { exampleSaasAccessPolicies } from "./dyrected/access-policies.ts";
 
 // Collections
 import { Media } from "./dyrected/collections/media.ts";
@@ -14,6 +15,7 @@ import { Navigation } from "./dyrected/globals/navigation.ts";
 import { Footer } from "./dyrected/globals/footer.ts";
 
 export default defineConfig({
+  accessPolicies: exampleSaasAccessPolicies,
   collections: [Admin, Media, Pages, Blog, Products, Authors],
   globals: [Settings, Navigation, Footer],
   admin: {

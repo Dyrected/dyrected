@@ -204,6 +204,14 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
     create?: AccessRule<TDoc>;
     update?: AccessRule<TDoc>;
     delete?: AccessRule<TDoc>;
+    /**
+     * Controls who can read this collection's audit log (`GET /:slug/__audit`),
+     * for collections with `audit` enabled. Falls back to the `read` rule when
+     * omitted, so the audit trail is visible to whoever can read the documents.
+     * Set it explicitly to gate the audit log separately — for example, admins
+     * only, even on a collection anyone can read.
+     */
+    readAudit?: AccessRule<TDoc>;
   };
 
   /**
