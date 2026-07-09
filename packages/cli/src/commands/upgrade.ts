@@ -168,6 +168,15 @@ function readInstalledVersion(cwd: string, pkgName: string): string | null {
   }
 }
 
+function isDeclaredVersionAligned(declared: unknown, expected: string): boolean {
+  if (typeof declared !== "string") return false;
+
+  const normalized = declared.trim();
+  if (normalized === expected) return true;
+
+  return normalized === `^${expected}` || normalized === `~${expected}`;
+}
+
 async function verifyUpgrade(
   cwd: string,
   pkgPath: string,
@@ -183,7 +192,7 @@ async function verifyUpgrade(
       const declared = pkg[bucket]?.[dep];
       const installed = readInstalledVersion(cwd, dep);
 
-      if (declared !== expected) {
+      if (!isDeclaredVersionAligned(declared, expected)) {
         problems.push(`${dep}: package.json has ${declared ?? "missing"}, expected ${expected}`);
       }
 
