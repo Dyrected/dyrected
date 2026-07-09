@@ -665,7 +665,7 @@ Set:
 
 For the home page, map the slug "home" to "/".
 
-For other pages, map the slug to "/{slug}".
+For other pages, map the slug to `/{slug}`.
 
 Do not hardcode production-only preview URLs.
 
@@ -706,16 +706,16 @@ The article slug is for routing.
 
 For blog articles, map the slug to:
 
-/blog/{slug}
+`/blog/{slug}`
 
 For other routable collections, derive the preview URL from the existing project route pattern.
 
 Examples:
 
-- /projects/{slug}
-- /case-studies/{slug}
-- /resources/{slug}
-- /products/{slug}
+- `/projects/{slug}`
+- `/case-studies/{slug}`
+- `/resources/{slug}`
+- `/products/{slug}`
 
 Use the project’s existing route structure.
 
@@ -1026,11 +1026,15 @@ Example:
 
 If the old UI expects:
 
+```ts
 sliderLabels: ["Low", "Medium", "High"]
+```
 
 but Dyrected stores:
 
+```ts
 sliderLabels: [{ label: "Low" }, { label: "Medium" }, { label: "High" }]
+```
 
 normalize it before passing data to the component.
 

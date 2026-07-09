@@ -149,6 +149,10 @@ describe("generated knowledge contracts", () => {
     { file: "features/workflows/overview.mdx", region: "REFERENCE-WORKFLOWS" },
     { file: "managing-data/rest-api/overview.mdx", region: "REFERENCE-REST-API" },
     { file: "managing-data/rest-api/overview.mdx", region: "REFERENCE-OPENAPI" },
+    {
+      file: "quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt.mdx",
+      region: "MODELING_RULES",
+    },
   ];
 
   const stripGeneratedRegions = (source: string) =>

@@ -1016,6 +1016,14 @@ const generatedSections = {
     "- [REST and OpenAPI](https://docs.dyrected.com/new-docs/managing-data/rest-api/overview)",
   ].join("\n"),
 };
+outputGeneratedRegion(
+  path.join(
+    newDocsRoot,
+    "quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt.mdx",
+  ),
+  "MODELING_RULES",
+  generatedSections.MODELING_RULES,
+);
 
 function renderHybridTemplate(templatePath) {
   let rendered = fs.readFileSync(templatePath, "utf8").trimEnd();
