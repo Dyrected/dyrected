@@ -150,4 +150,49 @@ describe("Backend Dynamic Option Queries", () => {
     const stateDataUs = await resStateUs.json();
     expect(stateDataUs).toEqual([{ label: "California", value: "CA" }]);
   });
+
+  it("should cache resolver results for cacheTTL seconds and re-run after expiry", async () => {
+    const resolve = vi.fn(async () => [{ label: "Cached", value: "c" }]);
+
+    const posts = defineCollection({
+      slug: "posts",
+      fields: [
+        {
+          name: "cached",
+          type: "select",
+          options: { resolve, cacheTTL: 60 },
+        },
+      ],
+    });
+
+    const config = defineConfig({ collections: [posts], globals: [], db });
+    const app = await createDyrectedApp(config);
+
+    const now = 1_000_000;
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(now);
+
+    // First call runs the resolver.
+    const r1 = await app.request("/api/dyrected/options/posts/cached?country=ca");
+    expect(await r1.json()).toEqual([{ label: "Cached", value: "c" }]);
+    expect(resolve).toHaveBeenCalledTimes(1);
+
+    // Same query within the TTL is served from cache — resolver not re-run.
+    nowSpy.mockReturnValue(now + 30_000);
+    const r2 = await app.request("/api/dyrected/options/posts/cached?country=ca");
+    expect(await r2.json()).toEqual([{ label: "Cached", value: "c" }]);
+    expect(resolve).toHaveBeenCalledTimes(1);
+
+    // A different query is a different cache key — resolver runs again.
+    const r3 = await app.request("/api/dyrected/options/posts/cached?country=us");
+    expect(await r3.json()).toEqual([{ label: "Cached", value: "c" }]);
+    expect(resolve).toHaveBeenCalledTimes(2);
+
+    // After the TTL elapses, the original query re-runs the resolver.
+    nowSpy.mockReturnValue(now + 61_000);
+    const r4 = await app.request("/api/dyrected/options/posts/cached?country=ca");
+    expect(await r4.json()).toEqual([{ label: "Cached", value: "c" }]);
+    expect(resolve).toHaveBeenCalledTimes(3);
+
+    nowSpy.mockRestore();
+  });
 });

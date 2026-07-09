@@ -374,22 +374,39 @@ export type TextareaField = TypedField<"textarea", string, TextareaFieldAdmin> &
 export type EmailField = TypedField<"email", string, EmailFieldAdmin> & CharacterLimitFieldConfig;
 export type UrlField = TypedField<"url", string | UrlLinkValue, UrlFieldAdmin> & CharacterLimitFieldConfig;
 export type IconField = TypedField<"icon", string, IconFieldAdmin> & CharacterLimitFieldConfig;
+/** A calendar day, stored and returned as an ISO date string. */
 export type DateField = TypedField<"date", string>;
+/** A specific instant, stored and returned as an ISO date-time string. */
 export type DateTimeField = TypedField<"datetime", string>;
+/** A local time of day, stored as a string when the date is modeled elsewhere. */
 export type TimeField = TypedField<"time", string>;
+/** A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value. */
 export type SelectField = TypedField<"select", string, SelectFieldAdmin>;
+/** A single choice shown as radio buttons, stored as the chosen value. */
 export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;
+/** A numeric value. Optional advisory `min`/`max` guide editors without enforcing server-side validation. */
 export type NumberField = TypedField<"number", number, NumberFieldAdmin> & NumberLimitFieldConfig;
+/** A `true`/`false` value, shown to editors as a checkbox or switch. */
 export type BooleanField = TypedField<"boolean", boolean, BooleanFieldAdmin>;
+/** Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values. */
 export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
+/** A reference to one or more documents in another collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple. */
 export type RelationshipField = TypedField<"relationship", string | string[]>;
+/** A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple. */
 export type ImageField = TypedField<"image", string | string[]>;
+/** Formatted content authored in the admin editor, stored as an HTML string. */
 export type RichTextField = TypedField<"richText", string> & RichTextFieldConfig;
+/** An arbitrary JSON value. Dyrected stores it as-is and does not validate its shape. */
 export type JsonField = TypedField<"json", Record<string, unknown>>;
+/** A group of nested `fields` stored as an embedded object under this field's `name`. */
 export type ObjectField = TypedField<"object", unknown>;
+/** A repeatable list of rows that all share the same `fields`, stored as an array of objects. */
 export type ArrayField = TypedField<"array", unknown>;
+/** Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`. */
 export type BlocksField = TypedField<"blocks", unknown>;
+/** A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document. */
 export type JoinField = TypedField<"join", unknown>;
+/** A layout-only container that arranges its child `fields` horizontally in the admin UI. Stores no value of its own. */
 export type RowField = TypedField<"row", unknown>;
 
 export type Field =

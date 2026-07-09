@@ -17,8 +17,9 @@ import {
   PopoverTrigger,
 } from "../../ui/popover"
 import { Badge } from "../../ui/badge"
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../../providers/dyrected-context"
+import { useDebouncedValue } from "../../../hooks/use-debounced-value"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 
 interface Option {
@@ -60,11 +61,17 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const { client } = useDyrected()
   const [open, setOpen] = React.useState(false)
+  const [searchVal, setSearchVal] = React.useState("")
 
   const isDynamic = !!(schema?.options && typeof schema.options === "object" && "_dynamic" in schema.options)
 
-  const { data: dynamicOptions, isLoading } = useQuery({
-    queryKey: ["options", collection, schema?.name, siblingValues],
+  // For dynamic options, search on the server so large and growing lists never
+  // ship to the browser in full. The typed query is debounced and forwarded as
+  // `?search=`; the resolver decides how to use it.
+  const debouncedSearch = useDebouncedValue(searchVal.trim(), 250)
+
+  const { data: dynamicOptions, isLoading, isFetching } = useQuery({
+    queryKey: ["options", collection, schema?.name, siblingValues, debouncedSearch],
     queryFn: async () => {
       const q = new URLSearchParams()
       if (siblingValues) {
@@ -74,6 +81,7 @@ export function MultiSelect({
           }
         })
       }
+      if (debouncedSearch) q.append("search", debouncedSearch)
       const baseUrl = client?.getBaseUrl() || ""
       const url = `${baseUrl}/api/dyrected/options/${collection}/${schema?.name}?${q.toString()}`
       const authHeaders: Record<string, string> = {}
@@ -86,6 +94,7 @@ export function MultiSelect({
       return res.json()
     },
     enabled: !!client && isDynamic && !!collection && !!schema?.name,
+    placeholderData: keepPreviousData,
   })
 
   const rawOptions = isDynamic ? (dynamicOptions || []) : options
@@ -181,9 +190,18 @@ export function MultiSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">
-          <Command>
-            <CommandInput placeholder="Search options..." />
+          <Command shouldFilter={!isDynamic}>
+            <CommandInput
+              placeholder="Search options..."
+              value={searchVal}
+              onValueChange={setSearchVal}
+            />
             <CommandList>
+              {isDynamic && isFetching && (
+                <div className="dy-py-6 dy-text-center dy-text-sm dy-text-muted-foreground">
+                  Searching…
+                </div>
+              )}
               <CommandEmpty>No option found.</CommandEmpty>
               <CommandGroup>
                 {normalizedOpts.map((option) => {

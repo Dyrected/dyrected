@@ -45,24 +45,25 @@ Per-page detail lives in the sub-batch packets:
 
 ## Open questions for human review
 
-- **O-3:** confirm `min`/`max` (and `maxLength`) should stay advisory (admin + hint only), not server-validated — current behavior and the consistent choice.
-- **O-5 (remaining half — dynamic options):** `SelectField.options` accepts `DynamicOptionsResolver | DynamicOptionsConfig` (`schema-core.ts:107`), but no `new-docs` page documents dynamic options and `select.mdx` does not mention them. Decide: extend `select.mdx` or add a dedicated page. (The rich-text-rendering half is resolved — `displaying-content/overview` now covers `DyrectedRichText`.)
-- **O-6:** structural fields (`array`, `object`, `row`, `join`) generate only `TypedField<…, unknown>` blocks; enriching them means generator/JSDoc work, not MDX edits. `datetime`/`time` aliases also lack a one-line JSDoc.
-- Naming confirmations: "Date and Time"/"Multi-select" titles; "Checkbox"/"Group"/"Upload" page titles vs their `defineBoolean/Object/Image` helpers.
-- **Release notes/changesets:** the session changed public package behavior — `RichTextField` value type (`Record<string, unknown>` → `string`), `UrlField` value widening, REST depth defaults (2/10/10 → 1), email/password constraint enforcement, new `min`/`max`, `defineTab`, `DyrectedRichText`, Nuxt `@nuxt/image` hard dependency. Confirm which need changesets before release.
-- **Variant condition footgun (product, optional):** block rows written outside the Admin may lack the reserved `variant` key; `admin.condition` sees the raw row, so default-variant conditions miss. Documented with a defensive pattern in `blocks.mdx`; a core/admin backfill of the default variant would remove the footgun.
+- **O-3 — DECIDED (advisory).** Product owner confirmed `min`/`max`/`maxLength` stay advisory (Admin + client hint), not server-validated. Docs say "advisory" consistently. No further action.
+- **Release notes/changesets — DONE.** One patch changeset (`.changeset/dynamic-select-and-field-rendering.md`) covers the whole session: dynamic-select server search, `cacheTTL`, `DyrectedRichText`, Next `DyrectedIcon` re-export, Nuxt `NuxtImg`/`@nuxt/image`, `RichTextField`→`string`, `UrlField` widening, number `min`/`max`, `defineTab`, email/password enforcement, depth defaults, and the field-page renames. Bumps `@dyrected/{core,admin,react,vue,next,nuxt,knowledge}` and `dyrected`.
 
 ## Resolved since (no longer open)
 
 - **O-1** — dedicated pages created for `datetime`, `time`, `multiSelect`, `url`, `icon`.
 - **O-2** — depth default settled at `1` in code and docs.
-- **Email footgun** — fixed in `config.ts` (see above); `email.mdx` note updated to describe the re-asserted constraints.
+- **O-5 (dynamic options) — DONE.** `select.mdx` now documents server resolvers, searchable lists, dependent (country → state) dropdowns, `cacheTTL`, creatable "grow over time" values, and displaying the stored value. The rich-text half was already covered by `displaying-content/overview`.
+- **O-5b (dynamic-select code was not optimal) — FIXED.** The Admin previously loaded the entire dynamic list into the browser and filtered client-side, never sending the search term. `select-field.tsx` and `multi-select.tsx` now forward a debounced `search` param to the resolver, use `keepPreviousData`, and set `shouldFilter={!isDynamic}` so the server is authoritative for dynamic lists. New shared `useDebouncedValue` hook. `cacheTTL` is now honored server-side (`router.ts`) with a regression test.
+- **O-6 — DONE.** All bare field-type aliases (`DateField`, `DateTimeField`, `TimeField`, `SelectField`, `RadioField`, `NumberField`, `BooleanField`, `MultiSelectField`, `RelationshipField`, `ImageField`, `RichTextField`, `JsonField`, `ObjectField`, `ArrayField`, `BlocksField`, `JoinField`, `RowField`) carry a JSDoc one-liner; the generated reference blocks on every field page now show a real description instead of the "Exported type…" fallback.
+- **Naming — DONE.** Pages renamed to match helpers: `checkbox`→`boolean`, `group`→`object`, `upload`→`image`, `radio-group`→`radio`; titles now "Boolean"/"Object"/"Image"/"Radio"/"Datetime"/"Multi Select". Slugs, inbound links, `meta.json`, generated region markers, generator map, and the mirror test all updated together.
+- **Email footgun** — fixed in `config.ts`; `email.mdx` note updated to describe the re-asserted constraints.
 - **`defineTab` signature** — specified by the product owner.
+- **Variant condition footgun — NOT a bug.** Confirmed the Admin backfills the first variant into any block row missing one when the edit form loads (`buildDefaultValues`, `utils.ts:195`), so `admin.condition` on `variant` sees a real value even for API-written rows. `blocks.mdx` documents this with an accurate `<Note>`.
 - **Displaying-content placement** — owner reorganized to `managing-data/displaying-content/overview.mdx`.
 
 ## Verification run
+
 - `@dyrected/core` build (DTS) ✅ · `@dyrected/admin` build ✅
 - `@dyrected/knowledge generate:check` clean ✅ · `knowledge test` 35/35 ✅
-- `core define-field.test` 5/5 ✅ (min/max + defineTab)
+- `core dynamic-options.test` 4/4 ✅ (incl. new `cacheTTL` test) · `core define-field.test` ✅ (min/max + defineTab)
 - No links to stub pages in the fields tree ✅
-- **Not yet run:** full Fuma/Next docs build (MDX compile). Recommend `pnpm --filter docs build` (or the app's `docs:check`) as the final gate before publish.

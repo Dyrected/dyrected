@@ -1,6 +1,6 @@
 ---
 title: Select
-description: A single choice from a fixed set of options, shown as a dropdown.
+description: A single choice from a fixed or dynamic set of options, shown as a dropdown.
 ---
 
 The select field lets editors pick one value from a fixed list of options, shown as a dropdown. Use it for statuses, categories, and other closed sets of choices. For a small set you want visible at a glance, use a [Radio](/new-docs/basics/fields/radio); when editors should pick more than one value, use [Multi Select](/new-docs/basics/fields/multi-select).
@@ -24,7 +24,134 @@ Each option is a `{ label, value }` pair — the `label` is what editors see, th
 defineSelectField({ name: 'size', label: 'Size', options: ['small', 'medium', 'large'] })
 ```
 
-When the choices aren't fixed — they come from the database, or depend on another field — provide `options` as a server-side resolver, or wire an admin hook, instead of a static array. That powers dependent dropdowns, where choosing a country narrows the list of regions.
+## Dynamic options
+
+When the choices aren't fixed — they live in the database, or depend on another field — pass `options` as a resolver function instead of an array. Dyrected runs it on the server and the admin fetches the result when it renders the field.
+
+```ts
+defineSelectField({
+  name: 'country',
+  label: 'Country',
+  options: async ({ db }) => {
+    const { docs } = await db.find({ collection: 'countries', limit: 300 })
+    return docs.map((c) => ({ label: c.name, value: c.code }))
+  },
+})
+```
+
+The resolver receives `db` for lookups, the authenticated `user`, and `req` — whose `query` carries the current form's sibling values plus any search text the editor has typed. Return the same `{ label, value }` pairs (or plain strings) a static list would use.
+
+### Searchable lists that scale
+
+For a static list, the admin filters the visible options as the editor types — no configuration needed. A dynamic list is different: instead of shipping every row to the browser, the admin sends the editor's search text to your resolver as `req.query.search` (debounced) and shows whatever it returns. Push the filter into your query so a list of thousands stays fast and only matching rows cross the wire:
+
+```ts
+defineSelectField({
+  name: 'country',
+  label: 'Country',
+  options: async ({ db, req }) => {
+    const search = String(req.query.search ?? '')
+    const { docs } = await db.find({
+      collection: 'countries',
+      where: search ? { name: { contains: search } } : undefined,
+      limit: 20,
+    })
+    return docs.map((c) => ({ label: c.name, value: c.code }))
+  },
+})
+```
+
+Return a capped page (say the first 20) rather than the whole table — the editor narrows it by typing, and each keystroke re-queries the server. When no `search` is present, return a sensible default page so the dropdown isn't empty on open.
+
+### Dependent dropdowns
+
+Because sibling values arrive on `req.query` too, one field's options can depend on another's value. Read the parent field from the query to narrow the child's list — pick a country, and the state field resolves to just that country's states:
+
+```ts
+defineSelectField({
+  name: 'country',
+  label: 'Country',
+  options: async ({ db }) => {
+    const { docs } = await db.find({ collection: 'countries', limit: 300 })
+    return docs.map((c) => ({ label: c.name, value: c.code }))
+  },
+}),
+defineSelectField({
+  name: 'state',
+  label: 'State',
+  options: async ({ db, req }) => {
+    const country = req.query.country
+    if (!country) return []
+    const { docs } = await db.find({
+      collection: 'states',
+      where: { country: { equals: country } },
+    })
+    return docs.map((s) => ({ label: s.name, value: s.code }))
+  },
+})
+```
+
+The admin re-fetches the state field's options whenever `country` changes, and clears the state value if it is no longer a valid choice for the new country.
+
+### Caching resolver results
+
+If a resolver is expensive and its results don't change per request, pass it as an object with a `cacheTTL` (in seconds). Dyrected caches each result — keyed by the field, the query parameters, and the requesting user — and reuses it until the TTL elapses:
+
+```ts
+defineSelectField({
+  name: 'country',
+  label: 'Country',
+  options: {
+    cacheTTL: 300,
+    resolve: async ({ db }) => {
+      const { docs } = await db.find({ collection: 'countries', limit: 100 })
+      return docs.map((c) => ({ label: c.name, value: c.code }))
+    },
+  },
+})
+```
+
+<Note>
+A server resolver runs on the server, so it can reach the database and secrets. If your options depend only on other form values and need no server data, you can compute them entirely in the browser with an `admin.hooks.options` hook instead — it recalculates as the editor types, with no round trip. Reach for the server resolver whenever the choices come from your data.
+</Note>
+
+## Letting editors add new options
+
+Some lists grow over time — tags, categories, a "source" field that gains new values as the business changes. When an editor types something that isn't already an option, the admin offers a **Use "…"** action that selects the typed text as the value. This works for both static and dynamic lists, so editors are never blocked by a list that hasn't caught up yet.
+
+The stored value is just the text they typed. If you want new entries to become first-class options that everyone sees next time, back the field with a collection and have the resolver read from it — then a small `beforeChange` hook (or a dedicated "tags" collection the editor manages) can persist genuinely new values:
+
+```ts
+defineSelectField({
+  name: 'category',
+  label: 'Category',
+  options: async ({ db, req }) => {
+    const search = String(req.query.search ?? '')
+    const { docs } = await db.find({
+      collection: 'categories',
+      where: search ? { name: { contains: search } } : undefined,
+      limit: 20,
+    })
+    return docs.map((c) => ({ label: c.name, value: c.slug }))
+  },
+})
+```
+
+With the list sourced from a `categories` collection, adding a category there makes it a permanent option everywhere the field appears. Until then, the **Use "…"** action lets an editor move forward with a one-off value.
+
+## Displaying the value
+
+A select stores the chosen `value`, not its label. When you read a document, you get back exactly what was stored — `'published'`, `'ca'`, a category slug — so render it directly, or map it to a friendlier label on the frontend:
+
+```tsx
+const STATUS_LABELS = { draft: 'Draft', published: 'Published' }
+
+export function Status({ post }: { post: { status: string } }) {
+  return <span className="badge">{STATUS_LABELS[post.status] ?? post.status}</span>
+}
+```
+
+For a value that came from a collection-backed dynamic list, either store enough to display (the label as the value) or resolve it against that collection at read time — the same way you would render any [Relationship](/new-docs/basics/fields/relationship).
 
 ## Presentation
 
@@ -49,7 +176,7 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 {/* GENERATED:REFERENCE-FIELD-SELECT:START */}
 ## SelectField
 
-Exported type from @dyrected/core.
+A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value.
 
 ```ts
 export type SelectField = TypedField<"select", string, SelectFieldAdmin>;

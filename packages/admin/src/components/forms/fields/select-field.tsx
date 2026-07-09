@@ -18,8 +18,9 @@ import {
 } from "../../ui/popover"
 import { normalizeOptions } from "../utils"
 import type { Field as FieldSchema } from "@dyrected/sdk"
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../../providers/dyrected-context"
+import { useDebouncedValue } from "../../../hooks/use-debounced-value"
 
 interface SelectFieldProps {
   schema: FieldSchema
@@ -49,8 +50,13 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
 
   const isDynamic = !!(schema.options && typeof schema.options === "object" && "_dynamic" in schema.options)
 
-  const { data: dynamicOptions, isLoading } = useQuery({
-    queryKey: ["options", collection, schema.name, siblingValues],
+  // For dynamic options, let the server do the searching so large and growing
+  // lists never have to be shipped to the browser in full. The typed query is
+  // debounced and forwarded as `?search=`; the resolver decides how to use it.
+  const debouncedSearch = useDebouncedValue(searchVal.trim(), 250)
+
+  const { data: dynamicOptions, isLoading, isFetching } = useQuery({
+    queryKey: ["options", collection, schema.name, siblingValues, debouncedSearch],
     queryFn: async () => {
       const q = new URLSearchParams()
       if (siblingValues) {
@@ -60,6 +66,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
           }
         })
       }
+      if (debouncedSearch) q.append("search", debouncedSearch)
       const baseUrl = client?.getBaseUrl() || ""
       const url = `${baseUrl}/api/dyrected/options/${collection}/${schema.name}?${q.toString()}`
       const authHeaders: Record<string, string> = {}
@@ -72,6 +79,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
       return res.json()
     },
     enabled: !!client && isDynamic && !!collection && !!schema.name,
+    placeholderData: keepPreviousData,
   })
 
   const rawOptions = isDynamic ? (dynamicOptions || []) : schema.options
@@ -140,13 +148,18 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
         </Button>
       </PopoverTrigger>
       <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">
-        <Command>
+        <Command shouldFilter={!isDynamic}>
           <CommandInput
             placeholder={`Search ${label.toLowerCase()}...`}
             value={searchVal}
             onValueChange={setSearchVal}
           />
           <CommandList>
+            {isDynamic && isFetching && (
+              <div className="dy-py-6 dy-text-center dy-text-sm dy-text-muted-foreground">
+                Searching…
+              </div>
+            )}
             {showCustomOption && (
               <CommandGroup heading="Custom Value">
                 <CommandItem

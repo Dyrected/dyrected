@@ -77,6 +77,10 @@ function serializeFieldForApi(f: any): any {
  * Register dynamic routes based on the provided configuration.
  */
 export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfig) {
+  // Per-app cache for dynamic option resolvers that opt in via `cacheTTL`.
+  // Scoped to this config so tests and multi-tenant setups stay isolated.
+  const optionsCache = new Map<string, { expires: number; value: unknown }>();
+
   // 1. Schema Endpoints
   // Used by the SDK and Admin to understand the content structure
   app.get("/api/schemas", optionalAuth(config), async (c) => {
@@ -265,10 +269,12 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
 
     // Get the resolver
     let resolver: any;
+    let cacheTTL: number | undefined;
     if (typeof field.options === "function") {
       resolver = field.options;
     } else if (field.options && typeof field.options === "object" && "resolve" in field.options) {
       resolver = field.options.resolve;
+      cacheTTL = (field.options as { cacheTTL?: number }).cacheTTL;
     }
 
     if (!resolver) {
@@ -285,11 +291,37 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         raw: c.req.raw,
       };
 
+      // When the resolver opts into caching, key the result by the inputs that
+      // change it: the field, the query params, and the requesting user (so a
+      // user-scoped resolver never serves another user's options).
+      const shouldCache = typeof cacheTTL === "number" && cacheTTL > 0;
+      let cacheKey = "";
+      if (shouldCache) {
+        cacheKey = JSON.stringify([
+          siteId ?? "",
+          colSlug,
+          fieldName,
+          (user as { id?: unknown } | undefined)?.id ?? null,
+          queryParams,
+        ]);
+        const hit = optionsCache.get(cacheKey);
+        if (hit && hit.expires > Date.now()) {
+          return c.json(hit.value);
+        }
+      }
+
       const result = await resolver({
         db,
         user,
         req: reqContext,
       });
+
+      if (shouldCache) {
+        optionsCache.set(cacheKey, {
+          expires: Date.now() + (cacheTTL as number) * 1000,
+          value: result,
+        });
+      }
 
       return c.json(result);
     } catch (err: any) {

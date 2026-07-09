@@ -39,7 +39,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A repeatable list of rows that all share the same `fields`, stored as an array of objects.",
     "signature": "export type ArrayField = TypedField<\"array\", unknown>;",
     "members": []
   },
@@ -202,7 +202,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`.",
     "signature": "export type BlocksField = TypedField<\"blocks\", unknown>;",
     "members": []
   },
@@ -243,7 +243,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A `true`/`false` value, shown to editors as a checkbox or switch.",
     "signature": "export type BooleanField = TypedField<\"boolean\", boolean, BooleanFieldAdmin>;",
     "members": []
   },
@@ -521,7 +521,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A calendar day, stored and returned as an ISO date string.",
     "signature": "export type DateField = TypedField<\"date\", string>;",
     "members": []
   },
@@ -531,7 +531,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A specific instant, stored and returned as an ISO date-time string.",
     "signature": "export type DateTimeField = TypedField<\"datetime\", string>;",
     "members": []
   },
@@ -1257,7 +1257,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.",
     "signature": "export type ImageField = TypedField<\"image\", string | string[]>;",
     "members": []
   },
@@ -1303,7 +1303,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document.",
     "signature": "export type JoinField = TypedField<\"join\", unknown>;",
     "members": []
   },
@@ -1313,7 +1313,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "An arbitrary JSON value. Dyrected stores it as-is and does not validate its shape.",
     "signature": "export type JsonField = TypedField<\"json\", Record<string, unknown>>;",
     "members": []
   },
@@ -1434,7 +1434,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.",
     "signature": "export type MultiSelectField = TypedField<\"multiSelect\", string[], MultiSelectFieldAdmin>;",
     "members": []
   },
@@ -1454,7 +1454,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A numeric value. Optional advisory `min`/`max` guide editors without enforcing server-side validation.",
     "signature": "export type NumberField = TypedField<\"number\", number, NumberFieldAdmin> & NumberLimitFieldConfig;",
     "members": []
   },
@@ -1505,7 +1505,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A group of nested `fields` stored as an embedded object under this field's `name`.",
     "signature": "export type ObjectField = TypedField<\"object\", unknown>;",
     "members": []
   },
@@ -1571,7 +1571,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A single choice shown as radio buttons, stored as the chosen value.",
     "signature": "export type RadioField = TypedField<\"radio\", string, RadioFieldAdmin>;",
     "members": []
   },
@@ -1601,7 +1601,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A reference to one or more documents in another collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.",
     "signature": "export type RelationshipField = TypedField<\"relationship\", string | string[]>;",
     "members": []
   },
@@ -1611,7 +1611,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "Formatted content authored in the admin editor, stored as an HTML string.",
     "signature": "export type RichTextField = TypedField<\"richText\", string> & RichTextFieldConfig;",
     "members": []
   },
@@ -1621,7 +1621,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A layout-only container that arranges its child `fields` horizontally in the admin UI. Stores no value of its own.",
     "signature": "export type RowField = TypedField<\"row\", unknown>;",
     "members": []
   },
@@ -1641,7 +1641,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value.",
     "signature": "export type SelectField = TypedField<\"select\", string, SelectFieldAdmin>;",
     "members": []
   },
@@ -1742,7 +1742,7 @@ export const references: readonly ReferenceEntry[] = [
     "kind": "type",
     "category": "fields",
     "sourcePackage": "@dyrected/core",
-    "description": "",
+    "description": "A local time of day, stored as a string when the date is modeled elsewhere.",
     "signature": "export type TimeField = TypedField<\"time\", string>;",
     "members": []
   },
