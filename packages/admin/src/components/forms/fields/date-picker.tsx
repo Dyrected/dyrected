@@ -45,7 +45,7 @@ function InlinePicker({
           ? "dy-opacity-100 dy-scale-100 dy-pointer-events-auto"
           : "dy-opacity-0 dy-scale-95 dy-pointer-events-none dy-invisible"
       )}
-      aria-hidden={!open}
+      inert={!open ? true : undefined}
     >
       {children}
     </div>
