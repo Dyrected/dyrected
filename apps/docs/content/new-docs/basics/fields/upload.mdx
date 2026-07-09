@@ -13,7 +13,7 @@ defineImageField({
 })
 ```
 
-`relationTo` points at a collection configured with `upload: true`, which is what stores the file and its metadata. When you read the field, the referenced document exposes a resolved `url` alongside details like `filename`, `mimeType`, and image `width` and `height` — consume that `url` directly rather than reconstructing storage paths. See [Storage Adapters](/new-docs/features/upload/storage-adapters) for where the files actually live and how their URLs resolve.
+`relationTo` points at a collection configured with `upload: true`, which is what stores the file and its metadata. When you read the field, the referenced document exposes a resolved `url` alongside details like `filename`, `mimeType`, and image `width` and `height` — consume that `url` directly rather than reconstructing storage paths. On the frontend, the [`DyrectedImage` and `DyrectedMedia` components](/new-docs/managing-data/displaying-content/overview) render an upload value for you. See [Storage Adapters](/new-docs/features/upload/storage-adapters) for where the files actually live and how their URLs resolve.
 
 ## Generated reference
 

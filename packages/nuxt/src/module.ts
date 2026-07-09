@@ -7,6 +7,7 @@ import {
   addImports,
   addServerPlugin,
   addTemplate,
+  installModule,
 } from "@nuxt/kit";
 import { join } from "path";
 import { existsSync } from "fs";
@@ -45,8 +46,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   defaults: {
     apiBase: "/dyrected",
   } as any,
-  setup(options, nuxt) {
+  async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url);
+
+    // Render images through @nuxt/image (<NuxtImg>) so the Dyrected image and
+    // media components get optimization, the way the Next integration uses
+    // next/image. Installed here so <NuxtImg> is always available.
+    await installModule("@nuxt/image");
 
     // Inject admin UI CSS globally. We use createRequire so the path resolves
     // from this module's location (packages/nuxt), where @dyrected/admin is a
@@ -80,6 +86,12 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       filePath: resolver.resolve("./runtime/components/DyrectedMedia.vue"),
     });
 
+    // <DyrectedImage> renders an upload/image value through <NuxtImg>.
+    addComponent({
+      name: "DyrectedImage",
+      filePath: resolver.resolve("./runtime/components/DyrectedImage.vue"),
+    });
+
     addComponent({
       name: "DyrectedAdmin",
       filePath: resolver.resolve("./runtime/components/DyrectedAdmin.vue"),
@@ -99,6 +111,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       name: "DyrectedIcon",
       filePath: "@dyrected/vue",
       export: "DyrectedIcon",
+    });
+
+    // <DyrectedRichText> renders a `richText` field value (an HTML string).
+    addComponent({
+      name: "DyrectedRichText",
+      filePath: "@dyrected/vue",
+      export: "DyrectedRichText",
     });
 
     // 3. Add Composables

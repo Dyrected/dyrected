@@ -3,7 +3,7 @@ title: Icon
 description: A field that stores the name of a Lucide icon as a string.
 ---
 
-The icon field stores the name of a [Lucide](https://lucide.dev) icon as a string, so editors can pick an icon for a menu item, a feature card, or a category. Because the value is just the icon's name, render it on your frontend by resolving that name to a Lucide component — and keep a fallback for names that disappear when you upgrade the icon library.
+The icon field stores the name of a [Lucide](https://lucide.dev) icon as a string, so editors can pick an icon for a menu item, a feature card, or a category. Because the value is just the icon's name, render it on your frontend with the [`DyrectedIcon` component](/new-docs/managing-data/displaying-content/overview), which resolves the name to a Lucide icon and takes a `fallback` for names that disappear when you upgrade the icon library.
 
 ```ts
 defineIconField({ name: 'icon', label: 'Icon' })

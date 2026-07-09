@@ -1,15 +1,15 @@
 ---
 title: Rich Text
-description: A structured rich-text field that stores formatted content as JSON.
+description: A rich-text field that stores formatted content as an HTML string.
 ---
 
-The rich text field stores formatted content — headings, bold, links, lists, tables, and images — as a structured Tiptap/ProseMirror JSON document rather than an HTML string. Reach for it whenever content needs real formatting instead of plain text.
+The rich text field stores formatted content — headings, bold, links, lists, tables, and images — as an HTML string produced by the editor. Reach for it whenever content needs real formatting instead of plain text.
 
 ```ts
 defineRichTextField({ name: 'body', label: 'Body' })
 ```
 
-Because the value is JSON, not HTML, you render it on your frontend from that structured document — walking its nodes and marks and mapping them to your own components, or passing it through a Tiptap/ProseMirror-compatible renderer. Storing structured JSON keeps the content portable: you decide how each heading, link, and block looks at render time.
+On your frontend, render the stored HTML with the [`DyrectedRichText` component](/new-docs/managing-data/displaying-content/overview). Because the value is HTML authored through the admin panel, render content you trust and sanitize it upstream if untrusted users can edit it.
 
 ## Choosing which controls editors get
 
@@ -35,6 +35,6 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 Exported type from @dyrected/core.
 
 ```ts
-export type RichTextField = TypedField<"richText", Record<string, unknown>> & RichTextFieldConfig;
+export type RichTextField = TypedField<"richText", string> & RichTextFieldConfig;
 ```
 {/* GENERATED:REFERENCE-FIELD-RICH-TEXT:END */}

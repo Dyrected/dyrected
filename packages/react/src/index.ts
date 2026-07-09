@@ -6,6 +6,7 @@ export * from './providers/DyPathProvider';
 export * from './components/DyrectedImage';
 export * from './components/DyrectedMedia';
 export * from './components/DyrectedIcon';
+export * from './components/DyrectedRichText';
 export * from './components/Blocks';
 
 // Re-export core types and errors from SDK for convenience

@@ -101,14 +101,14 @@ const _shapeOk: InferredDoc = {
   views: 3, // optional number
   featured: true, // optional boolean
   authors: ["author-1"], // hasMany relationship -> string[]
-  body: { type: "doc" }, // required richText -> Record<string, unknown>
+  body: "<p>hello</p>", // required richText -> HTML string
 };
 
 // @ts-expect-error `title` is required and cannot be omitted
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _requiredEnforced: InferredDoc = {
   views: 1,
-  body: {},
+  body: "<p>hi</p>",
 };
 
 // `defineField` must preserve literals well enough for inference too.

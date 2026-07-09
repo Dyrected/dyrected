@@ -24,7 +24,7 @@ defineBlocksField({
 })
 ```
 
-Each row stores the chosen block's `slug` as `blockType`, so your frontend can map each `blockType` to a component and render the list in order. Keep block `slug` values stable once content exists — renaming a slug orphans the rows already saved under the old name — and have your renderer fall back gracefully when it meets a `blockType` it does not recognize.
+Each row stores the chosen block's `slug` as `blockType`, so your frontend can map each `blockType` to a component and render the list in order — the [`Blocks` component](/new-docs/managing-data/displaying-content/overview) does that mapping for you. Keep block `slug` values stable once content exists — renaming a slug orphans the rows already saved under the old name — and have your renderer fall back gracefully when it meets a `blockType` it does not recognize.
 
 ## Presentation variants
 
