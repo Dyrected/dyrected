@@ -1,9 +1,9 @@
 ---
-title: Checkbox
-description: A boolean true/false toggle.
+title: Boolean
+description: A true/false toggle, shown to editors as a checkbox or switch.
 ---
 
-The checkbox field stores a boolean — `true` or `false`. Use it for on/off flags such as `featured`, `published`, or `acceptsTerms`. The helper is `defineBooleanField` and the stored type is `boolean`; "checkbox" names the default admin control, not the value.
+The boolean field stores `true` or `false`, shown to editors as a checkbox. Use it for on/off flags such as `featured`, `published`, or `acceptsTerms`. The helper is `defineBooleanField`.
 
 ```ts
 defineBooleanField({ name: 'featured', label: 'Featured', defaultValue: false })
@@ -26,7 +26,7 @@ defineBooleanField({
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
 
-{/* GENERATED:REFERENCE-FIELD-CHECKBOX:START */}
+{/* GENERATED:REFERENCE-FIELD-BOOLEAN:START */}
 ## BooleanField
 
 Exported type from @dyrected/core.
@@ -46,4 +46,4 @@ export type BooleanFieldAdmin = {
   layout?: "checkbox" | "switch";
 };
 ```
-{/* GENERATED:REFERENCE-FIELD-CHECKBOX:END */}
+{/* GENERATED:REFERENCE-FIELD-BOOLEAN:END */}

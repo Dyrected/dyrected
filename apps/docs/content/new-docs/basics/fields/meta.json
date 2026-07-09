@@ -4,7 +4,7 @@
     "overview",
     "array",
     "blocks",
-    "checkbox",
+    "boolean",
     "json",
     "date",
     "datetime",
@@ -12,9 +12,9 @@
     "email",
     "url",
     "icon",
-    "group",
+    "object",
     "number",
-    "radio-group",
+    "radio",
     "relationship",
     "rich-text",
     "join",
@@ -24,6 +24,6 @@
     "tabs",
     "text",
     "textarea",
-    "upload"
+    "image"
   ]
 }

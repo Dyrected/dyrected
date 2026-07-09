@@ -9,7 +9,7 @@ These components are presentational: they take a field value as a prop and rende
 
 ## Images and files
 
-An [upload](/new-docs/basics/fields/upload) field, once hydrated, gives you the upload document — its `url`, `width`, `height`, and `mimeType`. `DyrectedImage` renders it as an `<img>` (Next uses `next/image`, Nuxt uses `<NuxtImg>`), filling in dimensions and alt text from the document when you don't pass them:
+An [upload](/new-docs/basics/fields/image) field, once hydrated, gives you the upload document — its `url`, `width`, `height`, and `mimeType`. `DyrectedImage` renders it as an `<img>` (Next uses `next/image`, Nuxt uses `<NuxtImg>`), filling in dimensions and alt text from the document when you don't pass them:
 
 ```tsx
 import { DyrectedImage } from "@dyrected/react"; // or '@dyrected/next'

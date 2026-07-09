@@ -1,9 +1,9 @@
 ---
-title: Upload
+title: Image
 description: A reference to a document in an upload-enabled collection, such as an image or file.
 ---
 
-The upload field references a document in an upload-enabled collection, such as your media library, so editors pick a file instead of pasting a URL. Use it for images, documents, and other files. The helper is `defineImageField`, and the stored value is a reference to the upload document — set `hasMany: true` to reference several.
+The image field references a document in an upload-enabled collection, such as your media library, so editors pick a file instead of pasting a URL. Use it for images, documents, and other files. The helper is `defineImageField`, and the stored value is a reference to the upload document — set `hasMany: true` to reference several.
 
 ```ts
 defineImageField({
@@ -19,7 +19,7 @@ defineImageField({
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
 
-{/* GENERATED:REFERENCE-FIELD-UPLOAD:START */}
+{/* GENERATED:REFERENCE-FIELD-IMAGE:START */}
 ## ImageField
 
 Exported type from @dyrected/core.
@@ -27,4 +27,4 @@ Exported type from @dyrected/core.
 ```ts
 export type ImageField = TypedField<"image", string | string[]>;
 ```
-{/* GENERATED:REFERENCE-FIELD-UPLOAD:END */}
+{/* GENERATED:REFERENCE-FIELD-IMAGE:END */}

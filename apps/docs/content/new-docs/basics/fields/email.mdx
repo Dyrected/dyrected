@@ -12,7 +12,7 @@ defineEmailField({ name: 'contactEmail', label: 'Contact email', required: true 
 The format check is built in, so you don't need extra validation for the common case. Like other text fields, it accepts an advisory `maxLength`.
 
 <Note>
-Authentication collections already include an `email` field that Dyrected injects for you. You can define your own instead, but Dyrected keeps your definition while always overriding its [access `update` rule](/new-docs/basics/access-control/fields) to protect the login flow — and it will not re-add the built-in `unique` constraint. If you redefine `email`, set `unique: true` yourself to avoid duplicate accounts.
+Authentication collections already include an `email` field that Dyrected injects for you. You can define your own instead: Dyrected keeps your definition but always re-asserts the parts the login flow depends on — `required`, `unique`, and its [access `update` rule](/new-docs/basics/access-control/fields) — so a custom `email` field can never accidentally allow duplicate accounts.
 </Note>
 
 ## Generated reference

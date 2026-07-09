@@ -9,7 +9,7 @@ The JSON field stores an arbitrary JSON value — an object, an array, or any ne
 defineJsonField({ name: 'metadata', label: 'Metadata' })
 ```
 
-Treat JSON as an escape hatch. Dyrected does not validate the value against a schema, so nothing guarantees its shape — you own that in your own code. When the structure is known and stable, prefer typed fields instead: a [Group](/new-docs/basics/fields/group) for a fixed set of nested fields, or an [Array](/new-docs/basics/fields/array) for a repeating one. Those give editors real inputs and give you a checked shape; JSON gives you a raw editor and full flexibility.
+Treat JSON as an escape hatch. Dyrected does not validate the value against a schema, so nothing guarantees its shape — you own that in your own code. When the structure is known and stable, prefer typed fields instead: a [Object](/new-docs/basics/fields/object) for a fixed set of nested fields, or an [Array](/new-docs/basics/fields/array) for a repeating one. Those give editors real inputs and give you a checked shape; JSON gives you a raw editor and full flexibility.
 
 ## Generated reference
 

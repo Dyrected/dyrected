@@ -1,0 +1,33 @@
+---
+title: Object
+description: A nested object that groups related fields under a single key.
+---
+
+The object field nests a set of fields under a single key, storing them as an embedded object on the document. Use it to keep related fields together — an address, an SEO block, or a set of dimensions — without creating a separate collection. The helper is `defineObjectField`.
+
+```ts
+defineObjectField({
+  name: 'seo',
+  label: 'SEO',
+  fields: [
+    defineTextField({ name: 'title', label: 'Meta title' }),
+    defineTextareaField({ name: 'description', label: 'Meta description' }),
+  ],
+})
+```
+
+The fields are stored under the object field's `name`, so the example above saves as `{ seo: { title, description } }`. The nested fields behave like any others — they validate, hook, and render the same way — they just live one level down. An object field shares its parent document's lifecycle: it is created, updated, and deleted with the document, never on its own. When the same shape instead repeats, use an [Array](/new-docs/basics/fields/array); when the content should be its own record with its own lifecycle, give it a [Collection](/new-docs/basics/configuration/collections) and point at it with a [Relationship](/new-docs/basics/fields/relationship).
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-OBJECT:START */}
+## ObjectField
+
+Exported type from @dyrected/core.
+
+```ts
+export type ObjectField = TypedField<"object", unknown>;
+```
+{/* GENERATED:REFERENCE-FIELD-OBJECT:END */}

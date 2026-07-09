@@ -44,6 +44,38 @@ defineBlock({
 
 The first variant is the default. Like block slugs, keep variant slugs stable once content is saved.
 
+### Showing a field only for some variants
+
+Sometimes a field only makes sense in one layout — an avatar photo on a testimonial card, but not on a plain pull quote. Because the selected variant lives on the block row under the reserved `variant` key, any sibling field can read it in an `admin.condition`:
+
+```ts
+defineBlock({
+  slug: 'testimonial',
+  labels: { singular: 'Testimonial', plural: 'Testimonials' },
+  variants: [
+    { slug: 'card', label: 'Card' },
+    { slug: 'quote', label: 'Quote' },
+  ],
+  fields: [
+    defineTextField({ name: 'quote', label: 'Quote' }),
+    defineImageField({
+      name: 'avatar',
+      label: 'Avatar',
+      relationTo: 'media',
+      admin: { condition: "variant == 'card'" },
+    }),
+  ],
+})
+```
+
+Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
+
+Hiding a field this way only affects the Admin form, not what is stored. If an editor fills in the avatar, switches to the quote variant, and switches back, the avatar is still there — consistent with the rule that changing variant never loses content.
+
+<Note>
+Block rows written outside the Admin — seed scripts, direct API writes — may omit the `variant` key. That's fine: when the edit form loads, Dyrected fills in the first variant for any row that's missing one, so conditions like the example above see a real value either way.
+</Note>
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.

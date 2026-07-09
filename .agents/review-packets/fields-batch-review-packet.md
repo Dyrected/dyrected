@@ -43,12 +43,22 @@ Per-page detail lives in the sub-batch packets:
 - **O-4 (UrlField type) — FIXED.** Added `UrlLinkValue` interface and widened `UrlField` value to `string | UrlLinkValue` (`schema-core.ts`); registered `UrlLinkValue` in the generator so `url.mdx` now documents the structured shape. core/sdk/admin all build.
 - **Email footgun — FIXED.** `config.ts` enforcement pass now re-asserts `required`/`unique`/`promoted` on a redefined `email` and `required` on `password`, so a custom `email` can never silently drop uniqueness. Regression test added (`config.test.ts`).
 
-## Open factual questions for human review
-- **O-2 (blocking a factual claim):** depth default is inconsistent across source docs (`concepts/depth.mdx` says `1`; `concepts/relationships.mdx` implies `0`). The relationship page deliberately states no numeric default until this is settled in code.
+## Open questions for human review
+
 - **O-3:** confirm `min`/`max` (and `maxLength`) should stay advisory (admin + hint only), not server-validated — current behavior and the consistent choice.
-- **O-1 / O-5:** dynamic options and rich-text rendering have no real `new-docs` page yet; select and rich-text describe them inline. Decide whether dedicated pages are planned so they can link out later.
-- **Email footgun (product, not docs):** a developer-defined `email` on an auth collection silently loses the injected `unique` constraint (`config.ts` enforcement pass only re-applies `access.update`). Consider re-asserting `unique`/`required` or warning. Documented in `email.mdx`.
-- Naming confirmations: `defineTab` signature; "Date and Time"/"Multi-select" titles; "Checkbox"/"Group"/"Upload" page titles vs their `defineBoolean/Object/Image` helpers.
+- **O-5 (remaining half — dynamic options):** `SelectField.options` accepts `DynamicOptionsResolver | DynamicOptionsConfig` (`schema-core.ts:107`), but no `new-docs` page documents dynamic options and `select.mdx` does not mention them. Decide: extend `select.mdx` or add a dedicated page. (The rich-text-rendering half is resolved — `displaying-content/overview` now covers `DyrectedRichText`.)
+- **O-6:** structural fields (`array`, `object`, `row`, `join`) generate only `TypedField<…, unknown>` blocks; enriching them means generator/JSDoc work, not MDX edits. `datetime`/`time` aliases also lack a one-line JSDoc.
+- Naming confirmations: "Date and Time"/"Multi-select" titles; "Checkbox"/"Group"/"Upload" page titles vs their `defineBoolean/Object/Image` helpers.
+- **Release notes/changesets:** the session changed public package behavior — `RichTextField` value type (`Record<string, unknown>` → `string`), `UrlField` value widening, REST depth defaults (2/10/10 → 1), email/password constraint enforcement, new `min`/`max`, `defineTab`, `DyrectedRichText`, Nuxt `@nuxt/image` hard dependency. Confirm which need changesets before release.
+- **Variant condition footgun (product, optional):** block rows written outside the Admin may lack the reserved `variant` key; `admin.condition` sees the raw row, so default-variant conditions miss. Documented with a defensive pattern in `blocks.mdx`; a core/admin backfill of the default variant would remove the footgun.
+
+## Resolved since (no longer open)
+
+- **O-1** — dedicated pages created for `datetime`, `time`, `multiSelect`, `url`, `icon`.
+- **O-2** — depth default settled at `1` in code and docs.
+- **Email footgun** — fixed in `config.ts` (see above); `email.mdx` note updated to describe the re-asserted constraints.
+- **`defineTab` signature** — specified by the product owner.
+- **Displaying-content placement** — owner reorganized to `managing-data/displaying-content/overview.mdx`.
 
 ## Verification run
 - `@dyrected/core` build (DTS) ✅ · `@dyrected/admin` build ✅
