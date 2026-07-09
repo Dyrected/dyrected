@@ -1452,8 +1452,49 @@
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type NumberField = TypedField<\"number\", number>;",
+    "signature": "export type NumberField = TypedField<\"number\", number, NumberFieldAdmin> & NumberLimitFieldConfig;",
     "members": []
+  },
+  {
+    "id": "@dyrected/core:NumberFieldAdmin",
+    "name": "NumberFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type NumberFieldAdmin = NumberLimitFieldAdmin;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:NumberLimitFieldAdmin",
+    "name": "NumberLimitFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type NumberLimitFieldAdmin = {\n  /** Admin-only compatibility alias for `field.min`. Prefer the top-level field property. */\n  min?: number;\n  /** Admin-only compatibility alias for `field.max`. Prefer the top-level field property. */\n  max?: number;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:NumberLimitFieldConfig",
+    "name": "NumberLimitFieldConfig",
+    "kind": "interface",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface NumberLimitFieldConfig {\n  /** Advisory minimum numeric value exposed to editors and client tooling. */\n  min?: number;\n  /** Advisory maximum numeric value exposed to editors and client tooling. */\n  max?: number;\n}",
+    "members": [
+      {
+        "name": "min",
+        "signature": "min?: number",
+        "description": "Advisory minimum numeric value exposed to editors and client tooling."
+      },
+      {
+        "name": "max",
+        "signature": "max?: number",
+        "description": "Advisory maximum numeric value exposed to editors and client tooling."
+      }
+    ]
   },
   {
     "id": "@dyrected/core:ObjectField",

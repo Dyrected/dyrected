@@ -1,0 +1,47 @@
+---
+title: Multi-select
+description: A field for choosing several values from a fixed or dynamic set of options.
+---
+
+The multi-select field stores an array of values chosen from a set of options — think tags, categories, or feature flags where more than one choice applies. It works like [Select](/new-docs/basics/fields/select), but editors can pick many options instead of one, and the stored value is an array.
+
+Provide options as a static list, or generate them on the server or in the admin UI the same way you would for a select. See [Select](/new-docs/basics/fields/select) for the option formats and dynamic-option patterns, which apply here too.
+
+```ts
+defineMultiSelectField({
+  name: 'tags',
+  label: 'Tags',
+  options: [
+    { label: 'News', value: 'news' },
+    { label: 'Tutorial', value: 'tutorial' },
+  ],
+})
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-MULTI-SELECT:START */}
+## MultiSelectField
+
+Exported type from @dyrected/core.
+
+```ts
+export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
+```
+
+
+## MultiSelectFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type MultiSelectFieldAdmin = {
+  hooks?: {
+    /** Client-side option recalculation for dependent multi-select fields. */
+    options?: FieldAdminOptionsHook;
+  };
+};
+```
+{/* GENERATED:REFERENCE-FIELD-MULTI-SELECT:END */}

@@ -1,0 +1,26 @@
+---
+title: Time
+description: A field for a local time of day, used when the date is modeled elsewhere.
+---
+
+The time field stores a local time of day — store opening hours or a daily reminder, say — when the calendar date is handled somewhere else. Editors get a time picker, and values cross the API as strings.
+
+If you also need the date, use [Date and Time](/new-docs/basics/fields/datetime); if only the day matters, use [Date](/new-docs/basics/fields/date).
+
+```ts
+defineTimeField({ name: 'opensAt', label: 'Opens at' })
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-TIME:START */}
+## TimeField
+
+Exported type from @dyrected/core.
+
+```ts
+export type TimeField = TypedField<"time", string>;
+```
+{/* GENERATED:REFERENCE-FIELD-TIME:END */}

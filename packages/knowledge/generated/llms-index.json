@@ -580,6 +580,24 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:NumberFieldAdmin",
+      "name": "NumberFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:NumberLimitFieldAdmin",
+      "name": "NumberLimitFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:NumberLimitFieldConfig",
+      "name": "NumberLimitFieldConfig",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:ObjectField",
       "name": "ObjectField",
       "category": "fields",

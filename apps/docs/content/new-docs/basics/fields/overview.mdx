@@ -43,14 +43,12 @@ Most field types accept a common set of base options:
 
 Each field type has its own page with a focused example and its generated contract:
 
-- Text-like content: [Text](/new-docs/basics/fields/text), [Textarea](/new-docs/basics/fields/textarea), [Email](/new-docs/basics/fields/email), [Rich Text](/new-docs/basics/fields/rich-text)
-- Choices and toggles: [Select](/new-docs/basics/fields/select), [Radio Group](/new-docs/basics/fields/radio-group), [Checkbox](/new-docs/basics/fields/checkbox)
-- Numbers and dates: [Number](/new-docs/basics/fields/number), [Date](/new-docs/basics/fields/date)
+- Text-like content: [Text](/new-docs/basics/fields/text), [Textarea](/new-docs/basics/fields/textarea), [Email](/new-docs/basics/fields/email), [URL](/new-docs/basics/fields/url), [Icon](/new-docs/basics/fields/icon), [Rich Text](/new-docs/basics/fields/rich-text)
+- Choices and toggles: [Select](/new-docs/basics/fields/select), [Multi-select](/new-docs/basics/fields/multi-select), [Radio Group](/new-docs/basics/fields/radio-group), [Checkbox](/new-docs/basics/fields/checkbox)
+- Numbers and dates: [Number](/new-docs/basics/fields/number), [Date](/new-docs/basics/fields/date), [Date and Time](/new-docs/basics/fields/datetime), [Time](/new-docs/basics/fields/time)
 - Structure and nesting: [Group](/new-docs/basics/fields/group), [Array](/new-docs/basics/fields/array), [Blocks](/new-docs/basics/fields/blocks), [Row](/new-docs/basics/fields/row)
 - Relationships and files: [Relationship](/new-docs/basics/fields/relationship), [Upload](/new-docs/basics/fields/upload), [Join](/new-docs/basics/fields/join)
 - Data and layout: [JSON](/new-docs/basics/fields/json)
-
-A few related types don't have their own page yet. `datetime` and `time` are finer-grained relatives of [Date](/new-docs/basics/fields/date) and appear in its reference. `multiSelect` is the multi-value form of [Select](/new-docs/basics/fields/select). And `url` and `icon` cover links and Lucide icon names. Reach for each one the way you would its closest listed relative.
 
 ## Generated reference
 
@@ -335,24 +333,6 @@ export type FieldType =
 ```
 
 
-## IconField
-
-Exported type from @dyrected/core.
-
-```ts
-export type IconField = TypedField<"icon", string, IconFieldAdmin> & CharacterLimitFieldConfig;
-```
-
-
-## IconFieldAdmin
-
-Exported type from @dyrected/core.
-
-```ts
-export type IconFieldAdmin = CharacterLimitFieldAdmin;
-```
-
-
 ## InferDocShape
 
 Exported type from @dyrected/core.
@@ -366,27 +346,37 @@ export type InferDocShape<Fields extends readonly Field[]> = Fields extends read
 ```
 
 
-## MultiSelectField
+## NumberLimitFieldAdmin
 
 Exported type from @dyrected/core.
 
 ```ts
-export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
-```
-
-
-## MultiSelectFieldAdmin
-
-Exported type from @dyrected/core.
-
-```ts
-export type MultiSelectFieldAdmin = {
-  hooks?: {
-    /** Client-side option recalculation for dependent multi-select fields. */
-    options?: FieldAdminOptionsHook;
-  };
+export type NumberLimitFieldAdmin = {
+  /** Admin-only compatibility alias for `field.min`. Prefer the top-level field property. */
+  min?: number;
+  /** Admin-only compatibility alias for `field.max`. Prefer the top-level field property. */
+  max?: number;
 };
 ```
+
+
+## NumberLimitFieldConfig
+
+Exported interface from @dyrected/core.
+
+```ts
+export interface NumberLimitFieldConfig {
+  /** Advisory minimum numeric value exposed to editors and client tooling. */
+  min?: number;
+  /** Advisory maximum numeric value exposed to editors and client tooling. */
+  max?: number;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>min</code> (optional) | Advisory minimum numeric value exposed to editors and client tooling. |
+| <code>max</code> (optional) | Advisory maximum numeric value exposed to editors and client tooling. |
 
 
 ## SystemDocFields
@@ -432,24 +422,6 @@ export type UploadDocFields = {
   blurhash?: string;
   sizes?: Record<string, { filename?: string; url?: string; width?: number; height?: number }>;
 };
-```
-
-
-## UrlField
-
-Exported type from @dyrected/core.
-
-```ts
-export type UrlField = TypedField<"url", string, UrlFieldAdmin> & CharacterLimitFieldConfig;
-```
-
-
-## UrlFieldAdmin
-
-Exported type from @dyrected/core.
-
-```ts
-export type UrlFieldAdmin = CharacterLimitFieldAdmin;
 ```
 
 

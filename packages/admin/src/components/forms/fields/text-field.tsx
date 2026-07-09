@@ -37,7 +37,7 @@ export function TextField({ schema, field, disabled }: TextFieldProps) {
   const inputEl = (() => {
     switch (schema.type) {
       case "number":
-        return <Input type="number" {...field} value={field.value ?? ""} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} />
+        return <Input type="number" {...field} value={field.value ?? ""} placeholder={schema.admin?.placeholder || "0"} disabled={disabled} min={getMin(schema)} max={getMax(schema)} />
       case "email":
         return <Input type="email" {...field} value={field.value ?? ""} placeholder={placeholder} disabled={disabled} maxLength={maxLength} />
       case "url":
@@ -89,4 +89,20 @@ function getMaxWords(schema: TextInputSchema): number | undefined {
   }
 
   return schema.maxWords ?? schema.admin?.maxWords
+}
+
+function getMin(schema: TextInputSchema): number | undefined {
+  if (schema.type !== "number") {
+    return undefined
+  }
+
+  return schema.min ?? schema.admin?.min
+}
+
+function getMax(schema: TextInputSchema): number | undefined {
+  if (schema.type !== "number") {
+    return undefined
+  }
+
+  return schema.max ?? schema.admin?.max
 }

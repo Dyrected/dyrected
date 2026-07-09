@@ -9,7 +9,17 @@ The number field stores a numeric value — integers or decimals. Use it for pri
 defineNumberField({ name: 'price', label: 'Price', required: true })
 ```
 
-Dyrected keeps the number field deliberately small: there are no built-in `min`, `max`, or `step` options. When you need range checks, rounding, or a computed total, add a [collection hook](/new-docs/basics/hooks/overview) that runs on write. Keeping the rule in a hook enforces it on every path, not just the admin form.
+## Guiding entry with a range
+
+Number fields accept advisory `min` and `max` values. The admin editor uses them to bound the number input, nudging editors toward valid values as they type.
+
+```ts
+defineNumberField({ name: 'rating', label: 'Rating', min: 1, max: 5 })
+```
+
+Like the text length limits, `min` and `max` guide the editing experience but do not reject an out-of-range value on their own. When you need a hard rule — a strict range, rounding, or a computed total — add a [hook](/new-docs/basics/hooks/overview) that runs on write, so it applies on every path and not just the admin form.
+
+## Filtering and sorting
 
 If you filter or sort on a number often, mark it `promoted` so it becomes an indexed column. See [Database indexes](/new-docs/basics/database/indexes).
 
@@ -23,6 +33,15 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 Exported type from @dyrected/core.
 
 ```ts
-export type NumberField = TypedField<"number", number>;
+export type NumberField = TypedField<"number", number, NumberFieldAdmin> & NumberLimitFieldConfig;
+```
+
+
+## NumberFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type NumberFieldAdmin = NumberLimitFieldAdmin;
 ```
 {/* GENERATED:REFERENCE-FIELD-NUMBER:END */}

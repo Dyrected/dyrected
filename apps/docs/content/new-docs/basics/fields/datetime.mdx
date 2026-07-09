@@ -1,0 +1,26 @@
+---
+title: Date and Time
+description: A field for a specific instant, stored as an ISO string and shown with a date-and-time picker.
+---
+
+The datetime field stores a specific instant — a moment with both a date and a time — such as a publication time or an appointment slot. Editors get a combined date-and-time picker, and values cross the API as ISO-compatible strings. Since an instant carries no timezone of its own, decide how you want to present it and be explicit about the timezone on your frontend.
+
+Reach for [Date](/new-docs/basics/fields/date) when only the calendar day matters, or [Time](/new-docs/basics/fields/time) when you need a time of day whose date lives elsewhere.
+
+```ts
+defineDateTimeField({ name: 'publishAt', label: 'Publish at' })
+```
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-DATETIME:START */}
+## DateTimeField
+
+Exported type from @dyrected/core.
+
+```ts
+export type DateTimeField = TypedField<"datetime", string>;
+```
+{/* GENERATED:REFERENCE-FIELD-DATETIME:END */}

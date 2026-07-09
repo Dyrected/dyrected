@@ -280,6 +280,13 @@ export interface WordLimitFieldConfig {
   maxWords?: number;
 }
 
+export interface NumberLimitFieldConfig {
+  /** Advisory minimum numeric value exposed to editors and client tooling. */
+  min?: number;
+  /** Advisory maximum numeric value exposed to editors and client tooling. */
+  max?: number;
+}
+
 export type CharacterLimitFieldAdmin = {
   /** Admin-only compatibility alias for `field.maxLength`. Prefer the top-level field property. */
   maxLength?: number;
@@ -290,11 +297,19 @@ export type WordLimitFieldAdmin = {
   maxWords?: number;
 };
 
+export type NumberLimitFieldAdmin = {
+  /** Admin-only compatibility alias for `field.min`. Prefer the top-level field property. */
+  min?: number;
+  /** Admin-only compatibility alias for `field.max`. Prefer the top-level field property. */
+  max?: number;
+};
+
 export type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
 export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
 export type EmailFieldAdmin = CharacterLimitFieldAdmin;
 export type UrlFieldAdmin = CharacterLimitFieldAdmin;
 export type IconFieldAdmin = CharacterLimitFieldAdmin;
+export type NumberFieldAdmin = NumberLimitFieldAdmin;
 
 /**
  * Editor capabilities available on a `richText` field. Each feature maps to a
@@ -351,7 +366,7 @@ export type DateTimeField = TypedField<"datetime", string>;
 export type TimeField = TypedField<"time", string>;
 export type SelectField = TypedField<"select", string, SelectFieldAdmin>;
 export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;
-export type NumberField = TypedField<"number", number>;
+export type NumberField = TypedField<"number", number, NumberFieldAdmin> & NumberLimitFieldConfig;
 export type BooleanField = TypedField<"boolean", boolean, BooleanFieldAdmin>;
 export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
 export type RelationshipField = TypedField<"relationship", string | string[]>;

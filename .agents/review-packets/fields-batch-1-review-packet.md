@@ -136,13 +136,19 @@ Reader knows the email field validates format automatically, and is warned not t
 Definition + when-to-use → example → built-in validation + `maxLength` → `<Note>` auth caveat.
 
 ### 6. Changes made
-Rewrote intro to emphasize built-in validation and editor-supplied use; added the `<Note>` warning against redefining `email`/`password` on auth collections.
+Rewrote intro to emphasize built-in validation and editor-supplied use; added a `<Note>` about defining your own `email` on an auth collection. **Wording corrected after code trace** (see below) — the original "collides" claim was inaccurate.
 
-### 7. Review packet
-- **HIGH-RISK / behavior claim:** "redefining `email`/`password` collides with the built-in auth fields." Verified in `reference/fields.mdx` prose but **not** traced to the collision-handling code path. Confirm the exact behavior (hard error? silently ignored? overrides injected field?) so the wording is precise.
+### 7. Review packet — RESOLVED via code trace
+Traced `packages/core/src/utils/config.ts` `normalizeConfig()` L102-192 (CONFIRMED):
+- Auth injection is skip-if-present (L104, L108): a developer-defined `email`/`password`/`roles` field **wins**; Dyrected does not inject its own, error, warn, or duplicate.
+- An unconditional enforcement pass (L158-189) always overrides `access.update` on any field named `email`/`password`/`roles`, even developer-defined ones.
+- **Footgun:** the injected `email` carries `unique: true`/`required: true`/`promoted: true` (L115-117), but the enforcement pass re-applies only `access.update`, **not** `unique`/`required`. A developer-defined `email` that omits `unique: true` silently lacks the uniqueness constraint. The `<Note>` now warns to set `unique: true`.
 
 ### 8. Status
-`ready-for-sme-review`
+`verified-final` for the auth-caveat sentence (code-traced). Rest of page `ready-for-sme-review`.
+
+### High-risk finding for the product team (not a docs issue)
+Redefining `email` on an auth collection silently drops the `unique` constraint (enforcement pass only clamps `access.update`). Consider having `normalizeConfig` re-assert `unique`/`required` on a developer-defined `email`, or warn. Flagged for `packages/core` owners.
 
 ---
 
