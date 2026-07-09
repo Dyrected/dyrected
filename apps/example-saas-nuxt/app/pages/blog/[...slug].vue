@@ -32,7 +32,7 @@ const author = computed(() => {
 
 const publishedDate = computed(() => {
   const d = blog.value?.publishedDate;
-  return d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "";
+  return d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
 });
 
 // Click-to-edit attrs for top-level fields (no block base path → just the field name).

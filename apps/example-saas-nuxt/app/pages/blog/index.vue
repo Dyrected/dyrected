@@ -14,7 +14,7 @@ function authorName(post: any) {
 
 function formatDate(value?: string) {
   return value
-    ? new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
+    ? new Date(value).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : "";
 }
 
