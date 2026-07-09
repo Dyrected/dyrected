@@ -24,15 +24,22 @@ function buildAddCommand(packageManager: string, deps: string[], dev = false): s
   return `pnpm add ${dev ? "-D " : ""}${joined}`.trim();
 }
 
-async function ensureCloudSyncScripts(cwd: string) {
+function buildExecCommand(packageManager: string, command: string): string {
+  if (packageManager === "npm") return `npx ${command}`;
+  if (packageManager === "yarn") return `yarn exec ${command}`;
+  if (packageManager === "bun") return `bunx ${command}`;
+  return `pnpm exec ${command}`;
+}
+
+async function ensureCloudSyncScripts(cwd: string, packageManager: string) {
   const packageJsonPath = path.join(cwd, "package.json");
   if (!(await fs.pathExists(packageJsonPath))) return;
 
   const pkg = await fs.readJson(packageJsonPath);
   const scripts = { ...(pkg.scripts || {}) } as Record<string, string>;
   const syncScriptName = "dyrected:sync-schema";
-  const syncScriptCommand = "dyrected sync:schema";
-  const buildSyncCommand = "dyrected sync:schema --skip-on-error --skip-types";
+  const syncScriptCommand = buildExecCommand(packageManager, "dyrected sync:schema");
+  const buildSyncCommand = buildExecCommand(packageManager, "dyrected sync:schema --skip-on-error --skip-types");
 
   scripts[syncScriptName] = syncScriptCommand;
   if (scripts.postbuild !== buildSyncCommand && !scripts.postbuild?.includes(buildSyncCommand)) {
@@ -284,7 +291,7 @@ After running init:
         }
 
         if (!isSpa) {
-          await ensureCloudSyncScripts(cwd);
+          await ensureCloudSyncScripts(cwd, packageManager);
         }
 
         // ── 4. .env setup ──────────────────────────────────────────────────────

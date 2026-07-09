@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
-    "dyrected:sync-schema": "dyrected sync:schema",
+    "dyrected:sync-schema": "pnpm exec dyrected sync:schema",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
-    "postbuild": "dyrected sync:schema --skip-on-error --skip-types",
+    "postbuild": "pnpm exec dyrected sync:schema --skip-on-error --skip-types",
     "preview": "nuxt preview",
     "postinstall": "node -e \"if (!process.env.CI) { require('child_process').spawnSync('nuxt', ['prepare'], { stdio: 'inherit', shell: true }); }\""
   },
