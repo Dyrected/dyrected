@@ -3,11 +3,27 @@ title: Rich Text
 description: A structured rich-text field that stores formatted content as JSON.
 ---
 
-The rich text field stores formatted content — headings, bold, links, lists, and embedded blocks — as structured JSON rather than an HTML string. Render it on your frontend with the Dyrected converters. Reach for it whenever content needs real formatting instead of plain text.
+The rich text field stores formatted content — headings, bold, links, lists, tables, and images — as a structured Tiptap/ProseMirror JSON document rather than an HTML string. Reach for it whenever content needs real formatting instead of plain text.
 
 ```ts
 defineRichTextField({ name: 'body', label: 'Body' })
 ```
+
+Because the value is JSON, not HTML, you render it on your frontend with the framework's `RichText` component, which walks the document and outputs the matching markup. Storing structured JSON keeps the content portable — you decide how each mark and node looks at render time.
+
+## Choosing which controls editors get
+
+By default the editor offers its full toolbar. Pass `features` to restrict it to the formatting you want — handy for a lightweight inline field — and `headingLevels` to limit which heading sizes are offered (the default is `[1, 2, 3]`):
+
+```ts
+defineRichTextField({
+  name: 'summary',
+  label: 'Summary',
+  features: ['bold', 'italic', 'link'],
+})
+```
+
+When you enable the `image` feature, editors can insert images from an upload-enabled collection. Set `uploadCollection` to choose which one; it defaults to your first collection configured with `upload: true`.
 
 ## Generated reference
 

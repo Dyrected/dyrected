@@ -16,6 +16,8 @@ defineArrayField({
 })
 ```
 
+Each row is stored as an object, so the field saves as an array like `[{ label, url }, ...]`, in the order editors arrange them. The rows live inside the parent document and share its lifecycle. Reach for a [Collection](/new-docs/basics/configuration/collections) with a [Relationship](/new-docs/basics/fields/relationship) instead when the entries need their own IDs, their own access rules, or to be queried and reused on their own. An array is for content that only makes sense as part of its parent.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.

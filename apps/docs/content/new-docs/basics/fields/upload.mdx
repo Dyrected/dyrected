@@ -3,7 +3,7 @@ title: Upload
 description: A reference to a document in an upload-enabled collection, such as an image or file.
 ---
 
-The upload field references a document in an upload-enabled collection, such as your media library. Use it for images, documents, and other files. The referenced document exposes a resolved `url` you consume directly rather than reconstructing storage paths. See [Storage Adapters](/new-docs/features/upload/storage-adapters) for where those files live.
+The upload field references a document in an upload-enabled collection, such as your media library, so editors pick a file instead of pasting a URL. Use it for images, documents, and other files. The helper is `defineImageField`, and the stored value is a reference to the upload document — set `hasMany: true` to reference several.
 
 ```ts
 defineImageField({
@@ -12,6 +12,8 @@ defineImageField({
   relationTo: 'media',
 })
 ```
+
+`relationTo` points at a collection configured with `upload: true`, which is what stores the file and its metadata. When you read the field, the referenced document exposes a resolved `url` alongside details like `filename`, `mimeType`, and image `width` and `height` — consume that `url` directly rather than reconstructing storage paths. See [Storage Adapters](/new-docs/features/upload/storage-adapters) for where the files actually live and how their URLs resolve.
 
 ## Generated reference
 

@@ -9,6 +9,8 @@ The date field stores a calendar day and shows editors a date picker. Dates cros
 defineDateField({ name: 'publishedAt', label: 'Published at' })
 ```
 
+Dates are often sorted and filtered on — a `publishedAt` you order posts by, for instance. If you query a date field often, mark it `promoted` so it becomes an indexed column. See [Database indexes](/new-docs/basics/database/indexes).
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.

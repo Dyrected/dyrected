@@ -219,6 +219,45 @@ export const defineJoinField = createFieldDefiner("join");
 /** Define a layout-only `row` field. */
 export const defineRowField = createFieldDefiner("row");
 
+/**
+ * Group fields under a named tab in the Admin edit form. Tabs are presentational
+ * only: `defineTab` returns the given fields unchanged except that each one's
+ * `admin.tab` is set to `label`, and the Admin panel renders fields that share a
+ * tab name together under that tab. Spread the result into a collection, global,
+ * or group `fields` array, and add one `defineTab` call per tab. Fields left
+ * without a tab are collected into a leading tab named after the collection.
+ *
+ * ```ts
+ * defineCollection({
+ *   slug: 'pages',
+ *   fields: [
+ *     ...defineTab({
+ *       label: 'Content',
+ *       fields: [
+ *         defineTextField({ name: 'title', required: true }),
+ *         defineRichTextField({ name: 'body' }),
+ *       ],
+ *     }),
+ *     ...defineTab({
+ *       label: 'SEO',
+ *       fields: [defineTextField({ name: 'metaTitle' })],
+ *     }),
+ *   ],
+ * })
+ * ```
+ */
+export function defineTab<const T extends readonly Field[]>(args: {
+  /** Tab name shown in the Admin edit form's tab bar. */
+  label: string;
+  /** Fields to place under this tab; each field's `admin.tab` is set to `label`. */
+  fields: T;
+}): T {
+  return args.fields.map((field) => ({
+    ...field,
+    admin: { ...(field.admin ?? {}), tab: args.label },
+  })) as unknown as T;
+}
+
 export * from "./types/index.js";
 export * from "./utils/config.js";
 export * from "./utils/admin-auth.js";

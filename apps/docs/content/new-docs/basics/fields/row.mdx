@@ -14,6 +14,8 @@ defineRowField({
 })
 ```
 
+Because a row has no `name`, it stores nothing of its own — `firstName` and `lastName` above save straight onto the document, exactly as if the row weren't there. To size the columns, set `admin.width` on each child (for example `'50%'`), and the row lays the fields out to match.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.

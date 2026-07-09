@@ -7,6 +7,7 @@ import {
   defineRelationshipField,
   defineRichTextField,
   defineRowField,
+  defineTab,
   defineBlock,
   defineBlocksField,
   defineCollection,
@@ -21,6 +22,12 @@ describe("define<Type>Field helpers", () => {
       type: "text",
     });
     expect(defineNumberField({ name: "price" })).toEqual({ name: "price", type: "number" });
+    expect(defineNumberField({ name: "rating", min: 1, max: 5 })).toEqual({
+      name: "rating",
+      type: "number",
+      min: 1,
+      max: 5,
+    });
     expect(defineRichTextField({ name: "body", features: ["bold", "italic", "link"] })).toEqual({
       name: "body",
       type: "richText",
@@ -28,6 +35,21 @@ describe("define<Type>Field helpers", () => {
     });
     // layout-only field with no name
     expect(defineRowField({ fields: [] })).toEqual({ type: "row", fields: [] });
+  });
+
+  it("defineTab stamps admin.tab on every field and preserves existing admin options", () => {
+    expect(
+      defineTab({
+        label: "SEO",
+        fields: [
+          defineTextField({ name: "metaTitle" }),
+          defineTextField({ name: "metaDescription", admin: { placeholder: "Summary" } }),
+        ],
+      }),
+    ).toEqual([
+      { name: "metaTitle", type: "text", admin: { tab: "SEO" } },
+      { name: "metaDescription", type: "text", admin: { placeholder: "Summary", tab: "SEO" } },
+    ]);
   });
 
   it("defineField returns the field unchanged (identity)", () => {

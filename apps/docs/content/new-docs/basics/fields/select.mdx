@@ -3,7 +3,7 @@ title: Select
 description: A single choice from a fixed set of options, shown as a dropdown.
 ---
 
-The select field lets editors pick one value from a fixed list of options, shown as a dropdown. Use it for statuses, categories, and other closed sets of choices. For a small set you want visible at a glance, consider a [Radio Group](/new-docs/basics/fields/radio-group).
+The select field lets editors pick one value from a fixed list of options, shown as a dropdown. Use it for statuses, categories, and other closed sets of choices. For a small set you want visible at a glance, use a [Radio Group](/new-docs/basics/fields/radio-group); when editors should pick more than one value, use [Multi-select](/new-docs/basics/fields/multi-select).
 
 ```ts
 defineSelectField({
@@ -13,6 +13,32 @@ defineSelectField({
     { label: 'Draft', value: 'draft' },
     { label: 'Published', value: 'published' },
   ],
+})
+```
+
+## Options
+
+Each option is a `{ label, value }` pair — the `label` is what editors see, the `value` is what gets stored. You can also pass plain strings, which Dyrected expands into options whose label and value are the same.
+
+```ts
+defineSelectField({ name: 'size', label: 'Size', options: ['small', 'medium', 'large'] })
+```
+
+When the choices aren't fixed — they come from the database, or depend on another field — provide `options` as a server-side resolver, or wire an admin hook, instead of a static array. That powers dependent dropdowns, where choosing a country narrows the list of regions.
+
+## Presentation
+
+By default a select renders as a dropdown. To show the options inline as radio buttons without changing the stored value, set `admin.layout`:
+
+```ts
+defineSelectField({
+  name: 'status',
+  label: 'Status',
+  options: [
+    { label: 'Draft', value: 'draft' },
+    { label: 'Published', value: 'published' },
+  ],
+  admin: { layout: 'radio', direction: 'horizontal' },
 })
 ```
 

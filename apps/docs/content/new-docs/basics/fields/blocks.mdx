@@ -24,6 +24,26 @@ defineBlocksField({
 })
 ```
 
+Each row stores the chosen block's `slug` as `blockType`, so your frontend can map each `blockType` to a component and render the list in order. Keep block `slug` values stable once content exists — renaming a slug orphans the rows already saved under the old name — and have your renderer fall back gracefully when it meets a `blockType` it does not recognize.
+
+## Presentation variants
+
+A single block can offer more than one layout through `variants`. Every variant shares the same fields; only the rendered presentation differs. The selected variant is stored under a reserved `variant` key and passed to your component, so editors can switch a testimonial between a card and a quote without losing what they wrote.
+
+```ts
+defineBlock({
+  slug: 'testimonial',
+  labels: { singular: 'Testimonial', plural: 'Testimonials' },
+  variants: [
+    { slug: 'card', label: 'Card' },
+    { slug: 'quote', label: 'Quote' },
+  ],
+  fields: [defineTextField({ name: 'quote', label: 'Quote' })],
+})
+```
+
+The first variant is the default. Like block slugs, keep variant slugs stable once content is saved.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.

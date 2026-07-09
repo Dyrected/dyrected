@@ -14,6 +14,10 @@ defineJoinField({
 })
 ```
 
+`collection` is the collection to pull from, and `on` names the [relationship](/new-docs/basics/fields/relationship) field over there that points back at this document. In the example, each comment has a `post` relationship, and the join gathers every comment whose `post` is the current document. Use `limit` to cap how many related documents come back.
+
+Because a join is virtual, it stores nothing and is read-only in the admin panel — the link is owned entirely by the relationship field on the other collection. It is the natural partner to a [Relationship](/new-docs/basics/fields/relationship): one side stores the reference, the other surfaces it in reverse.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.

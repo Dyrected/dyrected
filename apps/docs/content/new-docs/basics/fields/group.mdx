@@ -3,7 +3,7 @@ title: Group
 description: A nested object that groups related fields under a single key.
 ---
 
-The group field (type `object`) nests a set of fields under a single key, storing them as an embedded object on the document. Use it to keep related fields together — an address, an SEO block, or a set of dimensions — without creating a separate collection. Reach for a [Relationship](/new-docs/basics/fields/relationship) instead when the nested content needs its own lifecycle or reuse.
+The group field (type `object`) nests a set of fields under a single key, storing them as an embedded object on the document. Use it to keep related fields together — an address, an SEO block, or a set of dimensions — without creating a separate collection.
 
 ```ts
 defineObjectField({
@@ -15,6 +15,8 @@ defineObjectField({
   ],
 })
 ```
+
+The fields are stored under the group's `name`, so the example above saves as `{ seo: { title, description } }`. The nested fields behave like any others — they validate, hook, and render the same way — they just live one level down. A group shares its parent document's lifecycle: it is created, updated, and deleted with the document, never on its own. When the same shape instead repeats, use an [Array](/new-docs/basics/fields/array); when the content should be its own record with its own lifecycle, give it a [Collection](/new-docs/basics/configuration/collections) and point at it with a [Relationship](/new-docs/basics/fields/relationship).
 
 ## Generated reference
 

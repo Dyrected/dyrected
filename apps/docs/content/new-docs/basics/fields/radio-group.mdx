@@ -3,7 +3,7 @@ title: Radio Group
 description: A single choice from a small set of options, shown as radio buttons.
 ---
 
-The radio field is like a [Select](/new-docs/basics/fields/select), but it shows every option at once as radio buttons. Use it when the set of choices is small and you want editors to see all options without opening a dropdown.
+The radio field is like a [Select](/new-docs/basics/fields/select), but it shows every option at once as radio buttons instead of a dropdown. Reach for it when the set of choices is small — three or four — and you want editors to see every option without opening a menu. For longer lists, prefer a [Select](/new-docs/basics/fields/select); for a simple on/off choice, use a [Checkbox](/new-docs/basics/fields/checkbox).
 
 ```ts
 defineRadioField({
@@ -13,6 +13,20 @@ defineRadioField({
     { label: 'Standard', value: 'standard' },
     { label: 'Wide', value: 'wide' },
   ],
+})
+```
+
+Options work the same as a [Select](/new-docs/basics/fields/select): `{ label, value }` pairs, or plain strings that stand in for both. Use `admin.direction` to control whether the buttons sit in a row or stack vertically:
+
+```ts
+defineRadioField({
+  name: 'layout',
+  label: 'Layout',
+  options: [
+    { label: 'Standard', value: 'standard' },
+    { label: 'Wide', value: 'wide' },
+  ],
+  admin: { direction: 'vertical' },
 })
 ```
 

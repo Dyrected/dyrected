@@ -3,7 +3,7 @@ title: Relationship
 description: A reference to one or more documents in another collection.
 ---
 
-The relationship field links a document to one or more documents in another collection. Use it for authors on a post, products in an order, or any connection between content types. Set `hasMany: true` for a list of references, and control how deeply related documents are hydrated with [depth](/new-docs/managing-data/sdk-api/depth).
+The relationship field links a document to one or more documents in another collection. Use it for authors on a post, products in an order, or any connection between content types.
 
 ```ts
 defineRelationshipField({
@@ -12,6 +12,23 @@ defineRelationshipField({
   relationTo: 'users',
 })
 ```
+
+`relationTo` names the collection you're linking to. By default the field stores a single reference; set `hasMany: true` to store an ordered list of them:
+
+```ts
+defineRelationshipField({
+  name: 'categories',
+  label: 'Categories',
+  relationTo: 'categories',
+  hasMany: true,
+})
+```
+
+## What the API returns
+
+A relationship stores the related document's ID — a single ID, or an array of IDs when `hasMany` is set. How much of the related document you get back depends on the read depth: at the lowest depth you receive just the IDs, and each step of depth hydrates one more level of related documents in place. Set the depth when you read through the [SDK or REST API](/new-docs/managing-data/sdk-api/overview) so a list view can stay lean while a detail view pulls in what it needs.
+
+To surface the reverse direction — the posts that point at an author, say — without storing the link on both sides, use a [Join](/new-docs/basics/fields/join).
 
 ## Generated reference
 

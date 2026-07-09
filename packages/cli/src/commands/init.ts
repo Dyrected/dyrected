@@ -24,22 +24,50 @@ function buildAddCommand(packageManager: string, deps: string[], dev = false): s
   return `pnpm add ${dev ? "-D " : ""}${joined}`.trim();
 }
 
-function buildExecCommand(packageManager: string, command: string): string {
-  if (packageManager === "npm") return `npx ${command}`;
-  if (packageManager === "yarn") return `yarn exec ${command}`;
-  if (packageManager === "bun") return `bunx ${command}`;
-  return `pnpm exec ${command}`;
+function buildSyncRunnerScript(): string {
+  return `import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const installedCliPath = path.resolve(__dirname, "../node_modules/dyrected/dist/index.js");
+const workspaceCliPath = path.resolve(__dirname, "../../../packages/cli/dist/index.js");
+
+const cliPath = [installedCliPath, workspaceCliPath].find((candidate) => existsSync(candidate));
+
+if (!cliPath) {
+  console.error("[dyrected sync] Could not find the Dyrected CLI build.");
+  process.exit(1);
 }
 
-async function ensureCloudSyncScripts(cwd: string, packageManager: string) {
+const result = spawnSync(process.execPath, [cliPath, "sync:schema", ...process.argv.slice(2)], {
+  cwd: process.cwd(),
+  env: process.env,
+  stdio: "inherit",
+});
+
+if (result.error) {
+  console.error(result.error);
+  process.exit(1);
+}
+
+process.exit(result.status ?? 0);
+`;
+}
+
+async function ensureCloudSyncScripts(cwd: string) {
   const packageJsonPath = path.join(cwd, "package.json");
   if (!(await fs.pathExists(packageJsonPath))) return;
 
   const pkg = await fs.readJson(packageJsonPath);
   const scripts = { ...(pkg.scripts || {}) } as Record<string, string>;
   const syncScriptName = "dyrected:sync-schema";
-  const syncScriptCommand = buildExecCommand(packageManager, "dyrected sync:schema");
-  const buildSyncCommand = buildExecCommand(packageManager, "dyrected sync:schema --skip-on-error --skip-types");
+  const syncRunnerPath = path.join(cwd, "scripts", "run-dyrected-sync.mjs");
+  const syncScriptCommand = "node ./scripts/run-dyrected-sync.mjs";
+  const buildSyncCommand = "node ./scripts/run-dyrected-sync.mjs --skip-on-error --skip-types";
 
   scripts[syncScriptName] = syncScriptCommand;
   if (scripts.postbuild !== buildSyncCommand && !scripts.postbuild?.includes(buildSyncCommand)) {
@@ -50,6 +78,7 @@ async function ensureCloudSyncScripts(cwd: string, packageManager: string) {
 
   pkg.scripts = scripts;
   await fs.writeJson(packageJsonPath, pkg, { spaces: 2 });
+  await fs.outputFile(syncRunnerPath, buildSyncRunnerScript());
   console.log(chalk.green("✔  package.json updated with Dyrected Cloud sync scripts"));
 }
 
@@ -291,7 +320,7 @@ After running init:
         }
 
         if (!isSpa) {
-          await ensureCloudSyncScripts(cwd, packageManager);
+          await ensureCloudSyncScripts(cwd);
         }
 
         // ── 4. .env setup ──────────────────────────────────────────────────────

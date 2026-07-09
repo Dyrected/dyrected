@@ -1,3 +1,54 @@
 ---
 title: Tabs
+description: Organize a long edit form into tabs by grouping fields under a tab label.
 ---
+
+Tabs are a layout tool, not a field type. When fields carry a tab name, Dyrected renders the edit form as a tab bar instead of one long column — a good way to keep a busy collection (content, SEO, settings) organized without changing anything about what you store.
+
+Every field accepts an `admin.tab` name, and the admin panel groups fields that share a tab name onto the same tab. `defineTab` is the ergonomic way to do that across a set of fields at once: give it a label and a list of fields, and it stamps that tab name on each one.
+
+```ts
+import {
+  defineCollection,
+  defineTab,
+  defineTextField,
+  defineTextareaField,
+  defineRichTextField,
+} from '@dyrected/core'
+
+export const Pages = defineCollection({
+  slug: 'pages',
+  fields: [
+    ...defineTab({
+      label: 'Content',
+      fields: [
+        defineTextField({ name: 'title', label: 'Title', required: true }),
+        defineRichTextField({ name: 'body', label: 'Body' }),
+      ],
+    }),
+    ...defineTab({
+      label: 'SEO',
+      fields: [
+        defineTextField({ name: 'metaTitle', label: 'Meta title' }),
+        defineTextareaField({ name: 'metaDescription', label: 'Meta description' }),
+      ],
+    }),
+  ],
+})
+```
+
+`defineTab` returns the same fields with each one's `admin.tab` set to the label, so you spread the result into the `fields` array. Add one `defineTab` call per tab, and the tabs appear in that order.
+
+Because tabs are purely presentational, they change nothing about how your data is stored or returned — `title`, `body`, `metaTitle`, and `metaDescription` all save at the top level of the document, exactly as they would without tabs.
+
+## Fields outside a tab
+
+You don't have to tab every field. Any field without an `admin.tab` is collected into a leading tab named after the collection, so a few shared fields can sit up front while the rest are organized into their own tabs. If no field has a tab name, the form renders as a normal single column.
+
+## Setting the tab directly
+
+`defineTab` is a convenience over the underlying `admin.tab` property. To put a single field on a specific tab, set it inline instead:
+
+```ts
+defineTextField({ name: 'slug', label: 'Slug', admin: { tab: 'Content' } })
+```

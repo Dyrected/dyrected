@@ -3,11 +3,13 @@ title: JSON
 description: A field for arbitrary JSON values.
 ---
 
-The JSON field stores an arbitrary JSON value. Use it for structured data that does not fit the other field types, such as third-party payloads or configuration blobs. Prefer typed fields when you can, because JSON values are not validated against a schema.
+The JSON field stores an arbitrary JSON value — an object, an array, or any nested shape. Reach for it when the data does not fit the other field types: a third-party API payload, a flexible configuration blob, or a value whose shape you don't control.
 
 ```ts
 defineJsonField({ name: 'metadata', label: 'Metadata' })
 ```
+
+Treat JSON as an escape hatch. Dyrected does not validate the value against a schema, so nothing guarantees its shape — you own that in your own code. When the structure is known and stable, prefer typed fields instead: a [Group](/new-docs/basics/fields/group) for a fixed set of nested fields, or an [Array](/new-docs/basics/fields/array) for a repeating one. Those give editors real inputs and give you a checked shape; JSON gives you a raw editor and full flexibility.
 
 ## Generated reference
 

@@ -6,8 +6,6 @@
     "blocks",
     "checkbox",
     "json",
-    "code",
-    "collapsible",
     "date",
     "datetime",
     "time",
@@ -16,7 +14,6 @@
     "icon",
     "group",
     "number",
-    "point",
     "radio-group",
     "relationship",
     "rich-text",
@@ -27,7 +24,6 @@
     "tabs",
     "text",
     "textarea",
-    "ui",
     "upload"
   ]
 }
