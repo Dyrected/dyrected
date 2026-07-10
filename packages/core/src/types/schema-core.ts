@@ -304,12 +304,141 @@ export type NumberLimitFieldAdmin = {
   max?: number;
 };
 
+/**
+ * How a `number` field's value is presented in read-only Admin surfaces (list
+ * cells and read-only inputs). Display only — the stored value is unchanged, and
+ * editing still uses a plain numeric input. Every option is JSON-serializable so
+ * it round-trips through Dyrected Cloud.
+ *
+ * Pass a shorthand string for defaults (`format: "currency"`) or an object to
+ * configure it (`format: { type: "currency", currency: "NGN" }`).
+ */
+export type NumberFormat =
+  /** Shorthand for the matching object form, using that format's defaults. */
+  | "decimal"
+  | "currency"
+  | "percent"
+  | "compact"
+  | "bytes"
+  | "rating"
+  /** Grouped number, e.g. `1234.5` → `1,234.5`. */
+  | {
+      type: "decimal";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      minimumFractionDigits?: number;
+      maximumFractionDigits?: number;
+    }
+  /** Currency amount, e.g. `1234.5` → `$1,234.50`. */
+  | {
+      type: "currency";
+      /** ISO 4217 currency code, e.g. `"USD"`, `"NGN"`, `"EUR"`. Defaults to `"USD"`. */
+      currency?: string;
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      minimumFractionDigits?: number;
+      maximumFractionDigits?: number;
+    }
+  /**
+   * Percentage. By default the stored value is a ratio, so `0.5` → `50%`. Set
+   * `scale: false` when the stored value is already a percentage, so `50` → `50%`.
+   */
+  | {
+      type: "percent";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      /** `false` when the stored number is already scaled to 0–100. Defaults to `true`. */
+      scale?: boolean;
+      minimumFractionDigits?: number;
+      maximumFractionDigits?: number;
+    }
+  /** A measurement unit, e.g. `5` → `5 km` with `unit: "kilometer"`. */
+  | {
+      type: "unit";
+      /** A [sanctioned Intl unit](https://tc39.es/proposal-unified-intl-numberformat/section6/locales-currencies-tz_proposed_out.html#sec-issanctionedsimpleunitidentifier), e.g. `"kilometer"`, `"liter"`, `"celsius"`. */
+      unit: string;
+      unitDisplay?: "short" | "long" | "narrow";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      maximumFractionDigits?: number;
+    }
+  /** Abbreviated large numbers, e.g. `1200` → `1.2K`. */
+  | {
+      type: "compact";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      maximumFractionDigits?: number;
+    }
+  /** A byte count rendered with units, e.g. `1536` → `1.5 KB`. */
+  | {
+      type: "bytes";
+      /** Use 1024-based units (`KiB`, `MiB`) instead of 1000-based (`KB`, `MB`). Defaults to `false`. */
+      binary?: boolean;
+      maximumFractionDigits?: number;
+    }
+  /** A star rating, e.g. `4` → `★★★★☆` with `max: 5`. */
+  | {
+      type: "rating";
+      /** Total number of stars. Defaults to `5`. */
+      max?: number;
+    };
+
+/**
+ * How a `date`, `datetime`, or `time` field's value is presented in read-only
+ * Admin surfaces. Display only and JSON-serializable so it round-trips through
+ * Dyrected Cloud.
+ *
+ * Pass a shorthand string (`format: "relative"`) or an object for finer control
+ * (`format: { type: "date", dateStyle: "long" }`).
+ */
+export type DateFormat =
+  /** Shorthand for the matching object form, using that format's defaults. */
+  | "date"
+  | "datetime"
+  | "time"
+  | "relative"
+  /** Calendar date, e.g. `Jan 5, 2026`. */
+  | {
+      type: "date";
+      dateStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Date and time together, e.g. `Jan 5, 2026, 2:30 PM`. */
+  | {
+      type: "datetime";
+      dateStyle?: "short" | "medium" | "long" | "full";
+      timeStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Time of day, e.g. `2:30 PM`. */
+  | {
+      type: "time";
+      timeStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Relative to now, e.g. `3 days ago`, `in 2 hours`. */
+  | {
+      type: "relative";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    };
+
 export type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
 export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
 export type EmailFieldAdmin = CharacterLimitFieldAdmin;
 export type UrlFieldAdmin = CharacterLimitFieldAdmin;
 export type IconFieldAdmin = CharacterLimitFieldAdmin;
-export type NumberFieldAdmin = NumberLimitFieldAdmin;
+export type NumberFieldAdmin = NumberLimitFieldAdmin & {
+  /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
+  format?: NumberFormat;
+};
+export type DateFieldAdmin = {
+  /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
+  format?: DateFormat;
+};
 
 export interface UrlLinkValue {
   /** Whether the link is a custom URL or a reference to an internal document. */
@@ -375,11 +504,11 @@ export type EmailField = TypedField<"email", string, EmailFieldAdmin> & Characte
 export type UrlField = TypedField<"url", string | UrlLinkValue, UrlFieldAdmin> & CharacterLimitFieldConfig;
 export type IconField = TypedField<"icon", string, IconFieldAdmin> & CharacterLimitFieldConfig;
 /** A calendar day, stored and returned as an ISO date string. */
-export type DateField = TypedField<"date", string>;
+export type DateField = TypedField<"date", string, DateFieldAdmin>;
 /** A specific instant, stored and returned as an ISO date-time string. */
-export type DateTimeField = TypedField<"datetime", string>;
+export type DateTimeField = TypedField<"datetime", string, DateFieldAdmin>;
 /** A local time of day, stored as a string when the date is modeled elsewhere. */
-export type TimeField = TypedField<"time", string>;
+export type TimeField = TypedField<"time", string, DateFieldAdmin>;
 /** A single choice from a fixed or dynamically-resolved set of options, stored as the chosen value. */
 export type SelectField = TypedField<"select", string, SelectFieldAdmin>;
 /** A single choice shown as radio buttons, stored as the chosen value. */

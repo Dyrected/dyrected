@@ -11,16 +11,91 @@ If you also need the date, use [Datetime](/new-docs/basics/fields/datetime); if 
 defineTimeField({ name: 'opensAt', label: 'Opens at' })
 ```
 
+## Formatting how the time displays
+
+By default a time renders in a short style in the admin list. Set `admin.format` with a `timeStyle` when you want more or less detail — for example, to include seconds:
+
+```ts
+defineTimeField({
+  name: 'opensAt',
+  label: 'Opens at',
+  admin: { format: { type: 'time', timeStyle: 'medium' } },
+})
+```
+
+`timeStyle` accepts `'short'`, `'medium'`, `'long'`, or `'full'`. Add a `locale` (a BCP 47 tag like `'en-GB'`) to pin the formatting; leave it off to follow the viewer's browser locale.
+
+Formatting is display-only — the value is still stored and returned as a string, so how the time appears on your site stays up to you.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
 
 {/* GENERATED:REFERENCE-FIELD-TIME:START */}
+## DateFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type DateFieldAdmin = {
+  /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
+  format?: DateFormat;
+};
+```
+
+
+## DateFormat
+
+How a `date`, `datetime`, or `time` field's value is presented in read-only
+Admin surfaces. Display only and JSON-serializable so it round-trips through
+Dyrected Cloud.
+
+Pass a shorthand string (`format: "relative"`) or an object for finer control
+(`format: { type: "date", dateStyle: "long" }`).
+
+```ts
+export type DateFormat =
+  /** Shorthand for the matching object form, using that format's defaults. */
+  | "date"
+  | "datetime"
+  | "time"
+  | "relative"
+  /** Calendar date, e.g. `Jan 5, 2026`. */
+  | {
+      type: "date";
+      dateStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Date and time together, e.g. `Jan 5, 2026, 2:30 PM`. */
+  | {
+      type: "datetime";
+      dateStyle?: "short" | "medium" | "long" | "full";
+      timeStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Time of day, e.g. `2:30 PM`. */
+  | {
+      type: "time";
+      timeStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Relative to now, e.g. `3 days ago`, `in 2 hours`. */
+  | {
+      type: "relative";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    };
+```
+
+
 ## TimeField
 
 A local time of day, stored as a string when the date is modeled elsewhere.
 
 ```ts
-export type TimeField = TypedField<"time", string>;
+export type TimeField = TypedField<"time", string, DateFieldAdmin>;
 ```
 {/* GENERATED:REFERENCE-FIELD-TIME:END */}

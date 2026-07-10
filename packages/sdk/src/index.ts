@@ -150,7 +150,11 @@ export interface DyrectedClientConfig {
   siteId?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
-  /** Default depth for relationship population. Applied to every request unless overridden per-call. */
+  /**
+   * Default relationship population depth applied to document reads
+   * (`find`, `findOne`, `global().get()`, and media listing) when a call
+   * does not pass its own `depth`. Defaults to `1`.
+   */
   defaultDepth?: number;
 }
 
@@ -224,6 +228,14 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
     return this.baseUrl;
   }
 
+  /**
+   * Inject the client's configured `defaultDepth` when a read did not specify
+   * its own `depth`. A per-call `depth` (including `0`) always wins.
+   */
+  private applyDefaultDepth(args: Record<string, unknown>): Record<string, unknown> {
+    return args.depth === undefined ? { ...args, depth: this.defaultDepth } : args;
+  }
+
   async getSchemas(): Promise<SchemaResponse> {
     return this.request("/api/schemas");
   }
@@ -289,7 +301,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
       normalizedArgs.where = JSON.stringify(queryArgs.where);
     }
 
-    const query = stringifyQuery(normalizedArgs, { addQueryPrefix: true });
+    const query = stringifyQuery(this.applyDefaultDepth(normalizedArgs), { addQueryPrefix: true });
     const res = (await this.request(`/api/collections/${collection}${query}`)) as PaginatedResult<
       TSchema["collections"][K]
     >;
@@ -329,7 +341,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
           if (args.sort) qb.sort(args.sort);
           if (args.limit) qb.limit(args.limit);
           if (args.page) qb.page(args.page);
-          if (args.depth) qb.depth(args.depth);
+          if (args.depth !== undefined) qb.depth(args.depth);
           if (args.initialData) qb.seed(args.initialData);
         }
         return qb;
@@ -482,7 +494,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
     args: { depth?: number; initialData?: T } = {},
   ): Promise<T> {
     const { initialData, ...queryArgs } = args;
-    const query = stringifyQuery(queryArgs, { addQueryPrefix: true });
+    const query = stringifyQuery(this.applyDefaultDepth(queryArgs), { addQueryPrefix: true });
 
     try {
       return await this.request(`/api/collections/${collection}/${id}${query}`);
@@ -598,7 +610,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
 
   async getGlobal<T = UnknownRecord>(slug: string, args: { depth?: number; initialData?: T } = {}): Promise<T> {
     const { initialData, ...queryArgs } = args;
-    const query = stringifyQuery(queryArgs, { addQueryPrefix: true });
+    const query = stringifyQuery(this.applyDefaultDepth(queryArgs), { addQueryPrefix: true });
 
     try {
       const res = await this.request(`/api/globals/${slug}${query}`);
@@ -632,7 +644,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
   }
 
   async listMedia(args: QueryArgs<Media> = {}, collection: string = "media"): Promise<PaginatedResult<Media>> {
-    const query = stringifyQuery(normalizeQueryArgs(args), { addQueryPrefix: true });
+    const query = stringifyQuery(this.applyDefaultDepth(normalizeQueryArgs(args)), { addQueryPrefix: true });
     return this.request<PaginatedResult<Media>>(`/api/collections/${collection}${query}`);
   }
 

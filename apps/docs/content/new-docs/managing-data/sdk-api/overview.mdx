@@ -20,7 +20,7 @@ const client = createClient<Schema>({
   apiKey: process.env.DYRECTED_API_KEY,
 })
 
-const posts = await client.collection('posts').find({
+const { docs: posts } = await client.collection('posts').find({
   where: { status: { equals: 'published' } },
   sort: '-createdAt',
   depth: 1,
@@ -152,7 +152,11 @@ export interface DyrectedClientConfig {
   siteId?: string;
   headers?: Record<string, string>;
   fetch?: typeof fetch;
-  /** Default depth for relationship population. Applied to every request unless overridden per-call. */
+  /**
+   * Default relationship population depth applied to document reads
+   * (`find`, `findOne`, `global().get()`, and media listing) when a call
+   * does not pass its own `depth`. Defaults to `1`.
+   */
   defaultDepth?: number;
 }
 ```
@@ -164,7 +168,7 @@ export interface DyrectedClientConfig {
 | <code>siteId</code> (optional) |  |
 | <code>headers</code> (optional) |  |
 | <code>fetch</code> (optional) |  |
-| <code>defaultDepth</code> (optional) | Default depth for relationship population. Applied to every request unless overridden per-call. |
+| <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
 
 
 ## DyrectedError

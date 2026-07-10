@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Badge } from "./badge"
-import { Calendar } from "lucide-react"
+import { Calendar, Star } from "lucide-react"
 import { getMediaUrl } from "../../lib/utils"
+import { formatDate, formatNumber, getRatingSpec } from "../../lib/format"
 
 interface RenderCellProps {
   value: any
@@ -18,13 +19,38 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     return <Badge variant={value ? "default" : "secondary"}>{value ? "Yes" : "No"}</Badge>
   }
 
-  // Handle Date
-  if (field.type === "date") {
-    const date = new Date(value)
+  // Handle Number (with optional admin.format: currency, percent, rating, etc.)
+  if (field.type === "number") {
+    const rating = getRatingSpec(value, field.admin?.format)
+    if (rating) {
+      return (
+        <div className="dy-flex dy-items-center dy-gap-0.5" title={`${rating.value} / ${rating.max}`}>
+          {Array.from({ length: rating.max }, (_, i) => (
+            <Star
+              key={i}
+              className={
+                i < Math.round(rating.value)
+                  ? "dy-h-3.5 dy-w-3.5 dy-fill-amber-400 dy-text-amber-400"
+                  : "dy-h-3.5 dy-w-3.5 dy-text-muted-foreground/30"
+              }
+            />
+          ))}
+        </div>
+      )
+    }
+    return (
+      <span className="dy-text-sm dy-font-medium dy-tabular-nums">
+        {formatNumber(value, field.admin?.format)}
+      </span>
+    )
+  }
+
+  // Handle Date / DateTime / Time (with optional admin.format)
+  if (field.type === "date" || field.type === "datetime" || field.type === "time") {
     return (
       <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-muted-foreground">
         <Calendar className="dy-h-3 dy-w-3" />
-        <span className="dy-text-xs">{date.toLocaleDateString()}</span>
+        <span className="dy-text-xs">{formatDate(value, field.admin?.format, field.type)}</span>
       </div>
     )
   }
@@ -81,7 +107,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
   // Handle Generic Object (Summary)
   if (typeof value === "object" && !Array.isArray(value)) {
     const entries = Object.entries(value)
-      .filter(([_, v]) => typeof v !== 'object' && v !== null && v !== undefined)
+      .filter(([, v]) => typeof v !== 'object' && v !== null && v !== undefined)
       .slice(0, 3)
     
     if (entries.length > 0) {

@@ -48,4 +48,51 @@ describe('DyrectedClient', () => {
     const [url] = mockFetch.mock.calls[0];
     expect(url).toContain('depth=5');
   });
+
+  it('applies configured defaultDepth when a read omits depth', async () => {
+    const customClient = new DyrectedClient({
+      baseUrl: 'http://api.test',
+      fetch: mockFetch as any,
+      defaultDepth: 2,
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ docs: [], total: 0 }),
+    });
+
+    await customClient.find('posts');
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('depth=2');
+  });
+
+  it('defaults depth to 1 when neither a call nor config sets it', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ docs: [], total: 0 }),
+    });
+
+    await client.find('posts');
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('depth=1');
+  });
+
+  it('lets a per-call depth of 0 override defaultDepth', async () => {
+    const customClient = new DyrectedClient({
+      baseUrl: 'http://api.test',
+      fetch: mockFetch as any,
+      defaultDepth: 2,
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ docs: [], total: 0 }),
+    });
+
+    await customClient.find('posts', { depth: 0 });
+
+    const [url] = mockFetch.mock.calls[0];
+    expect(url).toContain('depth=0');
+    expect(url).not.toContain('depth=2');
+  });
 });

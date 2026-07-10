@@ -286,6 +286,18 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:DateFieldAdmin",
+      "name": "DateFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DateFormat",
+      "name": "DateFormat",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:DateTimeField",
       "name": "DateTimeField",
       "category": "fields",
@@ -582,6 +594,12 @@
     {
       "id": "@dyrected/core:NumberFieldAdmin",
       "name": "NumberFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:NumberFormat",
+      "name": "NumberFormat",
       "category": "fields",
       "sourcePackage": "@dyrected/core"
     },

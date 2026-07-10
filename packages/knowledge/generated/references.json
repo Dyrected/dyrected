@@ -519,7 +519,27 @@
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "A calendar day, stored and returned as an ISO date string.",
-    "signature": "export type DateField = TypedField<\"date\", string>;",
+    "signature": "export type DateField = TypedField<\"date\", string, DateFieldAdmin>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DateFieldAdmin",
+    "name": "DateFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type DateFieldAdmin = {\n  /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */\n  format?: DateFormat;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:DateFormat",
+    "name": "DateFormat",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "How a `date`, `datetime`, or `time` field's value is presented in read-only\nAdmin surfaces. Display only and JSON-serializable so it round-trips through\nDyrected Cloud.\n\nPass a shorthand string (`format: \"relative\"`) or an object for finer control\n(`format: { type: \"date\", dateStyle: \"long\" }`).",
+    "signature": "export type DateFormat =\n  /** Shorthand for the matching object form, using that format's defaults. */\n  | \"date\"\n  | \"datetime\"\n  | \"time\"\n  | \"relative\"\n  /** Calendar date, e.g. `Jan 5, 2026`. */\n  | {\n      type: \"date\";\n      dateStyle?: \"short\" | \"medium\" | \"long\" | \"full\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n    }\n  /** Date and time together, e.g. `Jan 5, 2026, 2:30 PM`. */\n  | {\n      type: \"datetime\";\n      dateStyle?: \"short\" | \"medium\" | \"long\" | \"full\";\n      timeStyle?: \"short\" | \"medium\" | \"long\" | \"full\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n    }\n  /** Time of day, e.g. `2:30 PM`. */\n  | {\n      type: \"time\";\n      timeStyle?: \"short\" | \"medium\" | \"long\" | \"full\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n    }\n  /** Relative to now, e.g. `3 days ago`, `in 2 hours`. */\n  | {\n      type: \"relative\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n    };",
     "members": []
   },
   {
@@ -529,7 +549,7 @@
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "A specific instant, stored and returned as an ISO date-time string.",
-    "signature": "export type DateTimeField = TypedField<\"datetime\", string>;",
+    "signature": "export type DateTimeField = TypedField<\"datetime\", string, DateFieldAdmin>;",
     "members": []
   },
   {
@@ -1462,7 +1482,17 @@
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type NumberFieldAdmin = NumberLimitFieldAdmin;",
+    "signature": "export type NumberFieldAdmin = NumberLimitFieldAdmin & {\n  /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */\n  format?: NumberFormat;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:NumberFormat",
+    "name": "NumberFormat",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "How a `number` field's value is presented in read-only Admin surfaces (list\ncells and read-only inputs). Display only — the stored value is unchanged, and\nediting still uses a plain numeric input. Every option is JSON-serializable so\nit round-trips through Dyrected Cloud.\n\nPass a shorthand string for defaults (`format: \"currency\"`) or an object to\nconfigure it (`format: { type: \"currency\", currency: \"NGN\" }`).",
+    "signature": "export type NumberFormat =\n  /** Shorthand for the matching object form, using that format's defaults. */\n  | \"decimal\"\n  | \"currency\"\n  | \"percent\"\n  | \"compact\"\n  | \"bytes\"\n  | \"rating\"\n  /** Grouped number, e.g. `1234.5` → `1,234.5`. */\n  | {\n      type: \"decimal\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n      minimumFractionDigits?: number;\n      maximumFractionDigits?: number;\n    }\n  /** Currency amount, e.g. `1234.5` → `$1,234.50`. */\n  | {\n      type: \"currency\";\n      /** ISO 4217 currency code, e.g. `\"USD\"`, `\"NGN\"`, `\"EUR\"`. Defaults to `\"USD\"`. */\n      currency?: string;\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n      minimumFractionDigits?: number;\n      maximumFractionDigits?: number;\n    }\n  /**\n   * Percentage. By default the stored value is a ratio, so `0.5` → `50%`. Set\n   * `scale: false` when the stored value is already a percentage, so `50` → `50%`.\n   */\n  | {\n      type: \"percent\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n      /** `false` when the stored number is already scaled to 0–100. Defaults to `true`. */\n      scale?: boolean;\n      minimumFractionDigits?: number;\n      maximumFractionDigits?: number;\n    }\n  /** A measurement unit, e.g. `5` → `5 km` with `unit: \"kilometer\"`. */\n  | {\n      type: \"unit\";\n      /** A [sanctioned Intl unit](https://tc39.es/proposal-unified-intl-numberformat/section6/locales-currencies-tz_proposed_out.html#sec-issanctionedsimpleunitidentifier), e.g. `\"kilometer\"`, `\"liter\"`, `\"celsius\"`. */\n      unit: string;\n      unitDisplay?: \"short\" | \"long\" | \"narrow\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n      maximumFractionDigits?: number;\n    }\n  /** Abbreviated large numbers, e.g. `1200` → `1.2K`. */\n  | {\n      type: \"compact\";\n      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */\n      locale?: string;\n      maximumFractionDigits?: number;\n    }\n  /** A byte count rendered with units, e.g. `1536` → `1.5 KB`. */\n  | {\n      type: \"bytes\";\n      /** Use 1024-based units (`KiB`, `MiB`) instead of 1000-based (`KB`, `MB`). Defaults to `false`. */\n      binary?: boolean;\n      maximumFractionDigits?: number;\n    }\n  /** A star rating, e.g. `4` → `★★★★☆` with `max: 5`. */\n  | {\n      type: \"rating\";\n      /** Total number of stars. Defaults to `5`. */\n      max?: number;\n    };",
     "members": []
   },
   {
@@ -1740,7 +1770,7 @@
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "A local time of day, stored as a string when the date is modeled elsewhere.",
-    "signature": "export type TimeField = TypedField<\"time\", string>;",
+    "signature": "export type TimeField = TypedField<\"time\", string, DateFieldAdmin>;",
     "members": []
   },
   {
@@ -2341,7 +2371,7 @@
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "",
-    "signature": "export interface DyrectedClientConfig {\n  baseUrl: string;\n  apiKey?: string;\n  siteId?: string;\n  headers?: Record<string, string>;\n  fetch?: typeof fetch;\n  /** Default depth for relationship population. Applied to every request unless overridden per-call. */\n  defaultDepth?: number;\n}",
+    "signature": "export interface DyrectedClientConfig {\n  baseUrl: string;\n  apiKey?: string;\n  siteId?: string;\n  headers?: Record<string, string>;\n  fetch?: typeof fetch;\n  /**\n   * Default relationship population depth applied to document reads\n   * (`find`, `findOne`, `global().get()`, and media listing) when a call\n   * does not pass its own `depth`. Defaults to `1`.\n   */\n  defaultDepth?: number;\n}",
     "members": [
       {
         "name": "baseUrl",
@@ -2371,7 +2401,7 @@
       {
         "name": "defaultDepth",
         "signature": "defaultDepth?: number",
-        "description": "Default depth for relationship population. Applied to every request unless overridden per-call."
+        "description": "Default relationship population depth applied to document reads\n(`find`, `findOne`, `global().get()`, and media listing) when a call\ndoes not pass its own `depth`. Defaults to `1`."
       }
     ]
   },

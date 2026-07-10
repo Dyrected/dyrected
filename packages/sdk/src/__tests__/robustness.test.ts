@@ -50,8 +50,8 @@ describe("SDK Robustness", () => {
 
     await customClient.collection("posts").find({
       where: {
-        or: [{ status: { equals: "published" } }, { featured: { equals: true } }],
-        and: [{ price: { greater_than: 0 } }, { price: { less_than: 100 } }],
+        OR: [{ status: { equals: "published" } }, { featured: { equals: true } }],
+        AND: [{ price: { gt: 0 } }, { price: { lt: 100 } }],
       },
     });
 
@@ -59,9 +59,9 @@ describe("SDK Robustness", () => {
     const url = new URL(lastCall);
     const where = JSON.parse(url.searchParams.get("where") || "{}");
 
-    expect(where.or).toBeDefined();
-    expect(where.and).toBeDefined();
-    expect(where.or[0].status.equals).toBe("published");
+    expect(where.OR).toBeDefined();
+    expect(where.AND).toBeDefined();
+    expect(where.OR[0].status.equals).toBe("published");
   });
 
   it("survives malformed JSON responses gracefully", async () => {

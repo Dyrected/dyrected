@@ -1,5 +1,7 @@
+import { Star } from "lucide-react"
 import { Input } from "../../ui/input"
 import type { EmailField, IconField, NumberField, TextField as TextFieldSchema, UrlField } from "@dyrected/core"
+import { formatNumber, getRatingSpec } from "../../../lib/format"
 
 type CharacterLimitedFieldSchema = TextFieldSchema | EmailField | UrlField | IconField
 type TextInputSchema = CharacterLimitedFieldSchema | NumberField
@@ -48,6 +50,32 @@ export function TextField({ schema, field, disabled }: TextFieldProps) {
       }
     }
   })()
+
+  const numberFormat = schema.type === "number" ? schema.admin?.format : undefined
+  if (numberFormat && field.value !== null && field.value !== undefined && field.value !== "") {
+    const rating = getRatingSpec(field.value, numberFormat)
+    return (
+      <div className="dy-space-y-1">
+        {inputEl}
+        {rating ? (
+          <div className="dy-flex dy-items-center dy-gap-0.5" title={`${rating.value} / ${rating.max}`}>
+            {Array.from({ length: rating.max }, (_, i) => (
+              <Star
+                key={i}
+                className={
+                  i < Math.round(rating.value)
+                    ? "dy-h-4 dy-w-4 dy-fill-amber-400 dy-text-amber-400"
+                    : "dy-h-4 dy-w-4 dy-text-muted-foreground/30"
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <span className="dy-text-xs dy-text-muted-foreground">{formatNumber(field.value, numberFormat)}</span>
+        )}
+      </div>
+    )
+  }
 
   const hasMaxLength = maxLength && typeof maxLength === "number"
   const hasMaxWords = maxWords && typeof maxWords === "number"
