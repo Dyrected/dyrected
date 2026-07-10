@@ -1,11 +1,12 @@
 {
   "title": "Vue.js Quick Start",
   "pages": [
-    "setting-up-your-cloud-site",
+    "overview",
     "installing-dyrected",
     "defining-a-schema",
-    "setting-up-initial-data",
+    "creating-your-first-content",
     "displaying-content-in-vuejs",
-    "inviting-editors"
+    "adding-a-visual-editor-in-vuejs",
+    "building-landing-pages-for-marketing"
   ]
 }

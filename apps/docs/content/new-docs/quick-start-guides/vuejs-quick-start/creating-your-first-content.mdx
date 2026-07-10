@@ -1,0 +1,119 @@
+---
+title: Creating Your First Content
+description: Create the first page and shared records in Dyrected Cloud so your Vue app can render real content instead of wiring against an empty CMS.
+---
+
+Use this page when the first content model is already clear and you want your Vue app to fetch something real before you wire deeper rendering logic.
+
+By the end, you should have one routable page, one or two shared records, and a non-empty Cloud project that the frontend can safely read from.
+
+In the SPA quick-start flow, this step comes after the local schema has already been written and synced. The practical move now is to create the real starter content in Dyrected Cloud so the frontend can render something concrete.
+
+## Why this step matters
+
+An empty CMS makes frontend work harder than it needs to be.
+
+If you wire the app before there is any real content:
+
+- every route needs placeholder logic
+- preview has nothing useful to open
+- editors see a blank admin instead of a working example
+
+The safer path is to create a small amount of real content first.
+
+## Start with the smallest useful content set
+
+The recommended first set is:
+
+- one home page
+- one navigation record
+- one settings record
+
+That is enough to prove all three major paths:
+
+- the admin can edit content
+- the frontend can fetch content
+- the app can render something real before you optimize anything else
+
+<Steps>
+<Step>
+### Create the first page
+
+Start with one page in the `pages` content type.
+
+The goal is not a perfect content library. The goal is one real document the frontend can fetch by `slug`.
+
+A good first page usually includes:
+
+- `title`
+- `slug`
+- `content`
+- `featuredImage`
+
+</Step>
+<Step>
+### Create the shared site records
+
+Next, add the one-off shared records the app will likely need on more than one route.
+
+For most quick starts, that means:
+
+- `navigation`
+- `settings`
+
+These are usually better as globals because there should only be one of each.
+
+</Step>
+<Step>
+### Make the first content visibly real
+
+Do not use throwaway filler if you can avoid it.
+
+Use content that makes the frontend test meaningful:
+
+- a recognisable page title
+- navigation labels you can spot immediately
+- one or two settings values the app will actually show
+
+This makes it easier to tell whether the app is still rendering hardcoded content by accident.
+
+</Step>
+<Step>
+### Keep the first pass small
+
+Do not try to populate every page and every content type yet.
+
+The quick-start goal is smaller:
+
+- one page that can be fetched
+- one shared menu
+- one shared settings record
+
+Once the frontend reads those correctly, you can widen the content surface with confidence.
+
+</Step>
+</Steps>
+
+## Recommended path
+
+Create content in this order:
+
+1. one page with a stable `slug`
+2. one shared navigation record
+3. one shared settings record
+
+That is enough to make the next rendering step concrete instead of hypothetical.
+
+## Escape hatches
+
+If you need the deeper content-model background, go back to [Defining a Schema](/new-docs/quick-start-guides/vuejs-quick-start/defining-a-schema) and then use the broader [Collections](/new-docs/basics/configuration/collections) and [Globals](/new-docs/basics/configuration/globals) references.
+
+## Success check
+
+You are ready for the next step when:
+
+- Dyrected Cloud has at least one routable page
+- the app has one or more shared records it can read
+- you can point to one real piece of content the frontend should render next
+
+Once that is true, continue to [Displaying Content in Vue](/new-docs/quick-start-guides/vuejs-quick-start/displaying-content-in-vuejs).

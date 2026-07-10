@@ -89,10 +89,14 @@ export function buildViteEnvTemplate(): string {
   return (
     [
       `# Dyrected CMS — Environment Variables`,
-      `# Connect to Dyrected Cloud or a self-hosted instance`,
-      `VITE_DYRECTED_URL=https://cloud.dyrected.cloud`,
-      `VITE_DYRECTED_API_KEY=sk_live_...`,
-      `VITE_DYRECTED_SITE_ID=site_...`,
+      `# Connect this SPA to an existing Dyrected Cloud site`,
+      `DYRECTED_URL=https://cloud.dyrected.com`,
+      `DYRECTED_API_KEY=`,
+      `DYRECTED_SITE_ID=`,
+      ``,
+      `VITE_DYRECTED_URL=https://cloud.dyrected.com`,
+      `VITE_DYRECTED_API_KEY=`,
+      `VITE_DYRECTED_SITE_ID=`,
     ].join("\n") + "\n"
   );
 }

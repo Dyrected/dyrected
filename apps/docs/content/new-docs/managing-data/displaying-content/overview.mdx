@@ -3,7 +3,7 @@ title: Overview
 description: Render the content you fetch with Dyrected's framework components for React, Vue, Next, and Nuxt.
 ---
 
-Once you've [fetched a document](/new-docs/managing-data/sdk-api/overview), you need to render its fields. Most fields are plain values you output directly, but a few — images, icons, and block layouts — have a shape worth a small helper. Dyrected ships those helpers for React, Vue, Next, and Nuxt so you don't hand-roll an `<img>` for every upload or a `switch` for every block type.
+Once you've [fetched a document](/new-docs/managing-data/sdk-api/overview), you need to render its fields. Most fields are plain values you output directly, but a few — images, icons, rich text, and block layouts — have a shape worth a small helper. Dyrected ships those helpers for React, Vue, Next, and Nuxt so you don't hand-roll an `<img>` for every upload or a `switch` for every block type.
 
 These components are presentational: they take a field value as a prop and render it. They don't need a provider or a network call, so you can drop them anywhere you already have the data.
 
@@ -36,6 +36,18 @@ import { DyrectedIcon } from "@dyrected/react";
 
 <DyrectedIcon name={feature.icon} fallback="Circle" className="w-6 h-6" />;
 ```
+
+## Rich text
+
+A [rich text](/new-docs/basics/fields/rich-text) field stores an HTML string produced by the editor. `DyrectedRichText` renders it inside a wrapper you can style:
+
+```tsx
+import { DyrectedRichText } from "@dyrected/react"; // or '@dyrected/next'
+
+<DyrectedRichText content={post.body} className="prose" />;
+```
+
+Because the value is HTML authored through the admin panel, render content you trust — and sanitize it upstream if untrusted users can edit it.
 
 ## Blocks
 
@@ -73,15 +85,3 @@ In Vue you import from `@dyrected/vue`. In Nuxt, these are all auto-imported (wi
   <DyrectedBlocks :items="page.body" :components="{ hero: Hero }" />
 </template>
 ```
-
-## Rich text
-
-A [rich text](/new-docs/basics/fields/rich-text) field stores an HTML string produced by the editor. `DyrectedRichText` renders it inside a wrapper you can style:
-
-```tsx
-import { DyrectedRichText } from "@dyrected/react"; // or '@dyrected/next'
-
-<DyrectedRichText content={post.body} className="prose" />;
-```
-
-Because the value is HTML authored through the admin panel, render content you trust — and sanitize it upstream if untrusted users can edit it.

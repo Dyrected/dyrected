@@ -292,7 +292,8 @@ After running init:
         const devDeps: string[] = [];
         if (isSpa) {
           const frameworkPkg = framework === "react" ? "@dyrected/react" : "@dyrected/vue";
-          deps = frameworkPkg;
+          deps = ["@dyrected/core", frameworkPkg].join(" ");
+          devDeps.push("dyrected");
         } else {
           const frameworkPkg = framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
           const fullStackDeps = ["@dyrected/core", frameworkPkg];
@@ -319,8 +320,8 @@ After running init:
           console.log("");
         }
 
-        // ── 2. Write dyrected.config.ts (full-stack only) ─────────────────────
-        if (!isSpa) {
+        // ── 2. Write dyrected.config.ts ───────────────────────────────────────
+        if (!isSpa || backend === "cloud") {
           const configContent =
             backend === "self-hosted"
               ? buildDyrectedConfig({
@@ -374,7 +375,7 @@ After running init:
           await writeVueFiles(cwd, adminPath);
         }
 
-        if (!isSpa && backend === "cloud") {
+        if (backend === "cloud") {
           await ensureCloudSyncScripts(cwd);
         }
 
@@ -470,9 +471,13 @@ After running init:
         // ── Done ───────────────────────────────────────────────────────────────
         console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
         if (isSpa) {
-          console.log(chalk.cyan(`  1. Set VITE_DYRECTED_URL, VITE_DYRECTED_API_KEY, and VITE_DYRECTED_SITE_ID in .env`));
-          console.log(chalk.cyan(`  2. Add a route for /${adminPath} in your router config`));
-          console.log(chalk.cyan("  3. Start your dev server and open the admin route\n"));
+          console.log(chalk.cyan(`  1. Set DYRECTED_URL, DYRECTED_API_KEY, and DYRECTED_SITE_ID in .env`));
+          console.log(
+            chalk.cyan(`  2. Set VITE_DYRECTED_URL, VITE_DYRECTED_API_KEY, and VITE_DYRECTED_SITE_ID in .env`),
+          );
+          console.log(chalk.cyan("  3. Run npm run dyrected:sync-schema after editing dyrected.config.ts"));
+          console.log(chalk.cyan(`  4. Add a route for /${adminPath} in your router config`));
+          console.log(chalk.cyan("  5. Start your dev server and open the admin route\n"));
         } else if (backend === "cloud") {
           console.log(chalk.cyan(`  1. Set DYRECTED_URL, DYRECTED_API_KEY, and DYRECTED_SITE_ID in .env`));
           console.log(
