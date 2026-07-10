@@ -11,6 +11,16 @@ defineTextareaField({ name: 'excerpt', label: 'Excerpt' })
 
 Like [Text](/new-docs/basics/fields/text), a textarea accepts advisory `maxLength` and `maxWords` limits that show a live counter in the editor. They guide writers but do not hard-reject an over-length value; enforce a strict cap with a [hook](/new-docs/basics/hooks/overview) when you need one.
 
+## Formatting how the value displays
+
+A textarea holds longer content, so the most useful format here is `truncate` — it keeps a summary or note from stretching a list column:
+
+```ts
+defineTextareaField({ name: 'excerpt', label: 'Excerpt', admin: { format: { type: 'truncate', length: 60 } } })
+```
+
+The full text is still stored and still editable; only the list preview is shortened. The same `admin.format` options as [Text](/new-docs/basics/fields/text#formatting-how-the-value-displays) apply — case transforms and `mask` included — and all of them are display-only.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
@@ -32,6 +42,43 @@ export type TextareaField = TypedField<"textarea", string, TextareaFieldAdmin> &
 Exported type from @dyrected/core.
 
 ```ts
-export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
+export type TextareaFieldAdmin = CharacterLimitFieldAdmin &
+  WordLimitFieldAdmin & {
+    /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+    format?: TextFormat;
+  };
+```
+
+
+## TextFormat
+
+How a `text` or `textarea` value is presented in read-only Admin surfaces.
+Display only — the stored string is unchanged. Pass a shorthand string for the
+simple transforms, or an object for `truncate` and `mask`.
+
+```ts
+export type TextFormat =
+  /** Shorthand for the matching object form. */
+  | "uppercase"
+  | "lowercase"
+  | "capitalize"
+  | "code"
+  /** Change the letter case for display. */
+  | { type: "uppercase" | "lowercase" | "capitalize" }
+  /** Render in a monospace pill — good for IDs, SKUs, and short codes. */
+  | { type: "code" }
+  /** Cut the text to `length` characters with a trailing ellipsis. */
+  | { type: "truncate"; length: number }
+  /**
+   * Hide all but the last few characters — for tokens, keys, or reference
+   * numbers you don't want fully visible in a list.
+   */
+  | {
+      type: "mask";
+      /** How many trailing characters stay visible. Defaults to `4`. */
+      reveal?: number;
+      /** Character used for the hidden portion. Defaults to `"•"`. */
+      character?: string;
+    };
 ```
 {/* GENERATED:REFERENCE-FIELD-TEXTAREA:END */}

@@ -1,6 +1,6 @@
 import type { BaseDocument, FileData, PaginatedResult } from "./documents.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
-import type { UploadConfig } from "./schema-core.js";
+import type { Field, UploadConfig } from "./schema-core.js";
 
 /**
  * The interface every database adapter must implement.
@@ -16,6 +16,11 @@ export interface DatabaseAdapter {
     limit?: number;
     page?: number;
     sort?: string;
+    /**
+     * The collection's field definitions. Optional, so simple adapters can
+     * ignore it; SQL adapters use it to sort numeric fields by magnitude.
+     */
+    fields?: Field[];
   }): Promise<PaginatedResult>;
 
   /** Find a single document by its ID. Returns `null` if not found. */

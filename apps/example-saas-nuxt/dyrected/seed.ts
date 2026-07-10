@@ -26,6 +26,9 @@ export const authorsSeed = [
   {
     id: "author-maya-chen",
     name: "Maya Chen",
+    email: "maya.chen@snacktrackpro.com",
+    website: "https://snacktrackpro.com/team/maya",
+    memberId: "STAFF-2024-0142",
     bio: "Head of Snack Intelligence at SnackTrack Pro. Former supply-chain lead who spent a decade forecasting demand for global retailers before turning her attention to the most volatile pantry on earth: the office kitchen.",
     country: "US",
     state: "US-CA",
@@ -33,6 +36,9 @@ export const authorsSeed = [
   {
     id: "author-devon-okafor",
     name: "Devon Okafor",
+    email: "devon.okafor@snacktrackpro.com",
+    website: "https://snacktrackpro.com/team/devon",
+    memberId: "STAFF-2023-0001",
     bio: "Co-founder & CEO of SnackTrack Pro. Devon started the company after watching his 300-person startup burn a full afternoon of standups arguing about who finished the cold brew.",
     country: "US",
     state: "US-NY",
@@ -48,6 +54,9 @@ export const blogSeed = [
     title: "The Hidden Cost of an Empty Snack Drawer",
     slug: "the-hidden-cost-of-an-empty-snack-drawer",
     author: "author-maya-chen",
+    status: "published",
+    tags: ["insights", "operations"],
+    views: 12480,
     publishedDate: "2026-05-12T09:00:00.000Z",
     content:
       "<p>Every office has a moment: someone reaches for the last granola bar, finds an empty box, and quietly loses ten minutes of focus deciding what to do about it. Multiply that across a floor of two hundred people and the &ldquo;snack tax&rdquo; adds up fast.</p>" +
@@ -61,6 +70,9 @@ export const blogSeed = [
     title: "How We Cut Snack Waste by 40% with Predictive Restocking",
     slug: "how-we-cut-snack-waste-by-40-percent-with-predictive-restocking",
     author: "author-devon-okafor",
+    status: "in-review",
+    tags: ["insights", "product"],
+    views: 8630,
     publishedDate: "2026-06-03T09:00:00.000Z",
     content:
       "<p>For years, the standard advice for office pantries was to over-order. Better to have too much than to run out, the thinking went. The result was predictable: overflowing cabinets, expired granola, and a surprising amount of food quietly thrown away each month.</p>" +
@@ -79,20 +91,32 @@ export const productsSeed = [
     id: "product-snack-sensor",
     title: "SnackTrack Sensor",
     slug: "snacktrack-sensor",
+    sku: "SNK-SENS-01",
     description:
       "A wireless shelf sensor that measures weight and stock levels in real time, then streams the data straight to your SnackTrack dashboard. Installs in seconds, no wiring required.",
     price: 49,
+    discount: 10,
+    rating: 5,
+    stock: 1240,
+    status: "active",
     featured: true,
+    metadata: { warranty: "2 years", weight: "45g", connectivity: "wifi" },
     publishedAt: "2026-01-15T00:00:00.000Z",
   },
   {
     id: "product-analytics-suite",
     title: "SnackTrack Analytics Suite",
     slug: "snacktrack-analytics-suite",
+    sku: "SNK-ANLYT-02",
     description:
       "The reporting layer for operations teams. Consumption trends, spend forecasting, and satisfaction insights across every location, exportable and board-ready.",
     price: 199,
+    discount: 0,
+    rating: 4,
+    stock: 999,
+    status: "active",
     featured: false,
+    metadata: { seats: "unlimited", export: "csv", refresh: "hourly" },
     publishedAt: "2026-02-01T00:00:00.000Z",
   },
 ];

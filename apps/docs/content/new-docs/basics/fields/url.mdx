@@ -11,11 +11,39 @@ For internal links, set the target collection's `admin.urlPattern` (for example 
 defineUrlField({ name: 'ctaLink', label: 'Call to action link' })
 ```
 
+## Making the link clickable
+
+Set `admin.format` to `'link'` and the url renders as a clickable link in the admin list, so you can open the destination straight from the table:
+
+```ts
+defineUrlField({ name: 'website', label: 'Website', admin: { format: 'link' } })
+```
+
+Links open in a new tab by default; pass `{ type: 'link', newTab: false }` to open in the same tab instead. This changes only how the value displays, not what's stored.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
 
 {/* GENERATED:REFERENCE-FIELD-URL:START */}
+## LinkFormat
+
+How a `url` or `email` value is presented in read-only Admin surfaces.
+Renders the value as a clickable link (a `mailto:` link for `email`) instead
+of plain text. Display only.
+
+```ts
+export type LinkFormat =
+  /** Shorthand for `{ type: "link" }`. */
+  | "link"
+  | {
+      type: "link";
+      /** Open the link in a new tab. Defaults to `true`. */
+      newTab?: boolean;
+    };
+```
+
+
 ## UrlField
 
 Exported type from @dyrected/core.
@@ -30,7 +58,10 @@ export type UrlField = TypedField<"url", string | UrlLinkValue, UrlFieldAdmin> &
 Exported type from @dyrected/core.
 
 ```ts
-export type UrlFieldAdmin = CharacterLimitFieldAdmin;
+export type UrlFieldAdmin = CharacterLimitFieldAdmin & {
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: LinkFormat;
+};
 ```
 
 

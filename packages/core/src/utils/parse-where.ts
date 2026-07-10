@@ -73,6 +73,12 @@ export function parseSqlWhere(
   where: WhereClause,
   getJsonField: (field: string) => string,
   placeholder: '?' | 'pg' = '?',
+  /**
+   * SQL keyword used for `contains`/`starts_with`. Postgres `LIKE` is
+   * case-sensitive, so the Postgres adapter passes `'ILIKE'` to keep substring
+   * matching case-insensitive like SQLite and MySQL.
+   */
+  likeOperator: 'LIKE' | 'ILIKE' = 'LIKE',
 ): SqlWhereResult {
   const params: any[] = [];
   let pgIndex = 1;
@@ -148,11 +154,11 @@ export function parseSqlWhere(
 
       case 'contains':
         params.push(`%${operand}%`);
-        return `${c} LIKE ${next()}`;
+        return `${c} ${likeOperator} ${next()}`;
 
       case 'starts_with':
         params.push(`${operand}%`);
-        return `${c} LIKE ${next()}`;
+        return `${c} ${likeOperator} ${next()}`;
 
       case 'exists':
         return operand ? `${c} IS NOT NULL` : `${c} IS NULL`;

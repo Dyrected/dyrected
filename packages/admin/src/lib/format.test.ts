@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest"
-import { formatDate, formatNumber, getRatingSpec, resolveNumberFormat } from "./format"
+import {
+  displayToneClass,
+  formatDate,
+  formatJson,
+  formatNumber,
+  formatText,
+  getBooleanBadge,
+  getLinkSpec,
+  getOptionBadge,
+  getRatingSpec,
+  isCodeText,
+  resolveNumberFormat,
+} from "./format"
 
 describe("resolveNumberFormat", () => {
   it("normalizes the shorthand string form", () => {
@@ -89,5 +101,100 @@ describe("formatDate", () => {
   })
   it("returns the raw string for an unparseable value", () => {
     expect(formatDate("not-a-date", "date", "date")).toBe("not-a-date")
+  })
+})
+
+describe("getOptionBadge", () => {
+  it("maps a value to its tone and option label", () => {
+    const spec = getOptionBadge(
+      "published",
+      { type: "badge", tones: { published: "success", draft: "neutral" } },
+      [{ label: "Published", value: "published" }],
+    )
+    expect(spec).toEqual({ label: "Published", tone: "success" })
+  })
+  it("applies a label override and defaultTone", () => {
+    const spec = getOptionBadge("x", { type: "badge", labels: { x: "Custom" }, defaultTone: "info" }, ["x"])
+    expect(spec).toEqual({ label: "Custom", tone: "info" })
+  })
+  it("returns null without a badge format", () => {
+    expect(getOptionBadge("x", undefined)).toBeNull()
+  })
+  it("supports the shorthand string", () => {
+    expect(getOptionBadge("x", "badge", ["x"])).toEqual({ label: "x", tone: "neutral" })
+  })
+})
+
+describe("getBooleanBadge", () => {
+  it("uses the true side label and tone", () => {
+    const spec = getBooleanBadge(true, { type: "boolean", true: { label: "Active", tone: "success" } })
+    expect(spec).toEqual({ label: "Active", tone: "success" })
+  })
+  it("falls back to Yes/No with default tones", () => {
+    expect(getBooleanBadge(false, { type: "boolean" })).toEqual({ label: "No", tone: "neutral" })
+  })
+  it("returns null without a format", () => {
+    expect(getBooleanBadge(true, undefined)).toBeNull()
+  })
+})
+
+describe("formatText", () => {
+  it("uppercases", () => {
+    expect(formatText("abc", "uppercase")).toBe("ABC")
+  })
+  it("capitalizes each word", () => {
+    expect(formatText("hello world", "capitalize")).toBe("Hello World")
+  })
+  it("truncates with an ellipsis", () => {
+    expect(formatText("abcdefgh", { type: "truncate", length: 4 })).toBe("abcd…")
+  })
+  it("masks all but the last few characters", () => {
+    expect(formatText("sk_live_4242", { type: "mask", reveal: 4 })).toBe("••••••••4242")
+  })
+  it("leaves short values unmasked", () => {
+    expect(formatText("abc", { type: "mask", reveal: 4 })).toBe("abc")
+  })
+  it("passes code text through unchanged", () => {
+    expect(formatText("SKU-1", "code")).toBe("SKU-1")
+    expect(isCodeText("code")).toBe(true)
+  })
+})
+
+describe("getLinkSpec", () => {
+  it("builds a mailto link for email", () => {
+    expect(getLinkSpec("a@b.com", "link", "email")).toEqual({
+      href: "mailto:a@b.com",
+      label: "a@b.com",
+      newTab: false,
+    })
+  })
+  it("builds an external link for url that opens in a new tab", () => {
+    expect(getLinkSpec("https://x.com", "link", "url")).toEqual({
+      href: "https://x.com",
+      label: "https://x.com",
+      newTab: true,
+    })
+  })
+  it("returns null for empty values", () => {
+    expect(getLinkSpec("", "link", "url")).toBeNull()
+  })
+})
+
+describe("formatJson", () => {
+  it("summarizes object keys", () => {
+    expect(formatJson({ a: 1, b: 2 }, "summary")).toBe("{ 2 keys }")
+  })
+  it("summarizes array length", () => {
+    expect(formatJson([1, 2, 3], { type: "summary" })).toBe("[ 3 items ]")
+  })
+  it("truncates raw json in code mode", () => {
+    expect(formatJson({ a: 1 }, "code")).toBe('{"a":1}')
+  })
+})
+
+describe("displayToneClass", () => {
+  it("returns tone classes and falls back to neutral", () => {
+    expect(displayToneClass("success")).toContain("emerald")
+    expect(displayToneClass(undefined)).toBe(displayToneClass("neutral"))
   })
 })

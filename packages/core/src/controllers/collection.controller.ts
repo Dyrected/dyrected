@@ -117,7 +117,8 @@ export class CollectionController {
     }
 
     const readonlyDb = createReadonlyDb(db);
-    const limit = Number(c.req.query('limit')) || 10;
+    // Cap the page size so a caller can't request an unbounded result set.
+    const limit = Math.min(Number(c.req.query('limit')) || 10, 100);
     const page = Number(c.req.query('page')) || 1;
     // Default relationship depth is 1, matching the SDK default.
     const depth = c.req.query('depth') !== undefined ? Number(c.req.query('depth')) : 1;
@@ -180,6 +181,7 @@ export class CollectionController {
       page,
       sort,
       where,
+      fields: this.collection.fields,
     });
 
     // Auto-seeding if empty and initialData is provided
@@ -195,6 +197,7 @@ export class CollectionController {
         page,
         sort,
         where,
+        fields: this.collection.fields,
       });
     }
 

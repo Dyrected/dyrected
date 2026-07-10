@@ -8,10 +8,32 @@ export const Authors = defineCollection({
   admin: {
     useAsTitle: "name",
     group: "Content",
+    defaultColumns: ["name", "email", "website", "country", "memberId"],
     icon: "Users",
   },
   fields: [
     { name: "name", type: "text", required: true },
+    {
+      name: "email",
+      label: "Email",
+      type: "email",
+      // Renders as a clickable mailto link in the list.
+      admin: { format: "link" },
+    },
+    {
+      name: "website",
+      label: "Website",
+      type: "url",
+      // Renders as a clickable external link in the list.
+      admin: { format: "link" },
+    },
+    {
+      name: "memberId",
+      label: "Member ID",
+      type: "text",
+      // Hides all but the last 4 characters in the list.
+      admin: { format: { type: "mask", reveal: 4 } },
+    },
     { name: "bio", type: "textarea" },
     { name: "avatar", type: "relationship", relationTo: Media.slug },
     {
@@ -40,7 +62,8 @@ export const Authors = defineCollection({
           .sort((a, b) => a.label.localeCompare(b.label));
         return cache.__dyrectedCountryOptions;
       },
-      admin: { width: "50%" },
+      // A neutral badge for the selected country in the list.
+      admin: { width: "50%", format: "badge" },
     },
     {
       name: "state",

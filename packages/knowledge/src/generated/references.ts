@@ -254,7 +254,17 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type BooleanFieldAdmin = {\n  /** Boolean presentation style. */\n  layout?: \"checkbox\" | \"switch\";\n};",
+    "signature": "export type BooleanFieldAdmin = {\n  /** Boolean presentation style. */\n  layout?: \"checkbox\" | \"switch\";\n  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: BooleanFormat;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:BooleanFormat",
+    "name": "BooleanFormat",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "How a `boolean` value is presented in read-only Admin surfaces. Replaces the\ndefault `Yes`/`No` badge with your own labels and tones — for example\n`Active`/`Inactive` or `In stock`/`Sold out`. Display only.",
+    "signature": "export type BooleanFormat = {\n  type: \"boolean\";\n  /** Presentation for a `true` value. */\n  true?: { label?: string; tone?: DisplayTone };\n  /** Presentation for a `false` value. */\n  false?: { label?: string; tone?: DisplayTone };\n};",
     "members": []
   },
   {
@@ -576,6 +586,16 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:DisplayTone",
+    "name": "DisplayTone",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "A semantic color for a badge or status pill in the Admin UI. The Admin panel\nmaps each tone to a themed color, so you pick meaning (`success`, `danger`)\nrather than a raw color and it stays consistent in light and dark mode.",
+    "signature": "export type DisplayTone = \"neutral\" | \"primary\" | \"success\" | \"warning\" | \"danger\" | \"info\";",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:DynamicOptionItem",
     "name": "DynamicOptionItem",
     "kind": "type",
@@ -735,7 +755,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type EmailFieldAdmin = CharacterLimitFieldAdmin;",
+    "signature": "export type EmailFieldAdmin = CharacterLimitFieldAdmin & {\n  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: LinkFormat;\n};",
     "members": []
   },
   {
@@ -1334,7 +1354,27 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "An arbitrary JSON value. Dyrected stores it as-is and does not validate its shape.",
-    "signature": "export type JsonField = TypedField<\"json\", Record<string, unknown>>;",
+    "signature": "export type JsonField = TypedField<\"json\", Record<string, unknown>, JsonFieldAdmin>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:JsonFieldAdmin",
+    "name": "JsonFieldAdmin",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export type JsonFieldAdmin = {\n  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: JsonFormat;\n};",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:JsonFormat",
+    "name": "JsonFormat",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "How a `json` value is presented in read-only Admin surfaces. Display only.",
+    "signature": "export type JsonFormat =\n  /** Shorthand for the matching object form. */\n  | \"summary\"\n  | \"code\"\n  /** A compact key count, e.g. `{ 3 keys }`. */\n  | { type: \"summary\" }\n  /** A truncated inline monospace preview of the raw JSON. */\n  | { type: \"code\" };",
     "members": []
   },
   {
@@ -1439,6 +1479,16 @@ export const references: readonly ReferenceEntry[] = [
     "members": []
   },
   {
+    "id": "@dyrected/core:LinkFormat",
+    "name": "LinkFormat",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "How a `url` or `email` value is presented in read-only Admin surfaces.\nRenders the value as a clickable link (a `mailto:` link for `email`) instead\nof plain text. Display only.",
+    "signature": "export type LinkFormat =\n  /** Shorthand for `{ type: \"link\" }`. */\n  | \"link\"\n  | {\n      type: \"link\";\n      /** Open the link in a new tab. Defaults to `true`. */\n      newTab?: boolean;\n    };",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:materializeWorkflowDocument",
     "name": "materializeWorkflowDocument",
     "kind": "function",
@@ -1465,7 +1515,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type MultiSelectFieldAdmin = {\n  hooks?: {\n    /** Client-side option recalculation for dependent multi-select fields. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
+    "signature": "export type MultiSelectFieldAdmin = {\n  /** How each selected value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: OptionFormat;\n  hooks?: {\n    /** Client-side option recalculation for dependent multi-select fields. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
     "members": []
   },
   {
@@ -1537,6 +1587,16 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/core",
     "description": "A group of nested `fields` stored as an embedded object under this field's `name`.",
     "signature": "export type ObjectField = TypedField<\"object\", unknown>;",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:OptionFormat",
+    "name": "OptionFormat",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "How a `select`, `radio`, or `multiSelect` value is presented in read-only\nAdmin surfaces (list cells). Renders the chosen option as a colored badge —\nideal for statuses like `draft`/`published`. Display only and\nJSON-serializable so it round-trips through Dyrected Cloud.\n\nPass the shorthand `\"badge\"` for neutral badges, or an object to color and\nrelabel each value.",
+    "signature": "export type OptionFormat =\n  /** Shorthand for `{ type: \"badge\" }` — every value renders as a neutral badge. */\n  | \"badge\"\n  | {\n      type: \"badge\";\n      /** Maps an option value to a color tone. Values not listed use `defaultTone`. */\n      tones?: Record<string, DisplayTone>;\n      /** Overrides the displayed text per option value. Falls back to the option's label. */\n      labels?: Record<string, string>;\n      /** Tone for values missing from `tones`. Defaults to `\"neutral\"`. */\n      defaultTone?: DisplayTone;\n    };",
     "members": []
   },
   {
@@ -1612,7 +1672,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type RadioFieldAdmin = {\n  /** Radio group orientation. */\n  direction?: \"horizontal\" | \"vertical\";\n  hooks?: {\n    /** Client-side option recalculation for dependent radio groups. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
+    "signature": "export type RadioFieldAdmin = {\n  /** Radio group orientation. */\n  direction?: \"horizontal\" | \"vertical\";\n  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: OptionFormat;\n  hooks?: {\n    /** Client-side option recalculation for dependent radio groups. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
     "members": []
   },
   {
@@ -1682,7 +1742,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type SelectFieldAdmin = {\n  /** Select presentation style. */\n  layout?: \"radio\" | \"select\";\n  /** Radio orientation when `layout: 'radio'` is used. */\n  direction?: \"horizontal\" | \"vertical\";\n  hooks?: {\n    /** Client-side option recalculation for dependent dropdowns or radios. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
+    "signature": "export type SelectFieldAdmin = {\n  /** Select presentation style. */\n  layout?: \"radio\" | \"select\";\n  /** Radio orientation when `layout: 'radio'` is used. */\n  direction?: \"horizontal\" | \"vertical\";\n  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: OptionFormat;\n  hooks?: {\n    /** Client-side option recalculation for dependent dropdowns or radios. */\n    options?: FieldAdminOptionsHook;\n  };\n};",
     "members": []
   },
   {
@@ -1743,7 +1803,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;",
+    "signature": "export type TextareaFieldAdmin = CharacterLimitFieldAdmin &\n  WordLimitFieldAdmin & {\n    /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n    format?: TextFormat;\n  };",
     "members": []
   },
   {
@@ -1763,7 +1823,17 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;",
+    "signature": "export type TextFieldAdmin = CharacterLimitFieldAdmin &\n  WordLimitFieldAdmin & {\n    /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n    format?: TextFormat;\n  };",
+    "members": []
+  },
+  {
+    "id": "@dyrected/core:TextFormat",
+    "name": "TextFormat",
+    "kind": "type",
+    "category": "fields",
+    "sourcePackage": "@dyrected/core",
+    "description": "How a `text` or `textarea` value is presented in read-only Admin surfaces.\nDisplay only — the stored string is unchanged. Pass a shorthand string for the\nsimple transforms, or an object for `truncate` and `mask`.",
+    "signature": "export type TextFormat =\n  /** Shorthand for the matching object form. */\n  | \"uppercase\"\n  | \"lowercase\"\n  | \"capitalize\"\n  | \"code\"\n  /** Change the letter case for display. */\n  | { type: \"uppercase\" | \"lowercase\" | \"capitalize\" }\n  /** Render in a monospace pill — good for IDs, SKUs, and short codes. */\n  | { type: \"code\" }\n  /** Cut the text to `length` characters with a trailing ellipsis. */\n  | { type: \"truncate\"; length: number }\n  /**\n   * Hide all but the last few characters — for tokens, keys, or reference\n   * numbers you don't want fully visible in a list.\n   */\n  | {\n      type: \"mask\";\n      /** How many trailing characters stay visible. Defaults to `4`. */\n      reveal?: number;\n      /** Character used for the hidden portion. Defaults to `\"•\"`. */\n      character?: string;\n    };",
     "members": []
   },
   {
@@ -1823,7 +1893,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type UrlFieldAdmin = CharacterLimitFieldAdmin;",
+    "signature": "export type UrlFieldAdmin = CharacterLimitFieldAdmin & {\n  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */\n  format?: LinkFormat;\n};",
     "members": []
   },
   {

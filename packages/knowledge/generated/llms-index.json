@@ -202,6 +202,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:BooleanFormat",
+      "name": "BooleanFormat",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:canViewWorkflowDraft",
       "name": "canViewWorkflowDraft",
       "category": "workflows",
@@ -313,6 +319,12 @@
       "id": "@dyrected/core:dispatchPendingLifecycleEvents",
       "name": "dispatchPendingLifecycleEvents",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DisplayTone",
+      "name": "DisplayTone",
+      "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -544,6 +556,18 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:JsonFieldAdmin",
+      "name": "JsonFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:JsonFormat",
+      "name": "JsonFormat",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:LIFECYCLE_EVENTS_COLLECTION",
       "name": "LIFECYCLE_EVENTS_COLLECTION",
       "category": "workflows",
@@ -565,6 +589,12 @@
       "id": "@dyrected/core:LifecycleEventName",
       "name": "LifecycleEventName",
       "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:LinkFormat",
+      "name": "LinkFormat",
+      "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -618,6 +648,12 @@
     {
       "id": "@dyrected/core:ObjectField",
       "name": "ObjectField",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:OptionFormat",
+      "name": "OptionFormat",
       "category": "fields",
       "sourcePackage": "@dyrected/core"
     },
@@ -720,6 +756,12 @@
     {
       "id": "@dyrected/core:TextFieldAdmin",
       "name": "TextFieldAdmin",
+      "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:TextFormat",
+      "name": "TextFormat",
       "category": "fields",
       "sourcePackage": "@dyrected/core"
     },

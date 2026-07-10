@@ -18,11 +18,43 @@ defineMultiSelectField({
 })
 ```
 
+## Showing values as colored badges
+
+Set `admin.format` to a badge and each selected value renders as its own colored pill in the admin list — the same option formatting as [Select](/new-docs/basics/fields/select#showing-the-value-as-a-colored-badge), applied to every value in the array:
+
+```ts
+defineMultiSelectField({
+  name: 'tags',
+  label: 'Tags',
+  options: [
+    { label: 'News', value: 'news' },
+    { label: 'Tutorial', value: 'tutorial' },
+    { label: 'Release', value: 'release' },
+  ],
+  admin: {
+    format: { type: 'badge', tones: { release: 'success', news: 'info' } },
+  },
+})
+```
+
+Tones, `labels`, and `defaultTone` behave exactly as they do for [Select](/new-docs/basics/fields/select#showing-the-value-as-a-colored-badge). The list shows the first few badges and a `+N more` hint when a document has many values, so a long tag list stays readable. Formatting is display-only.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
 
 {/* GENERATED:REFERENCE-FIELD-MULTI-SELECT:START */}
+## DisplayTone
+
+A semantic color for a badge or status pill in the Admin UI. The Admin panel
+maps each tone to a themed color, so you pick meaning (`success`, `danger`)
+rather than a raw color and it stays consistent in light and dark mode.
+
+```ts
+export type DisplayTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+```
+
+
 ## MultiSelectField
 
 Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.
@@ -38,10 +70,38 @@ Exported type from @dyrected/core.
 
 ```ts
 export type MultiSelectFieldAdmin = {
+  /** How each selected value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: OptionFormat;
   hooks?: {
     /** Client-side option recalculation for dependent multi-select fields. */
     options?: FieldAdminOptionsHook;
   };
 };
+```
+
+
+## OptionFormat
+
+How a `select`, `radio`, or `multiSelect` value is presented in read-only
+Admin surfaces (list cells). Renders the chosen option as a colored badge —
+ideal for statuses like `draft`/`published`. Display only and
+JSON-serializable so it round-trips through Dyrected Cloud.
+
+Pass the shorthand `"badge"` for neutral badges, or an object to color and
+relabel each value.
+
+```ts
+export type OptionFormat =
+  /** Shorthand for `{ type: "badge" }` — every value renders as a neutral badge. */
+  | "badge"
+  | {
+      type: "badge";
+      /** Maps an option value to a color tone. Values not listed use `defaultTone`. */
+      tones?: Record<string, DisplayTone>;
+      /** Overrides the displayed text per option value. Falls back to the option's label. */
+      labels?: Record<string, string>;
+      /** Tone for values missing from `tones`. Defaults to `"neutral"`. */
+      defaultTone?: DisplayTone;
+    };
 ```
 {/* GENERATED:REFERENCE-FIELD-MULTI-SELECT:END */}

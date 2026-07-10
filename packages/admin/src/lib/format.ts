@@ -1,4 +1,13 @@
-import type { DateFormat, NumberFormat } from "@dyrected/core"
+import type {
+  BooleanFormat,
+  DateFormat,
+  DisplayTone,
+  JsonFormat,
+  LinkFormat,
+  NumberFormat,
+  OptionFormat,
+  TextFormat,
+} from "@dyrected/core"
 
 /**
  * Display-only formatting for `number` and `date`/`datetime`/`time` field values,
@@ -196,4 +205,181 @@ export function formatDate(
   } catch {
     return date.toLocaleString()
   }
+}
+
+// ---------------------------------------------------------------------------
+// Option badges (select / radio / multiSelect)
+// ---------------------------------------------------------------------------
+
+/**
+ * Soft pill classes per {@link DisplayTone}. Kept here (not as JSX) so the same
+ * mapping can drive list cells, previews, and tests. Composed with the base pill
+ * classes by the caller.
+ */
+const DISPLAY_TONE_CLASS: Record<DisplayTone, string> = {
+  neutral: "dy-border-border dy-bg-muted dy-text-muted-foreground",
+  primary: "dy-border-primary/20 dy-bg-primary/10 dy-text-primary",
+  success: "dy-border-emerald-500/20 dy-bg-emerald-500/10 dy-text-emerald-600",
+  warning: "dy-border-amber-500/20 dy-bg-amber-500/10 dy-text-amber-600",
+  danger: "dy-border-red-500/20 dy-bg-red-500/10 dy-text-red-600",
+  info: "dy-border-blue-500/20 dy-bg-blue-500/10 dy-text-blue-600",
+}
+
+/** The color classes for a tone, falling back to `neutral`. */
+export function displayToneClass(tone: DisplayTone | undefined): string {
+  return DISPLAY_TONE_CLASS[tone ?? "neutral"] ?? DISPLAY_TONE_CLASS.neutral
+}
+
+type OptionFormatObject = Exclude<OptionFormat, string>
+
+export function resolveOptionFormat(format: OptionFormat | undefined): OptionFormatObject | null {
+  if (!format) return null
+  return typeof format === "string" ? ({ type: format } as OptionFormatObject) : format
+}
+
+/** Field `options` as they arrive at render time — bare strings or `{ label, value }`. */
+type FieldOption = string | { label?: string; value?: unknown }
+
+function optionLabel(value: unknown, options: FieldOption[] | undefined): string {
+  if (Array.isArray(options)) {
+    for (const option of options) {
+      if (typeof option === "string") {
+        if (option === value) return option
+      } else if (option && option.value === value) {
+        return option.label ?? String(option.value)
+      }
+    }
+  }
+  return value == null ? "" : String(value)
+}
+
+export interface BadgeSpec {
+  label: string
+  tone: DisplayTone
+}
+
+/**
+ * Resolve a single option value into a badge label + tone. Returns `null` when
+ * the field has no badge format, signalling the caller to render plainly.
+ */
+export function getOptionBadge(
+  value: unknown,
+  format: OptionFormat | undefined,
+  options?: FieldOption[],
+): BadgeSpec | null {
+  const resolved = resolveOptionFormat(format)
+  if (!resolved || resolved.type !== "badge") return null
+  const key = value == null ? "" : String(value)
+  const label = resolved.labels?.[key] ?? optionLabel(value, options)
+  const tone = resolved.tones?.[key] ?? resolved.defaultTone ?? "neutral"
+  return { label, tone }
+}
+
+// ---------------------------------------------------------------------------
+// Boolean badges
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve a boolean value into a custom label + tone. Returns `null` when the
+ * field has no boolean format, so the caller keeps the default Yes/No badge.
+ */
+export function getBooleanBadge(value: unknown, format: BooleanFormat | undefined): BadgeSpec | null {
+  if (!format || format.type !== "boolean") return null
+  const side = value ? format.true : format.false
+  const label = side?.label ?? (value ? "Yes" : "No")
+  const tone = side?.tone ?? (value ? "success" : "neutral")
+  return { label, tone }
+}
+
+// ---------------------------------------------------------------------------
+// Text transforms
+// ---------------------------------------------------------------------------
+
+type TextFormatObject = Exclude<TextFormat, string>
+
+export function resolveTextFormat(format: TextFormat | undefined): TextFormatObject | null {
+  if (!format) return null
+  return typeof format === "string" ? ({ type: format } as TextFormatObject) : format
+}
+
+function capitalizeWords(text: string): string {
+  return text.replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+/** Apply a display-only transform to a text value. */
+export function formatText(value: unknown, format: TextFormat | undefined): string {
+  const resolved = resolveTextFormat(format)
+  const text = value == null ? "" : String(value)
+  if (!resolved) return text
+
+  switch (resolved.type) {
+    case "uppercase":
+      return text.toUpperCase()
+    case "lowercase":
+      return text.toLowerCase()
+    case "capitalize":
+      return capitalizeWords(text)
+    case "code":
+      return text
+    case "truncate":
+      return text.length > resolved.length ? `${text.slice(0, resolved.length)}…` : text
+    case "mask": {
+      const reveal = typeof resolved.reveal === "number" ? Math.max(0, resolved.reveal) : 4
+      const char = resolved.character ?? "•"
+      if (text.length <= reveal) return text
+      const hidden = char.repeat(Math.min(text.length - reveal, 8))
+      return `${hidden}${text.slice(text.length - reveal)}`
+    }
+    default:
+      return text
+  }
+}
+
+/** Whether a text format should render in a monospace pill. */
+export function isCodeText(format: TextFormat | undefined): boolean {
+  return resolveTextFormat(format)?.type === "code"
+}
+
+// ---------------------------------------------------------------------------
+// Links (url / email)
+// ---------------------------------------------------------------------------
+
+export interface LinkSpec {
+  href: string
+  label: string
+  newTab: boolean
+}
+
+/**
+ * Resolve a url/email value into a link spec. Returns `null` when the field has
+ * no link format. `fieldType` selects between an `http` link and a `mailto:`.
+ */
+export function getLinkSpec(
+  value: unknown,
+  format: LinkFormat | undefined,
+  fieldType: "url" | "email",
+): LinkSpec | null {
+  if (!format) return null
+  const resolved = typeof format === "string" ? { type: "link" as const } : format
+  if (resolved.type !== "link") return null
+  const raw = value == null ? "" : String(value)
+  if (!raw) return null
+  const href = fieldType === "email" ? `mailto:${raw}` : raw
+  return { href, label: raw, newTab: resolved.newTab !== false && fieldType === "url" }
+}
+
+// ---------------------------------------------------------------------------
+// JSON
+// ---------------------------------------------------------------------------
+
+/** Format a JSON value as a compact summary or truncated code preview. */
+export function formatJson(value: unknown, format: JsonFormat | undefined): string {
+  const resolved = typeof format === "string" ? { type: format } : format
+  if (resolved?.type === "summary" && value && typeof value === "object") {
+    const count = Array.isArray(value) ? value.length : Object.keys(value).length
+    return Array.isArray(value) ? `[ ${count} items ]` : `{ ${count} keys }`
+  }
+  const json = JSON.stringify(value)
+  if (!json) return ""
+  return json.length > 40 ? `${json.slice(0, 40)}…` : json
 }

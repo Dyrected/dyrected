@@ -15,6 +15,16 @@ The format check is built in, so you don't need extra validation for the common 
 Authentication collections already include an `email` field that Dyrected injects for you. You can define your own instead: Dyrected keeps your definition but always re-asserts the parts the login flow depends on — `required`, `unique`, and its [access `update` rule](/new-docs/basics/access-control/fields) — so a custom `email` field can never accidentally allow duplicate accounts.
 </Note>
 
+## Making the address clickable
+
+Set `admin.format` to `'link'` and the email renders as a `mailto:` link in the admin list, so you can reach someone straight from the table instead of copying the address out:
+
+```ts
+defineEmailField({ name: 'contactEmail', label: 'Contact email', admin: { format: 'link' } })
+```
+
+This only changes how the value displays; the stored string is a plain email address either way.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
@@ -34,6 +44,27 @@ export type EmailField = TypedField<"email", string, EmailFieldAdmin> & Characte
 Exported type from @dyrected/core.
 
 ```ts
-export type EmailFieldAdmin = CharacterLimitFieldAdmin;
+export type EmailFieldAdmin = CharacterLimitFieldAdmin & {
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: LinkFormat;
+};
+```
+
+
+## LinkFormat
+
+How a `url` or `email` value is presented in read-only Admin surfaces.
+Renders the value as a clickable link (a `mailto:` link for `email`) instead
+of plain text. Display only.
+
+```ts
+export type LinkFormat =
+  /** Shorthand for `{ type: "link" }`. */
+  | "link"
+  | {
+      type: "link";
+      /** Open the link in a new tab. Defaults to `true`. */
+      newTab?: boolean;
+    };
 ```
 {/* GENERATED:REFERENCE-FIELD-EMAIL:END */}

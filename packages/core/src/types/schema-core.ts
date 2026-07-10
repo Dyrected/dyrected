@@ -238,9 +238,108 @@ export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<nev
 } & FieldHooks<TValue> &
   FieldAdminHooks<TValue>;
 
+/**
+ * A semantic color for a badge or status pill in the Admin UI. The Admin panel
+ * maps each tone to a themed color, so you pick meaning (`success`, `danger`)
+ * rather than a raw color and it stays consistent in light and dark mode.
+ */
+export type DisplayTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+
+/**
+ * How a `select`, `radio`, or `multiSelect` value is presented in read-only
+ * Admin surfaces (list cells). Renders the chosen option as a colored badge —
+ * ideal for statuses like `draft`/`published`. Display only and
+ * JSON-serializable so it round-trips through Dyrected Cloud.
+ *
+ * Pass the shorthand `"badge"` for neutral badges, or an object to color and
+ * relabel each value.
+ */
+export type OptionFormat =
+  /** Shorthand for `{ type: "badge" }` — every value renders as a neutral badge. */
+  | "badge"
+  | {
+      type: "badge";
+      /** Maps an option value to a color tone. Values not listed use `defaultTone`. */
+      tones?: Record<string, DisplayTone>;
+      /** Overrides the displayed text per option value. Falls back to the option's label. */
+      labels?: Record<string, string>;
+      /** Tone for values missing from `tones`. Defaults to `"neutral"`. */
+      defaultTone?: DisplayTone;
+    };
+
+/**
+ * How a `boolean` value is presented in read-only Admin surfaces. Replaces the
+ * default `Yes`/`No` badge with your own labels and tones — for example
+ * `Active`/`Inactive` or `In stock`/`Sold out`. Display only.
+ */
+export type BooleanFormat = {
+  type: "boolean";
+  /** Presentation for a `true` value. */
+  true?: { label?: string; tone?: DisplayTone };
+  /** Presentation for a `false` value. */
+  false?: { label?: string; tone?: DisplayTone };
+};
+
+/**
+ * How a `text` or `textarea` value is presented in read-only Admin surfaces.
+ * Display only — the stored string is unchanged. Pass a shorthand string for the
+ * simple transforms, or an object for `truncate` and `mask`.
+ */
+export type TextFormat =
+  /** Shorthand for the matching object form. */
+  | "uppercase"
+  | "lowercase"
+  | "capitalize"
+  | "code"
+  /** Change the letter case for display. */
+  | { type: "uppercase" | "lowercase" | "capitalize" }
+  /** Render in a monospace pill — good for IDs, SKUs, and short codes. */
+  | { type: "code" }
+  /** Cut the text to `length` characters with a trailing ellipsis. */
+  | { type: "truncate"; length: number }
+  /**
+   * Hide all but the last few characters — for tokens, keys, or reference
+   * numbers you don't want fully visible in a list.
+   */
+  | {
+      type: "mask";
+      /** How many trailing characters stay visible. Defaults to `4`. */
+      reveal?: number;
+      /** Character used for the hidden portion. Defaults to `"•"`. */
+      character?: string;
+    };
+
+/**
+ * How a `url` or `email` value is presented in read-only Admin surfaces.
+ * Renders the value as a clickable link (a `mailto:` link for `email`) instead
+ * of plain text. Display only.
+ */
+export type LinkFormat =
+  /** Shorthand for `{ type: "link" }`. */
+  | "link"
+  | {
+      type: "link";
+      /** Open the link in a new tab. Defaults to `true`. */
+      newTab?: boolean;
+    };
+
+/**
+ * How a `json` value is presented in read-only Admin surfaces. Display only.
+ */
+export type JsonFormat =
+  /** Shorthand for the matching object form. */
+  | "summary"
+  | "code"
+  /** A compact key count, e.g. `{ 3 keys }`. */
+  | { type: "summary" }
+  /** A truncated inline monospace preview of the raw JSON. */
+  | { type: "code" };
+
 export type BooleanFieldAdmin = {
   /** Boolean presentation style. */
   layout?: "checkbox" | "switch";
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: BooleanFormat;
 };
 
 export type SelectFieldAdmin = {
@@ -248,6 +347,8 @@ export type SelectFieldAdmin = {
   layout?: "radio" | "select";
   /** Radio orientation when `layout: 'radio'` is used. */
   direction?: "horizontal" | "vertical";
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: OptionFormat;
   hooks?: {
     /** Client-side option recalculation for dependent dropdowns or radios. */
     options?: FieldAdminOptionsHook;
@@ -257,6 +358,8 @@ export type SelectFieldAdmin = {
 export type RadioFieldAdmin = {
   /** Radio group orientation. */
   direction?: "horizontal" | "vertical";
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: OptionFormat;
   hooks?: {
     /** Client-side option recalculation for dependent radio groups. */
     options?: FieldAdminOptionsHook;
@@ -264,6 +367,8 @@ export type RadioFieldAdmin = {
 };
 
 export type MultiSelectFieldAdmin = {
+  /** How each selected value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: OptionFormat;
   hooks?: {
     /** Client-side option recalculation for dependent multi-select fields. */
     options?: FieldAdminOptionsHook;
@@ -426,11 +531,29 @@ export type DateFormat =
       locale?: string;
     };
 
-export type TextFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
-export type TextareaFieldAdmin = CharacterLimitFieldAdmin & WordLimitFieldAdmin;
-export type EmailFieldAdmin = CharacterLimitFieldAdmin;
-export type UrlFieldAdmin = CharacterLimitFieldAdmin;
+export type TextFieldAdmin = CharacterLimitFieldAdmin &
+  WordLimitFieldAdmin & {
+    /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+    format?: TextFormat;
+  };
+export type TextareaFieldAdmin = CharacterLimitFieldAdmin &
+  WordLimitFieldAdmin & {
+    /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+    format?: TextFormat;
+  };
+export type EmailFieldAdmin = CharacterLimitFieldAdmin & {
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: LinkFormat;
+};
+export type UrlFieldAdmin = CharacterLimitFieldAdmin & {
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: LinkFormat;
+};
 export type IconFieldAdmin = CharacterLimitFieldAdmin;
+export type JsonFieldAdmin = {
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: JsonFormat;
+};
 export type NumberFieldAdmin = NumberLimitFieldAdmin & {
   /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
   format?: NumberFormat;
@@ -526,7 +649,7 @@ export type ImageField = TypedField<"image", string | string[]>;
 /** Formatted content authored in the admin editor, stored as an HTML string. */
 export type RichTextField = TypedField<"richText", string> & RichTextFieldConfig;
 /** An arbitrary JSON value. Dyrected stores it as-is and does not validate its shape. */
-export type JsonField = TypedField<"json", Record<string, unknown>>;
+export type JsonField = TypedField<"json", Record<string, unknown>, JsonFieldAdmin>;
 /** A group of nested `fields` stored as an embedded object under this field's `name`. */
 export type ObjectField = TypedField<"object", unknown>;
 /** A repeatable list of rows that all share the same `fields`, stored as an array of objects. */
