@@ -7,6 +7,7 @@ import { execSync } from "child_process";
 import { detectFramework, detectPackageManager, type SupportedFramework } from "../utils/detect.js";
 import { buildAiRules } from "@dyrected/knowledge";
 import {
+  type BackendMode,
   buildDbConfig,
   buildStorageConfig,
   buildEnvTemplate,
@@ -58,6 +59,10 @@ process.exit(result.status ?? 0);
 `;
 }
 
+function isBackendMode(value: string | undefined): value is BackendMode {
+  return value === "cloud" || value === "self-hosted";
+}
+
 async function ensureCloudSyncScripts(cwd: string) {
   const packageJsonPath = path.join(cwd, "package.json");
   if (!(await fs.pathExists(packageJsonPath))) return;
@@ -88,6 +93,7 @@ export function registerInit(program: Command) {
     .description("Bootstrap a new Dyrected CMS project")
     .option("-y, --yes", "Skip prompts and use default settings (SQLite + Local Storage)")
     .option("-f, --framework <framework>", "Target framework (next, nuxt, react, vue)")
+    .option("-b, --backend <backend>", "Backend mode (cloud, self-hosted)")
     .option("-d, --db <adapter>", "Database adapter (sqlite, postgres, mysql, mongodb)")
     .option("-s, --storage <adapter>", "Storage adapter (local, s3, b2, cloudinary)")
     .option("-p, --path <path>", "Admin dashboard route path", "admin")
@@ -99,8 +105,11 @@ Examples:
   # Interactive setup (detects your framework automatically)
   $ npx dyrected init
 
-  # Non-interactive automated setup (Next.js, Postgres, S3, custom path)
-  $ npx dyrected init -y -f next -d postgres -s s3 -p custom-admin
+  # Non-interactive Dyrected Cloud setup
+  $ npx dyrected init -y -f next -b cloud -p admin
+
+  # Non-interactive self-hosted setup (Next.js, Postgres, S3, custom path)
+  $ npx dyrected init -y -f next -b self-hosted -d postgres -s s3 -p custom-admin
 
 After running init:
   1. Fill in the values in .env
@@ -112,6 +121,7 @@ After running init:
       async (options: {
         yes?: boolean;
         framework?: string;
+        backend?: string;
         db?: string;
         storage?: string;
         path?: string;
@@ -170,6 +180,48 @@ After running init:
         }
 
         const isSpa = framework === "react" || framework === "vue";
+        let backend: BackendMode = "cloud";
+
+        if (options.backend && !isBackendMode(options.backend)) {
+          console.log(chalk.red(`\nInvalid backend "${options.backend}". Use "cloud" or "self-hosted".\n`));
+          process.exit(1);
+        }
+
+        if (isSpa) {
+          if (options.backend === "self-hosted") {
+            console.log(
+              chalk.red("\nReact and Vue currently connect to Dyrected Cloud only. Use --backend cloud.\n"),
+            );
+            process.exit(1);
+          }
+          backend = "cloud";
+        } else if (options.backend) {
+          backend = options.backend as BackendMode;
+        } else if (!autoAccept) {
+          const answer = await prompts({
+            type: "select",
+            name: "backend",
+            message: "Where should the Dyrected backend run?",
+            choices: [
+              {
+                title: "Dyrected Cloud (recommended)",
+                value: "cloud",
+                description: "Use Dyrected-hosted API, database, storage, and auth.",
+              },
+              {
+                title: "Self-hosted in this app",
+                value: "self-hosted",
+                description: "Run the full backend inside your Next.js or Nuxt app.",
+              },
+            ],
+            initial: 0,
+          });
+          if (!answer.backend) {
+            console.log(chalk.yellow("\nAborted."));
+            process.exit(0);
+          }
+          backend = answer.backend as BackendMode;
+        }
 
         let adminPath = options.path || "admin";
         if (!options.path && !autoAccept) {
@@ -196,7 +248,7 @@ After running init:
           storage = options.storage;
         }
 
-        if (!isSpa && !options.db && !options.storage && !autoAccept) {
+        if (!isSpa && backend === "self-hosted" && !options.db && !options.storage && !autoAccept) {
           const { quickSetup } = await prompts({
             type: "confirm",
             name: "quickSetup",
@@ -243,9 +295,11 @@ After running init:
           deps = frameworkPkg;
         } else {
           const frameworkPkg = framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
-          const dbPkg = `@dyrected/db-${db}`;
-          const storagePkg = `@dyrected/storage-${storage}`;
-          deps = ["@dyrected/core", frameworkPkg, dbPkg, storagePkg].join(" ");
+          const fullStackDeps = ["@dyrected/core", frameworkPkg];
+          if (backend === "self-hosted") {
+            fullStackDeps.push(`@dyrected/db-${db}`, `@dyrected/storage-${storage}`);
+          }
+          deps = fullStackDeps.join(" ");
           devDeps.push("dyrected");
         }
 
@@ -267,22 +321,23 @@ After running init:
 
         // ── 2. Write dyrected.config.ts (full-stack only) ─────────────────────
         if (!isSpa) {
-          const dbPkg = `@dyrected/db-${db}`;
-          const storagePkg = `@dyrected/storage-${storage}`;
-          const dbImport = `import { ${db}Adapter } from '${dbPkg}'`;
-          const storageFactory = {
-            local: "localStorage",
-            s3: "s3Storage",
-            b2: "b2Storage",
-            cloudinary: "cloudinaryStorage",
-          }[storage];
-          const storageImport = `import { ${storageFactory} } from '${storagePkg}'`;
-          const configContent = buildDyrectedConfig(
-            dbImport,
-            storageImport,
-            buildDbConfig(db),
-            buildStorageConfig(storage),
-          );
+          const configContent =
+            backend === "self-hosted"
+              ? buildDyrectedConfig({
+                  backend,
+                  dbImport: `import { ${db}Adapter } from '@dyrected/db-${db}'`,
+                  storageImport: `import { ${
+                    {
+                      local: "localStorage",
+                      s3: "s3Storage",
+                      b2: "b2Storage",
+                      cloudinary: "cloudinaryStorage",
+                    }[storage]
+                  } } from '@dyrected/storage-${storage}'`,
+                  dbConfig: buildDbConfig(db),
+                  storageConfig: buildStorageConfig(storage),
+                })
+              : buildDyrectedConfig({ backend });
 
           const configPath = path.join(cwd, "dyrected.config.ts");
           if (await fs.pathExists(configPath)) {
@@ -310,21 +365,23 @@ After running init:
 
         // ── 3. Framework-specific files ────────────────────────────────────────
         if (framework === "next") {
-          await writeNextFiles(cwd, adminPath);
+          await writeNextFiles(cwd, adminPath, backend);
         } else if (framework === "nuxt") {
-          await writeNuxtFiles(cwd, adminPath);
+          await writeNuxtFiles(cwd, adminPath, backend);
         } else if (framework === "react") {
           await writeReactFiles(cwd, adminPath);
         } else if (framework === "vue") {
           await writeVueFiles(cwd, adminPath);
         }
 
-        if (!isSpa) {
+        if (!isSpa && backend === "cloud") {
           await ensureCloudSyncScripts(cwd);
         }
 
         // ── 4. .env setup ──────────────────────────────────────────────────────
-        const envContent = isSpa ? buildViteEnvTemplate() : buildEnvTemplate(db, storage, framework);
+        const envContent = isSpa
+          ? buildViteEnvTemplate()
+          : buildEnvTemplate(framework as "next" | "nuxt", backend, db, storage);
         const envExamplePath = path.join(cwd, ".env.example");
         await fs.outputFile(envExamplePath, envContent);
         console.log(chalk.green("✔  .env.example written"));
@@ -413,9 +470,17 @@ After running init:
         // ── Done ───────────────────────────────────────────────────────────────
         console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
         if (isSpa) {
-          console.log(chalk.cyan(`  1. Set VITE_DYRECTED_URL and VITE_DYRECTED_API_KEY in .env`));
+          console.log(chalk.cyan(`  1. Set VITE_DYRECTED_URL, VITE_DYRECTED_API_KEY, and VITE_DYRECTED_SITE_ID in .env`));
           console.log(chalk.cyan(`  2. Add a route for /${adminPath} in your router config`));
           console.log(chalk.cyan("  3. Start your dev server and open the admin route\n"));
+        } else if (backend === "cloud") {
+          console.log(chalk.cyan(`  1. Set DYRECTED_URL, DYRECTED_API_KEY, and DYRECTED_SITE_ID in .env`));
+          console.log(
+            chalk.cyan(
+              `  2. Set ${framework === "next" ? "NEXT_PUBLIC" : "NUXT_PUBLIC"}_DYRECTED_URL, ${framework === "next" ? "NEXT_PUBLIC" : "NUXT_PUBLIC"}_DYRECTED_API_KEY, and ${framework === "next" ? "NEXT_PUBLIC" : "NUXT_PUBLIC"}_DYRECTED_SITE_ID in .env`,
+            ),
+          );
+          console.log(chalk.cyan(`  3. Open http://localhost:3000/${adminPath} and run npm run dyrected:sync-schema\n`));
         } else {
           console.log(chalk.cyan(`  1. Configure your environment variables in .env`));
           console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
@@ -429,7 +494,18 @@ After running init:
     );
 }
 
-function buildDyrectedConfig(dbImport: string, storageImport: string, dbConfig: string, storageConfig: string): string {
+function buildDyrectedConfig(options: {
+  backend: BackendMode;
+  dbImport?: string;
+  storageImport?: string;
+  dbConfig?: string;
+  storageConfig?: string;
+}): string {
+  const configLines = [`  collections: [Admins, Media, Pages, Posts],`, `  globals: [Navigation, Settings],`];
+  if (options.backend === "self-hosted") {
+    configLines.push(`  db: ${options.dbConfig},`, `  storage: ${options.storageConfig},`);
+  }
+
   return `import {
   defineCollection,
   defineGlobal,
@@ -441,8 +517,7 @@ function buildDyrectedConfig(dbImport: string, storageImport: string, dbConfig: 
   defineRelationshipField,
   defineArrayField,
 } from '@dyrected/core'
-${dbImport}
-${storageImport}
+${options.dbImport ? `${options.dbImport}\n` : ""}${options.storageImport ? options.storageImport : ""}
 
 // ── Admin Auth ────────────────────────────────────────────────────────────
 // Reserved collection — sole login gateway for the Dyrected dashboard.
@@ -531,10 +606,7 @@ const Settings = defineGlobal({
 // ── Config ────────────────────────────────────────────────────────────────
 
 export default defineConfig({
-  collections: [Admins, Media, Pages, Posts],
-  globals: [Navigation, Settings],
-  db: ${dbConfig},
-  storage: ${storageConfig},
+${configLines.join("\n")}
 })
 `;
 }

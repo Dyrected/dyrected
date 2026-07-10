@@ -5,7 +5,7 @@ description: Install Dyrected into an existing Next.js, Nuxt, React, or Vue app 
 
 import { Card } from "@/components/ui/card";
 
-Dyrected installs into an app you already have. The `npx dyrected init` command detects your framework, installs the right packages, writes a starter config, and mounts both the admin and the content API for you. When it finishes, you run your dev server and log in at `/admin`.
+Dyrected installs into an app you already have. The `npx dyrected init` command detects your framework, asks whether you want a **Dyrected Cloud** or **self-hosted** backend when that choice exists, installs the right packages, writes a starter config when needed, and mounts the admin for you. When it finishes, you run your dev server and log in at `/admin`.
 
 ## Requirements
 
@@ -38,10 +38,11 @@ npx dyrected init
 The CLI walks you through setup in a few prompts:
 
 1. Confirms the framework it detected (or asks, if it can't tell).
-2. Asks which path the admin should use — the default is `admin`, so editors log in at `/admin`.
-3. Offers **Quick Setup** (SQLite + local file storage), which is the fastest way to get running locally. Decline it to choose a different database and storage adapter.
+2. For Next.js and Nuxt, asks whether the backend should run in **Dyrected Cloud** or be **self-hosted** in your app.
+3. Asks which path the admin should use — the default is `admin`, so editors log in at `/admin`.
+4. On the self-hosted path, offers **Quick Setup** (SQLite + local file storage), which is the fastest way to get running locally. Decline it to choose a different database and storage adapter.
 
-When it finishes, you have installed packages, a `dyrected.config.ts`, the admin and API routes, environment variable templates, and rules files for AI coding agents — all wired into your project.
+When it finishes, you have installed packages, environment variable templates, and rules files for AI coding agents. Next.js and Nuxt also get a starter `dyrected.config.ts`; self-hosted installs add the local API runtime, while Cloud installs add schema-sync support instead.
 
 ### Choosing a database and storage adapter
 
@@ -58,15 +59,24 @@ The CLI installs the matching `@dyrected/db-*` and `@dyrected/storage-*` package
 
 To skip the prompts — useful in scripts or for AI agents — pass the answers as flags:
 
+For a Cloud-backed install:
+
 ```bash
-npx dyrected init -y -f next -d postgres -s s3 -p admin
+npx dyrected init -y -f next -b cloud -p admin
 ```
 
-- `-y` accepts defaults without prompting
-- `-f` sets the framework (`next`, `nuxt`, `react`, `vue`)
-- `-d` sets the database adapter (`sqlite`, `postgres`, `mysql`, `mongodb`)
-- `-s` sets the storage adapter (`local`, `s3`, `b2`, `cloudinary`)
-- `-p` sets the admin path
+For a self-hosted install:
+
+```bash
+npx dyrected init -y -f next -b self-hosted -d postgres -s s3 -p admin
+```
+
+- `-y` / `--yes` accepts defaults without prompting
+- `-f` / `--framework` sets the framework (`next`, `nuxt`, `react`, `vue`)
+- `-b` / `--backend` sets the backend mode (`cloud`, `self-hosted`)
+- `-d` / `--db` sets the database adapter (`sqlite`, `postgres`, `mysql`, `mongodb`) for self-hosted installs
+- `-s` / `--storage` sets the storage adapter (`local`, `s3`, `b2`, `cloudinary`) for self-hosted installs
+- `-p` / `--path` sets the admin path (`yourwebsite.com/any-thing-you like`)
 
 ## What the CLI creates
 
@@ -77,14 +87,11 @@ The rest depends on your framework. `init` detects a `src/` directory and adjust
 <Tabs items={['Next.js', 'Nuxt', 'React', 'Vue']}>
 <Tab value="Next.js">
 
-Next.js runs the full backend inside your app, so `init` writes a config plus the API and admin routes. The Next.js **App Router** is required.
+Next.js can either connect to **Dyrected Cloud** or run the full backend inside your app. The Next.js **App Router** is required either way.
 
 <Files>
   <File name="dyrected.config.ts" />
   <Folder name="app" defaultOpen>
-    <Folder name="dyrected/[...route]">
-      <File name="route.ts" />
-    </Folder>
     <Folder name="admin">
       <File name="page.tsx" />
     </Folder>
@@ -92,17 +99,18 @@ Next.js runs the full backend inside your app, so `init` writes a config plus th
   <File name="instrumentation.ts" />
 </Files>
 
-- **`dyrected.config.ts`** — your content model plus database and storage settings (see below).
-- **`app/dyrected/[...route]/route.ts`** — the content API, served under `/dyrected`.
+- **`dyrected.config.ts`** — your content model. On self-hosted installs it also includes database and storage settings.
 - **`app/admin/page.tsx`** — the admin panel, served at the path you chose.
-- **`instrumentation.ts`** — logs the admin and API URLs to your console on server start.
+- **`instrumentation.ts`** — logs the admin URL and the active Dyrected API URL on server start.
 
-Connection variables use the `NEXT_PUBLIC_DYRECTED_URL` and `NEXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `DYRECTED_JWT_SECRET`, and `ENCRYPTION_KEY`.
+On the **self-hosted** path, `init` also writes `app/dyrected/[...route]/route.ts` and mounts the content API under `/dyrected`.
+
+Cloud installs use `DYRECTED_URL`, `DYRECTED_API_KEY`, `DYRECTED_SITE_ID`, and their `NEXT_PUBLIC_*` equivalents. Self-hosted installs use `DATABASE_URL`, `DYRECTED_JWT_SECRET`, and `ENCRYPTION_KEY` for the local runtime.
 
 </Tab>
 <Tab value="Nuxt">
 
-Nuxt also runs the full backend inside your app, so `init` writes a config and the admin page, then registers the module.
+Nuxt can also connect to **Dyrected Cloud** or run the full backend inside your app, so `init` writes a config and the admin page, then registers the module.
 
 <Files>
   <File name="dyrected.config.ts" />
@@ -114,11 +122,11 @@ Nuxt also runs the full backend inside your app, so `init` writes a config and t
   </Folder>
 </Files>
 
-- **`dyrected.config.ts`** — your content model plus database and storage settings (see below).
+- **`dyrected.config.ts`** — your content model. On self-hosted installs it also includes database and storage settings.
 - **`pages/admin/index.vue`** — the admin panel (written under `app/pages/` if you use an `app/` directory).
-- **`nuxt.config.ts`** — `init` adds `@dyrected/nuxt` to your `modules`, which mounts the content API.
+- **`nuxt.config.ts`** — `init` adds `@dyrected/nuxt` to your `modules`. On self-hosted installs it mounts the content API; on Cloud installs it points the admin at your Cloud site.
 
-Connection variables use the `NUXT_PUBLIC_DYRECTED_URL` and `NUXT_PUBLIC_DYRECTED_API_KEY` env vars, alongside `DATABASE_URL`, `DYRECTED_JWT_SECRET`, and `ENCRYPTION_KEY`.
+Cloud installs use `DYRECTED_URL`, `DYRECTED_API_KEY`, `DYRECTED_SITE_ID`, and their `NUXT_PUBLIC_*` equivalents. Self-hosted installs use `DATABASE_URL`, `DYRECTED_JWT_SECRET`, and `ENCRYPTION_KEY` for the local runtime.
 
 </Tab>
 <Tab value="React">

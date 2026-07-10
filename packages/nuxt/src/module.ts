@@ -249,8 +249,9 @@ export default defineNitroPlugin(async (nitroApp) => {
       const base = listener.url.replace(/\/$/, "");
       const adminSlug = options.adminPath || "cms";
       const apiSlug = options.apiBase || "/dyrected";
+      const apiUrl = apiSlug.startsWith("http") ? apiSlug : `${base}${apiSlug}`;
       console.log(`\n  ➜  Dyrected admin:  ${base}/${adminSlug}`);
-      console.log(`  ➜  Dyrected API:    ${base}${apiSlug}\n`);
+      console.log(`  ➜  Dyrected API:    ${apiUrl}\n`);
     });
 
     // Ensure 'db' is attached but non-enumerable to avoid serialization crashes in DevTools.

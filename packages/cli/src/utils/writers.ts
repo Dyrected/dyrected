@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
+import type { BackendMode } from "./config-templates.js";
 
 export async function writeReactFiles(cwd: string, adminPath: string) {
   const hasSrc = await fs.pathExists(path.join(cwd, "src"));
@@ -64,7 +65,7 @@ const dyrectedSiteId = import.meta.env.VITE_DYRECTED_SITE_ID
   console.log(chalk.yellow(`\n  Add a route for /${adminPath} pointing to AdminView in your router config.\n`));
 }
 
-export async function writeNextFiles(cwd: string, adminPath: string) {
+export async function writeNextFiles(cwd: string, adminPath: string, backend: BackendMode) {
   const hasSrc = await fs.pathExists(path.join(cwd, "src"));
   const appDir = hasSrc ? path.join(cwd, "src/app") : path.join(cwd, "app");
   const pagesDir = hasSrc ? path.join(cwd, "src/pages") : path.join(cwd, "pages");
@@ -77,20 +78,22 @@ export async function writeNextFiles(cwd: string, adminPath: string) {
     );
   } else {
     const rel = hasSrc ? "src/app" : "app";
-    const apiRoutePath = path.join(appDir, "dyrected/[...route]/route.ts");
-    if (!(await fs.pathExists(apiRoutePath))) {
-      const configImport = hasSrc
-        ? "../../../../dyrected.config"
-        : "../../../dyrected.config";
-      await fs.outputFile(
-        apiRoutePath,
-        `import { dyrectedNextHandler } from '@dyrected/next'
+    if (backend === "self-hosted") {
+      const apiRoutePath = path.join(appDir, "dyrected/[...route]/route.ts");
+      if (!(await fs.pathExists(apiRoutePath))) {
+        const configImport = hasSrc
+          ? "../../../../dyrected.config"
+          : "../../../dyrected.config";
+        await fs.outputFile(
+          apiRoutePath,
+          `import { dyrectedNextHandler } from '@dyrected/next'
 import config from '${configImport}'
 
 export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)
 `,
-      );
-      console.log(chalk.green(`✔  ${rel}/dyrected/[...route]/route.ts written`));
+        );
+        console.log(chalk.green(`✔  ${rel}/dyrected/[...route]/route.ts written`));
+      }
     }
     const adminPagePath = path.join(appDir, `${adminPath}/page.tsx`);
     if (!(await fs.pathExists(adminPagePath))) {
@@ -111,14 +114,18 @@ export default function AdminPage() {
   const instrumentationDir = hasSrc ? path.join(cwd, "src") : cwd;
   const instrumentationPath = path.join(instrumentationDir, "instrumentation.ts");
   if (!(await fs.pathExists(instrumentationPath))) {
-    const apiPath = hasPagesRouter && !hasAppRouter ? "/api/dyrected" : "/dyrected";
+    const apiLogLine =
+      backend === "cloud"
+        ? "    const api = process.env.NEXT_PUBLIC_DYRECTED_URL || process.env.DYRECTED_URL || 'https://cloud.dyrected.com'\n    console.log(`  ➜  Dyrected API:    ${api}`)"
+        : "    console.log(`  ➜  Dyrected API:    ${base}/dyrected`)";
     await fs.outputFile(
       instrumentationPath,
       `export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const base = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\\/$/, '')
     console.log(\`\\n  ➜  Dyrected admin:  \${base}/${adminPath}\`)
-    console.log(\`  ➜  Dyrected API:    \${base}${apiPath}\\n\`)
+${apiLogLine}
+    console.log('')
   }
 }
 `,
@@ -128,7 +135,7 @@ export default function AdminPage() {
   }
 }
 
-export async function writeNuxtFiles(cwd: string, adminPath: string) {
+export async function writeNuxtFiles(cwd: string, adminPath: string, backend: BackendMode) {
   const hasAppDir = await fs.pathExists(path.join(cwd, "app"));
   const pagesBase = hasAppDir ? "app/pages" : "pages";
 
@@ -152,10 +159,10 @@ definePageMeta({
     console.log(chalk.green(`✔  ${pagesBase}/${adminPath}/index.vue written`));
   }
 
-  await patchNuxtConfig(cwd, adminPath);
+  await patchNuxtConfig(cwd, adminPath, backend);
 }
 
-export async function patchNuxtConfig(cwd: string, adminPath?: string) {
+export async function patchNuxtConfig(cwd: string, adminPath?: string, backend: BackendMode = "self-hosted") {
   const tsConfig = path.join(cwd, "nuxt.config.ts");
   const jsConfig = path.join(cwd, "nuxt.config.js");
   const configPath = (await fs.pathExists(tsConfig)) ? tsConfig : (await fs.pathExists(jsConfig)) ? jsConfig : null;
@@ -173,9 +180,13 @@ export async function patchNuxtConfig(cwd: string, adminPath?: string) {
     return;
   }
 
-  const moduleEntry = adminPath
-    ? `['@dyrected/nuxt', { adminPath: '${adminPath}' }]`
-    : `'@dyrected/nuxt'`;
+  const moduleOptions = [`adminPath: '${adminPath || "admin"}'`];
+  if (backend === "cloud") {
+    moduleOptions.push(
+      "apiBase: process.env.NUXT_PUBLIC_DYRECTED_URL || process.env.DYRECTED_URL || 'https://cloud.dyrected.com'",
+    );
+  }
+  const moduleEntry = `['@dyrected/nuxt', { ${moduleOptions.join(", ")} }]`;
 
   if (/modules\s*:\s*\[/.test(content)) {
     content = content.replace(/modules\s*:\s*\[/, `modules: [${moduleEntry}, `);

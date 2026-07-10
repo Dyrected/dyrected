@@ -1,3 +1,5 @@
+export type BackendMode = "cloud" | "self-hosted";
+
 export function buildDbConfig(db: string): string {
   switch (db) {
     case "postgres":
@@ -28,7 +30,29 @@ export function buildStorageConfig(storage: string): string {
   }
 }
 
-export function buildEnvTemplate(db: string, storage: string, framework: string): string {
+export function buildEnvTemplate(
+  framework: "next" | "nuxt",
+  backend: BackendMode,
+  db: string,
+  storage: string,
+): string {
+  if (backend === "cloud") {
+    const prefix = framework === "next" ? "NEXT_PUBLIC_" : "NUXT_PUBLIC_";
+    return (
+      [
+        `# Dyrected CMS — Environment Variables`,
+        `# Connect your app to an existing Dyrected Cloud site`,
+        `DYRECTED_URL=https://cloud.dyrected.com`,
+        `DYRECTED_API_KEY=`,
+        `DYRECTED_SITE_ID=`,
+        ``,
+        `${prefix}DYRECTED_URL=https://cloud.dyrected.com`,
+        `${prefix}DYRECTED_API_KEY=`,
+        `${prefix}DYRECTED_SITE_ID=`,
+      ].join("\n") + "\n"
+    );
+  }
+
   const lines = [
     `# Dyrected CMS — Environment Variables`,
     `DATABASE_URL=${
