@@ -2,25 +2,33 @@
 
 ```
 Use `$api-doc-hitl`.
+Claude
+lower model: $sonnet-4.5
+higher model: $opus-4.8
+
+OpenAI
+lower model: gpt-5.3
+higher model: gpt-5.4
+
 
 Model policy:
-- Highest model allowed for this workflow: `gpt-5.4`.
-- Use `gpt-5.4` only for tasks that require judgment, synthesis, or final writing quality:
+- Highest model allowed for this workflow: `higher model`.
+- Use `higher model` only for tasks that require judgment, synthesis, or final writing quality:
   - choosing the closest Payload equivalent
   - extracting the teaching structure from that page
   - deciding what the Dyrected page must teach directly
   - reconciling doc-vs-code conflicts
   - drafting or revising the final MDX
   - writing the review packet when it includes factual or editorial judgment
-- Use `gpt-5.3` for menial or low-risk tasks:
+- Use `lower model` for menial or low-risk tasks:
   - listing target files
   - gathering candidate Payload pages before final selection
   - collecting source links and file paths
   - extracting obvious headings or metadata
   - formatting output sections
   - summarizing already-verified notes without adding new claims
-- Do not escalate above `gpt-5.4`.
-- Do not let `gpt-5.3` make final factual, structural, or editorial decisions.
+- Do not escalate above `higher model`.
+- Do not let `lower model` make final factual, structural, or editorial decisions.
 
 Batch scope:
 Process all `*.mdx` files in:

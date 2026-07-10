@@ -1,9 +1,9 @@
 ---
-title: Let Editors Build Custom Pages in Next.js with Dyrected
-description: Set up Dyrected so your marketing & content team or clients can build new landing pages from approved reusable sections without waiting on a developer for every copy and layout change.
+title: Let Editors Build Custom Pages in Nuxt with Dyrected
+description: Set up Dyrected so your marketing and content team or clients can build new landing pages from approved reusable sections without waiting on a developer for every copy and layout change.
 ---
 
-Use this page after [Adding a Visual Editor in Next.js](/new-docs/quick-start-guides/nextjs-quick-start/adding-a-visual-editor-in-nextjs). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Nuxt](/new-docs/quick-start-guides/nuxtjs-quick-start/adding-a-visual-editor-in-nuxtjs). At this point, the important pieces should already exist:
 
 - the `pages` collection exists
 - the frontend can render Dyrected content
@@ -26,7 +26,7 @@ That means the safest setup is:
 In Dyrected, that setup is usually:
 
 - a `pages` collection with a `layout` blocks field
-- a Next.js renderer that maps each `blockType` to a real component
+- a Nuxt renderer that maps each `blockType` to a real component
 - a preview setup that opens the real page while editors are working
 
 <Steps>
@@ -134,7 +134,7 @@ This keeps the page structure flexible, but only inside the set of blocks you ap
 <Step>
 ### Make sure the frontend can render every approved section
 
-The dashboard is only half of the workflow. Every approved block also needs a matching Next.js component in the frontend.
+The dashboard is only half of the workflow. Every approved block also needs a matching Nuxt component in the frontend.
 
 That means:
 
@@ -180,10 +180,10 @@ That is the moment this guide is aiming for. It proves editors are no longer jus
 
 This workflow only works because the earlier quick-start pages already handled the pieces below:
 
-- [Defining a Schema](/new-docs/quick-start-guides/nextjs-quick-start/defining-a-schema) shaped the content model
-- [Setting Up Initial Data](/new-docs/quick-start-guides/nextjs-quick-start/setting-up-initial-data) made the first load non-empty
-- [Displaying Content in Next.js](/new-docs/quick-start-guides/nextjs-quick-start/displaying-content-in-nextjs) made the frontend render real content
-- [Adding a Visual Editor in Next.js](/new-docs/quick-start-guides/nextjs-quick-start/adding-a-visual-editor-in-nextjs) made editors preview and click into that content
+- [Defining a Schema](/new-docs/quick-start-guides/nuxtjs-quick-start/defining-a-schema) shaped the content model
+- [Setting Up Initial Data](/new-docs/quick-start-guides/nuxtjs-quick-start/setting-up-initial-data) made the first load non-empty
+- [Displaying Content in Nuxt](/new-docs/quick-start-guides/nuxtjs-quick-start/displaying-content-in-nuxtjs) made the frontend render real content
+- [Adding a Visual Editor in Nuxt](/new-docs/quick-start-guides/nuxtjs-quick-start/adding-a-visual-editor-in-nuxtjs) made editors preview and click into that content
 
 This page is where those pieces finally become one editor-ready landing-page workflow.
 
@@ -207,7 +207,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](/new-docs/basics/fields/blocks)
 - [Collections](/new-docs/basics/configuration/collections)
-- [Displaying Content in Next.js](/new-docs/quick-start-guides/nextjs-quick-start/displaying-content-in-nextjs)
+- [Displaying Content in Nuxt](/new-docs/quick-start-guides/nuxtjs-quick-start/displaying-content-in-nuxtjs)
 
 ## Success check
 
@@ -219,4 +219,4 @@ You are ready for the next step when:
 - preview reflects changes on a real page
 - the dashboard can create at least one landing page from those approved sections
 
-Once that is true, your Next.js quick start is complete. When you are ready to give access to another person, continue to [Handing Off to Editors](/new-docs/features/authentication/handing-off-to-editors).
+Once that is true, your Nuxt quick start is complete. When you are ready to give access to another person, continue to [Handing Off to Editors](/new-docs/features/authentication/handing-off-to-editors).

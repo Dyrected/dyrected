@@ -2,11 +2,11 @@
   "title": "Nuxt.js Quick Start",
   "pages": [
     "overview",
-    "setting-up-your-cloud-site",
     "installing-dyrected",
     "defining-a-schema",
     "setting-up-initial-data",
-    "displaying-content-in-vuejs",
-    "inviting-editors"
+    "displaying-content-in-nuxtjs",
+    "adding-a-visual-editor-in-nuxtjs",
+    "building-landing-pages-for-marketing"
   ]
 }

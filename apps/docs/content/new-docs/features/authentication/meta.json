@@ -2,6 +2,7 @@
   "title": "Authentication",
   "pages": [
     "overview",
+    "handing-off-to-editors",
     "operations",
     "email-verification",
     "jwt-strategy",
