@@ -181,6 +181,9 @@ export interface Blog {
   id: string;
   title: string;
   slug: string;
+  status?: "draft" | "in-review" | "published";
+  tags?: string[];
+  views?: number;
   content: Record<string, unknown>;
   featuredImage?: Media | string;
   author?: Authors | string;
@@ -192,11 +195,17 @@ export interface Blog {
 export interface Products {
   id: string;
   title: string;
+  sku?: string;
   slug: string;
   description?: string;
   price?: number;
-  image?: Array<Media | string>;
+  discount?: number;
+  rating?: number;
+  stock?: number;
+  status?: "draft" | "active" | "archived";
   featured?: boolean;
+  metadata?: Record<string, unknown>;
+  image?: Array<Media | string>;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -205,6 +214,9 @@ export interface Products {
 export interface Authors {
   id: string;
   name: string;
+  email?: string;
+  website?: UrlField;
+  memberId?: string;
   bio?: string;
   avatar?: Media | string;
   country?: string;

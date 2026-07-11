@@ -58,34 +58,43 @@ export interface CollectionListSlotProps {
 }
 
 /**
- * Custom component overrides passed to `<DyrectedAdmin />`.
+ * Custom component overrides passed to `<DyrectedAdmin />`. Each key is a
+ * registry: you reference a component by a string key in your schema config,
+ * then provide the real component under that same key here.
  *
  * @example
  * ```tsx
  * <DyrectedAdmin
  *   components={{
- *     fields: { color: ColorPickerField },
+ *     // field's admin.component: 'brand-color'
+ *     fields: { 'brand-color': ColorPickerField },
+ *     // admin.components.beforeDashboard: ['analytics']
  *     dashboard: { analytics: AnalyticsWidget },
- *     collectionList: { posts: PostsListView },
+ *     // collection admin.components.beforeList: ['posts-header']
+ *     collectionList: { 'posts-header': PostsHeader },
  *   }}
  * />
  * ```
  */
 export interface AdminComponents {
   /**
-   * Custom field renderers keyed by field type name.
-   * A component registered here replaces the built-in renderer for every
-   * field whose `type` matches the key.
+   * Custom field inputs keyed by the `admin.component` string set on a field.
+   * A field opts in by setting `admin.component: '<key>'`; the component
+   * registered under that key replaces the built-in input for that field.
+   * Keys are arbitrary — this is a per-field override, not a per-type one.
    */
   fields?: Record<string, ComponentType<any>>;
   /**
-   * Custom dashboard slot components keyed by a slot name of your choice.
-   * All registered components are rendered inside the dashboard page.
+   * Dashboard slot components keyed by the slot-key names declared in the
+   * top-level `admin.components` (`beforeDashboard` / `afterDashboard`).
+   * The registered components render around the built-in dashboard.
    */
   dashboard?: Record<string, ComponentType<DashboardSlotProps>>;
   /**
-   * Custom collection list slot components keyed by collection slug.
-   * The registered component replaces the entire list view for that collection.
+   * Collection-list slot components keyed by the slot-key names declared in a
+   * collection's `admin.components` (`beforeList` / `beforeListTable` /
+   * `afterListTable` / `afterList`). They inject content around the built-in
+   * list — they do not replace it.
    */
   collectionList?: Record<string, ComponentType<CollectionListSlotProps>>;
 }

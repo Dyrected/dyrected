@@ -1592,7 +1592,7 @@ The Admin UI is a React application exported from `@dyrected/admin`. Every frame
 
 
 export default function AdminPage() {
-  return <DyrectedAdmin basename="/admin" />;
+  return <DyrectedAdmin />;
 }
 ```
 
@@ -1628,7 +1628,7 @@ export function AdminPage() {
 </script>
 
 <template>
-  <DyrectedAdmin base-url="https://api.dyrected.cloud" api-key="sk_live_..." basename="/admin" />
+  <DyrectedAdmin base-url="https://api.dyrected.cloud" api-key="sk_live_..." />
 </template>
 ```
 
@@ -6628,19 +6628,19 @@ Create a catch-all page at `app/admin/page.tsx`. The `@dyrected/next` package pr
 
 export default function AdminPage() {
   return (
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   )
 }
 ```
 </Tab>
 <Tab value="Nuxt.js">
-Adding the `@dyrected/nuxt` module auto-imports the `<DyrectedAdmin>` component, but it does not create a route for you — you decide where the dashboard lives. Create a page and render `<DyrectedAdmin>` with a `basename` that matches that route. Here it is at `/admin`; use a different filename and `basename` (say `pages/cms-admin.vue` with `basename="/cms-admin"`) if you want a different path.
+Adding the `@dyrected/nuxt` module auto-imports the `<DyrectedAdmin>` component, but it does not create a route for you — you decide where the dashboard lives. The admin's URL is simply the route of the page you render it in. Here it is at `/admin`; use a different filename (say `pages/cms-admin.vue`) if you want a different path.
 
 ```vue
 <!-- pages/admin.vue -->
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   </ClientOnly>
 </template>
 
@@ -9391,7 +9391,7 @@ definePageMeta({ layout: false }); // Avoid nesting within your default site hea
   <div>
     <!-- Render dashboard inside ClientOnly to avoid server build errors -->
     <ClientOnly>
-      <DyrectedAdmin basename="/admin" />
+      <DyrectedAdmin />
     </ClientOnly>
   </div>
 </template>
@@ -11135,7 +11135,7 @@ definePageMeta({
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   </ClientOnly>
 </template>
 ```
@@ -11381,7 +11381,6 @@ export function AdminPage() {
     <DyrectedAdmin
       baseUrl="/dyrected"
       apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
-      basename="/admin"
     />
   )
 }
@@ -11391,7 +11390,6 @@ export function AdminPage() {
 |---|---|---|
 | `baseUrl` | `string` | URL of the Dyrected API (e.g. `/dyrected`) |
 | `apiKey` | `string` | API key for authenticating requests |
-| `basename` | `string` | Base path where the admin is mounted in your router |
 | `siteId` | `string` | Optional site ID for multi-tenant setups |
 | `onNavigate` | `(path: string) => void` | Called on internal route changes — use to sync your host router |
 
@@ -11759,7 +11757,6 @@ pnpm add @dyrected/vue @dyrected/sdk
   <DyrectedAdmin
     base-url="https://api.dyrected.cloud"
     api-key="sk_live_..."
-    basename="/admin"
   />
 </template>
 ```
@@ -11780,10 +11777,6 @@ pnpm add @dyrected/vue @dyrected/sdk
     },
     siteId: {
       description: 'Required in Cloud mode.',
-      type: 'string',
-    },
-    basename: {
-      description: 'The URL path prefix for the admin (default: `/admin`).',
       type: 'string',
     },
   }}
@@ -11896,7 +11889,6 @@ const props = defineProps<{
 <template>
   <ClientOnly>
     <DyrectedAdmin
-      basename="/admin"
       :components="{
         fields: {
           'products.brandColor': BrandColorPicker,

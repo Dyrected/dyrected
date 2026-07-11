@@ -106,7 +106,7 @@ export function registerSyncSchema(program: Command) {
     .description("Sync your local Dyrected schema with the Cloud dashboard")
     .option("-k, --api-key <key>", "Your Dyrected API Key")
     .option("-s, --site-id <id>", "Your Dyrected Site ID")
-    .option("-u, --url <url>", "Cloud API URL", "https://cloud.dyrected.com")
+    .option("-u, --url <url>", "Cloud API URL (defaults to $DYRECTED_URL, then Dyrected Cloud)")
     .option("-c, --config <path>", "Path to your dyrected.config.ts", "./dyrected.config.ts")
     .option("--env-path <path>", "Path to an env file to load before syncing")
     .option("--skip-on-error", "Do not exit with error if sync fails (useful for CI builds)")

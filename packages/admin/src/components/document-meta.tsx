@@ -30,8 +30,8 @@ function pageLabel(
   if (segments[0] === "collections" && segments[1]) {
     const slug = segments[1];
     const collection = collections.find((c) => c.slug === slug);
-    const singular = collection?.labels?.singular ?? collection?.label ?? humanize(slug);
-    const plural = collection?.labels?.plural ?? collection?.label ?? humanize(slug);
+    const singular = collection?.labels?.singular ?? humanize(slug);
+    const plural = collection?.labels?.plural ?? humanize(slug);
 
     if (segments[2] === "new") return `New ${singular}`;
     if (segments[2] === "edit") return `Edit ${singular}`;

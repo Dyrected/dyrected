@@ -2,12 +2,12 @@
   "title": "Custom Components",
   "pages": [
     "overview",
-    "root-components",
-    "custom-providers",
-    "customizing-views",
     "dashboard",
-    "document-views",
-    "edit-view",
-    "list-view"
+    "list-view",
+    "__root-components",
+    "__custom-providers",
+    "__customizing-views",
+    "__document-views",
+    "__edit-view"
   ]
 }

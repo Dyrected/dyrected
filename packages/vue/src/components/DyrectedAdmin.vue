@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, nextTick, watch, computed, getCurrentInstance } from "vue";
 import "@dyrected/admin/styles";
 import { wrapComponents } from "../bridge/react-in-vue";
 
@@ -26,8 +26,13 @@ const props = defineProps<{
 const container = ref<HTMLElement | null>(null);
 let unmount: (() => void) | null = null;
 
+// Capture the host app's context so wrapped Vue components (custom fields and
+// slots) share its plugins, provide/inject, Pinia, and i18n instead of each
+// mounting an isolated app.
+const appContext = getCurrentInstance()?.appContext ?? null;
+
 // Wrap components for React
-const wrappedComponents = computed(() => wrapComponents(props.components));
+const wrappedComponents = computed(() => wrapComponents(props.components, appContext));
 
 const mountAdmin = async () => {
   if (unmount) {
