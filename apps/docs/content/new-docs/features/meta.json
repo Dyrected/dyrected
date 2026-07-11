@@ -4,7 +4,6 @@
     "admin",
     "custom-components",
     "authentication",
-    "rich-text",
     "live-preview",
     "versions",
     "workflows",
