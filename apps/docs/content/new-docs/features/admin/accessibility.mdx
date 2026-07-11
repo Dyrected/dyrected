@@ -1,3 +1,32 @@
 ---
 title: Accessibility
+description: The admin is built on accessible primitives, so keyboard and screen-reader support come for free — and the content choices that keep your own data accessible.
 ---
+
+Accessibility in the admin has two halves: the parts Dyrected is responsible for — the buttons, forms, dialogs, and navigation the interface ships with — and the parts you're responsible for, which come from how you model and fill in your content. The good news is that the first half is handled by the foundation the admin is built on. This page covers what you get for free and what stays your job.
+
+By the end you should know why the admin is accessible out of the box and which content choices keep the pages your editors produce accessible too.
+
+## What the admin provides
+
+The admin is built on [Radix UI](https://www.radix-ui.com/) primitives — the same accessible component foundation behind shadcn/ui — rather than hand-rolled widgets. Every interactive control (dialogs, dropdowns, selects, comboboxes, tabs, switches, checkboxes, tooltips) follows the [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/), so a strong baseline comes built in:
+
+- **Full keyboard navigation.** Every control is reachable and operable by keyboard, with correct focus order and a visible focus ring on the element you're on. Menus, dialogs, and comboboxes handle arrow-key movement, `Escape` to dismiss, and focus trapping the way assistive-technology users expect.
+- **Correct ARIA semantics.** Controls expose the right roles, states, and labels — comboboxes announce their expanded state, icon-only buttons carry labels, and dialogs manage focus and describe themselves to screen readers.
+- **Accessible error handling.** Form validation surfaces through proper error messaging and `aria` associations, not color alone, so mistakes are reachable by screen readers.
+
+This is behavior you inherit from the component layer, not something you configure. There are no accessibility options to switch on and nothing on this page requires setup.
+
+## What stays your responsibility
+
+A large part of whether the admin — and the pages it produces — works for everyone depends on the content model you define. These are the choices that matter most:
+
+- **Give images an alt-text field and fill it in.** The admin prompts for alt text on media because screen readers depend on it, and the dashboard's "needs attention" panel flags upload collections that are missing an alt-text field. An image without alt text is inaccessible both in the admin and on the pages that render it.
+- **Write clear field labels and descriptions.** Use each field's `label` and `admin.description` so every editor — including those using assistive technology — understands a field without inferring its purpose from the field name.
+- **Keep content structure meaningful.** In rich text, use real headings and lists instead of styling text to merely look like them, so the structure survives for readers who navigate by it.
+
+None of this is styling configuration; it's schema and content discipline. But it's the part that most affects whether the content your editors publish is accessible.
+
+## Recommended path
+
+Rely on the built-in keyboard, focus, and ARIA behavior as your baseline — it's there because of the primitives the admin is built on, and you don't need to do anything to get it. Put your effort into the content side you control: an alt-text field on every upload collection, clear labels and descriptions on fields, and real structure in rich text.

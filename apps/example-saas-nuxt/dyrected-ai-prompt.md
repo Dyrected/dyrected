@@ -245,7 +245,7 @@ definePageMeta({ layout: false });
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   </ClientOnly>
 </template>
 ```

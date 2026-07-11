@@ -1,3 +1,90 @@
 ---
 title: Custom Admin Panel Location
+description: Mount the embedded admin at whatever route you want by placing its component where your framework's router expects a page.
 ---
+
+The embedded admin defaults to `/admin`, but nothing pins it there. Because you mount it as an ordinary page in your own app, its URL is decided by where you put that page — not by an admin config option. Want it at `/cms`, `/studio`, or behind a dashboard layout? Move the page.
+
+By the end of this page you should know how the admin's location is actually determined, how to mount it at a custom path in each framework, and one behavior to expect about its internal links.
+
+## How the location is decided
+
+The admin is a single embedded component. Its path is simply the route of the page file you render it in — this is your framework's file-based routing, not a Dyrected setting. There is no `admin.routes`, `adminRoute`, or `mountPath` option to configure. To move the admin, move (or rename) the page that renders it.
+
+Internally, the admin routes between its own screens with a **hash router**. That means once you're inside it, the browser URL looks like `/cms#/collections/posts` — the part before the `#` is where you mounted it, and the part after is the admin's internal navigation. This is what lets the admin drop into any route without fighting your app's router.
+
+<Callout type="warn">
+  Older examples and previously scaffolded projects may pass a `basename` prop. It had no effect on where the panel
+  lives — the admin routes internally with a hash router — so it has been removed. If your project still passes
+  `basename`, delete it and control the location with the page's route instead.
+</Callout>
+
+## Next.js
+
+Put the catch-all page wherever you want the admin to live. The folder name is the route:
+
+```tsx
+// app/cms/[[...path]]/page.tsx  → admin at /cms
+import { DyrectedAdmin } from "@dyrected/next/admin";
+
+export default function AdminPage() {
+  return <DyrectedAdmin />;
+}
+```
+
+Rename the folder from `admin` to `cms` (or anything else) and the admin moves with it. The `[[...path]]` catch-all segment lets the admin's own routing operate under that prefix.
+
+## React (Vite)
+
+Render `<AdminUI />` from the route component your router maps to your chosen path:
+
+```tsx
+// src/pages/Studio.tsx  → mapped to /studio in your router
+import { AdminUI } from "@dyrected/admin";
+
+export function StudioPage() {
+  return (
+    <div style={{ height: "100vh" }}>
+      <AdminUI
+        baseUrl={import.meta.env.VITE_DYRECTED_URL}
+        apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      />
+    </div>
+  );
+}
+```
+
+Point a route at this component in your router config and the admin lives there.
+
+## Vue and Nuxt
+
+Both wrap `renderAdminUI` and must run client-side only. The page's route is again the location.
+
+```vue
+<!-- Nuxt: pages/cms.vue  → admin at /cms -->
+<script setup lang="ts">
+definePageMeta({ layout: false });
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin />
+  </ClientOnly>
+</template>
+```
+
+For Vue, mount `<DyrectedAdmin />` inside whatever route your router maps to the path you want, wrapped in your framework's client-only mechanism.
+
+## Keeping browser history in sync
+
+When the admin is embedded, you may want its internal navigation reflected in your app's own router — the Next.js, Vue, or Nuxt router your project already uses — so the browser back button behaves. Pass `onNavigate`, which fires on every internal route change:
+
+```tsx
+<DyrectedAdmin onNavigate={(path) => router.push("/cms" + path)} />
+```
+
+This is optional. The admin works without it; `onNavigate` is there when you want your app's browser history and the admin's navigation to stay aligned.
+
+## Recommended path
+
+Pick the route you want, name the page file to match, and render the admin component there — that's the whole mechanism. Reach for `onNavigate` only if you need your app's router to track the admin's internal navigation, and don't rely on `basename` to place the panel.

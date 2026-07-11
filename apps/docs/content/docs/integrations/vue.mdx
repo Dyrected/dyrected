@@ -29,7 +29,6 @@ import { DyrectedAdmin } from '@dyrected/vue'
   <DyrectedAdmin
     base-url="https://api.dyrected.cloud"
     api-key="sk_live_..."
-    basename="/admin"
   />
 </template>
 ```
@@ -50,10 +49,6 @@ import { DyrectedAdmin } from '@dyrected/vue'
     },
     siteId: {
       description: 'Required in Cloud mode.',
-      type: 'string',
-    },
-    basename: {
-      description: 'The URL path prefix for the admin (default: `/admin`).',
       type: 'string',
     },
   }}
@@ -166,7 +161,6 @@ import BrandColorPicker from '~/components/BrandColorPicker.vue'
 <template>
   <ClientOnly>
     <DyrectedAdmin
-      basename="/admin"
       :components="{
         fields: {
           'products.brandColor': BrandColorPicker,

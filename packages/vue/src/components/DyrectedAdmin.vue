@@ -17,11 +17,6 @@ const props = defineProps<{
     baseUrl: string;
   };
   /**
-   * The base path where the admin is mounted.
-   * @default "/admin"
-   */
-  basename?: string;
-  /**
    * Custom components to inject into the Admin UI.
    * Can be raw Vue components; they will be automatically wrapped.
    */
@@ -48,7 +43,6 @@ const mountAdmin = async () => {
         apiKey: props.config.apiKey,
         siteId: props.config.siteId,
         baseUrl: props.config.baseUrl,
-        basename: props.basename || "/admin",
         isEmbedded: false,
         components: wrappedComponents.value,
       });

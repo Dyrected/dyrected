@@ -1,3 +1,186 @@
 ---
 title: Customizing CSS
+description: Match the admin to your brand with a few config options, then reach for CSS variables when you need full control of the theme, in light and dark mode.
 ---
+
+The admin ships with a clean default look, but it is meant to feel like your product, not ours. There are two layers to that: a small set of branding options you set in config, and a full set of CSS custom properties you can override when you want complete control of the palette, fonts, and shape.
+
+Throughout this page, "your app" means the project you embedded the admin into — your Next.js, Nuxt, Vue, or React application. That's where the admin's stylesheet is imported and where any CSS overrides live.
+
+By the end of this page you should know which layer to reach for, how to set your brand colors and fonts the easy way, and how to retheme the whole admin — in both light and dark mode — without those styles leaking into the rest of your app.
+
+## Two layers, in order of effort
+
+Start at the top and only go lower when you need to:
+
+1. **Branding config** — logo, brand colors, and fonts, set on the `admin.branding` key. Enough for most teams.
+2. **CSS variable overrides** — every design token (surfaces, borders, radius, sidebar, focus rings) exposed as a CSS custom property you can override from your app's own global stylesheet.
+
+There is no `custom.css` path option and no SCSS build step to configure. The admin's own stylesheet is a single import, and everything themeable is a CSS variable on top of it.
+
+## The easy layer: branding config
+
+Pass an `admin.branding` object in `defineConfig` to cover the common cases without writing any CSS:
+
+```ts
+export default defineConfig({
+  collections: [...],
+  admin: {
+    branding: {
+      logo: "/logo.svg",         // shown in the expanded sidebar
+      logoMark: "/logomark.svg", // compact mark for the collapsed sidebar
+      primaryColor: "#6366f1",   // filled actions (Save, Create) + active states
+      accentColor: "#8b5cf6",    // links, navigation accents, focus rings
+      fontSans: '"Inter"',       // body and UI text (load the font yourself)
+      fontSerif: '"Lora"',       // headings and display (load the font yourself)
+    },
+  },
+});
+```
+
+### Two brand colors
+
+The admin uses two brand colors, and you can set them independently:
+
+- **`primaryColor`** is for committed, filled actions — Save, Create, Upload — and active or selected states.
+- **`accentColor`** is for links, active navigation details, and focus rings.
+
+Both accept a hex value, a named color (`blue`, `violet`, `green`, and so on), or a raw HSL triplet, and both apply in light and dark mode. If you only have one brand color, set `primaryColor` alone — `accentColor` falls back to it, giving the single-color look. Set `accentColor` when your links and accents should be a different color from your primary action buttons.
+
+For the browser tab title and favicon, see [Metadata](/new-docs/features/admin/metadata) — those live alongside branding but control the page itself rather than the theme.
+
+### Loading fonts
+
+`fontSans` and `fontSerif` set which font families the admin uses, but they don't download the fonts — you load those yourself, the same way you would for any web page. Add the font in your app's `<head>`, then name it in `branding`.
+
+For example, to use Inter, first load it wherever your framework renders `<head>` tags — Next's root `layout.tsx`, Nuxt's `app.head` config, or `index.html` for a plain Vite app:
+
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+```
+
+Then reference it by name in your config:
+
+```ts
+admin: {
+  branding: {
+    fontSans: '"Inter", sans-serif',
+  },
+}
+```
+
+If the font isn't loaded, the admin falls back to its default — so a blank result usually means the `<link>` is missing, not the config.
+
+## The power layer: CSS variables
+
+When branding options aren't enough — you want a different surface color, a tighter radius, a custom sidebar tint — the admin exposes all of its design tokens as CSS custom properties. First, make sure the admin's stylesheet is imported once in your app:
+
+```ts
+import "@dyrected/admin/styles";
+```
+
+Then override any token on the `.dy-admin-ui` class from your app's own global stylesheet. Scoping to `.dy-admin-ui` is deliberate: it keeps the admin's theme isolated so these variables never bleed into the rest of your app, and your app's styles never bleed in.
+
+```css
+/* In your global.css */
+.dy-admin-ui {
+  /* Filled actions (Save, Create) and active states */
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Links and navigation accents */
+  --intelligence: 217 91% 60%;
+  --intelligence-foreground: 0 0% 100%;
+
+  /* Focus ring and corner radius */
+  --ring: 217 91% 60%;
+  --radius: 0.375rem;
+}
+```
+
+<Callout type="info">
+  Colors use **HSL without the `hsl()` wrapper** — three space-separated values like `217 91% 60%`, the Tailwind
+  convention. Write `--primary: 217 91% 60%`, not `--primary: hsl(217, 91%, 60%)`.
+</Callout>
+
+### The tokens you'll reach for most
+
+You don't need to set every variable — override only what you're changing, and the rest keep their defaults. The ones that come up most often:
+
+| Token                    | Controls                                       |
+| ------------------------ | ---------------------------------------------- |
+| `--background` / `--foreground` | Page surface and default text            |
+| `--card` / `--card-foreground`  | Panel and card surfaces                   |
+| `--primary` / `--primary-foreground` | Committed actions (Save, Create), active states |
+| `--intelligence`         | Links and navigation accents                   |
+| `--muted` / `--muted-foreground` | Placeholders, helper text, disabled states |
+| `--border` / `--input`   | Field borders and dividers                     |
+| `--ring`                 | Focus ring color                               |
+| `--radius`               | Corner radius on cards, inputs, buttons        |
+| `--sidebar-*`            | The sidebar's own background, text, and accents |
+| `--font-sans` / `--font-serif` | Font families                            |
+
+### A worked example: retheme to a single brand color
+
+When you have one brand color, use it for filled actions and active states, then derive lighter tints for the muted and sidebar surfaces so nothing looks flat:
+
+```css
+.dy-admin-ui {
+  --background: 324 17% 97%;
+  --foreground: 325 17% 16%;
+
+  --primary: 321 17% 38%;
+  --primary-foreground: 324 17% 97%;
+  --intelligence: 321 17% 38%;
+  --intelligence-foreground: 324 17% 97%;
+
+  --muted: 320 20% 95%;
+  --muted-foreground: 321 10% 42%;
+  --border: 321 10% 86%;
+  --input: 321 10% 86%;
+  --ring: 321 17% 38%;
+
+  --sidebar-background: 320 20% 95%;
+  --sidebar-primary: 321 17% 38%;
+  --sidebar-primary-foreground: 324 17% 97%;
+  --sidebar-border: 321 10% 84%;
+}
+```
+
+Keep `--primary-foreground` high-contrast against `--primary` so text on buttons stays readable.
+
+## Dark mode
+
+The admin has a light and a dark theme. Editors switch between them with the theme toggle, and by default it follows their operating system setting. You don't need to build anything for this — both themes ship out of the box.
+
+Your **branding colors carry across automatically**. A `primaryColor` or `accentColor` set in `admin.branding` applies in both light and dark mode with no extra work.
+
+Your **CSS variable overrides, though, are per theme**. The tokens you set on `.dy-admin-ui` apply to light mode. Dark mode has its own values for those same tokens, defined on the `.dy-admin-ui.dark` selector — so to change a token in dark mode, target that selector as well:
+
+```css
+/* Light mode */
+.dy-admin-ui {
+  --background: 0 0% 98%;
+  --card: 0 0% 100%;
+}
+
+/* Dark mode */
+.dy-admin-ui.dark {
+  --background: 240 10% 4%;
+  --card: 240 8% 7%;
+}
+```
+
+Surface tokens — backgrounds, cards, borders, muted text — are the ones that usually need a separate dark value, because a color that reads well on white rarely reads well on near-black. Accent tokens like `--primary` often work in both, which is why branding colors don't need a dark variant.
+
+## Scoping and escape hatches
+
+If you embed the admin inside a larger dashboard, you can nest the override under your own wrapper — `.my-admin-page .dy-admin-ui { ... }` — to theme one mounting differently from another. Because everything is a variable on a scoped class, you rarely need to write selectors against the admin's internal markup. If you find yourself wanting to restyle a specific field or panel rather than a token, that's a sign you want a [custom component](/new-docs/features/custom-components/overview) instead of a CSS override.
+
+## Recommended path
+
+Set `primaryColor`, `accentColor`, `logo`, and fonts in `admin.branding` first — that covers most brands in a few lines and works in light and dark mode automatically. Drop to CSS variables on `.dy-admin-ui` (and `.dy-admin-ui.dark` for dark mode) when you need surfaces, radius, or the sidebar to match exactly, and override only the tokens you're actually changing.

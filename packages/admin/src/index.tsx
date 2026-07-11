@@ -22,6 +22,7 @@ import { MediaPage } from "./pages/media/media-page";
 import { GlobalEditorPage } from "./pages/globals/editor-page";
 import { SetupPromptUI } from "./pages/setup/setup-prompt";
 import { ErrorBoundary } from "./components/error-boundary";
+import { DocumentMeta } from "./components/document-meta";
 import { AuthGate } from "./components/auth/auth-gate";
 import { AdminSplash } from "./components/layout/admin-splash";
 import { Toaster } from "./components/ui/sonner";
@@ -90,6 +91,7 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
     <AuthGate>
       <AdminShell isEmbedded={isEmbedded}>
         <NavigationSync onNavigate={onNavigate} />
+        <DocumentMeta />
         <ErrorBoundary>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -124,15 +126,6 @@ export interface AdminUIProps {
   /** Site ID for multi-tenant deployments. Omit for single-site setups. */
   siteId?: string;
   /**
-   * The base path where the admin is mounted in the host app.
-   * Defaults to "/admin". Used by BrowserRouter so internal links
-   * are relative to this prefix.
-   *
-   * Example — Next.js catch-all page at `app/admin/[[...path]]/page.tsx`:
-   *   <AdminUI basename="/admin" ... />
-   */
-  basename?: string;
-  /**
    * Called whenever the internal admin route changes.
    * Use this to sync the host router (e.g. Next.js router.push / Nuxt navigateTo)
    * so browser history works correctly when embedded.
@@ -156,7 +149,7 @@ export interface AdminUIProps {
   defaultTechStack?: string;
 }
 
-// ─── Embedded component (BrowserRouter — real URL + history) ─────────────────
+// ─── Embedded component (HashRouter — no host-router conflicts) ──────────────
 
 /**
  * The main admin UI component. Mount this inside your React app.

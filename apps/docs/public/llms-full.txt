@@ -633,40 +633,48 @@ Collections with no `group` are listed at the top of the sidebar ungrouped.
 URL to open in the Live Preview pane when editing a document. There are two ways to define the preview URL: using a **JavaScript function** or a **Jexl string expression**.
 
 **When to use which:**
+
 - **Jexl String (Recommended):** The safest and most robust approach. It works locally and is **required** if you use Dyrected Cloud Sync. The Admin automatically evaluates strings containing `+`, `?`, `==`, or `siteUrl` using [Jexl](https://github.com/TomFrost/Jexl), which is a safe, sandboxed expression language.
 - **JavaScript Function:** Works well for complex local-only configurations where you don't need to sync your schema to the cloud.
 
 <Callout type="warn">
-  **Dyrected Cloud Sync limitation**
-  If you use Dyrected Cloud Sync, your schema is serialized to JSON before being sent to the cloud. Because JSON cannot serialize JavaScript functions, any function passed to `previewUrl` will be stringified and break the Admin UI. Cloud users **must** use Jexl strings.
+  **Dyrected Cloud Sync limitation** If you use Dyrected Cloud Sync, your schema is serialized to JSON before being sent
+  to the cloud. Because JSON cannot serialize JavaScript functions, any function passed to `previewUrl` will be
+  stringified and break the Admin UI. Cloud users **must** use Jexl strings.
 </Callout>
 
 #### Example 1: Jexl String (Recommended)
+
 ```ts
 export default defineConfig({
-  collections: [{
-    slug: "posts",
-    admin: {
-      // Safely resolves slug and maps 'home' to '/'
-      previewUrl: "slug ? (slug == 'home' ? '/' : '/' + slug) : null",
-    }
-  }]
-})
+  collections: [
+    {
+      slug: "posts",
+      admin: {
+        // Safely resolves slug and maps 'home' to '/'
+        previewUrl: "slug ? (slug == 'home' ? '/' : '/' + slug) : null",
+      },
+    },
+  ],
+});
 ```
 
 #### Example 2: JavaScript Function (Local only)
+
 ```ts
 export default defineConfig({
-  collections: [{
-    slug: "posts",
-    admin: {
-      previewUrl: (doc, { locale }) => {
-        if (!doc?.slug) return null;
-        return `https://mysite.com/posts/${doc.slug}`;
-      }
-    }
-  }]
-})
+  collections: [
+    {
+      slug: "posts",
+      admin: {
+        previewUrl: (doc, { locale }) => {
+          if (!doc?.slug) return null;
+          return `https://mysite.com/posts/${doc.slug}`;
+        },
+      },
+    },
+  ],
+});
 ```
 
 If `previewUrl` evaluates to `null` or `undefined`, the preview pane is hidden.
@@ -797,7 +805,6 @@ Then pass your component to `<DyrectedAdmin>` under the matching key:
 
 ```vue
 <DyrectedAdmin
-  basename="/admin"
   :components="{
     fields: {
       'products.brandColor': BrandColorPicker,
@@ -1069,7 +1076,6 @@ export function AdminPage() {
     <DyrectedAdmin
       baseUrl="/dyrected"
       apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
-      basename="/admin"
       components={{
         dashboard: {
           "welcome-banner": WelcomeBanner,
@@ -1093,7 +1099,7 @@ The `@dyrected/nuxt` module auto-imports `<DyrectedAdmin />` — no explicit imp
 ```vue
 <!-- pages/admin/index.vue -->
 <script setup lang="ts">
-definePageMeta({ layout: false })
+definePageMeta({ layout: false });
 
 
 
@@ -1104,7 +1110,6 @@ definePageMeta({ layout: false })
 <template>
   <ClientOnly>
     <DyrectedAdmin
-      basename="/admin"
       :components="{
         dashboard: {
           'welcome-banner': WelcomeBanner,
@@ -1604,11 +1609,7 @@ Use `<AdminUI />` directly from `@dyrected/admin`:
 export function AdminPage() {
   return (
     <div style={{ height: "100vh" }}>
-      <AdminUI
-        baseUrl={import.meta.env.VITE_DYRECTED_URL}
-        apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
-        basename="/admin"
-      />
+      <AdminUI baseUrl={import.meta.env.VITE_DYRECTED_URL} apiKey={import.meta.env.VITE_DYRECTED_API_KEY} />
     </div>
   );
 }
@@ -1645,7 +1646,7 @@ definePageMeta({ layout: false });
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   </ClientOnly>
 </template>
 ```
@@ -1664,7 +1665,6 @@ const container = document.getElementById("admin-root")!;
 const unmount = renderAdminUI(container, {
   baseUrl: "https://api.dyrected.cloud",
   apiKey: "sk_live_...",
-  basename: "/admin",
 });
 
 // To tear down (e.g. on SPA route leave):
@@ -1685,7 +1685,6 @@ const unmount = renderAdminUI(container, {
     unmount = renderAdminUI(container, {
       baseUrl: import.meta.env.VITE_DYRECTED_URL,
       apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
-      basename: '/admin',
     })
   })
 
@@ -1704,30 +1703,27 @@ Both accept the same props:
 <TypeTable
   type={{
     baseUrl: {
-      description: 'The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).',
-      type: 'string',
+      description: "The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).",
+      type: "string",
       required: true,
     },
     apiKey: {
-      description: 'The Site API key used to authenticate all Admin requests.',
-      type: 'string',
+      description: "The Site API key used to authenticate all Admin requests.",
+      type: "string",
       required: true,
     },
     siteId: {
-      description: 'The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).',
-      type: 'string',
-    },
-    basename: {
-      description: 'The URL path prefix where the admin is mounted (default: `/admin`).',
-      type: 'string',
+      description: "The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).",
+      type: "string",
     },
     onNavigate: {
-      description: 'Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded.',
-      type: '(path: string) => void',
+      description:
+        "Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded.",
+      type: "(path: string) => void",
     },
     components: {
-      description: 'Custom field components. See [Custom Field Components](#custom-field-components).',
-      type: 'object',
+      description: "Custom field components. See [Custom Field Components](#custom-field-components).",
+      type: "object",
     },
   }}
 />
@@ -1868,20 +1864,20 @@ Your component receives:
 <TypeTable
   type={{
     value: {
-      description: 'The current field value.',
-      type: 'any',
+      description: "The current field value.",
+      type: "any",
     },
     onChange: {
-      description: 'Callback to update the value.',
-      type: '(value: any) => void',
+      description: "Callback to update the value.",
+      type: "(value: any) => void",
     },
     field: {
-      description: 'The full field definition from your config.',
-      type: 'FieldSchema',
+      description: "The full field definition from your config.",
+      type: "FieldSchema",
     },
     readOnly: {
-      description: 'Whether the field should be non-editable.',
-      type: 'boolean',
+      description: "Whether the field should be non-editable.",
+      type: "boolean",
     },
   }}
 />

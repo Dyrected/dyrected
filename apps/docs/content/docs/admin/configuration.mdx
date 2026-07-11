@@ -174,40 +174,48 @@ Collections with no `group` are listed at the top of the sidebar ungrouped.
 URL to open in the Live Preview pane when editing a document. There are two ways to define the preview URL: using a **JavaScript function** or a **Jexl string expression**.
 
 **When to use which:**
+
 - **Jexl String (Recommended):** The safest and most robust approach. It works locally and is **required** if you use Dyrected Cloud Sync. The Admin automatically evaluates strings containing `+`, `?`, `==`, or `siteUrl` using [Jexl](https://github.com/TomFrost/Jexl), which is a safe, sandboxed expression language.
 - **JavaScript Function:** Works well for complex local-only configurations where you don't need to sync your schema to the cloud.
 
 <Callout type="warn">
-  **Dyrected Cloud Sync limitation**
-  If you use Dyrected Cloud Sync, your schema is serialized to JSON before being sent to the cloud. Because JSON cannot serialize JavaScript functions, any function passed to `previewUrl` will be stringified and break the Admin UI. Cloud users **must** use Jexl strings.
+  **Dyrected Cloud Sync limitation** If you use Dyrected Cloud Sync, your schema is serialized to JSON before being sent
+  to the cloud. Because JSON cannot serialize JavaScript functions, any function passed to `previewUrl` will be
+  stringified and break the Admin UI. Cloud users **must** use Jexl strings.
 </Callout>
 
 #### Example 1: Jexl String (Recommended)
+
 ```ts
 export default defineConfig({
-  collections: [{
-    slug: "posts",
-    admin: {
-      // Safely resolves slug and maps 'home' to '/'
-      previewUrl: "slug ? (slug == 'home' ? '/' : '/' + slug) : null",
-    }
-  }]
-})
+  collections: [
+    {
+      slug: "posts",
+      admin: {
+        // Safely resolves slug and maps 'home' to '/'
+        previewUrl: "slug ? (slug == 'home' ? '/' : '/' + slug) : null",
+      },
+    },
+  ],
+});
 ```
 
 #### Example 2: JavaScript Function (Local only)
+
 ```ts
 export default defineConfig({
-  collections: [{
-    slug: "posts",
-    admin: {
-      previewUrl: (doc, { locale }) => {
-        if (!doc?.slug) return null;
-        return `https://mysite.com/posts/${doc.slug}`;
-      }
-    }
-  }]
-})
+  collections: [
+    {
+      slug: "posts",
+      admin: {
+        previewUrl: (doc, { locale }) => {
+          if (!doc?.slug) return null;
+          return `https://mysite.com/posts/${doc.slug}`;
+        },
+      },
+    },
+  ],
+});
 ```
 
 If `previewUrl` evaluates to `null` or `undefined`, the preview pane is hidden.
@@ -338,7 +346,6 @@ Then pass your component to `<DyrectedAdmin>` under the matching key:
 
 ```vue
 <DyrectedAdmin
-  basename="/admin"
   :components="{
     fields: {
       'products.brandColor': BrandColorPicker,
@@ -610,7 +617,6 @@ export function AdminPage() {
     <DyrectedAdmin
       baseUrl="/dyrected"
       apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
-      basename="/admin"
       components={{
         dashboard: {
           "welcome-banner": WelcomeBanner,
@@ -634,7 +640,7 @@ The `@dyrected/nuxt` module auto-imports `<DyrectedAdmin />` — no explicit imp
 ```vue
 <!-- pages/admin/index.vue -->
 <script setup lang="ts">
-definePageMeta({ layout: false })
+definePageMeta({ layout: false });
 
 import WelcomeBanner from "./WelcomeBanner.vue";
 import AnalyticsWidget from "./AnalyticsWidget.vue";
@@ -645,7 +651,6 @@ import CustomPagination from "./CustomPagination.vue";
 <template>
   <ClientOnly>
     <DyrectedAdmin
-      basename="/admin"
       :components="{
         dashboard: {
           'welcome-banner': WelcomeBanner,

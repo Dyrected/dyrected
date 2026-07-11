@@ -1,3 +1,92 @@
 ---
 title: Preferences
+description: How the admin remembers each editor's view, how a team-wide default cascades, and how to read or write preferences from your own code.
 ---
+
+The admin remembers how each editor likes to work. Reorder the columns on a list, hide the ones you don't use, rearrange fields on an edit form — those choices are saved per person and come back on the next visit. Admins can also publish a team-wide default so new editors start from a sensible layout instead of a blank slate.
+
+By the end of this page you should understand where preferences are stored, the order they resolve in, and how to read and write them yourself from a script or a custom tool.
+
+## What preferences are
+
+A preference is a small piece of per-user UI state, stored under a string key. Editors never set them in a settings screen — they're captured as a side effect of using the **View** button:
+
+- **On a list page**, View opens a panel to toggle columns on and off and drag them into a new order. Changes apply immediately and save automatically.
+- **On an edit page**, View switches the form into a drag-to-reorder mode where fields become cards you can rearrange.
+
+The admin uses the keys `list-columns:<slug>` for column order and `edit-fields:<slug>` for field order, but a preference key is just an arbitrary string — useful to know when you build your own tooling later.
+
+When a saved preference references a field that no longer exists, that entry is dropped on load; fields added after the preference was saved are appended to the end. Nothing disappears or breaks when your schema changes.
+
+## The cascade: personal, then team, then config
+
+Every editor sees a resolved preference, not necessarily their own. When a list or edit page opens, the value is resolved in this order:
+
+1. The editor's **personal** preference (saved with **Save for Me**).
+2. The **team-wide** preference an admin published (saved with **Save for Everyone**).
+3. `admin.defaultColumns` from the collection config (list pages only).
+4. The first three fields as a fallback — skipping `password`, hidden fields, and layout-only `row`/`join` fields (list pages only).
+
+So a brand-new editor inherits the team default if one exists, or your config default if not. An editor who has customized their own view keeps that until they reset it, at which point they fall back to the next level down.
+
+Publishing a team default is a privileged action. **Save for Everyone** is only visible to users whose `roles` include `admin`:
+
+| Button                 | Who it affects            | Required role         |
+| ---------------------- | ------------------------- | --------------------- |
+| **Save for Me**        | The signed-in editor only | Any authenticated user |
+| **Save for Everyone**  | Every editor on the site  | `admin` role only     |
+
+Set `admin.defaultColumns` on a collection to control the starting column set before anyone customizes anything:
+
+```ts
+export const Posts = defineCollection({
+  slug: "posts",
+  admin: {
+    defaultColumns: ["title", "status", "publishedAt"],
+  },
+  fields: [...],
+});
+```
+
+## Reading and writing preferences yourself
+
+Preferences live server-side under your Dyrected API, and you can read or write them directly when you're building custom tooling or extending the admin. The SDK is the simplest way in — it exposes the same three operations the admin uses:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+
+const cms = createClient({ baseUrl: "...", apiKey: "..." });
+
+// Read the active value (personal → team → config default)
+const pref = await cms.getPreference("list-columns:posts");
+// pref.value → string[] | null
+
+// Save a personal preference
+await cms.setPreference("list-columns:posts", ["title", "status", "publishedAt"]);
+
+// Save a team-wide default (requires the admin role)
+await cms.setPreference("list-columns:posts", ["title", "status", "publishedAt"], {
+  scope: "global",
+});
+
+// Reset a preference, revealing the next level in the cascade
+await cms.deletePreference("list-columns:posts");
+```
+
+Passing `scope: "global"` targets the team-wide value and requires the `admin` role — a non-admin caller gets a `403`. Omit it to read or write the signed-in user's personal value with the cascade applied.
+
+### The underlying REST endpoints
+
+If you're working outside the SDK, the same operations are available as a scoped key-value API. `GET`, `PUT`, and `DELETE` on `/api/preferences/:key`, each accepting an optional `?scope=global`:
+
+```
+GET    /api/preferences/list-columns:posts
+PUT    /api/preferences/list-columns:posts          { "value": ["title", "status"] }
+DELETE /api/preferences/list-columns:posts
+```
+
+A `GET` applies the cascade for the signed-in user. Add `?scope=global` to read or write the team default directly (admin only). A `PUT` or `DELETE` with `scope=global` from a non-admin returns `403`.
+
+## Recommended path
+
+Let editors manage their own views with the **View** button — that's the whole point, and it needs no configuration. Set `admin.defaultColumns` so a fresh list looks right before anyone touches it, and publish a team default with **Save for Everyone** once you've landed on a layout that works for the group. Reach for the SDK only when you're building something custom on top of the same store.

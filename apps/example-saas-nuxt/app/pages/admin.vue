@@ -13,7 +13,7 @@ const customComponents = {
 <template>
   <div>
     <ClientOnly>
-      <DyrectedAdmin basename="/admin" :components="customComponents" />
+      <DyrectedAdmin :components="customComponents" />
     </ClientOnly>
   </div>
 </template>

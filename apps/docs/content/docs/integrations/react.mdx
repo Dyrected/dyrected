@@ -140,7 +140,6 @@ export function AdminPage() {
     <DyrectedAdmin
       baseUrl="/dyrected"
       apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
-      basename="/admin"
     />
   )
 }
@@ -150,7 +149,6 @@ export function AdminPage() {
 |---|---|---|
 | `baseUrl` | `string` | URL of the Dyrected API (e.g. `/dyrected`) |
 | `apiKey` | `string` | API key for authenticating requests |
-| `basename` | `string` | Base path where the admin is mounted in your router |
 | `siteId` | `string` | Optional site ID for multi-tenant setups |
 | `onNavigate` | `(path: string) => void` | Called on internal route changes — use to sync your host router |
 

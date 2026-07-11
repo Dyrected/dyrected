@@ -46,7 +46,6 @@ export async function writeVueFiles(cwd: string, adminPath: string) {
       apiKey: dyrectedApiKey,
       siteId: dyrectedSiteId,
     }"
-    basename="/${adminPath}"
   />
 </template>
 
@@ -145,7 +144,7 @@ export async function writeNuxtFiles(cwd: string, adminPath: string, backend: Ba
       adminPagePath,
       `<template>
   <ClientOnly>
-    <DyrectedAdmin basename="/${adminPath}" />
+    <DyrectedAdmin />
   </ClientOnly>
 </template>
 

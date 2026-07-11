@@ -68,6 +68,11 @@ export interface DatabaseAdapter {
     limit?: number;
     page?: number;
     sort?: string;
+    /**
+     * The collection's field definitions. Optional, so simple adapters can
+     * ignore it; SQL adapters use it to sort numeric fields by magnitude.
+     */
+    fields?: Field[];
   }): Promise<PaginatedResult>;
 
   /** Find a single document by its ID. Returns `null` if not found. */

@@ -2,13 +2,16 @@
   "title": "Admin",
   "pages": [
     "overview",
-    "preview",
-    "custom-admin-panel-location",
-    "document-locking",
-    "accessibility",
-    "react-hooks",
-    "customizing-css",
+    "list-view",
+    "spreadsheet-view",
+    "csv-import-export",
     "preferences",
-    "metadata"
+    "preview",
+    "customizing-css",
+    "metadata",
+    "custom-admin-panel-location",
+    "react-hooks",
+    "accessibility",
+    "__document-locking"
   ]
 }

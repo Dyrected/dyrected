@@ -34,7 +34,7 @@ The Admin UI is a React application exported from `@dyrected/admin`. Every frame
 import { DyrectedAdmin } from "@dyrected/next/admin";
 
 export default function AdminPage() {
-  return <DyrectedAdmin basename="/admin" />;
+  return <DyrectedAdmin />;
 }
 ```
 
@@ -51,11 +51,7 @@ import { AdminUI } from "@dyrected/admin";
 export function AdminPage() {
   return (
     <div style={{ height: "100vh" }}>
-      <AdminUI
-        baseUrl={import.meta.env.VITE_DYRECTED_URL}
-        apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
-        basename="/admin"
-      />
+      <AdminUI baseUrl={import.meta.env.VITE_DYRECTED_URL} apiKey={import.meta.env.VITE_DYRECTED_API_KEY} />
     </div>
   );
 }
@@ -74,7 +70,7 @@ import { DyrectedAdmin } from "@dyrected/vue";
 </script>
 
 <template>
-  <DyrectedAdmin base-url="https://api.dyrected.cloud" api-key="sk_live_..." basename="/admin" />
+  <DyrectedAdmin base-url="https://api.dyrected.cloud" api-key="sk_live_..." />
 </template>
 ```
 
@@ -92,7 +88,7 @@ definePageMeta({ layout: false });
 
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   </ClientOnly>
 </template>
 ```
@@ -111,7 +107,6 @@ const container = document.getElementById("admin-root")!;
 const unmount = renderAdminUI(container, {
   baseUrl: "https://api.dyrected.cloud",
   apiKey: "sk_live_...",
-  basename: "/admin",
 });
 
 // To tear down (e.g. on SPA route leave):
@@ -132,7 +127,6 @@ const unmount = renderAdminUI(container, {
     unmount = renderAdminUI(container, {
       baseUrl: import.meta.env.VITE_DYRECTED_URL,
       apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
-      basename: '/admin',
     })
   })
 
@@ -151,30 +145,27 @@ Both accept the same props:
 <TypeTable
   type={{
     baseUrl: {
-      description: 'The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).',
-      type: 'string',
+      description: "The base URL of your Dyrected API (e.g. `https://cms.mysite.com`).",
+      type: "string",
       required: true,
     },
     apiKey: {
-      description: 'The Site API key used to authenticate all Admin requests.',
-      type: 'string',
+      description: "The Site API key used to authenticate all Admin requests.",
+      type: "string",
       required: true,
     },
     siteId: {
-      description: 'The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).',
-      type: 'string',
-    },
-    basename: {
-      description: 'The URL path prefix where the admin is mounted (default: `/admin`).',
-      type: 'string',
+      description: "The Site ID sent as `X-Site-Id` on every request (required in Cloud mode).",
+      type: "string",
     },
     onNavigate: {
-      description: 'Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded.',
-      type: '(path: string) => void',
+      description:
+        "Called on every internal route change. Use this to sync the host router so browser history works correctly when embedded.",
+      type: "(path: string) => void",
     },
     components: {
-      description: 'Custom field components. See [Custom Field Components](#custom-field-components).',
-      type: 'object',
+      description: "Custom field components. See [Custom Field Components](#custom-field-components).",
+      type: "object",
     },
   }}
 />
@@ -315,20 +306,20 @@ Your component receives:
 <TypeTable
   type={{
     value: {
-      description: 'The current field value.',
-      type: 'any',
+      description: "The current field value.",
+      type: "any",
     },
     onChange: {
-      description: 'Callback to update the value.',
-      type: '(value: any) => void',
+      description: "Callback to update the value.",
+      type: "(value: any) => void",
     },
     field: {
-      description: 'The full field definition from your config.',
-      type: 'FieldSchema',
+      description: "The full field definition from your config.",
+      type: "FieldSchema",
     },
     readOnly: {
-      description: 'Whether the field should be non-editable.',
-      type: 'boolean',
+      description: "Whether the field should be non-editable.",
+      type: "boolean",
     },
   }}
 />

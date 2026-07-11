@@ -120,11 +120,32 @@ export interface AdminConfig {
     /** Text alternative or addition to the logo image. */
     logoText?: string;
     /**
-     * Primary accent colour as any CSS colour value.
+     * Brand colour used for committed, filled actions — Save, Create, Upload —
+     * and active/selected states. Accepts a hex string, a named colour
+     * (`amber`, `lime`, `violet`, `green`, `blue`, `red`, `purple`, `orange`),
+     * or a raw HSL triplet (`"217 91% 60%"`). Applied in both light and dark mode.
+     *
+     * This is one half of the two-colour brand model. Use {@link accentColor}
+     * for links and navigation accents. If you only set `primaryColor`, it is
+     * reused for accents too, matching the single-brand-colour look.
      * @example '#6366f1'
+     * @example 'blue'
      * @example 'hsl(240 50% 60%)'
      */
     primaryColor?: string;
+    /**
+     * Brand colour used for links, active navigation details, hover text, and
+     * focus rings — the "accent" half of the two-colour brand model, mapped to
+     * the admin's `--intelligence` token. Accepts the same formats as
+     * {@link primaryColor} and applies in both light and dark mode.
+     *
+     * Set this when your brand has a distinct link/accent colour separate from
+     * your primary action colour. When omitted, accents fall back to
+     * `primaryColor` (if set) or the built-in default.
+     * @example '#8b5cf6'
+     * @example 'violet'
+     */
+    accentColor?: string;
     /** Browser tab favicon URL. */
     favicon?: string;
     /** Font family for body and UI text. Must be loaded separately. */

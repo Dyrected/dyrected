@@ -405,19 +405,71 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   const [exporting, setExporting] = React.useState(false)
 
+  // Build a CSV from a set of docs and trigger a download. Shared by the
+  // full-collection export and the "export selected rows" bulk action so both
+  // produce identical column layout and value flattening.
+  const exportDocsToCsv = React.useCallback((docs: Record<string, unknown>[], filenameSuffix = "") => {
+    if (!schema || !client) return
+    const displayFields = schema.fields.filter((f: Field) =>
+      f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
+    )
+    const csvColumns = [
+      { key: "id", label: "ID" },
+      ...displayFields.filter((f: Field) => !!f.name).map((f: Field) => ({ key: f.name!, label: (f as { label?: string }).label || f.name! })),
+      { key: "updatedAt", label: "Last Updated" },
+    ]
+
+    const flattenForCsv = (val: unknown): string => {
+      if (val === null || val === undefined) return ""
+      if (typeof val === "boolean") return val ? "true" : "false"
+      if (typeof val === "number" || typeof val === "string") return String(val)
+
+      // Array — join with "; " (industry standard for multi-value CSV cells)
+      if (Array.isArray(val)) {
+        return val.map((item) => flattenForCsv(item)).filter(Boolean).join("; ")
+      }
+
+      // Object — extract meaningful value
+      if (typeof val === "object" && val !== null) {
+        const obj = val as Record<string, unknown>;
+        // Image/media — return URL only
+        if (obj.url || obj.filename) {
+          return getMediaUrl(obj as Record<string, unknown>, client?.getBaseUrl() || "")
+        }
+        // Relationship — return title/name/label or id
+        if (obj.id) {
+          return String(obj.title || obj.name || obj.label || obj.id)
+        }
+        // Generic object — stringify
+        return JSON.stringify(val)
+      }
+
+      return String(val)
+    }
+
+    // Quote any field containing a comma, quote, or newline, and double internal
+    // quotes — per RFC 4180 — so values like "Smith, John" don't break columns.
+    const escapeCsv = (val: string): string =>
+      /[",\n\r]/.test(val) ? `"${val.replace(/"/g, '""')}"` : val
+
+    const header = csvColumns.map((c) => escapeCsv(flattenForCsv(c.label))).join(",")
+    const rows = docs.map((doc) =>
+      csvColumns.map((c) => escapeCsv(flattenForCsv(doc[c.key]))).join(",")
+    )
+    const csv = [header, ...rows].join("\n")
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `${slug}-export${filenameSuffix}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }, [schema, client, slug])
+
   const handleExportCsv = React.useCallback(async () => {
     if (!schema || !client) return
     setExporting(true)
     try {
-      const displayFields = schema.fields.filter((f: Field) =>
-        f.name !== "password" && !f.admin?.hidden && f.type !== "row" && f.type !== "join"
-      )
-      const csvColumns = [
-        { key: "id", label: "ID" },
-        ...displayFields.filter((f: Field) => !!f.name).map((f: Field) => ({ key: f.name!, label: (f as { label?: string }).label || f.name! })),
-        { key: "updatedAt", label: "Last Updated" },
-      ]
-
       const allDocs: Record<string, unknown>[] = []
       let pg = 1
       let totalPages = 1
@@ -428,53 +480,25 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         pg++
       }
 
-      const flattenForCsv = (val: unknown): string => {
-        if (val === null || val === undefined) return ""
-        if (typeof val === "boolean") return val ? "true" : "false"
-        if (typeof val === "number" || typeof val === "string") return String(val)
-
-        // Array — join with "; " (industry standard for multi-value CSV cells)
-        if (Array.isArray(val)) {
-          return val.map((item) => flattenForCsv(item)).filter(Boolean).join("; ")
-        }
-
-        // Object — extract meaningful value
-        if (typeof val === "object" && val !== null) {
-          const obj = val as Record<string, unknown>;
-          // Image/media — return URL only
-          if (obj.url || obj.filename) {
-            return getMediaUrl(obj as Record<string, unknown>, client?.getBaseUrl() || "")
-          }
-          // Relationship — return title/name/label or id
-          if (obj.id) {
-            return String(obj.title || obj.name || obj.label || obj.id)
-          }
-          // Generic object — stringify
-          return JSON.stringify(val)
-        }
-
-        return String(val)
-      }
-
-      const header = csvColumns.map((c) => flattenForCsv(c.label)).join(",")
-      const rows = allDocs.map((doc) =>
-        csvColumns.map((c) => flattenForCsv(doc[c.key])).join(",")
-      )
-      const csv = [header, ...rows].join("\n")
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement("a")
-      link.href = url
-      link.download = `${slug}-export.csv`
-      link.click()
-      URL.revokeObjectURL(url)
+      exportDocsToCsv(allDocs)
       toast.success(`Exported ${allDocs.length} entries`)
     } catch (err: unknown) {
       toast.error("Export failed", { description: err instanceof Error ? err.message : String(err) })
     } finally {
       setExporting(false)
     }
-  }, [schema, client, slug])
+  }, [schema, client, slug, exportDocsToCsv])
+
+  // Export only the currently selected rows. Resolves the selection against the
+  // loaded page data — the same source the bulk-delete action uses.
+  const handleExportSelected = React.useCallback((ids: string[]) => {
+    const selectedDocs = ids
+      .map((id) => response?.docs?.find((d: Record<string, unknown>) => d.id === id))
+      .filter((d): d is Record<string, unknown> => !!d)
+    if (selectedDocs.length === 0) return
+    exportDocsToCsv(selectedDocs, "-selected")
+    toast.success(`Exported ${selectedDocs.length} selected ${selectedDocs.length === 1 ? "entry" : "entries"}`)
+  }, [response, exportDocsToCsv])
 
   const handleDelete = React.useCallback((id: string) => {
     if (schema?.auth && id === user?.id) {
@@ -1079,16 +1103,28 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
               })
 
               return (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="dy-h-8"
-                  onClick={() => handleBulkDelete(deletableIds)}
-                  disabled={bulkDeleteMutation.isPending || deletableIds.length === 0}
-                >
-                  <Trash2 className="dy-h-4 dy-w-4 dy-mr-2" />
-                  Delete Selected ({deletableIds.length})
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="dy-h-8"
+                    onClick={() => handleExportSelected(selectedIds)}
+                    disabled={selectedIds.length === 0}
+                  >
+                    <FileDown className="dy-h-4 dy-w-4 dy-mr-2" />
+                    Export Selected ({selectedIds.length})
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="dy-h-8"
+                    onClick={() => handleBulkDelete(deletableIds)}
+                    disabled={bulkDeleteMutation.isPending || deletableIds.length === 0}
+                  >
+                    <Trash2 className="dy-h-4 dy-w-4 dy-mr-2" />
+                    Delete Selected ({deletableIds.length})
+                  </Button>
+                </>
               )
             }}
           />

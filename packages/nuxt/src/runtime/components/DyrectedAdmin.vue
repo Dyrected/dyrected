@@ -1,7 +1,6 @@
 <template>
-  <DyrectedAdmin 
-    :config="config" 
-    :basename="basename || '/cms-admin'" 
+  <DyrectedAdmin
+    :config="config"
     :components="components"
   />
 </template>
@@ -12,11 +11,6 @@ import { useRuntimeConfig } from "#imports";
 import { DyrectedAdmin } from "@dyrected/vue";
 
 defineProps<{
-  /**
-   * The base path where the admin is mounted.
-   * @default "/cms-admin"
-   */
-  basename?: string;
   /**
    * Custom components to inject into the Admin UI.
    */

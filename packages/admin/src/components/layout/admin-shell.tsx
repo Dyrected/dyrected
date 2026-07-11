@@ -249,13 +249,6 @@ interface AdminSidebarGlobal {
   };
 }
 
-interface AdminBranding {
-  logoText?: string;
-  logo?: string;
-  logoMark?: string;
-  titleSuffix?: string;
-}
-
 function SidebarInner({
   schemas,
   isLoading,
@@ -291,7 +284,8 @@ function SidebarInner({
       <div className="dy-my-2 dy-mx-3 dy-h-px dy-bg-border" />
     )
 
-  const branding = (schemas?.admin as Record<string, unknown> | undefined)?.branding as AdminBranding | undefined;
+  const branding = schemas?.admin?.branding;
+  const meta = schemas?.admin?.meta;
 
   return (
     <div className="dy-flex dy-flex-col dy-min-h-screen">
@@ -344,7 +338,7 @@ function SidebarInner({
               )}
               {!collapsed && !branding?.logoText && (
                 <span className="dy-font-serif dy-text-lg dy-tracking-tight dy-text-foreground dy-flex-1 dy-truncate">
-                  {branding?.titleSuffix?.replace(/^- /, '') || ''}
+                  {meta?.titleSuffix?.replace(/^- /, '') || ''}
                 </span>
               )}
             </>
@@ -720,13 +714,7 @@ export function AdminShell({
     enabled: !!client,
   })
 
-  // Extract branding from schemas — schemas type doesn't include admin in its TS signature
-  // but it is present at runtime, so we cast once here.
-  const mobileBranding = (schemas?.admin as Record<string, unknown> | undefined)?.branding as {
-    logoText?: string
-    logo?: string
-    logoMark?: string
-  } | undefined
+  const mobileBranding = schemas?.admin?.branding
 
   return (
     <BrandingProvider>

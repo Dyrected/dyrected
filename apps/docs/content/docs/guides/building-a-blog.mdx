@@ -290,19 +290,19 @@ import { DyrectedAdmin } from '@dyrected/next/admin'
 
 export default function AdminPage() {
   return (
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   )
 }
 ```
 </Tab>
 <Tab value="Nuxt.js">
-Adding the `@dyrected/nuxt` module auto-imports the `<DyrectedAdmin>` component, but it does not create a route for you — you decide where the dashboard lives. Create a page and render `<DyrectedAdmin>` with a `basename` that matches that route. Here it is at `/admin`; use a different filename and `basename` (say `pages/cms-admin.vue` with `basename="/cms-admin"`) if you want a different path.
+Adding the `@dyrected/nuxt` module auto-imports the `<DyrectedAdmin>` component, but it does not create a route for you — you decide where the dashboard lives. The admin's URL is simply the route of the page you render it in. Here it is at `/admin`; use a different filename (say `pages/cms-admin.vue`) if you want a different path.
 
 ```vue
 <!-- pages/admin.vue -->
 <template>
   <ClientOnly>
-    <DyrectedAdmin basename="/admin" />
+    <DyrectedAdmin />
   </ClientOnly>
 </template>
 

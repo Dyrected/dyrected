@@ -86,28 +86,46 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
 
   const styleTag = useMemo(() => {
     const hasCustomPrimary = Boolean(branding?.primaryColor);
+    const hasCustomAccent = Boolean(branding?.accentColor);
     const primaryHsl = toRawHsl(branding?.primaryColor || "#B6FF2E");
-    const intelligenceHsl = hasCustomPrimary ? primaryHsl : "259 100% 62%";
+    // Accent (the `--intelligence` token) is the second brand colour. When it
+    // isn't set explicitly, fall back to a custom primary, then the default
+    // violet — this keeps single-`primaryColor` configs looking unchanged.
+    const accentHsl = hasCustomAccent
+      ? toRawHsl(branding!.accentColor!)
+      : hasCustomPrimary
+        ? primaryHsl
+        : "259 100% 62%";
     const fg = primaryForeground(primaryHsl);
+
+    // The colour tokens, shared by the light and dark rules below.
+    const tokens = `
+      --primary: ${primaryHsl};
+      --primary-foreground: ${fg};
+      --intelligence: ${accentHsl};
+      --accent-foreground: ${accentHsl};
+      --sidebar-primary: ${primaryHsl};
+      --sidebar-primary-foreground: ${fg};
+      --sidebar-accent-foreground: ${accentHsl};
+      --sidebar-ring: ${accentHsl};
+      --ring: ${accentHsl} / 0.24;
+      ${branding?.fontSans ? `--font-sans: ${branding.fontSans};` : ""}
+      ${branding?.fontSerif ? `--font-serif: ${branding.fontSerif};` : ""}
+    `;
 
     return (
       <style dangerouslySetInnerHTML={{ __html: `
-        .dy-admin-ui {
-          --primary: ${primaryHsl};
-          --primary-foreground: ${fg};
-          --intelligence: ${intelligenceHsl};
-          --accent-foreground: ${intelligenceHsl};
-          --sidebar-primary: ${primaryHsl};
-          --sidebar-primary-foreground: ${fg};
-          --sidebar-accent-foreground: ${intelligenceHsl};
-          --sidebar-ring: ${intelligenceHsl};
-          --ring: ${intelligenceHsl} / 0.24;
-          ${branding?.fontSans ? `--font-sans: ${branding.fontSans};` : ""}
-          ${branding?.fontSerif ? `--font-serif: ${branding.fontSerif};` : ""}
-        }
+        .dy-admin-ui { ${tokens} }
+        /* Repeat under the dark selectors so brand colours also apply in dark
+           mode. The base stylesheet's \`.dy-admin-ui.dark\` sets its own
+           --primary/--intelligence at the same specificity; matching that
+           specificity here (and coming later in source order) lets the brand
+           colours win in dark mode too. */
+        .dy-admin-ui.dark,
+        .dy-admin-ui[data-theme="dark"] { ${tokens} }
       `}} />
     );
-  }, [branding?.primaryColor, branding?.fontSans, branding?.fontSerif]);
+  }, [branding?.primaryColor, branding?.accentColor, branding?.fontSans, branding?.fontSerif]);
 
   return (
     <>
