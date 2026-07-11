@@ -4,11 +4,8 @@
     "overview",
     "handing-off-to-editors",
     "operations",
-    "email-verification",
     "jwt-strategy",
     "cookie-strategy",
-    "api-key-strategy",
-    "custom-strategies",
     "token-data"
   ]
 }

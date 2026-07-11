@@ -1,0 +1,20 @@
+---
+title: Email Verification
+---
+
+{/*
+UNPUBLISHED — parked for future implementation.
+
+Dyrected does not currently ship an email-verification gate. As of this writing
+there is no `verify` route, no injected `_verified` field, and no
+`requireEmailVerification` config on auth collections. The `auth` option is a
+plain boolean (packages/core/src/types/schema-config.ts), so there is nothing to
+document here yet without inventing behavior.
+
+What exists today for controlling who gets an account:
+- Invitations: POST /api/collections/{slug}/invite + /accept-invite
+- Password reset: POST /api/collections/{slug}/forgot-password + /reset-password
+
+See ./operations for those flows. When an email-verification feature lands,
+rename this file back to `email-verification.mdx` and re-add it to meta.json.
+*/}

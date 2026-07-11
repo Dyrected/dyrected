@@ -1,0 +1,21 @@
+---
+title: API Key Strategy
+---
+
+{/*
+UNPUBLISHED — parked for future implementation.
+
+Dyrected has no per-user API-key authentication (no Payload-style `useAPIKey`,
+no injected `apiKey` field). The collection auth middleware accepts a Bearer JWT
+only (packages/core/src/middleware/auth.ts).
+
+What exists today and is easy to confuse with this:
+- `DYRECTED_API_KEY` -> sent by the SDK as the `x-api-key` header (plus
+  `x-site-id`). This is a project/site credential that identifies your app to
+  the Dyrected backend/cloud. It is NOT a way to log in as a specific user, and
+  it is not validated by collection auth. It belongs in configuration/SDK docs,
+  and is mentioned in ./overview under "Programmatic access".
+
+When per-user API keys land, rename this file back to `api-key-strategy.mdx` and
+re-add it to meta.json.
+*/}

@@ -1,0 +1,20 @@
+---
+title: Custom Strategies
+---
+
+{/*
+UNPUBLISHED — parked for future implementation.
+
+Dyrected has no pluggable custom auth strategy API for collection users. Collection
+auth is fixed to JWT + email/password (no `AuthStrategy`, no passport, no
+`strategies` array). See packages/core/src/middleware/auth.ts.
+
+The real "bring your own identity" surface today is DASHBOARD SSO, configured via
+`adminAuth` (OIDC and custom JWT providers) and served under /api/admin/auth/*.
+That is scoped to admin/dashboard login, not collection-user login, so it does
+not belong on this page. It is summarized in ./overview under "Dashboard sign-in
+and SSO" and is a candidate for its own dedicated page.
+
+When a custom-strategy API for collection users lands, rename this file back to
+`custom-strategies.mdx` and re-add it to meta.json.
+*/}
