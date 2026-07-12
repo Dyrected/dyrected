@@ -151,6 +151,8 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
         }))),
         upload: !!col.upload,
         auth: !!col.auth,
+        audit: !!col.audit,
+        drafts: !!col.drafts,
         admin: col.admin,
         workflow: col.workflow
           ? {
@@ -557,6 +559,11 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
   }
 
   // 6. Preview Routes
+  if (!process.env.DYRECTED_JWT_SECRET) {
+    console.warn(
+      "[dyrected] DYRECTED_JWT_SECRET is not set — token-mode live preview is signing with an insecure default. Set DYRECTED_JWT_SECRET before relying on `previewMode: \"token\"` in production.",
+    );
+  }
   const previewController = new PreviewController();
   app.post("/api/preview-token", requireAuth(config), (c) => previewController.createToken(c));
   app.get("/api/preview-data", (c) => previewController.getData(c));

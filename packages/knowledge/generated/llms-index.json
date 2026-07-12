@@ -724,6 +724,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:simplePublishingWorkflow",
+      "name": "simplePublishingWorkflow",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:StorageAdapter",
       "name": "StorageAdapter",
       "category": "adapters",
@@ -904,8 +910,20 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:getPreviewToken",
+      "name": "getPreviewToken",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:InferSchema",
       "name": "InferSchema",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:PREVIEW_TOKEN_PARAM",
+      "name": "PREVIEW_TOKEN_PARAM",
       "category": "sdk",
       "sourcePackage": "@dyrected/sdk"
     },

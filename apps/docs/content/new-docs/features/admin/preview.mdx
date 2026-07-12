@@ -71,15 +71,16 @@ The live pane needs to show unsaved edits, which means the admin has to hand dra
 | `postMessage` | The admin posts draft data straight into the iframe, no server round-trip    | Your frontend is same-origin or CORS-enabled (the default fit) |
 | `token`       | The admin issues a short-lived signed preview token your frontend redeems     | Statically generated sites that fetch draft data server-side |
 
-`postMessage` is the simpler path and needs no extra endpoint. `token` exists for frontends that render on the server and can't receive a browser message directly.
+`postMessage` is the simpler path and needs no extra endpoint, and it's the one to start with — it gives live-as-you-type updates and click-to-edit. Reach for `token` only when your frontend renders on the server and can't receive a browser message; it's refresh-based and has no click-to-edit. Both are documented in the Live Preview section below.
 
 ## Wiring up the frontend
 
-Setting `previewUrl` gives you the link and opens the pane, but the *live* part — your page re-rendering as the editor types — is work your frontend does. It listens for the draft data and re-renders with it. That client-side flow, including the `useLivePreview` hook and click-to-edit field mapping, is its own feature:
+Setting `previewUrl` gives you the link and opens the pane, but the *live* part — your page re-rendering as the editor types — is work your frontend does. It listens for the draft data and re-renders with it. That flow, including the `useLivePreview` hook and click-to-edit field mapping, is its own feature:
 
 - [Live Preview overview](/new-docs/features/live-preview/overview) — how the pane and your frontend talk to each other.
-- [Live Preview on the frontend](/new-docs/features/live-preview/frontend) — wiring `useLivePreview` into your pages.
-- [Server-side preview](/new-docs/features/live-preview/server-side) — the `token` flow for statically rendered sites.
+- [Connecting your frontend](/new-docs/features/live-preview/frontend) — the overlay model behind live data.
+- [Client-side integration](/new-docs/features/live-preview/client-side) — wiring `useLivePreview`, `useDyPath`, and `<Blocks>` into your pages (`postMessage`).
+- [Server-side integration](/new-docs/features/live-preview/server-side) — the `token` flow for server-rendered and statically generated sites.
 
 ## Recommended path
 

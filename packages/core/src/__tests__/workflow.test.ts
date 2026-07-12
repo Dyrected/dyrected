@@ -3,6 +3,7 @@ import { InMemoryAdapter } from "./mocks.js";
 import { defineCollection, defineConfig } from "../index.js";
 import {
   publishingWorkflow,
+  simplePublishingWorkflow,
   initializeWorkflowDocument,
   materializeWorkflowDocument,
   transitionWorkflow,
@@ -68,6 +69,38 @@ describe("publishingWorkflow template", () => {
     expect(spec.components.schemas.posts.properties._workflow.$ref).toBe("#/components/schemas/WorkflowMetadata");
   });
 });
+
+describe("simplePublishingWorkflow template", () => {
+  it("initializes a document in draft state", () => {
+    const doc = initializeWorkflowDocument({ title: "Test" }, simplePublishingWorkflow());
+    const workflow = doc.__workflow as WorkflowMetadata;
+    expect(workflow.state).toBe("draft");
+    expect(workflow.revision).toBe(1);
+  });
+
+  it("includes only draft and published states", () => {
+    const wf = simplePublishingWorkflow();
+    const stateNames = wf.states.map((s) => s.name);
+    expect(wf.states).toHaveLength(2);
+    expect(stateNames).toContain("draft");
+    expect(stateNames).toContain("published");
+    expect(wf.states.find((s) => s.name === "published")?.published).toBe(true);
+  });
+
+  it("includes only publish and unpublish transitions", () => {
+    const wf = simplePublishingWorkflow();
+    expect(wf.transitions).toHaveLength(2);
+    const publish = wf.transitions.find((t) => t.name === "publish");
+    expect(publish?.from).toBe("draft");
+    expect(publish?.to).toBe("published");
+    
+    const unpublish = wf.transitions.find((t) => t.name === "unpublish");
+    expect(unpublish?.from).toBe("published");
+    expect(unpublish?.to).toBe("draft");
+    expect(unpublish?.unpublish).toBe(true);
+  });
+});
+
 
 describe("workflow document visibility", () => {
   const stored = {

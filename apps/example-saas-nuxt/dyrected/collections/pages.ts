@@ -1,4 +1,4 @@
-import { defineCollection, publishingWorkflow } from "@dyrected/core";
+import { defineCollection } from "@dyrected/core";
 import { Media } from "./media.ts";
 import { pagesSeed } from "../seed.ts";
 
@@ -19,8 +19,8 @@ export const Pages = defineCollection({
     urlPattern: "/{slug}",
     icon: "ListCheck",
   },
+  drafts: true,
   audit: true,
-  // workflow: publishingWorkflow(),
   fields: [
     { name: "title", type: "text", required: true },
     { name: "slug", type: "text", required: true, unique: true },

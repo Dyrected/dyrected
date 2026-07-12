@@ -672,7 +672,7 @@ export function AdminShell({
   children: React.ReactNode
   isEmbedded?: boolean
 }) {
-  const { client, logout, user } = useDyrected()
+  const { client, logout } = useDyrected()
   const location = useLocation()
   const updateInfo = useUpdateCheck()
 
@@ -713,8 +713,6 @@ export function AdminShell({
     },
     enabled: !!client,
   })
-
-  const mobileBranding = schemas?.admin?.branding
 
   return (
     <BrandingProvider>
@@ -772,45 +770,19 @@ export function AdminShell({
             {/* Mobile top header — hidden on desktop, and hidden entirely when
                 embedded (the host dashboard renders the single mobile bar). */}
             {!isEmbedded && (
-              <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
-
-
-                {/* Brand — centered */}
-                {!isEmbedded && (
-                  <div className="dy-absolute dy-left-1/2 dy--translate-x-1/2 dy-flex dy-items-center dy-gap-2">
-                    {mobileBranding?.logoText ? (
-                      <span className="dy-font-serif dy-text-base dy-font-bold dy-tracking-tight dy-text-foreground dy-leading-none">
-                        {mobileBranding.logoText}
-                      </span>
-                    ) : mobileBranding?.logo ? (
-                      <img
-                        src={getMediaUrl(mobileBranding.logo, client?.getBaseUrl() || "")}
-                        alt="Logo"
-                        className="dy-h-7 dy-w-auto dy-object-contain"
-                      />
-                    ) : (
-                      <img src={logo} alt="Dyrected" className="dy-h-7 dy-w-auto" />
-                    )}
-                  </div>
-                )}
-                <div className="dy-ml-auto dy-flex dy-items-center dy-gap-1.5">
-                  <ThemeSelector mobile />
-                  {user && (
-                    <div className="dy-flex dy-h-8 dy-w-8 dy-items-center dy-justify-center dy-rounded-full dy-bg-primary/10 dy-text-primary dy-font-semibold dy-text-xs dy-shrink-0">
-                      {((user.name || user.email || "?") as string).charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  {/* Hamburger */}
-                  <button
-                    type="button"
-                    onClick={() => setMobileOpen(true)}
-                    className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
-                    aria-label="Open menu"
-                  >
-                    <Menu className="dy-h-5 dy-w-5" />
-                  </button>
-                </div>
-              </header>
+              /* Mobile header is intentionally minimal: a single hamburger at
+                 the top-right. Brand, theme, and account all live inside the
+                 nav drawer it opens, so nothing is lost. */
+              // <header className="md:dy-hidden dy-sticky dy-top-0 dy-z-20 dy-flex dy-h-14 dy-items-center dy-justify-end dy-border-b dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-3 dy-shrink-0">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="dy-fixed md:dy-hidden dy-z-10 dy-top-2 dy-right-2 dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-md dy-text-muted-foreground dy-bg-background hover:dy-bg-accent hover:dy-text-foreground dy-transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu className="dy-h-5 dy-w-5" />
+              </button>
+              // </header>
             )}
 
             <div className="dy-flex-1 dy-py-6 dy-px-4 lg:dy-py-10 lg:dy-px-6">

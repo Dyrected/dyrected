@@ -286,7 +286,25 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
    * Used in "token" preview mode.
    */
   async getPreviewData<T = unknown>(token: string): Promise<T> {
-    return this.request(`/api/preview-data?token=${token}`);
+    return this.request(`/api/preview-data?token=${encodeURIComponent(token)}`);
+  }
+
+  /**
+   * Mint a short-lived preview token that carries the current (unsaved) draft
+   * data. Used by the Admin in `previewMode: "token"` to hand draft content to
+   * a server-rendered frontend that cannot receive it over `postMessage`.
+   *
+   * Requires an authenticated request (the Admin is logged in).
+   */
+  async createPreviewToken(input: {
+    collectionSlug: string;
+    documentId?: string;
+    data: unknown;
+  }): Promise<{ token: string; expiresAt: string }> {
+    return this.request(`/api/preview-token`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 
   async find<K extends keyof TSchema["collections"]>(
@@ -792,6 +810,42 @@ export function createClient<TSchema extends BaseSchema = BaseSchema>(
   config: DyrectedClientConfig,
 ): DyrectedClient<TSchema> {
   return new DyrectedClient<TSchema>(config);
+}
+
+/**
+ * The query-string parameter the Admin appends to a preview URL in
+ * `previewMode: "token"`. Read it on your frontend to decide whether to fetch
+ * draft data instead of published content.
+ */
+export const PREVIEW_TOKEN_PARAM = "dyPreview";
+
+/**
+ * Extract the preview token from a request's query string. Accepts a raw query
+ * string, a `URLSearchParams`, or a plain params object (e.g. Nuxt's
+ * `route.query` or Next's `searchParams`). Returns `null` when absent.
+ *
+ * @example
+ *   const token = getPreviewToken(route.query);
+ *   const doc = token
+ *     ? (await client.getPreviewData(token)).data
+ *     : (await client.find("pages", { where })).docs[0];
+ */
+export function getPreviewToken(
+  search: string | URLSearchParams | Record<string, unknown> | undefined | null,
+): string | null {
+  if (!search) return null;
+
+  let value: unknown;
+  if (typeof search === "string") {
+    value = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get(PREVIEW_TOKEN_PARAM);
+  } else if (search instanceof URLSearchParams) {
+    value = search.get(PREVIEW_TOKEN_PARAM);
+  } else {
+    value = search[PREVIEW_TOKEN_PARAM];
+  }
+
+  if (Array.isArray(value)) value = value[0];
+  return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 function isFunctionallyEmpty(obj: unknown): boolean {

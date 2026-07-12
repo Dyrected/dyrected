@@ -1,5 +1,5 @@
 import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
-import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION } from "../workflows.js";
+import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
 import { getAdminAuthCollection } from "./admin-auth.js";
 
 const AUDIT_COLLECTION_SLUG = "__audit";
@@ -93,7 +93,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   const collections = config?.collections || [];
   const globals = config?.globals || [];
   const needsAudit = collections.some((col) => col.audit);
-  const needsWorkflow = collections.some((col) => col.workflow);
+  const needsWorkflow = collections.some((col) => col.workflow || col.drafts);
   const adminAuthCollectionSlug = getAdminAuthCollection({
     collections,
     adminAuth: config.adminAuth,
@@ -237,8 +237,10 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
 
     const updatedFieldNames = new Set(fields.map((f) => f.name));
     const fieldsToInject = SYSTEM_FIELDS.filter((f) => !updatedFieldNames.has(f.name));
+    const workflow = col.workflow || (col.drafts ? simplePublishingWorkflow() : undefined);
     return {
       ...col,
+      workflow,
       fields: [...fields, ...fieldsToInject],
     };
   });

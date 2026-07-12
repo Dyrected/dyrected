@@ -15,3 +15,6 @@ export * from './composables/useDyPath';
 
 // Bridge
 export * from './bridge/react-in-vue';
+
+// Live-preview token helpers (re-exported from the SDK for frontend consumption)
+export { getPreviewToken, PREVIEW_TOKEN_PARAM } from '@dyrected/sdk';

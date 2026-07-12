@@ -29,6 +29,11 @@ interface FormEngineProps {
   onChange?: (isDirty: boolean) => void
   isLoading?: boolean
   submitLabel?: string
+  /**
+   * Hide the inline submit button rendered at the end of the form. Use when the
+   * host page provides its own save affordance (e.g. a docked bottom save bar).
+   */
+  hideSubmit?: boolean
   readOnly?: boolean
   onDataChange?: (data: Record<string, unknown>) => void
   /**
@@ -55,6 +60,7 @@ function FormEngineInner({
   onChange,
   isLoading,
   submitLabel = "Save",
+  hideSubmit = false,
   readOnly,
   onDataChange,
   passwordChangeMode = null,
@@ -668,13 +674,15 @@ function FormEngineInner({
           </div>
         )}
 
-        <div className="dy-flex dy-justify-end dy-gap-4">
-          {!readOnly && (
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : submitLabel}
-            </Button>
-          )}
-        </div>
+        {!hideSubmit && (
+          <div className="dy-flex dy-justify-end dy-gap-4">
+            {!readOnly && (
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Saving..." : submitLabel}
+              </Button>
+            )}
+          </div>
+        )}
       </form>
       </Form>
     </>

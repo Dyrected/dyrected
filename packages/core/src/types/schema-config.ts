@@ -182,6 +182,14 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   workflow?: WorkflowConfig<TDoc>;
 
   /**
+   * If `true`, enables zero-config draft and publish functionality.
+   * Documents start as drafts, editors can save working drafts without affecting
+   * live content, and any authorized editor can publish or unpublish entries.
+   */
+  drafts?: boolean;
+
+
+  /**
    * Collection-level access control.
    *
    * Each key is an operation; the value can be a function, a Jexl string, a

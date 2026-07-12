@@ -4,20 +4,28 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
 import { FormEngine } from "../../components/forms/form-engine"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { ChevronLeft, Plus } from "lucide-react"
+import { ChevronLeft, Plus, ChevronDown } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl, getDisplayFilename, getSiteUrl } from "../../lib/utils"
 import { resolvePreviewUrl } from "../../lib/preview-url"
-import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil } from "lucide-react"
+import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil, History, Loader2 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "../../components/ui/popover"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
 import { NestedEditorProvider, useNestedEditor } from "../../components/forms/nested-editor-context"
 import { resolveContainerPath } from "../../components/forms/utils"
 import { useSidebarControl } from "../../components/layout/sidebar-control"
-import type { Field as FieldSchema } from "@dyrected/sdk"
+import type { Field as FieldSchema, PaginatedResult } from "@dyrected/sdk"
 import { WorkflowPanel } from "../../components/workflow/WorkflowPanel"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "../../components/ui/command"
 import jexl from 'jexl'
 import { useLayoutPreference, type LayoutItem } from "../../hooks/useLayoutPreference"
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
@@ -146,6 +154,8 @@ function PreviewPaneWithNav({
   previewUrl,
   data,
   mode,
+  collectionSlug,
+  documentId,
   fields,
   active,
   onFieldNavigate,
@@ -153,6 +163,8 @@ function PreviewPaneWithNav({
   previewUrl: string
   data: Record<string, unknown> | null
   mode?: 'postMessage' | 'token'
+  collectionSlug?: string
+  documentId?: string
   fields: FieldSchema[]
   /** True when the live preview pane is actually visible (not width-0). */
   active: boolean
@@ -219,11 +231,24 @@ function PreviewPaneWithNav({
       previewUrl={previewUrl}
       data={data}
       mode={mode}
+      collectionSlug={collectionSlug}
+      documentId={documentId}
       onFieldFocus={handleFieldFocus}
     />
   )
 }
 
+
+function getEntryTitle(entry: any, schema: any): string {
+  if (!entry) return ""
+  const titleField = schema?.admin?.useAsTitle || "title"
+  if (entry[titleField]) return String(entry[titleField])
+  const commonFields = ["title", "name", "label", "heading", "email", "subject"]
+  for (const f of commonFields) {
+    if (entry[f]) return String(entry[f])
+  }
+  return String(entry.id)
+}
 
 export function EditEntryPage() {
   const { slug, id } = useParams()
@@ -232,7 +257,7 @@ export function EditEntryPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showPreview, setShowPreview] = useState(false)
-  const [showWorkflow, setShowWorkflow] = useState(false)
+  const [activeTab, setActiveTab] = useState<'edit' | 'versions' | 'audit'>('edit')
   // Mobile only: the form and preview cannot sit side-by-side on a narrow
   // screen, so one pane is shown at a time. false = form, true = preview.
   const [mobilePreview, setMobilePreview] = useState(false)
@@ -380,7 +405,7 @@ export function EditEntryPage() {
 
   const hasWorkflow = !!(schema as { workflow?: unknown } | undefined)?.workflow
   const syncShowWorkflow = useState(() => (next: boolean) => {
-    setShowWorkflow((prev) => prev === next ? prev : next)
+    setActiveTab((prev) => next ? "versions" : (prev === "versions" ? "edit" : prev))
   })[0]
 
   useEffect(() => {
@@ -397,7 +422,30 @@ export function EditEntryPage() {
     queryFn: () => client!.collection(slug!).findOne(id!) as Promise<Record<string, any> | null>,
     enabled: !!client && isEdit,
   })
+  const [switcherOpen, setSwitcherOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Fetch collection entries for the dropdown switcher
+  const { data: siblingEntries, isLoading: isSiblingsLoading } = useQuery({
+    queryKey: ["collection-siblings", slug, debouncedSearchQuery],
+    queryFn: async () => {
+      const displayField = schema?.admin?.useAsTitle || "title"
+      let qb = client!.collection(slug!).find({ limit: 50 })
+      if (debouncedSearchQuery) {
+        qb = qb.where({ [displayField]: { like: `%${debouncedSearchQuery}%` } })
+      }
+      return qb.exec() as Promise<{ docs: Record<string, unknown>[] }>
+    },
+    enabled: !!client && !!slug && isEdit && switcherOpen,
+  })
   const syncPreviewData = useState(() => (next: Record<string, unknown> | null) => {
     setPreviewData((prev) => prev === next ? prev : next)
   })[0]
@@ -511,6 +559,18 @@ export function EditEntryPage() {
   const hasStatus = schema?.fields.some((f: { name?: string }) => f.name === "status")
   const currentStatus = entry?.status || "draft"
 
+  // Publishing badge. When the collection has a workflow (including one
+  // synthesized from `drafts: true`), the source of truth is the workflow
+  // state — a state flagged `published` renders "Live", anything else "Draft".
+  // Collections without a workflow fall back to a plain `status` field.
+  const workflowState = workflowConfig && workflowMeta
+    ? (workflowConfig.states as Array<{ name: string; published?: boolean }> | undefined)?.find(
+      (s) => s.name === (workflowMeta as { state?: string }).state,
+    )
+    : null
+  const isPublished = workflowState ? !!workflowState.published : currentStatus === "published"
+  const showStatusBadge = workflowConfig ? !!workflowMeta : hasStatus
+
   const siteUrl = getSiteUrl(schemas?.admin?.siteUrl);
   const previewUrl = resolvePreviewUrl(schema.admin?.previewUrl, previewData || entry, siteUrl)
 
@@ -565,18 +625,34 @@ export function EditEntryPage() {
     }
   }
 
-  // Preview (left) and workflow (right) are independent panels — they no longer
-  // compete for the same space, so each has its own toggle.
+  // Evaluate collection-level audit log access
+  const auditAccess = (schema.access as any)?.readAudit ?? readAccess
+  let canReadAudit = true
+  if (auditAccess === false) {
+    canReadAudit = false
+  } else if (typeof auditAccess === 'string') {
+    try {
+      canReadAudit = jexl.evalSync(auditAccess, { user, ...(previewData || entry || {}) })
+    } catch {
+      canReadAudit = false
+    }
+  }
+
   const workflowAvailable = !!(workflowConfig && isEdit && workflowMeta)
-  const showLivePreview = showPreview && !!previewUrl
-  const showWorkflowSidebar = workflowAvailable && showWorkflow
+  const showLivePreview = activeTab === 'edit' && showPreview && !!previewUrl
+  const showWorkflowSidebar = false
+
+
+  const docsToDisplay = debouncedSearchQuery
+    ? (siblingEntries?.docs || [])
+    : (siblingEntries?.docs?.filter((d) => String(d.id) !== id).slice(0, 4) || [])
 
   return (
     <NestedEditorProvider drillInEnabled={!!showLivePreview}>
       <div key={id || "new"} className={cn("dy-flex dy-flex-col dy--mt-6 dy--mb-6 dy--mx-4 lg:dy--mt-10 lg:dy--mb-10 lg:dy--mx-6", showLivePreview ? "dy-h-screen" : "")}>
         {/* Top action bar — title/status on the left, actions on the right.
             Replaces the former far-right vertical rail. */}
-        <div className="dy-flex dy-shrink-0 dy-items-center dy-gap-2 dy-border-b dy-border-border/50 dy-bg-background dy-px-3 dy-py-2">
+        <div className="dy-flex dy-flex-wrap dy-shrink-0 dy-items-center dy-gap-2 dy-border-b dy-border-border/50 dy-bg-background dy-px-3 dy-py-2">
           <Button
             variant="ghost"
             size="icon"
@@ -587,15 +663,66 @@ export function EditEntryPage() {
             <ChevronLeft className="dy-h-4 dy-w-4" />
           </Button>
           <div className="dy-flex dy-items-center dy-gap-2 dy-min-w-0">
-            <h1 className="dy-text-base dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
-              {isEdit ? `Edit ${schema?.labels?.plural || schema?.slug}` : `New ${schema?.labels?.singular || schema?.slug}`}
-            </h1>
-            {hasStatus && !workflowConfig && (
+            {isEdit ? (
+              <>
+                <span className="dy-text-base dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-mr-0.5">
+                  Edit
+                </span>
+                <Popover open={switcherOpen} onOpenChange={setSwitcherOpen}>
+                  <PopoverTrigger className="dy-flex dy-items-center dy-gap-1 dy-text-base dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground hover:dy-bg-muted/80 dy-px-2 dy-py-1 dy-rounded-lg dy-transition-all dy-outline-none dy-min-w-0">
+                    <span className="dy-truncate dy-max-w-[150px] sm:dy-max-w-none dy-inline-block">
+                      {isEdit && entry ? getEntryTitle(entry, schema) : "..."}
+                    </span>
+                    <ChevronDown className="dy-h-4 dy-w-4 dy-text-muted-foreground/80 dy-shrink-0" />
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="dy-w-64 dy-p-0 dy-z-[101]">
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        placeholder="Search entries..."
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                      />
+                      <CommandList>
+                        {isSiblingsLoading ? (
+                          <div className="dy-py-6 dy-text-center dy-text-sm dy-text-muted-foreground">
+                            Loading...
+                          </div>
+                        ) : docsToDisplay.length === 0 ? (
+                          <CommandEmpty>No entries found.</CommandEmpty>
+                        ) : (
+                          <CommandGroup>
+                            {docsToDisplay.map((sibling: Record<string, unknown>) => (
+                              <CommandItem
+                                key={sibling.id as string}
+                                value={sibling.id as string}
+                                onSelect={(val) => {
+                                  navigate(`/collections/${slug}/edit/${val}`)
+                                  setSwitcherOpen(false)
+                                  setSearchQuery("")
+                                }}
+                                className="dy-cursor-pointer dy-py-2 dy-px-3 dy-rounded-lg"
+                              >
+                                <span className="dy-text-sm dy-text-foreground">{getEntryTitle(sibling, schema)}</span>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </>
+            ) : (
+              <h1 className="dy-text-base dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
+                New {schema?.labels?.singular || schema?.slug}
+              </h1>
+            )}
+            {showStatusBadge && (
               <Badge className={cn(
                 "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
-                currentStatus === "published" ? "dy-bg-emerald-100 dy-text-emerald-700 dy-border-emerald-200" : "dy-bg-amber-100 dy-text-amber-700 dy-border-amber-200"
+                isPublished ? "dy-bg-emerald-100 dy-text-emerald-700 dy-border-emerald-200" : "dy-bg-amber-100 dy-text-amber-700 dy-border-amber-200"
               )} variant="outline">
-                {currentStatus === "published" ? "Live" : "Draft"}
+                {isPublished ? "Live" : "Draft"}
               </Badge>
             )}
           </div>
@@ -631,15 +758,24 @@ export function EditEntryPage() {
             {workflowAvailable && (
               <HeaderAction
                 icon={Workflow}
-                label="Workflow"
-                active={showWorkflow}
-                title={showWorkflow ? "Hide Workflow" : "Show Workflow"}
-                onClick={() => setShowWorkflow((v) => !v)}
+                label="Versions"
+                active={activeTab === "versions"}
+                title={activeTab === "versions" ? "Hide Version History" : "Show Version History"}
+                onClick={() => setActiveTab((tab) => tab === "versions" ? "edit" : "versions")}
+              />
+            )}
+            {schema?.audit && isEdit && canReadAudit && (
+              <HeaderAction
+                icon={History}
+                label="Audit Log"
+                active={activeTab === "audit"}
+                title={activeTab === "audit" ? "Hide Audit Log" : "Show Audit Log"}
+                onClick={() => setActiveTab((tab) => tab === "audit" ? "edit" : "audit")}
               />
             )}
             {/* Desktop preview show/hide. On mobile the Edit/Preview switch above
                 handles pane visibility, so this is hidden there. */}
-            {previewUrl && (
+            {previewUrl && activeTab === "edit" && (
               <HeaderAction
                 icon={showPreview ? Eye : EyeOff}
                 label="Preview"
@@ -697,8 +833,10 @@ export function EditEntryPage() {
               </PopoverContent>
             </Popover>
 
-            {(isEdit ? canUpdate : canCreate) && (
-              <>
+            {(isEdit ? canUpdate : canCreate) && activeTab === "edit" && (
+              /* Desktop save lives in the header. On mobile it moves to the
+                 docked bottom save bar, so this is hidden below md. */
+              <div className="dy-hidden md:dy-flex dy-items-center">
                 <div className="dy-mx-1 dy-h-6 dy-w-px dy-bg-border/60" />
                 <Button
                   size="sm"
@@ -719,7 +857,7 @@ export function EditEntryPage() {
                     </span>
                   )}
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -741,6 +879,8 @@ export function EditEntryPage() {
                   previewUrl={previewUrl}
                   data={previewData || entry}
                   mode={schema.admin?.previewMode}
+                  collectionSlug={slug}
+                  documentId={id && id !== "new" ? id : undefined}
                   fields={orderedFields}
                   active={!!showLivePreview}
                   onFieldNavigate={() => setMobilePreview(false)}
@@ -757,231 +897,403 @@ export function EditEntryPage() {
             mobilePreview && showLivePreview ? "dy-hidden lg:dy-block" : ""
           )}>
             <div className="dy-space-y-4">
-              {/* Form */}
-              <div className="dy-animate-in dy-space-y-8 dy-pb-32">
-                {!canUpdate && isEdit && (
-                  <div className="dy-p-4 dy-rounded-lg dy-bg-amber-50 dy-border dy-border-amber-200 dy-text-amber-800 dy-text-sm dy-flex dy-items-center dy-gap-3">
-                    <Archive className="dy-h-4 dy-w-4" />
-                    You have read-only access to this collection.
-                  </div>
-                )}
-                {schema.upload && (previewData || entry) && ((previewData || entry).filename || (previewData || entry).url) && (
-                  <div className="dy-p-5 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-muted/10 dy-space-y-4">
-                    <div className="dy-flex dy-items-start dy-gap-4">
-                      <div className="dy-flex-1 dy-space-y-1">
-                        <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Uploaded File</p>
-                        <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{getDisplayFilename((previewData || entry).filename)}</h3>
-                        <p className="dy-text-xs dy-text-muted-foreground">
-                          {(previewData || entry).filesize ? `${(((previewData || entry).filesize || 0) / 1024).toFixed(1)} KB` : 'N/A Size'} • {(previewData || entry).mimeType || 'Unknown Type'}
-                        </p>
-                      </div>
-                    </div>
+              {activeTab === "versions" && workflowAvailable && (
+                <div className="dy-animate-in dy-fade-in dy-duration-200 dy-max-w-3xl dy-mx-auto dy-py-6">
+                  <WorkflowPanel
+                    collection={slug!}
+                    documentId={id!}
+                    workflowMeta={workflowMeta}
+                    workflowConfig={workflowConfig}
+                  />
+                </div>
+              )}
 
-                    <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-flex dy-items-center dy-justify-center dy-p-4 dy-min-h-[160px] dy-max-h-[320px] dy-relative">
-                      {(previewData || entry).mimeType?.startsWith("image/") ? (
-                        <img
-                          src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
-                          alt={(previewData || entry).alt || (previewData || entry).filename}
-                          className="dy-object-contain dy-max-h-[280px] dy-rounded-lg dy-shadow-sm"
-                        />
-                      ) : (previewData || entry).mimeType?.startsWith("audio/") ? (
-                        <div className="dy-w-full dy-max-w-md dy-bg-card dy-p-4 dy-rounded-xl dy-border dy-border-border/60 dy-shadow-sm dy-flex dy-flex-col dy-gap-3 dy-items-center">
-                          <div className="dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-text-primary">
-                            <Volume2 className="dy-h-5 dy-w-5" />
+              {activeTab === "audit" && (
+                <div className="dy-animate-in dy-fade-in dy-duration-200 dy-max-w-3xl dy-mx-auto dy-py-6">
+                  <AuditPanel
+                    collection={slug!}
+                    documentId={id!}
+                  />
+                </div>
+              )}
+
+              {activeTab === "edit" && (
+                <div className="dy-animate-in dy-space-y-8 dy-pb-32">
+                  {!canUpdate && isEdit && (
+                    <div className="dy-p-4 dy-rounded-lg dy-bg-amber-50 dy-border dy-border-amber-200 dy-text-amber-800 dy-text-sm dy-flex dy-items-center dy-gap-3">
+                      <Archive className="dy-h-4 dy-w-4" />
+                      You have read-only access to this collection.
+                    </div>
+                  )}
+                  {schema.upload && (previewData || entry) && ((previewData || entry).filename || (previewData || entry).url) && (
+                    <div className="dy-p-5 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-muted/10 dy-space-y-4">
+                      <div className="dy-flex dy-items-start dy-gap-4">
+                        <div className="dy-flex-1 dy-space-y-1">
+                          <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/80">Uploaded File</p>
+                          <h3 className="dy-text-sm dy-font-bold dy-text-foreground dy-break-all">{getDisplayFilename((previewData || entry).filename)}</h3>
+                          <p className="dy-text-xs dy-text-muted-foreground">
+                            {(previewData || entry).filesize ? `${(((previewData || entry).filesize || 0) / 1024).toFixed(1)} KB` : 'N/A Size'} • {(previewData || entry).mimeType || 'Unknown Type'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/40 dy-bg-checkered dy-flex dy-items-center dy-justify-center dy-p-4 dy-min-h-[160px] dy-max-h-[320px] dy-relative">
+                        {(previewData || entry).mimeType?.startsWith("image/") ? (
+                          <img
+                            src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                            alt={(previewData || entry).alt || (previewData || entry).filename}
+                            className="dy-object-contain dy-max-h-[280px] dy-rounded-lg dy-shadow-sm"
+                          />
+                        ) : (previewData || entry).mimeType?.startsWith("audio/") ? (
+                          <div className="dy-w-full dy-max-w-md dy-bg-card dy-p-4 dy-rounded-xl dy-border dy-border-border/60 dy-shadow-sm dy-flex dy-flex-col dy-gap-3 dy-items-center">
+                            <div className="dy-h-12 dy-w-12 dy-rounded-full dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-text-primary">
+                              <Volume2 className="dy-h-5 dy-w-5" />
+                            </div>
+                            <audio
+                              src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
+                              controls
+                              className="dy-w-full"
+                            />
                           </div>
-                          <audio
+                        ) : (previewData || entry).mimeType?.startsWith("video/") ? (
+                          <video
                             src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
                             controls
-                            className="dy-w-full"
+                            className="dy-max-h-[280px] dy-w-full dy-rounded-lg dy-shadow-sm"
                           />
-                        </div>
-                      ) : (previewData || entry).mimeType?.startsWith("video/") ? (
-                        <video
-                          src={getMediaUrl(previewData || entry, client!.getBaseUrl())}
-                          controls
-                          className="dy-max-h-[280px] dy-w-full dy-rounded-lg dy-shadow-sm"
-                        />
-                      ) : (
-                        <div className="dy-flex dy-flex-col dy-items-center dy-gap-2 dy-p-6">
-                          <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
-                            <FileIcon className="dy-h-8 dy-w-8 dy-text-primary" />
-                          </div>
-                          <span className="dy-text-xs dy-font-medium dy-text-muted-foreground">Preview not available</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {isConfiguringView ? (
-                  <div className="dy-space-y-6 ">
-                    <div className="dy-p-4 dy-rounded-xl">
-                      <p className="mb-2 dy-text-sm dy-text-muted-foreground">Drag and drop fields to reorder the form layout. Changes will be saved as your personal preference or global default.</p>
-                      <div className="dy-space-y-2 dy-pr-1 dy-outline-none">
-                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                          <SortableContext items={layout.map(item => item.name)} strategy={verticalListSortingStrategy}>
-                            <div className="dy-space-y-1.5">
-                              {layout.map((item) => {
-                                const field = fieldsList.find(f => f.name === item.name)
-                                if (!field) return null
-                                return (
-                                  <SortableFieldItem
-                                    key={item.name}
-                                    id={item.name}
-                                    label={field.label || field.name}
-                                    type={field.type}
-                                    width={item.width || "100%"}
-                                    onChangeWidth={(newWidth) => {
-                                      setLayout((prev) =>
-                                        prev.map((x) =>
-                                          x.name === item.name ? { ...x, width: newWidth } : x
-                                        )
-                                      )
-                                    }}
-                                  />
-                                )
-                              })}
+                        ) : (
+                          <div className="dy-flex dy-flex-col dy-items-center dy-gap-2 dy-p-6">
+                            <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center">
+                              <FileIcon className="dy-h-8 dy-w-8 dy-text-primary" />
                             </div>
-                          </SortableContext>
-                        </DndContext>
+                            <span className="dy-text-xs dy-font-medium dy-text-muted-foreground">Preview not available</span>
+                          </div>
+                        )}
                       </div>
                     </div>
+                  )}
+                  {isConfiguringView ? (
+                    <div className="dy-space-y-6 ">
+                      <div className="dy-p-4 dy-rounded-xl">
+                        <p className="mb-2 dy-text-sm dy-text-muted-foreground">Drag and drop fields to reorder the form layout. Changes will be saved as your personal preference or global default.</p>
+                        <div className="dy-space-y-2 dy-pr-1 dy-outline-none">
+                          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={layout.map(item => item.name)} strategy={verticalListSortingStrategy}>
+                              <div className="dy-space-y-1.5">
+                                {layout.map((item) => {
+                                  const field = fieldsList.find(f => f.name === item.name)
+                                  if (!field) return null
+                                  return (
+                                    <SortableFieldItem
+                                      key={item.name}
+                                      id={item.name}
+                                      label={field.label || field.name}
+                                      type={field.type}
+                                      width={item.width || "100%"}
+                                      onChangeWidth={(newWidth) => {
+                                        setLayout((prev) =>
+                                          prev.map((x) =>
+                                            x.name === item.name ? { ...x, width: newWidth } : x
+                                          )
+                                        )
+                                      }}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            </SortableContext>
+                          </DndContext>
+                        </div>
+                      </div>
 
-                    {/* Sticky Save Preferences Bar */}
-                    <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
-                      <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
-                        <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
-                          <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
-                            View
-                          </p>
-                          <div className="dy-flex dy-items-center dy-gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="dy-rounded-xl"
-                              onClick={async () => {
-                                await resetLayout("personal")
-                                setIsConfiguringView(false)
-                                toast.success("Personal layout reset to default")
-                              }}
-                            >
-                              Reset
-                            </Button>
-                            {isAdminUser && (
+                      {/* Sticky Save Preferences Bar */}
+                      <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
+                        <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-6">
+                          <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
+                            <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
+                              View
+                            </p>
+                            <div className="dy-flex dy-items-center dy-gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
                                 className="dy-rounded-xl"
                                 onClick={async () => {
-                                  await saveLayout("global")
+                                  await resetLayout("personal")
                                   setIsConfiguringView(false)
-                                  toast.success("Saved for everyone successfully")
+                                  toast.success("Personal layout reset to default")
                                 }}
                               >
-                                Save for Everyone
+                                Reset
                               </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              className="dy-rounded-xl dy-bg-primary dy-text-primary-foreground"
-                              onClick={async () => {
-                                await saveLayout("personal")
-                                setIsConfiguringView(false)
-                                toast.success("Saved for me successfully")
-                              }}
-                            >
-                              Save for Me
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="dy-rounded-xl"
-                              onClick={() => {
-                                setLayout(reconciledLayout)
-                                setIsConfiguringView(false)
-                              }}
-                            >
-                              Cancel
-                            </Button>
+                              {isAdminUser && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="dy-rounded-xl"
+                                  onClick={async () => {
+                                    await saveLayout("global")
+                                    setIsConfiguringView(false)
+                                    toast.success("Saved for everyone successfully")
+                                  }}
+                                >
+                                  Save for Everyone
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                className="dy-rounded-xl dy-bg-primary dy-text-primary-foreground"
+                                onClick={async () => {
+                                  await saveLayout("personal")
+                                  setIsConfiguringView(false)
+                                  toast.success("Saved for me successfully")
+                                }}
+                              >
+                                Save for Me
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="dy-rounded-xl"
+                                onClick={() => {
+                                  setLayout(reconciledLayout)
+                                  setIsConfiguringView(false)
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ) : (() => {
-                  // Merge query params as default values for new entries
-                  const queryParamsDefaults: Record<string, unknown> = {}
-                  if (!isEdit) {
-                    searchParams.forEach((value, key) => {
-                      queryParamsDefaults[key] = value
-                    })
-                  }
+                  ) : (() => {
+                    // Merge query params as default values for new entries
+                    const queryParamsDefaults: Record<string, unknown> = {}
+                    if (!isEdit) {
+                      searchParams.forEach((value, key) => {
+                        queryParamsDefaults[key] = value
+                      })
+                    }
 
-                  return (
-                    <FormEngine
-                      collection={slug!}
-                      fields={orderedFields}
-                      defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
-                      onSubmit={(data) => saveMutation.mutate(data)}
-                      onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
-                      onChange={(dirty) => setIsDirty(dirty)}
-                      isLoading={saveMutation.isPending || isPreferenceLoading}
-                      submitLabel={isEdit ? "Save Changes" : "Create Entry"}
-                      readOnly={isEdit ? !canUpdate : !canCreate}
-                      passwordChangeMode={isEdit ? passwordChangeMode : null}
-                      documentId={id}
-                      defaultTabLabel={schema?.labels?.singular || 'General'}
-                    />
-                  );
-                })()}
-                <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
+                    return (
+                      <FormEngine
+                        collection={slug!}
+                        fields={orderedFields}
+                        defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
+                        onSubmit={(data) => saveMutation.mutate(data)}
+                        onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
+                        onChange={(dirty) => setIsDirty(dirty)}
+                        isLoading={saveMutation.isPending || isPreferenceLoading}
+                        submitLabel={isEdit ? "Save Changes" : "Create Entry"}
+                        hideSubmit
+                        readOnly={isEdit ? !canUpdate : !canCreate}
+                        passwordChangeMode={isEdit ? passwordChangeMode : null}
+                        documentId={id}
+                        defaultTabLabel={schema?.labels?.singular || 'General'}
+                      />
+                    );
+                  })()}
+                  <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
 
-                {/* Sticky Save Bar */}
-                {(isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
-                  <div className="dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
-                    <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-4">
-                      <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
-                        <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
-                          {isEdit ? "You have unsaved changes" : `Create a new ${schema?.labels?.singular || schema?.slug}`}
-                        </p>
-                        <Button
-                          size="sm"
-                          className="dy-h-9 dy-px-5 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
-                          onClick={() => document.getElementById('dyrected-form-submit')?.click()}
-                          disabled={saveMutation.isPending}
-                        >
-                          {saveMutation.isPending ? (
-                            <div className="dy-flex dy-items-center dy-gap-2">
-                              <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
-                              Saving...
-                            </div>
-                          ) : (
-                            <div className="dy-flex dy-items-center dy-gap-2">
-                              <Save className="dy-h-3.5 dy-w-3.5" />
-                              {isEdit ? "Save Changes" : "Create Entry"}
-                            </div>
-                          )}
-                        </Button>
+                  {/* Desktop save bar — floating pill, only surfaces when there
+                      are changes to save. Hidden on mobile (see docked bar below). */}
+                  {(isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
+                    <div className="dy-hidden md:dy-block dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
+                      <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-4">
+                        <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
+                          <p className="dy-text-sm dy-font-medium dy-text-muted-foreground">
+                            {isEdit ? "You have unsaved changes" : `Create a new ${schema?.labels?.singular || schema?.slug}`}
+                          </p>
+                          <Button
+                            size="sm"
+                            className="dy-h-9 dy-px-5 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
+                            onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                            disabled={saveMutation.isPending}
+                          >
+                            {saveMutation.isPending ? (
+                              <div className="dy-flex dy-items-center dy-gap-2">
+                                <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
+                                Saving...
+                              </div>
+                            ) : (
+                              <div className="dy-flex dy-items-center dy-gap-2">
+                                <Save className="dy-h-3.5 dy-w-3.5" />
+                                {isEdit ? "Save Changes" : "Create Entry"}
+                              </div>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+
+                  {/* Mobile save bar — docked to the bottom edge like a native
+                      app action bar. Always present while the entry is editable,
+                      but the button stays disabled until there is something to
+                      save. This is the only save affordance on mobile. */}
+                  {(isEdit ? canUpdate : canCreate) && (
+                    <div className="md:dy-hidden dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-border-t dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-4 dy-py-3">
+                      <Button
+                        className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm"
+                        onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                        disabled={saveMutation.isPending || !(isDirty || !isEdit)}
+                      >
+                        {saveMutation.isPending ? (
+                          <span className="dy-flex dy-items-center dy-gap-2">
+                            <span className="dy-h-4 dy-w-4 dy-animate-spin dy-border-2 dy-border-current dy-border-t-transparent dy-rounded-full" />
+                            Saving...
+                          </span>
+                        ) : (
+                          <span className="dy-flex dy-items-center dy-gap-2">
+                            <Save className="dy-h-4 dy-w-4" />
+                            {isEdit ? "Save Changes" : "Create Entry"}
+                          </span>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Workflow Sidebar — an extra right column when workflow is active */}
-          {showWorkflowSidebar && (
-            <div className="dy-hidden lg:dy-block dy-w-72 dy-shrink-0 dy-border-l dy-border-border/50 dy-bg-muted/5 dy-px-4 dy-py-8 dy-overflow-y-auto">
-              <WorkflowPanel
-                collection={slug!}
-                documentId={id!}
-                workflowMeta={workflowMeta}
-                workflowConfig={workflowConfig}
-              />
-            </div>
-          )}
         </div>
       </div>
     </NestedEditorProvider>
+  )
+}
+
+interface AuditEntry {
+  id: string
+  operation: string
+  user: string | null
+  timestamp: string
+  changes: string
+}
+
+function AuditPanel({ collection, documentId }: { collection: string; documentId: string }) {
+  const { client } = useDyrected()
+
+  const { data: auditData, isLoading } = useQuery({
+    queryKey: ["audit-log", collection, documentId],
+    queryFn: async () => {
+      const result = await client!.collectionAudit(collection, {
+        where: { documentId }
+      })
+      return result as PaginatedResult<AuditEntry>
+    },
+  })
+
+  if (isLoading) {
+    return (
+      <div className="dy-flex dy-items-center dy-justify-center dy-py-12">
+        <Loader2 className="dy-h-6 dy-w-6 dy-animate-spin dy-text-muted-foreground" />
+      </div>
+    )
+  }
+
+  const logs = auditData?.docs || []
+
+  if (logs.length === 0) {
+    return (
+      <div className="dy-text-center dy-py-12 dy-text-muted-foreground dy-text-sm">
+        No audit logs found for this document.
+      </div>
+    )
+  }
+
+  return (
+    <div className="dy-space-y-6">
+      <div className="dy-flex dy-items-center dy-justify-between">
+        <h2 className="dy-text-lg dy-font-bold">Audit History</h2>
+      </div>
+      <div className="dy-space-y-4">
+        {logs.map((log) => {
+          let changeDetails = null
+          try {
+            const parsed = JSON.parse(log.changes)
+            const before = parsed.before || {}
+            const after = parsed.after || {}
+            const diffs: { field: string; from: unknown; to: unknown }[] = []
+
+            const allKeys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]))
+            for (const key of allKeys) {
+              if (["updatedAt", "updatedBy", "createdAt", "createdBy", "id"].includes(key)) continue
+              if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+                diffs.push({ field: key, from: before[key], to: after[key] })
+              }
+            }
+
+            if (diffs.length > 0) {
+              changeDetails = (
+                <div className="dy-mt-3 dy-overflow-x-auto dy-rounded-lg dy-border dy-border-border/40">
+                  <table className="dy-w-full dy-text-left dy-text-xs">
+                    <thead>
+                      <tr className="dy-bg-muted/40 dy-border-b dy-border-border/40">
+                        <th className="dy-px-3 dy-py-2 dy-font-semibold dy-text-muted-foreground">Field</th>
+                        <th className="dy-px-3 dy-py-2 dy-font-semibold dy-text-muted-foreground">Before</th>
+                        <th className="dy-px-3 dy-py-2 dy-font-semibold dy-text-muted-foreground">After</th>
+                      </tr>
+                    </thead>
+                    <tbody className="dy-divide-y dy-divide-border/30">
+                      {diffs.map((diff) => (
+                        <tr key={diff.field}>
+                          <td className="dy-px-3 dy-py-2 dy-font-mono dy-font-semibold dy-text-foreground">{diff.field}</td>
+                          <td className="dy-px-3 dy-py-2 dy-text-muted-foreground dy-max-w-[200px] dy-truncate" title={JSON.stringify(diff.from)}>
+                            {diff.from === null || diff.from === undefined ? (
+                              <span className="dy-italic dy-text-muted-foreground/40">empty</span>
+                            ) : typeof diff.from === "object" ? (
+                              JSON.stringify(diff.from)
+                            ) : (
+                              String(diff.from)
+                            )}
+                          </td>
+                          <td className="dy-px-3 dy-py-2 dy-text-foreground dy-max-w-[200px] dy-truncate" title={JSON.stringify(diff.to)}>
+                            {diff.to === null || diff.to === undefined ? (
+                              <span className="dy-italic dy-text-muted-foreground/40">empty</span>
+                            ) : typeof diff.to === "object" ? (
+                              JSON.stringify(diff.to)
+                            ) : (
+                              String(diff.to)
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            }
+          } catch {
+            // Ignore parse errors
+          }
+
+          return (
+            <div key={log.id} className="dy-p-5 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-card dy-shadow-sm dy-space-y-2">
+              <div className="dy-flex dy-items-center dy-justify-between">
+                <div className="dy-flex dy-items-center dy-gap-2">
+                  <span className={cn(
+                    "dy-px-2 dy-py-0.5 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider",
+                    log.operation === "create" ? "dy-bg-emerald-50 dy-text-emerald-700 dy-border dy-border-emerald-200" :
+                      log.operation === "delete" ? "dy-bg-red-50 dy-text-red-700 dy-border dy-border-red-200" :
+                        "dy-bg-blue-50 dy-text-blue-700 dy-border dy-border-blue-200"
+                  )}>
+                    {log.operation}
+                  </span>
+                  <span className="dy-text-xs dy-text-muted-foreground">
+                    by <span className="dy-font-mono dy-text-foreground">{log.user || "System"}</span>
+                  </span>
+                </div>
+                <span className="dy-text-xs dy-text-muted-foreground">
+                  {new Date(log.timestamp).toLocaleString()}
+                </span>
+              </div>
+              {changeDetails}
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }

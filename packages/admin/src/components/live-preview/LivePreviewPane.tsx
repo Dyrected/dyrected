@@ -1,21 +1,87 @@
 import { useEffect, useRef, useState } from 'react';
+import { PREVIEW_TOKEN_PARAM } from '@dyrected/sdk';
 import { Button } from '../ui/button';
 import { ExternalLink, Smartphone, Monitor, RotateCcw, MousePointer2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useDyrected } from '../../providers/dyrected-context';
 
 interface LivePreviewPaneProps {
   previewUrl: string;
   data: any;
   mode?: 'postMessage' | 'token';
+  /** Collection slug, required to mint a preview token in `token` mode. */
+  collectionSlug?: string;
+  /** Current document id (omitted for new/unsaved documents). */
+  documentId?: string;
   onFieldFocus?: (path: string) => void;
 }
 
-export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFieldFocus }: LivePreviewPaneProps) {
+/** Append the preview token to a resolved (absolute) preview URL. */
+function withPreviewToken(url: string, token: string): string {
+  try {
+    const u = new URL(url);
+    u.searchParams.set(PREVIEW_TOKEN_PARAM, token);
+    return u.toString();
+  } catch {
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}${PREVIEW_TOKEN_PARAM}=${encodeURIComponent(token)}`;
+  }
+}
+
+function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collectionSlug, documentId, onFieldFocus }: LivePreviewPaneProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { client } = useDyrected();
   const [isReady, setIsReady] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [zoom, setZoom] = useState(0.75);
   const [editMode, setEditMode] = useState(true);
+
+  // Token mode: mint a short-lived token carrying the draft and load the iframe
+  // at `previewUrl?dyPreview=<token>`, so a server-rendered frontend can fetch
+  // the draft during its render. Refresh-based (a mint + reload per change),
+  // debounced so we don't mint on every keystroke.
+  const [tokenSrc, setTokenSrc] = useState<string | null>(null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const lastDataKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (mode !== 'token' || !client || !collectionSlug) return;
+
+    const key = safeStringify(data);
+    // Skip if the draft is unchanged since the last successful mint.
+    if (key === lastDataKeyRef.current) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const { token } = await client.createPreviewToken({ collectionSlug, documentId, data });
+        if (cancelled) return;
+        lastDataKeyRef.current = key;
+        setTokenSrc(withPreviewToken(previewUrl, token));
+        setTokenError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setTokenError(err instanceof Error ? err.message : 'Failed to create preview token.');
+      }
+    }, 800);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [mode, client, collectionSlug, documentId, previewUrl, data]);
+
+  // The URL actually loaded into the iframe. In token mode we wait for the first
+  // token before adding it; until then the frame shows published content.
+  const iframeSrc = mode === 'token' ? tokenSrc ?? previewUrl : previewUrl;
 
   // Handle postMessage communication
   useEffect(() => {
@@ -60,7 +126,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
 
   const reload = () => {
     if (iframeRef.current) {
-      iframeRef.current.src = previewUrl;
+      iframeRef.current.src = iframeSrc;
       setIsReady(false);
       // Keep edit mode on across reloads — it re-arms once the iframe is ready.
     }
@@ -125,6 +191,14 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
         </div>
 
         <div className="dy-flex dy-items-center dy-gap-2">
+          {mode === 'token' && tokenError && (
+            <span
+              className="dy-text-[11px] dy-font-medium dy-text-destructive dy-truncate dy-max-w-[220px]"
+              title={tokenError}
+            >
+              Preview token failed
+            </span>
+          )}
           <Button variant="ghost" size="icon" className="dy-h-8 dy-w-8" onClick={reload}>
             <RotateCcw className="dy-h-3.5 dy-w-3.5" />
           </Button>
@@ -143,7 +217,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', onFiel
         >
           <iframe
             ref={iframeRef}
-            src={previewUrl}
+            src={iframeSrc}
             className={cn(
               'dy-border-none dy-transition-transform dy-duration-300',
               editMode && 'dy-cursor-crosshair'

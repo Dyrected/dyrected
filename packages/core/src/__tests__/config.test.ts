@@ -135,4 +135,26 @@ describe('Configuration Helpers', () => {
     expect(validDashboard.admin?.components?.beforeDashboard).toEqual(['custom-banner']);
     expect(validCollection.admin?.components?.beforeList).toEqual(['custom-header']);
   });
+
+  it('normalizes drafts: true to simplePublishingWorkflow', () => {
+    const normalized = normalizeConfig(
+      defineConfig({
+        collections: [
+          defineCollection({
+            slug: 'posts',
+            drafts: true,
+            fields: [],
+          }),
+        ],
+        globals: [],
+        db: new MockDatabaseAdapter(),
+      }),
+    );
+
+    const posts = normalized.collections.find((c) => c.slug === 'posts')!;
+    expect(posts.workflow).toBeDefined();
+    expect(posts.workflow?.initialState).toBe('draft');
+    expect(posts.workflow?.states.map((s) => s.name)).toEqual(['draft', 'published']);
+  });
 });
+

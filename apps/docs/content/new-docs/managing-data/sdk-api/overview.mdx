@@ -122,6 +122,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
 | <code>setPreference</code> (optional) |  |
 | <code>deletePreference</code> (optional) |  |
 | <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
+| <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
 | <code>find</code> (required) |  |
 | <code>collection</code> (required) | Returns a fluent query builder for a collection. |
 | <code>global</code> (required) | Access a global by its slug with a fluent builder. |
@@ -186,6 +187,19 @@ export class DyrectedError extends Error {
 | <code>errors</code> (optional) |  |
 
 
+## getPreviewToken
+
+Extract the preview token from a request's query string. Accepts a raw query
+string, a `URLSearchParams`, or a plain params object (e.g. Nuxt's
+`route.query` or Next's `searchParams`). Returns `null` when absent.
+
+```ts
+export function getPreviewToken(
+  search: string | URLSearchParams | Record<string, unknown> | undefined | null,
+): string | null
+```
+
+
 ## InferSchema
 
 Derives a typed `TSchema` from your exported collection and global config constants.
@@ -202,6 +216,17 @@ export type InferSchema<
   collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };
   globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
 };
+```
+
+
+## PREVIEW_TOKEN_PARAM
+
+The query-string parameter the Admin appends to a preview URL in
+`previewMode: "token"`. Read it on your frontend to decide whether to fetch
+draft data instead of published content.
+
+```ts
+export const PREVIEW_TOKEN_PARAM = "dyPreview";
 ```
 
 

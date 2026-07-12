@@ -10,5 +10,5 @@ export * from './components/DyrectedRichText';
 export * from './components/Blocks';
 
 // Re-export core types and errors from SDK for convenience
-export { DyrectedClient, DyrectedError } from '@dyrected/sdk';
+export { DyrectedClient, DyrectedError, getPreviewToken, PREVIEW_TOKEN_PARAM } from '@dyrected/sdk';
 export type { CollectionConfig, GlobalConfig } from '@dyrected/sdk';

@@ -38,6 +38,22 @@ export function publishingWorkflow(): WorkflowConfig {
   };
 }
 
+export function simplePublishingWorkflow(): WorkflowConfig {
+  return {
+    initialState: "draft",
+    draftState: "draft",
+    states: [
+      { name: "draft", label: "Draft", color: "neutral" },
+      { name: "published", label: "Published", color: "success", published: true },
+    ],
+    transitions: [
+      { name: "publish", label: "Publish", from: "draft", to: "published" },
+      { name: "unpublish", label: "Unpublish", from: "published", to: "draft", unpublish: true },
+    ],
+  };
+}
+
+
 function publicMetadata(meta: WorkflowMetadata): WorkflowMetadata {
   const { availableTransitions: _availableTransitions, ...safe } = meta;
   return safe;
@@ -80,13 +96,40 @@ export function initializeWorkflowDocument(data: Record<string, unknown>, workfl
   };
 }
 
+/** The state a legacy document is treated as: the published one, else the last. */
+function publishedStateName(workflow: WorkflowConfig): string {
+  return (
+    workflow.states.find((state) => state.published)?.name ??
+    workflow.states[workflow.states.length - 1]?.name ??
+    workflow.initialState
+  );
+}
+
 export function materializeWorkflowDocument(
   doc: BaseDocument,
   workflow: WorkflowConfig,
   user?: AuthenticatedUser,
 ): BaseDocument | null {
   const meta = doc.__workflow as WorkflowMetadata | undefined;
-  if (!meta) return doc;
+
+  // Legacy content: a document that predates the workflow (no `__workflow`).
+  // Treat it as already-published live content — its own fields are the
+  // published snapshot — so it stays visible to everyone and surfaces the
+  // workflow panel in the Admin. Without this, enabling `drafts`/workflow on an
+  // existing collection would leave old documents with no workflow metadata.
+  if (!meta) {
+    const { __published: _legacyPublished, __workflow: _legacyWorkflow, ...working } = doc;
+    const state = publishedStateName(workflow);
+    return {
+      ...working,
+      _workflow: {
+        state,
+        revision: 1,
+        availableTransitions: availableWorkflowTransitions(workflow, state, user).map((item) => item.name),
+      },
+    };
+  }
+
   const { __published, __workflow, ...working } = doc;
 
   if (!canViewWorkflowDraft(workflow, user)) {

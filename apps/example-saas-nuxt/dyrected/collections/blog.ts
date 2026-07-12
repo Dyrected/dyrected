@@ -16,6 +16,10 @@ export const Blog = defineCollection({
     useAsTitle: "title",
     group: "Content",
     previewUrl: "'/blog/' + slug",
+    // Server-side preview: the admin hands the draft to the frontend as a
+    // signed token on the URL, and the blog route redeems it during its server
+    // render (see app/pages/blog/[...slug].vue). No click-to-edit in this mode.
+    previewMode: "token",
     urlPattern: "/blog/{slug}",
     defaultColumns: ["title", "status", "tags", "views", "publishedDate"],
     icon: "File",

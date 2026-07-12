@@ -134,6 +134,7 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
       { name: "useLivePreview", from: "@dyrected/vue" },
       { name: "useDyPath", from: "@dyrected/vue" },
       { name: "provideDyPath", from: "@dyrected/vue" },
+      { name: "getPreviewToken", from: "@dyrected/vue" },
     ]);
 
     // 4. Pass options to runtime
