@@ -1,5 +1,41 @@
 # @dyrected/vue
 
+## 2.5.61
+
+### Patch Changes
+
+- b4a06ff: Admin: brand accent color, wired page metadata, and list export
+
+  - Add `admin.branding.accentColor` — a second brand color for links, navigation accents, and focus rings (mapped to the `--intelligence` token) alongside `primaryColor`. Branding colors now also apply correctly in dark mode.
+  - Wire `admin.meta.titleSuffix` into the browser tab title (it now reflects the current page and updates on navigation) and `admin.branding.favicon` into the page favicon. Both restore the host page's title/icon when the embedded admin unmounts.
+  - Add an **Export Selected** bulk action on collection lists (export just the selected rows to CSV), and quote/escape CSV export values per RFC 4180 so values containing commas, quotes, or newlines no longer break columns.
+
+  **Breaking (shipped as patch):** removed the no-op `basename` prop from `AdminUIProps` and the `@dyrected/vue` / `@dyrected/nuxt` wrappers, and stopped the CLI from scaffolding it. The admin routes internally with a hash router, so the panel's location is determined by the route of the page you render it in. If your app passes `basename`, remove it — it had no effect.
+
+- b9b900b: Server-side (token) live preview now works end to end
+
+  `previewMode: "token"` was previously a config value with backend endpoints but no admin integration. It's now wired up for server-rendered and statically generated frontends that can't receive `postMessage`.
+
+  - `@dyrected/admin`: in `token` mode the live-preview pane mints a short-lived token from the current draft (debounced) and loads the frontend iframe at `previewUrl?dyPreview=<token>`, reloading on change. Click-to-edit and live-as-you-type remain `postMessage`-only.
+  - `@dyrected/sdk`: new `createPreviewToken({ collectionSlug, documentId?, data })` to mint a token, plus `getPreviewToken(search)` and `PREVIEW_TOKEN_PARAM` helpers for reading the `dyPreview` token from a request's query string. `@dyrected/react` and `@dyrected/vue` re-export the helpers; `@dyrected/nuxt` auto-imports `getPreviewToken`.
+  - `@dyrected/core`: the server now logs a startup warning when `DYRECTED_JWT_SECRET` is unset, since token-mode preview signs with it.
+
+  Token mode is refresh-based (a mint + iframe reload per change) and embeds the draft in the signed token — see the Live Preview → Server-side docs for the security notes (set `DYRECTED_JWT_SECRET`) and the large-document URL-length caveat.
+
+- 49ed92c: Vue bridge shares the host app context, CLI sync respects DYRECTED_URL
+
+  - `@dyrected/vue`: custom Vue components in the admin (custom field inputs and dashboard/list slots) now share the host app's context instead of each mounting an isolated Vue app. They can use the host app's plugins, `provide`/`inject`, Pinia, and i18n, and many custom components no longer spin up one full Vue app per instance.
+  - `dyrected` (CLI): `sync:schema` now honors `DYRECTED_URL` (and the `NEXT_PUBLIC_` / `NUXT_PUBLIC_` / `VITE_` variants) from your environment. Previously the `--url` option's hardcoded default masked the env fallback, so it always synced to Dyrected Cloud regardless of your configured URL.
+  - `@dyrected/admin`: fix the admin browser-title helper resolving a collection's label — it read a non-existent `collection.label` (collections use `labels.singular` / `labels.plural`), which broke the package build. Also corrected the misleading `AdminComponents` JSDoc (`fields` is keyed by the field's `admin.component` string, not field type; `collectionList` injects list slots rather than replacing the list view).
+
+- Updated dependencies [b4a06ff]
+- Updated dependencies [b9b900b]
+- Updated dependencies [b9b900b]
+- Updated dependencies [49ed92c]
+  - @dyrected/admin@2.5.61
+  - @dyrected/core@2.5.61
+  - @dyrected/sdk@2.5.61
+
 ## 2.5.60
 
 ### Patch Changes
