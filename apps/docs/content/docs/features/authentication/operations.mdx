@@ -3,7 +3,9 @@ title: Operations
 description: Every authentication endpoint an auth collection exposes — login, logout, the current user, token refresh, password reset, and invitations — with exact request and response shapes and the matching SDK methods.
 ---
 
-Enabling `auth: true` on a collection mounts a fixed set of authentication endpoints under `/api/collections/{slug}/`. This page is the reference for all of them: what each one expects, what it returns, and which SDK method calls it. If you are new to the concept, start with the [Overview](/docs/features/authentication/overview) first — this page assumes you already know what an auth collection is.
+This page is the endpoint guide for auth collections. Use it when you already understand what `auth` is and need the exact route, request shape, return shape, or SDK helper for a specific operation.
+
+Enabling `auth: true` on a collection mounts a fixed set of authentication endpoints under `/api/collections/{slug}/`. If you are new to the concept, start with the [Overview](/docs/features/authentication/overview) first — this page assumes you already know what an auth collection is.
 
 Throughout, `{slug}` is your collection's slug (for example `users` or `__admins`), and every path is prefixed with `/api/collections/`.
 
@@ -76,16 +78,25 @@ If the collection's built-in lockout is enabled and someone keeps guessing wrong
 
 The response also includes a `Retry-After` header. By default Dyrected locks an account after 5 failed attempts for 10 minutes, and you can change both values on the collection with `auth: { maxLoginAttempts, lockTime }`.
 
-`logout` is stateless. Because the token _is_ the session, there is nothing to delete on the server — the endpoint just confirms and reminds you to drop the token client-side:
+`logout` now revokes the current server-tracked session, so the token stops working immediately even before it expires:
 
 ```ts
 await client.collection("users").logout();
 client.clearToken();
 // POST /api/collections/users/logout
-// → { "success": true, "message": "Logged out. Discard your token." }
+// → { "success": true, "message": "Logged out." }
 ```
 
-Calling `clearToken()` is what actually ends the session in your app. The server call is optional confirmation.
+The normal SDK helper covers the current session only. If you want to sign the account out everywhere, call the same endpoint with `allSessions=true`:
+
+```ts
+await fetch("/api/collections/users/logout?allSessions=true", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+});
+```
+
+Calling `clearToken()` still matters because your app should stop sending the token it was holding, but the server now revokes the backing session too.
 
 ## Reading the current user
 
@@ -101,7 +112,7 @@ If the token is missing or invalid you get a `401`; if the account was deleted s
 
 ## Refreshing a session
 
-Tokens expire (7 days by default). `refresh-token` issues a fresh token from a still-valid one, extending the session without asking the user to log in again:
+Tokens expire (7 days by default). `refresh-token` issues a fresh token from a still-valid one, extending the current session without asking the user to log in again:
 
 ```ts
 const { token } = await client.collection("users").refreshToken();
@@ -109,9 +120,9 @@ client.setToken(token);
 // POST /api/collections/users/refresh-token → { token }
 ```
 
-This requires a valid Bearer token — an expired token cannot refresh itself, so refresh before it lapses.
+This requires a valid Bearer token — an expired token cannot refresh itself, so refresh before it lapses. The refreshed token keeps the same underlying session instead of silently creating a second one.
 
-## Resetting a forgotten password
+## Password recovery
 
 This is a two-step flow. First, `forgot-password` sends a reset email. It **always** returns `200` with the same message whether or not the email belongs to a real account, so it can never be used to probe which emails are registered:
 
@@ -136,7 +147,7 @@ await client
 // → { "success": true, "message": "Password has been reset. You can now log in." }
 ```
 
-The reset token is single-purpose and time-limited — it is valid for one hour and only works against the collection it was issued for.
+The reset token is single-purpose and time-limited — it is valid for one hour and only works against the collection it was issued for. A successful reset also revokes that user's active sessions so older login tokens stop working.
 
 ## Changing a known password
 
@@ -150,6 +161,8 @@ await client.collection("users").changePassword(user.id, {
 });
 // POST /api/collections/users/{id}/change-password → { success, message }
 ```
+
+A successful password change revokes that user's active sessions too, so any older tokens need to be replaced with a fresh login.
 
 ## Inviting users
 

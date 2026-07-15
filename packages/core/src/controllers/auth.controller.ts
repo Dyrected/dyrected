@@ -5,19 +5,25 @@ import { getLockedUntilMs, resolveAuthLockoutConfig } from "../auth/lockout.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signCollectionToken, verifyCollectionToken } from "../auth/token.js";
 import {
+  issueAuthSessionToken,
+  revokeAllAuthSessions,
+  revokeAuthSession,
+} from "../auth/sessions.js";
+import {
   sendEmail,
   buildWelcomeEmail,
   buildInviteEmail,
   buildResetPasswordEmail,
   buildPasswordChangedEmail,
 } from "../services/email.service.js";
+import { getRequestLogger } from "../observability.js";
 
 /**
  * Handles auth endpoints for collections with `auth: true`.
  *
  * Routes registered (relative to `/api/collections/:slug`):
  *   POST   /login
- *   POST   /logout       (stateless — client drops the token)
+ *   POST   /logout
  *   GET    /me
  *   POST   /refresh-token
  *   POST   /forgot-password
@@ -161,16 +167,23 @@ export class AuthController {
     });
 
     // 3. Log them in immediately
-    const token = await signCollectionToken({
-      sub: user.id,
+    const token = await issueAuthSessionToken({
+      config,
+      userId: user.id,
       email: user.email,
       collection: this.collection.slug,
+      ip: c.get("clientIp"),
+      authSource: "local",
     });
 
     // Send welcome email (best-effort — never block login)
     const { subject, html } = buildWelcomeEmail(config, { email: body.email });
     sendEmail(config, { to: body.email, subject, html }).catch((err) =>
-      console.error("[dyrected/core] Failed to send welcome email:", err),
+      getRequestLogger(c, "auth").error({
+        err,
+        msg: "Failed to send welcome email",
+        email: body.email,
+      }),
     );
 
     const safeUser = this.sanitizeUser(user);
@@ -254,10 +267,13 @@ export class AuthController {
       await this.clearLockoutState(c, String(user.id));
     }
 
-    const token = await signCollectionToken({
-      sub: user.id,
+    const token = await issueAuthSessionToken({
+      config: c.get("config"),
+      userId: user.id,
       email: user.email,
       collection: this.collection.slug,
+      ip: c.get("clientIp"),
+      authSource: "local",
     });
 
     // Strip password before returning
@@ -267,10 +283,49 @@ export class AuthController {
 
   // ---------------------------------------------------------------------------
   // POST /logout
-  // Auth collections use stateless JWTs — logout is handled client-side.
-  // This endpoint exists so clients have a consistent API surface.
+  // Revoke the current session by default. Pass `?allSessions=true` to revoke
+  // every active session for the current account.
   // ---------------------------------------------------------------------------
   async logout(c: Context<DyrectedContext>) {
+    const requestUser = c.get("user") as any;
+    const tokenPayload = c.get("authTokenPayload");
+    const allSessions = ["1", "true", "yes"].includes(
+      (c.req.query("allSessions") || "").toLowerCase(),
+    );
+
+    if (!requestUser) {
+      if (allSessions) {
+        return c.json(
+          { error: true, message: "Authentication required." },
+          401,
+        );
+      }
+
+      return c.json({
+        success: true,
+        message: "Logged out. Discard your token.",
+      });
+    }
+
+    if (allSessions) {
+      await revokeAllAuthSessions(c.get("config"), {
+        userId: requestUser.sub,
+        collection: this.collection.slug,
+      });
+      return c.json({
+        success: true,
+        message: "All sessions have been logged out.",
+      });
+    }
+
+    if (tokenPayload?.sid) {
+      await revokeAuthSession(c.get("config"), tokenPayload.sid);
+      return c.json({
+        success: true,
+        message: "Logged out.",
+      });
+    }
+
     return c.json({
       success: true,
       message: "Logged out. Discard your token.",
@@ -310,10 +365,32 @@ export class AuthController {
       return c.json({ error: true, message: "Authentication required." }, 401);
     }
 
-    const token = await signCollectionToken({
-      sub: requestUser.sub,
+    if (!requestUser.email) {
+      return c.json(
+        { error: true, message: "Authenticated user is missing an email." },
+        400,
+      );
+    }
+
+    const tokenPayload = c.get("authTokenPayload");
+    if (tokenPayload?.sid) {
+      const token = await signCollectionToken({
+        sub: requestUser.sub,
+        email: requestUser.email,
+        collection: this.collection.slug,
+        sid: tokenPayload.sid,
+      });
+
+      return c.json({ token });
+    }
+
+    const token = await issueAuthSessionToken({
+      config: c.get("config"),
+      userId: requestUser.sub,
       email: requestUser.email,
       collection: this.collection.slug,
+      ip: c.get("clientIp"),
+      authSource: "local",
     });
 
     return c.json({ token });
@@ -367,10 +444,11 @@ export class AuthController {
         });
         await sendEmail(config, { to: user.email as string, subject, html });
       } catch (err) {
-        console.error(
-          "[dyrected/core] Failed to send password reset email:",
+        getRequestLogger(c, "auth").error({
           err,
-        );
+          msg: "Failed to send password reset email",
+          email: user.email as string,
+        });
       }
     }
 
@@ -430,16 +508,21 @@ export class AuthController {
         lockedUntil: null,
       },
     });
+    await revokeAllAuthSessions(config, {
+      userId: payload.sub,
+      collection: this.collection.slug,
+    });
 
     // Notify the user their password was changed (security alert)
     const { subject, html } = buildPasswordChangedEmail(config, {
       email: payload.email,
     });
     sendEmail(config, { to: payload.email, subject, html }).catch((err) =>
-      console.error(
-        "[dyrected/core] Failed to send password-changed email:",
+      getRequestLogger(c, "auth").error({
         err,
-      ),
+        msg: "Failed to send password-changed email",
+        email: payload.email,
+      }),
     );
 
     return c.json({
@@ -498,7 +581,11 @@ export class AuthController {
       });
       await sendEmail(config, { to: body.email, subject, html });
     } catch (err) {
-      console.error("[dyrected/core] Failed to send invite email:", err);
+      getRequestLogger(c, "auth").error({
+        err,
+        msg: "Failed to send invite email",
+        email: body.email,
+      });
     }
 
     return c.json({ success: true, message: `Invite sent to ${body.email}.` });
@@ -565,10 +652,13 @@ export class AuthController {
     });
 
     // Log them in immediately
-    const sessionToken = await signCollectionToken({
-      sub: user.id,
+    const sessionToken = await issueAuthSessionToken({
+      config,
+      userId: user.id,
       email: inviteeEmail,
       collection: this.collection.slug,
+      ip: c.get("clientIp"),
+      authSource: "local",
     });
 
     // Send welcome email (best-effort)
@@ -576,7 +666,11 @@ export class AuthController {
       email: inviteeEmail,
     });
     sendEmail(config, { to: inviteeEmail, subject, html }).catch((err) =>
-      console.error("[dyrected/core] Failed to send welcome email:", err),
+      getRequestLogger(c, "auth").error({
+        err,
+        msg: "Failed to send welcome email",
+        email: inviteeEmail,
+      }),
     );
 
     const safeUser = this.sanitizeUser(user);

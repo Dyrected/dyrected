@@ -3,6 +3,12 @@ import type { DyrectedContext } from '../app.js';
 import type { DyrectedConfig } from '../types/index.js';
 import type { AuthenticatedUser } from '../types/request.js';
 import { verifyCollectionToken, type CollectionTokenPayload } from '../auth/token.js';
+import {
+  getAuthSession,
+  isAuthSessionActive,
+  touchAuthSession,
+} from '../auth/sessions.js';
+import { getConfigLogger, getRequestLogger } from '../observability.js';
 
 function getBearerToken(c: Context<DyrectedContext>): string | undefined {
   const authHeader = c.req.header('Authorization');
@@ -23,11 +29,9 @@ function getBearerToken(c: Context<DyrectedContext>): string | undefined {
  *   exists (deleted). Throws only when the token itself is invalid or expired.
  */
 async function resolveUser(
-  token: string,
+  payload: CollectionTokenPayload,
   config: DyrectedConfig | undefined,
 ): Promise<AuthenticatedUser | null> {
-  const payload: CollectionTokenPayload = await verifyCollectionToken(token);
-
   // Purpose tokens (invite/reset) are not full user sessions — their `sub` may be an
   // invited email rather than a document id, so never try to hydrate them.
   if (payload.purpose) {
@@ -49,7 +53,12 @@ async function resolveUser(
   } catch (err) {
     // A transient database error must not be mistaken for a logged-out user. The token
     // is cryptographically valid, so degrade gracefully to its identity claims.
-    console.error('[dyrected/core] Failed to hydrate user from token:', err);
+    getConfigLogger(config, 'auth').error({
+      err,
+      msg: 'Failed to hydrate user from token',
+      collection: payload.collection,
+      userId: payload.sub,
+    });
     return payload as AuthenticatedUser;
   }
 
@@ -71,6 +80,30 @@ async function resolveUser(
   } as AuthenticatedUser;
 }
 
+async function resolveAuthenticatedRequest(
+  token: string,
+  config: DyrectedConfig | undefined,
+  clientIp?: string,
+): Promise<{ user: AuthenticatedUser | null; payload: CollectionTokenPayload }> {
+  const payload = await verifyCollectionToken(token);
+
+  if (payload.sid && config?.db) {
+    const session = await getAuthSession(config, payload.sid);
+    if (
+      !isAuthSessionActive(session) ||
+      session.userId !== payload.sub ||
+      session.collection !== payload.collection
+    ) {
+      throw new Error('Invalid or expired session.');
+    }
+
+    await touchAuthSession(config, payload.sid, { ip: clientIp });
+  }
+
+  const user = await resolveUser(payload, config);
+  return { user, payload };
+}
+
 /**
  * Middleware that requires a valid Bearer JWT.
  * On success: sets `c.get('user')` to the resolved user (full record when a db is configured).
@@ -86,21 +119,45 @@ export function requireAuth(config?: DyrectedConfig) {
 
     const token = getBearerToken(c);
     if (!token) {
+      c.get('observability')?.recordAuthFailure({
+        reason: 'missing_token',
+        path: c.req.path,
+      });
       return c.json({ error: true, message: 'Authentication required.' }, 401);
     }
 
     let user: AuthenticatedUser | null;
+    let payload: CollectionTokenPayload;
     try {
-      user = await resolveUser(token, config ?? c.get('config'));
-    } catch {
+      const resolved = await resolveAuthenticatedRequest(
+        token,
+        config ?? c.get('config'),
+        c.get('clientIp'),
+      );
+      user = resolved.user;
+      payload = resolved.payload;
+    } catch (err) {
+      c.get('observability')?.recordAuthFailure({
+        reason: 'invalid_token',
+        path: c.req.path,
+      });
+      getRequestLogger(c, 'auth').warn({
+        err,
+        msg: 'Rejected invalid or expired token',
+      });
       return c.json({ error: true, message: 'Invalid or expired token.' }, 401);
     }
 
     if (!user) {
+      c.get('observability')?.recordAuthFailure({
+        reason: 'missing_user',
+        path: c.req.path,
+      });
       return c.json({ error: true, message: 'Invalid or expired token.' }, 401);
     }
 
     c.set('user', user);
+    c.set('authTokenPayload', payload!);
     await next();
   };
 }
@@ -121,10 +178,16 @@ export function optionalAuth(config?: DyrectedConfig) {
 
     if (token) {
       try {
-        const user = await resolveUser(token, config ?? c.get('config'));
+        const resolved = await resolveAuthenticatedRequest(
+          token,
+          config ?? c.get('config'),
+          c.get('clientIp'),
+        );
+        const user = resolved.user;
         if (user) {
           c.set('user', user);
         }
+        c.set('authTokenPayload', resolved.payload);
       } catch {
         // Invalid token — proceed without user
       }

@@ -9,7 +9,7 @@ import {
   type JWTPayload,
 } from "jose";
 import type { DyrectedContext } from "../app.js";
-import { signCollectionToken } from "../auth/token.js";
+import { issueAuthSessionToken, revokeAllAuthSessions, revokeAuthSession } from "../auth/sessions.js";
 import { hashPassword } from "../auth/password.js";
 import type {
   AdminAuthProvider,
@@ -160,6 +160,45 @@ export class AdminAuthController {
   }
 
   async logout(c: Context<DyrectedContext>) {
+    const requestUser = c.get("user") as any;
+    const tokenPayload = c.get("authTokenPayload");
+    const allSessions = ["1", "true", "yes"].includes(
+      (c.req.query("allSessions") || "").toLowerCase(),
+    );
+
+    if (!requestUser) {
+      if (allSessions) {
+        return c.json(
+          { error: true, message: "Authentication required." },
+          401,
+        );
+      }
+
+      return c.json({
+        success: true,
+        message: "Logged out. Discard your token.",
+      });
+    }
+
+    if (allSessions) {
+      await revokeAllAuthSessions(c.get("config"), {
+        userId: requestUser.sub,
+        collection: requestUser.collection,
+      });
+      return c.json({
+        success: true,
+        message: "All sessions have been logged out.",
+      });
+    }
+
+    if (tokenPayload?.sid) {
+      await revokeAuthSession(c.get("config"), tokenPayload.sid);
+      return c.json({
+        success: true,
+        message: "Logged out.",
+      });
+    }
+
     return c.json({
       success: true,
       message: "Logged out. Discard your token.",
@@ -266,12 +305,14 @@ export class AdminAuthController {
       throw new Error("Authenticated admin user is missing an email address.");
     }
 
-    const token = await signCollectionToken({
-      sub: user.id,
+    const token = await issueAuthSessionToken({
+      config: c.get("config"),
+      userId: user.id,
       email: user.email,
       collection: adminCollection.slug,
       providerId: provider.id,
       authSource: "external",
+      ip: c.get("clientIp"),
     });
 
     return {

@@ -413,6 +413,69 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/basics/configuration/logging#example-1",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-2",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-3",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-4",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-5",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-6",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-7",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-8",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-9",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/basics/configuration/overview#example-1",
     "page": "/basics/configuration/overview",
     "language": "ts",
@@ -1886,6 +1949,13 @@
     "id": "/deployment/production/preventing-abuse#example-1",
     "page": "/deployment/production/preventing-abuse",
     "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/deployment/production/preventing-abuse#example-2",
+    "page": "/deployment/production/preventing-abuse",
+    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
@@ -2431,16 +2501,16 @@
   {
     "id": "/features/authentication/operations#example-4",
     "page": "/features/authentication/operations",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
   },
   {
     "id": "/features/authentication/operations#example-5",
     "page": "/features/authentication/operations",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/features/authentication/operations#example-6",
@@ -2453,8 +2523,8 @@
     "id": "/features/authentication/operations#example-7",
     "page": "/features/authentication/operations",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/features/authentication/operations#example-8",
@@ -2487,12 +2557,26 @@
   {
     "id": "/features/authentication/operations#example-12",
     "page": "/features/authentication/operations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/features/authentication/operations#example-13",
+    "page": "/features/authentication/operations",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/features/authentication/operations#example-14",
+    "page": "/features/authentication/operations",
     "language": "json",
     "classification": "parsed",
     "validation": "Parsed as JSON"
   },
   {
-    "id": "/features/authentication/operations#example-13",
+    "id": "/features/authentication/operations#example-15",
     "page": "/features/authentication/operations",
     "language": "ts",
     "classification": "syntax-checked",
@@ -2522,12 +2606,19 @@
   {
     "id": "/features/authentication/overview#example-4",
     "page": "/features/authentication/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/features/authentication/overview#example-5",
+    "page": "/features/authentication/overview",
     "language": "",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/features/authentication/overview#example-5",
+    "id": "/features/authentication/overview#example-6",
     "page": "/features/authentication/overview",
     "language": "ts",
     "classification": "syntax-checked",

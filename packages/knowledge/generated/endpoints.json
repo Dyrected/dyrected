@@ -696,7 +696,14 @@
       "Collection: Users"
     ],
     "authenticated": true,
-    "parameters": [],
+    "parameters": [
+      {
+        "name": "allSessions",
+        "in": "query",
+        "required": false,
+        "description": "Revoke every active session for this account instead of only the current one."
+      }
+    ],
     "responses": [
       "200"
     ]

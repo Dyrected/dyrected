@@ -11,6 +11,7 @@ import type { LifecycleEventHandler } from "./workflows.js";
 import type { Block } from "./schema-core.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
 import type { DestinationStream, Logger, LoggerOptions } from "pino";
+import type { HookRequestContext } from "./request.js";
 
 export type DyrectedLoggerConfig =
   | {
@@ -56,6 +57,60 @@ export interface DyrectedObservabilityConfig {
       | { type: "otlp"; endpoint: string; headers?: Record<string, string> }
     >;
   };
+}
+
+export type TrustProxyConfig = boolean | number;
+
+export interface RateLimitConfig {
+  /**
+   * Enable in-process request rate limiting for HTTP API routes.
+   *
+   * This protects routes at the Dyrected app layer. For production you should
+   * still prefer an edge or proxy limit in front of it when possible.
+   */
+  enabled?: boolean;
+
+  /**
+   * Time window, in milliseconds, used to count requests from the same client.
+   *
+   * Defaults to `15 * 60 * 1000` (15 minutes).
+   */
+  window?: number;
+
+  /**
+   * Maximum number of requests a client may make within the current window.
+   *
+   * Defaults to `500`.
+   */
+  max?: number;
+
+  /**
+   * Trust upstream proxy forwarding headers when resolving the client IP.
+   *
+   * Set to `true` when Dyrected is deployed behind a reverse proxy or
+   * platform edge that correctly sets `X-Forwarded-For`. Set to a number to
+   * trust that many proxy hops from the right side of the header chain.
+   */
+  trustProxy?: TrustProxyConfig;
+
+  /**
+   * Route prefixes that should be subject to rate limiting.
+   *
+   * Defaults to `['/api']`.
+   */
+  paths?: string[];
+
+  /**
+   * Optional escape hatch for requests that should bypass the in-app limiter.
+   *
+   * Return `true` to skip limiting for the current request.
+   */
+  skip?: (args: {
+    ip: string;
+    path: string;
+    method: string;
+    req: HookRequestContext;
+  }) => boolean | Promise<boolean>;
 }
 
 /**
@@ -219,6 +274,15 @@ export interface DyrectedConfig<
   cors?: {
     origins: string[];
   };
+
+  /**
+   * App-level HTTP request rate limiting.
+   *
+   * Similar to Payload's `rateLimit` option, this counts requests by client IP
+   * over a rolling time window and returns `429` responses once the limit is
+   * exhausted.
+   */
+  rateLimit?: RateLimitConfig;
 
   /**
    * Callback to dynamically fetch additional collections and globals for a

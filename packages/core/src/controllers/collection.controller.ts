@@ -6,6 +6,7 @@ import { PopulationService } from "../services/population.service.js";
 import { DefaultsService } from "../services/defaults.service.js";
 import { AuditService } from "../services/audit.service.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
+import { revokeAllAuthSessions } from "../auth/sessions.js";
 import {
   runCollectionHooks,
   executeFieldBeforeChange,
@@ -31,6 +32,7 @@ import {
   saveWorkflowDraft,
   transitionWorkflow,
 } from "../workflows.js";
+import { getRequestLogger } from "../observability.js";
 
 export class CollectionController {
   private collection: CollectionConfig;
@@ -219,9 +221,10 @@ export class CollectionController {
       !where &&
       page === 1
     ) {
-      console.log(
-        `[dyrected/core] Auto-seeding collection "${this.collection.slug}" from config.initialData`,
-      );
+      getRequestLogger(c, "collection").info({
+        msg: "Auto-seeding collection from config.initialData",
+        collection: this.collection.slug,
+      });
       for (const data of this.collection.initialData) {
         await db!.create({ collection: this.collection.slug, data });
       }
@@ -513,7 +516,7 @@ export class CollectionController {
           : undefined,
         before: null,
         after: doc,
-      });
+      }, config);
     }
 
     // Run afterChange collection hooks (full db access)
@@ -832,7 +835,7 @@ export class CollectionController {
           : undefined,
         before,
         after: doc,
-      });
+      }, config);
     }
 
     // Run afterChange collection hooks (full db access)
@@ -1058,6 +1061,10 @@ export class CollectionController {
         updatedBy: user.sub,
       },
     });
+    await revokeAllAuthSessions(config, {
+      userId: id,
+      collection: this.collection.slug,
+    });
 
     if (this.collection.audit) {
       AuditService.log(db, {
@@ -1067,7 +1074,7 @@ export class CollectionController {
         user: { id: user.sub, collection: user.collection, email: user.email },
         before: null,
         after: { id },
-      });
+      }, config);
     }
 
     return c.json({ success: true, message: "Password updated successfully" });
@@ -1140,7 +1147,7 @@ export class CollectionController {
           : undefined,
         before,
         after: null,
-      });
+      }, config);
     }
 
     // Run afterDelete collection hook (full db access)
@@ -1232,7 +1239,7 @@ export class CollectionController {
               : undefined,
             before,
             after: null,
-          });
+          }, config);
         }
 
         // Run afterDelete hooks (full db access)
@@ -1279,9 +1286,10 @@ export class CollectionController {
       return c.json({ message: "Collection is not empty, skipping seed" });
     }
 
-    console.log(
-      `[dyrected/core] Auto-seeding collection: ${this.collection.slug}`,
-    );
+    getRequestLogger(c, "collection").info({
+      msg: "Auto-seeding collection",
+      collection: this.collection.slug,
+    });
     const createdDocs = [];
     for (const data of initialData) {
       const doc = await db.create({ collection: this.collection.slug, data });

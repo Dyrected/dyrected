@@ -807,6 +807,17 @@
           "Collection: Users"
         ],
         "summary": "Log out of Users",
+        "parameters": [
+          {
+            "name": "allSessions",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Revoke every active session for this account instead of only the current one."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Logged out"
@@ -877,7 +888,7 @@
         "summary": "Refresh an authentication token",
         "responses": {
           "200": {
-            "description": "Refreshed token"
+            "description": "Refreshed token for the current active session"
           }
         }
       }
@@ -997,7 +1008,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Password changed"
+            "description": "Password changed and active sessions revoked"
           }
         }
       }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient, DyrectedClient } from "@dyrected/sdk";
+import { createClient, DyrectedClient, DyrectedError } from "@dyrected/sdk";
 import type { AdminSchemas } from "../types/admin-components";
 import type { Block, Field } from "@dyrected/core";
 import { getAdminCollectionSlug, type AdminUser } from "./admin-auth";
@@ -156,6 +156,24 @@ export function DyrectedProvider({
     }
   }, [initialToken, client]);
 
+  const clearPersistedAuthState = useCallback(
+    (nextClient?: DyrectedClient | null) => {
+      localStorage.removeItem("dyrected_token");
+      localStorage.removeItem("dyrected_admin_auth_collection");
+      (nextClient ?? client)?.clearToken();
+      setAuthCollectionSlug(null);
+      setUser(null);
+    },
+    [client],
+  );
+
+  const shouldClearStoredAuth = useCallback((error: unknown) => {
+    return (
+      error instanceof DyrectedError &&
+      (error.statusCode === 401 || error.statusCode === 404)
+    );
+  }, []);
+
   const setAuth = useCallback(
     (newUrl: string, newKey: string, newSiteId?: string) => {
       localStorage.setItem("dyrected_url", newUrl);
@@ -173,11 +191,7 @@ export function DyrectedProvider({
   const setToken = useCallback(
     (token: string, collectionSlug?: string | null) => {
       if (!token) {
-        localStorage.removeItem("dyrected_token");
-        localStorage.removeItem("dyrected_admin_auth_collection");
-        if (client) client.clearToken();
-        setAuthCollectionSlug(null);
-        setUser(null);
+        clearPersistedAuthState(client);
         return;
       }
 
@@ -201,12 +215,18 @@ export function DyrectedProvider({
             .me()
             .then(
               (nextUser) => setUser(nextUser as AdminUser),
-              () => setUser(null),
+              (error) => {
+                if (shouldClearStoredAuth(error)) {
+                  clearPersistedAuthState(client);
+                  return;
+                }
+                setUser(null);
+              },
             );
         }
       }
     },
-    [authCollectionSlug, client, schemas],
+    [authCollectionSlug, clearPersistedAuthState, client, schemas, shouldClearStoredAuth],
   );
 
   useEffect(() => {
@@ -223,17 +243,40 @@ export function DyrectedProvider({
       .me()
       .then(
         (nextUser) => setUser(nextUser as AdminUser),
-        () => setUser(null),
+        (error) => {
+          if (shouldClearStoredAuth(error)) {
+            clearPersistedAuthState(client);
+            return;
+          }
+          setUser(null);
+        },
       );
-  }, [activeUser, authCollectionSlug, client, initialToken, schemas]);
+  }, [
+    activeUser,
+    authCollectionSlug,
+    clearPersistedAuthState,
+    client,
+    initialToken,
+    schemas,
+    shouldClearStoredAuth,
+  ]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem("dyrected_token");
-    localStorage.removeItem("dyrected_admin_auth_collection");
-    if (client) client.clearToken();
-    setAuthCollectionSlug(null);
-    setUser(null);
-  }, [client]);
+    void (async () => {
+      const resolvedCollectionSlug =
+        authCollectionSlug || getAdminCollectionSlug(schemas);
+
+      try {
+        if (client && resolvedCollectionSlug) {
+          await client.collection(resolvedCollectionSlug).logout();
+        }
+      } catch (error) {
+        console.warn("Failed to revoke admin session during logout:", error);
+      } finally {
+        clearPersistedAuthState(client);
+      }
+    })();
+  }, [authCollectionSlug, clearPersistedAuthState, client, schemas]);
 
   return (
     <DyrectedContext.Provider

@@ -1,13 +1,13 @@
 ---
 title: Overview
-description: How authentication works in Dyrected — turn any collection into a login provider with auth, get stateless JWT sessions, configure account lockout, and read the signed-in user in access rules and hooks.
+description: How authentication works in Dyrected — turn any collection into a login provider with auth, get JWT sessions that can be revoked server-side, configure lockout, and read the signed-in user in access rules and hooks.
 ---
 
-Authentication in Dyrected is opt-in and lives on your collections. You turn a collection into a login provider with `auth`, and Dyrected gives you email and password fields, a full set of login endpoints, and stateless JWT sessions you can check anywhere in your app.
+This page is the mental model for authentication in Dyrected. By the end, you should understand what `auth` adds to a collection, how Dyrected sessions work now, where production protection fits, and how to separate application users from dashboard users cleanly.
 
-By the end of this page you should understand what `auth` actually does, how a session works, how built-in login lockout fits into production auth, where roles and access control fit, and how to keep your dashboard logins separate from your application's users. This is the home page for the concept; deeper mechanics live on their own pages, linked as you go.
+Authentication in Dyrected is opt-in and lives on your collections. Turn a collection into a login provider with `auth`, and Dyrected adds the fields, routes, and session behavior needed to use those documents as real accounts.
 
-## The mental model
+## What enabling `auth` does
 
 An **auth collection** is just a normal collection with a login attached. When you enable `auth`, three things happen:
 
@@ -17,7 +17,7 @@ An **auth collection** is just a normal collection with a login attached. When y
 
 You can enable auth on as many collections as you like. A common shape is one collection for your application's members and a separate one for the people who log into the CMS dashboard.
 
-## Enable it
+## Start with `auth: true`
 
 Add `auth: true` to any collection when you want the default setup. You declare only the extra fields you want — `email`, `password`, and `roles` are added for you, so you never list them yourself:
 
@@ -32,20 +32,24 @@ export const Users = defineCollection({
 });
 ```
 
-That single collection now has working login endpoints. Before anyone can log in, set the signing secret Dyrected uses to sign session tokens:
+That single collection now has working login endpoints.
+
+Before anyone can log in, set the signing secret Dyrected uses to sign session tokens:
 
 ```bash
 # .env.local
 DYRECTED_JWT_SECRET=a-long-random-secret-at-least-32-chars
 ```
 
-The same secret must be present in every environment, and it must not be empty — auth collections throw at startup if `DYRECTED_JWT_SECRET` is missing. Changing it invalidates every existing session at once.
+The same secret must be present in every environment, and it must not be empty. Auth collections throw at startup if `DYRECTED_JWT_SECRET` is missing. Changing it invalidates every existing session at once.
 
-## Production login protection
+If you start from the current `dyrected init` templates, `.env.example` already includes `DYRECTED_JWT_SECRET`. Runtime code also uses the same variable for token-mode preview, so treat it as part of your production secret set, not as a local-only convenience.
 
-For production auth collections, leave Dyrected's built-in account lockout on. It is enabled by default and temporarily locks an account after too many failed password attempts.
+## Tune auth only when you need to
 
-If you want to tune it, pass an object instead of bare `true`:
+The recommended path is still `auth: true`. Reach for an object only when you need to change the built-in behavior.
+
+The most important auth-specific production options today are the login lockout settings:
 
 ```ts
 export const Users = defineCollection({
@@ -58,11 +62,13 @@ export const Users = defineCollection({
 });
 ```
 
-`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds. Set `maxLoginAttempts: 0` only if you have a deliberate reason to turn the built-in lockout off for that collection.
+`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds.
 
 This protects the account itself. It does **not** replace host-level rate limiting, WAF rules, or proxy throttling for public routes. Keep those in place too, especially for auth, uploads, and preview endpoints. The deployment side of that lives in [Preventing Abuse](/docs/deployment/production/preventing-abuse).
 
-## What you get
+Set `maxLoginAttempts: 0` only if you have a deliberate reason to turn Dyrected's built-in lockout off for that collection.
+
+## Know what Dyrected injects
 
 Enabling auth injects these fields into the collection. You can redefine them to add labels or admin options, but their core constraints are always enforced:
 
@@ -74,9 +80,19 @@ Enabling auth injects these fields into the collection. You can redefine them to
 
 And it mounts a full set of endpoints under `/api/collections/{slug}/` — `login`, `logout`, `me`, `refresh-token`, `forgot-password`, `reset-password`, `invite`, `accept-invite`, plus `init` and `first-user` for bootstrapping the very first account. Each one, with its exact request and response shape, is documented in [Operations](/docs/features/authentication/operations), including how the login route behaves when an account is temporarily locked.
 
-## Log in and read the user
+## Understand the session model
 
-Logging in exchanges an email and password for a token and the user record. Store the token, attach it to future requests, and Dyrected resolves it back into the signed-in user. Here it is with the SDK:
+Dyrected uses signed bearer tokens, but they are not purely stateless anymore. Every successful login creates a server-side session record and returns a JWT that points at that session.
+
+That means three useful things are true at once:
+
+- clients still send a normal `Authorization: Bearer <token>` header
+- the server still re-hydrates the live user document on each request
+- logout, password reset, and password change can revoke the session immediately instead of waiting for token expiry
+
+Tokens still expire on their own after 7 days by default, but there is now a real server-side invalidation point too.
+
+## Log in and read the user
 
 ```ts
 import { createClient } from "@dyrected/sdk";
@@ -97,22 +113,12 @@ const me = await client.collection("users").me();
 
 The SDK holds the token in memory only — it does not persist it for you. Deciding _where_ the token lives between requests (a cookie, storage, a framework composable) is the job of the [Cookie Strategy](/docs/features/authentication/cookie-strategy) page.
 
-## Sessions are stateless
-
-Dyrected auth has no server-side sessions. The signed token _is_ the session. Every request carries it in the `Authorization` header:
-
-```
-Authorization: Bearer <token>
-```
-
-The server verifies the token on each request and, when a database is connected, re-loads the user's current document so your access rules always see fresh data. There is nothing to invalidate on the server at logout — the client discards the token and it expires on its own (after 7 days by default).
-
 Two pages go deeper here:
 
 - [JWT Strategy](/docs/features/authentication/jwt-strategy) — how the token is signed, the secret, expiry, and how another service can verify a Dyrected token.
 - [Token Data](/docs/features/authentication/token-data) — exactly what the token carries, and how the full `user` object gets assembled for your access functions.
 
-## Roles and access control
+## Use roles in access control
 
 The injected `roles` field is where permissions live, but Dyrected does not enforce any role meaning on its own. Roles only matter when an access function reads them. The signed-in user is available as `user` in every access rule and hook:
 
@@ -130,19 +136,19 @@ export const Orders = defineCollection({
 
 `user.roles` is available here even though the token itself does not carry roles — Dyrected re-hydrates the user from the database on each request. For the full model, see [Access Control](/docs/basics/access-control/overview).
 
-## Multiple auth collections and the dashboard
+## Separate application users from dashboard users
 
 You can have more than one auth collection, and they are completely independent — separate endpoints, separate tokens, separate sessions. Someone logged into your storefront as a `customer` has no relationship to whoever can log into the CMS.
 
 Dyrected treats one slug specially: **`__admins`**. When a collection with that slug exists, it becomes the sole login gateway for the dashboard. Any other auth collection powers your application, not the CMS. This is how you keep customer accounts from ever reaching the admin panel. The full walkthrough — including onboarding your first editors — lives in [Handing Off to Editors](/docs/features/authentication/handing-off-to-editors).
 
-## Dashboard sign-in and SSO
+## Know where dashboard SSO fits
 
 Everything above describes **collection auth**: local email and password login for your application's users (and, by default, for the dashboard). Dyrected also supports **external sign-in for the dashboard** through an `adminAuth` configuration, so admins can log in with an identity provider (OIDC) or a custom JWT provider instead of a local password.
 
 This is a separate system from collection auth — it only governs who reaches the CMS, uses its own routes under `/api/admin/auth/`, and does not change how your application's users log in. If your team needs single sign-on for the admin panel, see [Admin SSO](/docs/features/authentication/admin-sso) for the full setup with Okta, Azure AD, Google, or any OIDC provider.
 
-## Programmatic access
+## Keep user sessions and project credentials separate
 
 For server-to-server calls, you have two distinct things, and it helps to keep them straight:
 

@@ -5,6 +5,7 @@ export interface CollectionTokenPayload extends JWTPayload {
   sub: string;       // document id (or invited email for invite tokens)
   email: string;
   collection: string; // which auth collection this token is for
+  sid?: string;
   purpose?: 'invite' | 'reset';
   providerId?: string;
   authSource?: 'local' | 'external';

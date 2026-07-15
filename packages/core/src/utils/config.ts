@@ -3,6 +3,7 @@ import type {
   DyrectedConfig,
   Field,
 } from "../types/index.js";
+import { AUTH_SESSIONS_COLLECTION } from "../auth/sessions.js";
 import {
   LIFECYCLE_EVENTS_COLLECTION,
   WORKFLOW_HISTORY_COLLECTION,
@@ -119,6 +120,29 @@ const LIFECYCLE_EVENTS_COLLECTION_CONFIG: CollectionConfig = {
   admin: { hidden: true },
 };
 
+const AUTH_SESSIONS_COLLECTION_CONFIG: CollectionConfig = {
+  slug: AUTH_SESSIONS_COLLECTION,
+  labels: { singular: "Auth session", plural: "Auth sessions" },
+  fields: [
+    { name: "userId", type: "text", required: true },
+    { name: "email", type: "email", required: true },
+    { name: "collection", type: "text", required: true },
+    { name: "authSource", type: "text" },
+    { name: "providerId", type: "text" },
+    { name: "lastIp", type: "text" },
+    { name: "lastSeenAt", type: "date" },
+    { name: "expiresAt", type: "date" },
+    { name: "revokedAt", type: "date" },
+  ],
+  access: {
+    read: () => false,
+    create: () => false,
+    update: () => false,
+    delete: () => false,
+  },
+  admin: { hidden: true },
+};
+
 /**
  * Normalizes the Dyrected configuration by injecting system fields
  * (createdAt, updatedAt, createdBy, updatedBy) into every collection and
@@ -130,6 +154,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   const globals = schemaAwareConfig?.globals || [];
   const needsAudit = collections.some((col) => col.audit);
   const needsWorkflow = collections.some((col) => col.workflow || col.drafts);
+  const needsAuthSessions = collections.some((col) => !!col.auth);
   const adminAuthCollectionSlug = getAdminAuthCollection({
     collections,
     adminAuth: schemaAwareConfig.adminAuth,
@@ -308,6 +333,12 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
     )
   ) {
     systemCollections.push(LIFECYCLE_EVENTS_COLLECTION_CONFIG);
+  }
+  if (
+    needsAuthSessions &&
+    !normalizedCollections.some((col) => col.slug === AUTH_SESSIONS_COLLECTION)
+  ) {
+    systemCollections.push(AUTH_SESSIONS_COLLECTION_CONFIG);
   }
 
   return {

@@ -608,6 +608,16 @@ export function generateOpenApi(config: DyrectedConfig) {
         post: {
           tags: [collectionTag],
           summary: `Log out of ${labels.plural}`,
+          parameters: [
+            {
+              name: "allSessions",
+              in: "query",
+              required: false,
+              schema: { type: "boolean" },
+              description:
+                "Revoke every active session for this account instead of only the current one.",
+            },
+          ],
           responses: { 200: { description: "Logged out" } },
         },
       };
@@ -633,7 +643,12 @@ export function generateOpenApi(config: DyrectedConfig) {
         post: {
           tags: [collectionTag],
           summary: "Refresh an authentication token",
-          responses: { 200: { description: "Refreshed token" } },
+          responses: {
+            200: {
+              description:
+                "Refreshed token for the current active session",
+            },
+          },
         },
       };
       spec.paths[`${path}/forgot-password`] = {
@@ -664,7 +679,12 @@ export function generateOpenApi(config: DyrectedConfig) {
               schema: { type: "string" },
             },
           ],
-          responses: { 200: { description: "Password changed" } },
+          responses: {
+            200: {
+              description:
+                "Password changed and active sessions revoked",
+            },
+          },
         },
       };
     }
