@@ -568,6 +568,16 @@
     "members": []
   },
   {
+    "id": "@dyrected/core:definePublishingWorkflow",
+    "name": "definePublishingWorkflow",
+    "kind": "function",
+    "category": "workflows",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export function definePublishingWorkflow(options: PublishingWorkflowOptions = {}): WorkflowConfig",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:dispatchLifecycleEvent",
     "name": "dispatchLifecycleEvent",
     "kind": "function",
@@ -1396,67 +1406,67 @@
     "category": "workflows",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface LifecycleEvent<TPayload = Record<string, unknown>> {\n  id: string;\n  name: LifecycleEventName;\n  collection: string;\n  documentId: string;\n  occurredAt: string;\n  actorId?: string;\n  payload: TPayload;\n  attempts: number;\n  status: \"pending\" | \"processing\" | \"delivered\" | \"failed\";\n  nextAttemptAt?: string;\n  deliveredAt?: string;\n  lastError?: string;\n}",
+    "signature": "export interface LifecycleEvent<TPayload = Record<string, unknown>> {\n  /** Unique id for this event. */\n  id: string;\n  /** The lifecycle event name, e.g. `\"workflow.transitioned\"` or `\"entry.published\"`. */\n  name: LifecycleEventName;\n  /** Slug of the collection the event is about. */\n  collection: string;\n  /** Id of the document the event is about. */\n  documentId: string;\n  /** ISO timestamp of when the event occurred. */\n  occurredAt: string;\n  /** Id of the user who triggered the event, when known. */\n  actorId?: string;\n  /** Event-specific data, such as the transition name and affected revision. */\n  payload: TPayload;\n  /** Number of delivery attempts made so far. */\n  attempts: number;\n  /** Current delivery status as the dispatcher works through the queue. */\n  status: \"pending\" | \"processing\" | \"delivered\" | \"failed\";\n  /** ISO timestamp of the next delivery retry, while pending. */\n  nextAttemptAt?: string;\n  /** ISO timestamp of successful delivery. */\n  deliveredAt?: string;\n  /** Message from the most recent failed delivery attempt. */\n  lastError?: string;\n}",
     "members": [
       {
         "name": "id",
         "signature": "id: string",
-        "description": ""
+        "description": "Unique id for this event."
       },
       {
         "name": "name",
         "signature": "name: LifecycleEventName",
-        "description": ""
+        "description": "The lifecycle event name, e.g. `\"workflow.transitioned\"` or `\"entry.published\"`."
       },
       {
         "name": "collection",
         "signature": "collection: string",
-        "description": ""
+        "description": "Slug of the collection the event is about."
       },
       {
         "name": "documentId",
         "signature": "documentId: string",
-        "description": ""
+        "description": "Id of the document the event is about."
       },
       {
         "name": "occurredAt",
         "signature": "occurredAt: string",
-        "description": ""
+        "description": "ISO timestamp of when the event occurred."
       },
       {
         "name": "actorId",
         "signature": "actorId?: string",
-        "description": ""
+        "description": "Id of the user who triggered the event, when known."
       },
       {
         "name": "payload",
         "signature": "payload: TPayload",
-        "description": ""
+        "description": "Event-specific data, such as the transition name and affected revision."
       },
       {
         "name": "attempts",
         "signature": "attempts: number",
-        "description": ""
+        "description": "Number of delivery attempts made so far."
       },
       {
         "name": "status",
         "signature": "status: \"pending\" | \"processing\" | \"delivered\" | \"failed\"",
-        "description": ""
+        "description": "Current delivery status as the dispatcher works through the queue."
       },
       {
         "name": "nextAttemptAt",
         "signature": "nextAttemptAt?: string",
-        "description": ""
+        "description": "ISO timestamp of the next delivery retry, while pending."
       },
       {
         "name": "deliveredAt",
         "signature": "deliveredAt?: string",
-        "description": ""
+        "description": "ISO timestamp of successful delivery."
       },
       {
         "name": "lastError",
         "signature": "lastError?: string",
-        "description": ""
+        "description": "Message from the most recent failed delivery attempt."
       }
     ]
   },
@@ -1658,6 +1668,27 @@
     "members": []
   },
   {
+    "id": "@dyrected/core:PublishingWorkflowOptions",
+    "name": "PublishingWorkflowOptions",
+    "kind": "interface",
+    "category": "workflows",
+    "sourcePackage": "@dyrected/core",
+    "description": "",
+    "signature": "export interface PublishingWorkflowOptions {\n  /** Role values allowed to edit and submit for review. Defaults to `[\"editor\"]`. */\n  editors?: string[];\n  /** Role values allowed to also publish and unpublish. Defaults to `[\"publisher\", \"admin\"]`. */\n  publishers?: string[];\n}",
+    "members": [
+      {
+        "name": "editors",
+        "signature": "editors?: string[]",
+        "description": "Role values allowed to edit and submit for review. Defaults to `[\"editor\"]`."
+      },
+      {
+        "name": "publishers",
+        "signature": "publishers?: string[]",
+        "description": "Role values allowed to also publish and unpublish. Defaults to `[\"publisher\", \"admin\"]`."
+      }
+    ]
+  },
+  {
     "id": "@dyrected/core:RadioField",
     "name": "RadioField",
     "kind": "type",
@@ -1763,7 +1794,7 @@
     "kind": "interface",
     "category": "adapters",
     "sourcePackage": "@dyrected/core",
-    "description": "The interface every storage adapter must implement.\n\nDyrected ships adapters for local disk, S3, Cloudflare R2, Cloudinary, and\nBackblaze B2. Implement this interface to use any other storage provider.",
+    "description": "The interface every storage adapter must implement.\n\nDyrected ships adapters for local disk, AWS S3 and other S3-compatible\nservices through the S3 adapter, Cloudinary, and Backblaze B2. Implement\nthis interface to use any other storage provider.",
     "signature": "export interface StorageAdapter {\n  /**\n   * Upload a file and return its metadata (URL, dimensions, etc.).\n   * The `prefix` is a path prefix used for multi-tenant setups.\n   */\n  upload(args: { filename: string; buffer: Uint8Array; mimeType: string; prefix?: string }): Promise<FileData>;\n\n  /** Delete a file by its stored filename. */\n  delete(args: { filename: string }): Promise<void>;\n\n  /** Return the public URL for a stored file. */\n  getURL(args: { filename: string }): string;\n\n  /**\n   * Retrieve the file's raw bytes and MIME type for serving via the API.\n   * Only needed by adapters that serve files through the Dyrected API\n   * (e.g. `LocalStorage`). Cloud adapters return `null` here and rely on\n   * direct CDN URLs instead.\n   */\n  resolve?(args: { filename: string }): Promise<{ buffer: Uint8Array; mimeType: string } | null>;\n}",
     "members": [
       {
@@ -1996,13 +2027,13 @@
     "kind": "interface",
     "category": "workflows",
     "sourcePackage": "@dyrected/core",
-    "description": "",
-    "signature": "export interface WorkflowConfig<TDoc extends object = Record<string, unknown>> {\n  initialState: string;\n  /** State used for a new working revision created from published content. */\n  draftState?: string;\n  states: WorkflowState[];\n  transitions: WorkflowTransition[];\n  /** Maps values in `user.roles` to workflow capabilities. */\n  roles?: WorkflowRole[];\n  hooks?: {\n    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];\n    afterTransition?: CollectionAfterTransitionHook<TDoc>[];\n  };\n}",
+    "description": "Configuration for a collection's editorial workflow: the states a document\ncan be in, the transitions between them, and the roles allowed to perform\neach. Attach it to a collection's `workflow`, or build one with\n`definePublishingWorkflow`.",
+    "signature": "export interface WorkflowConfig<TDoc extends object = Record<string, unknown>> {\n  /** The state every new document starts in, e.g. `\"draft\"`. */\n  initialState: string;\n  /** State used for a new working revision created from published content. */\n  draftState?: string;\n  /** All states a document can occupy. Exactly one should be marked `published`. */\n  states: WorkflowState[];\n  /** The allowed moves between states, each with its own capability and comment rules. */\n  transitions: WorkflowTransition[];\n  /** Maps values in `user.roles` to workflow capabilities. */\n  roles?: WorkflowRole[];\n  /** Server-side hooks that run around every transition. */\n  hooks?: {\n    /** Runs before a transition commits — throw to validate or block the move. */\n    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];\n    /** Runs after a transition commits — trigger notifications or downstream work. */\n    afterTransition?: CollectionAfterTransitionHook<TDoc>[];\n  };\n}",
     "members": [
       {
         "name": "initialState",
         "signature": "initialState: string",
-        "description": ""
+        "description": "The state every new document starts in, e.g. `\"draft\"`."
       },
       {
         "name": "draftState",
@@ -2012,12 +2043,12 @@
       {
         "name": "states",
         "signature": "states: WorkflowState[]",
-        "description": ""
+        "description": "All states a document can occupy. Exactly one should be marked `published`."
       },
       {
         "name": "transitions",
         "signature": "transitions: WorkflowTransition[]",
-        "description": ""
+        "description": "The allowed moves between states, each with its own capability and comment rules."
       },
       {
         "name": "roles",
@@ -2026,8 +2057,8 @@
       },
       {
         "name": "hooks",
-        "signature": "hooks?: {\n    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];\n    afterTransition?: CollectionAfterTransitionHook<TDoc>[];\n  }",
-        "description": ""
+        "signature": "hooks?: {\n    /** Runs before a transition commits — throw to validate or block the move. */\n    beforeTransition?: CollectionBeforeTransitionHook<TDoc>[];\n    /** Runs after a transition commits — trigger notifications or downstream work. */\n    afterTransition?: CollectionAfterTransitionHook<TDoc>[];\n  }",
+        "description": "Server-side hooks that run around every transition."
       }
     ]
   },
@@ -2038,32 +2069,32 @@
     "category": "workflows",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface WorkflowMetadata {\n  state: string;\n  revision: number;\n  publishedRevision?: number;\n  publishedAt?: string;\n  publishedBy?: string;\n  /** Transitions currently allowed for the requesting user. Response-only. */\n  availableTransitions?: string[];\n}",
+    "signature": "export interface WorkflowMetadata {\n  /** The document's current workflow state, e.g. `\"draft\"` or `\"published\"`. */\n  state: string;\n  /** Revision counter, incremented on every committed transition. */\n  revision: number;\n  /** Revision number currently exposed as the public snapshot, once published. */\n  publishedRevision?: number;\n  /** ISO timestamp of the most recent publish. */\n  publishedAt?: string;\n  /** Id of the user who last published this document. */\n  publishedBy?: string;\n  /** Transitions currently allowed for the requesting user. Response-only. */\n  availableTransitions?: string[];\n}",
     "members": [
       {
         "name": "state",
         "signature": "state: string",
-        "description": ""
+        "description": "The document's current workflow state, e.g. `\"draft\"` or `\"published\"`."
       },
       {
         "name": "revision",
         "signature": "revision: number",
-        "description": ""
+        "description": "Revision counter, incremented on every committed transition."
       },
       {
         "name": "publishedRevision",
         "signature": "publishedRevision?: number",
-        "description": ""
+        "description": "Revision number currently exposed as the public snapshot, once published."
       },
       {
         "name": "publishedAt",
         "signature": "publishedAt?: string",
-        "description": ""
+        "description": "ISO timestamp of the most recent publish."
       },
       {
         "name": "publishedBy",
         "signature": "publishedBy?: string",
-        "description": ""
+        "description": "Id of the user who last published this document."
       },
       {
         "name": "availableTransitions",
@@ -2177,47 +2208,47 @@
     "category": "workflows",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface WorkflowTransitionContext<\n  TDoc extends object = Record<string, unknown>,\n> {\n  transition: WorkflowTransition;\n  from: string;\n  to: string;\n  doc: TDoc;\n  user?: AuthenticatedUser;\n  comment?: string;\n  req: HookRequestContext;\n  db: DatabaseAdapter;\n}",
+    "signature": "export interface WorkflowTransitionContext<\n  TDoc extends object = Record<string, unknown>,\n> {\n  /** The transition being performed. */\n  transition: WorkflowTransition;\n  /** State the document is moving out of. */\n  from: string;\n  /** State the document is moving into. */\n  to: string;\n  /** The document as it stands before the transition commits. */\n  doc: TDoc;\n  /** The user performing the transition, when the request is authenticated. */\n  user?: AuthenticatedUser;\n  /** Comment supplied with the transition; required when `requireComment` is set. */\n  comment?: string;\n  /** Request context for the transition. */\n  req: HookRequestContext;\n  /** Transaction-scoped database adapter for reads and writes inside the hook. */\n  db: DatabaseAdapter;\n}",
     "members": [
       {
         "name": "transition",
         "signature": "transition: WorkflowTransition",
-        "description": ""
+        "description": "The transition being performed."
       },
       {
         "name": "from",
         "signature": "from: string",
-        "description": ""
+        "description": "State the document is moving out of."
       },
       {
         "name": "to",
         "signature": "to: string",
-        "description": ""
+        "description": "State the document is moving into."
       },
       {
         "name": "doc",
         "signature": "doc: TDoc",
-        "description": ""
+        "description": "The document as it stands before the transition commits."
       },
       {
         "name": "user",
         "signature": "user?: AuthenticatedUser",
-        "description": ""
+        "description": "The user performing the transition, when the request is authenticated."
       },
       {
         "name": "comment",
         "signature": "comment?: string",
-        "description": ""
+        "description": "Comment supplied with the transition; required when `requireComment` is set."
       },
       {
         "name": "req",
         "signature": "req: HookRequestContext",
-        "description": ""
+        "description": "Request context for the transition."
       },
       {
         "name": "db",
         "signature": "db: DatabaseAdapter",
-        "description": ""
+        "description": "Transaction-scoped database adapter for reads and writes inside the hook."
       }
     ]
   },

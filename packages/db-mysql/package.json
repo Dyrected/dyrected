@@ -28,9 +28,6 @@
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   },
-  "peerDependencies": {
-    "@dyrected/core": "*"
-  },
   "license": "BUSL-1.1",
   "homepage": "https://dyrected.com",
   "repository": {

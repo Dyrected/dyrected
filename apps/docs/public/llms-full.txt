@@ -15130,7 +15130,7 @@ Canonical URL: https://docs.dyrected.com/docs/reference/generated-workflows
 
 Workflows model editorial state transitions separately from ordinary field edits. A workflow-enabled document can keep an editable working revision while exposing an independent public snapshot, so changing a published entry does not necessarily change what public readers see.
 
-Use `publishingWorkflow()` for the standard draft → review → publish lifecycle. Define a custom workflow only when the business process genuinely has different states, capabilities, or transition rules.
+Use `publishingWorkflow()` for the standard draft → review → publish lifecycle, or `definePublishingWorkflow()` to map your own role names onto its editor and publisher tiers. For a lighter draft/published toggle, `simplePublishingWorkflow()` is what the `drafts: true` collection shortcut uses under the hood. Define a fully custom workflow only when the business process genuinely has different states, capabilities, or transition rules.
 
 ## States, transitions, and capabilities
 

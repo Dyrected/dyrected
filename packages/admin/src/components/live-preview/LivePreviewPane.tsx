@@ -52,19 +52,26 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collec
   const [tokenError, setTokenError] = useState<string | null>(null);
   const lastDataKeyRef = useRef<string | null>(null);
 
+  // Serialize the draft to a stable primitive so this effect only re-runs when
+  // the data actually changes — not on every parent render. Depending on the
+  // `data` object directly made the effect thrash: each render cancelled the
+  // in-flight mint (via the cleanup below), so a token that minted successfully
+  // was discarded before it could reach the iframe, and the debounce timer kept
+  // getting cleared. `dataKey` changes only on a real edit, so cancellation now
+  // means "the draft changed again", which is exactly when we want to discard a
+  // stale mint.
+  const dataKey = safeStringify(data);
+
   useEffect(() => {
     if (mode !== 'token' || !client || !collectionSlug) return;
-
-    const key = safeStringify(data);
-    // Skip if the draft is unchanged since the last successful mint.
-    if (key === lastDataKeyRef.current) return;
+    if (dataKey === lastDataKeyRef.current) return;
 
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
         const { token } = await client.createPreviewToken({ collectionSlug, documentId, data });
         if (cancelled) return;
-        lastDataKeyRef.current = key;
+        lastDataKeyRef.current = dataKey;
         setTokenSrc(withPreviewToken(previewUrl, token));
         setTokenError(null);
       } catch (err) {
@@ -77,7 +84,10 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collec
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [mode, client, collectionSlug, documentId, previewUrl, data]);
+    // `data` is intentionally read from the closure; `dataKey` is its stable
+    // primitive proxy and drives re-runs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, client, collectionSlug, documentId, previewUrl, dataKey]);
 
   // The URL actually loaded into the iframe. In token mode we wait for the first
   // token before adding it; until then the frame shows published content.

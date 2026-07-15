@@ -2,6 +2,8 @@
   "coverage": {
     "workflows": [
       "publishingWorkflow",
+      "definePublishingWorkflow",
+      "simplePublishingWorkflow",
       "workflowCapabilities",
       "canViewWorkflowDraft",
       "availableWorkflowTransitions",

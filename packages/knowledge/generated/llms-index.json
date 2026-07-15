@@ -310,6 +310,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:definePublishingWorkflow",
+      "name": "definePublishingWorkflow",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:dispatchLifecycleEvent",
       "name": "dispatchLifecycleEvent",
       "category": "workflows",
@@ -666,6 +672,12 @@
     {
       "id": "@dyrected/core:publishingWorkflow",
       "name": "publishingWorkflow",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:PublishingWorkflowOptions",
+      "name": "PublishingWorkflowOptions",
       "category": "workflows",
       "sourcePackage": "@dyrected/core"
     },

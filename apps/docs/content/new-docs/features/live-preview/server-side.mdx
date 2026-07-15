@@ -8,9 +8,10 @@ Client-side preview delivers the draft over `postMessage`, which only works if y
 Instead of streaming the draft into the browser, the admin mints a short-lived signed token that carries the draft, puts it on the preview URL, and your page reads it **during its server render** to fetch the draft in place of published content.
 
 <Callout type="info">
-  This mode is **refresh-based**: each edit re-mints a token and reloads the preview frame (a server round-trip), so
-  updates appear on a short delay rather than as you type. **Click-to-edit is not available** in token mode — there's no
-  return channel from a server-only page. If you want live-as-you-type and click-to-edit, use
+  This mode is **refresh-based**, not live-as-you-type. When you pause editing (changes are debounced ~1s), the admin
+  mints a fresh token and reloads the whole preview frame, which re-renders on the server with the new draft — so
+  updates land a moment after you stop typing, not on every keystroke. **Click-to-edit is not available** in token mode:
+  there's no return channel from a server-only page. If you want live-as-you-type and click-to-edit, use
   [client-side (`postMessage`)](/new-docs/features/live-preview/client-side) instead.
 </Callout>
 
@@ -51,12 +52,17 @@ const client = useDyrectedClient();
 const token = getPreviewToken(route.query);
 
 const { data: article } = await useAsyncData(
-  `blog:${route.params.slug}:${token ? "preview" : "published"}`,
+  // Key on the token so each distinct preview forces a fresh server fetch.
+  `blog:${route.params.slug}:${token ?? "published"}`,
   async () => {
     if (token) {
-      // Server-side preview: redeem the token for the unsaved draft.
-      const payload = await client.getPreviewData<{ data: any }>(token);
-      return payload?.data ?? null;
+      try {
+        // Server-side preview: redeem the token for the unsaved draft.
+        const payload = await client.getPreviewData<{ data: any }>(token);
+        return payload?.data ?? null;
+      } catch {
+        // Token invalid/expired — fall back to published below.
+      }
     }
     const res = await client
       .collection("blog")

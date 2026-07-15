@@ -33,7 +33,7 @@ Dyrected has a genuine, end-to-end **client-side (`postMessage`)** live preview:
 | `client-side` | REAL | Written — `useLivePreview` API, per-framework code (Next/React/Nuxt/Vue), `useDyPath` + `<Blocks>`, origin security, troubleshooting |
 | `server-side` | REAL (gap now closed) | Written — token mode implemented end to end (see below) |
 
-**Update:** the token-mode gap was subsequently **closed** (see `token-preview-implementation-plan.md`). `server-side.mdx` is now published documenting a working flow: the admin mints a token and appends `?dyPreview=<token>`; the frontend redeems it server-side via `getPreviewData`. Nuxt reference lives in `example-saas-nuxt` (the `blog` collection is now `previewMode: "token"`). `meta.json` includes all four pages.
+**Update:** the token-mode gap was subsequently **closed** (see `token-preview-implementation-plan.md`) and verified working end to end against Dyrected Cloud. `server-side.mdx` is now published documenting the working flow: the admin mints a token (debounced) and appends `?dyPreview=<token>`; the frontend redeems it server-side via `getPreviewData`. The `server-side.mdx` code is self-contained/illustrative — the `example-saas-nuxt` app uses **client-side** preview for both `pages` and `blog` (token mode was validated on `blog`, then reverted so both example pages stay live-as-you-type). `meta.json` includes all four pages.
 
 ---
 

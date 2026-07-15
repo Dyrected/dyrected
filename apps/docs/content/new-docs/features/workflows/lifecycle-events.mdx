@@ -1,0 +1,145 @@
+---
+title: Lifecycle events
+description: React to workflow changes — a draft saved, a document published or unpublished — with durable, retried event handlers that run your own side effects like cache purges, notifications, or downstream jobs.
+---
+
+When a document on a workflow-enabled collection changes state, Dyrected emits a **lifecycle event**: a durable record of what happened. Register a handler and you can run your own side effect off it — purge a CDN cache when something publishes, post to Slack when a draft lands for review, kick off a downstream job when an embargo lifts.
+
+The events are durable, so unlike a plain in-process callback they survive a crash and are retried until they're delivered. By the end of this page you'll know which events fire, how to handle them, and the delivery guarantees you can rely on.
+
+## The events
+
+Four events fire on workflow-enabled collections:
+
+| Event | Fires when |
+| --- | --- |
+| `revision.created` | A working draft is saved (a new revision of the document). |
+| `workflow.transitioned` | Any transition runs — `submit`, `publish`, `reject`, or your own. |
+| `entry.published` | A transition moves a document into a `published` state (the public snapshot changes). |
+| `entry.unpublished` | A transition marked `unpublish` pulls a document offline. |
+
+`workflow.transitioned` fires on **every** move, so it's the broad hook; `entry.published` and `entry.unpublished` are the narrow ones for the moments the public site actually changes.
+
+## Registering a handler
+
+Add handlers to the `events` block of your config. A handler is a function that receives the event and does whatever you need — it can be async:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  // ...collections, db, and the rest of your config
+  events: {
+    handlers: [
+      async (event) => {
+        if (event.name === "entry.published") {
+          // Purge the CDN cache for the page that just went live
+          await fetch("https://cache.example.com/purge", {
+            method: "POST",
+            body: JSON.stringify({ collection: event.collection, id: event.documentId }),
+          });
+        }
+      },
+    ],
+  },
+});
+```
+
+Each handler is called for every event, so branch on `event.name` (and `event.collection`) to decide what to act on. Register as many handlers as you like — they all run for each event.
+
+## Delivery guarantees
+
+Every event is written to a durable store **before** any handler runs, so nothing is lost if a handler throws or the process restarts mid-delivery. From there:
+
+- **Delivery is attempted immediately** after the change, in the background, without blocking the request that triggered it.
+- **Failures are retried** with exponential backoff — `retryDelayMs` (default 1000ms), doubling each attempt — up to `maxAttempts` (default 8). After that the event stays `failed` and stops retrying.
+- **Delivery is at-least-once.** A handler can run more than once for the same event — for example, when a retry follows a partial failure. **Make handlers idempotent**: key any external effect off `event.id` so re-delivery is harmless.
+
+You can tune the retry policy alongside your handlers:
+
+```ts
+events: {
+  handlers: [/* ... */],
+  maxAttempts: 5,      // give up after 5 tries (default 8)
+  retryDelayMs: 2000,  // first retry after 2s, then 4s, 8s, … (default 1000)
+}
+```
+
+## Running the dispatcher
+
+On **Dyrected Cloud**, the dispatcher runs automatically — you only write handlers.
+
+**Self-hosted**, drive delivery yourself by calling `dispatchPendingLifecycleEvents` on a schedule (a cron job or interval). It picks up anything the immediate attempt missed and retries due failures, then returns how many it dispatched:
+
+```ts
+import { dispatchPendingLifecycleEvents } from "@dyrected/core";
+import config from "./dyrected.config";
+
+// e.g. every 30 seconds from a scheduled task
+const delivered = await dispatchPendingLifecycleEvents(config);
+```
+
+Without a scheduled dispatcher, a self-hosted deployment still gets the immediate best-effort attempt, but failed events won't be retried until you run it.
+
+## The event shape
+
+Each handler receives a `LifecycleEvent`:
+
+```ts
+interface LifecycleEvent {
+  id: string;             // unique event id — use it to dedupe
+  name: string;           // "revision.created" | "workflow.transitioned" | "entry.published" | "entry.unpublished"
+  collection: string;     // the collection slug
+  documentId: string;     // the document the event is about
+  occurredAt: string;     // ISO timestamp
+  actorId?: string;       // the user who triggered it, when known
+  payload: Record<string, unknown>; // event-specific data, e.g. the transition name and revision
+  attempts: number;       // delivery attempts so far
+  status: "pending" | "processing" | "delivered" | "failed";
+  nextAttemptAt?: string; // when the next retry is due, while pending
+  deliveredAt?: string;
+  lastError?: string;     // message from the last failed attempt
+}
+```
+
+Events are stored in a hidden `__lifecycle_events` collection that Dyrected manages for you — you don't define it, and it stays out of the admin sidebar. Reading it directly isn't the intended path; handlers are.
+
+## Inline hooks vs. events
+
+Lifecycle events run *after* a change commits, decoupled and retried. When you instead need logic that runs **as part of** the transition, put it in the workflow's `beforeTransition` / `afterTransition` hooks. Both live on the `WorkflowConfig`, so you can add them to a built-in workflow or your own:
+
+```ts
+import { definePublishingWorkflow } from "@dyrected/core";
+import type { WorkflowConfig } from "@dyrected/core";
+
+const workflow: WorkflowConfig = {
+  ...definePublishingWorkflow({ editors: ["writer"], publishers: ["editor"] }),
+  hooks: {
+    // Runs BEFORE the move commits. Throw to block it — nothing is written and
+    // the client gets your error. Good for enforcing rules a transition requires.
+    beforeTransition: [
+      ({ transition, doc }) => {
+        if (transition.to === "published" && !doc.seoDescription) {
+          throw new Error("Add an SEO description before publishing.");
+        }
+      },
+    ],
+    // Runs AFTER the move commits, with the updated document and the event.
+    // Good for an immediate, in-request reaction.
+    afterTransition: [
+      async ({ transition, doc, user }) => {
+        if (transition.name === "submit") {
+          await pingReviewers(`${user?.email} submitted "${doc.title}" for review`);
+        }
+      },
+    ],
+  },
+};
+```
+
+Each hook receives the `transition`, the `doc`, the acting `user`, any `comment`, and a transaction-scoped `db` handle. Some things they're good for:
+
+- **`beforeTransition`** — validate the move (require a field before publishing, block a publish outside business hours, enforce that a `reject` has a comment beyond what `requireComment` covers). It's the only hook that can **stop** a transition.
+- **`afterTransition`** — react in the same request: notify reviewers on `submit`, stamp a `publishedBy` audit note, warm a cache for the page that just went live.
+
+**Which to reach for:** use `beforeTransition` when the logic must gate the move, and `afterTransition` for a quick in-process reaction. But an `afterTransition` hook runs once and is **not retried** — if it throws, the transition still stands and the error is only logged. For a side effect that must not be lost (a webhook, a CDN purge), use a durable [lifecycle event handler](#registering-a-handler) instead.

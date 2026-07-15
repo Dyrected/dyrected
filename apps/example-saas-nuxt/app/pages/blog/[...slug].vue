@@ -5,30 +5,16 @@ const slug = computed(() => {
   return s || "";
 });
 
-// This collection uses server-side (token) live preview. When the admin opens
-// the preview pane it loads this route with a `?dyPreview=<token>` param; we
-// redeem it here, on the server, for the unsaved draft. Without a token we
-// fetch the published article as usual.
-const client = useDyrectedClient();
-const previewToken = getPreviewToken(route.query);
+const { data: response } = await useDyrectedCollection("blog", {
+  where: { slug: { equals: slug.value } },
+  limit: 1,
+  depth: 1,
+});
 
-const { data: pageData } = await useAsyncData(
-  `blog:${slug.value}:${previewToken ? "preview" : "published"}`,
-  async () => {
-    if (previewToken) {
-      const payload = await client.getPreviewData<{ data: any }>(previewToken);
-      return payload?.data ?? null;
-    }
-    const res = await client
-      .collection("blog")
-      .find({ where: { slug: { equals: slug.value } }, limit: 1, depth: 1 })
-      .exec();
-    return res?.docs?.[0] ?? null;
-  },
-);
+const pageData = computed(() => response.value?.docs?.[0]);
 
-// useLivePreview is a no-op in token mode (no postMessage), so it simply passes
-// the server-resolved data through — draft when previewing, published otherwise.
+// Client-side live preview (postMessage). Also powers click-to-edit: the
+// data-dy-path attrs below become editable targets in the admin preview.
 const { data: blog } = useLivePreview({
   initialData: pageData.value,
 });

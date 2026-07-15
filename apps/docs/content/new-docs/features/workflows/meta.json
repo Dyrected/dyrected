@@ -1,6 +1,8 @@
 {
-  "title": "Workflows",
+  "title": "Editorial workflows",
   "pages": [
-    "overview"
+    "overview",
+    "custom-workflows",
+    "lifecycle-events"
   ]
 }

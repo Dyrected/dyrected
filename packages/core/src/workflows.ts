@@ -15,7 +15,37 @@ import type {
 export const WORKFLOW_HISTORY_COLLECTION = "__workflow_history";
 export const LIFECYCLE_EVENTS_COLLECTION = "__lifecycle_events";
 
-export function publishingWorkflow(): WorkflowConfig {
+/** Capabilities granted to the "editor" tier — edit and submit for review. */
+const EDITOR_CAPABILITIES = ["entry.edit", "entry.submit"];
+/** Capabilities granted to the "publisher" tier — edit, submit, publish, unpublish. */
+const PUBLISHER_CAPABILITIES = ["entry.edit", "entry.submit", "entry.publish", "entry.unpublish"];
+
+/**
+ * Role mapping for {@link definePublishingWorkflow}. Map your app's own role
+ * values onto the publishing workflow's two capability tiers.
+ */
+export interface PublishingWorkflowOptions {
+  /** Role values allowed to edit and submit for review. Defaults to `["editor"]`. */
+  editors?: string[];
+  /** Role values allowed to also publish and unpublish. Defaults to `["publisher", "admin"]`. */
+  publishers?: string[];
+}
+
+/**
+ * Build a `draft → in review → published` editorial workflow, mapping your own
+ * role values onto its capability tiers. Reach for this instead of
+ * {@link publishingWorkflow} when your roles aren't named
+ * `editor`/`publisher`/`admin`.
+ *
+ * @example
+ * workflow: definePublishingWorkflow({
+ *   editors: ["writer"],
+ *   publishers: ["managing-editor", "admin"],
+ * })
+ */
+export function definePublishingWorkflow(options: PublishingWorkflowOptions = {}): WorkflowConfig {
+  const editors = options.editors ?? ["editor"];
+  const publishers = options.publishers ?? ["publisher", "admin"];
   return {
     initialState: "draft",
     draftState: "draft",
@@ -31,11 +61,20 @@ export function publishingWorkflow(): WorkflowConfig {
       { name: "unpublish", label: "Unpublish", from: "published", to: "draft", requiredCapabilities: ["entry.unpublish"], unpublish: true },
     ],
     roles: [
-      { role: "editor", capabilities: ["entry.edit", "entry.submit"] },
-      { role: "publisher", capabilities: ["entry.edit", "entry.submit", "entry.publish", "entry.unpublish"] },
-      { role: "admin", capabilities: ["entry.edit", "entry.submit", "entry.publish", "entry.unpublish"] },
+      ...editors.map((role) => ({ role, capabilities: [...EDITOR_CAPABILITIES] })),
+      ...publishers.map((role) => ({ role, capabilities: [...PUBLISHER_CAPABILITIES] })),
     ],
   };
+}
+
+/**
+ * The default `draft → in review → published` editorial workflow, using the
+ * conventional role names `editor`, `publisher`, and `admin`. Shorthand for
+ * `definePublishingWorkflow()` — use {@link definePublishingWorkflow} to map
+ * your own role names onto its capability tiers.
+ */
+export function publishingWorkflow(): WorkflowConfig {
+  return definePublishingWorkflow();
 }
 
 export function simplePublishingWorkflow(): WorkflowConfig {
@@ -50,6 +89,9 @@ export function simplePublishingWorkflow(): WorkflowConfig {
       { name: "publish", label: "Publish", from: "draft", to: "published" },
       { name: "unpublish", label: "Unpublish", from: "published", to: "draft", unpublish: true },
     ],
+    // Intentionally no `roles`: this lightweight workflow (synthesized from
+    // `drafts: true`) does no capability-based gating. Draft visibility for a
+    // no-roles workflow is handled in `canViewWorkflowDraft`.
   };
 }
 
@@ -72,9 +114,20 @@ export function canViewWorkflowDraft(workflow: WorkflowConfig, user?: Authentica
   if (!user) return false;
   const capabilities = workflowCapabilities(workflow, user);
   if (capabilities.has("entry.edit")) return true;
-  return workflow.transitions.some((transition) =>
-    (transition.requiredCapabilities ?? []).some((capability) => capabilities.has(capability)),
-  );
+  if (
+    workflow.transitions.some((transition) =>
+      (transition.requiredCapabilities ?? []).some((capability) => capabilities.has(capability)),
+    )
+  ) {
+    return true;
+  }
+  // A workflow with no role→capability mappings (e.g. the one synthesized from
+  // `drafts: true`) does no capability-based gating. Rather than hide drafts
+  // from everyone — which would empty the Admin list — let any authenticated
+  // user view them. Unauthenticated/public readers are already excluded above,
+  // so drafts still never leak to the public site.
+  if (!workflow.roles || workflow.roles.length === 0) return true;
+  return false;
 }
 
 export function availableWorkflowTransitions(
@@ -204,6 +257,21 @@ export async function dispatchLifecycleEvent(config: DyrectedConfig, event: Life
   }
 }
 
+// Drain the durable lifecycle-event outbox: deliver pending events and retry
+// failed ones that are due, with backoff. Returns how many were dispatched.
+//
+// DESIGN NOTE — core intentionally does NOT schedule this itself. Immediate
+// delivery is attempted inline after each change (see `void dispatchLifecycleEvent`
+// above); this function drains the outbox for retries and for anything the inline
+// attempt missed. The host owns the process, so the host schedules the drain:
+// Dyrected Cloud runs it via BullMQ/Redis every 30s; self-hosters call it from a
+// cron / worker / platform scheduler (Vercel Cron, Cloudflare Cron Triggers, …).
+//
+// FUTURE — consider: an opt-in `events.autoDispatch: { intervalMs }` could start a
+// `setInterval` in `createDyrectedApp` as a convenience for long-lived,
+// single-instance Node servers. Keep it opt-in and off by default — a built-in
+// timer is unreliable on serverless (the process is ephemeral) and would
+// double-dispatch across multiple instances without coordination.
 export async function dispatchPendingLifecycleEvents(config: DyrectedConfig, limit = 50): Promise<number> {
   if (!config.db || !config.events?.handlers.length) return 0;
   const maxAttempts = config.events.maxAttempts ?? 8;

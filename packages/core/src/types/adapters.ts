@@ -74,8 +74,9 @@ export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" |
 /**
  * The interface every storage adapter must implement.
  *
- * Dyrected ships adapters for local disk, S3, Cloudflare R2, Cloudinary, and
- * Backblaze B2. Implement this interface to use any other storage provider.
+ * Dyrected ships adapters for local disk, AWS S3 and other S3-compatible
+ * services through the S3 adapter, Cloudinary, and Backblaze B2. Implement
+ * this interface to use any other storage provider.
  */
 export interface StorageAdapter {
   /**
