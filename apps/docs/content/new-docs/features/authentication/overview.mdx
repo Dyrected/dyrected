@@ -124,7 +124,7 @@ Dyrected treats one slug specially: **`__admins`**. When a collection with that 
 
 Everything above describes **collection auth**: local email and password login for your application's users (and, by default, for the dashboard). Dyrected also supports **external sign-in for the dashboard** through an `adminAuth` configuration, so admins can log in with an identity provider (OIDC) or a custom JWT provider instead of a local password.
 
-This is a separate system from collection auth — it only governs who reaches the CMS, uses its own routes under `/api/admin/auth/`, and does not change how your application's users log in. If your team needs single sign-on for the admin panel, that is the surface to reach for. (A dedicated guide for `adminAuth` is planned; for now, treat it as the dashboard-only extension point.)
+This is a separate system from collection auth — it only governs who reaches the CMS, uses its own routes under `/api/admin/auth/`, and does not change how your application's users log in. If your team needs single sign-on for the admin panel, see [Admin SSO](/new-docs/features/authentication/admin-sso) for the full setup with Okta, Azure AD, Google, or any OIDC provider.
 
 ## Programmatic access
 
@@ -142,4 +142,5 @@ Dyrected does not currently offer per-user API keys (a key that authenticates as
 - [Cookie Strategy](/new-docs/features/authentication/cookie-strategy) — where to keep the token between requests
 - [Token Data](/new-docs/features/authentication/token-data) — what the token carries and how `user` is built
 - [Handing Off to Editors](/new-docs/features/authentication/handing-off-to-editors) — onboard your first editors safely
+- [Admin SSO](/new-docs/features/authentication/admin-sso) — external dashboard sign-in with Okta, Azure AD, Google, or any OIDC provider
 - [Access Control](/new-docs/basics/access-control/overview) — turn the signed-in user into permissions

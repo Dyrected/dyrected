@@ -1,10 +1,10 @@
 {
-  "title": "Ecommerce",
+  "title": "Ecommerce (Coming Soon)",
   "pages": [
     "overview",
-    "plugin",
-    "frontend",
-    "payment-adapters",
-    "advanced"
+    "__plugin",
+    "__frontend",
+    "__payment-adapters",
+    "__advanced"
   ]
 }

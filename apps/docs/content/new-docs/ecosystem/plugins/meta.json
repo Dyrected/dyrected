@@ -1,18 +1,18 @@
 {
-  "title": "Plugins",
+  "title": "Plugins (Coming Soon)",
   "pages": [
     "overview",
-    "build-your-own",
-    "advanced-plugin-api",
-    "form-builder",
-    "import-export",
-    "mcp",
-    "multi-tenant",
-    "nested-docs",
-    "redirects",
-    "search",
-    "sentry",
-    "seo",
-    "stripe"
+    "__build-your-own",
+    "__advanced-plugin-api",
+    "__form-builder",
+    "__import-export",
+    "__mcp",
+    "__multi-tenant",
+    "__nested-docs",
+    "__redirects",
+    "__search",
+    "__sentry",
+    "__seo",
+    "__stripe"
   ]
 }

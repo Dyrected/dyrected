@@ -3,6 +3,7 @@
   "pages": [
     "overview",
     "handing-off-to-editors",
+    "admin-sso",
     "operations",
     "jwt-strategy",
     "cookie-strategy",

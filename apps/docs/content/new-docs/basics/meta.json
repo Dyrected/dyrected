@@ -3,6 +3,7 @@
   "pages": [
     "getting-started",
     "configuration",
+    "cli",
     "database",
     "fields",
     "access-control",
