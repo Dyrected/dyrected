@@ -1,5 +1,33 @@
 [
   {
+    "id": "archive-instead-of-delete",
+    "title": "Archive records instead of deleting them",
+    "description": "Add an archive flag, hide archived rows from normal readers, and disable destructive deletion.",
+    "problem": "Content should disappear from normal views without being permanently deleted from the database.",
+    "summary": "Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.",
+    "category": "data-lifecycle",
+    "intents": [
+      "archive content instead of deleting it",
+      "hide old records from normal queries",
+      "soft delete documents",
+      "retire entries without removing them"
+    ],
+    "concepts": [
+      "access",
+      "defaultValue",
+      "soft delete"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/data-lifecycle",
+      "/docs/basics/access-control/collections",
+      "/docs/basics/configuration/collections"
+    ],
+    "requires": [],
+    "source": "import { defineBooleanField, defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Announcements = defineCollection({\n  slug: \"announcements\",\n  access: {\n    read: ({ user }) =>\n      user?.roles?.includes(\"admin\") ? true : { archived: { equals: false } },\n    create: ({ user }) => Boolean(user),\n    update: ({ user }) => Boolean(user),\n    delete: () => false,\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineBooleanField({\n      name: \"archived\",\n      label: \"Archived\",\n      defaultValue: false,\n    }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "auto-slug",
     "title": "Generate a slug from a title",
     "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
@@ -26,6 +54,34 @@
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({\n      name: \"slug\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange: ({ siblingData }) => toSlug(siblingData.title),\n        },\n      },\n    }),\n  ],\n});",
     "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "category-taxonomy",
+    "title": "Create a category taxonomy for content",
+    "description": "Use a reusable categories collection and a has-many relationship from content entries that need tagging.",
+    "problem": "Entries need reusable categories so editors can organize content and build filtered listing pages.",
+    "summary": "Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.",
+    "category": "content-modeling",
+    "intents": [
+      "add categories to posts",
+      "model reusable taxonomy entries",
+      "tag content with multiple categories",
+      "build filtered content listings"
+    ],
+    "concepts": [
+      "relationship",
+      "hasMany",
+      "urlPattern"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/content-modeling",
+      "/docs/basics/fields/relationship",
+      "/docs/basics/configuration/collections"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Categories = defineCollection({\n  slug: \"categories\",\n  admin: { useAsTitle: \"title\", urlPattern: \"/categories/{slug}\" },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  admin: { useAsTitle: \"title\", urlPattern: \"/blog/{slug}\" },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n    defineRelationshipField({\n      name: \"categories\",\n      label: \"Categories\",\n      relationTo: \"categories\",\n      hasMany: true,\n    }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
     "snippetStatus": "validated"
   },
   {
@@ -113,6 +169,34 @@
     "snippetStatus": "validated"
   },
   {
+    "id": "document-download-library",
+    "title": "Create a document download library",
+    "description": "Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.",
+    "problem": "Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records.",
+    "summary": "Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.",
+    "category": "integrations",
+    "intents": [
+      "store downloadable documents",
+      "create a pdf library",
+      "manage shared downloads",
+      "add a documents upload collection"
+    ],
+    "concepts": [
+      "upload",
+      "allowedMimeTypes",
+      "maxFileSize"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/integrations",
+      "/docs/features/upload/overview",
+      "/docs/features/upload/storage-adapters"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Documents = defineCollection({\n  slug: \"documents\",\n  admin: { useAsTitle: \"title\" },\n  upload: {\n    allowedMimeTypes: [\n      \"application/pdf\",\n      \"application/vnd.openxmlformats-officedocument.wordprocessingml.document\",\n      \"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\",\n    ],\n    maxFileSize: 20 * 1024 * 1024,\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextareaField({ name: \"summary\", label: \"Summary\" }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/integrations",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "editorial-publishing-workflow",
     "title": "Add draft, review, and publishing states",
     "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
@@ -138,6 +222,63 @@
     "requires": [],
     "source": "import { defineCollection, defineRichTextField, defineTextField, publishingWorkflow } from \"@dyrected/core\";\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  workflow: publishingWorkflow(),\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRichTextField({ name: \"body\", label: \"Body\", required: true }),\n  ],\n});",
     "docsPath": "/docs/ecosystem/common-patterns/workflows",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "navigation-global-links",
+    "title": "Create a navigation global with nested links",
+    "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
+    "problem": "Editors need to manage shared site navigation without hardcoding links into the frontend.",
+    "summary": "Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.",
+    "category": "content-modeling",
+    "intents": [
+      "create editable navigation",
+      "store menu links in the cms",
+      "manage a navbar global",
+      "add nested navigation links"
+    ],
+    "concepts": [
+      "defineGlobal",
+      "array",
+      "url"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/content-modeling",
+      "/docs/basics/configuration/globals",
+      "/docs/basics/fields/array",
+      "/docs/basics/fields/url"
+    ],
+    "requires": [],
+    "source": "import { defineArrayField, defineGlobal, defineTextField, defineUrlField } from \"@dyrected/core\";\n\nexport const Navigation = defineGlobal({\n  slug: \"navigation\",\n  label: \"Navigation\",\n  fields: [\n    defineArrayField({\n      name: \"items\",\n      label: \"Navigation items\",\n      fields: [\n        defineTextField({ name: \"label\", label: \"Label\", required: true }),\n        defineUrlField({ name: \"link\", label: \"Link\", required: true }),\n        defineArrayField({\n          name: \"children\",\n          label: \"Child links\",\n          fields: [\n            defineTextField({ name: \"label\", label: \"Label\", required: true }),\n            defineUrlField({ name: \"link\", label: \"Link\", required: true }),\n          ],\n        }),\n      ],\n    }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "owner-or-admin-access",
+    "title": "Let owners edit records while admins manage everything",
+    "description": "Combine ownership rules with an admin override so ordinary users stay scoped while administrators can intervene.",
+    "problem": "Records should belong to one user, but administrators still need a way to review or fix any entry.",
+    "summary": "Scope writes to the owner by default and return `true` for admin users when they need broader access.",
+    "category": "access-control",
+    "intents": [
+      "let users edit their own records",
+      "allow admins to manage every document",
+      "combine ownership with admin overrides",
+      "restrict records to owners unless admin"
+    ],
+    "concepts": [
+      "access",
+      "relationship",
+      "beforeChange"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/access-control",
+      "/docs/basics/access-control/collections",
+      "/docs/features/authentication/overview"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nconst ownerConstraint = (user?: { sub?: string; roles?: string[] }) => {\n  if (user?.roles?.includes(\"admin\")) return true;\n  return user?.sub ? { owner: { equals: user.sub } } : false;\n};\n\nexport const Tickets = defineCollection({\n  slug: \"tickets\",\n  access: {\n    read: ({ user }) => ownerConstraint(user),\n    create: ({ user }) => Boolean(user?.sub),\n    update: ({ user }) => ownerConstraint(user),\n    delete: ({ user }) => ownerConstraint(user),\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        if (!user?.sub) throw new Error(\"Authentication is required.\");\n        return { ...data, owner: user.sub };\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"subject\", label: \"Subject\", required: true }),\n    defineRelationshipField({\n      name: \"owner\",\n      label: \"Owner\",\n      relationTo: \"users\",\n      required: true,\n      admin: { readOnly: true },\n    }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/access-control",
     "snippetStatus": "validated"
   },
   {
@@ -197,6 +338,34 @@
     "snippetStatus": "validated"
   },
   {
+    "id": "preview-url-token-mode",
+    "title": "Configure preview URLs with token mode",
+    "description": "Set a preview URL expression and token-based preview mode for server-rendered or static frontend routes.",
+    "problem": "Editors need to preview draft content on the real route before it is published.",
+    "summary": "Set `previewUrl` and `previewMode: 'token'` so the Admin can open a draft route without publishing the document.",
+    "category": "workflows",
+    "intents": [
+      "preview draft content privately",
+      "open live preview on the real route",
+      "use token mode preview",
+      "configure preview urls for a collection"
+    ],
+    "concepts": [
+      "previewUrl",
+      "previewMode",
+      "urlPattern"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/workflows",
+      "/docs/features/admin/preview",
+      "/docs/features/live-preview/overview"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Docs = defineCollection({\n  slug: \"docs\",\n  admin: {\n    useAsTitle: \"title\",\n    previewUrl: \"slug ? '/docs/' + slug : null\",\n    previewMode: \"token\",\n    urlPattern: \"/docs/{slug}\",\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/workflows",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "relationship-and-reverse-join",
     "title": "Model a relationship and its reverse lookup",
     "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
@@ -223,6 +392,34 @@
     "requires": [],
     "source": "import { defineCollection, defineJoinField, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Users = defineCollection({\n  slug: \"users\",\n  auth: true,\n  fields: [\n    defineTextField({ name: \"name\", label: \"Name\", required: true }),\n    defineJoinField({\n      name: \"posts\",\n      label: \"Posts\",\n      collection: \"posts\",\n      on: \"author\",\n      limit: 20,\n    }),\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRelationshipField({\n      name: \"author\",\n      label: \"Author\",\n      relationTo: \"users\",\n      required: true,\n    }),\n  ],\n});",
     "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "responsive-image-library",
+    "title": "Create a responsive image library",
+    "description": "Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.",
+    "problem": "Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails.",
+    "summary": "Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.",
+    "category": "integrations",
+    "intents": [
+      "create responsive image sizes",
+      "add generated media thumbnails",
+      "build a reusable image library",
+      "configure upload image presets"
+    ],
+    "concepts": [
+      "upload",
+      "imageSizes",
+      "adminThumbnail"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/integrations",
+      "/docs/features/upload/overview",
+      "/docs/features/upload/storage-adapters"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  admin: { useAsTitle: \"alt\" },\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n    adminThumbnail: \"card\",\n    imageSizes: [\n      { name: \"card\", width: 640, height: 480, fit: \"cover\" },\n      { name: \"hero\", width: 1600, height: 900, fit: \"cover\" },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"alt\", label: \"Alternative text\", required: true }),\n    defineTextareaField({ name: \"caption\", label: \"Caption\" }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/integrations",
     "snippetStatus": "validated"
   },
   {
@@ -279,6 +476,90 @@
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Customers = defineCollection({\n  slug: \"customers\",\n  fields: [\n    defineTextField({\n      name: \"fullName\",\n      label: \"Full name\",\n      renameTo: \"name\",\n      defaultValue: \"\",\n      required: true,\n    }),\n  ],\n});",
     "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "seo-tab-fields",
+    "title": "Group SEO fields into an Admin tab",
+    "description": "Keep secondary metadata together under an SEO tab so the main editing form stays focused.",
+    "problem": "SEO fields are useful, but they clutter the main content form when they sit beside every primary field.",
+    "summary": "Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.",
+    "category": "admin-experience",
+    "intents": [
+      "group seo fields in the admin",
+      "move metadata into a separate tab",
+      "keep forms cleaner with tabs",
+      "add an seo tab to a collection"
+    ],
+    "concepts": [
+      "defineTab",
+      "admin.tab",
+      "useAsTitle"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/admin-experience",
+      "/docs/features/admin/overview",
+      "/docs/basics/configuration/collections"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineTab, defineTextField, defineTextareaField, defineUrlField } from \"@dyrected/core\";\n\nexport const Pages = defineCollection({\n  slug: \"pages\",\n  admin: { useAsTitle: \"title\" },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n    ...defineTab({\n      label: \"SEO\",\n      fields: [\n        defineTextField({ name: \"metaTitle\", label: \"Meta title\" }),\n        defineTextareaField({ name: \"metaDescription\", label: \"Meta description\" }),\n        defineUrlField({ name: \"canonicalUrl\", label: \"Canonical URL\" }),\n      ],\n    }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "site-settings-global",
+    "title": "Create a site settings global",
+    "description": "Keep shared site-wide values in a single global instead of scattering them across collections.",
+    "problem": "You need one shared place for site name, support details, and other site-wide settings.",
+    "summary": "Use a global for singleton content that should be edited once and reused across the site or app.",
+    "category": "content-modeling",
+    "intents": [
+      "create site settings",
+      "store one shared settings document",
+      "make a singleton config record",
+      "manage site-wide content in one place"
+    ],
+    "concepts": [
+      "defineGlobal",
+      "initialData",
+      "singleton content"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/content-modeling",
+      "/docs/basics/configuration/globals",
+      "/docs/basics/fields/url"
+    ],
+    "requires": [],
+    "source": "import { defineEmailField, defineGlobal, defineTextField, defineUrlField } from \"@dyrected/core\";\n\nexport const SiteSettings = defineGlobal({\n  slug: \"site-settings\",\n  label: \"Site settings\",\n  initialData: {\n    siteName: \"Acme Studio\",\n    supportEmail: \"hello@example.com\",\n  },\n  fields: [\n    defineTextField({ name: \"siteName\", label: \"Site name\", required: true }),\n    defineTextField({ name: \"tagline\", label: \"Tagline\", defaultValue: \"\" }),\n    defineEmailField({\n      name: \"supportEmail\",\n      label: \"Support email\",\n      required: true,\n    }),\n    defineUrlField({\n      name: \"primaryCta\",\n      label: \"Primary call to action\",\n    }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "tenant-scoped-access",
+    "title": "Scope content to the current workspace",
+    "description": "Stamp a workspace identifier onto new records and filter reads and writes to that tenant boundary.",
+    "problem": "Users should only see or manage records that belong to their current workspace or organization.",
+    "summary": "Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.",
+    "category": "access-control",
+    "intents": [
+      "add multi-tenant access control",
+      "scope records to a workspace",
+      "keep organizations isolated",
+      "limit data by tenant"
+    ],
+    "concepts": [
+      "access",
+      "beforeChange",
+      "tenant isolation"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/access-control",
+      "/docs/basics/access-control/collections",
+      "/docs/basics/hooks/collections"
+    ],
+    "requires": [],
+    "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nconst getWorkspaceId = (user?: unknown) => {\n  if (!user || typeof user !== \"object\") return undefined;\n  const workspaceId = (user as Record<string, unknown>).workspaceId;\n  return typeof workspaceId === \"string\" && workspaceId.length > 0\n    ? workspaceId\n    : undefined;\n};\n\nexport const Projects = defineCollection({\n  slug: \"projects\",\n  access: {\n    read: ({ user }) =>\n      getWorkspaceId(user)\n        ? { workspaceId: { equals: getWorkspaceId(user) } }\n        : false,\n    create: ({ user }) => Boolean(getWorkspaceId(user)),\n    update: ({ user }) =>\n      getWorkspaceId(user)\n        ? { workspaceId: { equals: getWorkspaceId(user) } }\n        : false,\n    delete: ({ user }) =>\n      user?.roles?.includes(\"admin\")\n        ? true\n        : getWorkspaceId(user)\n          ? { workspaceId: { equals: getWorkspaceId(user) } }\n          : false,\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        const workspaceId = getWorkspaceId(user);\n        if (!workspaceId) {\n          throw new Error(\"A workspace is required to create a project.\");\n        }\n        return { ...data, workspaceId };\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"name\", label: \"Project name\", required: true }),\n    defineTextField({\n      name: \"workspaceId\",\n      label: \"Workspace ID\",\n      required: true,\n      admin: { readOnly: true },\n    }),\n  ],\n});",
+    "docsPath": "/docs/ecosystem/common-patterns/access-control",
     "snippetStatus": "validated"
   },
   {

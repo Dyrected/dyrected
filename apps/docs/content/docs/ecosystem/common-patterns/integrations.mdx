@@ -20,3 +20,33 @@ Read the full docs:
 - [Upload overview](/docs/features/upload/overview)
 - [Storage adapters](/docs/features/upload/storage-adapters)
 - [Collections](/docs/basics/configuration/collections)
+
+## Create a document download library
+
+**Problem:** editors need a dedicated place to manage downloadable files instead of attaching them ad hoc across many records.
+
+This pattern uses an upload collection for PDFs and office documents, with shared metadata that can be reused anywhere in the site or app. It works well for brochures, reports, onboarding packs, and gated resources.
+
+### Example implementation
+
+<RecipeExample id="document-download-library" />
+
+Read the full docs:
+
+- [Upload overview](/docs/features/upload/overview)
+- [Storage adapters](/docs/features/upload/storage-adapters)
+
+## Create a responsive image library
+
+**Problem:** editors need one reusable image library, but the frontend also needs predictable derived sizes for cards, hero sections, and thumbnails.
+
+This pattern defines generated upload sizes and a dedicated admin thumbnail so one source image can support multiple frontend layouts cleanly. It is a strong default for marketing sites, media-heavy dashboards, and content teams that reuse the same assets often.
+
+### Example implementation
+
+<RecipeExample id="responsive-image-library" />
+
+Read the full docs:
+
+- [Upload overview](/docs/features/upload/overview)
+- [Storage adapters](/docs/features/upload/storage-adapters)

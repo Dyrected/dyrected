@@ -34,3 +34,33 @@ Read the full docs:
 
 - [Collection access control](/docs/basics/access-control/collections)
 - [Authentication overview](/docs/features/authentication/overview)
+
+## Scope content to the current workspace
+
+**Problem:** users should only see or manage records that belong to their current workspace or organization.
+
+This pattern stamps a tenant identifier onto new records and returns tenant-scoped access constraints for reads and writes. It is the starting point for multi-workspace SaaS apps where isolation matters as much as authentication.
+
+### Example implementation
+
+<RecipeExample id="tenant-scoped-access" />
+
+Read the full docs:
+
+- [Collection access control](/docs/basics/access-control/collections)
+- [Collection hooks](/docs/basics/hooks/collections)
+
+## Let owners edit records while admins manage everything
+
+**Problem:** ordinary users should stay scoped to their own records, but administrators still need a way to intervene.
+
+This pattern combines ownership rules with an admin override. It works well for tickets, support requests, user-owned projects, and other records where support or operations staff may need broader access than the original owner.
+
+### Example implementation
+
+<RecipeExample id="owner-or-admin-access" />
+
+Read the full docs:
+
+- [Collection access control](/docs/basics/access-control/collections)
+- [Authentication overview](/docs/features/authentication/overview)

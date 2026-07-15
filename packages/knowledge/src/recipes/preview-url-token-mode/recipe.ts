@@ -1,0 +1,15 @@
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Docs = defineCollection({
+  slug: "docs",
+  admin: {
+    useAsTitle: "title",
+    previewUrl: "slug ? '/docs/' + slug : null",
+    previewMode: "token",
+    urlPattern: "/docs/{slug}",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+  ],
+});

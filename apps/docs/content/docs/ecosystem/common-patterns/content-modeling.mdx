@@ -34,3 +34,49 @@ Read the full docs:
 
 - [Relationship fields](/docs/basics/fields/relationship)
 - [Join fields](/docs/basics/fields/join)
+
+## Create a site settings global
+
+**Problem:** you need one shared place for site name, support details, and other values that should only exist once.
+
+This pattern uses a global for singleton content instead of forcing editors to manage a one-row collection. It fits site settings, contact information, default CTA copy, and other values reused across many frontend surfaces.
+
+### Example implementation
+
+<RecipeExample id="site-settings-global" />
+
+Read the full docs:
+
+- [Globals](/docs/basics/configuration/globals)
+- [URL fields](/docs/basics/fields/url)
+
+## Create a navigation global with nested links
+
+**Problem:** editors need to manage shared navigation without hardcoding menus in the frontend.
+
+This pattern models navigation as repeatable rows in a global, with one level of child links for grouped menus or dropdowns. It is a practical default for headers, footers, and docs navigation that should stay structured.
+
+### Example implementation
+
+<RecipeExample id="navigation-global-links" />
+
+Read the full docs:
+
+- [Globals](/docs/basics/configuration/globals)
+- [Array fields](/docs/basics/fields/array)
+- [URL fields](/docs/basics/fields/url)
+
+## Create a category taxonomy for content
+
+**Problem:** entries need reusable categories so editors can organize content and build filtered listing pages.
+
+This pattern stores categories in their own collection and relates content back to them with a has-many relationship field. It is a good fit for blogs, resources, case studies, and any content type that benefits from reusable taxonomy entries.
+
+### Example implementation
+
+<RecipeExample id="category-taxonomy" />
+
+Read the full docs:
+
+- [Collections](/docs/basics/configuration/collections)
+- [Relationship fields](/docs/basics/fields/relationship)

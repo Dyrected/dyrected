@@ -40,16 +40,26 @@ const categories = new Set([
   "integrations",
 ]);
 const recipeDocsPathMap = {
+  "archive-instead-of-delete": "/docs/ecosystem/common-patterns/data-lifecycle",
   "auto-slug": "/docs/ecosystem/common-patterns/data-lifecycle",
+  "category-taxonomy": "/docs/ecosystem/common-patterns/content-modeling",
   "conditional-admin-field": "/docs/ecosystem/common-patterns/admin-experience",
   "cross-field-validation": "/docs/ecosystem/common-patterns/data-lifecycle",
   "dependent-dropdown": "/docs/ecosystem/common-patterns/admin-experience",
+  "document-download-library": "/docs/ecosystem/common-patterns/integrations",
   "editorial-publishing-workflow": "/docs/ecosystem/common-patterns/workflows",
+  "navigation-global-links": "/docs/ecosystem/common-patterns/content-modeling",
+  "owner-or-admin-access": "/docs/ecosystem/common-patterns/access-control",
   "owner-scoped-access": "/docs/ecosystem/common-patterns/access-control",
   "page-builder-blocks": "/docs/ecosystem/common-patterns/content-modeling",
+  "preview-url-token-mode": "/docs/ecosystem/common-patterns/workflows",
   "relationship-and-reverse-join": "/docs/ecosystem/common-patterns/content-modeling",
+  "responsive-image-library": "/docs/ecosystem/common-patterns/integrations",
   "role-based-access": "/docs/ecosystem/common-patterns/access-control",
   "safe-field-rename": "/docs/ecosystem/common-patterns/data-lifecycle",
+  "seo-tab-fields": "/docs/ecosystem/common-patterns/admin-experience",
+  "site-settings-global": "/docs/ecosystem/common-patterns/content-modeling",
+  "tenant-scoped-access": "/docs/ecosystem/common-patterns/access-control",
   "upload-collection": "/docs/ecosystem/common-patterns/integrations",
 };
 

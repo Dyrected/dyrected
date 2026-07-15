@@ -1,0 +1,21 @@
+{
+  "id": "archive-instead-of-delete",
+  "title": "Archive records instead of deleting them",
+  "description": "Add an archive flag, hide archived rows from normal readers, and disable destructive deletion.",
+  "problem": "Content should disappear from normal views without being permanently deleted from the database.",
+  "summary": "Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.",
+  "category": "data-lifecycle",
+  "intents": [
+    "archive content instead of deleting it",
+    "hide old records from normal queries",
+    "soft delete documents",
+    "retire entries without removing them"
+  ],
+  "concepts": ["access", "defaultValue", "soft delete"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/data-lifecycle",
+    "/docs/basics/access-control/collections",
+    "/docs/basics/configuration/collections"
+  ],
+  "requires": []
+}

@@ -2,6 +2,26 @@
   "generatedBy": "@dyrected/knowledge",
   "recipes": [
     {
+      "id": "archive-instead-of-delete",
+      "title": "Archive records instead of deleting them",
+      "description": "Add an archive flag, hide archived rows from normal readers, and disable destructive deletion.",
+      "problem": "Content should disappear from normal views without being permanently deleted from the database.",
+      "summary": "Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.",
+      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/data-lifecycle",
+        "/docs/basics/access-control/collections",
+        "/docs/basics/configuration/collections"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "archive content instead of deleting it",
+        "hide old records from normal queries",
+        "soft delete documents",
+        "retire entries without removing them"
+      ]
+    },
+    {
       "id": "auto-slug",
       "title": "Generate a slug from a title",
       "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
@@ -19,6 +39,26 @@
         "automatically generate a slug",
         "create friendly URLs from titles",
         "keep a slug synchronized with a title"
+      ]
+    },
+    {
+      "id": "category-taxonomy",
+      "title": "Create a category taxonomy for content",
+      "description": "Use a reusable categories collection and a has-many relationship from content entries that need tagging.",
+      "problem": "Entries need reusable categories so editors can organize content and build filtered listing pages.",
+      "summary": "Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.",
+      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/content-modeling",
+        "/docs/basics/fields/relationship",
+        "/docs/basics/configuration/collections"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "add categories to posts",
+        "model reusable taxonomy entries",
+        "tag content with multiple categories",
+        "build filtered content listings"
       ]
     },
     {
@@ -82,6 +122,26 @@
       ]
     },
     {
+      "id": "document-download-library",
+      "title": "Create a document download library",
+      "description": "Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.",
+      "problem": "Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records.",
+      "summary": "Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.",
+      "docsPath": "/docs/ecosystem/common-patterns/integrations",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/integrations",
+        "/docs/features/upload/overview",
+        "/docs/features/upload/storage-adapters"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "store downloadable documents",
+        "create a pdf library",
+        "manage shared downloads",
+        "add a documents upload collection"
+      ]
+    },
+    {
       "id": "editorial-publishing-workflow",
       "title": "Add draft, review, and publishing states",
       "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
@@ -99,6 +159,47 @@
         "require review before publishing",
         "create an editorial workflow",
         "let editors submit content for approval"
+      ]
+    },
+    {
+      "id": "navigation-global-links",
+      "title": "Create a navigation global with nested links",
+      "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
+      "problem": "Editors need to manage shared site navigation without hardcoding links into the frontend.",
+      "summary": "Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.",
+      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/content-modeling",
+        "/docs/basics/configuration/globals",
+        "/docs/basics/fields/array",
+        "/docs/basics/fields/url"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "create editable navigation",
+        "store menu links in the cms",
+        "manage a navbar global",
+        "add nested navigation links"
+      ]
+    },
+    {
+      "id": "owner-or-admin-access",
+      "title": "Let owners edit records while admins manage everything",
+      "description": "Combine ownership rules with an admin override so ordinary users stay scoped while administrators can intervene.",
+      "problem": "Records should belong to one user, but administrators still need a way to review or fix any entry.",
+      "summary": "Scope writes to the owner by default and return `true` for admin users when they need broader access.",
+      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/access-control",
+        "/docs/basics/access-control/collections",
+        "/docs/features/authentication/overview"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "let users edit their own records",
+        "allow admins to manage every document",
+        "combine ownership with admin overrides",
+        "restrict records to owners unless admin"
       ]
     },
     {
@@ -142,6 +243,26 @@
       ]
     },
     {
+      "id": "preview-url-token-mode",
+      "title": "Configure preview URLs with token mode",
+      "description": "Set a preview URL expression and token-based preview mode for server-rendered or static frontend routes.",
+      "problem": "Editors need to preview draft content on the real route before it is published.",
+      "summary": "Set `previewUrl` and `previewMode: 'token'` so the Admin can open a draft route without publishing the document.",
+      "docsPath": "/docs/ecosystem/common-patterns/workflows",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/workflows",
+        "/docs/features/admin/preview",
+        "/docs/features/live-preview/overview"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "preview draft content privately",
+        "open live preview on the real route",
+        "use token mode preview",
+        "configure preview urls for a collection"
+      ]
+    },
+    {
       "id": "relationship-and-reverse-join",
       "title": "Model a relationship and its reverse lookup",
       "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
@@ -159,6 +280,26 @@
         "show every post written by a user",
         "create a reverse relationship",
         "model one-to-many content"
+      ]
+    },
+    {
+      "id": "responsive-image-library",
+      "title": "Create a responsive image library",
+      "description": "Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.",
+      "problem": "Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails.",
+      "summary": "Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.",
+      "docsPath": "/docs/ecosystem/common-patterns/integrations",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/integrations",
+        "/docs/features/upload/overview",
+        "/docs/features/upload/storage-adapters"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "create responsive image sizes",
+        "add generated media thumbnails",
+        "build a reusable image library",
+        "configure upload image presets"
       ]
     },
     {
@@ -199,6 +340,66 @@
         "change a field name without losing data",
         "migrate an existing schema",
         "keep old documents working after a rename"
+      ]
+    },
+    {
+      "id": "seo-tab-fields",
+      "title": "Group SEO fields into an Admin tab",
+      "description": "Keep secondary metadata together under an SEO tab so the main editing form stays focused.",
+      "problem": "SEO fields are useful, but they clutter the main content form when they sit beside every primary field.",
+      "summary": "Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.",
+      "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/admin-experience",
+        "/docs/features/admin/overview",
+        "/docs/basics/configuration/collections"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "group seo fields in the admin",
+        "move metadata into a separate tab",
+        "keep forms cleaner with tabs",
+        "add an seo tab to a collection"
+      ]
+    },
+    {
+      "id": "site-settings-global",
+      "title": "Create a site settings global",
+      "description": "Keep shared site-wide values in a single global instead of scattering them across collections.",
+      "problem": "You need one shared place for site name, support details, and other site-wide settings.",
+      "summary": "Use a global for singleton content that should be edited once and reused across the site or app.",
+      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/content-modeling",
+        "/docs/basics/configuration/globals",
+        "/docs/basics/fields/url"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "create site settings",
+        "store one shared settings document",
+        "make a singleton config record",
+        "manage site-wide content in one place"
+      ]
+    },
+    {
+      "id": "tenant-scoped-access",
+      "title": "Scope content to the current workspace",
+      "description": "Stamp a workspace identifier onto new records and filter reads and writes to that tenant boundary.",
+      "problem": "Users should only see or manage records that belong to their current workspace or organization.",
+      "summary": "Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.",
+      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/access-control",
+        "/docs/basics/access-control/collections",
+        "/docs/basics/hooks/collections"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "add multi-tenant access control",
+        "scope records to a workspace",
+        "keep organizations isolated",
+        "limit data by tenant"
       ]
     },
     {

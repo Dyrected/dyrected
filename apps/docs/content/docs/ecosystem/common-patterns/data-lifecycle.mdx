@@ -49,3 +49,18 @@ Read the full docs:
 
 - [Collections](/docs/basics/configuration/collections)
 - [Database migrations](/docs/basics/database/migrations)
+
+## Archive records instead of deleting them
+
+**Problem:** content should disappear from normal views without being permanently deleted from the database.
+
+This pattern adds an archive flag, hides archived rows from normal readers, and disables destructive deletion. It is useful for announcements, listings, or internal records that may need to be restored or audited later.
+
+### Example implementation
+
+<RecipeExample id="archive-instead-of-delete" />
+
+Read the full docs:
+
+- [Collection access control](/docs/basics/access-control/collections)
+- [Collections](/docs/basics/configuration/collections)

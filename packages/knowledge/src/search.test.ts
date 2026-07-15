@@ -8,7 +8,11 @@ describe("Dyrected knowledge catalogue", () => {
       recipes.length,
     );
     expect(
-      recipes.every((recipe) => recipe.source.includes("defineCollection")),
+      recipes.every(
+        (recipe) =>
+          recipe.source.includes("defineCollection") ||
+          recipe.source.includes("defineGlobal"),
+      ),
     ).toBe(true);
   });
 

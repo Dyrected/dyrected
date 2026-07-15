@@ -34,3 +34,18 @@ Read the full docs:
 
 - [Admin overview](/docs/features/admin/overview)
 - [Select fields](/docs/basics/fields/select)
+
+## Group SEO fields into an Admin tab
+
+**Problem:** SEO metadata matters, but it clutters the main editing form when it sits beside every primary field.
+
+This pattern uses `defineTab` to move secondary metadata into a dedicated Admin tab without changing the stored document shape. It is a good fit when editors need metadata fields regularly, but not at the expense of a focused main content form.
+
+### Example implementation
+
+<RecipeExample id="seo-tab-fields" />
+
+Read the full docs:
+
+- [Admin overview](/docs/features/admin/overview)
+- [Collections](/docs/basics/configuration/collections)

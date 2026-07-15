@@ -1,0 +1,21 @@
+{
+  "id": "preview-url-token-mode",
+  "title": "Configure preview URLs with token mode",
+  "description": "Set a preview URL expression and token-based preview mode for server-rendered or static frontend routes.",
+  "problem": "Editors need to preview draft content on the real route before it is published.",
+  "summary": "Set `previewUrl` and `previewMode: 'token'` so the Admin can open a draft route without publishing the document.",
+  "category": "workflows",
+  "intents": [
+    "preview draft content privately",
+    "open live preview on the real route",
+    "use token mode preview",
+    "configure preview urls for a collection"
+  ],
+  "concepts": ["previewUrl", "previewMode", "urlPattern"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/workflows",
+    "/docs/features/admin/preview",
+    "/docs/features/live-preview/overview"
+  ],
+  "requires": []
+}

@@ -1,0 +1,21 @@
+{
+  "id": "document-download-library",
+  "title": "Create a document download library",
+  "description": "Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.",
+  "problem": "Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records.",
+  "summary": "Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.",
+  "category": "integrations",
+  "intents": [
+    "store downloadable documents",
+    "create a pdf library",
+    "manage shared downloads",
+    "add a documents upload collection"
+  ],
+  "concepts": ["upload", "allowedMimeTypes", "maxFileSize"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/integrations",
+    "/docs/features/upload/overview",
+    "/docs/features/upload/storage-adapters"
+  ],
+  "requires": []
+}

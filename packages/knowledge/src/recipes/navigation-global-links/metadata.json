@@ -1,0 +1,22 @@
+{
+  "id": "navigation-global-links",
+  "title": "Create a navigation global with nested links",
+  "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
+  "problem": "Editors need to manage shared site navigation without hardcoding links into the frontend.",
+  "summary": "Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.",
+  "category": "content-modeling",
+  "intents": [
+    "create editable navigation",
+    "store menu links in the cms",
+    "manage a navbar global",
+    "add nested navigation links"
+  ],
+  "concepts": ["defineGlobal", "array", "url"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/content-modeling",
+    "/docs/basics/configuration/globals",
+    "/docs/basics/fields/array",
+    "/docs/basics/fields/url"
+  ],
+  "requires": []
+}

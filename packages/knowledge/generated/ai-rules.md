@@ -1733,26 +1733,44 @@ Use `allowedMimeTypes` and `maxFileSize` for upload collections, consume returne
 ## Compiled recipes
 
 <!-- GENERATED:RECIPES:START -->
+- [Archive records instead of deleting them](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle) — Problem: Content should disappear from normal views without being permanently deleted from the database. Summary: Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.
 - [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
+- [Create a category taxonomy for content](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: Entries need reusable categories so editors can organize content and build filtered listing pages. Summary: Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.
 - [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
 - [Validate related fields before saving](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
 - [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
+- [Create a document download library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations) — Problem: Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records. Summary: Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.
 - [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
+- [Create a navigation global with nested links](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: Editors need to manage shared site navigation without hardcoding links into the frontend. Summary: Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.
+- [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Records should belong to one user, but administrators still need a way to review or fix any entry. Summary: Scope writes to the owner by default and return `true` for admin users when they need broader access.
 - [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Signed-in users should only see or manage the records they own. Summary: Scope reads and writes to the current user in access control, then stamp ownership when records are created.
 - [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: Editors need to build or rearrange page sections without turning every page into one giant content object. Summary: Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.
+- [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows) — Problem: Editors need to preview draft content on the real route before it is published. Summary: Set `previewUrl` and `previewMode: 'token'` so the Admin can open a draft route without publishing the document.
 - [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: One record should point to another record, and you also want the reverse view without storing duplicate data. Summary: Store the owning relationship on one side and use a join field for the reverse lookup when you need one-to-many content structures.
+- [Create a responsive image library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations) — Problem: Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails. Summary: Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.
 - [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Different roles should have different permissions for reading, editing, publishing, or deleting content. Summary: Check user roles in collection access control so each operation matches the responsibilities of the current user.
 - [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle) — Problem: You need to change a field name on a live schema without breaking the documents that already exist. Summary: Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.
+- [Group SEO fields into an Admin tab](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience) — Problem: SEO fields are useful, but they clutter the main content form when they sit beside every primary field. Summary: Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.
+- [Create a site settings global](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: You need one shared place for site name, support details, and other site-wide settings. Summary: Use a global for singleton content that should be edited once and reused across the site or app.
+- [Scope content to the current workspace](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Users should only see or manage records that belong to their current workspace or organization. Summary: Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.
 - [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations) — Problem: Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents. Summary: Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.
 <!-- GENERATED:RECIPES:END -->
 
 ## Intent-to-pattern index
 
 <!-- GENERATED:INTENTS:START -->
+- “archive content instead of deleting it” → [Archive records instead of deleting them](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “hide old records from normal queries” → [Archive records instead of deleting them](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “soft delete documents” → [Archive records instead of deleting them](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “retire entries without removing them” → [Archive records instead of deleting them](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
 - “make the URL follow the title” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
 - “automatically generate a slug” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
 - “create friendly URLs from titles” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
 - “keep a slug synchronized with a title” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “add categories to posts” → [Create a category taxonomy for content](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “model reusable taxonomy entries” → [Create a category taxonomy for content](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “tag content with multiple categories” → [Create a category taxonomy for content](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “build filtered content listings” → [Create a category taxonomy for content](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “show a field conditionally” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
 - “hide irrelevant form fields” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
 - “show discount only with a coupon” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
@@ -1765,10 +1783,22 @@ Use `allowedMimeTypes` and `maxFileSize` for upload collections, consume returne
 - “show states based on the selected country” → [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
 - “create a cascading dropdown” → [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
 - “update select options while editing” → [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “store downloadable documents” → [Create a document download library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “create a pdf library” → [Create a document download library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “manage shared downloads” → [Create a document download library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “add a documents upload collection” → [Create a document download library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
 - “add draft and publish states” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
 - “require review before publishing” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
 - “create an editorial workflow” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
 - “let editors submit content for approval” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “create editable navigation” → [Create a navigation global with nested links](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “store menu links in the cms” → [Create a navigation global with nested links](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “manage a navbar global” → [Create a navigation global with nested links](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “add nested navigation links” → [Create a navigation global with nested links](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “let users edit their own records” → [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “allow admins to manage every document” → [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “combine ownership with admin overrides” → [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “restrict records to owners unless admin” → [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
 - “users should only see their own records” → [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
 - “add row level access” → [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
 - “scope documents by owner” → [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
@@ -1777,10 +1807,18 @@ Use `allowedMimeTypes` and `maxFileSize` for upload collections, consume returne
 - “let editors arrange page sections” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “create reusable content blocks” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “model flexible landing pages” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “preview draft content privately” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “open live preview on the real route” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “use token mode preview” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “configure preview urls for a collection” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
 - “connect posts to authors” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “show every post written by a user” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “create a reverse relationship” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “model one-to-many content” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “create responsive image sizes” → [Create a responsive image library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “add generated media thumbnails” → [Create a responsive image library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “build a reusable image library” → [Create a responsive image library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “configure upload image presets” → [Create a responsive image library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
 - “only editors can update content” → [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
 - “restrict deletion to admins” → [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
 - “make content publicly readable” → [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
@@ -1789,6 +1827,18 @@ Use `allowedMimeTypes` and `maxFileSize` for upload collections, consume returne
 - “change a field name without losing data” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
 - “migrate an existing schema” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
 - “keep old documents working after a rename” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “group seo fields in the admin” → [Group SEO fields into an Admin tab](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “move metadata into a separate tab” → [Group SEO fields into an Admin tab](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “keep forms cleaner with tabs” → [Group SEO fields into an Admin tab](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “add an seo tab to a collection” → [Group SEO fields into an Admin tab](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “create site settings” → [Create a site settings global](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “store one shared settings document” → [Create a site settings global](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “make a singleton config record” → [Create a site settings global](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “manage site-wide content in one place” → [Create a site settings global](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “add multi-tenant access control” → [Scope content to the current workspace](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “scope records to a workspace” → [Scope content to the current workspace](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “keep organizations isolated” → [Scope content to the current workspace](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “limit data by tenant” → [Scope content to the current workspace](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
 - “let editors upload images” → [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
 - “create a media library” → [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
 - “store uploaded files” → [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)

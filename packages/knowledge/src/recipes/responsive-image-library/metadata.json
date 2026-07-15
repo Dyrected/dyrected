@@ -1,0 +1,21 @@
+{
+  "id": "responsive-image-library",
+  "title": "Create a responsive image library",
+  "description": "Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.",
+  "problem": "Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails.",
+  "summary": "Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.",
+  "category": "integrations",
+  "intents": [
+    "create responsive image sizes",
+    "add generated media thumbnails",
+    "build a reusable image library",
+    "configure upload image presets"
+  ],
+  "concepts": ["upload", "imageSizes", "adminThumbnail"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/integrations",
+    "/docs/features/upload/overview",
+    "/docs/features/upload/storage-adapters"
+  ],
+  "requires": []
+}

@@ -1,0 +1,21 @@
+{
+  "id": "seo-tab-fields",
+  "title": "Group SEO fields into an Admin tab",
+  "description": "Keep secondary metadata together under an SEO tab so the main editing form stays focused.",
+  "problem": "SEO fields are useful, but they clutter the main content form when they sit beside every primary field.",
+  "summary": "Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.",
+  "category": "admin-experience",
+  "intents": [
+    "group seo fields in the admin",
+    "move metadata into a separate tab",
+    "keep forms cleaner with tabs",
+    "add an seo tab to a collection"
+  ],
+  "concepts": ["defineTab", "admin.tab", "useAsTitle"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/admin-experience",
+    "/docs/features/admin/overview",
+    "/docs/basics/configuration/collections"
+  ],
+  "requires": []
+}

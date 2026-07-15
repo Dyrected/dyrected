@@ -1,0 +1,21 @@
+{
+  "id": "category-taxonomy",
+  "title": "Create a category taxonomy for content",
+  "description": "Use a reusable categories collection and a has-many relationship from content entries that need tagging.",
+  "problem": "Entries need reusable categories so editors can organize content and build filtered listing pages.",
+  "summary": "Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.",
+  "category": "content-modeling",
+  "intents": [
+    "add categories to posts",
+    "model reusable taxonomy entries",
+    "tag content with multiple categories",
+    "build filtered content listings"
+  ],
+  "concepts": ["relationship", "hasMany", "urlPattern"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/content-modeling",
+    "/docs/basics/fields/relationship",
+    "/docs/basics/configuration/collections"
+  ],
+  "requires": []
+}

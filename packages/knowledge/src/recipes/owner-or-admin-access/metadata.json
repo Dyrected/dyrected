@@ -1,0 +1,21 @@
+{
+  "id": "owner-or-admin-access",
+  "title": "Let owners edit records while admins manage everything",
+  "description": "Combine ownership rules with an admin override so ordinary users stay scoped while administrators can intervene.",
+  "problem": "Records should belong to one user, but administrators still need a way to review or fix any entry.",
+  "summary": "Scope writes to the owner by default and return `true` for admin users when they need broader access.",
+  "category": "access-control",
+  "intents": [
+    "let users edit their own records",
+    "allow admins to manage every document",
+    "combine ownership with admin overrides",
+    "restrict records to owners unless admin"
+  ],
+  "concepts": ["access", "relationship", "beforeChange"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/access-control",
+    "/docs/basics/access-control/collections",
+    "/docs/features/authentication/overview"
+  ],
+  "requires": []
+}
