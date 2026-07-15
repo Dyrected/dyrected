@@ -1,5 +1,58 @@
 # @dyrected/core
 
+## 2.5.62
+
+### Patch Changes
+
+- a1b867e: Add built-in API rate limiting, proxy-aware client IP resolution, and revocable auth sessions
+
+  Dyrected auth and request protection were missing three production layers that Payload already treats as part of the core server contract: app-level request throttling, correct client-IP handling behind proxies, and a way to revoke JWT sessions immediately instead of waiting for expiry.
+
+  `createDyrectedApp` now mounts an in-process API rate limiter with Payload-style defaults for `/api` routes, including configurable `max`, `window`, `paths`, `skip`, and `trustProxy` options. Client IP resolution now understands common provider headers and trusted `X-Forwarded-For` chains so production deployments behind a reverse proxy count the right caller instead of the proxy hop.
+
+  Auth collections also move from purely stateless login tokens to JWTs backed by hidden `__auth_sessions` records. New tokens carry a session id, auth middleware validates that the backing session is still active, logout can revoke the current session immediately, `?allSessions=true` can revoke every session for the account, and password reset / password change now invalidate active sessions as a security boundary. Refreshing a token keeps the same underlying session instead of creating a second one silently.
+
+  The docs and OpenAPI surface were updated to match the new behavior, especially around built-in rate limiting, trusted proxy setup, logout semantics, and session revocation.
+
+- 16592a3: Point package-distributed documentation references at the canonical `/docs` tree
+
+  The docs site no longer maintains a separate `/new-docs` content tree and route. The new authored docs set now lives directly under the canonical `/docs` path, and the knowledge generator, published references, and package JSDoc links were updated to match.
+
+  For `@dyrected/core`, this updates JSDoc `@see` links so generated API references and editor tooling point at the current docs URLs instead of the removed `/new-docs` paths.
+
+  For `@dyrected/knowledge`, this refreshes generated references, prompt artifacts, LLM indexes, and skill outputs so published knowledge bundles link to the canonical docs paths and no longer depend on removed legacy recipe/reference pages.
+
+- ee0e566: Add `definePublishingWorkflow` to map your own role names onto the publishing workflow
+
+  `publishingWorkflow()` hardcoded the role names `editor`, `publisher`, and `admin`, so a project whose roles are named differently (e.g. `writer`, `managing-editor`) got no capabilities and couldn't move documents through the flow.
+
+  `definePublishingWorkflow({ editors, publishers })` builds the same `draft → in review → published` workflow but maps _your_ role values onto its two capability tiers — `editors` may edit and submit, `publishers` may also publish and unpublish. `publishingWorkflow()` is now a shorthand for `definePublishingWorkflow()` with the conventional defaults, so existing usage is unchanged.
+
+  ```ts
+  workflow: definePublishingWorkflow({
+    editors: ["writer"],
+    publishers: ["managing-editor", "admin"],
+  });
+  ```
+
+- ee0e566: Fix `drafts: true` documents disappearing from the Admin list
+
+  The publishing workflow synthesized from `drafts: true` (`simplePublishingWorkflow`) defined no role→capability mappings, so `canViewWorkflowDraft` returned `false` for everyone — including admins and editors. Every draft document was then filtered out of collection reads, leaving the Admin list empty.
+
+  `canViewWorkflowDraft` now treats a workflow with no `roles` (the `drafts: true` case) as ungated: any **authenticated** user can view drafts, so they show up in the Admin regardless of what a project names its roles. Unauthenticated/public readers still only ever see published content, so drafts never leak to the live site. Workflows that define explicit `roles` keep their existing capability-based gating.
+
+- b3cccd2: Add Payload-style logger config and first-class observability to Dyrected core
+
+  Dyrected now supports a root `logger` config shaped like Payload's Pino-based logger surface, plus a new top-level `observability` config for request logging, redaction, sampling, tracing, metrics, and Dyrected-managed transports.
+
+  Request logging is now structured instead of ad hoc string output. Successful requests are sampled, `4xx` requests log at `warn`, `5xx` requests log at `error`, and request ids, site/workspace ids, and trace correlation fields are included when available.
+
+  Body logging is opt-in and bounded. Dyrected only attempts to capture JSON request bodies, redacts common secret fields and headers before logging, truncates oversized payloads, and falls back to metadata-only logging when a body cannot be parsed safely after capture.
+
+  Core services and request paths now use structured logger helpers instead of direct `console.*` calls. This includes auth, audit-failure reporting, email delivery failures, router warnings, workflow hook isolation, and request error handling.
+
+  OpenTelemetry tracing and metrics are now available behind explicit config. Dyrected can create request spans, emit request and failure metrics, export telemetry through OTLP, and expose a Prometheus scrape route only when configured. Audit logging remains a separate feature and is not merged with runtime observability.
+
 ## 2.5.61
 
 ### Patch Changes

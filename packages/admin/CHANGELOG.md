@@ -1,5 +1,31 @@
 # @dyrected/admin
 
+## 2.5.62
+
+### Patch Changes
+
+- a1b867e: Use server-backed logout and clear revoked stored admin sessions
+
+  The admin provider still treated logout as a purely client-side action after Dyrected auth moved to revocable server-backed sessions. Logging out from the admin cleared local storage, but it did not call the server logout route, so the current session stayed valid until expiry. The provider also kept dead tokens in local storage when bootstrapping `me()` failed, which caused repeated failed auth requests on reload after a session had already been revoked.
+
+  The admin provider now calls the collection logout route before clearing local state, so admin logout actually revokes the current session. It also clears persisted auth state only on real stale-auth failures during bootstrap (`401` / `404`), so revoked or invalid stored sessions are cleaned up automatically without treating unrelated network errors as a logout.
+
+- ee0e566: Fix token-mode live preview never showing the draft
+
+  In `previewMode: "token"`, the preview pane minted a valid token but discarded it before it reached the iframe, so the frame kept loading published content and never reflected edits. The mint effect depended on the `data` object, so it re-ran on every parent render; its cleanup cancelled the in-flight mint, and the `if (cancelled) return` guard then skipped applying the token. The constant re-runs also cleared the debounce timer, so minting eventually stopped firing on edits.
+
+  The effect now depends on a stable serialized key of the draft instead of the object, so it only re-runs on a real edit — cancellation now means "the draft changed again," and a successful mint is applied to the iframe as intended.
+
+- Updated dependencies [a1b867e]
+- Updated dependencies [16592a3]
+- Updated dependencies [ee0e566]
+- Updated dependencies [ee0e566]
+- Updated dependencies [b3cccd2]
+- Updated dependencies [4e5cfad]
+  - @dyrected/core@2.5.62
+  - @dyrected/knowledge@0.2.14
+  - @dyrected/sdk@2.5.62
+
 ## 2.5.61
 
 ### Patch Changes

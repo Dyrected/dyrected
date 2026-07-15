@@ -1,5 +1,37 @@
 # @dyrected/knowledge
 
+## 0.2.14
+
+### Patch Changes
+
+- 16592a3: Point package-distributed documentation references at the canonical `/docs` tree
+
+  The docs site no longer maintains a separate `/new-docs` content tree and route. The new authored docs set now lives directly under the canonical `/docs` path, and the knowledge generator, published references, and package JSDoc links were updated to match.
+
+  For `@dyrected/core`, this updates JSDoc `@see` links so generated API references and editor tooling point at the current docs URLs instead of the removed `/new-docs` paths.
+
+  For `@dyrected/knowledge`, this refreshes generated references, prompt artifacts, LLM indexes, and skill outputs so published knowledge bundles link to the canonical docs paths and no longer depend on removed legacy recipe/reference pages.
+
+- ee0e566: Add `definePublishingWorkflow` to map your own role names onto the publishing workflow
+
+  `publishingWorkflow()` hardcoded the role names `editor`, `publisher`, and `admin`, so a project whose roles are named differently (e.g. `writer`, `managing-editor`) got no capabilities and couldn't move documents through the flow.
+
+  `definePublishingWorkflow({ editors, publishers })` builds the same `draft → in review → published` workflow but maps _your_ role values onto its two capability tiers — `editors` may edit and submit, `publishers` may also publish and unpublish. `publishingWorkflow()` is now a shorthand for `definePublishingWorkflow()` with the conventional defaults, so existing usage is unchanged.
+
+  ```ts
+  workflow: definePublishingWorkflow({
+    editors: ["writer"],
+    publishers: ["managing-editor", "admin"],
+  });
+  ```
+
+- Updated dependencies [a1b867e]
+- Updated dependencies [16592a3]
+- Updated dependencies [ee0e566]
+- Updated dependencies [ee0e566]
+- Updated dependencies [b3cccd2]
+  - @dyrected/core@2.5.62
+
 ## 0.2.13
 
 ### Patch Changes
