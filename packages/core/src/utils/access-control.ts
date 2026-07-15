@@ -1,5 +1,13 @@
-import type { HookRequestContext, Field, DyrectedConfig, AuthenticatedUser } from "../types/index.js";
-import type { AccessFunctionArgs, AccessResult, AccessRule } from "../types/access.js";
+import type {
+  HookRequestContext,
+  Field,
+  DyrectedConfig,
+  AuthenticatedUser,
+} from "../types/index.js";
+import type {
+  AccessFunctionArgs,
+  AccessRule,
+} from "../types/access.js";
 import { resolveAccess } from "../auth/access.js";
 
 type RequestLike = {
@@ -8,13 +16,10 @@ type RequestLike = {
   raw?: Request;
 };
 
-type AccessArgs<TDoc extends object = Record<string, unknown>> = AccessFunctionArgs<TDoc> & {
-  id?: string;
-};
-
-function isConstraintResult(value: AccessResult | undefined): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
+type AccessArgs<TDoc extends object = Record<string, unknown>> =
+  AccessFunctionArgs<TDoc> & {
+    id?: string;
+  };
 
 export function toHookRequestContext(req: RequestLike): HookRequestContext {
   return {
@@ -24,7 +29,9 @@ export function toHookRequestContext(req: RequestLike): HookRequestContext {
   };
 }
 
-export async function resolveBooleanAccess<TDoc extends object = Record<string, unknown>>(
+export async function resolveBooleanAccess<
+  TDoc extends object = Record<string, unknown>,
+>(
   config: DyrectedConfig,
   access: AccessRule<TDoc> | undefined | null,
   args: AccessArgs<TDoc>,
@@ -51,7 +58,9 @@ export async function matchesAccessConstraint(
   return match.total > 0;
 }
 
-export async function resolveCollectionAccess<TDoc extends object = Record<string, unknown>>(
+export async function resolveCollectionAccess<
+  TDoc extends object = Record<string, unknown>,
+>(
   config: DyrectedConfig,
   collection: string,
   action: "read" | "create" | "update" | "delete",
@@ -89,7 +98,9 @@ type FieldAccessContext = {
 
 function resolveFieldAccessId(context: FieldAccessContext): string | undefined {
   const candidate = context.id ?? context.doc?.id ?? context.data?.id;
-  return typeof candidate === "string" && candidate.length > 0 ? candidate : undefined;
+  return typeof candidate === "string" && candidate.length > 0
+    ? candidate
+    : undefined;
 }
 
 export async function applyFieldReadAccess(
@@ -102,20 +113,30 @@ export async function applyFieldReadAccess(
 
   for (const field of context.fields) {
     if (field.type === "row" && field.fields) {
-      Object.assign(result, await applyFieldReadAccess({ ...context, fields: field.fields }, result));
+      Object.assign(
+        result,
+        await applyFieldReadAccess(
+          { ...context, fields: field.fields },
+          result,
+        ),
+      );
       continue;
     }
 
     if (!field.name) continue;
 
     const value = result[field.name];
-    const canRead = await resolveBooleanAccess(context.config, field.access?.read, {
-      user: context.user,
-      req: context.req,
-      doc: context.doc,
-      data: context.data,
-      id: resolveFieldAccessId(context),
-    });
+    const canRead = await resolveBooleanAccess(
+      context.config,
+      field.access?.read,
+      {
+        user: context.user,
+        req: context.req,
+        doc: context.doc,
+        data: context.data,
+        id: resolveFieldAccessId(context),
+      },
+    );
 
     if (!canRead) {
       delete result[field.name];
@@ -124,8 +145,16 @@ export async function applyFieldReadAccess(
 
     if (value === undefined || value === null) continue;
 
-    if (field.type === "object" && field.fields && typeof value === "object" && !Array.isArray(value)) {
-      result[field.name] = await applyFieldReadAccess({ ...context, fields: field.fields }, value as Record<string, unknown>);
+    if (
+      field.type === "object" &&
+      field.fields &&
+      typeof value === "object" &&
+      !Array.isArray(value)
+    ) {
+      result[field.name] = await applyFieldReadAccess(
+        { ...context, fields: field.fields },
+        value as Record<string, unknown>,
+      );
       continue;
     }
 
@@ -134,7 +163,10 @@ export async function applyFieldReadAccess(
       result[field.name] = await Promise.all(
         value.map((item) =>
           typeof item === "object" && item !== null
-            ? applyFieldReadAccess({ ...context, fields: childFields }, item as Record<string, unknown>)
+            ? applyFieldReadAccess(
+                { ...context, fields: childFields },
+                item as Record<string, unknown>,
+              )
             : item,
         ),
       );
@@ -146,9 +178,14 @@ export async function applyFieldReadAccess(
         value.map(async (item) => {
           if (typeof item !== "object" || item === null) return item;
           const typedItem = item as Record<string, unknown>;
-          const block = field.blocks?.find((candidate) => candidate.slug === typedItem.blockType);
+          const block = field.blocks?.find(
+            (candidate) => candidate.slug === typedItem.blockType,
+          );
           if (!block || !block.fields) return item;
-          return applyFieldReadAccess({ ...context, fields: block.fields }, typedItem);
+          return applyFieldReadAccess(
+            { ...context, fields: block.fields },
+            typedItem,
+          );
         }),
       );
     }
@@ -167,7 +204,13 @@ export async function applyFieldWriteAccess(
 
   for (const field of context.fields) {
     if (field.type === "row" && field.fields) {
-      Object.assign(result, await applyFieldWriteAccess({ ...context, fields: field.fields }, result));
+      Object.assign(
+        result,
+        await applyFieldWriteAccess(
+          { ...context, fields: field.fields },
+          result,
+        ),
+      );
       continue;
     }
 
@@ -175,9 +218,10 @@ export async function applyFieldWriteAccess(
 
     // On create, the field's `create` rule governs the write, falling back to
     // `update` when it is not set. On update (the default), `update` governs.
-    const writeRule = context.operation === "create"
-      ? (field.access?.create ?? field.access?.update)
-      : field.access?.update;
+    const writeRule =
+      context.operation === "create"
+        ? (field.access?.create ?? field.access?.update)
+        : field.access?.update;
 
     const canWrite = await resolveBooleanAccess(context.config, writeRule, {
       user: context.user,
@@ -195,8 +239,16 @@ export async function applyFieldWriteAccess(
     const value = result[field.name];
     if (value === undefined || value === null) continue;
 
-    if (field.type === "object" && field.fields && typeof value === "object" && !Array.isArray(value)) {
-      result[field.name] = await applyFieldWriteAccess({ ...context, fields: field.fields }, value as Record<string, unknown>);
+    if (
+      field.type === "object" &&
+      field.fields &&
+      typeof value === "object" &&
+      !Array.isArray(value)
+    ) {
+      result[field.name] = await applyFieldWriteAccess(
+        { ...context, fields: field.fields },
+        value as Record<string, unknown>,
+      );
       continue;
     }
 
@@ -205,7 +257,10 @@ export async function applyFieldWriteAccess(
       result[field.name] = await Promise.all(
         value.map((item) =>
           typeof item === "object" && item !== null
-            ? applyFieldWriteAccess({ ...context, fields: childFields }, item as Record<string, unknown>)
+            ? applyFieldWriteAccess(
+                { ...context, fields: childFields },
+                item as Record<string, unknown>,
+              )
             : item,
         ),
       );
@@ -217,9 +272,14 @@ export async function applyFieldWriteAccess(
         value.map(async (item) => {
           if (typeof item !== "object" || item === null) return item;
           const typedItem = item as Record<string, unknown>;
-          const block = field.blocks?.find((candidate) => candidate.slug === typedItem.blockType);
+          const block = field.blocks?.find(
+            (candidate) => candidate.slug === typedItem.blockType,
+          );
           if (!block || !block.fields) return item;
-          return applyFieldWriteAccess({ ...context, fields: block.fields }, typedItem);
+          return applyFieldWriteAccess(
+            { ...context, fields: block.fields },
+            typedItem,
+          );
         }),
       );
     }

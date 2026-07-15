@@ -12,11 +12,16 @@ import type {
 // Using `any` for the parameter type is intentional — TypeScript's function
 // parameter contravariance would otherwise prevent specific hook types
 // (CollectionBeforeChangeHook, etc.) from being assigned here.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyHookFn = (args: any) => any;
 
-type AnyFieldBeforeChangeHook = FieldBeforeChangeHook<unknown, Record<string, unknown>>;
-type AnyFieldAfterReadHook = FieldAfterReadHook<unknown, Record<string, unknown>>;
+type AnyFieldBeforeChangeHook = FieldBeforeChangeHook<
+  unknown,
+  Record<string, unknown>
+>;
+type AnyFieldAfterReadHook = FieldAfterReadHook<
+  unknown,
+  Record<string, unknown>
+>;
 
 /**
  * Run a list of hook functions sequentially.
@@ -42,7 +47,6 @@ export async function runCollectionHooks(
     [key: string]: unknown;
   },
   options: { isolated?: boolean } = {},
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> {
   if (!hooks || hooks.length === 0) {
     return args.data ?? args.doc ?? undefined;
@@ -63,7 +67,10 @@ export async function runCollectionHooks(
       }
     } catch (err) {
       if (options.isolated) {
-        console.error("[dyrected/core] Side-effect hook failed (error isolated — DB write was successful):", err);
+        console.error(
+          "[dyrected/core] Side-effect hook failed (error isolated — DB write was successful):",
+          err,
+        );
       } else {
         throw err;
       }
@@ -100,7 +107,10 @@ export async function executeFieldBeforeChange(
     if (field.hooks?.beforeChange) {
       for (const hook of field.hooks.beforeChange) {
         const typedHook = hook as unknown as AnyFieldBeforeChangeHook;
-        const hookArgs: FieldBeforeChangeHookArgs<unknown, Record<string, unknown>> = {
+        const hookArgs: FieldBeforeChangeHookArgs<
+          unknown,
+          Record<string, unknown>
+        > = {
           value: updatedValue,
           originalDoc: originalDoc ?? undefined,
           data: result,
@@ -134,7 +144,13 @@ export async function executeFieldBeforeChange(
             ? (origValue[i] as Record<string, unknown> | null)
             : null;
           arrayResult.push(
-            await executeFieldBeforeChange(field.fields, item, origItem, user, db),
+            await executeFieldBeforeChange(
+              field.fields,
+              item,
+              origItem,
+              user,
+              db,
+            ),
           );
         }
         result[field.name] = arrayResult;
@@ -199,7 +215,10 @@ export async function executeFieldAfterRead(
     if (field.hooks?.afterRead) {
       for (const hook of field.hooks.afterRead) {
         const typedHook = hook as unknown as AnyFieldAfterReadHook;
-        const hookArgs: FieldAfterReadHookArgs<unknown, Record<string, unknown>> = {
+        const hookArgs: FieldAfterReadHookArgs<
+          unknown,
+          Record<string, unknown>
+        > = {
           value: updatedValue,
           doc: result,
           user: user as AuthenticatedUser | undefined,

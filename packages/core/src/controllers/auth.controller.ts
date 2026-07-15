@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { DyrectedContext } from "../app.js";
 import type { CollectionConfig } from "../types/index.js";
+import { getLockedUntilMs, resolveAuthLockoutConfig } from "../auth/lockout.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signCollectionToken, verifyCollectionToken } from "../auth/token.js";
 import {
@@ -29,6 +30,75 @@ export class AuthController {
 
   constructor(collection: CollectionConfig) {
     this.collection = collection;
+  }
+
+  private sanitizeUser(user: Record<string, unknown>) {
+    const {
+      password: _password,
+      loginAttempts: _loginAttempts,
+      lockedUntil: _lockedUntil,
+      ...safeUser
+    } = user;
+    return safeUser;
+  }
+
+  private clearLockoutState(c: Context<DyrectedContext>, userId: string) {
+    const db = c.get("config").db;
+    if (!db) return Promise.resolve(null);
+
+    return db.update({
+      collection: this.collection.slug,
+      id: userId,
+      data: {
+        loginAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+  }
+
+  private async recordFailedLogin(
+    c: Context<DyrectedContext>,
+    user: Record<string, unknown>,
+  ) {
+    const db = c.get("config").db;
+    if (!db)
+      return { justLocked: false, retryAfterSeconds: null as number | null };
+
+    const lockout = resolveAuthLockoutConfig(this.collection);
+    if (!lockout.enabled) {
+      return { justLocked: false, retryAfterSeconds: null as number | null };
+    }
+
+    const now = Date.now();
+    const lockedUntilMs = getLockedUntilMs(user.lockedUntil);
+    const lockExpired = lockedUntilMs !== null && lockedUntilMs <= now;
+    const currentAttempts =
+      !lockExpired &&
+      typeof user.loginAttempts === "number" &&
+      user.loginAttempts > 0
+        ? user.loginAttempts
+        : 0;
+    const loginAttempts = currentAttempts + 1;
+    const justLocked = loginAttempts >= lockout.maxLoginAttempts;
+    const nextLockedUntil = justLocked
+      ? new Date(now + lockout.lockTime).toISOString()
+      : null;
+
+    await db.update({
+      collection: this.collection.slug,
+      id: String(user.id),
+      data: {
+        loginAttempts,
+        lockedUntil: nextLockedUntil,
+      },
+    });
+
+    return {
+      justLocked,
+      retryAfterSeconds: justLocked
+        ? Math.max(1, Math.ceil(lockout.lockTime / 1000))
+        : null,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -65,12 +135,18 @@ export class AuthController {
     });
 
     if (check.total > 0) {
-      return c.json({ error: true, message: "Initial user already exists." }, 403);
+      return c.json(
+        { error: true, message: "Initial user already exists." },
+        403,
+      );
     }
 
     const body = await c.req.json().catch(() => null);
     if (!body?.email || !body?.password) {
-      return c.json({ error: true, message: "email and password are required." }, 400);
+      return c.json(
+        { error: true, message: "email and password are required." },
+        400,
+      );
     }
 
     // 2. Create the user
@@ -97,7 +173,7 @@ export class AuthController {
       console.error("[dyrected/core] Failed to send welcome email:", err),
     );
 
-    const { password: _, ...safeUser } = user;
+    const safeUser = this.sanitizeUser(user);
     return c.json({ token, user: safeUser });
   }
 
@@ -110,7 +186,10 @@ export class AuthController {
 
     const body = await c.req.json().catch(() => null);
     if (!body?.email || !body?.password) {
-      return c.json({ error: true, message: "email and password are required." }, 400);
+      return c.json(
+        { error: true, message: "email and password are required." },
+        400,
+      );
     }
 
     const result = await db.find({
@@ -122,12 +201,57 @@ export class AuthController {
     const user = result.docs[0];
 
     if (!user) {
-      return c.json({ error: true, message: "Invalid email or password." }, 401);
+      return c.json(
+        { error: true, message: "Invalid email or password." },
+        401,
+      );
+    }
+
+    const lockedUntilMs = getLockedUntilMs(user.lockedUntil);
+    if (lockedUntilMs !== null && lockedUntilMs > Date.now()) {
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((lockedUntilMs - Date.now()) / 1000),
+      );
+      c.header("Retry-After", String(retryAfterSeconds));
+      return c.json(
+        {
+          error: true,
+          message: "Too many login attempts. Try again later.",
+          retryAfterSeconds,
+        },
+        429,
+      );
     }
 
     const valid = await verifyPassword(body.password, user.password as string);
     if (!valid) {
-      return c.json({ error: true, message: "Invalid email or password." }, 401);
+      const { justLocked, retryAfterSeconds } = await this.recordFailedLogin(
+        c,
+        user,
+      );
+      if (justLocked && retryAfterSeconds) {
+        c.header("Retry-After", String(retryAfterSeconds));
+        return c.json(
+          {
+            error: true,
+            message: "Too many login attempts. Try again later.",
+            retryAfterSeconds,
+          },
+          429,
+        );
+      }
+      return c.json(
+        { error: true, message: "Invalid email or password." },
+        401,
+      );
+    }
+
+    if (
+      (typeof user.loginAttempts === "number" && user.loginAttempts > 0) ||
+      user.lockedUntil != null
+    ) {
+      await this.clearLockoutState(c, String(user.id));
     }
 
     const token = await signCollectionToken({
@@ -137,7 +261,7 @@ export class AuthController {
     });
 
     // Strip password before returning
-    const { password: _, ...safeUser } = user;
+    const safeUser = this.sanitizeUser(user);
     return c.json({ token, user: safeUser });
   }
 
@@ -147,7 +271,10 @@ export class AuthController {
   // This endpoint exists so clients have a consistent API surface.
   // ---------------------------------------------------------------------------
   async logout(c: Context<DyrectedContext>) {
-    return c.json({ success: true, message: "Logged out. Discard your token." });
+    return c.json({
+      success: true,
+      message: "Logged out. Discard your token.",
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -162,12 +289,15 @@ export class AuthController {
       return c.json({ error: true, message: "Authentication required." }, 401);
     }
 
-    const user = await db.findOne({ collection: this.collection.slug, id: requestUser.sub });
+    const user = await db.findOne({
+      collection: this.collection.slug,
+      id: requestUser.sub,
+    });
     if (!user) {
       return c.json({ error: true, message: "User not found." }, 404);
     }
 
-    const { password: _, ...safeUser } = user;
+    const safeUser = this.sanitizeUser(user);
     return c.json(safeUser);
   }
 
@@ -215,25 +345,39 @@ export class AuthController {
     if (user) {
       // Issue a short-lived reset token (1-hour)
       const resetToken = await signCollectionToken(
-        { sub: user.id, email: user.email, collection: this.collection.slug, purpose: "reset" },
+        {
+          sub: user.id,
+          email: user.email,
+          collection: this.collection.slug,
+          purpose: "reset",
+        },
         "1h",
       );
 
       // Append token to resetUrl if provided
       const resetUrl = body?.resetUrl;
-      const url = resetUrl ? `${resetUrl}${resetUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(resetToken)}` : undefined;
+      const url = resetUrl
+        ? `${resetUrl}${resetUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(resetToken)}`
+        : undefined;
 
       try {
-        const { subject, html } = buildResetPasswordEmail(config, { token: resetToken, url });
+        const { subject, html } = buildResetPasswordEmail(config, {
+          token: resetToken,
+          url,
+        });
         await sendEmail(config, { to: user.email as string, subject, html });
       } catch (err) {
-        console.error("[dyrected/core] Failed to send password reset email:", err);
+        console.error(
+          "[dyrected/core] Failed to send password reset email:",
+          err,
+        );
       }
     }
 
     return c.json({
       success: true,
-      message: "If an account with that email exists, a reset link has been sent.",
+      message:
+        "If an account with that email exists, a reset link has been sent.",
     });
   }
 
@@ -249,7 +393,10 @@ export class AuthController {
 
     const body = await c.req.json().catch(() => null);
     if (!body?.token || !body?.password) {
-      return c.json({ error: true, message: "token and password are required." }, 400);
+      return c.json(
+        { error: true, message: "token and password are required." },
+        400,
+      );
     }
 
     // Verify the reset token
@@ -257,27 +404,48 @@ export class AuthController {
     try {
       payload = await verifyCollectionToken(body.token);
     } catch {
-      return c.json({ error: true, message: "Reset token is invalid or has expired." }, 400);
+      return c.json(
+        { error: true, message: "Reset token is invalid or has expired." },
+        400,
+      );
     }
 
-    if (payload.collection !== this.collection.slug || payload.purpose !== "reset") {
-      return c.json({ error: true, message: "Reset token is invalid or has expired." }, 400);
+    if (
+      payload.collection !== this.collection.slug ||
+      payload.purpose !== "reset"
+    ) {
+      return c.json(
+        { error: true, message: "Reset token is invalid or has expired." },
+        400,
+      );
     }
 
     const hashedPassword = await hashPassword(body.password);
     await db.update({
       collection: this.collection.slug,
       id: payload.sub,
-      data: { password: hashedPassword },
+      data: {
+        password: hashedPassword,
+        loginAttempts: 0,
+        lockedUntil: null,
+      },
     });
 
     // Notify the user their password was changed (security alert)
-    const { subject, html } = buildPasswordChangedEmail(config, { email: payload.email });
+    const { subject, html } = buildPasswordChangedEmail(config, {
+      email: payload.email,
+    });
     sendEmail(config, { to: payload.email, subject, html }).catch((err) =>
-      console.error("[dyrected/core] Failed to send password-changed email:", err),
+      console.error(
+        "[dyrected/core] Failed to send password-changed email:",
+        err,
+      ),
     );
 
-    return c.json({ success: true, message: "Password has been reset. You can now log in." });
+    return c.json({
+      success: true,
+      message: "Password has been reset. You can now log in.",
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -306,12 +474,20 @@ export class AuthController {
       limit: 1,
     });
     if (existing.total > 0) {
-      return c.json({ error: true, message: "An account with that email already exists." }, 409);
+      return c.json(
+        { error: true, message: "An account with that email already exists." },
+        409,
+      );
     }
 
     // sub = invitee email (no user doc yet); purpose = 'invite'
     const inviteToken = await signCollectionToken(
-      { sub: body.email, email: body.email, collection: this.collection.slug, purpose: "invite" },
+      {
+        sub: body.email,
+        email: body.email,
+        collection: this.collection.slug,
+        purpose: "invite",
+      },
       "7d",
     );
 
@@ -340,18 +516,30 @@ export class AuthController {
 
     const body = await c.req.json().catch(() => null);
     if (!body?.token || !body?.password) {
-      return c.json({ error: true, message: "token and password are required." }, 400);
+      return c.json(
+        { error: true, message: "token and password are required." },
+        400,
+      );
     }
 
     let payload: any;
     try {
       payload = await verifyCollectionToken(body.token);
     } catch {
-      return c.json({ error: true, message: "Invite token is invalid or has expired." }, 400);
+      return c.json(
+        { error: true, message: "Invite token is invalid or has expired." },
+        400,
+      );
     }
 
-    if (payload.collection !== this.collection.slug || payload.purpose !== "invite") {
-      return c.json({ error: true, message: "Invite token is invalid or has expired." }, 400);
+    if (
+      payload.collection !== this.collection.slug ||
+      payload.purpose !== "invite"
+    ) {
+      return c.json(
+        { error: true, message: "Invite token is invalid or has expired." },
+        400,
+      );
     }
 
     const inviteeEmail = payload.sub;
@@ -363,7 +551,10 @@ export class AuthController {
       limit: 1,
     });
     if (existing.total > 0) {
-      return c.json({ error: true, message: "An account with that email already exists." }, 409);
+      return c.json(
+        { error: true, message: "An account with that email already exists." },
+        409,
+      );
     }
 
     const { token: _t, password: _p, ...extraFields } = body;
@@ -381,12 +572,14 @@ export class AuthController {
     });
 
     // Send welcome email (best-effort)
-    const { subject, html } = buildWelcomeEmail(config, { email: inviteeEmail });
+    const { subject, html } = buildWelcomeEmail(config, {
+      email: inviteeEmail,
+    });
     sendEmail(config, { to: inviteeEmail, subject, html }).catch((err) =>
       console.error("[dyrected/core] Failed to send welcome email:", err),
     );
 
-    const { password: _, ...safeUser } = user;
+    const safeUser = this.sanitizeUser(user);
     return c.json({ token: sessionToken, user: safeUser }, 201);
   }
 }

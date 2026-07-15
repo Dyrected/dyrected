@@ -424,7 +424,7 @@ export class AdminAuthController {
 
     const tokenBody = await tokenResponse.json();
     const idToken = tokenBody.id_token as string | undefined;
-    let claims: Record<string, unknown> = {};
+    let claims: Record<string, unknown>;
 
     if (idToken) {
       const jwks = createRemoteJWKSet(new URL(discovery.jwks_uri));

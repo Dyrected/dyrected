@@ -232,7 +232,6 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
           };
         }
         return field;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }) as any as Field[];
     }
 

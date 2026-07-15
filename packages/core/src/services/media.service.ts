@@ -10,28 +10,28 @@ export class MediaService {
   static async fetchMetadata(url: string) {
     if (!url) return null;
 
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
       const videoId = this.extractYoutubeId(url);
       if (videoId) {
         return {
-          provider: 'youtube',
+          provider: "youtube",
           provider_id: videoId,
           thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
           embedUrl: `https://www.youtube.com/embed/${videoId}`,
-          type: 'video' as const,
+          type: "video" as const,
         };
       }
     }
 
-    if (url.includes('vimeo.com')) {
+    if (url.includes("vimeo.com")) {
       const vimeoId = this.extractVimeoId(url);
       if (vimeoId) {
         return {
-          provider: 'vimeo',
+          provider: "vimeo",
           provider_id: vimeoId,
-          thumbnail: '', // Requires oEmbed API for reliable thumbnails
+          thumbnail: "", // Requires oEmbed API for reliable thumbnails
           embedUrl: `https://player.vimeo.com/video/${vimeoId}`,
-          type: 'video' as const,
+          type: "video" as const,
         };
       }
     }
@@ -40,13 +40,16 @@ export class MediaService {
   }
 
   private static extractYoutubeId(url: string) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    return match && match[2].length === 11 ? match[2] : null;
   }
 
   private static extractVimeoId(url: string) {
-    const match = url.match(/vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?)/);
+    const match = url.match(
+      /vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?)/,
+    );
     return match ? match[1] : null;
   }
 }

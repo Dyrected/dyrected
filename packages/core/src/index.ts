@@ -1,5 +1,6 @@
 import type {
   AuthenticatedUser,
+  AuthConfig,
   Block,
   CollectionConfig,
   DyrectedConfig,
@@ -45,25 +46,54 @@ import type {
 // Overload 1: auth collection — infer fields + add system + auth fields
 export function defineCollection<const TFields extends Field[]>(
   config: Omit<
-    CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>,
+    CollectionConfig<
+      Prettify<
+        { id: string } & InferDocShape<TFields> &
+          SystemDocFields &
+          AuthDocFields
+      >
+    >,
     "fields" | "auth"
-  > & { fields: TFields; auth: true },
-): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields>>;
+  > & { fields: TFields; auth: true | AuthConfig },
+): CollectionConfig<
+  Prettify<
+    { id: string } & InferDocShape<TFields> & SystemDocFields & AuthDocFields
+  >
+>;
 // Overload 2: upload/media collection — infer fields + add system + upload fields
 export function defineCollection<const TFields extends Field[]>(
   config: Omit<
-    CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>,
+    CollectionConfig<
+      Prettify<
+        { id: string } & InferDocShape<TFields> &
+          SystemDocFields &
+          UploadDocFields
+      >
+    >,
     "fields" | "upload"
   > & { fields: TFields; upload: true },
-): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields>>;
+): CollectionConfig<
+  Prettify<
+    { id: string } & InferDocShape<TFields> & SystemDocFields & UploadDocFields
+  >
+>;
 // Overload 3: base collection — infer fields + add system fields
 export function defineCollection<const TFields extends Field[]>(
-  config: Omit<CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>, "fields"> & {
+  config: Omit<
+    CollectionConfig<
+      Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>
+    >,
+    "fields"
+  > & {
     fields: TFields;
   },
-): CollectionConfig<Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>>;
+): CollectionConfig<
+  Prettify<{ id: string } & InferDocShape<TFields> & SystemDocFields>
+>;
 // Overload 4: explicit TDoc
-export function defineCollection<TDoc extends object>(config: CollectionConfig<TDoc>): CollectionConfig<TDoc>;
+export function defineCollection<TDoc extends object>(
+  config: CollectionConfig<TDoc>,
+): CollectionConfig<TDoc>;
 // Implementation
 export function defineCollection(config: unknown): unknown {
   return config;
@@ -101,7 +131,9 @@ export function defineGlobal<const TFields extends Field[]>(
   },
 ): GlobalConfig<Prettify<InferDocShape<TFields>>>;
 // Overload 2: explicit TDoc
-export function defineGlobal<TDoc extends object>(config: GlobalConfig<TDoc>): GlobalConfig<TDoc>;
+export function defineGlobal<TDoc extends object>(
+  config: GlobalConfig<TDoc>,
+): GlobalConfig<TDoc>;
 // Implementation
 export function defineGlobal(config: unknown): unknown {
   return config;
@@ -114,9 +146,9 @@ export function defineGlobal(config: unknown): unknown {
  * the database adapter, collections, globals, storage, email, and all other
  * server-level configuration.
  */
-export function defineConfig<TUser extends AuthenticatedUser = AuthenticatedUser>(
-  config: DyrectedConfig<TUser>,
-): DyrectedConfig<TUser> {
+export function defineConfig<
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+>(config: DyrectedConfig<TUser>): DyrectedConfig<TUser> {
   return config;
 }
 
@@ -170,8 +202,9 @@ type FieldOfType<TType extends FieldType> = Extract<Field, { type: TType }>;
  * shapes. Used to generate the `define<Type>Field` helpers below.
  */
 function createFieldDefiner<TType extends FieldType>(type: TType) {
-  return <const T extends Omit<FieldOfType<TType>, "type">>(field: T): T & { type: TType } =>
-    ({ ...field, type }) as T & { type: TType };
+  return <const T extends Omit<FieldOfType<TType>, "type">>(
+    field: T,
+  ): T & { type: TType } => ({ ...field, type }) as T & { type: TType };
 }
 
 /** Define a `text` field. */

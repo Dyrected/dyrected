@@ -21,14 +21,22 @@ describe("define<Type>Field helpers", () => {
       required: true,
       type: "text",
     });
-    expect(defineNumberField({ name: "price" })).toEqual({ name: "price", type: "number" });
+    expect(defineNumberField({ name: "price" })).toEqual({
+      name: "price",
+      type: "number",
+    });
     expect(defineNumberField({ name: "rating", min: 1, max: 5 })).toEqual({
       name: "rating",
       type: "number",
       min: 1,
       max: 5,
     });
-    expect(defineRichTextField({ name: "body", features: ["bold", "italic", "link"] })).toEqual({
+    expect(
+      defineRichTextField({
+        name: "body",
+        features: ["bold", "italic", "link"],
+      }),
+    ).toEqual({
       name: "body",
       type: "richText",
       features: ["bold", "italic", "link"],
@@ -43,12 +51,19 @@ describe("define<Type>Field helpers", () => {
         label: "SEO",
         fields: [
           defineTextField({ name: "metaTitle" }),
-          defineTextField({ name: "metaDescription", admin: { placeholder: "Summary" } }),
+          defineTextField({
+            name: "metaDescription",
+            admin: { placeholder: "Summary" },
+          }),
         ],
       }),
     ).toEqual([
       { name: "metaTitle", type: "text", admin: { tab: "SEO" } },
-      { name: "metaDescription", type: "text", admin: { placeholder: "Summary", tab: "SEO" } },
+      {
+        name: "metaDescription",
+        type: "text",
+        admin: { placeholder: "Summary", tab: "SEO" },
+      },
     ]);
   });
 
@@ -70,12 +85,21 @@ describe("define<Type>Field helpers", () => {
         defineRichTextField({ name: "body" }),
         defineBlocksField({
           name: "layout",
-          blocks: [defineBlock({ slug: "hero", fields: [defineTextField({ name: "heading" })] })],
+          blocks: [
+            defineBlock({
+              slug: "hero",
+              fields: [defineTextField({ name: "heading" })],
+            }),
+          ],
         }),
       ],
     });
     expect(Posts.slug).toBe("posts");
-    expect(Posts.fields.map((f) => f.type)).toEqual(["text", "richText", "blocks"]);
+    expect(Posts.fields.map((f) => f.type)).toEqual([
+      "text",
+      "richText",
+      "blocks",
+    ]);
   });
 });
 
@@ -89,13 +113,16 @@ const inferredFields = [
   defineTextField({ name: "title", required: true }),
   defineNumberField({ name: "views" }),
   defineBooleanField({ name: "featured" }),
-  defineRelationshipField({ name: "authors", relationTo: "users", hasMany: true }),
+  defineRelationshipField({
+    name: "authors",
+    relationTo: "users",
+    hasMany: true,
+  }),
   defineRichTextField({ name: "body", required: true }),
 ] as const;
 
 type InferredDoc = InferDocShape<typeof inferredFields>;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _shapeOk: InferredDoc = {
   title: "hello", // required text -> string
   views: 3, // optional number
@@ -105,13 +132,17 @@ const _shapeOk: InferredDoc = {
 };
 
 // @ts-expect-error `title` is required and cannot be omitted
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _requiredEnforced: InferredDoc = {
   views: 1,
   body: "<p>hi</p>",
 };
 
 // `defineField` must preserve literals well enough for inference too.
-const genericField = defineField({ name: "slug", type: "text", required: true });
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _genericOk: InferDocShape<readonly [typeof genericField]> = { slug: "posts-are-great" };
+const genericField = defineField({
+  name: "slug",
+  type: "text",
+  required: true,
+});
+const _genericOk: InferDocShape<readonly [typeof genericField]> = {
+  slug: "posts-are-great",
+};

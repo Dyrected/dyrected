@@ -10,6 +10,53 @@ import type { AuthenticatedUser } from "./request.js";
 import type { LifecycleEventHandler } from "./workflows.js";
 import type { Block } from "./schema-core.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
+import type { DestinationStream, Logger, LoggerOptions } from "pino";
+
+export type DyrectedLoggerConfig =
+  | {
+      options: LoggerOptions;
+      destination?: DestinationStream;
+    }
+  | Logger;
+
+export interface DyrectedObservabilityConfig {
+  requestLogging?: {
+    enabled?: boolean;
+    logBodies?: boolean;
+    maxBodyBytes?: number;
+    redactPaths?: string[];
+    includeHeaders?: string[];
+    redactHeaders?: string[];
+  };
+  sampling?: {
+    successRate?: number;
+    traceSuccessRate?: number;
+    bodySuccessRate?: number;
+    alwaysKeep4xx?: boolean;
+    alwaysKeep5xx?: boolean;
+  };
+  tracing?: {
+    enabled?: boolean;
+    serviceName?: string;
+    exporter?: "otlp" | "console" | "none";
+    headers?: Record<string, string>;
+    endpoint?: string;
+  };
+  metrics?: {
+    enabled?: boolean;
+    exporter?: "otlp" | "prometheus" | "none";
+    endpoint?: string;
+    path?: string;
+  };
+  transports?: {
+    targets?: Array<
+      | { type: "stdout" }
+      | { type: "stderr" }
+      | { type: "file"; path: string }
+      | { type: "otlp"; endpoint: string; headers?: Record<string, string> }
+    >;
+  };
+}
 
 /**
  * The root configuration object passed to `createDyrectedApp`.
@@ -37,11 +84,9 @@ export interface DyrectedConfig<
   blocks?: Block[];
 
   /** Collection definitions. Each collection maps to a database table/collection. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   collections: CollectionConfig<any>[];
 
   /** Global (singleton) definitions. Each global maps to a single document. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globals: GlobalConfig<any>[];
 
   /**
@@ -63,6 +108,18 @@ export interface DyrectedConfig<
    * @see ImageService
    */
   image?: ImageService;
+
+  /**
+   * Runtime logger configuration. Accepts either logger options/destination or
+   * a fully-instantiated Pino logger.
+   */
+  logger?: DyrectedLoggerConfig;
+
+  /**
+   * Request logging, redaction, sampling, tracing, metrics, and transport
+   * configuration for the Dyrected server runtime.
+   */
+  observability?: DyrectedObservabilityConfig;
 
   /** Admin UI branding and metadata. */
   admin?: AdminConfig;
@@ -168,10 +225,7 @@ export interface DyrectedConfig<
    * given site ID at request time. Used in multi-tenant deployments where each
    * site has its own schema stored in the database.
    */
-  onSchemaFetch?: (
-    siteId: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) => Promise<{
+  onSchemaFetch?: (siteId: string) => Promise<{
     blocks?: Block[];
     collections?: CollectionConfig<any>[];
     globals?: GlobalConfig<any>[];

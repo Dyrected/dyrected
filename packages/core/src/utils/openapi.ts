@@ -1,7 +1,14 @@
-import type { DyrectedConfig, Field, CollectionConfig, GlobalConfig } from "../types/index.js";
+import type {
+  DyrectedConfig,
+  Field,
+  CollectionConfig,
+  GlobalConfig,
+} from "../types/index.js";
 
 function getCollectionLabels(collection: CollectionConfig) {
-  return collection.labels || { singular: collection.slug, plural: collection.slug };
+  return (
+    collection.labels || { singular: collection.slug, plural: collection.slug }
+  );
 }
 
 function getCollectionTag(collection: CollectionConfig) {
@@ -21,7 +28,8 @@ export function generateOpenApi(config: DyrectedConfig) {
     info: {
       title: "Dyrected API",
       version: "1.0.0",
-      description: "Automatically generated OpenAPI specification for the Dyrected project.",
+      description:
+        "Automatically generated OpenAPI specification for the Dyrected project.",
     },
     components: {
       schemas: {
@@ -46,7 +54,15 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
         WorkflowHistoryEntry: {
           type: "object",
-          required: ["collection", "documentId", "transition", "from", "to", "revision", "createdAt"],
+          required: [
+            "collection",
+            "documentId",
+            "transition",
+            "from",
+            "to",
+            "revision",
+            "createdAt",
+          ],
           properties: {
             id: { type: "string" },
             collection: { type: "string" },
@@ -71,7 +87,11 @@ export function generateOpenApi(config: DyrectedConfig) {
             user: { type: "string", nullable: true },
             timestamp: { type: "string", format: "date-time" },
             changes: {
-              oneOf: [{ type: "string" }, { type: "object", additionalProperties: true }, { type: "null" }],
+              oneOf: [
+                { type: "string" },
+                { type: "object", additionalProperties: true },
+                { type: "null" },
+              ],
             },
           },
         },
@@ -164,13 +184,17 @@ export function generateOpenApi(config: DyrectedConfig) {
     get: {
       tags: ["Preferences"],
       summary: "Get an authenticated user preference",
-      parameters: [{ name: "key", in: "path", required: true, schema: { type: "string" } }],
+      parameters: [
+        { name: "key", in: "path", required: true, schema: { type: "string" } },
+      ],
       responses: { 200: { description: "Preference value" } },
     },
     put: {
       tags: ["Preferences"],
       summary: "Set an authenticated user preference",
-      parameters: [{ name: "key", in: "path", required: true, schema: { type: "string" } }],
+      parameters: [
+        { name: "key", in: "path", required: true, schema: { type: "string" } },
+      ],
       requestBody: {
         required: true,
         content: { "application/json": { schema: { type: "object" } } },
@@ -206,10 +230,23 @@ export function generateOpenApi(config: DyrectedConfig) {
       tags: ["Audit"],
       summary: "Get audit entries across all readable audited collections",
       parameters: [
-        { name: "limit", in: "query", schema: { type: "integer", default: 50, maximum: 100 } },
+        {
+          name: "limit",
+          in: "query",
+          schema: { type: "integer", default: 50, maximum: 100 },
+        },
         { name: "page", in: "query", schema: { type: "integer", default: 1 } },
-        { name: "where", in: "query", schema: { type: "string" }, description: "JSON filter" },
-        { name: "sort", in: "query", schema: { type: "string", default: "-timestamp" } },
+        {
+          name: "where",
+          in: "query",
+          schema: { type: "string" },
+          description: "JSON filter",
+        },
+        {
+          name: "sort",
+          in: "query",
+          schema: { type: "string", default: "-timestamp" },
+        },
       ],
       responses: {
         200: {
@@ -423,10 +460,27 @@ export function generateOpenApi(config: DyrectedConfig) {
           tags: [collectionTag],
           summary: `Get ${labels.singular} audit entries`,
           parameters: [
-            { name: "limit", in: "query", schema: { type: "integer", default: 50, maximum: 100 } },
-            { name: "page", in: "query", schema: { type: "integer", default: 1 } },
-            { name: "where", in: "query", schema: { type: "string" }, description: "JSON filter" },
-            { name: "sort", in: "query", schema: { type: "string", default: "-timestamp" } },
+            {
+              name: "limit",
+              in: "query",
+              schema: { type: "integer", default: 50, maximum: 100 },
+            },
+            {
+              name: "page",
+              in: "query",
+              schema: { type: "integer", default: 1 },
+            },
+            {
+              name: "where",
+              in: "query",
+              schema: { type: "string" },
+              description: "JSON filter",
+            },
+            {
+              name: "sort",
+              in: "query",
+              schema: { type: "string", default: "-timestamp" },
+            },
           ],
           responses: {
             200: {
@@ -794,7 +848,9 @@ function collectionToSchema(collection: CollectionConfig) {
       id: { type: "string" },
       createdAt: { type: "string", format: "date-time" },
       updatedAt: { type: "string", format: "date-time" },
-      ...(collection.workflow ? { _workflow: { $ref: "#/components/schemas/WorkflowMetadata" } } : {}),
+      ...(collection.workflow
+        ? { _workflow: { $ref: "#/components/schemas/WorkflowMetadata" } }
+        : {}),
       ...properties,
     },
     required: ["id", ...required],
@@ -832,7 +888,7 @@ function fieldsToProperties(fields: Field[]) {
 }
 
 function fieldToSchema(field: Field): any {
-  let schema: any = {};
+  let schema: any;
 
   switch (field.type) {
     case "text":
@@ -842,7 +898,10 @@ function fieldToSchema(field: Field): any {
       break;
     case "url":
       schema = {
-        oneOf: [{ type: "string" }, { type: "object", additionalProperties: true }],
+        oneOf: [
+          { type: "string" },
+          { type: "object", additionalProperties: true },
+        ],
       };
       break;
     case "icon":
@@ -889,7 +948,9 @@ function fieldToSchema(field: Field): any {
         type: "string",
         description: `ID of a ${field.relationTo} record`,
       };
-      schema = field.hasMany ? { type: "array", items: valueSchema } : valueSchema;
+      schema = field.hasMany
+        ? { type: "array", items: valueSchema }
+        : valueSchema;
       break;
     }
     case "join":

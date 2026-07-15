@@ -5,6 +5,8 @@ description: Protect a production Dyrected app by adding rate limits, keeping se
 
 Dyrected gives you the content layer. It does **not** try to be your whole edge-security stack. In production, you should assume public routes, auth flows, preview routes, and upload paths all need deliberate protection from the host app or platform around them.
 
+Dyrected now helps with one piece directly: auth collections include built-in account lockout for repeated failed logins. That is useful, but it is only one layer. You still need host-level request controls around it.
+
 The recommended path is:
 
 1. rate-limit at the framework, proxy, or platform edge
@@ -15,6 +17,8 @@ The recommended path is:
 ## Start with rate limits
 
 Dyrected does not ship built-in request throttling for you. If a route is public, assume you need to protect it outside Dyrected.
+
+That is still true even though auth collections now have built-in login lockout. Account lockout protects one user record after repeated bad passwords; rate limiting protects the route itself, your infrastructure, and every anonymous request that never maps cleanly to a real account.
 
 That matters most for:
 
@@ -92,7 +96,7 @@ If you need strict origin control, IP allowlists, WAF rules, bot management, or 
 
 Before you ship, verify the basics:
 
-- repeated login attempts get throttled by the host layer
+- repeated login attempts hit Dyrected's account lockout and also get throttled by the host layer
 - upload endpoints are protected the way you expect
 - preview URLs cannot be reused long after issuance
 - public collection reads have sane limits

@@ -16,6 +16,30 @@ import type { Field, UploadConfig } from "./schema-core.js";
 import type { WorkflowConfig } from "./workflows.js";
 
 /**
+ * Configures account lockout behavior for an auth-enabled collection.
+ *
+ * This protects collection login endpoints from repeated password guessing by
+ * temporarily locking an account after too many failed attempts.
+ */
+export interface AuthConfig {
+  /**
+   * How many failed login attempts are allowed before the account is locked.
+   *
+   * Defaults to `5`. Set to `0` to disable Dyrected's built-in account lockout
+   * for this collection.
+   */
+  maxLoginAttempts?: number;
+
+  /**
+   * How long, in milliseconds, an account stays locked after reaching the
+   * failed-attempt limit.
+   *
+   * Defaults to `10 * 60 * 1000` (10 minutes).
+   */
+  lockTime?: number;
+}
+
+/**
  * Use this contract when you want the exact shape of a collection config.
  *
  * Most collection work comes down to a small set of top-level options: giving
@@ -57,7 +81,9 @@ import type { WorkflowConfig } from "./workflows.js";
  * @template TDoc The TypeScript shape of a document in this collection.
  * Defaults to `Record<string, unknown>` for untyped usage.
  */
-export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
+export interface CollectionConfig<
+  TDoc extends object = Record<string, unknown>,
+> {
   /**
    * Unique identifier for this collection.
    *
@@ -103,7 +129,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * If `true`, this collection is an auth collection. It gains
+   * If `true` or an auth config object, this collection is an auth collection. It gains
    * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`
    * endpoints, and documents are expected to have a `password` field.
    *
@@ -111,9 +137,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * in, hold credentials, and participate in user flows. Typical examples are
    * `users`, `admins`, `members`, or `customers`.
    *
+   * Pass an object when you want to tune built-in account lockout behavior for
+   * repeated failed logins.
+   *
    * @see {@link https://dyrected.com/docs/features/authentication/overview Authentication overview}
    */
-  auth?: boolean;
+  auth?: boolean | AuthConfig;
 
   /**
    * If `true` or a config object, this collection supports file uploads.
@@ -187,7 +216,6 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * live content, and any authorized editor can publish or unpublish entries.
    */
   drafts?: boolean;
-
 
   /**
    * Collection-level access control.
@@ -331,7 +359,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?:
+      string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.

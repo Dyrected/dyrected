@@ -1,6 +1,11 @@
-import type { CollectionConfig, DatabaseAdapter, Field, PaginatedResult } from '../types/index.js';
-import { DefaultsService } from './defaults.service.js';
-import jexl from 'jexl';
+import type {
+  CollectionConfig,
+  DatabaseAdapter,
+  Field,
+  PaginatedResult,
+} from "../types/index.js";
+import { DefaultsService } from "./defaults.service.js";
+import jexl from "jexl";
 
 export class PopulationService {
   private db: DatabaseAdapter;
@@ -27,15 +32,24 @@ export class PopulationService {
     }
 
     if (Array.isArray(data)) {
-      return Promise.all(data.map(item => this.populate({ ...args, data: item })));
+      return Promise.all(
+        data.map((item) => this.populate({ ...args, data: item })),
+      );
     }
 
     const populatedDoc = { ...data };
 
     for (const field of fields) {
       // Handle Join Fields - only populate at top level (depth 0) to prevent infinite recursion
-      if ((field.type as string) === 'join' && field.collection && field.on && currentDepth === 0) {
-        const targetCollection = this.collections.find(c => c.slug === field.collection);
+      if (
+        (field.type as string) === "join" &&
+        field.collection &&
+        field.on &&
+        currentDepth === 0
+      ) {
+        const targetCollection = this.collections.find(
+          (c) => c.slug === field.collection,
+        );
         if (targetCollection) {
           const docId = populatedDoc.id;
           if (docId) {
@@ -46,10 +60,12 @@ export class PopulationService {
               where,
               limit: joinLimit,
             });
-            
+
             // Apply defaults and populate the joined documents (depth 1, so joins inside are skipped)
             const populatedDocs = await this.populate({
-              data: result.docs.map(doc => DefaultsService.apply(targetCollection.fields, doc)),
+              data: result.docs.map((doc) =>
+                DefaultsService.apply(targetCollection.fields, doc),
+              ),
               fields: targetCollection.fields,
               currentDepth: 1,
               maxDepth,
@@ -65,8 +81,13 @@ export class PopulationService {
         continue;
       }
 
-      if ((field.type as string) === 'row' && field.fields) {
-        const rowPopulated = await this.populate({ data, fields: field.fields, currentDepth, maxDepth });
+      if ((field.type as string) === "row" && field.fields) {
+        const rowPopulated = await this.populate({
+          data,
+          fields: field.fields,
+          currentDepth,
+          maxDepth,
+        });
         Object.assign(populatedDoc, rowPopulated);
         continue;
       }
@@ -74,8 +95,10 @@ export class PopulationService {
       const value = populatedDoc[field.name];
 
       // Handle Relationship Fields
-      if (field.type === 'relationship' && field.relationTo && value) {
-        const relatedCollection = this.collections.find(c => c.slug === field.relationTo);
+      if (field.type === "relationship" && field.relationTo && value) {
+        const relatedCollection = this.collections.find(
+          (c) => c.slug === field.relationTo,
+        );
         if (!relatedCollection) continue;
 
         if (Array.isArray(value)) {
@@ -83,32 +106,44 @@ export class PopulationService {
           populatedDoc[field.name] = await Promise.all(
             value.map(async (id: any) => {
               if (!id) return id;
-              
-              let doc = id;
-              if (typeof id === 'string') {
-                doc = await this.db.findOne({ collection: field.relationTo!, id });
-              }
-              
-              if (!doc || typeof doc !== 'object') return id;
 
-              const docWithDefaults = DefaultsService.apply(relatedCollection.fields, doc);
+              let doc = id;
+              if (typeof id === "string") {
+                doc = await this.db.findOne({
+                  collection: field.relationTo!,
+                  id,
+                });
+              }
+
+              if (!doc || typeof doc !== "object") return id;
+
+              const docWithDefaults = DefaultsService.apply(
+                relatedCollection.fields,
+                doc,
+              );
               return this.populate({
                 data: docWithDefaults,
                 fields: relatedCollection.fields,
                 currentDepth: currentDepth + 1,
                 maxDepth,
               });
-            })
+            }),
           );
         } else if (value) {
           // Single relationship
           let doc = value;
-          if (typeof value === 'string') {
-            doc = await this.db.findOne({ collection: field.relationTo, id: value });
+          if (typeof value === "string") {
+            doc = await this.db.findOne({
+              collection: field.relationTo,
+              id: value,
+            });
           }
 
-          if (doc && typeof doc === 'object') {
-            const docWithDefaults = DefaultsService.apply(relatedCollection.fields, doc);
+          if (doc && typeof doc === "object") {
+            const docWithDefaults = DefaultsService.apply(
+              relatedCollection.fields,
+              doc,
+            );
             populatedDoc[field.name] = await this.populate({
               data: docWithDefaults,
               fields: relatedCollection.fields,
@@ -120,12 +155,27 @@ export class PopulationService {
       }
 
       // Handle URL Fields with internal relationships
-      if (field.type === 'url' && value && typeof value === 'object' && value.type === 'internal' && value.relationTo && value.value) {
-        const relatedCollection = this.collections.find(c => c.slug === value.relationTo);
+      if (
+        field.type === "url" &&
+        value &&
+        typeof value === "object" &&
+        value.type === "internal" &&
+        value.relationTo &&
+        value.value
+      ) {
+        const relatedCollection = this.collections.find(
+          (c) => c.slug === value.relationTo,
+        );
         if (relatedCollection) {
-          const doc = await this.db.findOne({ collection: value.relationTo, id: value.value });
-          if (doc && typeof doc === 'object') {
-            const docWithDefaults = DefaultsService.apply(relatedCollection.fields, doc);
+          const doc = await this.db.findOne({
+            collection: value.relationTo,
+            id: value.value,
+          });
+          if (doc && typeof doc === "object") {
+            const docWithDefaults = DefaultsService.apply(
+              relatedCollection.fields,
+              doc,
+            );
             const populatedDocValue = await this.populate({
               data: docWithDefaults,
               fields: relatedCollection.fields,
@@ -135,23 +185,44 @@ export class PopulationService {
             const identifier = docWithDefaults.slug || docWithDefaults.id;
             let resolvedUrl = `/collections/${value.relationTo}/${identifier}`;
 
-            const previewUrlPattern = relatedCollection.admin?.previewUrl || relatedCollection.admin?.urlPattern;
+            const previewUrlPattern =
+              relatedCollection.admin?.previewUrl ||
+              relatedCollection.admin?.urlPattern;
             if (previewUrlPattern) {
-              if (typeof previewUrlPattern === 'function') {
+              if (typeof previewUrlPattern === "function") {
                 try {
-                  resolvedUrl = previewUrlPattern(docWithDefaults, { locale: 'en' }) || resolvedUrl;
+                  resolvedUrl =
+                    previewUrlPattern(docWithDefaults, { locale: "en" }) ||
+                    resolvedUrl;
                 } catch {}
-              } else if (typeof previewUrlPattern === 'string') {
-                if (previewUrlPattern.includes('{{')) {
-                  resolvedUrl = previewUrlPattern.replace(/{{(.*?)}}/g, (_, key) => String(docWithDefaults[key.trim()] || ''));
-                } else if (previewUrlPattern.includes('+') || previewUrlPattern.includes('?') || previewUrlPattern.includes('==') || previewUrlPattern.includes('siteUrl')) {
+              } else if (typeof previewUrlPattern === "string") {
+                if (previewUrlPattern.includes("{{")) {
+                  resolvedUrl = previewUrlPattern.replace(
+                    /{{(.*?)}}/g,
+                    (_, key) => String(docWithDefaults[key.trim()] || ""),
+                  );
+                } else if (
+                  previewUrlPattern.includes("+") ||
+                  previewUrlPattern.includes("?") ||
+                  previewUrlPattern.includes("==") ||
+                  previewUrlPattern.includes("siteUrl")
+                ) {
                   try {
-                    resolvedUrl = jexl.evalSync(previewUrlPattern, docWithDefaults);
-                  } catch (err) {
-                    resolvedUrl = previewUrlPattern.replace(/:([a-zA-Z0-9_]+)/g, (_, key) => String(docWithDefaults[key] || ''));
+                    resolvedUrl = jexl.evalSync(
+                      previewUrlPattern,
+                      docWithDefaults,
+                    );
+                  } catch (_err) {
+                    resolvedUrl = previewUrlPattern.replace(
+                      /:([a-zA-Z0-9_]+)/g,
+                      (_, key) => String(docWithDefaults[key] || ""),
+                    );
                   }
                 } else {
-                  resolvedUrl = previewUrlPattern.replace(/:([a-zA-Z0-9_]+)/g, (_, key) => String(docWithDefaults[key] || ''));
+                  resolvedUrl = previewUrlPattern.replace(
+                    /:([a-zA-Z0-9_]+)/g,
+                    (_, key) => String(docWithDefaults[key] || ""),
+                  );
                 }
               }
             }
@@ -166,7 +237,11 @@ export class PopulationService {
       }
 
       // Handle Nested Fields (Arrays/Objects)
-      if ((field.type === 'array' || field.type === 'object') && field.fields && value) {
+      if (
+        (field.type === "array" || field.type === "object") &&
+        field.fields &&
+        value
+      ) {
         populatedDoc[field.name] = await this.populate({
           data: value,
           fields: field.fields,
@@ -176,10 +251,12 @@ export class PopulationService {
       }
 
       // Handle Blocks
-      if (field.type === 'blocks' && field.blocks && Array.isArray(value)) {
+      if (field.type === "blocks" && field.blocks && Array.isArray(value)) {
         populatedDoc[field.name] = await Promise.all(
           value.map(async (blockData: any) => {
-            const blockConfig = field.blocks!.find(b => b.slug === blockData.blockType);
+            const blockConfig = field.blocks!.find(
+              (b) => b.slug === blockData.blockType,
+            );
             if (!blockConfig) return blockData;
             return this.populate({
               data: blockData,
@@ -187,7 +264,7 @@ export class PopulationService {
               currentDepth,
               maxDepth,
             });
-          })
+          }),
         );
       }
     }
@@ -198,19 +275,23 @@ export class PopulationService {
   /**
    * Helper to populate a PaginatedResult
    */
-  async populateResult(result: PaginatedResult, fields: Field[], maxDepth: number): Promise<PaginatedResult> {
+  async populateResult(
+    result: PaginatedResult,
+    fields: Field[],
+    maxDepth: number,
+  ): Promise<PaginatedResult> {
     if (maxDepth <= 0) return result;
-    
+
     const populatedDocs = await this.populate({
       data: result.docs,
       fields,
       currentDepth: 0,
-      maxDepth
+      maxDepth,
     });
 
     return {
       ...result,
-      docs: populatedDocs
+      docs: populatedDocs,
     };
   }
 }
