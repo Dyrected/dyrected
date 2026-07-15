@@ -1,8 +1,4 @@
 {
   "title": "TypeScript",
-  "pages": [
-    "overview",
-    "generating-types",
-    "typescript-plugin"
-  ]
+  "pages": ["overview", "infer-schema", "generating-types"]
 }

@@ -4,7 +4,11 @@ import fs from "fs-extra";
 import path from "path";
 import prompts from "prompts";
 import { execSync } from "child_process";
-import { detectFramework, detectPackageManager, type SupportedFramework } from "../utils/detect.js";
+import {
+  detectFramework,
+  detectPackageManager,
+  type SupportedFramework,
+} from "../utils/detect.js";
 import { buildAiRules } from "@dyrected/knowledge";
 import {
   type BackendMode,
@@ -13,15 +17,27 @@ import {
   buildEnvTemplate,
   buildViteEnvTemplate,
 } from "../utils/config-templates.js";
-import { writeNextFiles, writeNuxtFiles, writeReactFiles, writeVueFiles } from "../utils/writers.js";
+import {
+  writeNextFiles,
+  writeNuxtFiles,
+  writeReactFiles,
+  writeVueFiles,
+} from "../utils/writers.js";
 
-function buildAddCommand(packageManager: string, deps: string[], dev = false): string {
+function buildAddCommand(
+  packageManager: string,
+  deps: string[],
+  dev = false,
+): string {
   if (deps.length === 0) return "";
 
   const joined = deps.join(" ");
-  if (packageManager === "npm") return `npm install ${dev ? "--save-dev " : ""}${joined}`.trim();
-  if (packageManager === "yarn") return `yarn add ${dev ? "--dev " : ""}${joined}`.trim();
-  if (packageManager === "bun") return `bun add ${dev ? "--dev " : ""}${joined}`.trim();
+  if (packageManager === "npm")
+    return `npm install ${dev ? "--save-dev " : ""}${joined}`.trim();
+  if (packageManager === "yarn")
+    return `yarn add ${dev ? "--dev " : ""}${joined}`.trim();
+  if (packageManager === "bun")
+    return `bun add ${dev ? "--dev " : ""}${joined}`.trim();
   return `pnpm add ${dev ? "-D " : ""}${joined}`.trim();
 }
 
@@ -72,10 +88,14 @@ async function ensureCloudSyncScripts(cwd: string) {
   const syncScriptName = "dyrected:sync-schema";
   const syncRunnerPath = path.join(cwd, "scripts", "run-dyrected-sync.mjs");
   const syncScriptCommand = "node ./scripts/run-dyrected-sync.mjs";
-  const buildSyncCommand = "node ./scripts/run-dyrected-sync.mjs --skip-on-error --skip-types";
+  const buildSyncCommand =
+    "node ./scripts/run-dyrected-sync.mjs --skip-on-error --skip-types";
 
   scripts[syncScriptName] = syncScriptCommand;
-  if (scripts.postbuild !== buildSyncCommand && !scripts.postbuild?.includes(buildSyncCommand)) {
+  if (
+    scripts.postbuild !== buildSyncCommand &&
+    !scripts.postbuild?.includes(buildSyncCommand)
+  ) {
     scripts.postbuild = scripts.postbuild
       ? `${scripts.postbuild} && ${buildSyncCommand}`
       : buildSyncCommand;
@@ -84,20 +104,56 @@ async function ensureCloudSyncScripts(cwd: string) {
   pkg.scripts = scripts;
   await fs.writeJson(packageJsonPath, pkg, { spaces: 2 });
   await fs.outputFile(syncRunnerPath, buildSyncRunnerScript());
-  console.log(chalk.green("✔  package.json updated with Dyrected Cloud sync scripts"));
+  console.log(
+    chalk.green("✔  package.json updated with Dyrected Cloud sync scripts"),
+  );
+}
+
+async function ensureGenerateTypesScript(cwd: string) {
+  const packageJsonPath = path.join(cwd, "package.json");
+  if (!(await fs.pathExists(packageJsonPath))) return;
+
+  const pkg = await fs.readJson(packageJsonPath);
+  const scripts = { ...(pkg.scripts || {}) } as Record<string, string>;
+  const scriptName = "dyrected:generate-types";
+  const scriptCommand = "dyrected generate:types";
+
+  if (scripts[scriptName] === scriptCommand) return;
+
+  scripts[scriptName] = scriptCommand;
+  pkg.scripts = scripts;
+  await fs.writeJson(packageJsonPath, pkg, { spaces: 2 });
+  console.log(
+    chalk.green("✔  package.json updated with Dyrected type generation script"),
+  );
 }
 
 export function registerInit(program: Command) {
   program
     .command("init")
     .description("Bootstrap a new Dyrected CMS project")
-    .option("-y, --yes", "Skip prompts and use default settings (SQLite + Local Storage)")
-    .option("-f, --framework <framework>", "Target framework (next, nuxt, react, vue)")
+    .option(
+      "-y, --yes",
+      "Skip prompts and use default settings (SQLite + Local Storage)",
+    )
+    .option(
+      "-f, --framework <framework>",
+      "Target framework (next, nuxt, react, vue)",
+    )
     .option("-b, --backend <backend>", "Backend mode (cloud, self-hosted)")
-    .option("-d, --db <adapter>", "Database adapter (sqlite, postgres, mysql, mongodb)")
-    .option("-s, --storage <adapter>", "Storage adapter (local, s3, b2, cloudinary)")
+    .option(
+      "-d, --db <adapter>",
+      "Database adapter (sqlite, postgres, mysql, mongodb)",
+    )
+    .option(
+      "-s, --storage <adapter>",
+      "Storage adapter (local, s3, b2, cloudinary)",
+    )
     .option("-p, --path <path>", "Admin dashboard route path", "admin")
-    .option("-o, --overwrite", "Overwrite existing config/env files without confirmation")
+    .option(
+      "-o, --overwrite",
+      "Overwrite existing config/env files without confirmation",
+    )
     .addHelpText(
       "after",
       `
@@ -136,17 +192,33 @@ After running init:
 
         if (detection && !detection.supported) {
           console.log(chalk.yellow(`  Detected framework: ${detection.name}`));
-          console.log(chalk.red(`\n  Dyrected doesn't have a native ${detection.name} integration yet.`));
-          console.log(chalk.dim(`  Supported frameworks: Next.js, Nuxt 3, React, Vue`));
           console.log(
-            chalk.dim(`  You can still use the SDK directly: https://docs.dyrected.com/docs/integrations/sdk\n`),
+            chalk.red(
+              `\n  Dyrected doesn't have a native ${detection.name} integration yet.`,
+            ),
+          );
+          console.log(
+            chalk.dim(`  Supported frameworks: Next.js, Nuxt 3, React, Vue`),
+          );
+          console.log(
+            chalk.dim(
+              `  You can still use the SDK directly: https://docs.dyrected.com/docs/integrations/sdk\n`,
+            ),
           );
           process.exit(0);
         }
 
         let framework: SupportedFramework;
-        const validFrameworks: SupportedFramework[] = ["next", "nuxt", "react", "vue"];
-        if (options.framework && validFrameworks.includes(options.framework as SupportedFramework)) {
+        const validFrameworks: SupportedFramework[] = [
+          "next",
+          "nuxt",
+          "react",
+          "vue",
+        ];
+        if (
+          options.framework &&
+          validFrameworks.includes(options.framework as SupportedFramework)
+        ) {
           framework = options.framework as SupportedFramework;
         } else if (detection?.supported) {
           const labels: Record<SupportedFramework, string> = {
@@ -155,10 +227,16 @@ After running init:
             react: "React",
             vue: "Vue",
           };
-          console.log(chalk.dim(`  Detected framework: ${labels[detection.framework]} — skipping prompt\n`));
+          console.log(
+            chalk.dim(
+              `  Detected framework: ${labels[detection.framework]} — skipping prompt\n`,
+            ),
+          );
           framework = detection.framework;
         } else if (autoAccept) {
-          console.log(chalk.dim("  No framework detected. Defaulting to Next.js\n"));
+          console.log(
+            chalk.dim("  No framework detected. Defaulting to Next.js\n"),
+          );
           framework = "next";
         } else {
           const answer = await prompts({
@@ -183,14 +261,20 @@ After running init:
         let backend: BackendMode = "cloud";
 
         if (options.backend && !isBackendMode(options.backend)) {
-          console.log(chalk.red(`\nInvalid backend "${options.backend}". Use "cloud" or "self-hosted".\n`));
+          console.log(
+            chalk.red(
+              `\nInvalid backend "${options.backend}". Use "cloud" or "self-hosted".\n`,
+            ),
+          );
           process.exit(1);
         }
 
         if (isSpa) {
           if (options.backend === "self-hosted") {
             console.log(
-              chalk.red("\nReact and Vue currently connect to Dyrected Cloud only. Use --backend cloud.\n"),
+              chalk.red(
+                "\nReact and Vue currently connect to Dyrected Cloud only. Use --backend cloud.\n",
+              ),
             );
             process.exit(1);
           }
@@ -206,12 +290,14 @@ After running init:
               {
                 title: "Dyrected Cloud (recommended)",
                 value: "cloud",
-                description: "Use Dyrected-hosted API, database, storage, and auth.",
+                description:
+                  "Use Dyrected-hosted API, database, storage, and auth.",
               },
               {
                 title: "Self-hosted in this app",
                 value: "self-hosted",
-                description: "Run the full backend inside your Next.js or Nuxt app.",
+                description:
+                  "Run the full backend inside your Next.js or Nuxt app.",
               },
             ],
             initial: 0,
@@ -248,7 +334,13 @@ After running init:
           storage = options.storage;
         }
 
-        if (!isSpa && backend === "self-hosted" && !options.db && !options.storage && !autoAccept) {
+        if (
+          !isSpa &&
+          backend === "self-hosted" &&
+          !options.db &&
+          !options.storage &&
+          !autoAccept
+        ) {
           const { quickSetup } = await prompts({
             type: "confirm",
             name: "quickSetup",
@@ -291,14 +383,19 @@ After running init:
         let deps: string;
         const devDeps: string[] = [];
         if (isSpa) {
-          const frameworkPkg = framework === "react" ? "@dyrected/react" : "@dyrected/vue";
+          const frameworkPkg =
+            framework === "react" ? "@dyrected/react" : "@dyrected/vue";
           deps = ["@dyrected/core", frameworkPkg].join(" ");
           devDeps.push("dyrected");
         } else {
-          const frameworkPkg = framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
+          const frameworkPkg =
+            framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
           const fullStackDeps = ["@dyrected/core", frameworkPkg];
           if (backend === "self-hosted") {
-            fullStackDeps.push(`@dyrected/db-${db}`, `@dyrected/storage-${storage}`);
+            fullStackDeps.push(
+              `@dyrected/db-${db}`,
+              `@dyrected/storage-${storage}`,
+            );
           }
           deps = fullStackDeps.join(" ");
           devDeps.push("dyrected");
@@ -306,16 +403,34 @@ After running init:
 
         console.log(chalk.blue(`\nInstalling ${deps}...`));
         try {
-          execSync(buildAddCommand(packageManager, deps.split(" ")), { cwd, stdio: "inherit" });
+          execSync(buildAddCommand(packageManager, deps.split(" ")), {
+            cwd,
+            stdio: "inherit",
+          });
           if (devDeps.length > 0) {
-            console.log(chalk.blue(`Installing ${devDeps.join(" ")} as a dev dependency...`));
-            execSync(buildAddCommand(packageManager, devDeps, true), { cwd, stdio: "inherit" });
+            console.log(
+              chalk.blue(
+                `Installing ${devDeps.join(" ")} as a dev dependency...`,
+              ),
+            );
+            execSync(buildAddCommand(packageManager, devDeps, true), {
+              cwd,
+              stdio: "inherit",
+            });
           }
         } catch {
-          console.log(chalk.yellow("\nCould not auto-install. Run the following manually:"));
-          console.log(chalk.cyan(`  ${buildAddCommand(packageManager, deps.split(" "))}`));
+          console.log(
+            chalk.yellow(
+              "\nCould not auto-install. Run the following manually:",
+            ),
+          );
+          console.log(
+            chalk.cyan(`  ${buildAddCommand(packageManager, deps.split(" "))}`),
+          );
           if (devDeps.length > 0) {
-            console.log(chalk.cyan(`  ${buildAddCommand(packageManager, devDeps, true)}`));
+            console.log(
+              chalk.cyan(`  ${buildAddCommand(packageManager, devDeps, true)}`),
+            );
           }
           console.log("");
         }
@@ -375,6 +490,8 @@ After running init:
           await writeVueFiles(cwd, adminPath);
         }
 
+        await ensureGenerateTypesScript(cwd);
+
         if (backend === "cloud") {
           await ensureCloudSyncScripts(cwd);
         }
@@ -382,7 +499,12 @@ After running init:
         // ── 4. .env setup ──────────────────────────────────────────────────────
         const envContent = isSpa
           ? buildViteEnvTemplate()
-          : buildEnvTemplate(framework as "next" | "nuxt", backend, db, storage);
+          : buildEnvTemplate(
+              framework as "next" | "nuxt",
+              backend,
+              db,
+              storage,
+            );
         const envExamplePath = path.join(cwd, ".env.example");
         await fs.outputFile(envExamplePath, envContent);
         console.log(chalk.green("✔  .env.example written"));
@@ -405,7 +527,8 @@ After running init:
               const answer = await prompts({
                 type: "confirm",
                 name: "appendEnv",
-                message: ".env already exists. Append missing Dyrected variables?",
+                message:
+                  ".env already exists. Append missing Dyrected variables?",
                 initial: true,
               });
               appendEnv = answer.appendEnv;
@@ -415,10 +538,14 @@ After running init:
                 envPath,
                 `\n# ── Dyrected CMS ──────────────────────────────────────────────────\n${missingVars}`,
               );
-              console.log(chalk.green("✔  .env file updated with missing variables"));
+              console.log(
+                chalk.green("✔  .env file updated with missing variables"),
+              );
             }
           } else {
-            console.log(chalk.dim("ℹ  .env already contains all required variables."));
+            console.log(
+              chalk.dim("ℹ  .env already contains all required variables."),
+            );
           }
         } else {
           let createEnv = forceOverwrite;
@@ -456,7 +583,8 @@ After running init:
           },
           {
             path: path.join(cwd, ".github", "copilot-instructions.md"),
-            content: "# Copilot instructions\n\nRead and follow `.dyrected/ai-rules.md` for every Dyrected CMS task.\n",
+            content:
+              "# Copilot instructions\n\nRead and follow `.dyrected/ai-rules.md` for every Dyrected CMS task.\n",
           },
           {
             path: path.join(cwd, ".cursor", "rules", "dyrected.mdc"),
@@ -465,36 +593,87 @@ After running init:
           },
         ];
         for (const pointer of agentRulePointers) {
-          if (!(await fs.pathExists(pointer.path))) await fs.outputFile(pointer.path, pointer.content);
+          if (!(await fs.pathExists(pointer.path)))
+            await fs.outputFile(pointer.path, pointer.content);
         }
 
         // ── Done ───────────────────────────────────────────────────────────────
         console.log(chalk.bold.green("\n✅ Dyrected is ready!\n"));
         if (isSpa) {
-          console.log(chalk.cyan(`  1. Set DYRECTED_URL, DYRECTED_API_KEY, and DYRECTED_SITE_ID in .env`));
           console.log(
-            chalk.cyan(`  2. Set VITE_DYRECTED_URL, VITE_DYRECTED_API_KEY, and VITE_DYRECTED_SITE_ID in .env`),
+            chalk.cyan(
+              `  1. Set DYRECTED_URL, DYRECTED_API_KEY, and DYRECTED_SITE_ID in .env`,
+            ),
           );
-          console.log(chalk.cyan("  3. Run npm run dyrected:sync-schema after editing dyrected.config.ts"));
-          console.log(chalk.cyan(`  4. Add a route for /${adminPath} in your router config`));
-          console.log(chalk.cyan("  5. Start your dev server and open the admin route\n"));
+          console.log(
+            chalk.cyan(
+              `  2. Set VITE_DYRECTED_URL, VITE_DYRECTED_API_KEY, and VITE_DYRECTED_SITE_ID in .env`,
+            ),
+          );
+          console.log(
+            chalk.cyan(
+              "  3. Run npm run dyrected:sync-schema after editing dyrected.config.ts",
+            ),
+          );
+          console.log(
+            chalk.cyan(
+              "  4. Run npm run dyrected:generate-types after schema changes",
+            ),
+          );
+          console.log(
+            chalk.cyan(
+              `  5. Add a route for /${adminPath} in your router config`,
+            ),
+          );
+          console.log(
+            chalk.cyan("  6. Start your dev server and open the admin route\n"),
+          );
         } else if (backend === "cloud") {
-          console.log(chalk.cyan(`  1. Set DYRECTED_URL, DYRECTED_API_KEY, and DYRECTED_SITE_ID in .env`));
+          console.log(
+            chalk.cyan(
+              `  1. Set DYRECTED_URL, DYRECTED_API_KEY, and DYRECTED_SITE_ID in .env`,
+            ),
+          );
           console.log(
             chalk.cyan(
               `  2. Set ${framework === "next" ? "NEXT_PUBLIC" : "NUXT_PUBLIC"}_DYRECTED_URL, ${framework === "next" ? "NEXT_PUBLIC" : "NUXT_PUBLIC"}_DYRECTED_API_KEY, and ${framework === "next" ? "NEXT_PUBLIC" : "NUXT_PUBLIC"}_DYRECTED_SITE_ID in .env`,
             ),
           );
-          console.log(chalk.cyan(`  3. Open http://localhost:3000/${adminPath} and run npm run dyrected:sync-schema\n`));
+          console.log(
+            chalk.cyan(
+              "  3. Run npm run dyrected:generate-types if you want a generated types file",
+            ),
+          );
+          console.log(
+            chalk.cyan(
+              `  4. Open http://localhost:3000/${adminPath} and run npm run dyrected:sync-schema\n`,
+            ),
+          );
         } else {
-          console.log(chalk.cyan(`  1. Configure your environment variables in .env`));
-          console.log(chalk.cyan(`  2. Open http://localhost:3000/${adminPath} to start managing content.`));
-          console.log(chalk.cyan("  3. Run: npx dyrected generate:types\n"));
+          console.log(
+            chalk.cyan(`  1. Configure your environment variables in .env`),
+          );
+          console.log(
+            chalk.cyan(
+              `  2. Open http://localhost:3000/${adminPath} to start managing content.`,
+            ),
+          );
+          console.log(
+            chalk.cyan(
+              "  3. Run npm run dyrected:generate-types to create your typed contract file\n",
+            ),
+          );
         }
 
         console.log(chalk.bold.magenta("🤖 Using Claude Code or Cursor?"));
-        console.log(chalk.dim("  Install the Dyrected skill to give your AI agent full context:"));
-        console.log(chalk.cyan("  npx skills add dyrected/agent-skills@dyrected\n"));
+        console.log(
+          chalk.dim(
+            "  Install the Dyrected skill to give your AI agent full context:",
+          ),
+        );
+        console.log(
+          chalk.cyan("  npx skills add dyrected/agent-skills@dyrected\n"),
+        );
       },
     );
 }
@@ -506,9 +685,15 @@ function buildDyrectedConfig(options: {
   dbConfig?: string;
   storageConfig?: string;
 }): string {
-  const configLines = [`  collections: [Admins, Media, Pages, Posts],`, `  globals: [Navigation, Settings],`];
+  const configLines = [
+    `  collections: [Admins, Media, Pages, Posts],`,
+    `  globals: [Navigation, Settings],`,
+  ];
   if (options.backend === "self-hosted") {
-    configLines.push(`  db: ${options.dbConfig},`, `  storage: ${options.storageConfig},`);
+    configLines.push(
+      `  db: ${options.dbConfig},`,
+      `  storage: ${options.storageConfig},`,
+    );
   }
 
   return `import {

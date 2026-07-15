@@ -16,8 +16,9 @@ Before you install, make sure you have:
 - **A supported app to install into**: Next.js (App Router), Nuxt 3, React, or Vue.
 
 <Note>
-  Next.js projects must use the **App Router**. Dyrected mounts its API as a route handler, so `init` stops with an
-  error if it finds a Pages Router project without an `app/` directory. Add an `app/` directory first.
+  Next.js projects must use the **App Router**. Dyrected mounts its API as a
+  route handler, so `init` stops with an error if it finds a Pages Router
+  project without an `app/` directory. Add an `app/` directory first.
 </Note>
 
 <Note>
@@ -189,7 +190,11 @@ const Admins = defineCollection({
   admin: { icon: "Users", useAsTitle: "name" },
   fields: [
     defineTextField({ name: "name", required: true }),
-    defineSelectField({ name: "roles", options: ["admin", "editor"], defaultValue: "admin" }),
+    defineSelectField({
+      name: "roles",
+      options: ["admin", "editor"],
+      defaultValue: "admin",
+    }),
   ],
 });
 
@@ -266,7 +271,10 @@ export default defineConfig({
   collections: [Admins, Media, Pages, Posts],
   globals: [Navigation, Settings],
   db: sqliteAdapter({ filename: "./data.db" }),
-  storage: localStorage({ uploadDir: "./public/uploads", staticUrlPrefix: "/uploads" }),
+  storage: localStorage({
+    uploadDir: "./public/uploads",
+    staticUrlPrefix: "/uploads",
+  }),
 });
 ```
 
@@ -281,8 +289,10 @@ The reserved `__admins` collection is the login gateway for the dashboard — em
 Once the admin loads and you can log in, generate typed helpers for your content model:
 
 ```bash
-npx dyrected generate:types
+npm run dyrected:generate-types
 ```
+
+`dyrected init` adds that script to `package.json` for you. If you prefer to run the CLI directly, `npx dyrected generate:types` still works too.
 
 ## Next steps
 

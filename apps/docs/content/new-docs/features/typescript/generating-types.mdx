@@ -1,3 +1,154 @@
 ---
 title: Generating Types
+description: Generate a Dyrected types file from local config or a running site, and know when that workflow is better than inference alone.
 ---
+
+Use this page when you want a real TypeScript file on disk instead of relying only on in-memory inference from your schema constants. By the end, you should know what `npx dyrected generate:types` reads from, what it writes, how to point it at another config or URL, how to generate into a custom path of your choice, and how to use the generated file with the SDK.
+
+## When to use generated types
+
+The best reason to run `generate:types` is that you want a shareable boundary.
+
+Reach for it when:
+
+- your frontend should import a generated file instead of importing `dyrected.config.ts`
+- your schema lives in another package or repo
+- you are generating types from a running Dyrected Cloud or self-hosted instance
+- you want a committed artifact that other tools can consume
+
+If your schema and SDK usage live in one codebase, start with the simpler path from [TypeScript Overview](/new-docs/features/typescript/overview): export your schema constants and derive the client type with `InferSchema`.
+
+## The basic command
+
+The default command is:
+
+```bash
+npx dyrected generate:types
+```
+
+With no extra flags, the CLI tries to generate from `./dyrected.config.ts` and writes the result to:
+
+```bash
+./dyrected-types.ts
+```
+
+That is the recommended starting point for a self-hosted project or any repo where the local config file is the source of truth.
+
+## What the command actually does
+
+The current CLI resolves its source in this order:
+
+1. if you pass `--url`, it fetches `YOUR_URL/api/schemas`
+2. otherwise, if the config path exists, it imports the local config file
+3. otherwise, it falls back to `http://localhost:3000/api/schemas`
+
+That means the same command supports both local-config generation and remote-schema generation. It is not limited to one deployment style.
+
+## Generate from a local config
+
+This is the default and simplest path:
+
+```bash
+npx dyrected generate:types
+```
+
+If your config file lives somewhere else, pass it explicitly:
+
+```bash
+npx dyrected generate:types --config ./cms/dyrected.config.ts
+```
+
+Use that when your app has a non-standard layout or when the schema lives outside the repository root.
+
+## Generate from a running site
+
+If the schema should come from a running self-hosted instance instead of a local file, pass `--url`.
+
+For a self-hosted site:
+
+```bash
+npx dyrected generate:types --url http://localhost:3000
+```
+
+This path works by reading the serialized schema from `/api/schemas`, so it is useful when the running site is the boundary you actually care about.
+
+At the moment, this is the verified remote path for self-hosted instances that expose `/api/schemas` directly. The current CLI does not have a Dyrected-Cloud-specific remote type-generation flow that accepts `siteId` and Cloud credentials separately, so this page does not recommend `--url` as the primary Cloud path yet.
+
+## Change the output path
+
+If you do not want `./dyrected-types.ts`, generate the file anywhere you want:
+
+```bash
+npx dyrected generate:types --output ./types/cms.ts
+```
+
+This is the usual fit when you keep generated contracts in a dedicated `types/` directory, want multiple apps to read from a shared package path, or just prefer a different filename than the default.
+
+If you run `npx dyrected init`, the CLI adds a helper script to `package.json`:
+
+```json
+{
+  "scripts": {
+    "dyrected:generate-types": "dyrected generate:types"
+  }
+}
+```
+
+That gives you a stable rerun command, and you can still add `--output` whenever you want a non-default destination.
+
+## What the generated file contains
+
+The current generator writes a plain TypeScript file with:
+
+- a built-in `Media` interface
+- `UrlFieldValue` and `UrlField` helper types
+- one interface per collection
+- one interface per global, suffixed with `Global`
+- a `DyrectedSchema` interface with `collections` and `globals` maps
+
+It also maps common field shapes for you:
+
+- `select` and `radio` fields become string unions when the options are statically known
+- `relationship` and `image` fields become `RelatedDoc | string`
+- `blocks` become a `blockType` union
+- upload collections gain upload-specific fields such as `filename`, `mimeType`, `url`, and `sizes`
+- auth collections gain `email` and optional `roles`
+
+The file is generated with Prettier and should be treated as generated output, not a hand-edited source file.
+
+## Use the generated schema with the SDK
+
+The generated file includes `DyrectedSchema`, which is the shape the SDK expects for typed collection and global access.
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+const client = createClient<DyrectedSchema>({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+});
+
+const { docs: posts } = await client.collection("posts").find();
+```
+
+That is the easiest way to get typed SDK results when the generated file is your contract boundary.
+
+## Recommended workflow
+
+The recommended path is:
+
+1. change your schema
+2. rerun `npm run dyrected:generate-types` or your package manager's equivalent
+3. commit the updated generated file if your project treats it as a shared contract
+
+Do not edit the generated file by hand. Your next generation run will overwrite it.
+
+## Escape hatches
+
+The default command is intentionally simple, but you still have room to adjust it:
+
+- use `--config` when the schema file is not in the root
+- use `--url` when the running site is the real source of truth
+- use `--output` when another package or app should consume the generated file from a different path
+
+If you find yourself needing deeper compile-time control inside the schema code itself, go back to the inference-first path from [TypeScript Overview](/new-docs/features/typescript/overview).
