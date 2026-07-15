@@ -241,8 +241,8 @@ export const Orders = defineCollection({
     delete: ({ user }) => ({ customer: { equals: user?.sub } }),
   },
   fields: [
-    { name: 'customer', type: 'text' },
-    { name: 'total', type: 'number' },
+    { name: 'customer', label: 'Customer', type: 'text' },
+    { name: 'total', label: 'Total', type: 'number' },
   ],
 })
 ```
@@ -263,8 +263,8 @@ export const Guides = defineCollection({
     delete: "'admin' in user.roles",
   },
   fields: [
-    { name: 'title', type: 'text' },
-    { name: 'status', type: 'select', options: ['draft', 'published'] },
+    { name: 'title', label: 'Title', type: 'text' },
+    { name: 'status', label: 'Status', type: 'select', options: ['draft', 'published'] },
   ],
 })
 ```
@@ -290,8 +290,8 @@ export const Invoices = defineCollection({
     delete: { policy: 'isAdmin' },
   },
   fields: [
-    { name: 'tenant', type: 'text' },
-    { name: 'amount', type: 'number' },
+    { name: 'tenant', label: 'Tenant', type: 'text' },
+    { name: 'amount', label: 'Amount', type: 'number' },
   ],
 })
 ```
@@ -676,7 +676,7 @@ export default defineConfig({
         create: { policy: 'isAdmin' },
         delete: { policy: 'isAdmin' },
       },
-      fields: [{ name: 'title', type: 'text' }],
+      fields: [{ name: 'title', label: 'Title', type: 'text' }],
     }),
   ],
   globals: [],
@@ -1137,7 +1137,9 @@ Pass your document's TypeScript type as the generic parameter `TDoc` to get
 fully typed hooks and access functions.
 
 ```ts
-export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
+export interface CollectionConfig<
+  TDoc extends object = Record<string, unknown>,
+> {
   /**
    * Unique identifier for this collection.
    *
@@ -1183,7 +1185,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * If `true`, this collection is an auth collection. It gains
+   * If `true` or an auth config object, this collection is an auth collection. It gains
    * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`
    * endpoints, and documents are expected to have a `password` field.
    *
@@ -1191,9 +1193,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * in, hold credentials, and participate in user flows. Typical examples are
    * `users`, `admins`, `members`, or `customers`.
    *
+   * Pass an object when you want to tune built-in account lockout behavior for
+   * repeated failed logins.
+   *
    * @see {@link https://dyrected.com/docs/features/authentication/overview Authentication overview}
    */
-  auth?: boolean;
+  auth?: boolean | AuthConfig;
 
   /**
    * If `true` or a config object, this collection supports file uploads.
@@ -1267,7 +1272,6 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * live content, and any authorized editor can publish or unpublish entries.
    */
   drafts?: boolean;
-
 
   /**
    * Collection-level access control.
@@ -1411,7 +1415,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?:
+      string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.
@@ -1441,7 +1446,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>siteId</code> (optional) | Restricts this collection to one specific site in a multi-tenant setup.  Use this when the collection should belong to a single site rather than the whole installation. When set, only requests bearing a matching &#96;X-Site-Id&#96; header can access it. |
 | <code>shared</code> (optional) | If &#96;true&#96;, this collection is shared across all sites in a multi-tenant setup and accessible regardless of the &#96;X-Site-Id&#96; header.  Use this for content that should stay common across sites, such as shared taxonomies, reusable assets, or centrally managed reference data. |
 | <code>labels</code> (optional) | Human-readable names for documents in this collection, shown in the Admin UI.  Use this when the slug is technical or when you want the dashboard to read more naturally. For example, &#96;slug: 'people'&#96; might use &#96;labels: &#123; singular: 'Person', plural: 'People' &#125;&#96;.  See: [Collections labels](https://dyrected.com/docs/basics/configuration/collections#labels) |
-| <code>auth</code> (optional) | If &#96;true&#96;, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  See: [Authentication overview](https://dyrected.com/docs/features/authentication/overview) |
+| <code>auth</code> (optional) | If &#96;true&#96; or an auth config object, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  Pass an object when you want to tune built-in account lockout behavior for repeated failed logins.  See: [Authentication overview](https://dyrected.com/docs/features/authentication/overview) |
 | <code>upload</code> (optional) | If &#96;true&#96; or a config object, this collection supports file uploads. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;.  Turn this on when each document in the collection should represent a stored file, such as an image, PDF, video, or downloadable asset.  See: [Upload overview](https://dyrected.com/docs/features/upload/overview) |
 | <code>fields</code> (required) | Field definitions that make up the document schema for this collection.  This is the main schema contract for every document in the collection. It decides what editors can fill in, how data is validated, how records are stored, and what the API and SDK return.  In practice, fields are where you model the actual content structure of the collection: simple values such as text and dates, relationships to other collections, nested objects and arrays, and flexible &#96;blocks&#96; fields for reusable page sections or long-form layouts.  See: [Fields overview](https://dyrected.com/docs/basics/fields/overview), [Blocks and page sections](https://dyrected.com/docs/basics/fields/blocks) |
 | <code>timestamps</code> (optional) | If &#96;true&#96;, Dyrected automatically adds the built-in system fields &#96;createdAt&#96;, &#96;updatedAt&#96;, &#96;createdBy&#96;, and &#96;updatedBy&#96; to every document. Defaults to &#96;true&#96;. |
@@ -2059,6 +2064,363 @@ Keeping these separate makes each global easy to find and safe to edit without d
 
 ---
 
+## Logging and Observability
+
+Canonical URL: https://docs.dyrected.com/docs/basics/configuration/logging
+
+This page shows how to control Dyrected's runtime observability. By the end, you'll know what gets logged by default, how to turn on body capture safely, how to export logs and telemetry, and where runtime logging stops and audit logging begins.
+
+The important split is simple:
+
+- `logger` controls the root Pino logger
+- `observability` controls request logging, redaction, sampling, tracing, metrics, and Dyrected-managed transports
+
+If you want the recommended path, start with Dyrected's default logger and add `observability` settings only for the parts you actually need.
+
+## What you get by default
+
+If you do not configure anything, Dyrected creates a Pino logger named `dyrected` and writes structured request-completion logs.
+
+Those default request logs include:
+
+- HTTP method
+- request path
+- response status
+- request duration
+- request id
+- site and workspace ids when they exist
+
+Request bodies are **not** logged by default. Tracing and metrics are also off until you enable them explicitly.
+
+## Start with the root config
+
+The smallest working setup is a normal Dyrected config with an optional `logger` block and an `observability` block beside it:
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+
+  logger: {
+    options: {
+      level: 'info',
+      name: 'dyrected',
+    },
+  },
+
+  observability: {
+    requestLogging: {
+      enabled: true,
+    },
+  },
+})
+```
+
+This keeps the default behavior, but makes the logging surface explicit so you can grow it safely.
+
+## Configure the root logger
+
+Use `logger` when you want to control the Pino instance itself.
+
+You can either pass logger options with an optional destination stream, or pass a fully instantiated Pino logger that you manage yourself.
+
+```ts
+
+
+
+
+const destination = pino.destination('/var/log/dyrected.log')
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  logger: {
+    options: {
+      level: 'debug',
+    },
+    destination,
+  },
+})
+```
+
+Use an instantiated logger when you already own the transport or formatting policy and want Dyrected to write into that existing logger.
+
+## Turn on body logging safely
+
+Body logging is opt-in because it is the easiest part of request logging to get wrong.
+
+Dyrected only attempts body capture when all of these are true:
+
+- `observability.requestLogging.logBodies` is `true`
+- the request is sampled for body capture
+- the request is `application/json`
+
+Dyrected does **not** log raw multipart or binary payload contents. If a body is too large or cannot be parsed safely after truncation, Dyrected logs metadata about the capture attempt instead of logging the raw payload.
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    requestLogging: {
+      logBodies: true,
+      maxBodyBytes: 8192,
+    },
+    sampling: {
+      successRate: 1,
+      bodySuccessRate: 0.1,
+    },
+  },
+})
+```
+
+That pattern keeps ordinary request logs on, but only captures a smaller sample of successful request bodies.
+
+## Built-in redaction
+
+When body logging is enabled, Dyrected redacts common secrets before anything is logged or exported.
+
+Default redacted headers:
+
+- `authorization`
+- `cookie`
+- `set-cookie`
+- `x-api-key`
+
+Default redacted body paths:
+
+- `password`
+- `currentPassword`
+- `newPassword`
+- `confirmPassword`
+- `token`
+- `refreshToken`
+- `accessToken`
+- `secret`
+- `apiKey`
+- `inviteToken`
+- `resetToken`
+
+You can add more body paths and headers in config:
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    requestLogging: {
+      logBodies: true,
+      includeHeaders: ['authorization', 'content-type', 'x-request-id'],
+      redactHeaders: ['x-customer-token'],
+      redactPaths: ['profile.secret', 'tokens.*.value'],
+    },
+  },
+})
+```
+
+Dyrected supports dotted paths and `*` wildcards for nested JSON structures, so you can target repeated fields without writing custom serializers.
+
+## Configure transports
+
+If Dyrected creates the logger, you can declare transports through `observability.transports.targets`.
+
+V1 supports these target types:
+
+- `stdout`
+- `stderr`
+- `file`
+- `otlp`
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    transports: {
+      targets: [
+        { type: 'stdout' },
+        { type: 'file', path: '/var/log/dyrected.jsonl' },
+      ],
+    },
+  },
+})
+```
+
+If you pass an already-instantiated logger, Dyrected does not override its transport behavior.
+
+## Enable tracing
+
+Dyrected uses OpenTelemetry for tracing. In v1, Dyrected creates one root span per request and attaches request-level metadata such as method, route, status code, request id, site id, and workspace id.
+
+Use tracing when you need request timing across middleware, auth, hooks, or database-heavy paths.
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    tracing: {
+      enabled: true,
+      serviceName: 'my-dyrected-app',
+      exporter: 'otlp',
+      endpoint: 'https://otel.example.com/v1/traces',
+      headers: {
+        authorization: `Bearer ${process.env.OTEL_TOKEN!}`,
+      },
+    },
+  },
+})
+```
+
+When tracing is enabled, Dyrected also adds `traceId` and `spanId` to request-scoped log context when a request span is active.
+
+## Enable metrics
+
+Dyrected uses OpenTelemetry metrics internally and can export them either through OTLP or a Prometheus scrape endpoint.
+
+Use Prometheus only in self-hosted or server-runtime deployments where Dyrected is actually serving HTTP requests.
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    metrics: {
+      enabled: true,
+      exporter: 'prometheus',
+      path: '/metrics',
+    },
+  },
+})
+```
+
+V1 emits metrics for request counts and duration, auth failures, uncaught errors, audit write failures, email send failures, and workflow hook failures.
+
+## Configure sampling
+
+Sampling is where you control cost and noise without losing the logs that matter.
+
+Dyrected keeps `warn` and `error` paths by default and samples successful traffic separately for logs, traces, and body capture.
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    sampling: {
+      successRate: 0.1,
+      traceSuccessRate: 0.1,
+      bodySuccessRate: 0.02,
+      alwaysKeep4xx: true,
+      alwaysKeep5xx: true,
+    },
+  },
+})
+```
+
+Dyrected uses deterministic request-id-based sampling when it can, which makes repeated debugging sessions less noisy than pure randomness.
+
+## Audit logging is different
+
+Runtime logging helps you operate the service. Audit logging helps you answer who changed content and when.
+
+Keep those two jobs separate:
+
+- runtime logs are for debugging, monitoring, and production operations
+- audit logs are durable content-history records stored in `__audit`
+
+If you need edit history or accountability, read [Audit Overview](/docs/features/audit/overview). Runtime logs do not replace it.
+
+## Config reference
+
+These are the top-level shapes you configure from `dyrected.config.ts`:
+
+```ts
+type DyrectedLoggerConfig =
+  | {
+      options: import('pino').LoggerOptions
+      destination?: import('pino').DestinationStream
+    }
+  | import('pino').Logger
+
+interface DyrectedObservabilityConfig {
+  requestLogging?: {
+    enabled?: boolean
+    logBodies?: boolean
+    maxBodyBytes?: number
+    redactPaths?: string[]
+    includeHeaders?: string[]
+    redactHeaders?: string[]
+  }
+  sampling?: {
+    successRate?: number
+    traceSuccessRate?: number
+    bodySuccessRate?: number
+    alwaysKeep4xx?: boolean
+    alwaysKeep5xx?: boolean
+  }
+  tracing?: {
+    enabled?: boolean
+    serviceName?: string
+    exporter?: 'otlp' | 'console' | 'none'
+    headers?: Record<string, string>
+    endpoint?: string
+  }
+  metrics?: {
+    enabled?: boolean
+    exporter?: 'otlp' | 'prometheus' | 'none'
+    endpoint?: string
+    path?: string
+  }
+  transports?: {
+    targets?: Array<
+      | { type: 'stdout' }
+      | { type: 'stderr' }
+      | { type: 'file'; path: string }
+      | { type: 'otlp'; endpoint: string; headers?: Record<string, string> }
+    >
+  }
+}
+```
+
+## Related pages
+
+- [Configuration Overview](/docs/basics/configuration/overview)
+- [Environment Variables](/docs/basics/configuration/environment-variables)
+- [Audit Overview](/docs/features/audit/overview)
+- [Deployment](/docs/deployment/production/deployment)
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/basics/configuration/overview
@@ -2075,6 +2437,8 @@ The root config brings together a few major areas:
 - `globals` for singleton content
 - `db`, `storage`, and `image` for self-hosted infrastructure
 - `admin` and `adminAuth` for dashboard behavior
+- `logger` for the root Pino logger
+- `observability` for request logging, redaction, sampling, tracing, metrics, and transports
 - `email`, `redis`, `events`, and `cors` for runtime services
 
 In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
@@ -2140,6 +2504,18 @@ Use `adminAuth` when you need to control how people log in to the dashboard itse
 ### `email`
 
 The `email` config wires transactional messages such as invites and password resets to your provider.
+
+### `logger`
+
+Use `logger` when you want to control the root Pino logger Dyrected writes into.
+
+See [Logging and Observability](/docs/basics/configuration/logging).
+
+### `observability`
+
+Use `observability` for request logs, request-body capture, redaction, sampling, tracing, metrics, and Dyrected-managed transports.
+
+See [Logging and Observability](/docs/basics/configuration/logging).
 
 ### `cors`
 
@@ -2253,11 +2629,9 @@ export interface DyrectedConfig<
   blocks?: Block[];
 
   /** Collection definitions. Each collection maps to a database table/collection. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   collections: CollectionConfig<any>[];
 
   /** Global (singleton) definitions. Each global maps to a single document. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globals: GlobalConfig<any>[];
 
   /**
@@ -2279,6 +2653,18 @@ export interface DyrectedConfig<
    * @see ImageService
    */
   image?: ImageService;
+
+  /**
+   * Runtime logger configuration. Accepts either logger options/destination or
+   * a fully-instantiated Pino logger.
+   */
+  logger?: DyrectedLoggerConfig;
+
+  /**
+   * Request logging, redaction, sampling, tracing, metrics, and transport
+   * configuration for the Dyrected server runtime.
+   */
+  observability?: DyrectedObservabilityConfig;
 
   /** Admin UI branding and metadata. */
   admin?: AdminConfig;
@@ -2380,14 +2766,20 @@ export interface DyrectedConfig<
   };
 
   /**
+   * App-level HTTP request rate limiting.
+   *
+   * Similar to Payload's `rateLimit` option, this counts requests by client IP
+   * over a rolling time window and returns `429` responses once the limit is
+   * exhausted.
+   */
+  rateLimit?: RateLimitConfig;
+
+  /**
    * Callback to dynamically fetch additional collections and globals for a
    * given site ID at request time. Used in multi-tenant deployments where each
    * site has its own schema stored in the database.
    */
-  onSchemaFetch?: (
-    siteId: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) => Promise<{
+  onSchemaFetch?: (siteId: string) => Promise<{
     blocks?: Block[];
     collections?: CollectionConfig<any>[];
     globals?: GlobalConfig<any>[];
@@ -2405,6 +2797,8 @@ export interface DyrectedConfig<
 | <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
 | <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>logger</code> (optional) | Runtime logger configuration. Accepts either logger options/destination or a fully-instantiated Pino logger. |
+| <code>observability</code> (optional) | Request logging, redaction, sampling, tracing, metrics, and transport configuration for the Dyrected server runtime. |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |
 | <code>adminAuth</code> (optional) | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
 | <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;.  A policy can be a **function** (full server logic, evaluated to a static boolean when serialized for the admin panel) or a **Jexl string** (or boolean). String policies are inlined when the schema is sent to the admin, so the admin panel evaluates them live against the current form — the same way it evaluates inline Jexl rules. |
@@ -2412,6 +2806,7 @@ export interface DyrectedConfig<
 | <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
 | <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |
 | <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
+| <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
 | <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
 
 ---
@@ -5788,7 +6183,7 @@ See [Admin Overview](/docs/features/admin/overview).
 
 Workflows add editorial states and transitions, so content can move through review and publishing steps instead of going live immediately on every edit.
 
-The closest coverage today is [Versions Overview](/docs/features/versions/overview), plus [Drafts](/docs/features/versions/drafts) and [Autosave](/docs/features/versions/autosave).
+See [Workflows Overview](/docs/features/workflows/overview) for the current published guide.
 
 ## Retrieving data
 
@@ -5840,7 +6235,7 @@ Adapters such as `@dyrected/db-postgres`, `@dyrected/db-mysql`, `@dyrected/db-sq
 
 ## Next step
 
-If this mental model feels clear, continue to [Installation](/docs/basics/getting-started/installation). If you want the practical setup path after that, the quick start guides under [Quick Start Guides](/docs/quick-start-guides) are the next likely stop.
+If this mental model feels clear, continue to [Installation](/docs/basics/getting-started/installation). If you want the practical setup path after that, go to the quick start guide that matches your frontend: [Next.js](/docs/quick-start-guides/nextjs-quick-start/overview), [Nuxt](/docs/quick-start-guides/nuxtjs-quick-start/overview), [React](/docs/quick-start-guides/reactjs-quick-start/overview), or [Vue](/docs/quick-start-guides/vuejs-quick-start/overview).
 
 ---
 
@@ -7787,6 +8182,8 @@ Before you ship, make sure these are set correctly for the environment that will
 
 The important production rule is consistency: if multiple instances or environments serve the same app, they must agree on the same secret values and the same backend URL assumptions.
 
+If you enable OTLP exporters or a Prometheus scrape endpoint, treat those values as production infrastructure too. Keep OTLP auth headers in server-only environment variables, and only expose a Prometheus route on a boundary that is meant to be scraped by your monitoring system.
+
 ## What happens during deploy
 
 ### Self-hosted
@@ -7837,16 +8234,48 @@ Canonical URL: https://docs.dyrected.com/docs/deployment/production/preventing-a
 
 Dyrected gives you the content layer. It does **not** try to be your whole edge-security stack. In production, you should assume public routes, auth flows, preview routes, and upload paths all need deliberate protection from the host app or platform around them.
 
+Dyrected now helps with two pieces directly:
+
+- built-in HTTP rate limiting for `/api` routes
+- built-in auth account lockout for repeated failed logins
+
+That is useful, but it is still only one layer of the production story. You should still put edge or proxy controls in front of it.
+
 The recommended path is:
 
-1. rate-limit at the framework, proxy, or platform edge
+1. turn on Dyrected's built-in API rate limiting and configure proxy trust correctly
 2. keep secrets and privileged keys server-side
 3. keep preview and side-effect paths narrow
-4. test the abuse cases you care about before launch
+4. add host-level rate limits and network controls where Dyrected is not the right layer
+5. test the abuse cases you care about before launch
 
 ## Start with rate limits
 
-Dyrected does not ship built-in request throttling for you. If a route is public, assume you need to protect it outside Dyrected.
+Dyrected now ships built-in request throttling for API routes. By default it protects `/api` with a per-IP limit of 500 requests per 15-minute window.
+
+Start there, then keep your edge or proxy limits on top. The two layers do different jobs:
+
+- Dyrected's limiter protects the app itself and understands your routed API surface.
+- Edge or proxy limits protect the infrastructure in front of Dyrected and help before traffic even reaches your app.
+
+Account lockout still solves a different problem again: it protects one user record after repeated bad passwords.
+
+If you are behind a reverse proxy, configure `trustProxy` so Dyrected counts the real client IP instead of the proxy hop:
+
+```ts
+
+
+export default defineConfig({
+  rateLimit: {
+    max: 500,
+    window: 15 * 60 * 1000,
+    trustProxy: true,
+  },
+  // ...
+});
+```
+
+You can also narrow or expand the protected route prefixes with `rateLimit.paths`, and `rateLimit.skip` exists as an escape hatch when one request class needs to bypass the in-app limiter deliberately.
 
 That matters most for:
 
@@ -7856,14 +8285,14 @@ That matters most for:
 - custom routes that call third-party services
 - any public collection endpoint that is expensive to query
 
-Use the normal protection mechanism for your host:
+Keep the normal protection mechanism for your host too:
 
 - framework middleware
 - edge middleware
 - reverse proxy or CDN rules
 - provider-native throttling
 
-If you already have one rate-limiting layer in your stack, use that before inventing something Dyrected-specific.
+If you already have one rate-limiting layer in your stack, keep it. Dyrected's limiter should complement that layer, not replace it.
 
 ## Keep privileged credentials out of the browser
 
@@ -7924,7 +8353,8 @@ If you need strict origin control, IP allowlists, WAF rules, bot management, or 
 
 Before you ship, verify the basics:
 
-- repeated login attempts get throttled by the host layer
+- repeated login attempts hit Dyrected's account lockout and also get throttled by the host layer
+- built-in Dyrected rate limiting sees the real client IP in production because `trustProxy` is set correctly
 - upload endpoints are protected the way you expect
 - preview URLs cannot be reused long after issuance
 - public collection reads have sane limits
@@ -8012,6 +8442,35 @@ Each ecommerce page should be published only after the public package behavior, 
 Canonical URL: https://docs.dyrected.com/docs/ecosystem/examples/overview
 
 
+
+---
+
+## Vercel Content Link
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/integrations/__vercel-content-link
+
+This page exists because Vercel Content Link is a real thing people look for, but the important answer right now is simple:
+
+**Dyrected does not currently expose a first-class Vercel Content Link integration surface that is ready to document as a supported workflow.**
+
+So if you are trying to connect Dyrected to a Vercel-hosted frontend today, the practical paths are still the normal Dyrected ones:
+
+- [Next.js integration](/docs/ecosystem/integrations/nextjs) when the app is a Next project
+- [Live preview](/docs/features/live-preview/overview) when the goal is editor preview
+- [Deployment](/docs/deployment/production/deployment) when the goal is production hosting on Vercel
+
+## What to do today
+
+If your site is on Vercel, treat the integration as a standard Dyrected frontend deployment:
+
+- point the frontend at your Dyrected API or Cloud site
+- use live preview where editors need it
+- use the normal Next.js or SDK integration for reads and writes
+- handle Vercel-specific routing, caching, and protection at the app layer
+
+## Why this page is short
+
+There is no verified package API, route contract, or setup flow in this codebase yet that would justify a longer product guide here. It is better to be explicit about that than to invent a workflow that sounds plausible but is not actually shipped.
 
 ---
 
@@ -8566,35 +9025,6 @@ For the full API surface, deeper query pages, and the generated reference, use t
 
 ---
 
-## Vercel Content Link
-
-Canonical URL: https://docs.dyrected.com/docs/ecosystem/integrations/vercel-content-link
-
-This page exists because Vercel Content Link is a real thing people look for, but the important answer right now is simple:
-
-**Dyrected does not currently expose a first-class Vercel Content Link integration surface that is ready to document as a supported workflow.**
-
-So if you are trying to connect Dyrected to a Vercel-hosted frontend today, the practical paths are still the normal Dyrected ones:
-
-- [Next.js integration](/docs/ecosystem/integrations/nextjs) when the app is a Next project
-- [Live preview](/docs/features/live-preview/overview) when the goal is editor preview
-- [Deployment](/docs/deployment/production/deployment) when the goal is production hosting on Vercel
-
-## What to do today
-
-If your site is on Vercel, treat the integration as a standard Dyrected frontend deployment:
-
-- point the frontend at your Dyrected API or Cloud site
-- use live preview where editors need it
-- use the normal Next.js or SDK integration for reads and writes
-- handle Vercel-specific routing, caching, and protection at the app layer
-
-## Why this page is short
-
-There is no verified package API, route contract, or setup flow in this codebase yet that would justify a longer product guide here. It is better to be explicit about that than to invent a workflow that sounds plausible but is not actually shipped.
-
----
-
 ## Vue
 
 Canonical URL: https://docs.dyrected.com/docs/ecosystem/integrations/vue
@@ -9020,7 +9450,7 @@ The one guard that does exist is local to each editor's own browser: if you have
 
 Until there's a first-class locking feature, a few existing capabilities cover most of the risk:
 
-- **Use versions and drafts.** With [Versions](/docs/features/versions/overview) enabled, saves create version history, so an overwrite is recoverable — you can see what changed and restore a previous version instead of losing it permanently.
+- **Use workflows.** With [Workflows](/docs/features/workflows/overview) enabled, edits move through an explicit revision flow, so an overwrite is recoverable from workflow history and never updates the published snapshot by accident.
 - **Use workflows for review.** [Workflows](/docs/features/workflows/overview) separate an editable working revision from the published snapshot, so parallel editing at least never touches live content until someone deliberately transitions it.
 - **Narrow who can edit what.** [Access Control](/docs/basics/access-control/overview) lets you scope update rights so fewer people can edit the same document at once — for example, restricting a collection to its owner.
 - **Coordinate on high-traffic documents.** For a handful of frequently co-edited globals or landing pages, a light team convention ("ping before you edit the homepage") is often enough on a small team.
@@ -9995,6 +10425,8 @@ Audit logging keeps a durable record of who changed what. Turn it on for a colle
 
 Reach for it on collections where changes need accountability: content under compliance review, records that support operational auditing, or anything where a reliable history of edits matters. By the end of this page you'll know how to enable it, what each entry contains, how to read the trail from your code or the admin, and how to control who's allowed to see it.
 
+Audit logging is different from runtime logging. Runtime logs help you monitor and debug the running service. Audit logs are durable content-history records stored in `__audit`. If you need request logs, redaction, tracing, or metrics, use [Logging and Observability](/docs/basics/configuration/logging).
+
 ## Enabling audit
 
 Set `audit: true` on any collection. That's the whole setup — Dyrected handles the logging for you.
@@ -10831,19 +11263,19 @@ Throughout, `{slug}` is your collection's slug (for example `users` or `__admins
 
 ## The full list
 
-| Method | Path | Auth | SDK method | Returns |
-| --- | --- | --- | --- | --- |
-| `GET` | `/{slug}/init` | Public | `isInitialized()` | `{ initialized }` |
-| `POST` | `/{slug}/first-user` | Public | `registerFirstUser(data)` | `{ token, user }` |
-| `POST` | `/{slug}/login` | Public | `login(email, password)` | `{ token, user }` |
-| `POST` | `/{slug}/logout` | Public | `logout()` | `{ success, message }` |
-| `GET` | `/{slug}/me` | Bearer | `me()` | the user document |
-| `POST` | `/{slug}/refresh-token` | Bearer | `refreshToken()` | `{ token }` |
-| `POST` | `/{slug}/forgot-password` | Public | `sendResetLink(email, resetUrl?)` | `{ success, message }` |
-| `POST` | `/{slug}/reset-password` | Public | `resetPassword(token, password)` | `{ success, message }` |
-| `POST` | `/{slug}/{id}/change-password` | Bearer | `changePassword(id, payload)` | `{ success, message }` |
-| `POST` | `/{slug}/invite` | Bearer | `invite(email)` | `{ success, message }` |
-| `POST` | `/{slug}/accept-invite` | Public | `acceptInvite(token, password, extra?)` | `{ token, user }` |
+| Method | Path                           | Auth   | SDK method                              | Returns                |
+| ------ | ------------------------------ | ------ | --------------------------------------- | ---------------------- |
+| `GET`  | `/{slug}/init`                 | Public | `isInitialized()`                       | `{ initialized }`      |
+| `POST` | `/{slug}/first-user`           | Public | `registerFirstUser(data)`               | `{ token, user }`      |
+| `POST` | `/{slug}/login`                | Public | `login(email, password)`                | `{ token, user }`      |
+| `POST` | `/{slug}/logout`               | Public | `logout()`                              | `{ success, message }` |
+| `GET`  | `/{slug}/me`                   | Bearer | `me()`                                  | the user document      |
+| `POST` | `/{slug}/refresh-token`        | Bearer | `refreshToken()`                        | `{ token }`            |
+| `POST` | `/{slug}/forgot-password`      | Public | `sendResetLink(email, resetUrl?)`       | `{ success, message }` |
+| `POST` | `/{slug}/reset-password`       | Public | `resetPassword(token, password)`        | `{ success, message }` |
+| `POST` | `/{slug}/{id}/change-password` | Bearer | `changePassword(id, payload)`           | `{ success, message }` |
+| `POST` | `/{slug}/invite`               | Bearer | `invite(email)`                         | `{ success, message }` |
+| `POST` | `/{slug}/accept-invite`        | Public | `acceptInvite(token, password, extra?)` | `{ token, user }`      |
 
 "Bearer" means the request must include a valid `Authorization: Bearer <token>` header. The rest are public. The `password` field is stripped from every user object these endpoints return.
 
@@ -10856,19 +11288,19 @@ A brand-new auth collection has no users, and login needs one to exist. These tw
 `init` tells you whether any user exists yet, which is handy for deciding whether to show a "create first admin" screen or a normal login form:
 
 ```ts
-const { initialized } = await client.collection('users').isInitialized()
+const { initialized } = await client.collection("users").isInitialized();
 // GET /api/collections/users/init → { "initialized": false }
 ```
 
 `first-user` creates that very first account. It only works while the collection is empty — once any user exists it returns `403`. The first user is always created with `roles: ["admin"]`, and you get back a signed-in session immediately:
 
 ```ts
-const { token, user } = await client.collection('users').registerFirstUser({
-  email: 'owner@example.com',
-  password: 'a-strong-password',
-  name: 'Site Owner',
-})
-client.setToken(token)
+const { token, user } = await client.collection("users").registerFirstUser({
+  email: "owner@example.com",
+  password: "a-strong-password",
+  name: "Site Owner",
+});
+client.setToken(token);
 // POST /api/collections/users/first-user → { token, user }
 ```
 
@@ -10876,34 +11308,54 @@ Any extra fields you include (like `name` above) are saved onto the new document
 
 ## Logging in and out
 
-`login` exchanges an email and password for a token and the user record. A wrong email and a wrong password return the same `401` with the message `"Invalid email or password."`, so the endpoint never reveals which accounts exist:
+`login` exchanges an email and password for a token and the user record. A wrong email and a wrong password return the same `401` with the message `"Invalid email or password."`, so the endpoint never reveals which accounts exist during normal failures:
 
 ```ts
-const { token, user } = await client.collection('users').login(
-  'jane@example.com',
-  'hunter2',
-)
-client.setToken(token)
+const { token, user } = await client
+  .collection("users")
+  .login("jane@example.com", "hunter2");
+client.setToken(token);
 // POST /api/collections/users/login → { token, user }
 ```
 
-`logout` is stateless. Because the token *is* the session, there is nothing to delete on the server — the endpoint just confirms and reminds you to drop the token client-side:
+If the collection's built-in lockout is enabled and someone keeps guessing wrong passwords, Dyrected temporarily locks that account and `login` starts returning `429 Too Many Requests` until the lock window expires:
 
-```ts
-await client.collection('users').logout()
-client.clearToken()
-// POST /api/collections/users/logout
-// → { "success": true, "message": "Logged out. Discard your token." }
+```json
+{
+  "error": true,
+  "message": "Too many login attempts. Try again later.",
+  "retryAfterSeconds": 600
+}
 ```
 
-Calling `clearToken()` is what actually ends the session in your app. The server call is optional confirmation.
+The response also includes a `Retry-After` header. By default Dyrected locks an account after 5 failed attempts for 10 minutes, and you can change both values on the collection with `auth: { maxLoginAttempts, lockTime }`.
+
+`logout` now revokes the current server-tracked session, so the token stops working immediately even before it expires:
+
+```ts
+await client.collection("users").logout();
+client.clearToken();
+// POST /api/collections/users/logout
+// → { "success": true, "message": "Logged out." }
+```
+
+If you want to sign the account out everywhere, call the same endpoint with `allSessions=true`:
+
+```ts
+await fetch("/api/collections/users/logout?allSessions=true", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+});
+```
+
+Calling `clearToken()` still matters because your app should stop sending the token it was holding, but the server now revokes the backing session too.
 
 ## Reading the current user
 
 `me` returns the signed-in user's current document. It requires a Bearer token and returns the user object **directly** — not wrapped in a `{ user }` envelope:
 
 ```ts
-const user = await client.collection('users').me()
+const user = await client.collection("users").me();
 // GET /api/collections/users/me
 // → { "id": "...", "email": "jane@example.com", "name": "Jane", "roles": [...] }
 ```
@@ -10912,25 +11364,25 @@ If the token is missing or invalid you get a `401`; if the account was deleted s
 
 ## Refreshing a session
 
-Tokens expire (7 days by default). `refresh-token` issues a fresh token from a still-valid one, extending the session without asking the user to log in again:
+Tokens expire (7 days by default). `refresh-token` issues a fresh token from a still-valid one, extending the current session without asking the user to log in again:
 
 ```ts
-const { token } = await client.collection('users').refreshToken()
-client.setToken(token)
+const { token } = await client.collection("users").refreshToken();
+client.setToken(token);
 // POST /api/collections/users/refresh-token → { token }
 ```
 
-This requires a valid Bearer token — an expired token cannot refresh itself, so refresh before it lapses.
+This requires a valid Bearer token — an expired token cannot refresh itself, so refresh before it lapses. The refreshed token keeps the same underlying session instead of silently creating a second one.
 
 ## Resetting a forgotten password
 
 This is a two-step flow. First, `forgot-password` sends a reset email. It **always** returns `200` with the same message whether or not the email belongs to a real account, so it can never be used to probe which emails are registered:
 
 ```ts
-await client.collection('users').sendResetLink(
-  'jane@example.com',
-  'https://mysite.com/reset-password', // optional
-)
+await client.collection("users").sendResetLink(
+  "jane@example.com",
+  "https://mysite.com/reset-password", // optional
+);
 // POST /api/collections/users/forgot-password
 // → { "success": true, "message": "If an account with that email exists, a reset link has been sent." }
 ```
@@ -10940,32 +11392,36 @@ When you pass a `resetUrl`, Dyrected builds a clickable link by appending `token
 Second, `reset-password` sets the new password using the token from that email:
 
 ```ts
-await client.collection('users').resetPassword(tokenFromEmail, 'a-new-password')
+await client
+  .collection("users")
+  .resetPassword(tokenFromEmail, "a-new-password");
 // POST /api/collections/users/reset-password
 // → { "success": true, "message": "Password has been reset. You can now log in." }
 ```
 
-The reset token is single-purpose and time-limited — it is valid for one hour and only works against the collection it was issued for.
+The reset token is single-purpose and time-limited — it is valid for one hour and only works against the collection it was issued for. A successful reset also revokes that user's active sessions so older login tokens stop working.
 
 ## Changing a known password
 
 When the user is signed in and just wants to change their password, use `change-password` instead of the reset flow. It requires a Bearer token and targets the user's own `id`:
 
 ```ts
-await client.collection('users').changePassword(user.id, {
-  oldPassword: 'hunter2',
-  newPassword: 'an-even-better-password',
-  confirmPassword: 'an-even-better-password',
-})
+await client.collection("users").changePassword(user.id, {
+  oldPassword: "hunter2",
+  newPassword: "an-even-better-password",
+  confirmPassword: "an-even-better-password",
+});
 // POST /api/collections/users/{id}/change-password → { success, message }
 ```
+
+A successful password change revokes that user's active sessions too, so any older tokens need to be replaced with a fresh login.
 
 ## Inviting users
 
 Invitations let an existing, signed-in user bring someone new in without handing out a shared password. `invite` sends an invitation email to an address that does not yet have an account — it requires a Bearer token, and returns `409` if the email is already registered:
 
 ```ts
-await client.collection('users').invite('newteammate@example.com')
+await client.collection("users").invite("newteammate@example.com");
 // POST /api/collections/users/invite
 // → { "success": true, "message": "Invite sent to newteammate@example.com." }
 ```
@@ -10973,12 +11429,12 @@ await client.collection('users').invite('newteammate@example.com')
 The invited person completes signup with `accept-invite`, which is public — the invite token is what authorizes it. Their email comes from the token, so they only choose a password (plus any extra fields you collect). On success they are created and signed in, and the response is `201`:
 
 ```ts
-const { token, user } = await client.collection('users').acceptInvite(
+const { token, user } = await client.collection("users").acceptInvite(
   inviteTokenFromEmail,
-  'their-chosen-password',
-  { name: 'New Teammate' }, // optional extra fields
-)
-client.setToken(token)
+  "their-chosen-password",
+  { name: "New Teammate" }, // optional extra fields
+);
+client.setToken(token);
 // POST /api/collections/users/accept-invite → { token, user }
 ```
 
@@ -10998,7 +11454,7 @@ Through the SDK these surface as a `DyrectedError` with a `statusCode` and an `e
 
 
 try {
-  await client.collection('users').login(email, password)
+  await client.collection("users").login(email, password);
 } catch (err) {
   if (err instanceof DyrectedError && err.statusCode === 401) {
     // show "wrong email or password"
@@ -11019,13 +11475,13 @@ try {
 
 Canonical URL: https://docs.dyrected.com/docs/features/authentication/overview
 
-Authentication in Dyrected is opt-in and lives on your collections. You turn a collection into a login provider by adding one line — `auth: true` — and Dyrected gives you email and password fields, a full set of login endpoints, and stateless JWT sessions you can check anywhere in your app.
+Authentication in Dyrected is opt-in and lives on your collections. You turn a collection into a login provider with `auth`, and Dyrected gives you email and password fields, a full set of login endpoints, and JWT sessions you can check anywhere in your app.
 
-By the end of this page you should understand what `auth: true` actually does, how a session works, where roles and access control fit, and how to keep your dashboard logins separate from your application's users. This is the home page for the concept; deeper mechanics live on their own pages, linked as you go.
+By the end of this page you should understand what `auth` actually does, how a session works, how built-in login lockout fits into production auth, where roles and access control fit, and how to keep your dashboard logins separate from your application's users. This is the home page for the concept; deeper mechanics live on their own pages, linked as you go.
 
 ## The mental model
 
-An **auth collection** is just a normal collection with a login attached. When you set `auth: true`, three things happen:
+An **auth collection** is just a normal collection with a login attached. When you enable `auth`, three things happen:
 
 1. **Fields are injected.** Every document gets an `email` (required, unique) and a `password` (hashed on save, never returned in API responses). A `roles` field is added too, so you have somewhere to store permissions from day one.
 2. **Endpoints are mounted.** A full set of auth routes appears under `/api/collections/{slug}/` — login, logout, the current user, password reset, invitations, and more.
@@ -11035,19 +11491,17 @@ You can enable auth on as many collections as you like. A common shape is one co
 
 ## Enable it
 
-Add `auth: true` to any collection. You declare only the extra fields you want — `email`, `password`, and `roles` are added for you, so you never list them yourself:
+Add `auth: true` to any collection when you want the default setup. You declare only the extra fields you want — `email`, `password`, and `roles` are added for you, so you never list them yourself:
 
 ```ts
 // dyrected.config.ts
 
 
 export const Users = defineCollection({
-  slug: 'users',
+  slug: "users",
   auth: true,
-  fields: [
-    { name: 'name', label: 'Name', type: 'text' },
-  ],
-})
+  fields: [{ name: "name", label: "Name", type: "text" }],
+});
 ```
 
 That single collection now has working login endpoints. Before anyone can log in, set the signing secret Dyrected uses to sign session tokens:
@@ -11059,17 +11513,38 @@ DYRECTED_JWT_SECRET=a-long-random-secret-at-least-32-chars
 
 The same secret must be present in every environment, and it must not be empty — auth collections throw at startup if `DYRECTED_JWT_SECRET` is missing. Changing it invalidates every existing session at once.
 
+## Production login protection
+
+For production auth collections, leave Dyrected's built-in account lockout on. It is enabled by default and temporarily locks an account after too many failed password attempts.
+
+If you want to tune it, pass an object instead of bare `true`:
+
+```ts
+export const Users = defineCollection({
+  slug: "users",
+  auth: {
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000, // 15 minutes
+  },
+  fields: [{ name: "name", label: "Name", type: "text" }],
+});
+```
+
+`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds. Set `maxLoginAttempts: 0` only if you have a deliberate reason to turn the built-in lockout off for that collection.
+
+This protects the account itself. It does **not** replace host-level rate limiting, WAF rules, or proxy throttling for public routes. Keep those in place too, especially for auth, uploads, and preview endpoints. The deployment side of that lives in [Preventing Abuse](/docs/deployment/production/preventing-abuse).
+
 ## What you get
 
 Enabling auth injects these fields into the collection. You can redefine them to add labels or admin options, but their core constraints are always enforced:
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `email` | `email` | Required, unique. This is the login identifier and cannot be changed after the document is created. |
-| `password` | `text` | Required, hashed on save, stripped from every API read response. A user can only change their own. |
-| `roles` | `select` | Options `admin`, `editor`, `viewer` by default; starts empty. Only an existing admin can change another user's roles. |
+| Field      | Type     | Notes                                                                                                                 |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------- |
+| `email`    | `email`  | Required, unique. This is the login identifier and cannot be changed after the document is created.                   |
+| `password` | `text`   | Required, hashed on save, stripped from every API read response. A user can only change their own.                    |
+| `roles`    | `select` | Options `admin`, `editor`, `viewer` by default; starts empty. Only an existing admin can change another user's roles. |
 
-And it mounts a full set of endpoints under `/api/collections/{slug}/` — `login`, `logout`, `me`, `refresh-token`, `forgot-password`, `reset-password`, `invite`, `accept-invite`, plus `init` and `first-user` for bootstrapping the very first account. Each one, with its exact request and response shape, is documented in [Operations](/docs/features/authentication/operations).
+And it mounts a full set of endpoints under `/api/collections/{slug}/` — `login`, `logout`, `me`, `refresh-token`, `forgot-password`, `reset-password`, `invite`, `accept-invite`, plus `init` and `first-user` for bootstrapping the very first account. Each one, with its exact request and response shape, is documented in [Operations](/docs/features/authentication/operations), including how the login route behaves when an account is temporarily locked.
 
 ## Log in and read the user
 
@@ -11078,32 +11553,33 @@ Logging in exchanges an email and password for a token and the user record. Stor
 ```ts
 
 
-const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! });
 
 // Exchange credentials for a session
-const { token, user } = await client.collection('users').login(
-  'jane@example.com',
-  'hunter2',
-)
+const { token, user } = await client
+  .collection("users")
+  .login("jane@example.com", "hunter2");
 
 // Tell the client to send this token on future requests
-client.setToken(token)
+client.setToken(token);
 
 // Now protected calls work
-const me = await client.collection('users').me()
+const me = await client.collection("users").me();
 ```
 
-The SDK holds the token in memory only — it does not persist it for you. Deciding *where* the token lives between requests (a cookie, storage, a framework composable) is the job of the [Cookie Strategy](/docs/features/authentication/cookie-strategy) page.
+The SDK holds the token in memory only — it does not persist it for you. Deciding _where_ the token lives between requests (a cookie, storage, a framework composable) is the job of the [Cookie Strategy](/docs/features/authentication/cookie-strategy) page.
 
-## Sessions are stateless
+## Sessions are signed tokens with server-side revocation
 
-Dyrected auth has no server-side sessions. The signed token *is* the session. Every request carries it in the `Authorization` header:
+Dyrected still uses signed bearer tokens, but they are no longer purely stateless. Every login creates a server-side session record and returns a JWT that points at that session. Every request carries the token in the `Authorization` header:
 
 ```
 Authorization: Bearer <token>
 ```
 
-The server verifies the token on each request and, when a database is connected, re-loads the user's current document so your access rules always see fresh data. There is nothing to invalidate on the server at logout — the client discards the token and it expires on its own (after 7 days by default).
+The server verifies the token on each request, checks that the backing session is still active, and then re-loads the user's current document so your access rules always see fresh data. That means logout can revoke the current token immediately, `logout?allSessions=true` can revoke every session for that account, and password resets or password changes can invalidate older tokens on the spot.
+
+The client still needs to discard the token it was holding, but there is now a real server-side invalidation point too.
 
 Two pages go deeper here:
 
@@ -11116,16 +11592,14 @@ The injected `roles` field is where permissions live, but Dyrected does not enfo
 
 ```ts
 export const Orders = defineCollection({
-  slug: 'orders',
+  slug: "orders",
   access: {
     read: ({ user }) => !!user,
     create: ({ user }) => !!user,
-    update: ({ user }) => user?.roles?.includes('admin'),
+    update: ({ user }) => user?.roles?.includes("admin"),
   },
-  fields: [
-    { name: 'total', label: 'Total', type: 'number' },
-  ],
-})
+  fields: [{ name: "total", label: "Total", type: "number" }],
+});
 ```
 
 `user.roles` is available here even though the token itself does not carry roles — Dyrected re-hydrates the user from the database on each request. For the full model, see [Access Control](/docs/basics/access-control/overview).
@@ -11146,8 +11620,8 @@ This is a separate system from collection auth — it only governs who reaches t
 
 For server-to-server calls, you have two distinct things, and it helps to keep them straight:
 
-- **A user session** — obtained by logging a real user in (`login` → JWT) and sent as `Authorization: Bearer <token>`. Use this when a request should act *as a specific user* and respect that user's access rules.
-- **A project credential** — the `DYRECTED_API_KEY` you configure for the SDK, sent as the `x-api-key` header. This identifies your *application* to the Dyrected backend. It is not a per-user login and does not stand in for a user session.
+- **A user session** — obtained by logging a real user in (`login` → JWT) and sent as `Authorization: Bearer <token>`. Use this when a request should act _as a specific user_ and respect that user's access rules.
+- **A project credential** — the `DYRECTED_API_KEY` you configure for the SDK, sent as the `x-api-key` header. This identifies your _application_ to the Dyrected backend. It is not a per-user login and does not stand in for a user session.
 
 Dyrected does not currently offer per-user API keys (a key that authenticates as one specific account). If you need that today, log the user in and reuse the returned token.
 
@@ -11529,6 +12003,7 @@ export const Products = defineCollection({
   fields: [
     {
       name: "brandColor",
+      label: "Brand color",
       type: "text",
       admin: {
         component: "brand-color-picker",

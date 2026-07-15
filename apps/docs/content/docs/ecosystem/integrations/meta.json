@@ -7,6 +7,6 @@
     "react",
     "vue",
     "sdk",
-    "vercel-content-link"
+    "__vercel-content-link"
   ]
 }

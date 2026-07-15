@@ -1,17 +1,65 @@
 import { Hero } from '@/components/hero'
 import { Card } from '@/components/ui/card'
-import { BookOpen, Terminal, Zap, Layers, Database, Cloud } from 'lucide-react'
+import { InstallCommand } from '@/components/install-command'
+import { CopyPromptButton } from '@/components/copy-prompt-button'
+import { NextLogo, NuxtLogo, ReactLogo, VueLogo } from '@/components/framework-logos'
+import {
+  Bot,
+  Compass,
+  Database,
+  ShieldCheck,
+  Eye,
+  Rocket,
+  ArrowRight,
+} from 'lucide-react'
+
+// Framework quickstarts. AI agents is a first-class peer, listed first.
+const quickstarts = [
+  {
+    label: 'AI agents',
+    descriptor: 'Set up with a coding agent',
+    href: '/docs/quick-start-guides/coding-agents-and-ai-app-builders/setting-up-your-cloud-site',
+    badge: <Bot size={18} />,
+  },
+  {
+    label: 'Next.js',
+    descriptor: 'App Router quick start',
+    href: '/docs/quick-start-guides/nextjs-quick-start/overview',
+    badge: <NextLogo />,
+  },
+  {
+    label: 'Nuxt',
+    descriptor: 'Nuxt 3 quick start',
+    href: '/docs/quick-start-guides/nuxtjs-quick-start/overview',
+    badge: <NuxtLogo />,
+  },
+  {
+    label: 'React',
+    descriptor: 'React quick start',
+    href: '/docs/quick-start-guides/reactjs-quick-start/overview',
+    badge: <ReactLogo />,
+  },
+  {
+    label: 'Vue',
+    descriptor: 'Vue quick start',
+    href: '/docs/quick-start-guides/vuejs-quick-start/overview',
+    badge: <VueLogo />,
+  },
+]
 
 export default function HomePage() {
   return (
-    <main className="flex-1 space-y-20 pb-20">
+    <main className="flex-1 space-y-24 pb-24">
       <Hero
         title="Give every site you build a client-ready admin"
-        description="Dyrected adds a safe content admin to websites and SaaS apps, so clients and teams can update content without touching your design or creating engineering tickets."
+        description="Dyrected adds a safe content admin to websites and SaaS apps, so clients and teams can update content without touching your design or filing engineering tickets."
       >
-        <div className="flex flex-wrap items-center justify-center gap-4 mt-2">
-          <a href="/docs/getting-started/introduction" className="btn-lime rounded-full px-8 py-3 text-sm font-semibold">
-            Get Started
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-4">
+          <a
+            href="/docs/basics/getting-started/what-is-dyrected"
+            className="btn-lime rounded-full px-8 py-3 text-sm font-semibold"
+          >
+            Start here
           </a>
           <a
             href="https://github.com/Dyrected/dyrected"
@@ -22,89 +70,157 @@ export default function HomePage() {
             Star on GitHub
           </a>
         </div>
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          Use the hosted admin at <span className="font-medium text-foreground">app.dyrected.com</span> for automatic updates,
-          or mount the admin inside your app at <span className="font-medium text-foreground">/admin</span> for a white-label handoff.
-        </p>
       </Hero>
 
-      <section className="container mx-auto px-4 max-w-6xl">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <Card
-            title="Guides"
-            description="Step-by-step tutorials on building blogs, portfolios, and enterprise dashboards with Dyrected."
-            href="/docs/guides/building-a-blog"
-            icon={<BookOpen size={20} />}
-          />
-          <Card
-            title="REST API"
-            description="Explore the comprehensive REST API endpoints for content manipulation and retrieval."
-            href="/docs/reference/rest-api"
-            icon={<Terminal size={20} />}
-          />
-          <Card
-            title="SDK Reference"
-            description="Deep dive into our TypeScript SDK, including hooks for React, Next.js, and Nuxt."
-            href="/docs/reference/sdk"
-            icon={<Zap size={20} />}
-          />
-          <Card
-            title="Core Concepts"
-            description="Understand how collections, fields, and access control work under the hood."
-            href="/docs/concepts/collections"
-            icon={<Layers size={20} />}
-          />
-          <Card
-            title="Storage Adapters"
-            description="Configure Local, S3, or Cloudinary storage for your media and file uploads."
-            href="/docs/adapters/storage"
-            icon={<Database size={20} />}
-          />
-          <Card
-            title="Deployment"
-            description="Guides for deploying Dyrected to Docker, Railway, or Vercel with ease."
-            href="/docs/deployment/docker"
-            icon={<Cloud size={20} />}
-          />
-        </div>
-      </section>
+      {/* Set up: for humans (install command) and for agents (copy prompt) */}
+      <section className="container mx-auto max-w-5xl px-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="setup-panel flex flex-col gap-4 rounded-2xl p-6">
+            <div>
+              <h2 className="setup-eyebrow text-xs font-semibold uppercase tracking-wide">
+                For humans
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Scaffold Dyrected into a new or existing project. Same command on any package manager.
+              </p>
+            </div>
+            <InstallCommand />
+            <a
+              href="/docs/basics/getting-started/installation"
+              className="link-violet mt-auto inline-flex items-center gap-1 text-sm font-medium"
+            >
+              Installation guide
+              <ArrowRight size={14} />
+            </a>
+          </div>
 
-      {/* Proof section: white in light mode, Violet Black in dark mode. */}
-      <section className="container mx-auto px-4 max-w-4xl text-center">
-        <div className="proof-section rounded-lg p-12">
-          <h2
-            className="text-2xl font-medium tracking-normal mb-4 text-foreground"
-            style={{ fontFamily: 'var(--font-display, serif)' }}
-          >
-            Source Available &amp; Transparent
-          </h2>
-          <p className="mb-8 max-w-lg mx-auto leading-relaxed text-sm text-muted-foreground">
-            Dyrected is source-available and built for the community. Join our Discord to contribute
-            or get help with your project.
-          </p>
-          <div className="flex justify-center gap-6 text-sm font-medium">
-            <a href="#" className="link-violet">Discord</a>
-            <span className="proof-divider">•</span>
-            <a href="#" className="link-violet">GitHub Discussions</a>
+          <div className="setup-panel flex flex-col gap-4 rounded-2xl p-6">
+            <div>
+              <h2 className="setup-eyebrow text-xs font-semibold uppercase tracking-wide">
+                For agents
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Paste the setup prompt into Claude Code, Cursor, or any coding agent and let it wire
+                Dyrected up for you.
+              </p>
+            </div>
+            <div>
+              <CopyPromptButton mode="cloud" />
+            </div>
+            <a
+              href="/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt"
+              className="link-violet mt-auto inline-flex items-center gap-1 text-sm font-medium"
+            >
+              Using the Dyrected prompt
+              <ArrowRight size={14} />
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Final CTA — strongest color moment: full Signal Lime section */}
-      <section className="container mx-auto px-4 max-w-4xl text-center">
-        <div className="cta-lime rounded-lg py-16 px-8">
-          <h2
-            className="text-3xl font-medium tracking-normal mb-4"
-            style={{ fontFamily: 'var(--font-display, serif)' }}
-          >
-            Ready to build?
-          </h2>
-          <p className="cta-lime-copy mb-8 max-w-sm mx-auto text-sm leading-relaxed">
-            Define what editors can change in code, then choose hosted admin or embedded admin based on how you want to hand it off.
-          </p>
-          <a href="/docs/getting-started/introduction" className="btn-dark-on-lime inline-flex items-center rounded-full px-8 py-3 text-sm font-semibold">
-            Read the docs →
-          </a>
+      {/* Quickstarts by framework */}
+      <section className="container mx-auto max-w-6xl px-4">
+        <h2
+          className="mb-6 text-2xl font-medium tracking-normal text-foreground"
+          style={{ fontFamily: 'var(--font-display, serif)' }}
+        >
+          Start in your stack
+        </h2>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {quickstarts.map((qs) => (
+            <a
+              key={qs.label}
+              href={qs.href}
+              className="doc-card group flex flex-col gap-3 rounded-xl p-5"
+            >
+              <div className="doc-card-icon flex h-10 w-10 items-center justify-center rounded-lg">
+                {qs.badge}
+              </div>
+              <div>
+                <h3 className="doc-card-title font-medium">{qs.label}</h3>
+                <p className="doc-card-copy mt-0.5 text-xs leading-relaxed">{qs.descriptor}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      {/* Browse by intent — real top-level areas */}
+      <section className="container mx-auto max-w-6xl px-4">
+        <h2
+          className="mb-6 text-2xl font-medium tracking-normal text-foreground"
+          style={{ fontFamily: 'var(--font-display, serif)' }}
+        >
+          Explore the docs
+        </h2>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <Card
+            title="Core concepts"
+            description="How collections, fields, globals, and access control fit together in a Dyrected config."
+            href="/docs/basics/getting-started/concepts"
+            icon={<Compass size={20} />}
+          />
+          <Card
+            title="Managing data"
+            description="Query and mutate your content with the TypeScript SDK and the REST API."
+            href="/docs/managing-data/sdk-api/overview"
+            icon={<Database size={20} />}
+          />
+          <Card
+            title="The admin panel"
+            description="Configure the editing experience your clients and teams actually use every day."
+            href="/docs/features/admin/overview"
+            icon={<Eye size={20} />}
+          />
+          <Card
+            title="Authentication"
+            description="Set up login, sessions, and API keys, then hand the admin off to editors safely."
+            href="/docs/features/authentication/overview"
+            icon={<ShieldCheck size={20} />}
+          />
+          <Card
+            title="Live preview"
+            description="Let editors see content changes reflected in your real frontend as they type."
+            href="/docs/features/live-preview/overview"
+            icon={<Eye size={20} />}
+          />
+          <Card
+            title="Deployment"
+            description="Take a Dyrected project to production, including builds without a live database."
+            href="/docs/deployment/production/deployment"
+            icon={<Rocket size={20} />}
+          />
+        </div>
+      </section>
+
+      {/* Thin community strip */}
+      <section className="container mx-auto max-w-4xl px-4">
+        <div className="proof-section flex flex-col items-center gap-3 rounded-xl p-8 text-center sm:flex-row sm:justify-between sm:text-left">
+          <div>
+            <h2 className="text-base font-medium text-foreground">Source-available and community-built</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Contribute, ask questions, or follow along as Dyrected grows.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-6 text-sm font-medium">
+            <a
+              href="https://github.com/Dyrected/dyrected/discussions"
+              target="_blank"
+              rel="noreferrer"
+              className="link-violet"
+            >
+              Ask a question
+            </a>
+            <span className="proof-divider">•</span>
+            <a
+              href="https://github.com/Dyrected/dyrected"
+              target="_blank"
+              rel="noreferrer"
+              className="link-violet"
+            >
+              GitHub
+            </a>
+          </div>
         </div>
       </section>
     </main>

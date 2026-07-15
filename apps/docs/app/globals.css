@@ -162,13 +162,30 @@ body {
 
 .link-violet:hover { color: var(--primary-hover); }
 
-/* Homepage atmosphere */
+/* Homepage atmosphere: content requests routed into clean directed paths.
+   Ported from the dyrected-pro www hero background. */
 .docs-atmosphere {
   background-color: var(--background);
-  background-image:
-    linear-gradient(to right, var(--path-lime) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--path-violet) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-image: url("data:image/svg+xml,%3Csvg width='420' height='260' viewBox='0 0 420 260' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 66H112C130 66 138 74 138 92V126C138 144 146 152 164 152H260C278 152 286 144 286 126V72C286 54 294 46 312 46H394' stroke='%237C3DFF' stroke-opacity='0.18' stroke-width='1.25'/%3E%3Cpath d='M18 184H86C104 184 112 176 112 158V136C112 118 120 110 138 110H208C226 110 234 102 234 84V30' stroke='%23B6FF2E' stroke-opacity='0.22' stroke-width='1.25'/%3E%3Cpath d='M128 230V202C128 184 136 176 154 176H232C250 176 258 184 258 202V224' stroke='%237C3DFF' stroke-opacity='0.13' stroke-width='1.25'/%3E%3Cpath d='M314 236V198C314 180 322 172 340 172H404' stroke='%23B6FF2E' stroke-opacity='0.18' stroke-width='1.25'/%3E%3Ccircle cx='24' cy='66' r='3' fill='%237C3DFF' fill-opacity='0.28'/%3E%3Ccircle cx='394' cy='46' r='3' fill='%23B6FF2E' fill-opacity='0.46'/%3E%3Ccircle cx='18' cy='184' r='3' fill='%23B6FF2E' fill-opacity='0.36'/%3E%3Ccircle cx='234' cy='30' r='3' fill='%237C3DFF' fill-opacity='0.24'/%3E%3Ccircle cx='128' cy='230' r='3' fill='%237C3DFF' fill-opacity='0.18'/%3E%3Ccircle cx='404' cy='172' r='3' fill='%23B6FF2E' fill-opacity='0.28'/%3E%3C/svg%3E");
+  background-position: center top;
+  background-repeat: repeat;
+  background-size: 460px 285px;
+  opacity: 0.7;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+}
+
+/* Dark mode: lighter violet (--primary in dark) and stronger stroke opacity so
+   the paths stay legible over the near-black background. */
+.dark .docs-atmosphere {
+  background-image: url("data:image/svg+xml,%3Csvg width='420' height='260' viewBox='0 0 420 260' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 66H112C130 66 138 74 138 92V126C138 144 146 152 164 152H260C278 152 286 144 286 126V72C286 54 294 46 312 46H394' stroke='%23A77DFF' stroke-opacity='0.30' stroke-width='1.25'/%3E%3Cpath d='M18 184H86C104 184 112 176 112 158V136C112 118 120 110 138 110H208C226 110 234 102 234 84V30' stroke='%23B6FF2E' stroke-opacity='0.30' stroke-width='1.25'/%3E%3Cpath d='M128 230V202C128 184 136 176 154 176H232C250 176 258 184 258 202V224' stroke='%23A77DFF' stroke-opacity='0.22' stroke-width='1.25'/%3E%3Cpath d='M314 236V198C314 180 322 172 340 172H404' stroke='%23B6FF2E' stroke-opacity='0.26' stroke-width='1.25'/%3E%3Ccircle cx='24' cy='66' r='3' fill='%23A77DFF' fill-opacity='0.40'/%3E%3Ccircle cx='394' cy='46' r='3' fill='%23B6FF2E' fill-opacity='0.58'/%3E%3Ccircle cx='18' cy='184' r='3' fill='%23B6FF2E' fill-opacity='0.48'/%3E%3Ccircle cx='234' cy='30' r='3' fill='%23A77DFF' fill-opacity='0.36'/%3E%3Ccircle cx='128' cy='230' r='3' fill='%23A77DFF' fill-opacity='0.28'/%3E%3Ccircle cx='404' cy='172' r='3' fill='%23B6FF2E' fill-opacity='0.40'/%3E%3C/svg%3E");
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .docs-atmosphere {
+    transition: opacity 300ms;
+  }
 }
 
 .docs-glow-lime { background: var(--glow-lime); }
@@ -213,6 +230,34 @@ body {
 .doc-card-learn { color: var(--primary); opacity: 0; transition: opacity 200ms; }
 .doc-card:hover .doc-card-learn,
 .doc-card:focus-visible .doc-card-learn { opacity: 1; }
+
+/* Setup panels: For humans / For agents */
+.setup-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 46px -42px var(--surface-shadow);
+}
+
+.setup-eyebrow {
+  color: var(--primary);
+  letter-spacing: 0.08em;
+}
+
+/* Copy-paste install command */
+.install-command {
+  background: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+}
+
+.install-command-copy {
+  color: var(--muted-foreground);
+  transition: background 150ms, color 150ms;
+}
+
+.install-command-copy:hover {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+}
 
 .proof-section {
   background: var(--proof-surface);

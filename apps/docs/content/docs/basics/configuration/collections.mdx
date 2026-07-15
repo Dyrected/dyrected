@@ -118,7 +118,9 @@ Pass your document's TypeScript type as the generic parameter `TDoc` to get
 fully typed hooks and access functions.
 
 ```ts
-export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
+export interface CollectionConfig<
+  TDoc extends object = Record<string, unknown>,
+> {
   /**
    * Unique identifier for this collection.
    *
@@ -164,7 +166,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * If `true`, this collection is an auth collection. It gains
+   * If `true` or an auth config object, this collection is an auth collection. It gains
    * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`
    * endpoints, and documents are expected to have a `password` field.
    *
@@ -172,9 +174,12 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * in, hold credentials, and participate in user flows. Typical examples are
    * `users`, `admins`, `members`, or `customers`.
    *
+   * Pass an object when you want to tune built-in account lockout behavior for
+   * repeated failed logins.
+   *
    * @see {@link https://dyrected.com/docs/features/authentication/overview Authentication overview}
    */
-  auth?: boolean;
+  auth?: boolean | AuthConfig;
 
   /**
    * If `true` or a config object, this collection supports file uploads.
@@ -248,7 +253,6 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * live content, and any authorized editor can publish or unpublish entries.
    */
   drafts?: boolean;
-
 
   /**
    * Collection-level access control.
@@ -392,7 +396,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?:
+      string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.
@@ -422,7 +427,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>siteId</code> (optional) | Restricts this collection to one specific site in a multi-tenant setup.  Use this when the collection should belong to a single site rather than the whole installation. When set, only requests bearing a matching &#96;X-Site-Id&#96; header can access it. |
 | <code>shared</code> (optional) | If &#96;true&#96;, this collection is shared across all sites in a multi-tenant setup and accessible regardless of the &#96;X-Site-Id&#96; header.  Use this for content that should stay common across sites, such as shared taxonomies, reusable assets, or centrally managed reference data. |
 | <code>labels</code> (optional) | Human-readable names for documents in this collection, shown in the Admin UI.  Use this when the slug is technical or when you want the dashboard to read more naturally. For example, &#96;slug: 'people'&#96; might use &#96;labels: &#123; singular: 'Person', plural: 'People' &#125;&#96;.  See: [Collections labels](https://dyrected.com/docs/basics/configuration/collections#labels) |
-| <code>auth</code> (optional) | If &#96;true&#96;, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  See: [Authentication overview](https://dyrected.com/docs/features/authentication/overview) |
+| <code>auth</code> (optional) | If &#96;true&#96; or an auth config object, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  Pass an object when you want to tune built-in account lockout behavior for repeated failed logins.  See: [Authentication overview](https://dyrected.com/docs/features/authentication/overview) |
 | <code>upload</code> (optional) | If &#96;true&#96; or a config object, this collection supports file uploads. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;.  Turn this on when each document in the collection should represent a stored file, such as an image, PDF, video, or downloadable asset.  See: [Upload overview](https://dyrected.com/docs/features/upload/overview) |
 | <code>fields</code> (required) | Field definitions that make up the document schema for this collection.  This is the main schema contract for every document in the collection. It decides what editors can fill in, how data is validated, how records are stored, and what the API and SDK return.  In practice, fields are where you model the actual content structure of the collection: simple values such as text and dates, relationships to other collections, nested objects and arrays, and flexible &#96;blocks&#96; fields for reusable page sections or long-form layouts.  See: [Fields overview](https://dyrected.com/docs/basics/fields/overview), [Blocks and page sections](https://dyrected.com/docs/basics/fields/blocks) |
 | <code>timestamps</code> (optional) | If &#96;true&#96;, Dyrected automatically adds the built-in system fields &#96;createdAt&#96;, &#96;updatedAt&#96;, &#96;createdBy&#96;, and &#96;updatedBy&#96; to every document. Defaults to &#96;true&#96;. |
