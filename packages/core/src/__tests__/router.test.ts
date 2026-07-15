@@ -1,15 +1,35 @@
 import { describe, it, expect } from "vitest";
 import { createDyrectedApp } from "../app.js";
-import { defineConfig, defineCollection, defineGlobal } from "../index.js";
+import {
+  defineBlock,
+  defineBlocksField,
+  defineConfig,
+  defineCollection,
+  defineGlobal,
+  defineTextField,
+} from "../index.js";
 import { MockDatabaseAdapter } from "./mocks.js";
 
 describe("Dynamic Router", async () => {
   const config = defineConfig({
+    blocks: [
+      defineBlock({
+        slug: "hero",
+        fields: [defineTextField({ name: "heading", label: "Heading" })],
+      }),
+    ],
     collections: [
       defineCollection({
         slug: "posts",
         admin: { icon: "Newspaper" },
-        fields: [{ name: "title", type: "text" }],
+        fields: [
+          { name: "title", type: "text" },
+          defineBlocksField({
+            name: "layout",
+            label: "Layout",
+            blockReferences: ["hero"],
+          }),
+        ],
       }),
     ],
     globals: [
@@ -34,6 +54,13 @@ describe("Dynamic Router", async () => {
     expect(data.collections[0].admin.icon).toBe("Newspaper");
     expect(data.globals[0].slug).toBe("settings");
     expect(data.globals[0].admin.icon).toBe("Settings2");
+    expect(data.blocks).toHaveLength(1);
+    expect(data.blocks[0].slug).toBe("hero");
+    const layoutField = data.collections[0].fields.find(
+      (field: any) => field.name === "layout",
+    );
+    expect(layoutField.blockReferences).toEqual(["hero"]);
+    expect(layoutField.blocks).toBeUndefined();
   });
 
   it("should register collection routes", async () => {

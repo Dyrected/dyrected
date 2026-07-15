@@ -1,11 +1,16 @@
 import type { Context } from "hono";
 import type { DyrectedContext } from "../app.js";
-import type { CollectionConfig, DatabaseAdapter, PaginatedResult } from "../types/index.js";
+import type {
+  CollectionConfig,
+  DatabaseAdapter,
+  PaginatedResult,
+} from "../types/index.js";
 import {
   mergeWhereConstraint,
   resolveCollectionAccess,
   toHookRequestContext,
 } from "../utils/access-control.js";
+import { mergeDynamicConfig } from "../utils/block-references.js";
 
 type AuditQuery = {
   limit: number;
@@ -30,7 +35,10 @@ export class AuditController {
         limit,
         page,
         sort,
-        where: JSON.parse(decodeURIComponent(whereRaw)) as Record<string, unknown>,
+        where: JSON.parse(decodeURIComponent(whereRaw)) as Record<
+          string,
+          unknown
+        >,
       };
     } catch {
       return { limit, page, sort };
@@ -105,17 +113,25 @@ export class AuditController {
       return { denied: true, where: {} };
     }
 
-    let where: Record<string, unknown> = { collection: { equals: collection.slug } };
+    let where: Record<string, unknown> = {
+      collection: { equals: collection.slug },
+    };
 
     if (access.constraint) {
-      const ids = await this.collectAccessibleDocumentIds(config.db!, collection, access.constraint);
+      const ids = await this.collectAccessibleDocumentIds(
+        config.db!,
+        collection,
+        access.constraint,
+      );
       where = mergeWhereConstraint(where, { documentId: { in: ids } });
     }
 
     return { denied: false, where };
   }
 
-  private async getVisibleCollections(c: Context<DyrectedContext>): Promise<CollectionConfig[]> {
+  private async getVisibleCollections(
+    c: Context<DyrectedContext>,
+  ): Promise<CollectionConfig[]> {
     const config = c.get("config");
     const collections = new Map<string, CollectionConfig>();
 
@@ -125,8 +141,11 @@ export class AuditController {
 
     const siteId = c.req.header("X-Site-Id") || c.get("siteId");
     if (config.onSchemaFetch && siteId) {
-      const dynamic = await config.onSchemaFetch(siteId);
-      for (const collection of dynamic.collections || []) {
+      const requestConfig = mergeDynamicConfig(
+        config,
+        await config.onSchemaFetch(siteId),
+      );
+      for (const collection of requestConfig.collections) {
         if (!collections.has(collection.slug)) {
           collections.set(collection.slug, collection);
         }
@@ -136,18 +155,30 @@ export class AuditController {
     return Array.from(collections.values());
   }
 
-  async findForCollection(c: Context<DyrectedContext>, collection: CollectionConfig) {
+  async findForCollection(
+    c: Context<DyrectedContext>,
+    collection: CollectionConfig,
+  ) {
     const config = c.get("config");
     if (!config.db) return c.json({ message: "Database not configured" }, 500);
-    if (!collection.audit) return c.json({ message: "Audit is not enabled for this collection" }, 404);
+    if (!collection.audit)
+      return c.json(
+        { message: "Audit is not enabled for this collection" },
+        404,
+      );
 
     const query = this.parseQuery(c);
     const scope = await this.buildCollectionAuditScope(c, collection);
     if (scope.denied) {
-      return c.json({ error: true, message: `Access denied: read on ${collection.slug}` }, 403);
+      return c.json(
+        { error: true, message: `Access denied: read on ${collection.slug}` },
+        403,
+      );
     }
 
-    const where = query.where ? mergeWhereConstraint(scope.where, query.where) : scope.where;
+    const where = query.where
+      ? mergeWhereConstraint(scope.where, query.where)
+      : scope.where;
     const result = await config.db.find({
       collection: "__audit",
       where,
@@ -164,7 +195,9 @@ export class AuditController {
     if (!config.db) return c.json({ message: "Database not configured" }, 500);
 
     const query = this.parseQuery(c);
-    const collections = (await this.getVisibleCollections(c)).filter((collection) => collection.audit);
+    const collections = (await this.getVisibleCollections(c)).filter(
+      (collection) => collection.audit,
+    );
     const scopes: Record<string, unknown>[] = [];
 
     for (const collection of collections) {

@@ -1,6 +1,15 @@
-import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
-import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
+import type {
+  CollectionConfig,
+  DyrectedConfig,
+  Field,
+} from "../types/index.js";
+import {
+  LIFECYCLE_EVENTS_COLLECTION,
+  WORKFLOW_HISTORY_COLLECTION,
+  simplePublishingWorkflow,
+} from "../workflows.js";
 import { getAdminAuthCollection } from "./admin-auth.js";
+import { normalizeSchemaFragment } from "./block-references.js";
 
 const AUDIT_COLLECTION_SLUG = "__audit";
 
@@ -37,12 +46,23 @@ const AUDIT_COLLECTION: CollectionConfig = {
   fields: [
     { name: "collection", type: "text", label: "Collection", required: true },
     { name: "documentId", type: "text", label: "Document ID" },
-    { name: "operation", type: "select", label: "Operation", options: ["create", "update", "delete"], required: true },
+    {
+      name: "operation",
+      type: "select",
+      label: "Operation",
+      options: ["create", "update", "delete"],
+      required: true,
+    },
     { name: "user", type: "text", label: "User ID" },
     { name: "timestamp", type: "date", label: "Timestamp", required: true },
     { name: "changes", type: "json", label: "Changes" },
   ],
-  access: { read: () => false, create: () => false, update: () => false, delete: () => false },
+  access: {
+    read: () => false,
+    create: () => false,
+    update: () => false,
+    delete: () => false,
+  },
   admin: { hidden: true },
 };
 
@@ -60,7 +80,12 @@ const WORKFLOW_HISTORY_COLLECTION_CONFIG: CollectionConfig = {
     { name: "actorId", type: "text" },
     { name: "createdAt", type: "date", required: true },
   ],
-  access: { read: ({ user }) => !!user, create: () => false, update: () => false, delete: () => false },
+  access: {
+    read: ({ user }) => !!user,
+    create: () => false,
+    update: () => false,
+    delete: () => false,
+  },
   admin: { hidden: true },
 };
 
@@ -75,12 +100,22 @@ const LIFECYCLE_EVENTS_COLLECTION_CONFIG: CollectionConfig = {
     { name: "actorId", type: "text" },
     { name: "payload", type: "json", required: true },
     { name: "attempts", type: "number", required: true },
-    { name: "status", type: "select", options: ["pending", "processing", "delivered", "failed"], required: true },
+    {
+      name: "status",
+      type: "select",
+      options: ["pending", "processing", "delivered", "failed"],
+      required: true,
+    },
     { name: "nextAttemptAt", type: "date" },
     { name: "deliveredAt", type: "date" },
     { name: "lastError", type: "textarea" },
   ],
-  access: { read: ({ user }) => !!user?.roles?.includes("admin"), create: () => false, update: () => false, delete: () => false },
+  access: {
+    read: ({ user }) => !!user?.roles?.includes("admin"),
+    create: () => false,
+    update: () => false,
+    delete: () => false,
+  },
   admin: { hidden: true },
 };
 
@@ -90,13 +125,14 @@ const LIFECYCLE_EVENTS_COLLECTION_CONFIG: CollectionConfig = {
  * registering the __audit collection if any collection has audit: true.
  */
 export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
-  const collections = config?.collections || [];
-  const globals = config?.globals || [];
+  const schemaAwareConfig = normalizeSchemaFragment(config);
+  const collections = schemaAwareConfig?.collections || [];
+  const globals = schemaAwareConfig?.globals || [];
   const needsAudit = collections.some((col) => col.audit);
   const needsWorkflow = collections.some((col) => col.workflow || col.drafts);
   const adminAuthCollectionSlug = getAdminAuthCollection({
     collections,
-    adminAuth: config.adminAuth,
+    adminAuth: schemaAwareConfig.adminAuth,
   })?.slug;
 
   const normalizedCollections = collections.map((col) => {
@@ -156,7 +192,7 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
       }
 
       // Enforce access control rules for email, password, and roles fields even if explicitly defined
-      fields = (fields.map((field) => {
+      fields = fields.map((field) => {
         if (field.name === "email") {
           return {
             ...field,
@@ -196,11 +232,15 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
           };
         }
         return field;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      }) as any) as Field[];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }) as any as Field[];
     }
 
-    if (adminAuthCollectionSlug && col.slug === adminAuthCollectionSlug && config.adminAuth?.mode === "external") {
+    if (
+      adminAuthCollectionSlug &&
+      col.slug === adminAuthCollectionSlug &&
+      schemaAwareConfig.adminAuth?.mode === "external"
+    ) {
       const externalAdminFields: Field[] = [
         {
           name: "authProvider",
@@ -236,8 +276,11 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
     }
 
     const updatedFieldNames = new Set(fields.map((f) => f.name));
-    const fieldsToInject = SYSTEM_FIELDS.filter((f) => !updatedFieldNames.has(f.name));
-    const workflow = col.workflow || (col.drafts ? simplePublishingWorkflow() : undefined);
+    const fieldsToInject = SYSTEM_FIELDS.filter(
+      (f) => !updatedFieldNames.has(f.name),
+    );
+    const workflow =
+      col.workflow || (col.drafts ? simplePublishingWorkflow() : undefined);
     return {
       ...col,
       workflow,
@@ -245,18 +288,31 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
     };
   });
 
-  const hasAuditCollection = normalizedCollections.some((col) => col.slug === AUDIT_COLLECTION_SLUG);
+  const hasAuditCollection = normalizedCollections.some(
+    (col) => col.slug === AUDIT_COLLECTION_SLUG,
+  );
   const systemCollections: CollectionConfig[] = [];
-  if (needsAudit && !hasAuditCollection) systemCollections.push(AUDIT_COLLECTION);
-  if (needsWorkflow && !normalizedCollections.some((col) => col.slug === WORKFLOW_HISTORY_COLLECTION)) {
+  if (needsAudit && !hasAuditCollection)
+    systemCollections.push(AUDIT_COLLECTION);
+  if (
+    needsWorkflow &&
+    !normalizedCollections.some(
+      (col) => col.slug === WORKFLOW_HISTORY_COLLECTION,
+    )
+  ) {
     systemCollections.push(WORKFLOW_HISTORY_COLLECTION_CONFIG);
   }
-  if (needsWorkflow && !normalizedCollections.some((col) => col.slug === LIFECYCLE_EVENTS_COLLECTION)) {
+  if (
+    needsWorkflow &&
+    !normalizedCollections.some(
+      (col) => col.slug === LIFECYCLE_EVENTS_COLLECTION,
+    )
+  ) {
     systemCollections.push(LIFECYCLE_EVENTS_COLLECTION_CONFIG);
   }
 
   return {
-    ...config,
+    ...schemaAwareConfig,
     collections: [...normalizedCollections, ...systemCollections],
     globals,
   };

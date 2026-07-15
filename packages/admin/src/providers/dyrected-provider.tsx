@@ -1,8 +1,57 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, DyrectedClient } from "@dyrected/sdk";
 import type { AdminSchemas } from "../types/admin-components";
+import type { Block, Field } from "@dyrected/core";
 import { getAdminCollectionSlug, type AdminUser } from "./admin-auth";
 import { DyrectedContext, type DyrectedContextType } from "./dyrected-context";
+
+function resolveBlock(block: Block, registry: Map<string, Block>): Block {
+  return {
+    ...block,
+    fields: block.fields.map((field) => resolveFieldBlocks(field, registry)),
+  };
+}
+
+function resolveFieldBlocks(field: Field, registry: Map<string, Block>): Field {
+  const next = { ...field };
+
+  if (next.fields) {
+    next.fields = next.fields.map((child) =>
+      resolveFieldBlocks(child, registry),
+    );
+  }
+
+  if (next.type === "blocks" && next.blockReferences?.length) {
+    next.blocks = next.blockReferences
+      .map((slug) => registry.get(slug))
+      .filter((block): block is Block => !!block);
+    next.blocks = next.blocks.map((block) => resolveBlock(block, registry));
+  } else if (next.blocks) {
+    next.blocks = next.blocks.map((block) => resolveBlock(block, registry));
+  }
+
+  return next;
+}
+
+function resolveSchemas(schema: AdminSchemas): AdminSchemas {
+  const registry = new Map(
+    (schema.blocks ?? []).map((block) => [block.slug, block] as const),
+  );
+
+  return {
+    ...schema,
+    collections: schema.collections.map((collection) => ({
+      ...collection,
+      fields: collection.fields.map((field) =>
+        resolveFieldBlocks(field, registry),
+      ),
+    })),
+    globals: schema.globals.map((global) => ({
+      ...global,
+      fields: global.fields.map((field) => resolveFieldBlocks(field, registry)),
+    })),
+  };
+}
 
 export interface DyrectedProviderProps {
   children: React.ReactNode;
@@ -13,7 +62,7 @@ export interface DyrectedProviderProps {
   // admin-level auth when the user is already authenticated at the cloud level.
   initialToken?: string;
   defaultTechStack?: string;
-  components?: DyrectedContextType['components'];
+  components?: DyrectedContextType["components"];
 }
 
 export function DyrectedProvider({
@@ -23,16 +72,43 @@ export function DyrectedProvider({
   siteId: initialSiteId,
   initialToken,
   defaultTechStack,
-  components
+  components,
 }: DyrectedProviderProps) {
-  const [baseUrl, setBaseUrl] = useState<string>(() => initialBaseUrl || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_url") : null) || "");
-  const [apiKey, setApiKey] = useState<string | undefined>(() => initialApiKey || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_key") : null) || undefined);
-  const [siteId, setSiteId] = useState<string | undefined>(() => initialSiteId || (typeof window !== 'undefined' ? localStorage.getItem("dyrected_site_id") : null) || undefined);
+  const [baseUrl, setBaseUrl] = useState<string>(
+    () =>
+      initialBaseUrl ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("dyrected_url")
+        : null) ||
+      "",
+  );
+  const [apiKey, setApiKey] = useState<string | undefined>(
+    () =>
+      initialApiKey ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("dyrected_key")
+        : null) ||
+      undefined,
+  );
+  const [siteId, setSiteId] = useState<string | undefined>(
+    () =>
+      initialSiteId ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("dyrected_site_id")
+        : null) ||
+      undefined,
+  );
   const [schemas, setSchemas] = useState<AdminSchemas | null>(null);
-  const initialTokenUser = useMemo(() => (initialToken ? decodeTokenPayload(initialToken) : null), [initialToken]);
+  const initialTokenUser = useMemo(
+    () => (initialToken ? decodeTokenPayload(initialToken) : null),
+    [initialToken],
+  );
   const [user, setUser] = useState<AdminUser | null>(() => initialTokenUser);
   const [authCollectionSlug, setAuthCollectionSlug] = useState<string | null>(
-    () => (typeof window !== "undefined" ? localStorage.getItem("dyrected_admin_auth_collection") : null) || null,
+    () =>
+      (typeof window !== "undefined"
+        ? localStorage.getItem("dyrected_admin_auth_collection")
+        : null) || null,
   );
 
   const client = useMemo<DyrectedClient | null>(() => {
@@ -56,7 +132,8 @@ export function DyrectedProvider({
     client.getSchemas().then(
       (nextSchemas) => {
         if (cancelled) return;
-        setSchemas((prev) => (prev === nextSchemas ? prev : nextSchemas));
+        const resolved = resolveSchemas(nextSchemas);
+        setSchemas((prev) => (prev === resolved ? prev : resolved));
       },
       (err) => {
         if (cancelled) return;
@@ -79,56 +156,75 @@ export function DyrectedProvider({
     }
   }, [initialToken, client]);
 
-  const setAuth = useCallback((newUrl: string, newKey: string, newSiteId?: string) => {
-    localStorage.setItem("dyrected_url", newUrl);
-    localStorage.setItem("dyrected_key", newKey);
-    if (newSiteId) localStorage.setItem("dyrected_site_id", newSiteId);
-    else localStorage.removeItem("dyrected_site_id");
-    
-    setBaseUrl(newUrl);
-    setApiKey(newKey);
-    setSiteId(newSiteId);
-  }, []);
+  const setAuth = useCallback(
+    (newUrl: string, newKey: string, newSiteId?: string) => {
+      localStorage.setItem("dyrected_url", newUrl);
+      localStorage.setItem("dyrected_key", newKey);
+      if (newSiteId) localStorage.setItem("dyrected_site_id", newSiteId);
+      else localStorage.removeItem("dyrected_site_id");
 
-  const setToken = useCallback((token: string, collectionSlug?: string | null) => {
-    if (!token) {
-      localStorage.removeItem("dyrected_token");
-      localStorage.removeItem("dyrected_admin_auth_collection");
-      if (client) client.clearToken();
-      setAuthCollectionSlug(null);
-      setUser(null);
-      return;
-    }
+      setBaseUrl(newUrl);
+      setApiKey(newKey);
+      setSiteId(newSiteId);
+    },
+    [],
+  );
 
-    const resolvedCollectionSlug = collectionSlug || authCollectionSlug || getAdminCollectionSlug(schemas);
-    localStorage.setItem("dyrected_token", token);
-    if (resolvedCollectionSlug) {
-      localStorage.setItem("dyrected_admin_auth_collection", resolvedCollectionSlug);
-      setAuthCollectionSlug((prev) => (prev === resolvedCollectionSlug ? prev : resolvedCollectionSlug));
-    }
-    if (client) {
-      client.setToken(token);
+  const setToken = useCallback(
+    (token: string, collectionSlug?: string | null) => {
+      if (!token) {
+        localStorage.removeItem("dyrected_token");
+        localStorage.removeItem("dyrected_admin_auth_collection");
+        if (client) client.clearToken();
+        setAuthCollectionSlug(null);
+        setUser(null);
+        return;
+      }
+
+      const resolvedCollectionSlug =
+        collectionSlug || authCollectionSlug || getAdminCollectionSlug(schemas);
+      localStorage.setItem("dyrected_token", token);
       if (resolvedCollectionSlug) {
-        client.collection(resolvedCollectionSlug).me().then(
-          (nextUser) => setUser(nextUser as AdminUser),
-          () => setUser(null),
+        localStorage.setItem(
+          "dyrected_admin_auth_collection",
+          resolvedCollectionSlug,
+        );
+        setAuthCollectionSlug((prev) =>
+          prev === resolvedCollectionSlug ? prev : resolvedCollectionSlug,
         );
       }
-    }
-  }, [authCollectionSlug, client, schemas]);
+      if (client) {
+        client.setToken(token);
+        if (resolvedCollectionSlug) {
+          client
+            .collection(resolvedCollectionSlug)
+            .me()
+            .then(
+              (nextUser) => setUser(nextUser as AdminUser),
+              () => setUser(null),
+            );
+        }
+      }
+    },
+    [authCollectionSlug, client, schemas],
+  );
 
   useEffect(() => {
     if (initialToken || !client || !schemas || activeUser) return;
     const token = localStorage.getItem("dyrected_token");
-    const resolvedCollectionSlug = authCollectionSlug || getAdminCollectionSlug(schemas);
+    const resolvedCollectionSlug =
+      authCollectionSlug || getAdminCollectionSlug(schemas);
 
     if (!token || !resolvedCollectionSlug) return;
 
     client.setToken(token);
-    client.collection(resolvedCollectionSlug).me().then(
-      (nextUser) => setUser(nextUser as AdminUser),
-      () => setUser(null),
-    );
+    client
+      .collection(resolvedCollectionSlug)
+      .me()
+      .then(
+        (nextUser) => setUser(nextUser as AdminUser),
+        () => setUser(null),
+      );
   }, [activeUser, authCollectionSlug, client, initialToken, schemas]);
 
   const logout = useCallback(() => {
@@ -140,18 +236,20 @@ export function DyrectedProvider({
   }, [client]);
 
   return (
-    <DyrectedContext.Provider value={{
-      client,
-      config: { baseUrl, apiKey, siteId, defaultTechStack },
-      setAuth,
-      setToken,
-      logout,
-      isAuthenticated: !!baseUrl && !!apiKey,
-      schemas,
-      user: activeUser,
-      initialToken,
-      components
-    }}>
+    <DyrectedContext.Provider
+      value={{
+        client,
+        config: { baseUrl, apiKey, siteId, defaultTechStack },
+        setAuth,
+        setToken,
+        logout,
+        isAuthenticated: !!baseUrl && !!apiKey,
+        schemas,
+        user: activeUser,
+        initialToken,
+        components,
+      }}
+    >
       {children}
     </DyrectedContext.Provider>
   );
@@ -175,9 +273,12 @@ function decodeTokenPayload(token: string): AdminUser | null {
 
     const user = parsed as AdminUser;
     const roles = Array.isArray(user.roles)
-      ? user.roles.filter((role): role is string => typeof role === "string").map(normalizeCloudRole)
+      ? user.roles
+          .filter((role): role is string => typeof role === "string")
+          .map(normalizeCloudRole)
       : [];
-    const role = typeof user.role === "string" ? normalizeCloudRole(user.role) : undefined;
+    const role =
+      typeof user.role === "string" ? normalizeCloudRole(user.role) : undefined;
 
     return {
       ...user,

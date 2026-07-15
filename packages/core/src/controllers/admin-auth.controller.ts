@@ -18,7 +18,11 @@ import type {
   DyrectedConfig,
   OIDCAdminAuthProvider,
 } from "../types/index.js";
-import { getAdminAuthCollection, getPublicAdminAuthConfig } from "../utils/admin-auth.js";
+import {
+  getAdminAuthCollection,
+  getPublicAdminAuthConfig,
+} from "../utils/admin-auth.js";
+import { mergeDynamicConfig } from "../utils/block-references.js";
 
 interface AdminAuthStatePayload extends JWTPayload {
   providerId: string;
@@ -32,14 +36,22 @@ export class AdminAuthController {
 
   async providers(c: Context<DyrectedContext>) {
     const requestConfig = await this.getRequestConfig(c);
-    return c.json(getPublicAdminAuthConfig(requestConfig.adminAuth, requestConfig.collections));
+    return c.json(
+      getPublicAdminAuthConfig(
+        requestConfig.adminAuth,
+        requestConfig.collections,
+      ),
+    );
   }
 
   async start(c: Context<DyrectedContext>) {
     const requestConfig = await this.getRequestConfig(c);
     const provider = this.getProvider(requestConfig, c.req.param("provider"));
     if (!provider) {
-      return c.json({ error: true, message: "Admin auth provider not found." }, 404);
+      return c.json(
+        { error: true, message: "Admin auth provider not found." },
+        404,
+      );
     }
 
     const siteId = this.getSiteId(c);
@@ -56,10 +68,16 @@ export class AdminAuthController {
     }
 
     if (!provider.startUrl) {
-      return c.json({ error: true, message: "This provider does not expose a start URL." }, 400);
+      return c.json(
+        { error: true, message: "This provider does not expose a start URL." },
+        400,
+      );
     }
 
-    const url = this.buildCustomProviderStartUrl(provider.startUrl, new URL(c.req.url).origin);
+    const url = this.buildCustomProviderStartUrl(
+      provider.startUrl,
+      new URL(c.req.url).origin,
+    );
     if (!url) {
       return c.json(
         {
@@ -79,17 +97,30 @@ export class AdminAuthController {
     const requestConfig = await this.getRequestConfig(c);
     const provider = this.getProvider(requestConfig, c.req.param("provider"));
     if (!provider) {
-      return c.json({ error: true, message: "Admin auth provider not found." }, 404);
+      return c.json(
+        { error: true, message: "Admin auth provider not found." },
+        404,
+      );
     }
 
     try {
-      const exchange = await this.completeProviderAuth(requestConfig, provider, c);
+      const exchange = await this.completeProviderAuth(
+        requestConfig,
+        provider,
+        c,
+      );
       const redirectUrl = new URL(exchange.returnTo);
       redirectUrl.searchParams.set("dyrectedExternalToken", exchange.token);
-      redirectUrl.searchParams.set("dyrectedAdminCollection", exchange.collectionSlug);
+      redirectUrl.searchParams.set(
+        "dyrectedAdminCollection",
+        exchange.collectionSlug,
+      );
       return c.redirect(redirectUrl.toString(), 302);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "External authentication failed.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "External authentication failed.";
       const fallback = this.normalizeReturnTo(c.req.query("returnTo"), c);
       const redirectUrl = new URL(fallback);
       redirectUrl.searchParams.set("dyrectedExternalError", message);
@@ -101,28 +132,44 @@ export class AdminAuthController {
     const requestConfig = await this.getRequestConfig(c);
     const provider = this.getProvider(requestConfig, c.req.param("provider"));
     if (!provider) {
-      return c.json({ error: true, message: "Admin auth provider not found." }, 404);
+      return c.json(
+        { error: true, message: "Admin auth provider not found." },
+        404,
+      );
     }
 
     try {
-      const exchange = await this.completeProviderAuth(requestConfig, provider, c);
+      const exchange = await this.completeProviderAuth(
+        requestConfig,
+        provider,
+        c,
+      );
       return c.json({
         token: exchange.token,
         collectionSlug: exchange.collectionSlug,
         providerId: provider.id,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "External authentication failed.";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "External authentication failed.";
       const status = message === "Access denied for this site." ? 403 : 401;
       return c.json({ error: true, message }, status);
     }
   }
 
   async logout(c: Context<DyrectedContext>) {
-    return c.json({ success: true, message: "Logged out. Discard your token." });
+    return c.json({
+      success: true,
+      message: "Logged out. Discard your token.",
+    });
   }
 
-  private getProvider(config: DyrectedConfig, id: string): AdminAuthProvider | undefined {
+  private getProvider(
+    config: DyrectedConfig,
+    id: string,
+  ): AdminAuthProvider | undefined {
     if (config.adminAuth?.mode !== "external") return undefined;
     return config.adminAuth.providers.find((provider) => provider.id === id);
   }
@@ -148,7 +195,12 @@ export class AdminAuthController {
     if (!db) throw new Error("Database not configured.");
 
     let user =
-      (await this.findUserByExternalIdentity(db, adminCollection.slug, provider.id, identity.sub)) ??
+      (await this.findUserByExternalIdentity(
+        db,
+        adminCollection.slug,
+        provider.id,
+        identity.sub,
+      )) ??
       (identity.email
         ? (
             await db.find({
@@ -159,15 +211,27 @@ export class AdminAuthController {
           ).docs[0]
         : null);
 
-    const provisioningMode = requestConfig.adminAuth?.provisioningMode ?? "jit_plus_membership_management";
+    const provisioningMode =
+      requestConfig.adminAuth?.provisioningMode ??
+      "jit_plus_membership_management";
     const allowJitProvisioning =
-      provisioningMode !== "preprovisioned_only" && provider.allowJitProvisioning !== false;
+      provisioningMode !== "preprovisioned_only" &&
+      provider.allowJitProvisioning !== false;
 
     if (!user && !allowJitProvisioning) {
-      throw new Error("This account has not been provisioned for admin access.");
+      throw new Error(
+        "This account has not been provisioned for admin access.",
+      );
     }
 
-    const access = await this.resolveAccess(requestConfig, identity, provider.id, siteId, c, user);
+    const access = await this.resolveAccess(
+      requestConfig,
+      identity,
+      provider.id,
+      siteId,
+      c,
+      user,
+    );
     if (!access.allowed) {
       throw new Error("Access denied for this site.");
     }
@@ -176,7 +240,12 @@ export class AdminAuthController {
       user = await db.create({
         collection: adminCollection.slug,
         data: {
-          ...(await this.buildUserData(identity, provider.id, access.roles, access.data)),
+          ...(await this.buildUserData(
+            identity,
+            provider.id,
+            access.roles,
+            access.data,
+          )),
           password: await hashPassword(randomBytes(32).toString("hex")),
         },
       });
@@ -184,7 +253,12 @@ export class AdminAuthController {
       user = await db.update({
         collection: adminCollection.slug,
         id: user.id,
-        data: await this.buildUserData(identity, provider.id, access.roles, access.data),
+        data: await this.buildUserData(
+          identity,
+          provider.id,
+          access.roles,
+          access.data,
+        ),
       });
     }
 
@@ -272,20 +346,15 @@ export class AdminAuthController {
     return c.req.header("X-Site-Id") || c.get("siteId");
   }
 
-  private async getRequestConfig(c: Context<DyrectedContext>): Promise<DyrectedConfig> {
+  private async getRequestConfig(
+    c: Context<DyrectedContext>,
+  ): Promise<DyrectedConfig> {
     const siteId = this.getSiteId(c);
     if (!siteId || !this.config.onSchemaFetch) return this.config;
-
-    const dynamic = await this.config.onSchemaFetch(siteId);
-    return {
-      ...this.config,
-      ...(dynamic.admin ? { admin: { ...this.config.admin, ...dynamic.admin } } : {}),
-      ...(dynamic.adminAuth
-        ? { adminAuth: { ...this.config.adminAuth, ...dynamic.adminAuth } }
-        : {}),
-      collections: dynamic.collections ? [...this.config.collections, ...dynamic.collections] : this.config.collections,
-      globals: dynamic.globals ? [...this.config.globals, ...dynamic.globals] : this.config.globals,
-    };
+    return mergeDynamicConfig(
+      this.config,
+      await this.config.onSchemaFetch(siteId),
+    );
   }
 
   private async buildOidcStartUrl(
@@ -302,36 +371,52 @@ export class AdminAuthController {
       siteId,
       nonce,
     });
-    const url = new URL(provider.authorizationEndpoint || discovery.authorization_endpoint);
+    const url = new URL(
+      provider.authorizationEndpoint || discovery.authorization_endpoint,
+    );
     url.searchParams.set("response_type", "code");
     url.searchParams.set("client_id", provider.clientId);
-    url.searchParams.set("redirect_uri", provider.redirectUri || this.defaultCallbackPath(provider.id, origin));
-    url.searchParams.set("scope", (provider.scopes ?? ["openid", "profile", "email"]).join(" "));
+    url.searchParams.set(
+      "redirect_uri",
+      provider.redirectUri || this.defaultCallbackPath(provider.id, origin),
+    );
+    url.searchParams.set(
+      "scope",
+      (provider.scopes ?? ["openid", "profile", "email"]).join(" "),
+    );
     url.searchParams.set("state", state);
     url.searchParams.set("nonce", nonce);
     return url.toString();
   }
 
-  private async resolveOidcIdentity(provider: OIDCAdminAuthProvider, c: Context<DyrectedContext>) {
+  private async resolveOidcIdentity(
+    provider: OIDCAdminAuthProvider,
+    c: Context<DyrectedContext>,
+  ) {
     const code = c.req.query("code");
     const state = c.req.query("state");
     if (!code || !state) throw new Error("Missing OIDC callback parameters.");
 
     const parsedState = await this.verifyState(state, provider.id);
     const discovery = await this.getOidcDiscovery(provider);
-    const redirectUri = provider.redirectUri || this.defaultCallbackPath(provider.id, new URL(c.req.url).origin);
+    const redirectUri =
+      provider.redirectUri ||
+      this.defaultCallbackPath(provider.id, new URL(c.req.url).origin);
 
-    const tokenResponse = await fetch(provider.tokenEndpoint || discovery.token_endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: redirectUri,
-        client_id: provider.clientId,
-        client_secret: provider.clientSecret,
-      }),
-    });
+    const tokenResponse = await fetch(
+      provider.tokenEndpoint || discovery.token_endpoint,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+          client_id: provider.clientId,
+          client_secret: provider.clientSecret,
+        }),
+      },
+    );
 
     if (!tokenResponse.ok) {
       throw new Error("OIDC token exchange failed.");
@@ -351,10 +436,16 @@ export class AdminAuthController {
         throw new Error("OIDC nonce verification failed.");
       }
       claims = payload as Record<string, unknown>;
-    } else if (tokenBody.access_token && (provider.userInfoEndpoint || discovery.userinfo_endpoint)) {
-      const userInfo = await fetch(provider.userInfoEndpoint || discovery.userinfo_endpoint, {
-        headers: { Authorization: `Bearer ${tokenBody.access_token}` },
-      });
+    } else if (
+      tokenBody.access_token &&
+      (provider.userInfoEndpoint || discovery.userinfo_endpoint)
+    ) {
+      const userInfo = await fetch(
+        provider.userInfoEndpoint || discovery.userinfo_endpoint,
+        {
+          headers: { Authorization: `Bearer ${tokenBody.access_token}` },
+        },
+      );
       if (!userInfo.ok) throw new Error("OIDC userinfo request failed.");
       claims = await userInfo.json();
     } else {
@@ -367,10 +458,15 @@ export class AdminAuthController {
     };
   }
 
-  private async resolveCustomIdentity(provider: CustomAdminAuthProvider, c: Context<DyrectedContext>) {
-    const body = c.req.method === "POST" ? await c.req.json().catch(() => ({})) : {};
+  private async resolveCustomIdentity(
+    provider: CustomAdminAuthProvider,
+    c: Context<DyrectedContext>,
+  ) {
+    const body =
+      c.req.method === "POST" ? await c.req.json().catch(() => ({})) : {};
     const tokenParam = provider.tokenParam || "token";
-    const token = (body?.[tokenParam] as string | undefined) || c.req.query(tokenParam);
+    const token =
+      (body?.[tokenParam] as string | undefined) || c.req.query(tokenParam);
     if (!token) {
       throw new Error(`Missing ${tokenParam} for external auth exchange.`);
     }
@@ -397,13 +493,18 @@ export class AdminAuthController {
       }
       if (provider.audience) {
         const aud = claims.aud;
-        const matches = Array.isArray(aud) ? aud.includes(provider.audience) : aud === provider.audience;
+        const matches = Array.isArray(aud)
+          ? aud.includes(provider.audience)
+          : aud === provider.audience;
         if (!matches) throw new Error("External auth audience mismatch.");
       }
     }
 
     return {
-      identity: this.mapClaims(claims as Record<string, unknown>, provider.claimMapping),
+      identity: this.mapClaims(
+        claims as Record<string, unknown>,
+        provider.claimMapping,
+      ),
       returnTo: this.normalizeReturnTo(
         (body?.returnTo as string | undefined) || c.req.query("returnTo"),
         c,
@@ -433,9 +534,15 @@ export class AdminAuthController {
       email: this.readStringClaim(claims[emailKey]),
       name: this.readStringClaim(claims[nameKey]),
       roles: this.readStringArrayClaim(rolesKey ? claims[rolesKey] : undefined),
-      groups: this.readStringArrayClaim(groupsKey ? claims[groupsKey] : undefined),
-      siteIds: this.readStringArrayClaim(siteIdsKey ? claims[siteIdsKey] : undefined),
-      workspaceIds: this.readStringArrayClaim(workspaceIdsKey ? claims[workspaceIdsKey] : undefined),
+      groups: this.readStringArrayClaim(
+        groupsKey ? claims[groupsKey] : undefined,
+      ),
+      siteIds: this.readStringArrayClaim(
+        siteIdsKey ? claims[siteIdsKey] : undefined,
+      ),
+      workspaceIds: this.readStringArrayClaim(
+        workspaceIdsKey ? claims[workspaceIdsKey] : undefined,
+      ),
       rawClaims: claims,
     };
   }
@@ -447,7 +554,9 @@ export class AdminAuthController {
   private readStringArrayClaim(value: unknown) {
     if (!value) return undefined;
     if (Array.isArray(value)) {
-      return value.filter((entry): entry is string => typeof entry === "string");
+      return value.filter(
+        (entry): entry is string => typeof entry === "string",
+      );
     }
     if (typeof value === "string") return [value];
     return undefined;
@@ -458,7 +567,8 @@ export class AdminAuthController {
       provider.issuer.replace(/\/$/, "") + "/.well-known/openid-configuration",
     );
     const response = await fetch(discoveryUrl.toString());
-    if (!response.ok) throw new Error("Failed to load OIDC discovery document.");
+    if (!response.ok)
+      throw new Error("Failed to load OIDC discovery document.");
     return response.json() as Promise<{
       authorization_endpoint: string;
       token_endpoint: string;
@@ -471,7 +581,10 @@ export class AdminAuthController {
     return `${origin}/api/admin/auth/${providerId}/callback`;
   }
 
-  private buildCustomProviderStartUrl(startUrl: string, origin: string): URL | null {
+  private buildCustomProviderStartUrl(
+    startUrl: string,
+    origin: string,
+  ): URL | null {
     const value = startUrl.trim();
     if (!value || /^(undefined|null)(\/|$)/i.test(value)) return null;
 
@@ -509,7 +622,10 @@ export class AdminAuthController {
     return new TextEncoder().encode(secret);
   }
 
-  private normalizeReturnTo(returnTo: string | undefined, c: Context<DyrectedContext>) {
+  private normalizeReturnTo(
+    returnTo: string | undefined,
+    c: Context<DyrectedContext>,
+  ) {
     if (returnTo) return returnTo;
     const url = new URL(c.req.url);
     return `${url.origin}/admin`;

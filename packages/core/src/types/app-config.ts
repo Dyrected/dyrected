@@ -1,9 +1,14 @@
 import type { AdminAuthConfig } from "./admin-auth.js";
 import type { AdminConfig } from "./admin.js";
 import type { AccessPolicyResolver } from "./access.js";
-import type { DatabaseAdapter, ImageService, StorageAdapter } from "./adapters.js";
+import type {
+  DatabaseAdapter,
+  ImageService,
+  StorageAdapter,
+} from "./adapters.js";
 import type { AuthenticatedUser } from "./request.js";
 import type { LifecycleEventHandler } from "./workflows.js";
+import type { Block } from "./schema-core.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
 
 /**
@@ -22,7 +27,15 @@ import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
  *   globals: [SiteSettings],
  * })
  */
-export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedUser> {
+export interface DyrectedConfig<
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+> {
+  /**
+   * Reusable block definitions that `blocks` fields can reference by slug via
+   * `blockReferences`.
+   */
+  blocks?: Block[];
+
   /** Collection definitions. Each collection maps to a database table/collection. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   collections: CollectionConfig<any>[];
@@ -71,7 +84,10 @@ export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedU
    * so the admin panel evaluates them live against the current form — the same
    * way it evaluates inline Jexl rules.
    */
-  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean>;
+  accessPolicies?: Record<
+    string,
+    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean
+  >;
 
   /**
    * Email transport configuration. Required for welcome emails, password
@@ -90,7 +106,11 @@ export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedU
     from: string;
 
     /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
-    send: (args: { to: string; subject: string; html: string }) => Promise<void>;
+    send: (args: {
+      to: string;
+      subject: string;
+      html: string;
+    }) => Promise<void>;
 
     /** Override the default email templates. */
     templates?: {
@@ -152,6 +172,7 @@ export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedU
     siteId: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => Promise<{
+    blocks?: Block[];
     collections?: CollectionConfig<any>[];
     globals?: GlobalConfig<any>[];
     admin?: AdminConfig;

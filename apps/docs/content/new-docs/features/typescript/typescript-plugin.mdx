@@ -22,7 +22,7 @@ The current tooling story is:
 - `@dyrected/core` infers document shapes from `defineCollection`, `defineGlobal`, `defineField`, and `defineBlock`
 - `@dyrected/core` exports `InferDocShape` when you want to derive a type from a field array
 - `@dyrected/sdk` exports `InferSchema` so SDK calls follow your exported schema constants
-- `npx dyrected generate:types` creates a standalone typed contract file when inference alone is not the right boundary
+- `npx dyrected generate:types` creates a standalone typed contract file, including `DyrectedSchema`, when inference alone is not the right boundary
 
 So the real Dyrected TypeScript experience today is built from inference and generation, not from a dedicated editor plugin.
 
@@ -32,7 +32,7 @@ If what you really want is better TypeScript confidence while building with Dyre
 
 1. write schema code with the typed helpers from `@dyrected/core`
 2. export the collection and global constants you want the rest of the app to know about
-3. derive the client type with `InferSchema`, or generate `dyrected-types.ts` when you need a standalone contract
+3. derive the client type with `InferSchema`, or generate `dyrected-types.ts` and use `DyrectedSchema` when you need a standalone contract
 
 That is the current happy path, and it covers most of the same practical needs people usually mean when they ask for "the TypeScript plugin."
 
@@ -68,6 +68,6 @@ If you needed a plugin because you wanted stronger editor feedback, the current 
 
 - use inference-first schema code so mistakes surface as normal TypeScript errors
 - use `InferSchema` so SDK usage stays aligned with the exported schema constants
-- use `generate:types` when another app, repo, or package needs a plain generated contract file
+- use `generate:types` when another app, repo, or package needs a plain generated contract file and then type the SDK with generated `DyrectedSchema`
 
 That is less specialized than a dedicated language-service plugin, but it is the real Dyrected path available today.

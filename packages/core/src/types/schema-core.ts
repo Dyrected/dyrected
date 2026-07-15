@@ -104,7 +104,11 @@ export interface FieldBase {
   /** Default value used when a new document omits this field. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
-  options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig;
+  options?:
+    | string[]
+    | { label: string; value: unknown }[]
+    | DynamicOptionsResolver
+    | DynamicOptionsConfig;
   /** Target collection slug for `relationship` fields. */
   relationTo?: string;
   /** Whether the field stores multiple values instead of one. */
@@ -113,6 +117,14 @@ export interface FieldBase {
   fields?: Field[];
   /** Allowed block definitions for a `blocks` field. */
   blocks?: Block[];
+  /**
+   * Shared block slugs pulled from the root `defineConfig({ blocks: [...] })`
+   * registry for a `blocks` field.
+   *
+   * Use this when the same block types should be reused across multiple fields
+   * without inlining the full block schema into each field definition.
+   */
+  blockReferences?: string[];
   /** Target collection slug for `join` fields. */
   collection?: string;
   /** Back-reference field name on the joined collection. */
@@ -152,14 +164,22 @@ export interface BaseFieldAdmin {
   /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */
   hideLabel?: boolean;
   /** Reactive condition controlling whether the field is visible in the Admin UI. */
-  condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;
+  condition?:
+    | ((
+        data: Record<string, unknown>,
+        siblingData: Record<string, unknown>,
+      ) => boolean)
+    | string;
   /** Tab name used when the edit form is rendered as tabs. */
   tab?: string;
   /** CSS width hint used when the field appears inside a `row`. */
   width?: string;
 }
 
-export interface FieldBeforeChangeHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+export interface FieldBeforeChangeHookArgs<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> {
   /** Current field value after previous hooks in the chain. */
   value: TValue;
   /** Existing stored document before the write, if this is an update. */
@@ -172,11 +192,15 @@ export interface FieldBeforeChangeHookArgs<TValue = unknown, TDoc extends object
   db: ReadonlyDatabaseAdapter;
 }
 
-export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
-  args: FieldBeforeChangeHookArgs<TValue, TDoc>,
-) => unknown;
+export type FieldBeforeChangeHook<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> = (args: FieldBeforeChangeHookArgs<TValue, TDoc>) => unknown;
 
-export interface FieldAfterReadHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+export interface FieldAfterReadHookArgs<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> {
   /** Raw stored field value before this hook transforms it. */
   value: TValue;
   /** Full document currently being returned to the caller. */
@@ -187,9 +211,10 @@ export interface FieldAfterReadHookArgs<TValue = unknown, TDoc extends object = 
   db: ReadonlyDatabaseAdapter;
 }
 
-export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
-  args: FieldAfterReadHookArgs<TValue, TDoc>,
-) => unknown;
+export type FieldAfterReadHook<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> = (args: FieldAfterReadHookArgs<TValue, TDoc>) => unknown;
 
 export type FieldHooks<TValue> = {
   hooks?: {
@@ -209,7 +234,9 @@ export interface FieldAdminOnChangeHookArgs<TValue = unknown> {
   setValue: (value: unknown) => void;
 }
 
-export type FieldAdminOnChangeHook<TValue = unknown> = (args: FieldAdminOnChangeHookArgs<TValue>) => unknown;
+export type FieldAdminOnChangeHook<TValue = unknown> = (
+  args: FieldAdminOnChangeHookArgs<TValue>,
+) => unknown;
 
 export type FieldAdminHooks<TValue> = {
   admin?: {
@@ -226,13 +253,19 @@ export interface FieldAdminOptionsHookArgs {
   data: Record<string, unknown>;
 }
 
-export type FieldAdminOptionsHookResult = Array<string | { label: string; value: unknown }>;
+export type FieldAdminOptionsHookResult = Array<
+  string | { label: string; value: unknown }
+>;
 
 export type FieldAdminOptionsHook = (
   args: FieldAdminOptionsHookArgs,
 ) => FieldAdminOptionsHookResult | Promise<FieldAdminOptionsHookResult>;
 
-export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<never, never>> = Omit<FieldBase, "admin"> & {
+export type TypedField<
+  TType extends FieldType,
+  TValue,
+  TAdminExtra = Record<never, never>,
+> = Omit<FieldBase, "admin"> & {
   type: TType;
   admin?: BaseFieldAdmin & TAdminExtra;
 } & FieldHooks<TValue> &
@@ -243,7 +276,8 @@ export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<nev
  * maps each tone to a themed color, so you pick meaning (`success`, `danger`)
  * rather than a raw color and it stays consistent in light and dark mode.
  */
-export type DisplayTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+export type DisplayTone =
+  "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 
 /**
  * How a `select`, `radio`, or `multiSelect` value is presented in read-only
@@ -619,13 +653,18 @@ export interface RichTextFieldConfig {
   uploadCollection?: string;
 }
 
-export type TextField = TypedField<"text", string, TextFieldAdmin> & CharacterLimitFieldConfig & WordLimitFieldConfig;
+export type TextField = TypedField<"text", string, TextFieldAdmin> &
+  CharacterLimitFieldConfig &
+  WordLimitFieldConfig;
 export type TextareaField = TypedField<"textarea", string, TextareaFieldAdmin> &
   CharacterLimitFieldConfig &
   WordLimitFieldConfig;
-export type EmailField = TypedField<"email", string, EmailFieldAdmin> & CharacterLimitFieldConfig;
-export type UrlField = TypedField<"url", string | UrlLinkValue, UrlFieldAdmin> & CharacterLimitFieldConfig;
-export type IconField = TypedField<"icon", string, IconFieldAdmin> & CharacterLimitFieldConfig;
+export type EmailField = TypedField<"email", string, EmailFieldAdmin> &
+  CharacterLimitFieldConfig;
+export type UrlField = TypedField<"url", string | UrlLinkValue, UrlFieldAdmin> &
+  CharacterLimitFieldConfig;
+export type IconField = TypedField<"icon", string, IconFieldAdmin> &
+  CharacterLimitFieldConfig;
 /** A calendar day, stored and returned as an ISO date string. */
 export type DateField = TypedField<"date", string, DateFieldAdmin>;
 /** A specific instant, stored and returned as an ISO date-time string. */
@@ -637,19 +676,29 @@ export type SelectField = TypedField<"select", string, SelectFieldAdmin>;
 /** A single choice shown as radio buttons, stored as the chosen value. */
 export type RadioField = TypedField<"radio", string, RadioFieldAdmin>;
 /** A numeric value. Optional advisory `min`/`max` guide editors without enforcing server-side validation. */
-export type NumberField = TypedField<"number", number, NumberFieldAdmin> & NumberLimitFieldConfig;
+export type NumberField = TypedField<"number", number, NumberFieldAdmin> &
+  NumberLimitFieldConfig;
 /** A `true`/`false` value, shown to editors as a checkbox or switch. */
 export type BooleanField = TypedField<"boolean", boolean, BooleanFieldAdmin>;
 /** Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values. */
-export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
+export type MultiSelectField = TypedField<
+  "multiSelect",
+  string[],
+  MultiSelectFieldAdmin
+>;
 /** A reference to one or more documents in another collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple. */
 export type RelationshipField = TypedField<"relationship", string | string[]>;
 /** A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple. */
 export type ImageField = TypedField<"image", string | string[]>;
 /** Formatted content authored in the admin editor, stored as an HTML string. */
-export type RichTextField = TypedField<"richText", string> & RichTextFieldConfig;
+export type RichTextField = TypedField<"richText", string> &
+  RichTextFieldConfig;
 /** An arbitrary JSON value. Dyrected stores it as-is and does not validate its shape. */
-export type JsonField = TypedField<"json", Record<string, unknown>, JsonFieldAdmin>;
+export type JsonField = TypedField<
+  "json",
+  Record<string, unknown>,
+  JsonFieldAdmin
+>;
 /** A group of nested `fields` stored as an embedded object under this field's `name`. */
 export type ObjectField = TypedField<"object", unknown>;
 /** A repeatable list of rows that all share the same `fields`, stored as an array of objects. */

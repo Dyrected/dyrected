@@ -39,6 +39,8 @@ Reach for generated types when one of these is true:
 - your frontend or another package should consume types without importing the full schema config
 - you are pointing at Dyrected Cloud or another running instance and want types from `/api/schemas`
 
+When you choose that generated-file path, the type you use with the SDK is `DyrectedSchema` from `dyrected-types.ts`.
+
 ## What you get from inference
 
 The builder helpers in `@dyrected/core` preserve the literal shape of your schema while you write it.
@@ -179,6 +181,17 @@ By default, Dyrected writes `./dyrected-types.ts`. That file includes:
 - a `DyrectedSchema` interface you can pass to `createClient<DyrectedSchema>()`
 
 The next page covers that flow in detail: [Generating Types](/new-docs/features/typescript/generating-types).
+
+If you already have that generated file, use it directly:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+const client = createClient<DyrectedSchema>({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+});
+```
 
 ## What belongs on this page
 

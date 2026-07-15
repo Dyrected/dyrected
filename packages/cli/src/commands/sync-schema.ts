@@ -6,11 +6,22 @@ import { createJiti } from "jiti";
 import { runGenerateTypes } from "../utils/type-generator.js";
 import { loadCommandEnv } from "../utils/env.js";
 
-function isNamedPolicy(value: unknown): value is { policy: string; params?: Record<string, unknown> } {
-  return !!value && typeof value === "object" && "policy" in value && typeof (value as { policy?: unknown }).policy === "string";
+function isNamedPolicy(
+  value: unknown,
+): value is { policy: string; params?: Record<string, unknown> } {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "policy" in value &&
+    typeof (value as { policy?: unknown }).policy === "string"
+  );
 }
 
-function sanitizeAccessValue(value: unknown, location: string, warnings: string[]): unknown {
+function sanitizeAccessValue(
+  value: unknown,
+  location: string,
+  warnings: string[],
+): unknown {
   if (value === undefined || value === null) return value;
   if (typeof value === "boolean" || typeof value === "string") return value;
   if (isNamedPolicy(value)) return value;
@@ -23,56 +34,150 @@ function sanitizeAccessValue(value: unknown, location: string, warnings: string[
   return value;
 }
 
-function sanitizeField(field: Record<string, any>, location: string, warnings: string[]) {
+function sanitizeField(
+  field: Record<string, any>,
+  location: string,
+  warnings: string[],
+) {
   const sanitized = { ...field };
 
   if (sanitized.access) {
     sanitized.access = {
-      ...(sanitized.access.read !== undefined ? { read: sanitizeAccessValue(sanitized.access.read, `${location}.access.read`, warnings) } : {}),
-      ...(sanitized.access.create !== undefined ? { create: sanitizeAccessValue(sanitized.access.create, `${location}.access.create`, warnings) } : {}),
-      ...(sanitized.access.update !== undefined ? { update: sanitizeAccessValue(sanitized.access.update, `${location}.access.update`, warnings) } : {}),
+      ...(sanitized.access.read !== undefined
+        ? {
+            read: sanitizeAccessValue(
+              sanitized.access.read,
+              `${location}.access.read`,
+              warnings,
+            ),
+          }
+        : {}),
+      ...(sanitized.access.create !== undefined
+        ? {
+            create: sanitizeAccessValue(
+              sanitized.access.create,
+              `${location}.access.create`,
+              warnings,
+            ),
+          }
+        : {}),
+      ...(sanitized.access.update !== undefined
+        ? {
+            update: sanitizeAccessValue(
+              sanitized.access.update,
+              `${location}.access.update`,
+              warnings,
+            ),
+          }
+        : {}),
     };
   }
 
   if (Array.isArray(sanitized.fields)) {
-    sanitized.fields = sanitized.fields.map((child: Record<string, any>, index: number) =>
-      sanitizeField(child, `${location}.fields[${index}]`, warnings),
+    sanitized.fields = sanitized.fields.map(
+      (child: Record<string, any>, index: number) =>
+        sanitizeField(child, `${location}.fields[${index}]`, warnings),
     );
   }
 
   if (Array.isArray(sanitized.blocks)) {
-    sanitized.blocks = sanitized.blocks.map((block: Record<string, any>, blockIndex: number) => ({
-      ...block,
-      fields: Array.isArray(block.fields)
-        ? block.fields.map((child: Record<string, any>, fieldIndex: number) =>
-            sanitizeField(child, `${location}.blocks[${blockIndex}].fields[${fieldIndex}]`, warnings),
-          )
-        : block.fields,
-    }));
+    sanitized.blocks = sanitized.blocks.map(
+      (block: Record<string, any>, blockIndex: number) => ({
+        ...block,
+        fields: Array.isArray(block.fields)
+          ? block.fields.map((child: Record<string, any>, fieldIndex: number) =>
+              sanitizeField(
+                child,
+                `${location}.blocks[${blockIndex}].fields[${fieldIndex}]`,
+                warnings,
+              ),
+            )
+          : block.fields,
+      }),
+    );
   }
 
   return sanitized;
 }
 
 export function sanitizeSchemaForCloudSync(config: {
+  blocks?: Record<string, any>[];
   collections: Record<string, any>[];
   globals?: Record<string, any>[];
   admin?: Record<string, any>;
 }) {
   const warnings: string[] = [];
 
+  const blocks = (config.blocks || []).map((block, index) => ({
+    ...block,
+    fields: Array.isArray(block.fields)
+      ? block.fields.map((field: Record<string, any>, fieldIndex: number) =>
+          sanitizeField(
+            field,
+            `blocks[${index}].fields[${fieldIndex}]`,
+            warnings,
+          ),
+        )
+      : block.fields,
+  }));
+
   const collections = config.collections.map((collection, index) => ({
     ...collection,
     access: {
-      ...(collection.access?.read !== undefined ? { read: sanitizeAccessValue(collection.access.read, `collections[${index}].access.read`, warnings) } : {}),
-      ...(collection.access?.create !== undefined ? { create: sanitizeAccessValue(collection.access.create, `collections[${index}].access.create`, warnings) } : {}),
-      ...(collection.access?.update !== undefined ? { update: sanitizeAccessValue(collection.access.update, `collections[${index}].access.update`, warnings) } : {}),
-      ...(collection.access?.delete !== undefined ? { delete: sanitizeAccessValue(collection.access.delete, `collections[${index}].access.delete`, warnings) } : {}),
-      ...(collection.access?.readAudit !== undefined ? { readAudit: sanitizeAccessValue(collection.access.readAudit, `collections[${index}].access.readAudit`, warnings) } : {}),
+      ...(collection.access?.read !== undefined
+        ? {
+            read: sanitizeAccessValue(
+              collection.access.read,
+              `collections[${index}].access.read`,
+              warnings,
+            ),
+          }
+        : {}),
+      ...(collection.access?.create !== undefined
+        ? {
+            create: sanitizeAccessValue(
+              collection.access.create,
+              `collections[${index}].access.create`,
+              warnings,
+            ),
+          }
+        : {}),
+      ...(collection.access?.update !== undefined
+        ? {
+            update: sanitizeAccessValue(
+              collection.access.update,
+              `collections[${index}].access.update`,
+              warnings,
+            ),
+          }
+        : {}),
+      ...(collection.access?.delete !== undefined
+        ? {
+            delete: sanitizeAccessValue(
+              collection.access.delete,
+              `collections[${index}].access.delete`,
+              warnings,
+            ),
+          }
+        : {}),
+      ...(collection.access?.readAudit !== undefined
+        ? {
+            readAudit: sanitizeAccessValue(
+              collection.access.readAudit,
+              `collections[${index}].access.readAudit`,
+              warnings,
+            ),
+          }
+        : {}),
     },
     fields: Array.isArray(collection.fields)
-      ? collection.fields.map((field: Record<string, any>, fieldIndex: number) =>
-          sanitizeField(field, `collections[${index}].fields[${fieldIndex}]`, warnings),
+      ? collection.fields.map(
+          (field: Record<string, any>, fieldIndex: number) =>
+            sanitizeField(
+              field,
+              `collections[${index}].fields[${fieldIndex}]`,
+              warnings,
+            ),
         )
       : collection.fields,
   }));
@@ -80,18 +185,39 @@ export function sanitizeSchemaForCloudSync(config: {
   const globals = (config.globals || []).map((global, index) => ({
     ...global,
     access: {
-      ...(global.access?.read !== undefined ? { read: sanitizeAccessValue(global.access.read, `globals[${index}].access.read`, warnings) } : {}),
-      ...(global.access?.update !== undefined ? { update: sanitizeAccessValue(global.access.update, `globals[${index}].access.update`, warnings) } : {}),
+      ...(global.access?.read !== undefined
+        ? {
+            read: sanitizeAccessValue(
+              global.access.read,
+              `globals[${index}].access.read`,
+              warnings,
+            ),
+          }
+        : {}),
+      ...(global.access?.update !== undefined
+        ? {
+            update: sanitizeAccessValue(
+              global.access.update,
+              `globals[${index}].access.update`,
+              warnings,
+            ),
+          }
+        : {}),
     },
     fields: Array.isArray(global.fields)
       ? global.fields.map((field: Record<string, any>, fieldIndex: number) =>
-          sanitizeField(field, `globals[${index}].fields[${fieldIndex}]`, warnings),
+          sanitizeField(
+            field,
+            `globals[${index}].fields[${fieldIndex}]`,
+            warnings,
+          ),
         )
       : global.fields,
   }));
 
   return {
     payload: {
+      blocks,
       collections,
       globals,
       admin: config.admin || {},
@@ -106,11 +232,24 @@ export function registerSyncSchema(program: Command) {
     .description("Sync your local Dyrected schema with the Cloud dashboard")
     .option("-k, --api-key <key>", "Your Dyrected API Key")
     .option("-s, --site-id <id>", "Your Dyrected Site ID")
-    .option("-u, --url <url>", "Cloud API URL (defaults to $DYRECTED_URL, then Dyrected Cloud)")
-    .option("-c, --config <path>", "Path to your dyrected.config.ts", "./dyrected.config.ts")
+    .option(
+      "-u, --url <url>",
+      "Cloud API URL (defaults to $DYRECTED_URL, then Dyrected Cloud)",
+    )
+    .option(
+      "-c, --config <path>",
+      "Path to your dyrected.config.ts",
+      "./dyrected.config.ts",
+    )
     .option("--env-path <path>", "Path to an env file to load before syncing")
-    .option("--skip-on-error", "Do not exit with error if sync fails (useful for CI builds)")
-    .option("--skip-types", "Skip automatic type generation after a successful sync")
+    .option(
+      "--skip-on-error",
+      "Do not exit with error if sync fails (useful for CI builds)",
+    )
+    .option(
+      "--skip-types",
+      "Skip automatic type generation after a successful sync",
+    )
     .addHelpText(
       "after",
       `
@@ -164,18 +303,24 @@ Examples:
         const configModule = (await jiti.import(configPath)) as any;
         const config = configModule.default || configModule;
 
-        if (!config.collections) throw new Error("Invalid config: No collections found.");
+        if (!config.collections)
+          throw new Error("Invalid config: No collections found.");
 
         console.log(chalk.blue(`Syncing schema to ${apiUrl}...`));
 
         const { payload, warnings } = sanitizeSchemaForCloudSync({
+          blocks: config.blocks || [],
           collections: config.collections,
           globals: config.globals || [],
           admin: config.admin || {},
         });
 
         if (warnings.length > 0) {
-          console.warn(chalk.yellow("\n⚠  Cloud sync stripped unsupported function-based access rules at these paths:"));
+          console.warn(
+            chalk.yellow(
+              "\n⚠  Cloud sync stripped unsupported function-based access rules at these paths:",
+            ),
+          );
           for (const warning of warnings) {
             console.warn(chalk.yellow(`   - ${warning}`));
           }
@@ -186,30 +331,46 @@ Examples:
           );
         }
 
-        const response = await fetch(`${apiUrl}/cloud/workspaces/sites/${siteId}/schema/sync`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-            "X-API-Key": apiKey,
+        const response = await fetch(
+          `${apiUrl}/cloud/workspaces/sites/${siteId}/schema/sync`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              "X-API-Key": apiKey,
+            },
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload),
-        });
+        );
 
         if (!response.ok) {
-          const error = await response.json().catch(() => ({ message: response.statusText }));
-          throw new Error(`Sync failed: ${error.message || response.statusText}`);
+          const error = await response
+            .json()
+            .catch(() => ({ message: response.statusText }));
+          throw new Error(
+            `Sync failed: ${error.message || response.statusText}`,
+          );
         }
 
-        console.log(chalk.green(`✔  Schema synced successfully for site ${siteId}`));
+        console.log(
+          chalk.green(`✔  Schema synced successfully for site ${siteId}`),
+        );
 
         if (!options.skipTypes) {
           console.log(chalk.blue("\nGenerating types from synced schema..."));
-          await runGenerateTypes({ config: options.config, output: "./dyrected-types.ts" });
+          await runGenerateTypes({
+            config: options.config,
+            output: "./dyrected-types.ts",
+          });
         }
       } catch (error: any) {
         if (options.skipOnError) {
-          console.warn(chalk.yellow(`\n⚠  Sync failed, but skipping error as requested: ${error.message}`));
+          console.warn(
+            chalk.yellow(
+              `\n⚠  Sync failed, but skipping error as requested: ${error.message}`,
+            ),
+          );
           return;
         }
         console.error(chalk.red(`\nError: ${error.message}`));

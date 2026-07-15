@@ -4,6 +4,68 @@ import fs from "fs-extra";
 import path from "path";
 import { createJiti } from "jiti";
 
+function resolveFieldBlocks(field: any, registry: Map<string, any>): any {
+  const next = { ...field };
+
+  if (next.fields) {
+    next.fields = next.fields.map((child: any) =>
+      resolveFieldBlocks(child, registry),
+    );
+  }
+
+  if (
+    next.type === "blocks" &&
+    Array.isArray(next.blockReferences) &&
+    next.blockReferences.length > 0
+  ) {
+    next.blocks = next.blockReferences
+      .map((slug: string) => registry.get(slug))
+      .filter(Boolean)
+      .map((block: any) => resolveBlock(block, registry));
+    return next;
+  }
+
+  if (next.blocks) {
+    next.blocks = next.blocks.map((block: any) =>
+      resolveBlock(block, registry),
+    );
+  }
+
+  return next;
+}
+
+function resolveBlock(block: any, registry: Map<string, any>): any {
+  return {
+    ...block,
+    fields: (block.fields || []).map((field: any) =>
+      resolveFieldBlocks(field, registry),
+    ),
+  };
+}
+
+function resolveSchemaBlocks(schema: any): any {
+  const registry = new Map<string, any>(
+    (schema.blocks || []).map(
+      (block: any) => [block.slug, block] as [string, any],
+    ),
+  );
+  return {
+    ...schema,
+    collections: (schema.collections || []).map((collection: any) => ({
+      ...collection,
+      fields: (collection.fields || []).map((field: any) =>
+        resolveFieldBlocks(field, registry),
+      ),
+    })),
+    globals: (schema.globals || []).map((global: any) => ({
+      ...global,
+      fields: (global.fields || []).map((field: any) =>
+        resolveFieldBlocks(field, registry),
+      ),
+    })),
+  };
+}
+
 export async function runGenerateTypes(options: {
   url?: string;
   config: string;
@@ -45,7 +107,7 @@ export async function runGenerateTypes(options: {
   if (!schema || !schema.collections)
     throw new Error("Invalid schema: collections missing.");
 
-  const code = generateTypes(schema);
+  const code = generateTypes(resolveSchemaBlocks(schema));
   const formattedCode = await prettier.format(code, { parser: "typescript" });
   await fs.outputFile(
     path.resolve(process.cwd(), options.output),

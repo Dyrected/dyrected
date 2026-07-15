@@ -139,6 +139,17 @@ Use [Generating Types](/new-docs/features/typescript/generating-types) instead w
 - you want a committed generated contract file
 - you want to generate from a running self-hosted instance instead of local config
 
+When you switch to that workflow, the generated type you pass to the SDK is `DyrectedSchema` from `dyrected-types.ts`:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+const client = createClient<DyrectedSchema>({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+});
+```
+
 That is the main tradeoff:
 
 - `InferSchema` is cleaner inside one codebase
