@@ -11,6 +11,10 @@ Use these patterns when the hard part is not the initial schema, but keeping dat
 
 This pattern generates the slug on the server and can also mirror it live in the Admin UI. It is a strong default for article pages, documentation content, and any collection that needs stable URL-friendly paths.
 
+### Example implementation
+
+<RecipeExample id="auto-slug" />
+
 Read the full docs:
 
 - [Collections](/docs/basics/configuration/collections)
@@ -22,6 +26,10 @@ Read the full docs:
 
 This pattern uses a collection hook to reject invalid combinations before they reach the database. It is a good fit for dates, time windows, numeric ranges, and any rule that depends on multiple values together.
 
+### Example implementation
+
+<RecipeExample id="cross-field-validation" />
+
 Read the full docs:
 
 - [Collection hooks](/docs/basics/hooks/collections)
@@ -32,6 +40,10 @@ Read the full docs:
 **Problem:** you need to change a field name on a live schema without breaking the documents that already exist.
 
 This pattern uses `renameTo` and a safe default so old content can continue working while the schema migrates. It is the safer path when a schema needs to evolve without forcing a risky big-bang rename.
+
+### Example implementation
+
+<RecipeExample id="safe-field-rename" />
 
 Read the full docs:
 

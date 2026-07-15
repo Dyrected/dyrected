@@ -11,6 +11,10 @@ Use these patterns when your main concern is who should be allowed to read, crea
 
 This pattern returns a where constraint from collection access control and usually pairs it with a server hook that stamps ownership during creation. It is a good fit for customer dashboards, project spaces, and user-owned records.
 
+### Example implementation
+
+<RecipeExample id="owner-scoped-access" />
+
 Read the full docs:
 
 - [Collection access control](/docs/basics/access-control/collections)
@@ -21,6 +25,10 @@ Read the full docs:
 **Problem:** different team roles should have different permissions, such as public reads, editor writes, or admin-only deletion.
 
 This pattern uses collection access control to check roles on each operation. It is the right starting point when content needs a clearer separation between editors, reviewers, administrators, or public readers.
+
+### Example implementation
+
+<RecipeExample id="role-based-access" />
 
 Read the full docs:
 

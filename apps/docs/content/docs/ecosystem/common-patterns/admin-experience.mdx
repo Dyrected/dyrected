@@ -11,6 +11,10 @@ Use these patterns when the underlying content model is already clear, but the e
 
 This pattern uses a serializable admin condition so the editor only sees the field when it is relevant. It is useful for optional discounts, feature toggles, and forms that should stay focused until a later choice unlocks more detail.
 
+### Example implementation
+
+<RecipeExample id="conditional-admin-field" />
+
 Read the full docs:
 
 - [Admin overview](/docs/features/admin/overview)
@@ -21,6 +25,10 @@ Read the full docs:
 **Problem:** the valid options for one field depend on what the editor picked in another field.
 
 This pattern updates select options from sibling field data in the Admin UI. It works well for country-and-region choices, dependent selectors, or any form where the next choice should be constrained by the last one.
+
+### Example implementation
+
+<RecipeExample id="dependent-dropdown" />
 
 Read the full docs:
 

@@ -13,6 +13,7 @@ import { CopyPromptButton } from '@/components/copy-prompt-button'
 import { SetupWizard } from '@/components/setup-wizard'
 import { Note, Warning } from '@/components/callouts'
 import { Mermaid } from '@/components/mermaid'
+import { RecipeExample } from '@/components/recipe-example'
 import { SafeScriptTag } from '@/components/safe-script-tag'
 import { source } from '@/app/source'
 import { isUnpublishedSlug, showUnpublished } from '@/lib/unpublished'
@@ -68,6 +69,7 @@ export default async function Page({ params }: Props) {
             Note,
             Warning,
             Mermaid,
+            RecipeExample,
             script: SafeScriptTag,
           }}
         />
