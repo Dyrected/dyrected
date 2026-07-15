@@ -17,6 +17,7 @@ import {
   resolveBooleanAccess,
   toHookRequestContext,
 } from "./utils/access-control.js";
+import { getConfigLogger, getRequestLogger } from "./observability.js";
 
 /**
  * Access gate middleware for granular permissions using Jexl.
@@ -393,10 +394,11 @@ export function registerRoutes(
 
         return c.json(result);
       } catch (err: any) {
-        console.error(
-          `[dyrected/core] Failed to resolve dynamic options for field ${fieldName}:`,
+        getRequestLogger(c, "router").error({
           err,
-        );
+          msg: "Failed to resolve dynamic field options",
+          fieldName,
+        });
         return c.json(
           {
             error: true,
@@ -706,9 +708,9 @@ export function registerRoutes(
 
   // 6. Preview Routes
   if (!process.env.DYRECTED_JWT_SECRET) {
-    console.warn(
-      '[dyrected] DYRECTED_JWT_SECRET is not set — token-mode live preview is signing with an insecure default. Set DYRECTED_JWT_SECRET before relying on `previewMode: "token"` in production.',
-    );
+    getConfigLogger(config, "router").warn({
+      msg: "DYRECTED_JWT_SECRET is not set; token-mode live preview is signing with an insecure default",
+    });
   }
   const previewController = new PreviewController();
   app.post("/api/preview-token", requireAuth(config), (c) =>

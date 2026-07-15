@@ -58,6 +58,8 @@ Before you ship, make sure these are set correctly for the environment that will
 
 The important production rule is consistency: if multiple instances or environments serve the same app, they must agree on the same secret values and the same backend URL assumptions.
 
+If you enable OTLP exporters or a Prometheus scrape endpoint, treat those values as production infrastructure too. Keep OTLP auth headers in server-only environment variables, and only expose a Prometheus route on a boundary that is meant to be scraped by your monitoring system.
+
 ## What happens during deploy
 
 ### Self-hosted

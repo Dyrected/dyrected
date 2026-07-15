@@ -1,5 +1,6 @@
 import jexl from 'jexl';
 import type { AccessResult } from '../types/access.js';
+import { getConfigLogger } from '../observability.js';
 
 /**
  * Jexl evaluator for Dyrected access control.
@@ -7,7 +8,7 @@ import type { AccessResult } from '../types/access.js';
  */
 export async function evaluateAccess(
   expression: string | boolean | undefined | null,
-  context: { user?: any; req?: any; doc?: any; data?: any }
+  context: { user?: any; req?: any; doc?: any; data?: any; config?: any }
 ): Promise<AccessResult> {
   // If no expression is provided, default to closed (false) for security
   // unless explicitly specified otherwise in the core router logic.
@@ -21,7 +22,11 @@ export async function evaluateAccess(
     }
     return !!result;
   } catch (err) {
-    console.error('[dyrected/core] Jexl evaluation failed:', err);
+    getConfigLogger(context.config, 'access').error({
+      err,
+      msg: 'Jexl evaluation failed',
+      expression,
+    });
     return false;
   }
 }

@@ -2,9 +2,11 @@ import type { Context } from "hono";
 import type { DyrectedContext } from "../app.js";
 import { validateUpload } from "../utils/upload-validation.js";
 import { mergeDynamicConfig } from "../utils/block-references.js";
+import { getRequestLogger } from "../observability.js";
 
 export class MediaController {
   private collection: string;
+  private loggerComponent = "media";
 
   constructor(collection: string = "media") {
     this.collection = collection;
@@ -76,7 +78,12 @@ export class MediaController {
         imageMetadata = processed.metadata;
         imageSizes = processed.sizes;
       } catch (err) {
-        console.error("[MediaController] Image processing failed:", err);
+        getRequestLogger(c, this.loggerComponent).error({
+          err,
+          msg: "Image processing failed",
+          collection: this.collection,
+          filename: file.name,
+        });
       }
     }
 
@@ -119,10 +126,13 @@ export class MediaController {
             height: sizeData.height,
           };
         } catch (err) {
-          console.error(
-            `[MediaController] Failed to upload size ${sizeName}:`,
+          getRequestLogger(c, this.loggerComponent).error({
             err,
-          );
+            msg: "Failed to upload image size",
+            collection: this.collection,
+            filename: file.name,
+            sizeName,
+          });
         }
       }
     }

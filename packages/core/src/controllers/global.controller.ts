@@ -15,6 +15,7 @@ import {
   resolveBooleanAccess,
   toHookRequestContext,
 } from "../utils/access-control.js";
+import { getRequestLogger } from "../observability.js";
 
 export class GlobalController {
   private global: GlobalConfig;
@@ -46,9 +47,10 @@ export class GlobalController {
     const isEmpty = !data || isFunctionallyEmpty(data);
 
     if (isEmpty && this.global.initialData) {
-      console.log(
-        `[dyrected/core] Auto-seeding global "${this.global.slug}" from config.initialData`,
-      );
+      getRequestLogger(c, "global").info({
+        msg: "Auto-seeding global from config.initialData",
+        global: this.global.slug,
+      });
       await db.updateGlobal({
         slug: this.global.slug,
         data: this.global.initialData,
@@ -236,7 +238,10 @@ export class GlobalController {
       return c.json({ message: "Global is not empty, skipping seed" });
     }
 
-    console.log(`[dyrected/core] Auto-seeding global: ${this.global.slug}`);
+    getRequestLogger(c, "global").info({
+      msg: "Auto-seeding global",
+      global: this.global.slug,
+    });
     await db.updateGlobal({ slug: this.global.slug, data: initialData });
 
     return c.json({ message: "Seed successful", data: initialData }, 201);

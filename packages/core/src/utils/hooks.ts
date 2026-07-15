@@ -7,6 +7,7 @@ import type {
   FieldBeforeChangeHookArgs,
   ReadonlyDatabaseAdapter,
 } from "../types/index.js";
+import { getConfigLogger } from "../observability.js";
 
 // Internal loose type used by the hook runner.
 // Using `any` for the parameter type is intentional — TypeScript's function
@@ -67,10 +68,10 @@ export async function runCollectionHooks(
       }
     } catch (err) {
       if (options.isolated) {
-        console.error(
-          "[dyrected/core] Side-effect hook failed (error isolated — DB write was successful):",
+        getConfigLogger(undefined, "hooks").error({
           err,
-        );
+          msg: "Side-effect hook failed after a successful write",
+        });
       } else {
         throw err;
       }

@@ -1,4 +1,5 @@
-import type { DatabaseAdapter } from '../types/index.js';
+import type { DatabaseAdapter, DyrectedConfig } from '../types/index.js';
+import { getConfigLogger, getObservabilityRuntime } from '../observability.js';
 
 export interface AuditLogArgs {
   operation: 'create' | 'update' | 'delete';
@@ -16,7 +17,11 @@ export class AuditService {
    * Writes a single entry to the __audit collection.
    * Called without await — runs asynchronously and never blocks the primary operation.
    */
-  static async log(db: DatabaseAdapter, args: AuditLogArgs): Promise<void> {
+  static async log(
+    db: DatabaseAdapter,
+    args: AuditLogArgs,
+    config?: DyrectedConfig,
+  ): Promise<void> {
     try {
       await db.create({
         collection: '__audit',
@@ -33,7 +38,17 @@ export class AuditService {
         },
       });
     } catch (err) {
-      console.error('[dyrected/audit] Failed to write audit log:', err);
+      getObservabilityRuntime(config)?.recordAuditWriteFailure({
+        collection: args.collection,
+        operation: args.operation,
+      });
+      getConfigLogger(config, 'audit').error({
+        err,
+        msg: 'Failed to write audit log',
+        collection: args.collection,
+        operation: args.operation,
+        documentId: args.documentId,
+      });
     }
   }
 }

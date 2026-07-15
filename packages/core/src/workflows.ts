@@ -11,6 +11,7 @@ import type {
   WorkflowMetadata,
   WorkflowTransition,
 } from "./types/index.js";
+import { getConfigLogger, getObservabilityRuntime } from "./observability.js";
 
 export const WORKFLOW_HISTORY_COLLECTION = "__workflow_history";
 export const LIFECYCLE_EVENTS_COLLECTION = "__lifecycle_events";
@@ -438,7 +439,21 @@ export async function transitionWorkflow(args: {
 
   for (const event of events) void dispatchLifecycleEvent(config, event);
   for (const hook of workflow.hooks?.afterTransition ?? []) {
-    try { await hook({ ...hookContext, doc: updated, event: events[0] }); } catch (error) { console.error("[dyrected/workflow] afterTransition hook failed:", error); }
+    try {
+      await hook({ ...hookContext, doc: updated, event: events[0] });
+    } catch (error) {
+      getObservabilityRuntime(config)?.recordWorkflowHookFailure({
+        collection: collection.slug,
+        transition: transition.name,
+      });
+      getConfigLogger(config, "workflow").error({
+        err: error,
+        msg: "afterTransition hook failed",
+        collection: collection.slug,
+        transition: transition.name,
+        documentId: id,
+      });
+    }
   }
   return updated;
 }

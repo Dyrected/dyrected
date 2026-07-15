@@ -15,6 +15,8 @@ The root config brings together a few major areas:
 - `globals` for singleton content
 - `db`, `storage`, and `image` for self-hosted infrastructure
 - `admin` and `adminAuth` for dashboard behavior
+- `logger` for the root Pino logger
+- `observability` for request logging, redaction, sampling, tracing, metrics, and transports
 - `email`, `redis`, `events`, and `cors` for runtime services
 
 In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
@@ -80,6 +82,18 @@ Use `adminAuth` when you need to control how people log in to the dashboard itse
 ### `email`
 
 The `email` config wires transactional messages such as invites and password resets to your provider.
+
+### `logger`
+
+Use `logger` when you want to control the root Pino logger Dyrected writes into.
+
+See [Logging and Observability](/docs/basics/configuration/logging).
+
+### `observability`
+
+Use `observability` for request logs, request-body capture, redaction, sampling, tracing, metrics, and Dyrected-managed transports.
+
+See [Logging and Observability](/docs/basics/configuration/logging).
 
 ### `cors`
 
@@ -193,11 +207,9 @@ export interface DyrectedConfig<
   blocks?: Block[];
 
   /** Collection definitions. Each collection maps to a database table/collection. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   collections: CollectionConfig<any>[];
 
   /** Global (singleton) definitions. Each global maps to a single document. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globals: GlobalConfig<any>[];
 
   /**
@@ -219,6 +231,18 @@ export interface DyrectedConfig<
    * @see ImageService
    */
   image?: ImageService;
+
+  /**
+   * Runtime logger configuration. Accepts either logger options/destination or
+   * a fully-instantiated Pino logger.
+   */
+  logger?: DyrectedLoggerConfig;
+
+  /**
+   * Request logging, redaction, sampling, tracing, metrics, and transport
+   * configuration for the Dyrected server runtime.
+   */
+  observability?: DyrectedObservabilityConfig;
 
   /** Admin UI branding and metadata. */
   admin?: AdminConfig;
@@ -320,14 +344,20 @@ export interface DyrectedConfig<
   };
 
   /**
+   * App-level HTTP request rate limiting.
+   *
+   * Similar to Payload's `rateLimit` option, this counts requests by client IP
+   * over a rolling time window and returns `429` responses once the limit is
+   * exhausted.
+   */
+  rateLimit?: RateLimitConfig;
+
+  /**
    * Callback to dynamically fetch additional collections and globals for a
    * given site ID at request time. Used in multi-tenant deployments where each
    * site has its own schema stored in the database.
    */
-  onSchemaFetch?: (
-    siteId: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ) => Promise<{
+  onSchemaFetch?: (siteId: string) => Promise<{
     blocks?: Block[];
     collections?: CollectionConfig<any>[];
     globals?: GlobalConfig<any>[];
@@ -345,6 +375,8 @@ export interface DyrectedConfig<
 | <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
 | <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
 | <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>logger</code> (optional) | Runtime logger configuration. Accepts either logger options/destination or a fully-instantiated Pino logger. |
+| <code>observability</code> (optional) | Request logging, redaction, sampling, tracing, metrics, and transport configuration for the Dyrected server runtime. |
 | <code>admin</code> (optional) | Admin UI branding and metadata. |
 | <code>adminAuth</code> (optional) | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
 | <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;.  A policy can be a **function** (full server logic, evaluated to a static boolean when serialized for the admin panel) or a **Jexl string** (or boolean). String policies are inlined when the schema is sent to the admin, so the admin panel evaluates them live against the current form — the same way it evaluates inline Jexl rules. |
@@ -352,5 +384,6 @@ export interface DyrectedConfig<
 | <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
 | <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |
 | <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
+| <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
 | <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
 {/* GENERATED:REFERENCE-CONFIGURATION:END */}

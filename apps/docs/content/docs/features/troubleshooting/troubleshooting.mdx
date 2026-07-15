@@ -18,6 +18,7 @@ Most Dyrected problems fall into one of these buckets:
 | The preview link or live pane does not work       | `previewUrl` is wrong, or the frontend preview wiring is incomplete | [Preview is not working](#preview-is-not-working)                       |
 | Uploads fail or files do not render               | Storage or upload-collection setup is incomplete                    | [Uploads or media are not working](#uploads-or-media-are-not-working)   |
 | Reset, invite, or welcome emails never arrive     | Email transport is unset or only development fallback is active     | [Auth emails are not sending](#auth-emails-are-not-sending)             |
+| Request logs appear, but request bodies do not    | Body capture is disabled, unsampled, non-JSON, or intentionally skipped | [Request bodies are missing from logs](#request-bodies-are-missing-from-logs) |
 
 ## Recommended troubleshooting order
 
@@ -217,6 +218,34 @@ That means the first checks are:
 Also keep the flow semantics straight: the auth endpoint may still succeed even if sending fails, because these built-in auth emails are best-effort.
 
 Use [Email Overview](/docs/features/email/overview) for the transport setup and built-in email behavior.
+
+## Request bodies are missing from logs
+
+If you can see Dyrected request logs but the `body` field is missing, start by checking whether body capture was ever eligible for that request.
+
+Dyrected only captures request bodies when all of these are true:
+
+- `observability.requestLogging.logBodies` is `true`
+- the request was sampled for body capture
+- the request `content-type` includes `application/json`
+
+That means these cases are expected:
+
+- multipart uploads do not log raw file payloads
+- binary payloads do not log raw body content
+- JSON bodies larger than `maxBodyBytes` may be truncated and fall back to metadata-only logging if the truncated payload can no longer be parsed safely
+- successful requests may log without a body when `bodySuccessRate` does not sample them
+
+The fastest checks are:
+
+- confirm `observability.requestLogging.logBodies` is enabled
+- confirm the request really used `application/json`
+- temporarily raise `sampling.bodySuccessRate` to `1` while debugging
+- check whether the log event contains `bodyCapture` metadata instead of `body`
+
+If the log entry includes `bodyCapture` with `parseFailed: true` or `truncated: true`, Dyrected did attempt capture but intentionally avoided logging parsed content.
+
+For the config surface and defaults, use [Logging and Observability](/docs/basics/configuration/logging).
 
 ## When to stop here
 

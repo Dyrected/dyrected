@@ -1,6 +1,7 @@
 import type { AuthenticatedUser, DyrectedConfig } from "../types/index.js";
 import type { AccessFunctionArgs, AccessPolicyResolver, AccessResult, AccessRule, NamedAccessPolicy } from "../types/access.js";
 import { evaluateAccess } from "./jexl.js";
+import { getConfigLogger } from "../observability.js";
 
 function isNamedAccessPolicy(value: unknown): value is NamedAccessPolicy {
   return !!value && typeof value === "object" && "policy" in value && typeof (value as { policy?: unknown }).policy === "string";
@@ -17,14 +18,17 @@ export async function resolveAccess<
   if (access === undefined || access === null) return undefined;
 
   if (typeof access === "boolean" || typeof access === "string") {
-    return evaluateAccess(access, args);
+    return evaluateAccess(access, { ...args, config });
   }
 
   if (typeof access === "function") {
     try {
       return await access(args);
     } catch (err) {
-      console.error("[dyrected/core] Functional access check failed:", err);
+      getConfigLogger(config, "access").error({
+        err,
+        msg: "Functional access check failed",
+      });
       return false;
     }
   }
@@ -32,21 +36,28 @@ export async function resolveAccess<
   if (isNamedAccessPolicy(access)) {
     const policy = config.accessPolicies?.[access.policy];
     if (policy === undefined) {
-      console.error(`[dyrected/core] Unknown access policy "${access.policy}".`);
+      getConfigLogger(config, "access").error({
+        msg: "Unknown access policy",
+        policy: access.policy,
+      });
       return false;
     }
 
     // A policy defined as a Jexl string or boolean is evaluated the same way as
     // an inline rule of that shape.
     if (typeof policy === "string" || typeof policy === "boolean") {
-      return evaluateAccess(policy, args);
+      return evaluateAccess(policy, { ...args, config });
     }
 
     try {
       const resolver = policy as AccessPolicyResolver<TDoc, TUser>;
       return await resolver({ ...args, params: access.params });
     } catch (err) {
-      console.error(`[dyrected/core] Access policy "${access.policy}" failed:`, err);
+      getConfigLogger(config, "access").error({
+        err,
+        msg: "Access policy failed",
+        policy: access.policy,
+      });
       return false;
     }
   }

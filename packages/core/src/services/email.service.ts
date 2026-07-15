@@ -1,5 +1,6 @@
 import type { DyrectedConfig } from '../types/index.js';
 import { alertBox, ctaButton, detailBox, layout, paragraph, sectionLabel, spacer } from './email-template.js';
+import { getConfigLogger, getObservabilityRuntime } from '../observability.js';
 
 type SendFn = (args: { to: string; subject: string; html: string }) => Promise<void>;
 
@@ -12,6 +13,7 @@ async function getDevSend(): Promise<SendFn | null> {
   if (_devSendPromise) return _devSendPromise;
 
   _devSendPromise = (async () => {
+    const logger = getConfigLogger(undefined, 'email');
     try {
       const nodemailer = await import('nodemailer');
       const account = await nodemailer.default.createTestAccount();
@@ -21,16 +23,28 @@ async function getDevSend(): Promise<SendFn | null> {
         auth: { user: account.user, pass: account.pass },
       });
 
-      console.log('[dyrected/core] No email config — using Ethereal for dev email preview.');
-      console.log(`[dyrected/core] Ethereal login: https://ethereal.email  user: ${account.user}  pass: ${account.pass}`);
+      logger.info({
+        msg: 'No email config; using Ethereal for development email preview',
+      });
+      logger.info({
+        msg: 'Ethereal credentials',
+        loginUrl: 'https://ethereal.email',
+        user: account.user,
+        password: account.pass,
+      });
 
       _devSend = async ({ to, subject, html }) => {
         const info = await transport.sendMail({ from: '"Dyrected Dev" <dev@dyrected.local>', to, subject, html });
-        console.log(`[dyrected/core] Email preview URL: ${nodemailer.default.getTestMessageUrl(info)}`);
+        logger.info({
+          msg: 'Email preview URL',
+          previewUrl: nodemailer.default.getTestMessageUrl(info),
+        });
       };
       return _devSend;
     } catch {
-      console.warn('[dyrected/core] nodemailer not available — emails will not be sent in dev.');
+      logger.warn({
+        msg: 'nodemailer not available; development emails will not be sent',
+      });
       return null;
     }
   })();
@@ -42,8 +56,23 @@ export async function sendEmail(
   config: DyrectedConfig,
   payload: { to: string; subject: string; html: string },
 ): Promise<void> {
+  const logger = getConfigLogger(config, 'email');
+  const observability = getObservabilityRuntime(config);
   if (config.email) {
-    await config.email.send(payload);
+    try {
+      await config.email.send(payload);
+    } catch (err) {
+      observability?.recordEmailSendFailure({
+        to: payload.to,
+      });
+      logger.error({
+        err,
+        msg: 'Email provider send failed',
+        to: payload.to,
+        subject: payload.subject,
+      });
+      throw err;
+    }
     return;
   }
   if (process.env.NODE_ENV !== 'production') {

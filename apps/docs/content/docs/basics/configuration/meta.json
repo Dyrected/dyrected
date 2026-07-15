@@ -4,6 +4,7 @@
     "overview",
     "collections",
     "globals",
+    "logging",
     "__i18n",
     "__localization",
     "environment-variables"

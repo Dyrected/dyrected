@@ -7,6 +7,8 @@ Audit logging keeps a durable record of who changed what. Turn it on for a colle
 
 Reach for it on collections where changes need accountability: content under compliance review, records that support operational auditing, or anything where a reliable history of edits matters. By the end of this page you'll know how to enable it, what each entry contains, how to read the trail from your code or the admin, and how to control who's allowed to see it.
 
+Audit logging is different from runtime logging. Runtime logs help you monitor and debug the running service. Audit logs are durable content-history records stored in `__audit`. If you need request logs, redaction, tracing, or metrics, use [Logging and Observability](/docs/basics/configuration/logging).
+
 ## Enabling audit
 
 Set `audit: true` on any collection. That's the whole setup — Dyrected handles the logging for you.
