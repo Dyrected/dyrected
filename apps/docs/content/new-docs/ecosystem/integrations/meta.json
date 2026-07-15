@@ -1,6 +1,12 @@
 {
   "title": "Integrations",
   "pages": [
+    "overview",
+    "nextjs",
+    "nuxt",
+    "react",
+    "vue",
+    "sdk",
     "vercel-content-link"
   ]
 }

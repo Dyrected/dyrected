@@ -18,3 +18,7 @@ export * from './bridge/react-in-vue';
 
 // Live-preview token helpers (re-exported from the SDK for frontend consumption)
 export { getPreviewToken, PREVIEW_TOKEN_PARAM } from '@dyrected/sdk';
+
+// Schema typing seam (re-exported from the SDK). The generated types file
+// augments `Register`, which types the composables against your schema.
+export type { Register, RegisteredSchema, BaseSchema, InferSchema } from '@dyrected/sdk';

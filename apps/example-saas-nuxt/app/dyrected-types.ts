@@ -46,7 +46,6 @@ export interface Admin {
   lastName?: string;
   roles?: "admin" | "editor" | "viewer";
   email: string;
-  roles?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -182,7 +181,7 @@ export interface Blog {
   title: string;
   slug: string;
   status?: "draft" | "in-review" | "published";
-  tags?: string[];
+  tags?: ("insights" | "product" | "operations")[];
   views?: number;
   content: Record<string, unknown>;
   featuredImage?: Media | string;
@@ -269,4 +268,10 @@ export interface DyrectedSchema {
     navigation: NavigationGlobal;
     footer: FooterGlobal;
   };
+}
+
+declare module "@dyrected/sdk" {
+  interface Register {
+    schema: DyrectedSchema;
+  }
 }

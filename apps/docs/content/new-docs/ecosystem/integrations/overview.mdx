@@ -1,0 +1,51 @@
+---
+title: Overview
+description: Choose the Dyrected integration package that matches your framework and where you want the backend boundary to live.
+---
+
+Dyrected ships a few different integration layers, and they are not interchangeable.
+
+The simplest way to choose is to ask one question first: **where should the Dyrected backend live?**
+
+- If it should run inside a **Next.js** app, use [`@dyrected/next`](/new-docs/ecosystem/integrations/nextjs).
+- If it should run inside a **Nuxt** app, use [`@dyrected/nuxt`](/new-docs/ecosystem/integrations/nuxt).
+- If you already have a running Dyrected API and just need a **React** frontend integration, use [`@dyrected/react`](/new-docs/ecosystem/integrations/react).
+- If you already have a running Dyrected API and just need a **Vue** frontend integration, use [`@dyrected/vue`](/new-docs/ecosystem/integrations/vue).
+- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](/new-docs/ecosystem/integrations/sdk).
+
+## The package map
+
+| Package           | Reach for it when                                                                            | What it gives you                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `@dyrected/next`  | You are in a Next.js App Router project and want the strongest first-party integration.      | Self-hosted route handler, admin wrapper, Next-aware media components, `withDyrected`, and SDK re-exports. |
+| `@dyrected/nuxt`  | You are in Nuxt and want the backend mounted by the module or want Nuxt-aware client wiring. | Nuxt module, auto-imported composables, auto-registered components, server handler, and admin bridge.      |
+| `@dyrected/react` | You are in a plain React app or want the lowest React integration layer.                     | Provider, hooks, live preview, admin wrapper, and UI helpers.                                              |
+| `@dyrected/vue`   | You are in a plain Vue 3 app and need Vue-side composables and the admin bridge.             | Vue composables, live preview, auth helpers, and a React-in-Vue admin wrapper.                             |
+| `@dyrected/sdk`   | You want a framework-agnostic typed client.                                                  | Reads, writes, auth helpers, uploads, preview helpers, and typed query APIs.                               |
+
+## Recommended paths
+
+For most teams, the recommendations are straightforward:
+
+- **Next.js project:** start with `@dyrected/next`
+- **Nuxt project:** start with `@dyrected/nuxt`
+- **React or Vue SPA talking to Cloud or another existing API:** start with `@dyrected/react` or `@dyrected/vue`
+- **Scripts, utilities, or another app consuming content:** start with `@dyrected/sdk`
+
+If a higher-level integration exists for your framework, prefer it over assembling the lower-level pieces yourself.
+
+## What this section covers
+
+These pages focus on the framework boundary:
+
+- how to mount or point at the API
+- how to embed the admin
+- how to fetch content in the framework's normal style
+- where live preview and typed SDK usage fit
+
+Deeper feature pages still live elsewhere:
+
+- [Admin](/new-docs/features/admin/overview)
+- [Live preview](/new-docs/features/live-preview/overview)
+- [SDK API](/new-docs/managing-data/sdk-api/overview)
+- [TypeScript](/new-docs/features/typescript/overview)

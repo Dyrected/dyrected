@@ -940,6 +940,18 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:Register",
+      "name": "Register",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
+      "id": "@dyrected/sdk:RegisteredSchema",
+      "name": "RegisteredSchema",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:TransitionOptions",
       "name": "TransitionOptions",
       "category": "sdk",

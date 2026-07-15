@@ -173,12 +173,12 @@ The CLI command is:
 npx dyrected generate:types
 ```
 
-By default, Dyrected writes `./dyrected-types.ts`. That file includes:
+By default, Dyrected writes the file into your app's source directory (`src/dyrected-types.ts`, or `app/dyrected-types.ts` in Nuxt) so your TypeScript program picks it up. That file includes:
 
 - a `Media` interface
 - one interface per collection
 - one interface per global, with a `Global` suffix
-- a `DyrectedSchema` interface you can pass to `createClient<DyrectedSchema>()`
+- a `DyrectedSchema` interface, plus a module augmentation that registers it so typing works with no generics
 
 The next page covers that flow in detail: [Generating Types](/new-docs/features/typescript/generating-types).
 
@@ -192,6 +192,8 @@ const client = createClient<DyrectedSchema>({
   baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
 });
 ```
+
+The generated file also registers your schema globally, so passing `<DyrectedSchema>` is optional — once the file is part of your project, `createClient()` and the React/Vue/Nuxt hooks are typed against it automatically, with no per-call generics. See [Automatic typing](/new-docs/features/typescript/generating-types#automatic-typing-no-generics-needed).
 
 ## What belongs on this page
 

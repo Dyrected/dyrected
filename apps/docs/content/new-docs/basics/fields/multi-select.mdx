@@ -51,7 +51,8 @@ maps each tone to a themed color, so you pick meaning (`success`, `danger`)
 rather than a raw color and it stays consistent in light and dark mode.
 
 ```ts
-export type DisplayTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+export type DisplayTone =
+  "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 ```
 
 
@@ -60,7 +61,11 @@ export type DisplayTone = "neutral" | "primary" | "success" | "warning" | "dange
 Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.
 
 ```ts
-export type MultiSelectField = TypedField<"multiSelect", string[], MultiSelectFieldAdmin>;
+export type MultiSelectField = TypedField<
+  "multiSelect",
+  string[],
+  MultiSelectFieldAdmin
+>;
 ```
 
 

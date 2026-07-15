@@ -54,7 +54,6 @@ SDK calls throw a typed `DyrectedError` when the API returns a non-success statu
 The contracts below are generated from the public `@dyrected/sdk` exports by `@dyrected/knowledge`, so the client, factory, options, and error types stay in sync with the package. Query-shaping details live on the [sort](/new-docs/managing-data/sdk-api/sort), [filter](/new-docs/managing-data/sdk-api/filter), [depth](/new-docs/managing-data/sdk-api/depth), and [pagination](/new-docs/managing-data/sdk-api/pagination) pages.
 
 {/* GENERATED:REFERENCE-SDK:START */}
-
 ## AuditEntry
 
 A single audit entry returned by `client.audit()` or `client.collection(slug).audit()`.
@@ -71,15 +70,16 @@ export interface AuditEntry {
 }
 ```
 
-| Option                             | Description |
-| ---------------------------------- | ----------- |
-| <code>id</code> (required)         |             |
-| <code>collection</code> (required) |             |
-| <code>documentId</code> (required) |             |
-| <code>operation</code> (required)  |             |
-| <code>user</code> (required)       |             |
-| <code>timestamp</code> (required)  |             |
-| <code>changes</code> (optional)    |             |
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>documentId</code> (required) |  |
+| <code>operation</code> (required) |  |
+| <code>user</code> (required) |  |
+| <code>timestamp</code> (required) |  |
+| <code>changes</code> (optional) |  |
+
 
 ## BaseSchema
 
@@ -92,60 +92,64 @@ export interface BaseSchema {
 }
 ```
 
-| Option                              | Description |
-| ----------------------------------- | ----------- |
-| <code>collections</code> (required) |             |
-| <code>globals</code> (required)     |             |
+| Option | Description |
+| --- | --- |
+| <code>collections</code> (required) |  |
+| <code>globals</code> (required) |  |
+
 
 ## createClient
 
 Exported function from @dyrected/sdk.
 
 ```ts
-export function createClient<TSchema extends BaseSchema = BaseSchema>(
+export function createClient<TSchema extends BaseSchema = RegisteredSchema>(
   config: DyrectedClientConfig,
-): DyrectedClient<TSchema>;
+): DyrectedClient<TSchema>
 ```
+
 
 ## DyrectedClient
 
 Exported class from @dyrected/sdk.
 
 ```ts
-export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {}
+export class DyrectedClient<TSchema extends BaseSchema = RegisteredSchema> {
+}
 ```
 
-| Option                                     | Description                                                                                                                                                                                                                                                                                            |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <code>setToken</code> (required)           | Update the Authorization header with a Bearer token. Call this after a successful login.                                                                                                                                                                                                               |
-| <code>clearToken</code> (required)         | Remove the Authorization header. Call this after logout.                                                                                                                                                                                                                                               |
-| <code>getAuthHeaders</code> (required)     | Returns the headers needed to authenticate raw &#96;fetch()&#96; calls made outside the SDK client (e.g. streaming endpoints, dynamic options). Includes the Authorization bearer token (if set), x-api-key, and x-site-id.                                                                            |
-| <code>getBaseUrl</code> (required)         |                                                                                                                                                                                                                                                                                                        |
-| <code>getSchemas</code> (required)         |                                                                                                                                                                                                                                                                                                        |
-| <code>getAdminAuthConfig</code> (required) |                                                                                                                                                                                                                                                                                                        |
-| <code>exchangeAdminAuth</code> (required)  |                                                                                                                                                                                                                                                                                                        |
-| <code>getPreference</code> (optional)      |                                                                                                                                                                                                                                                                                                        |
-| <code>setPreference</code> (optional)      |                                                                                                                                                                                                                                                                                                        |
-| <code>deletePreference</code> (optional)   |                                                                                                                                                                                                                                                                                                        |
-| <code>getPreviewData</code> (required)     | Fetch draft data for a specific preview token. Used in "token" preview mode.                                                                                                                                                                                                                           |
-| <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;. Requires an authenticated request (the Admin is logged in). |
-| <code>find</code> (required)               |                                                                                                                                                                                                                                                                                                        |
-| <code>collection</code> (required)         | Returns a fluent query builder for a collection.                                                                                                                                                                                                                                                       |
-| <code>global</code> (required)             | Access a global by its slug with a fluent builder.                                                                                                                                                                                                                                                     |
-| <code>findOne</code> (optional)            |                                                                                                                                                                                                                                                                                                        |
-| <code>create</code> (required)             |                                                                                                                                                                                                                                                                                                        |
-| <code>update</code> (required)             |                                                                                                                                                                                                                                                                                                        |
-| <code>delete</code> (required)             |                                                                                                                                                                                                                                                                                                        |
-| <code>transition</code> (required)         | Perform a workflow transition on a document. Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;.                                                                                             |
-| <code>workflowHistory</code> (optional)    | Fetch the workflow history for a document. Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;.                                                                                                                                                                                      |
-| <code>audit</code> (required)              | Fetch audit entries across every audited collection the current caller can read. Sends &#96;GET /api/audit&#96;.                                                                                                                                                                                       |
-| <code>collectionAudit</code> (required)    | Fetch audit entries for a single collection. Sends &#96;GET /api/collections/:collection/\_\_audit&#96;.                                                                                                                                                                                               |
-| <code>deleteMany</code> (required)         |                                                                                                                                                                                                                                                                                                        |
-| <code>getGlobal</code> (optional)          |                                                                                                                                                                                                                                                                                                        |
-| <code>updateGlobal</code> (required)       |                                                                                                                                                                                                                                                                                                        |
-| <code>listMedia</code> (required)          |                                                                                                                                                                                                                                                                                                        |
-| <code>uploadMedia</code> (required)        |                                                                                                                                                                                                                                                                                                        |
-| <code>deleteMedia</code> (required)        |                                                                                                                                                                                                                                                                                                        |
+| Option | Description |
+| --- | --- |
+| <code>setToken</code> (required) | Update the Authorization header with a Bearer token. Call this after a successful login. |
+| <code>clearToken</code> (required) | Remove the Authorization header. Call this after logout. |
+| <code>getAuthHeaders</code> (required) | Returns the headers needed to authenticate raw &#96;fetch()&#96; calls made outside the SDK client (e.g. streaming endpoints, dynamic options).  Includes the Authorization bearer token (if set), x-api-key, and x-site-id. |
+| <code>getBaseUrl</code> (required) |  |
+| <code>getSchemas</code> (required) |  |
+| <code>getAdminAuthConfig</code> (required) |  |
+| <code>exchangeAdminAuth</code> (required) |  |
+| <code>getPreference</code> (optional) |  |
+| <code>setPreference</code> (optional) |  |
+| <code>deletePreference</code> (optional) |  |
+| <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
+| <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
+| <code>find</code> (required) |  |
+| <code>collection</code> (required) | Returns a fluent query builder for a collection. |
+| <code>global</code> (required) | Access a global by its slug with a fluent builder. |
+| <code>findOne</code> (optional) |  |
+| <code>create</code> (required) |  |
+| <code>update</code> (required) |  |
+| <code>delete</code> (required) |  |
+| <code>transition</code> (required) | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
+| <code>workflowHistory</code> (optional) | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
+| <code>audit</code> (required) | Fetch audit entries across every audited collection the current caller can read.  Sends &#96;GET /api/audit&#96;. |
+| <code>collectionAudit</code> (required) | Fetch audit entries for a single collection.  Sends &#96;GET /api/collections/:collection/__audit&#96;. |
+| <code>deleteMany</code> (required) |  |
+| <code>getGlobal</code> (optional) |  |
+| <code>updateGlobal</code> (required) |  |
+| <code>listMedia</code> (required) |  |
+| <code>uploadMedia</code> (required) |  |
+| <code>deleteMedia</code> (required) |  |
+
 
 ## DyrectedClientConfig
 
@@ -167,27 +171,30 @@ export interface DyrectedClientConfig {
 }
 ```
 
-| Option                               | Description                                                                                                                                                                                                                  |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <code>baseUrl</code> (required)      |                                                                                                                                                                                                                              |
-| <code>apiKey</code> (optional)       |                                                                                                                                                                                                                              |
-| <code>siteId</code> (optional)       |                                                                                                                                                                                                                              |
-| <code>headers</code> (optional)      |                                                                                                                                                                                                                              |
-| <code>fetch</code> (optional)        |                                                                                                                                                                                                                              |
+| Option | Description |
+| --- | --- |
+| <code>baseUrl</code> (required) |  |
+| <code>apiKey</code> (optional) |  |
+| <code>siteId</code> (optional) |  |
+| <code>headers</code> (optional) |  |
+| <code>fetch</code> (optional) |  |
 | <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
+
 
 ## DyrectedError
 
 Structured error thrown by the SDK when the server returns a non-2xx response.
 
 ```ts
-export class DyrectedError extends Error {}
+export class DyrectedError extends Error {
+}
 ```
 
-| Option                             | Description |
-| ---------------------------------- | ----------- |
-| <code>statusCode</code> (required) |             |
-| <code>errors</code> (optional)     |             |
+| Option | Description |
+| --- | --- |
+| <code>statusCode</code> (required) |  |
+| <code>errors</code> (optional) |  |
+
 
 ## getPreviewToken
 
@@ -198,8 +205,9 @@ string, a `URLSearchParams`, or a plain params object (e.g. Nuxt's
 ```ts
 export function getPreviewToken(
   search: string | URLSearchParams | Record<string, unknown> | undefined | null,
-): string | null;
+): string | null
 ```
+
 
 ## InferSchema
 
@@ -222,6 +230,7 @@ export type InferSchema<
 };
 ```
 
+
 ## PREVIEW_TOKEN_PARAM
 
 The query-string parameter the Admin appends to a preview URL in
@@ -231,6 +240,29 @@ draft data instead of published content.
 ```ts
 export const PREVIEW_TOKEN_PARAM = "dyPreview";
 ```
+
+
+## Register
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface Register {}
+```
+
+
+## RegisteredSchema
+
+Exported type from @dyrected/sdk.
+
+```ts
+export type RegisteredSchema = Register extends { schema: infer S }
+  ? S extends BaseSchema
+    ? S
+    : BaseSchema
+  : BaseSchema;
+```
+
 
 ## TransitionOptions
 
@@ -249,10 +281,11 @@ export interface TransitionOptions {
 }
 ```
 
-| Option                                   | Description                                                                                                                                                                      |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Option | Description |
+| --- | --- |
 | <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
-| <code>comment</code> (optional)          | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;).                                                                                       |
+| <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
+
 
 ## UploadOptions
 
@@ -270,10 +303,11 @@ export interface UploadOptions {
 }
 ```
 
-| Option                             | Description                                              |
-| ---------------------------------- | -------------------------------------------------------- |
+| Option | Description |
+| --- | --- |
 | <code>onProgress</code> (optional) | Called with an integer 0–100 as the file bytes are sent. |
-| <code>signal</code> (optional)     | Abort the in-flight upload.                              |
+| <code>signal</code> (optional) | Abort the in-flight upload. |
+
 
 ## WorkflowDocument
 
@@ -287,10 +321,11 @@ export interface WorkflowDocument {
 }
 ```
 
-| Option                             | Description |
-| ---------------------------------- | ----------- |
-| <code>id</code> (required)         |             |
-| <code>\_workflow</code> (required) |             |
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>_workflow</code> (required) |  |
+
 
 ## WorkflowHistoryEntry
 
@@ -311,17 +346,16 @@ export interface WorkflowHistoryEntry {
 }
 ```
 
-| Option                             | Description |
-| ---------------------------------- | ----------- |
-| <code>id</code> (required)         |             |
-| <code>collection</code> (required) |             |
-| <code>documentId</code> (required) |             |
-| <code>transition</code> (required) |             |
-| <code>from</code> (required)       |             |
-| <code>to</code> (required)         |             |
-| <code>revision</code> (required)   |             |
-| <code>comment</code> (required)    |             |
-| <code>actorId</code> (required)    |             |
-| <code>createdAt</code> (required)  |             |
-
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>documentId</code> (required) |  |
+| <code>transition</code> (required) |  |
+| <code>from</code> (required) |  |
+| <code>to</code> (required) |  |
+| <code>revision</code> (required) |  |
+| <code>comment</code> (required) |  |
+| <code>actorId</code> (required) |  |
+| <code>createdAt</code> (required) |  |
 {/* GENERATED:REFERENCE-SDK:END */}

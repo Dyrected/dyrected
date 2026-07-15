@@ -1,3 +1,27 @@
 ---
 title: Vercel Content Link
+description: Current status of Vercel Content Link support in Dyrected, and the practical integrations to use today instead.
 ---
+
+This page exists because Vercel Content Link is a real thing people look for, but the important answer right now is simple:
+
+**Dyrected does not currently expose a first-class Vercel Content Link integration surface that is ready to document as a supported workflow.**
+
+So if you are trying to connect Dyrected to a Vercel-hosted frontend today, the practical paths are still the normal Dyrected ones:
+
+- [Next.js integration](/new-docs/ecosystem/integrations/nextjs) when the app is a Next project
+- [Live preview](/new-docs/features/live-preview/overview) when the goal is editor preview
+- [Deployment](/new-docs/deployment/production/deployment) when the goal is production hosting on Vercel
+
+## What to do today
+
+If your site is on Vercel, treat the integration as a standard Dyrected frontend deployment:
+
+- point the frontend at your Dyrected API or Cloud site
+- use live preview where editors need it
+- use the normal Next.js or SDK integration for reads and writes
+- handle Vercel-specific routing, caching, and protection at the app layer
+
+## Why this page is short
+
+There is no verified package API, route contract, or setup flow in this codebase yet that would justify a longer product guide here. It is better to be explicit about that than to invent a workflow that sounds plausible but is not actually shipped.

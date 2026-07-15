@@ -101,7 +101,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface BaseFieldAdmin {\n  /** Placeholder text shown when the input has no value. */\n  placeholder?: string;\n  /** Custom component key registered in the Admin UI. */\n  component?: string;\n  /** Help text rendered below the field. */\n  description?: string;\n  /** Hides the field from the Admin form without deleting stored data. */\n  hidden?: boolean;\n  /** Excludes the field from Admin list filtering. */\n  filterable?: boolean;\n  /** Renders the field as non-editable in the Admin UI. */\n  readOnly?: boolean;\n  /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */\n  hideLabel?: boolean;\n  /** Reactive condition controlling whether the field is visible in the Admin UI. */\n  condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;\n  /** Tab name used when the edit form is rendered as tabs. */\n  tab?: string;\n  /** CSS width hint used when the field appears inside a `row`. */\n  width?: string;\n}",
+    "signature": "export interface BaseFieldAdmin {\n  /** Placeholder text shown when the input has no value. */\n  placeholder?: string;\n  /** Custom component key registered in the Admin UI. */\n  component?: string;\n  /** Help text rendered below the field. */\n  description?: string;\n  /** Hides the field from the Admin form without deleting stored data. */\n  hidden?: boolean;\n  /** Excludes the field from Admin list filtering. */\n  filterable?: boolean;\n  /** Renders the field as non-editable in the Admin UI. */\n  readOnly?: boolean;\n  /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */\n  hideLabel?: boolean;\n  /** Reactive condition controlling whether the field is visible in the Admin UI. */\n  condition?:\n    | ((\n        data: Record<string, unknown>,\n        siblingData: Record<string, unknown>,\n      ) => boolean)\n    | string;\n  /** Tab name used when the edit form is rendered as tabs. */\n  tab?: string;\n  /** CSS width hint used when the field appears inside a `row`. */\n  width?: string;\n}",
     "members": [
       {
         "name": "placeholder",
@@ -140,7 +140,7 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "condition",
-        "signature": "condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string",
+        "signature": "condition?:\n    | ((\n        data: Record<string, unknown>,\n        siblingData: Record<string, unknown>,\n      ) => boolean)\n    | string",
         "description": "Reactive condition controlling whether the field is visible in the Admin UI."
       },
       {
@@ -607,7 +607,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "A semantic color for a badge or status pill in the Admin UI. The Admin panel\nmaps each tone to a themed color, so you pick meaning (`success`, `danger`)\nrather than a raw color and it stays consistent in light and dark mode.",
-    "signature": "export type DisplayTone = \"neutral\" | \"primary\" | \"success\" | \"warning\" | \"danger\" | \"info\";",
+    "signature": "export type DisplayTone =\n  \"neutral\" | \"primary\" | \"success\" | \"warning\" | \"danger\" | \"info\";",
     "members": []
   },
   {
@@ -684,8 +684,13 @@ export const references: readonly ReferenceEntry[] = [
     "category": "configuration",
     "sourcePackage": "@dyrected/core",
     "description": "The root configuration object passed to `createDyrectedApp`.\n\nThis is the single source of truth for your entire Dyrected instance —\ncollections, globals, database adapter, storage, email, and more.",
-    "signature": "export interface DyrectedConfig<TUser extends AuthenticatedUser = AuthenticatedUser> {\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean>;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: { to: string; subject: string; html: string }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
+    "signature": "export interface DyrectedConfig<\n  TUser extends AuthenticatedUser = AuthenticatedUser,\n> {\n  /**\n   * Reusable block definitions that `blocks` fields can reference by slug via\n   * `blockReferences`.\n   */\n  blocks?: Block[];\n\n  /** Collection definitions. Each collection maps to a database table/collection. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  collections: CollectionConfig<any>[];\n\n  /** Global (singleton) definitions. Each global maps to a single document. */\n  // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  globals: GlobalConfig<any>[];\n\n  /**\n   * The database adapter. Required for all data operations.\n   * @see DatabaseAdapter\n   */\n  db?: DatabaseAdapter;\n\n  /**\n   * The storage adapter for file uploads.\n   * Required when any collection has `upload: true`.\n   * @see StorageAdapter\n   */\n  storage?: StorageAdapter;\n\n  /**\n   * The image processing service. Required when any upload collection\n   * defines `imageSizes`.\n   * @see ImageService\n   */\n  image?: ImageService;\n\n  /** Admin UI branding and metadata. */\n  admin?: AdminConfig;\n\n  /**\n   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).\n   * This is separate from collection-level `auth: true`, which continues to\n   * power application/customer auth independently.\n   */\n  adminAuth?: AdminAuthConfig;\n\n  /**\n   * Named access policies available to collection, global, and field access\n   * rules via `{ policy: 'name' }`.\n   *\n   * A policy can be a **function** (full server logic, evaluated to a static\n   * boolean when serialized for the admin panel) or a **Jexl string** (or\n   * boolean). String policies are inlined when the schema is sent to the admin,\n   * so the admin panel evaluates them live against the current form — the same\n   * way it evaluates inline Jexl rules.\n   */\n  accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >;\n\n  /**\n   * Email transport configuration. Required for welcome emails, password\n   * resets, and invite links.\n   *\n   * @example\n   * email: {\n   *   from: 'no-reply@myapp.com',\n   *   send: async ({ to, subject, html }) => {\n   *     await resend.emails.send({ from, to, subject, html })\n   *   },\n   * }\n   */\n  email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  };\n\n  /**\n   * Redis connection URL. Required for distributed caching of dynamic option\n   * resolvers and other server-side caches in multi-instance deployments.\n   *\n   * @example\n   * redis: { url: process.env.REDIS_URL }\n   */\n  redis?: {\n    url: string;\n  };\n\n  /** Durable lifecycle-event delivery configuration. */\n  events?: {\n    handlers: LifecycleEventHandler[];\n\n    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */\n    maxAttempts?: number;\n\n    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */\n    retryDelayMs?: number;\n  };\n\n  /**\n   * Cross-Origin Resource Sharing (CORS) configuration.\n   * List all origins that are allowed to call the Dyrected API.\n   *\n   * @example\n   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }\n   */\n  cors?: {\n    origins: string[];\n  };\n\n  /**\n   * Callback to dynamically fetch additional collections and globals for a\n   * given site ID at request time. Used in multi-tenant deployments where each\n   * site has its own schema stored in the database.\n   */\n  onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>;\n}",
     "members": [
+      {
+        "name": "blocks",
+        "signature": "blocks?: Block[]",
+        "description": "Reusable block definitions that `blocks` fields can reference by slug via\n`blockReferences`."
+      },
       {
         "name": "collections",
         "signature": "collections: CollectionConfig<any>[]",
@@ -723,12 +728,12 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "accessPolicies",
-        "signature": "accessPolicies?: Record<string, AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean>",
+        "signature": "accessPolicies?: Record<\n    string,\n    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean\n  >",
         "description": "Named access policies available to collection, global, and field access\nrules via `{ policy: 'name' }`.\n\nA policy can be a **function** (full server logic, evaluated to a static\nboolean when serialized for the admin panel) or a **Jexl string** (or\nboolean). String policies are inlined when the schema is sent to the admin,\nso the admin panel evaluates them live against the current form — the same\nway it evaluates inline Jexl rules."
       },
       {
         "name": "email",
-        "signature": "email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: { to: string; subject: string; html: string }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  }",
+        "signature": "email?: {\n    /** The `From` address for all outbound emails. */\n    from: string;\n\n    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */\n    send: (args: {\n      to: string;\n      subject: string;\n      html: string;\n    }) => Promise<void>;\n\n    /** Override the default email templates. */\n    templates?: {\n      welcome?: (args: { email: string }) => { subject?: string; html: string };\n      invite?: (args: { token: string; invitedByEmail?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      resetPassword?: (args: { token: string; url?: string }) => {\n        subject?: string;\n        html: string;\n      };\n      passwordChanged?: (args: { email: string }) => {\n        subject?: string;\n        html: string;\n      };\n    };\n  }",
         "description": "Email transport configuration. Required for welcome emails, password\nresets, and invite links."
       },
       {
@@ -748,7 +753,7 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "onSchemaFetch",
-        "signature": "onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>",
+        "signature": "onSchemaFetch?: (\n    siteId: string,\n    // eslint-disable-next-line @typescript-eslint/no-explicit-any\n  ) => Promise<{\n    blocks?: Block[];\n    collections?: CollectionConfig<any>[];\n    globals?: GlobalConfig<any>[];\n    admin?: AdminConfig;\n    adminAuth?: AdminAuthConfig;\n  }>",
         "description": "Callback to dynamically fetch additional collections and globals for a\ngiven site ID at request time. Used in multi-tenant deployments where each\nsite has its own schema stored in the database."
       }
     ]
@@ -760,7 +765,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type EmailField = TypedField<\"email\", string, EmailFieldAdmin> & CharacterLimitFieldConfig;",
+    "signature": "export type EmailField = TypedField<\"email\", string, EmailFieldAdmin> &\n  CharacterLimitFieldConfig;",
     "members": []
   },
   {
@@ -800,7 +805,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type FieldAdminOnChangeHook<TValue = unknown> = (args: FieldAdminOnChangeHookArgs<TValue>) => unknown;",
+    "signature": "export type FieldAdminOnChangeHook<TValue = unknown> = (\n  args: FieldAdminOnChangeHookArgs<TValue>,\n) => unknown;",
     "members": []
   },
   {
@@ -872,7 +877,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type FieldAdminOptionsHookResult = Array<string | { label: string; value: unknown }>;",
+    "signature": "export type FieldAdminOptionsHookResult = Array<\n  string | { label: string; value: unknown }\n>;",
     "members": []
   },
   {
@@ -882,7 +887,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (\n  args: FieldAfterReadHookArgs<TValue, TDoc>,\n) => unknown;",
+    "signature": "export type FieldAfterReadHook<\n  TValue = unknown,\n  TDoc extends object = Record<string, unknown>,\n> = (args: FieldAfterReadHookArgs<TValue, TDoc>) => unknown;",
     "members": []
   },
   {
@@ -892,7 +897,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldAfterReadHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {\n  /** Raw stored field value before this hook transforms it. */\n  value: TValue;\n  /** Full document currently being returned to the caller. */\n  doc: TDoc;\n  /** Authenticated user requesting the document, if any. */\n  user?: AuthenticatedUser;\n  /** Read-only database adapter for related lookups. */\n  db: ReadonlyDatabaseAdapter;\n}",
+    "signature": "export interface FieldAfterReadHookArgs<\n  TValue = unknown,\n  TDoc extends object = Record<string, unknown>,\n> {\n  /** Raw stored field value before this hook transforms it. */\n  value: TValue;\n  /** Full document currently being returned to the caller. */\n  doc: TDoc;\n  /** Authenticated user requesting the document, if any. */\n  user?: AuthenticatedUser;\n  /** Read-only database adapter for related lookups. */\n  db: ReadonlyDatabaseAdapter;\n}",
     "members": [
       {
         "name": "value",
@@ -923,7 +928,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldBase {\n  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */\n  name?: string;\n  /** Human-readable label shown in the Admin UI. */\n  label?: string;\n  /** Whether the field must have a value when saving. */\n  required?: boolean;\n  /** Whether values for this field must be unique across the collection. */\n  unique?: boolean;\n  /** Default value used when a new document omits this field. */\n  defaultValue?: unknown;\n  /** Static or dynamic option source for supported selection fields. */\n  options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig;\n  /** Target collection slug for `relationship` fields. */\n  relationTo?: string;\n  /** Whether the field stores multiple values instead of one. */\n  hasMany?: boolean;\n  /** Child fields for `object` and `array` field types. */\n  fields?: Field[];\n  /** Allowed block definitions for a `blocks` field. */\n  blocks?: Block[];\n  /** Target collection slug for `join` fields. */\n  collection?: string;\n  /** Back-reference field name on the joined collection. */\n  on?: string;\n  /** Maximum number of joined documents returned by a `join` field. */\n  limit?: number;\n  /** Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. */\n  access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */\n    create?: AccessRule;\n    /** Controls whether incoming writes may change this field on update. */\n    update?: AccessRule;\n  };\n  /** Admin-only presentation options for this field. */\n  admin?: BaseFieldAdmin;\n  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */\n  renameTo?: string;\n  /** Whether SQL adapters should promote this field into a first-class column. */\n  promoted?: boolean;\n}",
+    "signature": "export interface FieldBase {\n  /** Stored key for this field. Omit only for layout-only fields such as `row` or `join`. */\n  name?: string;\n  /** Human-readable label shown in the Admin UI. */\n  label?: string;\n  /** Whether the field must have a value when saving. */\n  required?: boolean;\n  /** Whether values for this field must be unique across the collection. */\n  unique?: boolean;\n  /** Default value used when a new document omits this field. */\n  defaultValue?: unknown;\n  /** Static or dynamic option source for supported selection fields. */\n  options?:\n    | string[]\n    | { label: string; value: unknown }[]\n    | DynamicOptionsResolver\n    | DynamicOptionsConfig;\n  /** Target collection slug for `relationship` fields. */\n  relationTo?: string;\n  /** Whether the field stores multiple values instead of one. */\n  hasMany?: boolean;\n  /** Child fields for `object` and `array` field types. */\n  fields?: Field[];\n  /** Allowed block definitions for a `blocks` field. */\n  blocks?: Block[];\n  /**\n   * Shared block slugs pulled from the root `defineConfig({ blocks: [...] })`\n   * registry for a `blocks` field.\n   *\n   * Use this when the same block types should be reused across multiple fields\n   * without inlining the full block schema into each field definition.\n   */\n  blockReferences?: string[];\n  /** Target collection slug for `join` fields. */\n  collection?: string;\n  /** Back-reference field name on the joined collection. */\n  on?: string;\n  /** Maximum number of joined documents returned by a `join` field. */\n  limit?: number;\n  /** Field-level read, create, and update access rules. Supports functions, Jexl strings, booleans, and named policies. */\n  access?: {\n    /** Controls whether this field is returned in API responses. */\n    read?: AccessRule;\n    /** Controls whether this field may be set when creating a document. Falls back to `update` when omitted. */\n    create?: AccessRule;\n    /** Controls whether incoming writes may change this field on update. */\n    update?: AccessRule;\n  };\n  /** Admin-only presentation options for this field. */\n  admin?: BaseFieldAdmin;\n  /** Previous storage key this field falls back to. When the field has no value, its value is read from the old key at read time, then rewritten under the new key on the next save. */\n  renameTo?: string;\n  /** Whether SQL adapters should promote this field into a first-class column. */\n  promoted?: boolean;\n}",
     "members": [
       {
         "name": "name",
@@ -952,7 +957,7 @@ export const references: readonly ReferenceEntry[] = [
       },
       {
         "name": "options",
-        "signature": "options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig",
+        "signature": "options?:\n    | string[]\n    | { label: string; value: unknown }[]\n    | DynamicOptionsResolver\n    | DynamicOptionsConfig",
         "description": "Static or dynamic option source for supported selection fields."
       },
       {
@@ -974,6 +979,11 @@ export const references: readonly ReferenceEntry[] = [
         "name": "blocks",
         "signature": "blocks?: Block[]",
         "description": "Allowed block definitions for a `blocks` field."
+      },
+      {
+        "name": "blockReferences",
+        "signature": "blockReferences?: string[]",
+        "description": "Shared block slugs pulled from the root `defineConfig({ blocks: [...] })`\nregistry for a `blocks` field.\n\nUse this when the same block types should be reused across multiple fields\nwithout inlining the full block schema into each field definition."
       },
       {
         "name": "collection",
@@ -1019,7 +1029,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (\n  args: FieldBeforeChangeHookArgs<TValue, TDoc>,\n) => unknown;",
+    "signature": "export type FieldBeforeChangeHook<\n  TValue = unknown,\n  TDoc extends object = Record<string, unknown>,\n> = (args: FieldBeforeChangeHookArgs<TValue, TDoc>) => unknown;",
     "members": []
   },
   {
@@ -1029,7 +1039,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "hooks",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export interface FieldBeforeChangeHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {\n  /** Current field value after previous hooks in the chain. */\n  value: TValue;\n  /** Existing stored document before the write, if this is an update. */\n  originalDoc?: TDoc;\n  /** Full incoming payload being written. */\n  data: Record<string, unknown>;\n  /** Authenticated user performing the write, if any. */\n  user?: AuthenticatedUser;\n  /** Read-only database adapter for related lookups. */\n  db: ReadonlyDatabaseAdapter;\n}",
+    "signature": "export interface FieldBeforeChangeHookArgs<\n  TValue = unknown,\n  TDoc extends object = Record<string, unknown>,\n> {\n  /** Current field value after previous hooks in the chain. */\n  value: TValue;\n  /** Existing stored document before the write, if this is an update. */\n  originalDoc?: TDoc;\n  /** Full incoming payload being written. */\n  data: Record<string, unknown>;\n  /** Authenticated user performing the write, if any. */\n  user?: AuthenticatedUser;\n  /** Read-only database adapter for related lookups. */\n  db: ReadonlyDatabaseAdapter;\n}",
     "members": [
       {
         "name": "value",
@@ -1293,7 +1303,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type IconField = TypedField<\"icon\", string, IconFieldAdmin> & CharacterLimitFieldConfig;",
+    "signature": "export type IconField = TypedField<\"icon\", string, IconFieldAdmin> &\n  CharacterLimitFieldConfig;",
     "members": []
   },
   {
@@ -1369,7 +1379,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "An arbitrary JSON value. Dyrected stores it as-is and does not validate its shape.",
-    "signature": "export type JsonField = TypedField<\"json\", Record<string, unknown>, JsonFieldAdmin>;",
+    "signature": "export type JsonField = TypedField<\n  \"json\",\n  Record<string, unknown>,\n  JsonFieldAdmin\n>;",
     "members": []
   },
   {
@@ -1520,7 +1530,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "Several choices from a fixed or dynamically-resolved set, stored as an array of the chosen values.",
-    "signature": "export type MultiSelectField = TypedField<\"multiSelect\", string[], MultiSelectFieldAdmin>;",
+    "signature": "export type MultiSelectField = TypedField<\n  \"multiSelect\",\n  string[],\n  MultiSelectFieldAdmin\n>;",
     "members": []
   },
   {
@@ -1540,7 +1550,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "A numeric value. Optional advisory `min`/`max` guide editors without enforcing server-side validation.",
-    "signature": "export type NumberField = TypedField<\"number\", number, NumberFieldAdmin> & NumberLimitFieldConfig;",
+    "signature": "export type NumberField = TypedField<\"number\", number, NumberFieldAdmin> &\n  NumberLimitFieldConfig;",
     "members": []
   },
   {
@@ -1738,7 +1748,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "Formatted content authored in the admin editor, stored as an HTML string.",
-    "signature": "export type RichTextField = TypedField<\"richText\", string> & RichTextFieldConfig;",
+    "signature": "export type RichTextField = TypedField<\"richText\", string> &\n  RichTextFieldConfig;",
     "members": []
   },
   {
@@ -1859,7 +1869,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type TextField = TypedField<\"text\", string, TextFieldAdmin> & CharacterLimitFieldConfig & WordLimitFieldConfig;",
+    "signature": "export type TextField = TypedField<\"text\", string, TextFieldAdmin> &\n  CharacterLimitFieldConfig &\n  WordLimitFieldConfig;",
     "members": []
   },
   {
@@ -1909,7 +1919,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<never, never>> = Omit<FieldBase, \"admin\"> & {\n  type: TType;\n  admin?: BaseFieldAdmin & TAdminExtra;\n} & FieldHooks<TValue> &\n  FieldAdminHooks<TValue>;",
+    "signature": "export type TypedField<\n  TType extends FieldType,\n  TValue,\n  TAdminExtra = Record<never, never>,\n> = Omit<FieldBase, \"admin\"> & {\n  type: TType;\n  admin?: BaseFieldAdmin & TAdminExtra;\n} & FieldHooks<TValue> &\n  FieldAdminHooks<TValue>;",
     "members": []
   },
   {
@@ -1929,7 +1939,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "fields",
     "sourcePackage": "@dyrected/core",
     "description": "",
-    "signature": "export type UrlField = TypedField<\"url\", string | UrlLinkValue, UrlFieldAdmin> & CharacterLimitFieldConfig;",
+    "signature": "export type UrlField = TypedField<\"url\", string | UrlLinkValue, UrlFieldAdmin> &\n  CharacterLimitFieldConfig;",
     "members": []
   },
   {
@@ -2329,7 +2339,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "",
-    "signature": "export function createClient<TSchema extends BaseSchema = BaseSchema>(\n  config: DyrectedClientConfig,\n): DyrectedClient<TSchema>",
+    "signature": "export function createClient<TSchema extends BaseSchema = RegisteredSchema>(\n  config: DyrectedClientConfig,\n): DyrectedClient<TSchema>",
     "members": []
   },
   {
@@ -2339,7 +2349,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "",
-    "signature": "export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {\n}",
+    "signature": "export class DyrectedClient<TSchema extends BaseSchema = RegisteredSchema> {\n}",
     "members": [
       {
         "name": "setToken",
@@ -2567,7 +2577,7 @@ export const references: readonly ReferenceEntry[] = [
     "category": "sdk",
     "sourcePackage": "@dyrected/sdk",
     "description": "Derives a typed `TSchema` from your exported collection and global config constants.\n\nPass it to `createClient<Schema>()` so every `find`, `findOne`, `create`,\n`update`, `global().get()` call returns the inferred document shape — no\nmanual interfaces required.",
-    "signature": "export type InferSchema<\n  TCollections extends Record<string, CollectionConfig<UnknownRecord>>,\n  TGlobals extends Record<string, GlobalConfig<UnknownRecord>> = Record<never, never>,\n> = {\n  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };\n  globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };\n};",
+    "signature": "export type InferSchema<\n  TCollections extends Record<string, CollectionConfig<UnknownRecord>>,\n  TGlobals extends Record<string, GlobalConfig<UnknownRecord>> = Record<\n    never,\n    never\n  >,\n> = {\n  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };\n  globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };\n};",
     "members": []
   },
   {
@@ -2578,6 +2588,26 @@ export const references: readonly ReferenceEntry[] = [
     "sourcePackage": "@dyrected/sdk",
     "description": "The query-string parameter the Admin appends to a preview URL in\n`previewMode: \"token\"`. Read it on your frontend to decide whether to fetch\ndraft data instead of published content.",
     "signature": "export const PREVIEW_TOKEN_PARAM = \"dyPreview\";",
+    "members": []
+  },
+  {
+    "id": "@dyrected/sdk:Register",
+    "name": "Register",
+    "kind": "interface",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "",
+    "signature": "export interface Register {}",
+    "members": []
+  },
+  {
+    "id": "@dyrected/sdk:RegisteredSchema",
+    "name": "RegisteredSchema",
+    "kind": "type",
+    "category": "sdk",
+    "sourcePackage": "@dyrected/sdk",
+    "description": "",
+    "signature": "export type RegisteredSchema = Register extends { schema: infer S }\n  ? S extends BaseSchema\n    ? S\n    : BaseSchema\n  : BaseSchema;",
     "members": []
   },
   {

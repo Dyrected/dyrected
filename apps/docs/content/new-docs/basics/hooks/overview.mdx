@@ -280,7 +280,9 @@ export type FieldAdminHooks<TValue> = {
 Exported type from @dyrected/core.
 
 ```ts
-export type FieldAdminOnChangeHook<TValue = unknown> = (args: FieldAdminOnChangeHookArgs<TValue>) => unknown;
+export type FieldAdminOnChangeHook<TValue = unknown> = (
+  args: FieldAdminOnChangeHookArgs<TValue>,
+) => unknown;
 ```
 
 
@@ -344,7 +346,9 @@ export interface FieldAdminOptionsHookArgs {
 Exported type from @dyrected/core.
 
 ```ts
-export type FieldAdminOptionsHookResult = Array<string | { label: string; value: unknown }>;
+export type FieldAdminOptionsHookResult = Array<
+  string | { label: string; value: unknown }
+>;
 ```
 
 
@@ -353,9 +357,10 @@ export type FieldAdminOptionsHookResult = Array<string | { label: string; value:
 Exported type from @dyrected/core.
 
 ```ts
-export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
-  args: FieldAfterReadHookArgs<TValue, TDoc>,
-) => unknown;
+export type FieldAfterReadHook<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> = (args: FieldAfterReadHookArgs<TValue, TDoc>) => unknown;
 ```
 
 
@@ -364,7 +369,10 @@ export type FieldAfterReadHook<TValue = unknown, TDoc extends object = Record<st
 Exported interface from @dyrected/core.
 
 ```ts
-export interface FieldAfterReadHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+export interface FieldAfterReadHookArgs<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> {
   /** Raw stored field value before this hook transforms it. */
   value: TValue;
   /** Full document currently being returned to the caller. */
@@ -389,9 +397,10 @@ export interface FieldAfterReadHookArgs<TValue = unknown, TDoc extends object = 
 Exported type from @dyrected/core.
 
 ```ts
-export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record<string, unknown>> = (
-  args: FieldBeforeChangeHookArgs<TValue, TDoc>,
-) => unknown;
+export type FieldBeforeChangeHook<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> = (args: FieldBeforeChangeHookArgs<TValue, TDoc>) => unknown;
 ```
 
 
@@ -400,7 +409,10 @@ export type FieldBeforeChangeHook<TValue = unknown, TDoc extends object = Record
 Exported interface from @dyrected/core.
 
 ```ts
-export interface FieldBeforeChangeHookArgs<TValue = unknown, TDoc extends object = Record<string, unknown>> {
+export interface FieldBeforeChangeHookArgs<
+  TValue = unknown,
+  TDoc extends object = Record<string, unknown>,
+> {
   /** Current field value after previous hooks in the chain. */
   value: TValue;
   /** Existing stored document before the write, if this is an update. */

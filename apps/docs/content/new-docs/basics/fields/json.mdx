@@ -31,7 +31,11 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 An arbitrary JSON value. Dyrected stores it as-is and does not validate its shape.
 
 ```ts
-export type JsonField = TypedField<"json", Record<string, unknown>, JsonFieldAdmin>;
+export type JsonField = TypedField<
+  "json",
+  Record<string, unknown>,
+  JsonFieldAdmin
+>;
 ```
 
 

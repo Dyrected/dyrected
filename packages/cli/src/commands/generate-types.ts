@@ -1,6 +1,20 @@
 import type { Command } from "commander";
 import chalk from "chalk";
+import fs from "fs-extra";
+import path from "path";
 import { runGenerateTypes } from "../utils/type-generator.js";
+import { resolveAppSrcDir } from "../utils/detect.js";
+
+/**
+ * Resolve where `dyrected.config.ts` lives. Prefer the framework source dir
+ * (where new projects scaffold it), then fall back to the project root so
+ * existing setups keep working.
+ */
+function resolveConfigPath(cwd: string, srcDir: string): string {
+  const inSrc = path.join(srcDir, "dyrected.config.ts");
+  if (fs.existsSync(path.join(cwd, inSrc))) return inSrc;
+  return "./dyrected.config.ts";
+}
 
 export function registerGenerateTypes(program: Command) {
   program
@@ -12,15 +26,17 @@ export function registerGenerateTypes(program: Command) {
     )
     .option(
       "-c, --config <path>",
-      "Path to your dyrected.config.ts (Self-hosted)",
-      "./dyrected.config.ts",
+      "Path to your dyrected.config.ts (defaults to your app source dir, then the project root)",
     )
-    .option("-o, --output <path>", "Output file path", "./dyrected-types.ts")
+    .option(
+      "-o, --output <path>",
+      "Output file path (defaults to <srcDir>/dyrected-types.ts so your framework's TypeScript program picks up the generated types)",
+    )
     .addHelpText(
       "after",
       `
 Examples:
-  # Generate from local config (default)
+  # Generate from local config (writes into your app source dir)
   $ npx dyrected generate:types
 
   # Generate from a running self-hosted instance
@@ -32,10 +48,14 @@ Examples:
     )
     .action(async (options) => {
       try {
+        const cwd = process.cwd();
+        const srcDir = resolveAppSrcDir(cwd);
+        const config = options.config ?? resolveConfigPath(cwd, srcDir);
+        const output = options.output ?? path.join(srcDir, "dyrected-types.ts");
         await runGenerateTypes({
           url: options.url,
-          config: options.config,
-          output: options.output,
+          config,
+          output,
         });
       } catch (error: any) {
         console.error(chalk.red(`\nError: ${error.message}`));

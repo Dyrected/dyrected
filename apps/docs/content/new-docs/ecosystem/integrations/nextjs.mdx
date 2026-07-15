@@ -1,0 +1,145 @@
+---
+title: Next.js
+description: Use Dyrected inside a Next.js App Router project with the self-hosted route handler, admin wrapper, and Next-aware client utilities.
+---
+
+`@dyrected/next` is the recommended integration for Next.js App Router projects. It is the package to reach for when the Dyrected backend should live inside your Next app, or when a Next frontend wants the most convenient first-party wrapper around a running Dyrected API.
+
+By the end of this page, you should know the recommended mounting pattern, how to embed the admin, and where the Next package fits relative to the SDK and React layer.
+
+## What `@dyrected/next` adds
+
+`@dyrected/next` bundles the Next-specific pieces together:
+
+- `dyrectedNextHandler` to mount a self-hosted Dyrected API
+- `withDyrected` to keep the admin bundle on the same React instance as your app
+- `DyrectedAdmin` for the admin route
+- media components and SDK exports for normal app reads
+
+It also re-exports the React integration layer, so a Next app usually imports from `@dyrected/next` instead of mixing packages by hand.
+
+## Install the package
+
+For a self-hosted Next project, install the Next package plus the core package and the database adapter your config uses:
+
+```bash
+pnpm add @dyrected/next @dyrected/core @dyrected/sdk @dyrected/react @dyrected/db-postgres
+```
+
+Swap `@dyrected/db-postgres` for the adapter you actually use.
+
+## Wrap `next.config.ts`
+
+Wrap your Next config with `withDyrected` once. This keeps the app and the embedded admin bundle on the same React instance, which avoids the class of invalid-hook-call problems that show up when the admin and app resolve React differently.
+
+```ts
+// next.config.ts
+import type { NextConfig } from "next";
+import { withDyrected } from "@dyrected/next/config";
+
+const nextConfig: NextConfig = {};
+
+export default withDyrected(
+  nextConfig as unknown as Parameters<typeof withDyrected>[0],
+) as unknown as NextConfig;
+```
+
+## Mount the self-hosted API
+
+The recommended path is to mount Dyrected at `/dyrected`, because that matches the package defaults and the admin wrapper's default `baseUrl`.
+
+```ts
+// app/dyrected/[...route]/route.ts
+import { dyrectedNextHandler } from "@dyrected/next";
+import config from "../../../dyrected.config";
+
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } =
+  dyrectedNextHandler(config);
+```
+
+That creates the Dyrected routes under `/dyrected`, including `/dyrected/api/...`.
+
+If you want a different mount path, move the catch-all route and pass the matching `basePath` explicitly.
+
+```ts
+export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(
+  config,
+  { basePath: "/cms" },
+);
+```
+
+## Embed the admin
+
+Create a normal App Router page and render `DyrectedAdmin` there:
+
+```tsx
+// app/admin/page.tsx
+import { DyrectedAdmin } from "@dyrected/next/admin";
+
+export default function AdminPage() {
+  return <DyrectedAdmin />;
+}
+```
+
+If your environment variables follow the usual Next naming, the admin wrapper can read them automatically:
+
+- `NEXT_PUBLIC_DYRECTED_URL`
+- `NEXT_PUBLIC_DYRECTED_API_KEY`
+- `NEXT_PUBLIC_DYRECTED_SITE_ID`
+
+Pass props manually only when you want to override those defaults.
+
+## Fetch content in server code
+
+For normal app reads, use the preconfigured client helper:
+
+```tsx
+// app/blog/page.tsx
+import { getDyrectedClient } from "@dyrected/next";
+
+export default async function BlogPage() {
+  const client = getDyrectedClient();
+  const { docs: posts } = await client.collection("posts").find({
+    where: { status: { equals: "published" } },
+    sort: "-createdAt",
+    limit: 10,
+    depth: 1,
+  });
+
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+`getDyrectedClient()` reads `NEXT_PUBLIC_DYRECTED_URL` first, then `DYRECTED_URL`, and falls back to `http://localhost:3000` if neither is set. It also reads the corresponding API key variables.
+
+## Use the rest of the stack from the same package
+
+When you need live preview or rendering helpers, the Next package is still the entry point:
+
+- `useLivePreview`
+- `Blocks`
+- `useDyPath`
+- `DyrectedImage`
+- `DyrectedMedia`
+- `DyrectedIcon`
+
+That is the practical reason to prefer `@dyrected/next` over mixing `@dyrected/react` and `@dyrected/sdk` directly in a Next app.
+
+## Production expectations
+
+In production, remember two things:
+
+- `dyrectedNextHandler` initializes lazily on the first matching request, so a successful `next build` does not prove the runtime can reach the database
+- the default mount path is `/dyrected`, so keep your env values and admin expectations aligned with that path unless you intentionally changed it
+
+## Related pages
+
+- [Admin](/new-docs/features/admin/overview)
+- [Live preview](/new-docs/features/live-preview/overview)
+- [Deployment](/new-docs/deployment/production/deployment)

@@ -5,6 +5,7 @@ import path from "path";
 import { createJiti } from "jiti";
 import { runGenerateTypes } from "../utils/type-generator.js";
 import { loadCommandEnv } from "../utils/env.js";
+import { resolveAppSrcDir } from "../utils/detect.js";
 
 function isNamedPolicy(
   value: unknown,
@@ -359,9 +360,12 @@ Examples:
 
         if (!options.skipTypes) {
           console.log(chalk.blue("\nGenerating types from synced schema..."));
+          // Write generated types into the framework source dir so the schema
+          // augmentation is picked up by the TypeScript program.
+          const srcDir = resolveAppSrcDir(process.cwd());
           await runGenerateTypes({
             config: options.config,
-            output: "./dyrected-types.ts",
+            output: path.join(srcDir, "dyrected-types.ts"),
           });
         }
       } catch (error: any) {

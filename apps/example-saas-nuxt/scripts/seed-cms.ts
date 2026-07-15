@@ -1,5 +1,5 @@
 import { createClient } from "@dyrected/sdk";
-import { DyrectedSchema } from "../dyrected-types.js";
+import { DyrectedSchema } from "../app/dyrected-types.js";
 
 async function seed() {
   console.log("🌱 Seeding Dyrected CMS with full archived content...");

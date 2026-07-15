@@ -1,3 +1,105 @@
 ---
 title: Preventing Abuse
+description: Protect a production Dyrected app by adding rate limits, keeping sensitive credentials server-side, and treating preview and side-effect routes as real attack surfaces.
 ---
+
+Dyrected gives you the content layer. It does **not** try to be your whole edge-security stack. In production, you should assume public routes, auth flows, preview routes, and upload paths all need deliberate protection from the host app or platform around them.
+
+The recommended path is:
+
+1. rate-limit at the framework, proxy, or platform edge
+2. keep secrets and privileged keys server-side
+3. keep preview and side-effect paths narrow
+4. test the abuse cases you care about before launch
+
+## Start with rate limits
+
+Dyrected does not ship built-in request throttling for you. If a route is public, assume you need to protect it outside Dyrected.
+
+That matters most for:
+
+- auth endpoints
+- media uploads
+- preview routes
+- custom routes that call third-party services
+- any public collection endpoint that is expensive to query
+
+Use the normal protection mechanism for your host:
+
+- framework middleware
+- edge middleware
+- reverse proxy or CDN rules
+- provider-native throttling
+
+If you already have one rate-limiting layer in your stack, use that before inventing something Dyrected-specific.
+
+## Keep privileged credentials out of the browser
+
+This is the simplest abuse-prevention rule and still one of the most important:
+
+- server-side keys stay server-side
+- browser-visible keys should only expose the access you actually intend to expose
+
+If you embed the admin or use browser-side SDK calls, use the framework's public runtime variables only for values that are meant to be public in that environment. Do not leak your server-only API key just because a page happens to need content.
+
+## Treat preview as a protected surface
+
+Server-side preview tokens are short-lived, but they are still bearer credentials. Anyone holding the token can redeem that draft until it expires.
+
+For token-mode preview in production:
+
+- set `DYRECTED_JWT_SECRET`
+- keep preview URLs out of places they do not need to go
+- guard sensitive preview routes at the app layer if the content is sensitive
+
+If you need the strongest operational posture, prefer client-side live preview where it fits, because it avoids shipping draft-bearing tokens in the URL.
+
+## Make hooks resilient
+
+Abuse is not only about malicious traffic. A burst of real traffic can also expose brittle side effects.
+
+If a hook sends email, pings a webhook, or calls another API, wrap that work so a transient downstream failure does not take out a successful content write unless that failure is supposed to block the write.
+
+```ts
+afterChange: [
+  async ({ doc }) => {
+    try {
+      await sendWebhook(doc);
+    } catch (error) {
+      console.error("Webhook failed:", error);
+    }
+  },
+];
+```
+
+That keeps backpressure from external services from turning into an avoidable admin outage.
+
+## Bound expensive reads
+
+A route can be abusive even when the caller is authorized. Protect your database from accidental heavy reads too:
+
+- set explicit `limit` values on list queries
+- keep `depth` only as high as the page actually needs
+- promote fields you filter or sort on frequently
+
+Those are performance choices, but they are also abuse-surface choices because unbounded reads are easy to amplify.
+
+## Enforce origin and network rules at the host layer
+
+If you need strict origin control, IP allowlists, WAF rules, bot management, or per-path request controls, treat that as a responsibility of your framework, proxy, or infrastructure edge. Do not assume Dyrected alone is the place those policies will live.
+
+## Pre-launch checks
+
+Before you ship, verify the basics:
+
+- repeated login attempts get throttled by the host layer
+- upload endpoints are protected the way you expect
+- preview URLs cannot be reused long after issuance
+- public collection reads have sane limits
+- external side effects degrade safely under failure
+
+## Related pages
+
+- [Deployment](/new-docs/deployment/production/deployment)
+- [Server-side integration](/new-docs/features/live-preview/server-side)
+- [Performance](/new-docs/deployment/performance/overview)

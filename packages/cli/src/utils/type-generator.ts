@@ -199,14 +199,21 @@ export type UrlField = UrlFieldValue | string;
 
     code += `export interface ${interfaceName} {\n`;
     code += `  id: string;\n`;
+    const declaredFields = new Set<string>(["id"]);
     for (const field of col.fields) {
       if (!field.name || field.type === "join") continue;
       if (["createdAt", "updatedAt", "id"].includes(field.name)) continue;
       code += `  ${propertyName(field.name)}${field.required ? "" : "?"}: ${mapFieldType(field)};\n`;
+      declaredFields.add(field.name);
     }
     if (col.auth) {
-      code += `  email: string;\n`;
-      code += `  roles?: string[];\n`;
+      // Auth collections gain `email` and `roles`, but only add them when the
+      // schema didn't already declare a field of that name. Otherwise the
+      // interface would carry the property twice with conflicting types (e.g. a
+      // `roles` select field is `'admin' | 'editor'`, not `string[]`), which is
+      // a TypeScript error. The schema's own definition wins.
+      if (!declaredFields.has("email")) code += `  email: string;\n`;
+      if (!declaredFields.has("roles")) code += `  roles?: string[];\n`;
     }
     if (col.upload) code += uploadFields();
     code += `  createdAt: string;\n`;
@@ -238,7 +245,29 @@ export type UrlField = UrlFieldValue | string;
   code += `  };\n`;
   code += `}\n`;
 
+  // Register the schema globally with @dyrected/sdk. Once this file is part of
+  // the compilation, the SDK client and every framework hook (React/Vue/Nuxt)
+  // are typed against DyrectedSchema automatically — no per-call generics.
+  code += `\n`;
+  code += `declare module "@dyrected/sdk" {\n`;
+  code += `  interface Register {\n`;
+  code += `    schema: DyrectedSchema;\n`;
+  code += `  }\n`;
+  code += `}\n`;
+
   return code;
+}
+
+/**
+ * Build a union of string literals from a select/radio/multiSelect field's
+ * `options` (accepting both `"value"` and `{ label, value }` shapes). Returns
+ * `null` when there are no options to enumerate.
+ */
+function optionsUnion(options: any): string | null {
+  if (!Array.isArray(options) || options.length === 0) return null;
+  return options
+    .map((o: any) => JSON.stringify(typeof o === "string" ? o : o.value))
+    .join(" | ");
 }
 
 export function mapFieldType(field: any): string {
@@ -261,16 +290,16 @@ export function mapFieldType(field: any): string {
     case "boolean":
       return "boolean";
     case "select":
-    case "radio":
-      return Array.isArray(field.options) && field.options.length > 0
-        ? field.options
-            .map((o: any) =>
-              JSON.stringify(typeof o === "string" ? o : o.value),
-            )
-            .join(" | ")
-        : "string";
-    case "multiSelect":
-      return "string[]";
+    case "radio": {
+      const union = optionsUnion(field.options);
+      return union ?? "string";
+    }
+    case "multiSelect": {
+      // Emit an array of the option literals (an enum), not a loose string[],
+      // so a multi-valued field like `roles` stays typed as its allowed values.
+      const union = optionsUnion(field.options);
+      return union ? `(${union})[]` : "string[]";
+    }
     case "image":
     case "relationship": {
       const relationTo = field.relationTo || field.collection;

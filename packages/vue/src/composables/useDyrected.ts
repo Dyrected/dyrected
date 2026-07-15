@@ -1,12 +1,21 @@
 import { ref, inject, onMounted, watch, type Ref, type InjectionKey } from 'vue';
-import { createClient, type DyrectedClient, type BaseSchema } from '@dyrected/sdk';
+import { createClient, type DyrectedClient, type SchemaShape, type RegisteredSchema } from '@dyrected/sdk';
+
+/** A collection slug from your registered schema (or any string until types are generated). */
+type CollectionSlug = keyof RegisteredSchema['collections'] & string;
+/** The document type for a given collection slug. */
+type CollectionDoc<K extends CollectionSlug> = RegisteredSchema['collections'][K];
+/** A global slug from your registered schema. */
+type GlobalSlug = keyof RegisteredSchema['globals'] & string;
+/** The data type for a given global slug. */
+type GlobalData<K extends GlobalSlug> = RegisteredSchema['globals'][K];
 
 export const DYRECTED_CLIENT_KEY: InjectionKey<DyrectedClient> = Symbol('dyrected-client');
 
 /**
  * useDyrectedClient — Returns the injected Dyrected client.
  */
-export function useDyrectedClient<TSchema extends BaseSchema = any>(): DyrectedClient<TSchema> {
+export function useDyrectedClient<TSchema extends SchemaShape = RegisteredSchema>(): DyrectedClient<TSchema> {
   const client = inject(DYRECTED_CLIENT_KEY);
   if (!client) {
     throw new Error('Dyrected client not found. Use provideDyrectedClient() or the DyrectedVue plugin.');
@@ -30,8 +39,11 @@ export interface UseDyrectedOptions {
 /**
  * useDyrected — Reactive composable for fetching a single document.
  */
-export function useDyrected<T = any>(
-  collection: string,
+export function useDyrected<
+  K extends CollectionSlug,
+  T = CollectionDoc<K>
+>(
+  collection: K,
   idOrSlug: string,
   options: UseDyrectedOptions = {}
 ) {
@@ -70,8 +82,11 @@ export function useDyrected<T = any>(
 /**
  * useDyrectedCollection — Reactive composable for fetching a collection.
  */
-export function useDyrectedCollection<T = any>(
-  collection: string,
+export function useDyrectedCollection<
+  K extends CollectionSlug,
+  T = CollectionDoc<K>
+>(
+  collection: K,
   options: UseDyrectedOptions = {}
 ) {
   const client = useDyrectedClient();
@@ -107,8 +122,11 @@ export function useDyrectedCollection<T = any>(
 /**
  * useDyrectedGlobal — Reactive composable for fetching a global.
  */
-export function useDyrectedGlobal<T = any>(
-  slug: string,
+export function useDyrectedGlobal<
+  K extends GlobalSlug,
+  T = GlobalData<K>
+>(
+  slug: K,
   options: UseDyrectedOptions = {}
 ) {
   const client = useDyrectedClient();

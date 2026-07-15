@@ -89,7 +89,12 @@ export interface BaseFieldAdmin {
   /** Hides the field's label in the Admin form (e.g. single-field array rows where the label is redundant). */
   hideLabel?: boolean;
   /** Reactive condition controlling whether the field is visible in the Admin UI. */
-  condition?: ((data: Record<string, unknown>, siblingData: Record<string, unknown>) => boolean) | string;
+  condition?:
+    | ((
+        data: Record<string, unknown>,
+        siblingData: Record<string, unknown>,
+      ) => boolean)
+    | string;
   /** Tab name used when the edit form is rendered as tabs. */
   tab?: string;
   /** CSS width hint used when the field appears inside a `row`. */
@@ -248,7 +253,11 @@ export interface FieldBase {
   /** Default value used when a new document omits this field. */
   defaultValue?: unknown;
   /** Static or dynamic option source for supported selection fields. */
-  options?: string[] | { label: string; value: unknown }[] | DynamicOptionsResolver | DynamicOptionsConfig;
+  options?:
+    | string[]
+    | { label: string; value: unknown }[]
+    | DynamicOptionsResolver
+    | DynamicOptionsConfig;
   /** Target collection slug for `relationship` fields. */
   relationTo?: string;
   /** Whether the field stores multiple values instead of one. */
@@ -257,6 +266,14 @@ export interface FieldBase {
   fields?: Field[];
   /** Allowed block definitions for a `blocks` field. */
   blocks?: Block[];
+  /**
+   * Shared block slugs pulled from the root `defineConfig({ blocks: [...] })`
+   * registry for a `blocks` field.
+   *
+   * Use this when the same block types should be reused across multiple fields
+   * without inlining the full block schema into each field definition.
+   */
+  blockReferences?: string[];
   /** Target collection slug for `join` fields. */
   collection?: string;
   /** Back-reference field name on the joined collection. */
@@ -293,6 +310,7 @@ export interface FieldBase {
 | <code>hasMany</code> (optional) | Whether the field stores multiple values instead of one. |
 | <code>fields</code> (optional) | Child fields for &#96;object&#96; and &#96;array&#96; field types. |
 | <code>blocks</code> (optional) | Allowed block definitions for a &#96;blocks&#96; field. |
+| <code>blockReferences</code> (optional) | Shared block slugs pulled from the root &#96;defineConfig(&#123; blocks: [...] &#125;)&#96; registry for a &#96;blocks&#96; field.  Use this when the same block types should be reused across multiple fields without inlining the full block schema into each field definition. |
 | <code>collection</code> (optional) | Target collection slug for &#96;join&#96; fields. |
 | <code>on</code> (optional) | Back-reference field name on the joined collection. |
 | <code>limit</code> (optional) | Maximum number of joined documents returned by a &#96;join&#96; field. |
@@ -398,7 +416,11 @@ export type SystemDocFields = {
 Exported type from @dyrected/core.
 
 ```ts
-export type TypedField<TType extends FieldType, TValue, TAdminExtra = Record<never, never>> = Omit<FieldBase, "admin"> & {
+export type TypedField<
+  TType extends FieldType,
+  TValue,
+  TAdminExtra = Record<never, never>,
+> = Omit<FieldBase, "admin"> & {
   type: TType;
   admin?: BaseFieldAdmin & TAdminExtra;
 } & FieldHooks<TValue> &

@@ -26,13 +26,14 @@ The default command is:
 npx dyrected generate:types
 ```
 
-With no extra flags, the CLI tries to generate from `./dyrected.config.ts` and writes the result to:
+With no extra flags, the CLI reads `./dyrected.config.ts` and writes the result **into your app's source directory**, so your framework's TypeScript program picks it up:
 
-```bash
-./dyrected-types.ts
-```
+- **Vite (React/Vue) and Next.js** → `src/dyrected-types.ts` (falls back to the project root if there is no `src/`)
+- **Nuxt** → `app/dyrected-types.ts`
 
-That is the recommended starting point for a self-hosted project or any repo where the local config file is the source of truth.
+<Callout type="info">
+The location matters. The generated file registers your schema through a module augmentation (see [Automatic typing](#automatic-typing-no-generics-needed)), and TypeScript only applies that augmentation when the file is inside the program's `include` globs. A stray `dyrected-types.ts` at a Nuxt project root is silently ignored by the type checker — which is why the CLI writes into your source directory. Your `dyrected.config.ts` stays at the project root; only the generated types file lives in the source dir.
+</Callout>
 
 ## What the command actually does
 
@@ -76,7 +77,7 @@ At the moment, this is the verified remote path for self-hosted instances that e
 
 ## Change the output path
 
-If you do not want `./dyrected-types.ts`, generate the file anywhere you want:
+If you do not want the default source-dir location, generate the file anywhere you want:
 
 ```bash
 npx dyrected generate:types --output ./types/cms.ts
@@ -105,6 +106,7 @@ The current generator writes a plain TypeScript file with:
 - one interface per collection
 - one interface per global, suffixed with `Global`
 - a `DyrectedSchema` interface with `collections` and `globals` maps
+- a `declare module "@dyrected/sdk"` block that registers `DyrectedSchema` globally, so the SDK client and framework hooks type themselves against your schema automatically (see [Automatic typing](#automatic-typing-no-generics-needed) below)
 
 It also maps common field shapes for you:
 
@@ -132,6 +134,48 @@ const { docs: posts } = await client.collection("posts").find();
 ```
 
 That is the easiest way to get typed SDK results when the generated file is your contract boundary.
+
+## Automatic typing, no generics needed
+
+The generated file also **registers your schema globally** with `@dyrected/sdk`, through a small module augmentation at the bottom of the file:
+
+```ts
+// dyrected-types.ts (generated — do not edit)
+declare module "@dyrected/sdk" {
+  interface Register {
+    schema: DyrectedSchema;
+  }
+}
+```
+
+Once that file is part of your project, you no longer have to pass `<DyrectedSchema>` anywhere. `createClient()` and every framework hook default to your registered schema on their own:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+
+// No generic — the client is already typed against DyrectedSchema
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! });
+
+const { docs } = await client.collection("posts").find(); // docs: Post[]
+```
+
+The same applies to the **React and Vue hooks** (and Nuxt, via auto-import). Collection slugs autocomplete and results are typed with no per-call generics:
+
+```ts
+// Vue
+const { docs } = useDyrectedCollection("posts"); // "posts" autocompleted, docs: Post[]
+const { data } = useDyrectedGlobal("settings");  // data: Settings
+
+// React
+const { client } = useDyrected();
+const { docs } = await client.collection("posts").find().exec(); // typed
+```
+
+<Callout type="info">
+Registration is global and assumes **one schema per app** — the same model Payload uses. Until the generated file is part of your compilation, the client and hooks fall back to a loose `BaseSchema` (slugs are plain strings, documents are `Record<string, unknown>`). Generating the file is what turns typing on everywhere at once.
+</Callout>
+
+You can still pass an explicit generic when you want to override the registered schema for a specific call — for example `createClient<OtherSchema>({ ... })` — but you rarely need to.
 
 ## Recommended workflow
 

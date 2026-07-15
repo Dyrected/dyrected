@@ -54,7 +54,7 @@ npx dyrected init -y -f next -b self-hosted -d postgres -s s3 -p custom-admin
 
 ## `generate:types`
 
-Generate a TypeScript types file from your schema. With no flags it reads `./dyrected.config.ts` and writes `./dyrected-types.ts`. Point it at a different config, a running site, or a different output path with the flags below.
+Generate a TypeScript types file from your schema. With no flags it reads `./dyrected.config.ts` and writes the types into your app's source directory (`src/dyrected-types.ts`, or `app/dyrected-types.ts` in Nuxt) so your TypeScript program picks up the generated schema. Point it at a different config, a running site, or a different output path with the flags below.
 
 ```bash
 npx dyrected generate:types
@@ -64,7 +64,7 @@ npx dyrected generate:types
 | --- | --- |
 | `-u, --url <url>` | Base URL of a running Dyrected API. Generates from its `/api/schemas` instead of a local file. |
 | `-c, --config <path>` | Path to your `dyrected.config.ts`. Defaults to `./dyrected.config.ts`. |
-| `-o, --output <path>` | Where to write the generated file. Defaults to `./dyrected-types.ts`. |
+| `-o, --output <path>` | Where to write the generated file. Defaults to `<srcDir>/dyrected-types.ts` (`src/`, or `app/` in Nuxt). |
 
 The output path is yours to choose — keep generated contracts wherever they fit your project:
 

@@ -177,6 +177,57 @@ export interface BaseSchema {
 }
 
 /**
+ * The structural bound used as the generic *constraint* for {@link DyrectedClient}
+ * and the framework hooks. Its map values are `object` rather than
+ * `Record<string, unknown>`.
+ *
+ * This matters because a generated `DyrectedSchema` is built from named
+ * `interface`s (one per collection/global), and TypeScript interfaces have **no
+ * implicit index signature** — so they are assignable to `object` but *not* to
+ * `Record<string, unknown>`. Constraining against {@link BaseSchema} would
+ * reject every real generated schema; constraining against `SchemaShape`
+ * accepts them while {@link BaseSchema} remains the rich fallback default.
+ */
+export interface SchemaShape {
+  collections: Record<string, object>;
+  globals: Record<string, object>;
+}
+
+/**
+ * Global registration seam for your generated schema.
+ *
+ * `dyrected generate:types` emits a module augmentation that registers your
+ * `DyrectedSchema` here:
+ *
+ * ```ts
+ * declare module "@dyrected/sdk" {
+ *   interface Register { schema: DyrectedSchema }
+ * }
+ * ```
+ *
+ * Once that generated file is part of your compilation, every client and
+ * framework hook is typed against your schema automatically — no per-call
+ * generics. Until then, this stays empty and everything falls back to the
+ * loosely-typed {@link BaseSchema}.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface Register {}
+
+/**
+ * The schema the SDK and framework hooks type themselves against. Resolves to
+ * your registered {@link Register} schema when the generated types are present,
+ * otherwise to {@link BaseSchema}. This is the default type parameter for
+ * {@link DyrectedClient} and {@link createClient}, so `client.collection("...")`
+ * and the React/Vue hooks pick up your collections and document shapes with no
+ * explicit generic.
+ */
+export type RegisteredSchema = Register extends { schema: infer S }
+  ? S extends SchemaShape
+    ? S
+    : BaseSchema
+  : BaseSchema;
+
+/**
  * Options for file uploads.
  * When `onProgress` is provided and the runtime supports XMLHttpRequest (browsers),
  * the upload reports real byte-level progress. In other environments (SSR, custom
@@ -189,7 +240,7 @@ export interface UploadOptions {
   signal?: AbortSignal;
 }
 
-export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
+export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
   private baseUrl: string;
   private headers: Record<string, string>;
   private fetch: typeof fetch;
@@ -967,7 +1018,7 @@ export class DyrectedClient<TSchema extends BaseSchema = BaseSchema> {
   }
 }
 
-export function createClient<TSchema extends BaseSchema = BaseSchema>(
+export function createClient<TSchema extends SchemaShape = RegisteredSchema>(
   config: DyrectedClientConfig,
 ): DyrectedClient<TSchema> {
   return new DyrectedClient<TSchema>(config);

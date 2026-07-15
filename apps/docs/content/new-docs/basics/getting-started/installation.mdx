@@ -294,7 +294,7 @@ npm run dyrected:generate-types
 
 `dyrected init` adds that script to `package.json` for you. If you prefer to run the CLI directly, `npx dyrected generate:types` still works too.
 
-That command writes `dyrected-types.ts`, including the generated `DyrectedSchema` type you can pass to `createClient<DyrectedSchema>()` in your app code.
+That command writes `dyrected-types.ts` into your app's source directory (`src/`, or `app/` in Nuxt) so TypeScript picks it up. It includes the generated `DyrectedSchema` type — and registers it globally, so the SDK client and framework hooks are typed against your schema automatically, no generics needed.
 
 ## Next steps
 

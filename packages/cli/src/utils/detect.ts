@@ -17,6 +17,30 @@ export function detectPackageManager(cwd: string): string {
 
 export type SupportedFramework = "next" | "nuxt" | "react" | "vue";
 
+/**
+ * Resolve the directory (relative to `cwd`) where `dyrected.config.ts` and the
+ * generated `dyrected-types.ts` should live so the framework's TypeScript
+ * program actually includes them. This is what makes the generated schema
+ * augmentation load — a file outside the program's `include` globs (e.g. a
+ * `.ts` at a Nuxt project root) is silently ignored by the type checker.
+ *
+ * - **Nuxt** keeps its source under `app/` (Nuxt 4 srcDir), which the generated
+ *   tsconfig includes as `app/**`. Falls back to the project root otherwise.
+ * - **Vite (React/Vue) and Next** conventionally keep source in `src/`.
+ * - Falls back to the project root when no source dir convention is detected.
+ */
+export function resolveAppSrcDir(cwd: string): string {
+  const hasNuxt =
+    fs.existsSync(path.join(cwd, "nuxt.config.ts")) ||
+    fs.existsSync(path.join(cwd, "nuxt.config.js")) ||
+    fs.existsSync(path.join(cwd, "nuxt.config.mjs"));
+  if (hasNuxt) {
+    return fs.existsSync(path.join(cwd, "app")) ? "app" : ".";
+  }
+  if (fs.existsSync(path.join(cwd, "src"))) return "src";
+  return ".";
+}
+
 export type FrameworkDetection =
   | { supported: true; framework: SupportedFramework }
   | { supported: false; name: string }

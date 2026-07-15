@@ -199,7 +199,6 @@ Hiding a field this way only affects the Admin form, not what is stored. If an e
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/new-docs/basics/fields/overview) for the shared field options every type accepts.
 
 {/* GENERATED:REFERENCE-FIELD-BLOCKS:START */}
-
 ## Block
 
 Exported interface from @dyrected/core.
@@ -234,14 +233,15 @@ export interface Block {
 }
 ```
 
-| Option                              | Description                                                                                                                                                                                                                                                                                                                     |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <code>slug</code> (required)        | Stable identifier stored in each block row as &#96;blockType&#96;.                                                                                                                                                                                                                                                              |
-| <code>labels</code> (optional)      | Human-readable labels shown in the Admin block picker.                                                                                                                                                                                                                                                                          |
-| <code>icon</code> (optional)        | Lucide icon name shown on the block card and in the block library. Falls back to a generic layout icon when omitted.                                                                                                                                                                                                            |
-| <code>description</code> (optional) | Short one-line summary shown under the block name (block card subtitle).                                                                                                                                                                                                                                                        |
-| <code>variants</code> (optional)    | Presentation variants for this block. All variants share the same &#96;fields&#96;; only the rendered layout differs. The chosen variant is stored on each block row under the reserved &#96;variant&#96; key and passed to the render component as a &#96;variant&#96; prop. Switching variant preserves the author's content. |
-| <code>fields</code> (required)      | Fields that make up this block's payload.                                                                                                                                                                                                                                                                                       |
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) | Stable identifier stored in each block row as &#96;blockType&#96;. |
+| <code>labels</code> (optional) | Human-readable labels shown in the Admin block picker. |
+| <code>icon</code> (optional) | Lucide icon name shown on the block card and in the block library. Falls back to a generic layout icon when omitted. |
+| <code>description</code> (optional) | Short one-line summary shown under the block name (block card subtitle). |
+| <code>variants</code> (optional) | Presentation variants for this block. All variants share the same &#96;fields&#96;; only the rendered layout differs. The chosen variant is stored on each block row under the reserved &#96;variant&#96; key and passed to the render component as a &#96;variant&#96; prop. Switching variant preserves the author's content. |
+| <code>fields</code> (required) | Fields that make up this block's payload. |
+
 
 ## BlocksField
 
@@ -250,6 +250,7 @@ Flexible content built from a controlled set of typed `blocks`, stored as an ord
 ```ts
 export type BlocksField = TypedField<"blocks", unknown>;
 ```
+
 
 ## BlockVariant
 
@@ -268,11 +269,10 @@ export interface BlockVariant {
 }
 ```
 
-| Option                              | Description                                                                     |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| <code>slug</code> (required)        | Stable identifier stored on the block row as &#96;variant&#96;.                 |
-| <code>label</code> (optional)       | Human-readable label shown in the variant switcher. Defaults to &#96;slug&#96;. |
-| <code>icon</code> (optional)        | Lucide icon name shown beside the variant label.                                |
-| <code>description</code> (optional) | Short one-line summary of what this variant looks like.                         |
-
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) | Stable identifier stored on the block row as &#96;variant&#96;. |
+| <code>label</code> (optional) | Human-readable label shown in the variant switcher. Defaults to &#96;slug&#96;. |
+| <code>icon</code> (optional) | Lucide icon name shown beside the variant label. |
+| <code>description</code> (optional) | Short one-line summary of what this variant looks like. |
 {/* GENERATED:REFERENCE-FIELD-BLOCKS:END */}
