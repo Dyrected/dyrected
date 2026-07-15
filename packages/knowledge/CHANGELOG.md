@@ -1,5 +1,11 @@
 # @dyrected/knowledge
 
+## 0.2.15
+
+### Patch Changes
+
+- 9dc3e10: Improve generated recipe metadata and route recipe links to the new common-patterns docs section.
+
 ## 0.2.14
 
 ### Patch Changes
