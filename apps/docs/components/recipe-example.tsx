@@ -16,8 +16,8 @@ export function RecipeExample({ id }: RecipeExampleProps) {
   }
 
   return (
-    <pre data-language="ts">
-      <code className="language-ts">{recipe.source}</code>
+    <pre className="language-ts" data-language="ts">
+      {recipe.source}
     </pre>
   )
 }
