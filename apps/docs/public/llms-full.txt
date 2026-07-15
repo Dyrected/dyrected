@@ -2068,33 +2068,22 @@ Keeping these separate makes each global easy to find and safe to edit without d
 
 Canonical URL: https://docs.dyrected.com/docs/basics/configuration/logging
 
-This page shows how to control Dyrected's runtime observability. By the end, you'll know what gets logged by default, how to turn on body capture safely, how to export logs and telemetry, and where runtime logging stops and audit logging begins.
+Dyrected gives you two related config surfaces for runtime observability:
 
-The important split is simple:
+- `logger` controls the root Pino logger Dyrected writes into
+- `observability` controls request logging, body capture, redaction, sampling, tracing, metrics, and Dyrected-managed transports
 
-- `logger` controls the root Pino logger
-- `observability` controls request logging, redaction, sampling, tracing, metrics, and Dyrected-managed transports
+If you only need the recommended path, start with the default logger and add `observability` options as your deployment needs them.
 
-If you want the recommended path, start with Dyrected's default logger and add `observability` settings only for the parts you actually need.
+## Logger
 
-## What you get by default
+Dyrected uses Pino for runtime logging. By default, Dyrected creates a logger named `dyrected`, pretty-prints to stdout in non-production environments, and writes structured request-completion logs.
 
-If you do not configure anything, Dyrected creates a Pino logger named `dyrected` and writes structured request-completion logs.
+The `logger` option accepts either logger options with an optional destination stream, or a pre-instantiated Pino logger.
 
-Those default request logs include:
+## 1. Logger options with an optional destination stream
 
-- HTTP method
-- request path
-- response status
-- request duration
-- request id
-- site and workspace ids when they exist
-
-Request bodies are **not** logged by default. Tracing and metrics are also off until you enable them explicitly.
-
-## Start with the root config
-
-The smallest working setup is a normal Dyrected config with an optional `logger` block and an `observability` block beside it:
+Pass a `{ options, destination? }` object when you want Dyrected to create the logger for you.
 
 ```ts
 
@@ -2104,36 +2093,21 @@ export default defineConfig({
   db: postgresAdapter({ url: process.env.DATABASE_URL! }),
   collections: [],
   globals: [],
-
   logger: {
     options: {
       level: 'info',
       name: 'dyrected',
     },
   },
-
-  observability: {
-    requestLogging: {
-      enabled: true,
-    },
-  },
 })
 ```
 
-This keeps the default behavior, but makes the logging surface explicit so you can grow it safely.
-
-## Configure the root logger
-
-Use `logger` when you want to control the Pino instance itself.
-
-You can either pass logger options with an optional destination stream, or pass a fully instantiated Pino logger that you manage yourself.
+If you want the logger to write somewhere other than the default stdout destination, pass a destination stream:
 
 ```ts
 
 
 
-
-const destination = pino.destination('/var/log/dyrected.log')
 
 export default defineConfig({
   db: postgresAdapter({ url: process.env.DATABASE_URL! }),
@@ -2143,24 +2117,93 @@ export default defineConfig({
     options: {
       level: 'debug',
     },
-    destination,
+    destination: pino.destination('/var/log/dyrected.log'),
   },
 })
 ```
 
-Use an instantiated logger when you already own the transport or formatting policy and want Dyrected to write into that existing logger.
+This is the simplest way to change log level, logger name, or destination without taking over the full logger lifecycle yourself.
 
-## Turn on body logging safely
+## 2. Pre-instantiated logger
 
-Body logging is opt-in because it is the easiest part of request logging to get wrong.
+Pass a fully configured Pino logger when you already own the transport, formatting, or environment-specific setup.
 
-Dyrected only attempts body capture when all of these are true:
+```ts
+
+
+
+
+
+const logger = pino(
+  { level: 'debug', name: 'my-app' },
+  pinoPretty({ colorize: true }),
+)
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  logger,
+})
+```
+
+Use this form when you want to reuse an existing logging policy across your app. When you pass an instantiated logger, Dyrected writes into that logger and does not override its transport behavior.
+
+## 3. Disabling Dyrected-created logging
+
+Set `DISABLE_LOGGING=true` to suppress log output from loggers Dyrected creates itself.
+
+```bash
+DISABLE_LOGGING=true node server.js
+```
+
+If you pass your own instantiated logger, that logger keeps its own behavior.
+
+## Request logging
+
+Request logging is enabled by default. Dyrected writes one structured completion event per logged request with fields such as:
+
+- `method`
+- `path`
+- `statusCode`
+- `durationMs`
+- `requestId`
+- `siteId` when present
+- `workspaceId` when present
+- `contentType`
+- `contentLength`
+
+Successful requests log at `info` when sampled. `4xx` requests log at `warn`, and `5xx` requests log at `error`.
+
+You can make the request-logging surface explicit in config like this:
+
+```ts
+
+
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    requestLogging: {
+      enabled: true,
+    },
+  },
+})
+```
+
+## Body logging
+
+Body logging is off by default. Turn it on only when you have a clear debugging need and you are comfortable with the redaction policy for that environment.
+
+Dyrected only attempts body capture when:
 
 - `observability.requestLogging.logBodies` is `true`
 - the request is sampled for body capture
-- the request is `application/json`
+- the request `content-type` includes `application/json`
 
-Dyrected does **not** log raw multipart or binary payload contents. If a body is too large or cannot be parsed safely after truncation, Dyrected logs metadata about the capture attempt instead of logging the raw payload.
+Multipart and binary payload contents are not logged. If a body is too large or cannot be parsed safely after capture, Dyrected logs metadata about the capture attempt instead of logging raw payload content.
 
 ```ts
 
@@ -2183,11 +2226,13 @@ export default defineConfig({
 })
 ```
 
-That pattern keeps ordinary request logs on, but only captures a smaller sample of successful request bodies.
+That keeps ordinary request logs on while capturing a smaller sample of successful bodies.
 
-## Built-in redaction
+If you turned body logging on and still do not see bodies in request logs, use [Troubleshooting](/docs/features/troubleshooting/troubleshooting#request-bodies-are-missing-from-logs) for the fast checks.
 
-When body logging is enabled, Dyrected redacts common secrets before anything is logged or exported.
+## Redaction
+
+Dyrected redacts common secrets before request headers or JSON bodies are logged or exported.
 
 Default redacted headers:
 
@@ -2210,7 +2255,7 @@ Default redacted body paths:
 - `inviteToken`
 - `resetToken`
 
-You can add more body paths and headers in config:
+You can extend that list with your own header names and JSON paths:
 
 ```ts
 
@@ -2231,13 +2276,13 @@ export default defineConfig({
 })
 ```
 
-Dyrected supports dotted paths and `*` wildcards for nested JSON structures, so you can target repeated fields without writing custom serializers.
+Dyrected supports dotted paths and `*` wildcards for nested JSON structures.
 
-## Configure transports
+## Transports
 
-If Dyrected creates the logger, you can declare transports through `observability.transports.targets`.
+If Dyrected creates the logger, you can also configure Dyrected-managed transport targets through `observability.transports.targets`.
 
-V1 supports these target types:
+Supported target types:
 
 - `stdout`
 - `stderr`
@@ -2263,13 +2308,11 @@ export default defineConfig({
 })
 ```
 
-If you pass an already-instantiated logger, Dyrected does not override its transport behavior.
+This transport layer only applies when Dyrected is creating the logger.
 
-## Enable tracing
+## Tracing
 
-Dyrected uses OpenTelemetry for tracing. In v1, Dyrected creates one root span per request and attaches request-level metadata such as method, route, status code, request id, site id, and workspace id.
-
-Use tracing when you need request timing across middleware, auth, hooks, or database-heavy paths.
+Dyrected uses OpenTelemetry for tracing. When tracing is enabled, Dyrected creates one request span per traced request and attaches request attributes such as method, route, status code, request id, site id, and workspace id.
 
 ```ts
 
@@ -2293,13 +2336,11 @@ export default defineConfig({
 })
 ```
 
-When tracing is enabled, Dyrected also adds `traceId` and `spanId` to request-scoped log context when a request span is active.
+When a request span is active, Dyrected also adds `traceId` and `spanId` to the request-scoped logger context.
 
-## Enable metrics
+## Metrics
 
-Dyrected uses OpenTelemetry metrics internally and can export them either through OTLP or a Prometheus scrape endpoint.
-
-Use Prometheus only in self-hosted or server-runtime deployments where Dyrected is actually serving HTTP requests.
+Dyrected uses OpenTelemetry metrics internally. You can export those metrics through OTLP or expose them on a Prometheus scrape route.
 
 ```ts
 
@@ -2319,13 +2360,23 @@ export default defineConfig({
 })
 ```
 
-V1 emits metrics for request counts and duration, auth failures, uncaught errors, audit write failures, email send failures, and workflow hook failures.
+Dyrected emits metrics for:
 
-## Configure sampling
+- request count
+- request duration
+- auth failures
+- uncaught errors
+- audit write failures
+- email send failures
+- workflow hook failures
 
-Sampling is where you control cost and noise without losing the logs that matter.
+The Prometheus route is only registered when metrics are enabled and the exporter is set to `prometheus`.
 
-Dyrected keeps `warn` and `error` paths by default and samples successful traffic separately for logs, traces, and body capture.
+## Sampling
+
+Sampling lets you keep noisy success-path traffic under control without dropping warning and error signals.
+
+Dyrected samples successful request logs, request traces, and request-body capture separately. `4xx` and `5xx` requests are kept by default.
 
 ```ts
 
@@ -2347,9 +2398,9 @@ export default defineConfig({
 })
 ```
 
-Dyrected uses deterministic request-id-based sampling when it can, which makes repeated debugging sessions less noisy than pure randomness.
+When a request id is present, Dyrected uses deterministic request-id-based sampling instead of pure randomness.
 
-## Audit logging is different
+## Audit logging versus runtime logging
 
 Runtime logging helps you operate the service. Audit logging helps you answer who changed content and when.
 
@@ -8232,35 +8283,29 @@ If you use seeded collection content, also make sure each seeded collection is l
 
 Canonical URL: https://docs.dyrected.com/docs/deployment/production/preventing-abuse
 
-Dyrected gives you the content layer. It does **not** try to be your whole edge-security stack. In production, you should assume public routes, auth flows, preview routes, and upload paths all need deliberate protection from the host app or platform around them.
+This page helps you decide which abuse protections belong in Dyrected itself and which still belong at your host, proxy, or edge.
 
-Dyrected now helps with two pieces directly:
+Dyrected gives you two built-in protections now:
 
 - built-in HTTP rate limiting for `/api` routes
 - built-in auth account lockout for repeated failed logins
 
-That is useful, but it is still only one layer of the production story. You should still put edge or proxy controls in front of it.
+That is a good base layer, not a full security perimeter. In production you should still assume public routes, auth flows, preview routes, and upload paths need deliberate protection from the stack around Dyrected too.
 
 The recommended path is:
 
 1. turn on Dyrected's built-in API rate limiting and configure proxy trust correctly
-2. keep secrets and privileged keys server-side
-3. keep preview and side-effect paths narrow
-4. add host-level rate limits and network controls where Dyrected is not the right layer
-5. test the abuse cases you care about before launch
+2. leave auth lockout on unless you have a deliberate reason to disable it
+3. keep secrets and privileged keys server-side
+4. treat preview, uploads, and side-effect routes as real attack surfaces
+5. add host-level rate limits and network controls where Dyrected is not the right layer
+6. test the abuse cases you care about before launch
 
-## Start with rate limits
+## Start with Dyrected's built-in rate limiting
 
-Dyrected now ships built-in request throttling for API routes. By default it protects `/api` with a per-IP limit of 500 requests per 15-minute window.
+Dyrected now ships with in-process API rate limiting enabled by default. Out of the box it protects `/api` with a per-IP limit of `500` requests per `15` minutes.
 
-Start there, then keep your edge or proxy limits on top. The two layers do different jobs:
-
-- Dyrected's limiter protects the app itself and understands your routed API surface.
-- Edge or proxy limits protect the infrastructure in front of Dyrected and help before traffic even reaches your app.
-
-Account lockout still solves a different problem again: it protects one user record after repeated bad passwords.
-
-If you are behind a reverse proxy, configure `trustProxy` so Dyrected counts the real client IP instead of the proxy hop:
+That gives you a sensible default immediately, but it only works well if Dyrected can identify the real client correctly. If you are deployed behind a reverse proxy or platform edge, set `trustProxy` so Dyrected reads the forwarded client IP instead of treating the proxy hop as the caller:
 
 ```ts
 
@@ -8275,7 +8320,38 @@ export default defineConfig({
 });
 ```
 
-You can also narrow or expand the protected route prefixes with `rateLimit.paths`, and `rateLimit.skip` exists as an escape hatch when one request class needs to bypass the in-app limiter deliberately.
+Use `trustProxy: true` when you trust the full forwarded chain from your platform. Use a number when you need to trust a specific number of proxy hops from the right side of that chain.
+
+The recommended path is to leave the default `/api` scope alone unless you know you need something narrower or broader. If you do need more control:
+
+- use `rateLimit.paths` to change which route prefixes are protected
+- use `rateLimit.skip` for the rare request class that should bypass the in-app limiter
+- use `enabled: false` only if another layer is intentionally taking over this job
+
+One caveat matters in production: this limiter is **in-process**. It is a useful app-layer protection, but it is not a distributed rate limit shared across multiple app instances.
+
+## Keep account lockout on
+
+Rate limiting protects the route. Account lockout protects a specific user record after repeated bad password attempts. The two layers solve different problems, so keep both.
+
+For auth collections, Dyrected enables login lockout by default. You only need to tune it when your product needs a different threshold or lock window:
+
+```ts
+export const Users = defineCollection({
+  slug: "users",
+  auth: {
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000,
+  },
+  fields: [{ name: "name", type: "text" }],
+});
+```
+
+Set `maxLoginAttempts: 0` only if you have another deliberate lockout strategy and understand the tradeoff.
+
+## Add host and edge protection on top
+
+Dyrected's limiter protects the app layer. Your host or edge should still protect the infrastructure in front of it.
 
 That matters most for:
 
@@ -8285,25 +8361,26 @@ That matters most for:
 - custom routes that call third-party services
 - any public collection endpoint that is expensive to query
 
-Keep the normal protection mechanism for your host too:
+Keep the normal protection mechanisms for your host too:
 
 - framework middleware
 - edge middleware
 - reverse proxy or CDN rules
 - provider-native throttling
+- bot protection, WAF, or IP allowlists when needed
 
-If you already have one rate-limiting layer in your stack, keep it. Dyrected's limiter should complement that layer, not replace it.
+If you run more than one app instance, this outer layer stops being optional. It becomes the shared limit that protects the whole deployment.
 
 ## Keep privileged credentials out of the browser
 
-This is the simplest abuse-prevention rule and still one of the most important:
+This is still one of the simplest and highest-value production rules:
 
 - server-side keys stay server-side
 - browser-visible keys should only expose the access you actually intend to expose
 
-If you embed the admin or use browser-side SDK calls, use the framework's public runtime variables only for values that are meant to be public in that environment. Do not leak your server-only API key just because a page happens to need content.
+If you embed the admin or use browser-side SDK calls, use your framework's public runtime variables only for values that are meant to be public in that environment. Do not leak your server-only API key just because a page needs content.
 
-## Treat preview as a protected surface
+## Treat preview and uploads as public surfaces
 
 Server-side preview tokens are short-lived, but they are still bearer credentials. Anyone holding the token can redeem that draft until it expires.
 
@@ -8313,13 +8390,23 @@ For token-mode preview in production:
 - keep preview URLs out of places they do not need to go
 - guard sensitive preview routes at the app layer if the content is sensitive
 
-If you need the strongest operational posture, prefer client-side live preview where it fits, because it avoids shipping draft-bearing tokens in the URL.
+Uploads deserve the same mindset. If a route accepts files, check that:
 
-## Make hooks resilient
+- `create` and `update` access are as restrictive as they should be
+- public `read` access is intentional
+- your storage and serving setup match the sensitivity of the files
 
-Abuse is not only about malicious traffic. A burst of real traffic can also expose brittle side effects.
+## Bound expensive reads and side effects
 
-If a hook sends email, pings a webhook, or calls another API, wrap that work so a transient downstream failure does not take out a successful content write unless that failure is supposed to block the write.
+Abuse is not only malicious traffic. Real traffic spikes also expose weak spots.
+
+A route can become expensive just by asking for too much data. Keep collection reads bounded:
+
+- set explicit `limit` values on list queries
+- keep `depth` only as high as the page actually needs
+- promote fields you filter or sort on frequently
+
+Hooks need the same discipline. If a hook sends email, calls a webhook, or touches another API, decide whether that side effect should block the write. If not, fail it safely:
 
 ```ts
 afterChange: [
@@ -8333,28 +8420,14 @@ afterChange: [
 ];
 ```
 
-That keeps backpressure from external services from turning into an avoidable admin outage.
-
-## Bound expensive reads
-
-A route can be abusive even when the caller is authorized. Protect your database from accidental heavy reads too:
-
-- set explicit `limit` values on list queries
-- keep `depth` only as high as the page actually needs
-- promote fields you filter or sort on frequently
-
-Those are performance choices, but they are also abuse-surface choices because unbounded reads are easy to amplify.
-
-## Enforce origin and network rules at the host layer
-
-If you need strict origin control, IP allowlists, WAF rules, bot management, or per-path request controls, treat that as a responsibility of your framework, proxy, or infrastructure edge. Do not assume Dyrected alone is the place those policies will live.
+That keeps downstream failures from turning into avoidable admin outages.
 
 ## Pre-launch checks
 
 Before you ship, verify the basics:
 
-- repeated login attempts hit Dyrected's account lockout and also get throttled by the host layer
 - built-in Dyrected rate limiting sees the real client IP in production because `trustProxy` is set correctly
+- repeated login attempts hit Dyrected's account lockout and also get throttled by the host layer
 - upload endpoints are protected the way you expect
 - preview URLs cannot be reused long after issuance
 - public collection reads have sane limits
@@ -8363,6 +8436,7 @@ Before you ship, verify the basics:
 ## Related pages
 
 - [Deployment](/docs/deployment/production/deployment)
+- [Authentication Overview](/docs/features/authentication/overview)
 - [Server-side integration](/docs/features/live-preview/server-side)
 - [Performance](/docs/deployment/performance/overview)
 
@@ -11257,7 +11331,9 @@ const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] })
 
 Canonical URL: https://docs.dyrected.com/docs/features/authentication/operations
 
-Enabling `auth: true` on a collection mounts a fixed set of authentication endpoints under `/api/collections/{slug}/`. This page is the reference for all of them: what each one expects, what it returns, and which SDK method calls it. If you are new to the concept, start with the [Overview](/docs/features/authentication/overview) first — this page assumes you already know what an auth collection is.
+This page is the endpoint guide for auth collections. Use it when you already understand what `auth` is and need the exact route, request shape, return shape, or SDK helper for a specific operation.
+
+Enabling `auth: true` on a collection mounts a fixed set of authentication endpoints under `/api/collections/{slug}/`. If you are new to the concept, start with the [Overview](/docs/features/authentication/overview) first — this page assumes you already know what an auth collection is.
 
 Throughout, `{slug}` is your collection's slug (for example `users` or `__admins`), and every path is prefixed with `/api/collections/`.
 
@@ -11339,7 +11415,7 @@ client.clearToken();
 // → { "success": true, "message": "Logged out." }
 ```
 
-If you want to sign the account out everywhere, call the same endpoint with `allSessions=true`:
+The normal SDK helper covers the current session only. If you want to sign the account out everywhere, call the same endpoint with `allSessions=true`:
 
 ```ts
 await fetch("/api/collections/users/logout?allSessions=true", {
@@ -11374,7 +11450,7 @@ client.setToken(token);
 
 This requires a valid Bearer token — an expired token cannot refresh itself, so refresh before it lapses. The refreshed token keeps the same underlying session instead of silently creating a second one.
 
-## Resetting a forgotten password
+## Password recovery
 
 This is a two-step flow. First, `forgot-password` sends a reset email. It **always** returns `200` with the same message whether or not the email belongs to a real account, so it can never be used to probe which emails are registered:
 
@@ -11475,11 +11551,11 @@ try {
 
 Canonical URL: https://docs.dyrected.com/docs/features/authentication/overview
 
-Authentication in Dyrected is opt-in and lives on your collections. You turn a collection into a login provider with `auth`, and Dyrected gives you email and password fields, a full set of login endpoints, and JWT sessions you can check anywhere in your app.
+This page is the mental model for authentication in Dyrected. By the end, you should understand what `auth` adds to a collection, how Dyrected sessions work now, where production protection fits, and how to separate application users from dashboard users cleanly.
 
-By the end of this page you should understand what `auth` actually does, how a session works, how built-in login lockout fits into production auth, where roles and access control fit, and how to keep your dashboard logins separate from your application's users. This is the home page for the concept; deeper mechanics live on their own pages, linked as you go.
+Authentication in Dyrected is opt-in and lives on your collections. Turn a collection into a login provider with `auth`, and Dyrected adds the fields, routes, and session behavior needed to use those documents as real accounts.
 
-## The mental model
+## What enabling `auth` does
 
 An **auth collection** is just a normal collection with a login attached. When you enable `auth`, three things happen:
 
@@ -11489,7 +11565,7 @@ An **auth collection** is just a normal collection with a login attached. When y
 
 You can enable auth on as many collections as you like. A common shape is one collection for your application's members and a separate one for the people who log into the CMS dashboard.
 
-## Enable it
+## Start with `auth: true`
 
 Add `auth: true` to any collection when you want the default setup. You declare only the extra fields you want — `email`, `password`, and `roles` are added for you, so you never list them yourself:
 
@@ -11504,20 +11580,24 @@ export const Users = defineCollection({
 });
 ```
 
-That single collection now has working login endpoints. Before anyone can log in, set the signing secret Dyrected uses to sign session tokens:
+That single collection now has working login endpoints.
+
+Before anyone can log in, set the signing secret Dyrected uses to sign session tokens:
 
 ```bash
 # .env.local
 DYRECTED_JWT_SECRET=a-long-random-secret-at-least-32-chars
 ```
 
-The same secret must be present in every environment, and it must not be empty — auth collections throw at startup if `DYRECTED_JWT_SECRET` is missing. Changing it invalidates every existing session at once.
+The same secret must be present in every environment, and it must not be empty. Auth collections throw at startup if `DYRECTED_JWT_SECRET` is missing. Changing it invalidates every existing session at once.
 
-## Production login protection
+If you start from the current `dyrected init` templates, `.env.example` already includes `DYRECTED_JWT_SECRET`. Runtime code also uses the same variable for token-mode preview, so treat it as part of your production secret set, not as a local-only convenience.
 
-For production auth collections, leave Dyrected's built-in account lockout on. It is enabled by default and temporarily locks an account after too many failed password attempts.
+## Tune auth only when you need to
 
-If you want to tune it, pass an object instead of bare `true`:
+The recommended path is still `auth: true`. Reach for an object only when you need to change the built-in behavior.
+
+The most important auth-specific production options today are the login lockout settings:
 
 ```ts
 export const Users = defineCollection({
@@ -11530,11 +11610,13 @@ export const Users = defineCollection({
 });
 ```
 
-`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds. Set `maxLoginAttempts: 0` only if you have a deliberate reason to turn the built-in lockout off for that collection.
+`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds.
 
 This protects the account itself. It does **not** replace host-level rate limiting, WAF rules, or proxy throttling for public routes. Keep those in place too, especially for auth, uploads, and preview endpoints. The deployment side of that lives in [Preventing Abuse](/docs/deployment/production/preventing-abuse).
 
-## What you get
+Set `maxLoginAttempts: 0` only if you have a deliberate reason to turn Dyrected's built-in lockout off for that collection.
+
+## Know what Dyrected injects
 
 Enabling auth injects these fields into the collection. You can redefine them to add labels or admin options, but their core constraints are always enforced:
 
@@ -11546,9 +11628,19 @@ Enabling auth injects these fields into the collection. You can redefine them to
 
 And it mounts a full set of endpoints under `/api/collections/{slug}/` — `login`, `logout`, `me`, `refresh-token`, `forgot-password`, `reset-password`, `invite`, `accept-invite`, plus `init` and `first-user` for bootstrapping the very first account. Each one, with its exact request and response shape, is documented in [Operations](/docs/features/authentication/operations), including how the login route behaves when an account is temporarily locked.
 
-## Log in and read the user
+## Understand the session model
 
-Logging in exchanges an email and password for a token and the user record. Store the token, attach it to future requests, and Dyrected resolves it back into the signed-in user. Here it is with the SDK:
+Dyrected uses signed bearer tokens, but they are not purely stateless anymore. Every successful login creates a server-side session record and returns a JWT that points at that session.
+
+That means three useful things are true at once:
+
+- clients still send a normal `Authorization: Bearer <token>` header
+- the server still re-hydrates the live user document on each request
+- logout, password reset, and password change can revoke the session immediately instead of waiting for token expiry
+
+Tokens still expire on their own after 7 days by default, but there is now a real server-side invalidation point too.
+
+## Log in and read the user
 
 ```ts
 
@@ -11569,24 +11661,12 @@ const me = await client.collection("users").me();
 
 The SDK holds the token in memory only — it does not persist it for you. Deciding _where_ the token lives between requests (a cookie, storage, a framework composable) is the job of the [Cookie Strategy](/docs/features/authentication/cookie-strategy) page.
 
-## Sessions are signed tokens with server-side revocation
-
-Dyrected still uses signed bearer tokens, but they are no longer purely stateless. Every login creates a server-side session record and returns a JWT that points at that session. Every request carries the token in the `Authorization` header:
-
-```
-Authorization: Bearer <token>
-```
-
-The server verifies the token on each request, checks that the backing session is still active, and then re-loads the user's current document so your access rules always see fresh data. That means logout can revoke the current token immediately, `logout?allSessions=true` can revoke every session for that account, and password resets or password changes can invalidate older tokens on the spot.
-
-The client still needs to discard the token it was holding, but there is now a real server-side invalidation point too.
-
 Two pages go deeper here:
 
 - [JWT Strategy](/docs/features/authentication/jwt-strategy) — how the token is signed, the secret, expiry, and how another service can verify a Dyrected token.
 - [Token Data](/docs/features/authentication/token-data) — exactly what the token carries, and how the full `user` object gets assembled for your access functions.
 
-## Roles and access control
+## Use roles in access control
 
 The injected `roles` field is where permissions live, but Dyrected does not enforce any role meaning on its own. Roles only matter when an access function reads them. The signed-in user is available as `user` in every access rule and hook:
 
@@ -11604,19 +11684,19 @@ export const Orders = defineCollection({
 
 `user.roles` is available here even though the token itself does not carry roles — Dyrected re-hydrates the user from the database on each request. For the full model, see [Access Control](/docs/basics/access-control/overview).
 
-## Multiple auth collections and the dashboard
+## Separate application users from dashboard users
 
 You can have more than one auth collection, and they are completely independent — separate endpoints, separate tokens, separate sessions. Someone logged into your storefront as a `customer` has no relationship to whoever can log into the CMS.
 
 Dyrected treats one slug specially: **`__admins`**. When a collection with that slug exists, it becomes the sole login gateway for the dashboard. Any other auth collection powers your application, not the CMS. This is how you keep customer accounts from ever reaching the admin panel. The full walkthrough — including onboarding your first editors — lives in [Handing Off to Editors](/docs/features/authentication/handing-off-to-editors).
 
-## Dashboard sign-in and SSO
+## Know where dashboard SSO fits
 
 Everything above describes **collection auth**: local email and password login for your application's users (and, by default, for the dashboard). Dyrected also supports **external sign-in for the dashboard** through an `adminAuth` configuration, so admins can log in with an identity provider (OIDC) or a custom JWT provider instead of a local password.
 
 This is a separate system from collection auth — it only governs who reaches the CMS, uses its own routes under `/api/admin/auth/`, and does not change how your application's users log in. If your team needs single sign-on for the admin panel, see [Admin SSO](/docs/features/authentication/admin-sso) for the full setup with Okta, Azure AD, Google, or any OIDC provider.
 
-## Programmatic access
+## Keep user sessions and project credentials separate
 
 For server-to-server calls, you have two distinct things, and it helps to keep them straight:
 
@@ -12909,6 +12989,7 @@ Most Dyrected problems fall into one of these buckets:
 | The preview link or live pane does not work       | `previewUrl` is wrong, or the frontend preview wiring is incomplete | [Preview is not working](#preview-is-not-working)                       |
 | Uploads fail or files do not render               | Storage or upload-collection setup is incomplete                    | [Uploads or media are not working](#uploads-or-media-are-not-working)   |
 | Reset, invite, or welcome emails never arrive     | Email transport is unset or only development fallback is active     | [Auth emails are not sending](#auth-emails-are-not-sending)             |
+| Request logs appear, but request bodies do not    | Body capture is disabled, unsampled, non-JSON, or intentionally skipped | [Request bodies are missing from logs](#request-bodies-are-missing-from-logs) |
 
 ## Recommended troubleshooting order
 
@@ -13108,6 +13189,34 @@ That means the first checks are:
 Also keep the flow semantics straight: the auth endpoint may still succeed even if sending fails, because these built-in auth emails are best-effort.
 
 Use [Email Overview](/docs/features/email/overview) for the transport setup and built-in email behavior.
+
+## Request bodies are missing from logs
+
+If you can see Dyrected request logs but the `body` field is missing, start by checking whether body capture was ever eligible for that request.
+
+Dyrected only captures request bodies when all of these are true:
+
+- `observability.requestLogging.logBodies` is `true`
+- the request was sampled for body capture
+- the request `content-type` includes `application/json`
+
+That means these cases are expected:
+
+- multipart uploads do not log raw file payloads
+- binary payloads do not log raw body content
+- JSON bodies larger than `maxBodyBytes` may be truncated and fall back to metadata-only logging if the truncated payload can no longer be parsed safely
+- successful requests may log without a body when `bodySuccessRate` does not sample them
+
+The fastest checks are:
+
+- confirm `observability.requestLogging.logBodies` is enabled
+- confirm the request really used `application/json`
+- temporarily raise `sampling.bodySuccessRate` to `1` while debugging
+- check whether the log event contains `bodyCapture` metadata instead of `body`
+
+If the log entry includes `bodyCapture` with `parseFailed: true` or `truncated: true`, Dyrected did attempt capture but intentionally avoided logging parsed content.
+
+For the config surface and defaults, use [Logging and Observability](/docs/basics/configuration/logging).
 
 ## When to stop here
 

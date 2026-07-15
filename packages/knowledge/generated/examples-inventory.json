@@ -436,9 +436,9 @@
   {
     "id": "/basics/configuration/logging#example-4",
     "page": "/basics/configuration/logging",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
   },
   {
     "id": "/basics/configuration/logging#example-5",
@@ -470,6 +470,27 @@
   },
   {
     "id": "/basics/configuration/logging#example-9",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-10",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-11",
+    "page": "/basics/configuration/logging",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/logging#example-12",
     "page": "/basics/configuration/logging",
     "language": "ts",
     "classification": "syntax-checked",
@@ -1960,6 +1981,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/deployment/production/preventing-abuse#example-3",
+    "page": "/deployment/production/preventing-abuse",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/ecosystem/integrations/nextjs#example-1",
     "page": "/ecosystem/integrations/nextjs",
     "language": "bash",
@@ -2612,13 +2640,6 @@
   },
   {
     "id": "/features/authentication/overview#example-5",
-    "page": "/features/authentication/overview",
-    "language": "",
-    "classification": "illustrative",
-    "validation": "Output, prose, or non-executable illustration"
-  },
-  {
-    "id": "/features/authentication/overview#example-6",
     "page": "/features/authentication/overview",
     "language": "ts",
     "classification": "syntax-checked",
