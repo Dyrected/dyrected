@@ -1,0 +1,107 @@
+---
+title: Filter
+description: Narrow a find to the documents you want with Dyrected's where clause and its operators.
+---
+
+Most of the time you don't want every document in a collection — you want the published ones, or the posts by a given author, or everything created this week. The `where` option is how you say which documents come back. You describe the conditions as an object, and Dyrected returns only the documents that match.
+
+## Matching a field
+
+The simplest `where` matches a field against a value. Give the field an operator object:
+
+```ts
+await client.collection('posts').find({
+  where: { status: { equals: 'published' } },
+})
+```
+
+If you only ever need an exact match, you can drop the operator and pass the value directly — a bare value is treated as `equals`:
+
+```ts
+// Shorthand for { status: { equals: 'published' } }
+await client.collection('posts').find({ where: { status: 'published' } })
+```
+
+## Operators
+
+Each field condition uses one operator. These are the operators Dyrected supports:
+
+| Operator | Matches when the field… |
+| --- | --- |
+| `equals` | equals the value |
+| `not_equals` | does not equal the value |
+| `in` | is one of the values in the array |
+| `not_in` | is none of the values in the array |
+| `gt` | is greater than the value |
+| `gte` | is greater than or equal to the value |
+| `lt` | is less than the value |
+| `lte` | is less than or equal to the value |
+| `contains` | contains the substring (case-insensitive) |
+| `starts_with` | begins with the substring (case-insensitive) |
+| `exists` | is present (`true`) or absent (`false`) |
+
+A quick tour:
+
+```ts
+await client.collection('posts').find({
+  where: {
+    views: { gte: 100 },          // at least 100 views
+    title: { contains: 'guide' }, // "guide" appears anywhere in the title
+  },
+})
+```
+
+Listing two conditions side by side like this means **both** must hold — they're combined with AND.
+
+## Combining conditions with AND and OR
+
+When you need explicit boolean logic — especially an OR — wrap the conditions in an `AND` or `OR` array. Write these keys in uppercase; that's the form Dyrected recognizes:
+
+```ts
+await client.collection('posts').find({
+  where: {
+    OR: [
+      { status: { equals: 'published' } },
+      { featured: { equals: true } },
+    ],
+  },
+})
+```
+
+That returns posts that are published *or* featured. You can nest `AND` and `OR` inside each other to build more precise queries:
+
+```ts
+await client.collection('posts').find({
+  where: {
+    AND: [
+      { status: { equals: 'published' } },
+      { OR: [{ views: { gte: 100 } }, { featured: { equals: true } }] },
+    ],
+  },
+})
+```
+
+## Filtering on relationships and nested fields
+
+A relationship field stores the related document's ID, so you filter it by that ID:
+
+```ts
+// Posts whose author is this document
+await client.collection('posts').find({
+  where: { author: { equals: 'author-123' } },
+})
+```
+
+You can match against fields nested inside a group, array, or row field using dot notation — `where: { address: { city: { equals: 'Lagos' } } }` reads the `city` inside the `address` group. What you can't do is filter by a *related document's* fields (for example, an author's name through the `author` relationship); match on the stored ID instead.
+
+## What can't be filtered
+
+Dyrected quietly drops conditions it can't safely run, so a bad filter narrows nothing rather than erroring:
+
+- Fields that don't exist in the collection's schema.
+- Fields whose type is never queryable: `password`, `richText`, `json`, `file`, `image`, and `join`.
+- Any field marked `admin.filterable: false`, or a whole collection marked `admin.filterable: false`.
+
+If a filter seems to be ignored, check that the field exists and isn't one of these types.
+
+Once you've selected the right documents, [sort](/docs/managing-data/sdk-api/sort) puts them in order and [pagination](/docs/managing-data/sdk-api/pagination) controls how many you get back at a time.

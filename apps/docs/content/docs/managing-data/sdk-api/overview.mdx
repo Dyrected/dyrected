@@ -1,0 +1,378 @@
+---
+title: Overview
+description: The typed SDK is the fastest way to read and write Dyrected content from JavaScript and TypeScript.
+---
+
+The Dyrected SDK (`@dyrected/sdk`) is a small typed client for talking to your Dyrected API. It gives you fully typed collection and global access, query building, uploads, and workflow transitions without hand-writing `fetch` calls.
+
+If you are working in JavaScript or TypeScript, reach for the SDK first. Drop down to the [REST API](/docs/managing-data/rest-api/overview) only when you need a language the SDK does not cover.
+
+## Creating a client
+
+Create one client and reuse it. Point it at the origin of your Dyrected app — the SDK adds the `/api` prefix itself.
+
+There are two normal ways to type that client:
+
+- use `InferSchema` when the app can import exported collection and global constants directly from `dyrected.config.ts`
+- use generated `DyrectedSchema` when the app should read from `dyrected-types.ts` instead of importing schema code
+
+If you already generated `dyrected-types.ts`, you do not need to infer the schema again by hand. Use `DyrectedSchema` directly:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+const client = createClient<DyrectedSchema>({
+  baseUrl: "https://example.com",
+  apiKey: process.env.DYRECTED_API_KEY,
+});
+
+const { docs: posts } = await client.collection("posts").find({
+  where: { status: { equals: "published" } },
+  sort: "-createdAt",
+  depth: 1,
+});
+```
+
+Because the client is generic over your schema, `find`, `create`, and `update` return typed documents and reject unknown fields at compile time.
+
+If your app and schema live in the same codebase and you prefer not to generate a file, the TypeScript docs show the `InferSchema` path in [TypeScript Overview](/docs/features/typescript/overview) and [InferSchema](/docs/features/typescript/infer-schema).
+
+## What you can do
+
+- Read and write collections through `client.collection('slug')`.
+- Read and update singletons through `client.global('slug')`.
+- Shape reads with [sort](/docs/managing-data/sdk-api/sort), [filter](/docs/managing-data/sdk-api/filter), [depth](/docs/managing-data/sdk-api/depth), and [pagination](/docs/managing-data/sdk-api/pagination).
+- Upload files and run workflow transitions on documents that support them.
+
+## Handling errors
+
+SDK calls throw a typed `DyrectedError` when the API returns a non-success status, so you can branch on status codes and surface server validation messages safely.
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/sdk` exports by `@dyrected/knowledge`, so the client, factory, options, and error types stay in sync with the package. Query-shaping details live on the [sort](/docs/managing-data/sdk-api/sort), [filter](/docs/managing-data/sdk-api/filter), [depth](/docs/managing-data/sdk-api/depth), and [pagination](/docs/managing-data/sdk-api/pagination) pages.
+
+{/* GENERATED:REFERENCE-SDK:START */}
+## AuditEntry
+
+A single audit entry returned by `client.audit()` or `client.collection(slug).audit()`.
+
+```ts
+export interface AuditEntry {
+  id: string;
+  collection: string;
+  documentId: string | null;
+  operation: string;
+  user: string | null;
+  timestamp: string;
+  changes?: string | Record<string, unknown> | null;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>documentId</code> (required) |  |
+| <code>operation</code> (required) |  |
+| <code>user</code> (required) |  |
+| <code>timestamp</code> (required) |  |
+| <code>changes</code> (optional) |  |
+
+
+## BaseSchema
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface BaseSchema {
+  collections: Record<string, UnknownRecord>;
+  globals: Record<string, UnknownRecord>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>collections</code> (required) |  |
+| <code>globals</code> (required) |  |
+
+
+## createClient
+
+Exported function from @dyrected/sdk.
+
+```ts
+export function createClient<TSchema extends SchemaShape = RegisteredSchema>(
+  config: DyrectedClientConfig,
+): DyrectedClient<TSchema>
+```
+
+
+## DyrectedClient
+
+Exported class from @dyrected/sdk.
+
+```ts
+export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>setToken</code> (required) | Update the Authorization header with a Bearer token. Call this after a successful login. |
+| <code>clearToken</code> (required) | Remove the Authorization header. Call this after logout. |
+| <code>getAuthHeaders</code> (required) | Returns the headers needed to authenticate raw &#96;fetch()&#96; calls made outside the SDK client (e.g. streaming endpoints, dynamic options).  Includes the Authorization bearer token (if set), x-api-key, and x-site-id. |
+| <code>getBaseUrl</code> (required) |  |
+| <code>getSchemas</code> (required) |  |
+| <code>getAdminAuthConfig</code> (required) |  |
+| <code>exchangeAdminAuth</code> (required) |  |
+| <code>getPreference</code> (optional) |  |
+| <code>setPreference</code> (optional) |  |
+| <code>deletePreference</code> (optional) |  |
+| <code>getPreviewData</code> (required) | Fetch draft data for a specific preview token. Used in "token" preview mode. |
+| <code>createPreviewToken</code> (optional) | Mint a short-lived preview token that carries the current (unsaved) draft data. Used by the Admin in &#96;previewMode: "token"&#96; to hand draft content to a server-rendered frontend that cannot receive it over &#96;postMessage&#96;.  Requires an authenticated request (the Admin is logged in). |
+| <code>find</code> (required) |  |
+| <code>collection</code> (required) | Returns a fluent query builder for a collection. |
+| <code>global</code> (required) | Access a global by its slug with a fluent builder. |
+| <code>findOne</code> (optional) |  |
+| <code>create</code> (required) |  |
+| <code>update</code> (required) |  |
+| <code>delete</code> (required) |  |
+| <code>transition</code> (required) | Perform a workflow transition on a document.  Sends &#96;POST /api/collections/:collection/:id/transitions/:transition&#96;. Requires the client to have a valid bearer token set via &#96;setToken()&#96;. |
+| <code>workflowHistory</code> (optional) | Fetch the workflow history for a document.  Sends &#96;GET /api/collections/:collection/:id/workflow-history&#96;. |
+| <code>audit</code> (required) | Fetch audit entries across every audited collection the current caller can read.  Sends &#96;GET /api/audit&#96;. |
+| <code>collectionAudit</code> (required) | Fetch audit entries for a single collection.  Sends &#96;GET /api/collections/:collection/__audit&#96;. |
+| <code>deleteMany</code> (required) |  |
+| <code>getGlobal</code> (optional) |  |
+| <code>updateGlobal</code> (required) |  |
+| <code>listMedia</code> (required) |  |
+| <code>uploadMedia</code> (required) |  |
+| <code>deleteMedia</code> (required) |  |
+
+
+## DyrectedClientConfig
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface DyrectedClientConfig {
+  baseUrl: string;
+  apiKey?: string;
+  siteId?: string;
+  headers?: Record<string, string>;
+  fetch?: typeof fetch;
+  /**
+   * Default relationship population depth applied to document reads
+   * (`find`, `findOne`, `global().get()`, and media listing) when a call
+   * does not pass its own `depth`. Defaults to `1`.
+   */
+  defaultDepth?: number;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>baseUrl</code> (required) |  |
+| <code>apiKey</code> (optional) |  |
+| <code>siteId</code> (optional) |  |
+| <code>headers</code> (optional) |  |
+| <code>fetch</code> (optional) |  |
+| <code>defaultDepth</code> (optional) | Default relationship population depth applied to document reads (&#96;find&#96;, &#96;findOne&#96;, &#96;global().get()&#96;, and media listing) when a call does not pass its own &#96;depth&#96;. Defaults to &#96;1&#96;. |
+
+
+## DyrectedError
+
+Structured error thrown by the SDK when the server returns a non-2xx response.
+
+```ts
+export class DyrectedError extends Error {
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>statusCode</code> (required) |  |
+| <code>errors</code> (optional) |  |
+
+
+## getPreviewToken
+
+Extract the preview token from a request's query string. Accepts a raw query
+string, a `URLSearchParams`, or a plain params object (e.g. Nuxt's
+`route.query` or Next's `searchParams`). Returns `null` when absent.
+
+```ts
+export function getPreviewToken(
+  search: string | URLSearchParams | Record<string, unknown> | undefined | null,
+): string | null
+```
+
+
+## InferSchema
+
+Derives a typed `TSchema` from your exported collection and global config constants.
+
+Pass it to `createClient<Schema>()` so every `find`, `findOne`, `create`,
+`update`, `global().get()` call returns the inferred document shape — no
+manual interfaces required.
+
+```ts
+export type InferSchema<
+  TCollections extends Record<string, CollectionConfig<UnknownRecord>>,
+  TGlobals extends Record<string, GlobalConfig<UnknownRecord>> = Record<
+    never,
+    never
+  >,
+> = {
+  collections: { [K in keyof TCollections]: ExtractDoc<TCollections[K]> };
+  globals: { [K in keyof TGlobals]: ExtractDoc<TGlobals[K]> };
+};
+```
+
+
+## PREVIEW_TOKEN_PARAM
+
+The query-string parameter the Admin appends to a preview URL in
+`previewMode: "token"`. Read it on your frontend to decide whether to fetch
+draft data instead of published content.
+
+```ts
+export const PREVIEW_TOKEN_PARAM = "dyPreview";
+```
+
+
+## Register
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface Register {}
+```
+
+
+## RegisteredSchema
+
+Exported type from @dyrected/sdk.
+
+```ts
+export type RegisteredSchema = Register extends { schema: infer S }
+  ? S extends SchemaShape
+    ? S
+    : BaseSchema
+  : BaseSchema;
+```
+
+
+## SchemaShape
+
+Exported interface from @dyrected/sdk.
+
+```ts
+export interface SchemaShape {
+  collections: Record<string, object>;
+  globals: Record<string, object>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>collections</code> (required) |  |
+| <code>globals</code> (required) |  |
+
+
+## TransitionOptions
+
+Options accepted by `client.transition()`.
+
+```ts
+export interface TransitionOptions {
+  /**
+   * The revision number currently shown to the user. When provided, the server
+   * rejects the transition if the document has changed since it was loaded,
+   * preventing lost-update races.
+   */
+  expectedRevision?: number;
+  /** Required for transitions that have `requireComment: true` (e.g. `reject`). */
+  comment?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>expectedRevision</code> (optional) | The revision number currently shown to the user. When provided, the server rejects the transition if the document has changed since it was loaded, preventing lost-update races. |
+| <code>comment</code> (optional) | Required for transitions that have &#96;requireComment: true&#96; (e.g. &#96;reject&#96;). |
+
+
+## UploadOptions
+
+Options for file uploads.
+When `onProgress` is provided and the runtime supports XMLHttpRequest (browsers),
+the upload reports real byte-level progress. In other environments (SSR, custom
+fetch) the callback is ignored and the standard fetch path is used.
+
+```ts
+export interface UploadOptions {
+  /** Called with an integer 0–100 as the file bytes are sent. */
+  onProgress?: (percent: number) => void;
+  /** Abort the in-flight upload. */
+  signal?: AbortSignal;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>onProgress</code> (optional) | Called with an integer 0–100 as the file bytes are sent. |
+| <code>signal</code> (optional) | Abort the in-flight upload. |
+
+
+## WorkflowDocument
+
+Shape of a document returned from a workflow-enabled collection.
+
+```ts
+export interface WorkflowDocument {
+  id: string;
+  _workflow: WorkflowMetadata;
+  [key: string]: unknown;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>_workflow</code> (required) |  |
+
+
+## WorkflowHistoryEntry
+
+A single workflow history entry returned by `client.workflowHistory()`.
+
+```ts
+export interface WorkflowHistoryEntry {
+  id: string;
+  collection: string;
+  documentId: string;
+  transition: string;
+  from: string;
+  to: string;
+  revision: number;
+  comment: string | null;
+  actorId: string | null;
+  createdAt: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>id</code> (required) |  |
+| <code>collection</code> (required) |  |
+| <code>documentId</code> (required) |  |
+| <code>transition</code> (required) |  |
+| <code>from</code> (required) |  |
+| <code>to</code> (required) |  |
+| <code>revision</code> (required) |  |
+| <code>comment</code> (required) |  |
+| <code>actorId</code> (required) |  |
+| <code>createdAt</code> (required) |  |
+{/* GENERATED:REFERENCE-SDK:END */}

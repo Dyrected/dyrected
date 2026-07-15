@@ -47,93 +47,49 @@ const configTemplateSource = fs.readFileSync(
 );
 const mdxFiles = [];
 const hybridPages = {
-  "reference/configuration.mdx": {
+  "basics/configuration/overview.mdx": {
     marker: "REFERENCE-CONFIGURATION",
-    headings: [
-      "Core configuration (`DyrectedConfig`)",
-      "Collection configuration (`CollectionConfig`)",
-      "Global configuration (`GlobalConfig`)",
-      "Content-contract practices",
-      "Email configuration",
-      "JSON response contract",
-    ],
+    headings: [],
   },
-  "reference/fields.mdx": {
+  "basics/configuration/collections.mdx": {
+    marker: "REFERENCE-CONFIGURATION-COLLECTIONS",
+    headings: [],
+  },
+  "basics/configuration/globals.mdx": {
+    marker: "REFERENCE-CONFIGURATION-GLOBALS",
+    headings: [],
+  },
+  "basics/fields/overview.mdx": {
     marker: "REFERENCE-FIELDS",
-    headings: [
-      "Base properties (all fields)",
-      "Text fields",
-      "Selection fields",
-      "Relationship and media fields",
-      "Structural fields",
-      "Admin field options",
-      "Field access",
-      "Field hooks",
-    ],
+    headings: [],
   },
-  "reference/sdk.mdx": {
+  "basics/hooks/overview.mdx": {
+    marker: "REFERENCE-HOOKS",
+    headings: [],
+  },
+  "managing-data/sdk-api/overview.mdx": {
     marker: "REFERENCE-SDK",
-    headings: [
-      "Installation",
-      "Creating a client",
-      "Collection methods",
-      "Authentication",
-      "TypeScript schema inference",
-      "Error handling",
-    ],
+    headings: [],
   },
-  "reference/generated-workflows.mdx": {
-    marker: "REFERENCE-GENERATED-WORKFLOWS",
-    headings: [
-      "States, transitions, and capabilities",
-      "Revisions and concurrency",
-      "Draft visibility",
-      "Transition hooks",
-      "Lifecycle events",
-    ],
+  "features/workflows/overview.mdx": {
+    marker: "REFERENCE-WORKFLOWS",
+    headings: [],
   },
-  "reference/rest-api.mdx": {
+  "managing-data/rest-api/overview.mdx": {
     marker: "REFERENCE-REST-API",
-    headings: [
-      "Base URL",
-      "Authentication",
-      "Listing and filtering",
-      "Collections",
-      "Uploads and media",
-      "Error responses",
-    ],
+    headings: [],
   },
-  "reference/openapi.mdx": {
+  "features/upload/storage-adapters.mdx": {
+    marker: "REFERENCE-STORAGE-ADAPTERS",
+    headings: [],
+  },
+  "basics/database/overview.mdx": {
+    marker: "REFERENCE-DATABASE-ADAPTERS",
+    headings: [],
+  },
+  "managing-data/rest-api/overview.mdx#openapi": {
     marker: "REFERENCE-OPENAPI",
-    headings: [
-      "Accessing the specification",
-      "Interactive documentation",
-      "Workflows and generated schemas",
-      "Why use OpenAPI?",
-    ],
-  },
-  "adapters/databases.mdx": {
-    marker: "ADAPTERS-DATABASES",
-    headings: [
-      "Supported adapters",
-      "Schema synchronization",
-      "Field renames and promotion",
-      "Writing a custom adapter",
-    ],
-  },
-  "adapters/storage.mdx": {
-    marker: "ADAPTERS-STORAGE",
-    headings: [
-      "Local filesystem",
-      "S3 and compatible providers",
-      "URL resolution",
-      "Upload collection configuration",
-      "Writing a custom adapter",
-    ],
-  },
-  "recipes/index.mdx": {
-    marker: "RECIPE-INDEX",
-    headings: ["Recipe index", "Choosing a pattern"],
+    headings: [],
   },
 };
 
@@ -148,7 +104,8 @@ walk(docsRoot);
 const corpus = mdxFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
 const failures = [];
 
-for (const [relative, requirements] of Object.entries(hybridPages)) {
+for (const [relativeKey, requirements] of Object.entries(hybridPages)) {
+  const relative = relativeKey.split("#")[0];
   const filename = path.join(docsRoot, relative);
   const source = fs.readFileSync(filename, "utf8");
   const start = `{/* GENERATED:${requirements.marker}:START */}`;

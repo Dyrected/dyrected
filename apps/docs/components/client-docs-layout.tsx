@@ -8,7 +8,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from 'fumadocs-ui/layouts/docs/slots/sidebar'
-import { NewDocsSidebar } from '@/components/new-docs-sidebar'
+import { DocsSidebar } from '@/components/docs-sidebar'
 
 export function ClientDocsLayout({ children, tree }: { children: ReactNode; tree: any }) {
   return (
@@ -37,7 +37,7 @@ export function ClientDocsLayout({ children, tree }: { children: ReactNode; tree
       slots={{
         sidebar: {
           provider: SidebarProvider,
-          root: (props) => <NewDocsSidebar tree={tree} {...props} />,
+          root: (props) => <DocsSidebar tree={tree} {...props} />,
           trigger: SidebarTrigger,
           useSidebar,
         },

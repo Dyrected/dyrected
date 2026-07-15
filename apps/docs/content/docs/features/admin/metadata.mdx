@@ -1,0 +1,57 @@
+---
+title: Metadata
+description: Set the admin's browser tab title and favicon so it reads as your product in the tab bar, bookmarks, and history.
+---
+
+Metadata here means the small details of the admin as a browser page: the text in the tab and the icon beside it. Setting them makes the admin read as your product — in the tab bar, in bookmarks, and in browser history — instead of a generic app.
+
+Throughout this page, "your app" means the project you embedded the admin into — your Next.js, Nuxt, Vue, or React application.
+
+By the end of this page you should know how to set the tab title suffix and the favicon, and what the title looks like as editors move around the admin.
+
+## The browser tab title
+
+The tab title is built from two parts: the page the editor is on, and a suffix you choose. Set the suffix with `admin.meta.titleSuffix`:
+
+```ts
+export default defineConfig({
+  admin: {
+    meta: {
+      titleSuffix: "— Acme CMS",
+    },
+  },
+});
+```
+
+The admin combines the current page with your suffix and updates the tab as the editor navigates. With the suffix above, the tab reads:
+
+- `Dashboard — Acme CMS` on the home screen
+- `Posts — Acme CMS` on the Posts list
+- `New Post — Acme CMS` while creating a post
+- `Edit Post — Acme CMS` while editing one
+
+The page part comes from your collection and global labels, so it stays readable without any extra configuration. If you don't set `titleSuffix`, the admin uses `- Dyrected` as the default.
+
+## The favicon
+
+Set the tab icon with `admin.branding.favicon`. It sits under `branding` alongside your logo and colors, since it's part of the same visual identity:
+
+```ts
+export default defineConfig({
+  admin: {
+    branding: {
+      favicon: "/favicon.ico",
+    },
+  },
+});
+```
+
+Point it at any icon your app serves — an `.ico`, `.png`, or `.svg` at a path the browser can reach. For the rest of the branding options — logo, colors, and fonts — see [Customizing CSS](/docs/features/admin/customizing-css).
+
+## When the admin is embedded in your app
+
+If you run the admin inside your own app (rather than the hosted admin), it takes over the browser tab while an editor is using it: the title and favicon reflect the admin. When the editor navigates away and the admin unmounts, it restores your app's original title, so your own pages keep their titles. You don't need to coordinate anything for this — it happens automatically.
+
+## Recommended path
+
+Set `admin.meta.titleSuffix` to your product name so every admin tab is recognizable, and set `admin.branding.favicon` to match. Both are one line each, and together they make the admin feel like part of your product the moment an editor opens it.

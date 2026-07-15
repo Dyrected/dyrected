@@ -32,7 +32,7 @@ export function isUnpublishedSlug(slug: string[] | undefined): boolean {
   return (slug ?? []).some(isUnpublishedSegment)
 }
 
-/** True when a page-tree URL (e.g. `/new-docs/.../__i18n`) points at an unpublished page. */
+/** True when a page-tree URL (e.g. `/docs/.../__i18n`) points at an unpublished page. */
 export function isUnpublishedUrl(url: string): boolean {
   return url.split('/').some(isUnpublishedSegment)
 }

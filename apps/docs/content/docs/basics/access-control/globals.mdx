@@ -1,0 +1,101 @@
+---
+title: Globals
+description: Read and update rules for a global — the single-document config objects like site settings or a navigation menu.
+---
+
+A global is a single document rather than a collection of many — site settings, a header menu, a homepage layout. Because there is only ever one document and you never create or delete it through the API, globals have just two access rules: `read` and `update`.
+
+Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes and the context a rule receives. This page covers the two rules a global supports.
+
+## The shape
+
+Attach `read` and `update` to the `access` key of a global. A typical setup makes settings readable by anyone (so your frontend can render them) while restricting edits to admins:
+
+```ts
+import { defineGlobal } from '@dyrected/core'
+
+export const SiteSettings = defineGlobal({
+  slug: 'site-settings',
+  access: {
+    read: true,
+    update: "'admin' in user.roles",
+  },
+  fields: [
+    // ...
+  ],
+})
+```
+
+## How operations map to requests
+
+| Operation | HTTP method | Access key |
+|---|---|---|
+| Read the global | `GET` | `read` |
+| Update the global | `PATCH` | `update` |
+
+There are no `create` or `delete` rules — a global always exists and cannot be removed through the API, so those operations do not apply.
+
+## The two operations
+
+### Read
+
+`read` decides who can fetch the global. Settings that your public site needs to render — a site title, social links, a footer — are usually readable by everyone:
+
+```ts
+access: {
+  read: true,
+}
+```
+
+If a global holds internal configuration, require a user instead:
+
+```ts
+access: {
+  read: 'user != null',
+}
+```
+
+### Update
+
+`update` decides who can change the global. This is almost always restricted, since a global usually controls site-wide behavior:
+
+```ts
+access: {
+  update: "'admin' in user.roles",
+}
+```
+
+## What a global rule receives
+
+Global rules run on the server with the standard [access context](/docs/basics/access-control/overview#what-a-rule-can-see). The useful values here are:
+
+- `user` and `req`, as always
+- `doc` — the current stored global
+- `data` — the incoming update payload
+
+That makes globals practical for rules that depend on the stored value or the change being made. For example, allow updates only while the global is unlocked, and inspect the incoming payload with `data`:
+
+```ts
+access: {
+  read: ({ doc }) => doc?.visibility === 'public',
+  update: ({ doc, data }) => !doc?.locked && data?.locked !== true,
+}
+```
+
+<Note>
+A global rule should return `true` or `false`. Row-level filter objects, which collections use to scope a query, do not apply to a global — there is only one document — so a global rule that returns an object is treated as a denial.
+</Note>
+
+## Default access
+
+If you omit a rule, that operation is **open**. A global with no `access` block can be read and updated by anyone who can reach the API.
+
+<Warning>
+Access is open by default. Set an explicit `update` rule on every global — an unguarded global lets any caller rewrite your site-wide settings.
+</Warning>
+
+## Related pages
+
+- [Access control overview](/docs/basics/access-control/overview) — the model behind these rules.
+- [Global configuration](/docs/basics/configuration/globals) — everything else you can set on a global.
+- [Global hooks](/docs/basics/hooks/globals) — for logic that transforms data or raises custom errors, beyond allow/deny.

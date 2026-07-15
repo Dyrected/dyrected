@@ -28,7 +28,7 @@ const promptSnapshotsRoot = path.join(packageRoot, "src/prompt-snapshots");
 const testFixturesRoot = path.join(packageRoot, "src/test-fixtures");
 const docsRoot = path.join(repositoryRoot, "apps/docs/content/docs/recipes");
 const allDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
-const newDocsRoot = path.join(repositoryRoot, "apps/docs/content/new-docs");
+const newDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
 const docsPublicRoot = path.join(repositoryRoot, "apps/docs/public");
 const checkOnly = process.argv.includes("--check");
 const categories = new Set([
@@ -394,16 +394,17 @@ const categoryLabels = {
   integrations: "Integrations",
 };
 
-for (const recipe of recipes) {
-  const intentList = recipe.intents.map((intent) => `- ${intent}`).join("\n");
-  const conceptList = recipe.concepts
-    .map((concept) => `\`${concept}\``)
-    .join(", ");
-  const requires =
-    recipe.requires.length > 0
-      ? recipe.requires.map((item) => `\`${item}\``).join(", ")
-      : "No additional packages.";
-  const generatedRecipe = `${recipe.description}
+if (fs.existsSync(docsRoot)) {
+  for (const recipe of recipes) {
+    const intentList = recipe.intents.map((intent) => `- ${intent}`).join("\n");
+    const conceptList = recipe.concepts
+      .map((concept) => `\`${concept}\``)
+      .join(", ");
+    const requires =
+      recipe.requires.length > 0
+        ? recipe.requires.map((item) => `\`${item}\``).join(", ")
+        : "No additional packages.";
+    const generatedRecipe = `${recipe.description}
 
 ## Use this when
 
@@ -422,11 +423,12 @@ This is the canonical source compiled and behavior-tested by \`@dyrected/knowled
 \`\`\`ts
 ${recipe.source}
 \`\`\``;
-  outputGeneratedRegion(
-    path.join(docsRoot, `${recipe.id}.mdx`),
-    "RECIPE",
-    generatedRecipe,
-  );
+    outputGeneratedRegion(
+      path.join(docsRoot, `${recipe.id}.mdx`),
+      "RECIPE",
+      generatedRecipe,
+    );
+  }
 }
 
 const groupedPages = [];
@@ -698,7 +700,7 @@ function renderMemberLabel(member) {
 }
 
 function docsUrlForTargetFile(targetFile) {
-  return `https://dyrected.com/new-docs/${targetFile.replace(/\.mdx$/, "")}`;
+  return `https://dyrected.com/docs/${targetFile.replace(/\.mdx$/, "")}`;
 }
 
 function stripSelfSeeReference(description, pageUrl) {
@@ -780,7 +782,7 @@ for (const [file, names] of Object.entries(fieldPageContracts)) {
 const isDatabaseAdapter = (entry) =>
   entry.name.includes("Database") || entry.name === "PaginatedResult";
 
-// Canonical routing of generated reference material into authored new-docs
+// Canonical routing of generated reference material into authored docs
 // pages. Each target owns exactly one generated region; when a category cannot
 // be classified onto a leaf page it falls back to the topic overview page.
 const referenceTargets = [
@@ -873,21 +875,23 @@ outputFile(
   `${JSON.stringify(openapi, null, 2)}\n`,
 );
 
-const recipeCards = recipes
-  .map(
-    (recipe) =>
-      `- [${recipe.title}](${recipe.docsPath}) — ${recipe.description}`,
-  )
-  .join("\n");
-outputGeneratedRegion(
-  path.join(docsRoot, "index.mdx"),
-  "RECIPE-INDEX",
-  recipeCards,
-);
-outputFile(
-  path.join(docsRoot, "meta.json"),
-  `${JSON.stringify({ title: "Recipes", pages: ["index", ...groupedPages] }, null, 2)}\n`,
-);
+if (fs.existsSync(docsRoot)) {
+  const recipeCards = recipes
+    .map(
+      (recipe) =>
+        `- [${recipe.title}](${recipe.docsPath}) — ${recipe.description}`,
+    )
+    .join("\n");
+  outputGeneratedRegion(
+    path.join(docsRoot, "index.mdx"),
+    "RECIPE-INDEX",
+    recipeCards,
+  );
+  outputFile(
+    path.join(docsRoot, "meta.json"),
+    `${JSON.stringify({ title: "Recipes", pages: ["index", ...groupedPages] }, null, 2)}\n`,
+  );
+}
 
 function classifyFence(language, code, recipeSources) {
   if (recipeSources.has(code.trim()))
@@ -1016,14 +1020,14 @@ const generatedSections = {
     .join("\n"),
   INTENTS: intentLines.join("\n"),
   REFERENCES: [
-    "- [Configuration](https://docs.dyrected.com/new-docs/basics/configuration/overview)",
-    "- [Fields](https://docs.dyrected.com/new-docs/basics/fields/overview)",
-    "- [Hooks](https://docs.dyrected.com/new-docs/basics/hooks/overview)",
-    "- [Database adapters](https://docs.dyrected.com/new-docs/basics/database/overview)",
-    "- [Storage adapters](https://docs.dyrected.com/new-docs/features/upload/storage-adapters)",
-    "- [SDK](https://docs.dyrected.com/new-docs/managing-data/sdk-api/overview)",
-    "- [Workflows](https://docs.dyrected.com/new-docs/features/workflows/overview)",
-    "- [REST and OpenAPI](https://docs.dyrected.com/new-docs/managing-data/rest-api/overview)",
+    "- [Configuration](https://docs.dyrected.com/docs/basics/configuration/overview)",
+    "- [Fields](https://docs.dyrected.com/docs/basics/fields/overview)",
+    "- [Hooks](https://docs.dyrected.com/docs/basics/hooks/overview)",
+    "- [Database adapters](https://docs.dyrected.com/docs/basics/database/overview)",
+    "- [Storage adapters](https://docs.dyrected.com/docs/features/upload/storage-adapters)",
+    "- [SDK](https://docs.dyrected.com/docs/managing-data/sdk-api/overview)",
+    "- [Workflows](https://docs.dyrected.com/docs/features/workflows/overview)",
+    "- [REST and OpenAPI](https://docs.dyrected.com/docs/managing-data/rest-api/overview)",
   ].join("\n"),
 };
 outputGeneratedRegion(

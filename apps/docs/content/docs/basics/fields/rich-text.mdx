@@ -1,0 +1,41 @@
+---
+title: Rich Text
+description: A rich-text field that stores formatted content as an HTML string.
+---
+
+The rich text field stores formatted content — headings, bold, links, lists, tables, and images — as an HTML string produced by the editor. Reach for it whenever content needs real formatting instead of plain text.
+
+```ts
+defineRichTextField({ name: 'body', label: 'Body' })
+```
+
+On your frontend, render the stored HTML with the [`DyrectedRichText` component](/docs/managing-data/displaying-content/overview). Because the value is HTML authored through the admin panel, render content you trust and sanitize it upstream if untrusted users can edit it.
+
+## Choosing which controls editors get
+
+By default the editor offers its full toolbar. Pass `features` to restrict it to the formatting you want — handy for a lightweight inline field — and `headingLevels` to limit which heading sizes are offered (the default is `[1, 2, 3]`):
+
+```ts
+defineRichTextField({
+  name: 'summary',
+  label: 'Summary',
+  features: ['bold', 'italic', 'link'],
+})
+```
+
+When you enable the `image` feature, editors can insert images from an upload-enabled collection. Set `uploadCollection` to choose which one; it defaults to your first collection configured with `upload: true`.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-RICH-TEXT:START */}
+## RichTextField
+
+Formatted content authored in the admin editor, stored as an HTML string.
+
+```ts
+export type RichTextField = TypedField<"richText", string> &
+  RichTextFieldConfig;
+```
+{/* GENERATED:REFERENCE-FIELD-RICH-TEXT:END */}

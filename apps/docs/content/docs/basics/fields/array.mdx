@@ -1,0 +1,33 @@
+---
+title: Array
+description: A repeatable list where each row shares the same set of fields.
+---
+
+The array field stores an ordered, repeatable list of rows, where every row has the same fields. Use it for lists of the same shape: gallery items, feature bullets, or link lists. When rows need to differ in shape, use [Blocks](/docs/basics/fields/blocks) instead.
+
+```ts
+defineArrayField({
+  name: 'links',
+  label: 'Links',
+  fields: [
+    defineTextField({ name: 'label', label: 'Label' }),
+    defineTextField({ name: 'url', label: 'URL' }),
+  ],
+})
+```
+
+Each row is stored as an object, so the field saves as an array like `[{ label, url }, ...]`, in the order editors arrange them. The rows live inside the parent document and share its lifecycle. Reach for a [Collection](/docs/basics/configuration/collections) with a [Relationship](/docs/basics/fields/relationship) instead when the entries need their own IDs, their own access rules, or to be queried and reused on their own. An array is for content that only makes sense as part of its parent.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-ARRAY:START */}
+## ArrayField
+
+A repeatable list of rows that all share the same `fields`, stored as an array of objects.
+
+```ts
+export type ArrayField = TypedField<"array", unknown>;
+```
+{/* GENERATED:REFERENCE-FIELD-ARRAY:END */}

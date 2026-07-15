@@ -26,15 +26,15 @@ Your goal is to make the existing website content manageable in Dyrected without
 
 For the longer operating rules, stage behavior, content architecture defaults, batching guidance, and final verification bar, read and follow this page:
 
-https://docs.dyrected.com/new-docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt
+https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt
 
 Before using any Dyrected feature, read the relevant current docs and the installed package types. Start with:
 
 - https://docs.dyrected.com/llms.txt
 - https://docs.dyrected.com
-- https://docs.dyrected.com/new-docs/basics/fields/overview
-- https://docs.dyrected.com/new-docs/basics/configuration/overview
-- https://docs.dyrected.com/new-docs/features/upload/storage-adapters
+- https://docs.dyrected.com/docs/basics/fields/overview
+- https://docs.dyrected.com/docs/basics/configuration/overview
+- https://docs.dyrected.com/docs/features/upload/storage-adapters
 - https://docs.dyrected.com/docs/admin/overview
 
 Use only APIs supported by the installed version and current documentation. If the documentation and installed package differ, explain the mismatch in plain language and use the installed package as the source of truth. Do not invent Dyrected functions, configuration options, hooks, field types, access rules, storage options, preview handlers, or package APIs.

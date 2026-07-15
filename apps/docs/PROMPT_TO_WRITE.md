@@ -52,7 +52,7 @@ Workflow for each file:
 
 3. Build a Dyrected source inventory before rewriting.
    - Primary source of truth: `apps/docs/content/docs/`
-   - Secondary source of truth: existing `apps/docs/content/new-docs/`
+   - Secondary source of truth: existing `apps/docs/content/docs/`
    - Verify implementation details against relevant `@dyrected/*` packages only when the page makes factual code-behavior claims.
    - For environment-variable claims, verify against the actual CLI scaffolding source in `packages/cli` and distinguish clearly between:
      - variables the CLI currently writes into `.env.example`
@@ -60,7 +60,7 @@ Workflow for each file:
    - If package code and existing docs disagree, prefer package code for behavior and note the conflict in the review packet.
 
 4. Decide what this page must teach directly.
-   - Do not assume another page will explain the core of the concept unless that page already exists in `new-docs`.
+   - Do not assume another page will explain the core of the concept unless that page already exists in `docs`.
    - If this page is intended to be the canonical home for a concept, explain that concept fully here.
    - Link outward only for deeper subtopics, not to hide missing explanation.
 
@@ -80,13 +80,13 @@ Workflow for each file:
    - Store review packets outside the docs content tree.
    - Use:
      `.agents/review-packets/`
-   - Do not write review packet files into `apps/docs/content/new-docs/...` because that breaks Fuma Docs.
+   - Do not write review packet files into `apps/docs/content/docs/...` because that breaks Fuma Docs.
 
 Constraints:
 - Use official Payload docs as the comparison source.
 - Do not invent Dyrected behavior, APIs, pages, routes, or product guarantees.
 - Do not link to old `/docs/...` pages.
-- Prefer only `new-docs` links.
+- Prefer only `/docs` links.
 - Treat each file independently.
 - If one file has no clean Payload equivalent, continue with the others and report the gap.
 - Preserve existing good prose when it already fits the docs philosophy.
@@ -148,7 +148,7 @@ A stronger single-file version would be:
 Use `$api-doc-hitl`.
 
 Target file:
-`apps/docs/content/new-docs/basics/getting-started/installation.mdx`
+`apps/docs/content/docs/basics/getting-started/installation.mdx`
 
 Task:
 1. Find the closest live equivalent page on `payloadcms.com` for the target file.
@@ -166,7 +166,7 @@ Constraints:
 - Use official Payload docs as the comparison source.
 - Do not invent Dyrected behavior, APIs, pages, or routes.
 - Do not link to old `/docs/...` pages from the rewritten MDX.
-- Link only to `apps/docs/content/new-docs/` equivalents, or the closest likely `new-docs` destination when no exact equivalent exists.
+- Link only to `apps/docs/content/docs/` equivalents, or the closest likely `docs` destination when no exact equivalent exists.
 - Keep the result review-ready, not final, unless every substantive claim is supported.
 - Follow the Dyrected docs voice.
 - If there is no strong Payload equivalent, say so and use the nearest structural match.
@@ -187,7 +187,7 @@ For batching multiple files, yes, absolutely. The clean way is to make the promp
 Use `$api-doc-hitl`.
 
 Batch scope:
-Process every `.mdx` file in `apps/docs/content/new-docs/basics/getting-started/`.
+Process every `.mdx` file in `apps/docs/content/docs/basics/getting-started/`.
 
 For each file:
 1. Find the closest live equivalent page on `payloadcms.com`.
@@ -200,7 +200,7 @@ Constraints:
 - Use official Payload docs as the comparison source.
 - Do not invent Dyrected behavior, APIs, pages, or routes.
 - Do not link to old `/docs/...` pages.
-- Prefer only `new-docs` links.
+- Prefer only `/docs` links.
 - Keep each file review-ready, not final.
 - Treat each file independently. If one file has no clean Payload equivalent, continue with the others and report the gap.
 

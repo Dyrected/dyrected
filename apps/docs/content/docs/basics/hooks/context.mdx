@@ -1,0 +1,117 @@
+---
+title: Context
+description: Understand the request, user, document, and database values Dyrected passes into hook functions.
+---
+
+Every hook in Dyrected receives a small piece of runtime context: the current request, the authenticated user if there is one, the document or data being worked on, and sometimes a database adapter.
+
+This page is the mental model for those arguments. By the end, you should know what `req` contains, which hooks get `doc` vs `data`, and when the database adapter is read-only versus writable.
+
+<Note>
+Payload also has a Hooks "Context" page, but the concept is not the same. Payload uses `context` for shared mutable state passed between hooks in one request. Dyrected's equivalent page is about the real values hooks receive today: `req`, `user`, `data`, `doc`, `previousDoc`, and `db`. In other words, the structure of this page is informed by Payload, but the runtime behavior described here is Dyrected-specific.
+</Note>
+
+## Start with `req`
+
+Every server hook receives `req`, which is a `HookRequestContext`:
+
+```ts
+export interface HookRequestContext {
+  query: Record<string, string>
+  headers: Record<string, string>
+  raw?: Request
+}
+```
+
+That gives you three useful levels of detail:
+
+- `query` for URL parameters such as pagination or custom request flags
+- `headers` for low-friction request metadata
+- `raw` when you need the underlying Web `Request`
+
+For most hooks, `query` and `headers` are the important parts.
+
+## The common arguments
+
+Across the hook system, you will see the same few values repeatedly:
+
+| Argument | What it means |
+|---|---|
+| `req` | The current request context |
+| `user` | The authenticated user, if the request has one |
+| `data` | The incoming payload being written |
+| `doc` | The current or returned document, depending on the phase |
+| `previousDoc` | The document before an update, in `afterChange` hooks |
+| `operation` | The current write operation, such as `'create'` or `'update'` |
+| `db` | A database adapter for related lookups, and sometimes follow-up writes |
+
+## Which hooks get which values
+
+### Collection hooks
+
+Collection hooks receive the broadest document-level context:
+
+- `beforeRead`: `req`, `query`, `user`, `db`
+- `afterRead`: `req`, `doc`, `user`, `db`
+- `beforeChange`: `req`, `data`, `doc`, `user`, `operation`, `db`
+- `afterChange`: `req`, `doc`, `previousDoc`, `user`, `operation`, `db`
+- `beforeDelete`: `req`, `id`, `doc`, `user`, `db`
+- `afterDelete`: `req`, `id`, `doc`, `user`, `db`
+
+The important distinction is that `beforeChange` sees the incoming payload, while `afterChange` sees the saved document.
+
+### Global hooks
+
+Global hooks follow the same pattern in a smaller lifecycle:
+
+- `beforeRead`: `req`, `query`, `user`, `db`
+- `afterRead`: `req`, `doc`, `user`, `db`
+- `beforeChange`: `req`, `data`, `doc`, `user`, `operation`, `db`
+- `afterChange`: `req`, `doc`, `previousDoc`, `user`, `operation`, `db`
+
+For globals, `operation` is always `'update'`.
+
+### Field hooks
+
+Server field hooks receive field-level values instead of full lifecycle metadata:
+
+- `beforeChange`: `value`, `originalDoc`, `data`, `user`, `db`
+- `afterRead`: `value`, `doc`, `user`, `db`
+
+That is enough to normalize one field while still peeking at the surrounding document when needed.
+
+### Admin field hooks
+
+Admin hooks run in the browser and receive form state instead of request context:
+
+- `onChange`: `value`, `siblingData`, `data`, `setValue`
+- `options`: `siblingData`, `data`
+
+They do not receive `req`, `user`, or a server database adapter.
+
+## Read-only versus writable `db`
+
+The `db` argument changes by phase:
+
+- `beforeRead`, `afterRead`, `beforeChange`, `beforeDelete`, and server field hooks get a **read-only** adapter
+- `afterChange` and `afterDelete` get a **writable** adapter
+
+That boundary is deliberate. Dyrected lets you inspect related records before a write, but reserves follow-up writes for the phases that run after persistence has already succeeded.
+
+For example, a `beforeChange` hook can look up a related category and copy its name into the incoming payload, but it cannot create or update another record while doing it. An `afterChange` hook can do both: read related records and write a follow-up audit log or queue record once the main document is already saved.
+
+## A practical way to think about `doc` and `data`
+
+- `data` is what the caller is trying to write now.
+- `doc` in `beforeChange` is the existing stored document on update.
+- `doc` in `afterRead` and `afterChange` is what the caller is about to receive or what was just saved.
+- `previousDoc` is how you compare before and after in post-write logic.
+
+If you are deciding what should be stored, use `data`. If you are deciding what changed, compare `previousDoc` and `doc`. If you are deciding what should be returned, use `doc` in `afterRead`.
+
+## Related pages
+
+- [Hooks overview](/docs/basics/hooks/overview) for the full hook family map.
+- [Collection hooks](/docs/basics/hooks/collections) for document-level lifecycle details.
+- [Global hooks](/docs/basics/hooks/globals) for singleton config hooks.
+- [Field hooks](/docs/basics/hooks/fields) for value-level transforms and admin reactivity.

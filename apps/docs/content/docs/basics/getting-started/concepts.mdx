@@ -1,0 +1,128 @@
+---
+title: Concepts
+description: Learn the core Dyrected ideas before you start modeling content.
+---
+
+Dyrected is based around a small set of core ideas. Before you start configuring collections or inviting editors, it helps to get comfortable with the terms Dyrected uses and how those pieces fit together.
+
+Most of the system starts from one source of truth: your `dyrected.config.ts`. That config describes your content model, your rules, and the runtime surfaces Dyrected generates from them.
+
+## Core concepts
+
+### Config
+
+The config is the center of a Dyrected project. It is a typed object that defines collections, globals, fields, access rules, hooks, adapters, email, and admin behavior.
+
+Start here when you want the main setup surface: [Configuration Overview](/docs/basics/configuration/overview).
+
+### Database
+
+Dyrected stores your content through an adapter. In self-hosted projects, you choose the adapter and provide the connection. In Dyrected Cloud, the infrastructure is managed for you.
+
+Schema behavior and storage setup are best paired with [Database Overview](/docs/basics/database/overview) and [Configuration Overview](/docs/basics/configuration/overview).
+
+### Collections
+
+Collections are groups of repeatable documents that share a schema. Use them for content like posts, products, team members, users, orders, or submissions.
+
+If the content has many instances, it usually belongs in a collection. The closest starting point today is [Configuration Overview](/docs/basics/configuration/overview).
+
+### Globals
+
+Globals are singleton documents for content that should exist only once, such as navigation, footer settings, SEO defaults, or site-wide business details.
+
+If there is one shared version of the content for the whole site, it usually belongs in a global. The closest starting point today is [Configuration Overview](/docs/basics/configuration/overview).
+
+### Fields
+
+Fields are the building blocks of every collection and global. They define your schema and drive the generated admin forms, API responses, and SDK types.
+
+Start with [Fields Overview](/docs/basics/fields/overview) for the mental model.
+
+### Relationships and Depth
+
+Relationships connect one collection to another. Depth controls how much related data gets hydrated in API and SDK responses.
+
+The closest place for this topic today is [Fields Overview](/docs/basics/fields/overview), since relationships are part of how fields shape documents.
+
+### Hooks
+
+Hooks let you run your own logic before or after reads, writes, deletes, and workflow transitions. This is where you usually put things like slug generation, revalidation, webhooks, and side effects.
+
+See [Hooks Overview](/docs/basics/hooks/overview).
+
+### Authentication
+
+Authentication is collection-scoped in Dyrected. Adding `auth: true` turns a collection into an auth provider and generates the related auth endpoints automatically.
+
+See [Authentication Overview](/docs/features/authentication/overview) and [Operations](/docs/features/authentication/operations).
+
+### Access Control
+
+Access control decides who can read, create, update, or delete documents and fields. It runs on the server, not just in the admin UI.
+
+See [Access Control Overview](/docs/basics/access-control/overview).
+
+### Admin UI
+
+The admin UI is generated from your config. Editors use it to manage collections and globals without you building a custom dashboard from scratch.
+
+See [Admin Overview](/docs/features/admin/overview).
+
+### Workflows
+
+Workflows add editorial states and transitions, so content can move through review and publishing steps instead of going live immediately on every edit.
+
+See [Workflows Overview](/docs/features/workflows/overview) for the current published guide.
+
+## Retrieving data
+
+Dyrected exposes your content through a few main surfaces:
+
+### REST API
+
+Every collection and global gets predictable HTTP endpoints under `/api`. This is the most general integration surface and works from any language or tool.
+
+See [REST API Overview](/docs/managing-data/rest-api/overview).
+
+### SDK
+
+`@dyrected/sdk` is the typed TypeScript client for reading and mutating Dyrected data. It wraps the REST API and adds a more convenient application-facing interface.
+
+See [SDK API Overview](/docs/managing-data/sdk-api/overview).
+
+### OpenAPI
+
+Dyrected also generates an API contract from your config at runtime. Until there is a dedicated OpenAPI page, the closest related overview is [REST API Overview](/docs/managing-data/rest-api/overview).
+
+## Package structure
+
+Dyrected is split into focused packages so you only install the pieces your project needs.
+
+### `@dyrected/core`
+
+This is the main engine. It contains the content model, runtime rules, hooks, workflows, and core server behavior.
+
+### `@dyrected/next` and `@dyrected/nuxt`
+
+These packages mount Dyrected into a Next.js or Nuxt application and provide framework-specific integration points, including admin mounting.
+
+### `@dyrected/react` and `@dyrected/vue`
+
+These packages provide framework-native helpers for using Dyrected in React and Vue applications when you want to fetch content, work with the SDK more ergonomically, or embed Dyrected-powered experiences into an existing frontend.
+
+### `@dyrected/admin`
+
+This package provides the generated React admin UI that can be hosted by Dyrected or embedded into your own app.
+
+### `@dyrected/sdk`
+
+This is the framework-agnostic client for reading and updating content from frontend code, server code, or scripts.
+
+### Database and storage adapters
+
+Adapters such as `@dyrected/db-postgres`, `@dyrected/db-mysql`, `@dyrected/db-sqlite`, `@dyrected/db-mongodb`, and the storage packages let you choose how Dyrected connects to your infrastructure when you are self-hosting.
+
+## Next step
+
+If this mental model feels clear, continue to [Installation](/docs/basics/getting-started/installation). If you want the practical setup path after that, go to the quick start guide that matches your frontend: [Next.js](/docs/quick-start-guides/nextjs-quick-start/overview), [Nuxt](/docs/quick-start-guides/nuxtjs-quick-start/overview), [React](/docs/quick-start-guides/reactjs-quick-start/overview), or [Vue](/docs/quick-start-guides/vuejs-quick-start/overview).

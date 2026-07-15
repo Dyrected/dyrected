@@ -1,0 +1,148 @@
+---
+title: Nuxt
+description: Use Dyrected in Nuxt with the first-party module, auto-imported composables, auto-registered components, and an optional self-hosted server handler.
+---
+
+`@dyrected/nuxt` is the recommended integration for Nuxt projects. It can do two different jobs:
+
+- mount a self-hosted Dyrected backend inside the Nuxt app
+- act as the Nuxt-side client integration for a remote Dyrected API
+
+That is why this package is usually the right starting point for Nuxt instead of wiring `@dyrected/vue` and `@dyrected/sdk` manually.
+
+## What the module gives you
+
+The Nuxt module adds the framework glue for you:
+
+- auto-imported Dyrected composables
+- auto-registered components like `DyrectedAdmin`, `DyrectedImage`, and `DyrectedMedia`
+- a Nitro server handler when `apiBase` is a relative path
+- a provided SDK client that uses Nuxt request fetching
+
+It also installs `@nuxt/image` so the shipped image component can render through Nuxt's image layer.
+
+## Install the module
+
+```bash
+pnpm add @dyrected/nuxt @dyrected/sdk
+```
+
+For self-hosted mode, also install the core package and your chosen database adapter.
+
+## Remote API mode
+
+If Dyrected is already running somewhere else, point the module at that API:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: {
+    apiBase: process.env.NUXT_PUBLIC_DYRECTED_URL || "",
+  },
+});
+```
+
+When `apiBase` is an absolute URL, the module does not add the Nitro server handler. In that mode, Nuxt acts as a client of the running Dyrected API.
+
+## Self-hosted mode
+
+If the Dyrected backend should run inside the Nuxt app, keep `apiBase` as a relative path and merge in your config:
+
+```ts
+// nuxt.config.ts
+import config from "./dyrected.config";
+
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: {
+    ...config,
+    apiBase: "/dyrected",
+    adminPath: "admin",
+  },
+});
+```
+
+With a relative `apiBase`, the module registers the server handler for you and serves Dyrected under that path.
+
+## Add the admin page
+
+The module auto-registers `DyrectedAdmin`, but you still choose the route that renders it:
+
+```vue
+<!-- app/pages/admin.vue -->
+<script setup lang="ts">
+definePageMeta({ layout: false });
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin />
+  </ClientOnly>
+</template>
+```
+
+Use `ClientOnly` here because the admin UI needs the browser DOM.
+
+## Fetch content with the auto-imported composables
+
+For normal reads, the module gives you a configured SDK client and a few Nuxt-friendly shortcuts.
+
+```vue
+<!-- app/pages/blog.vue -->
+<script setup lang="ts">
+const client = useDyrectedClient();
+
+const { data: posts } = await useAsyncData("posts", () =>
+  client.collection("posts").find({
+    where: { status: { equals: "published" } },
+    sort: "-createdAt",
+    limit: 10,
+    depth: 1,
+  }),
+);
+</script>
+
+<template>
+  <ul>
+    <li v-for="post in posts?.docs" :key="post.id">
+      {{ post.title }}
+    </li>
+  </ul>
+</template>
+```
+
+You can also reach for:
+
+- `useDyrectedCollection`
+- `useDyrectedDoc`
+- `useDyrectedGlobal`
+- `useDyrectedAuth`
+- `useLivePreview`
+
+Those are auto-imported by the module.
+
+## Default path expectations
+
+The module defaults `apiBase` to `/dyrected`. That means the typical self-hosted API surface is `/dyrected/api/...`, which lines up with the other framework integrations and the admin wrapper defaults.
+
+If you change the path, keep your runtime config and any hard-coded app expectations aligned with it.
+
+## Production expectations
+
+For self-hosted Nuxt:
+
+- the runtime still needs live database connectivity
+- the module can rebuild the Dyrected app when the server handler initializes
+- a successful front-end build alone does not prove the backend boundary is healthy
+
+For remote API mode:
+
+- Nuxt only needs to be able to reach the configured Dyrected URL
+- your production concern becomes API availability and credentials, not local server mounting
+
+## Related pages
+
+- [Vue integration](/docs/ecosystem/integrations/vue)
+- [Admin](/docs/features/admin/overview)
+- [Deployment](/docs/deployment/production/deployment)

@@ -1,0 +1,224 @@
+---
+title: Overview
+description: Understand how upload collections, storage adapters, and file options fit together in Dyrected.
+---
+
+Use this page when you are setting up uploads and want the mental model before the provider-specific setup. By the end, you should know what an upload collection is, when to use one, which options belong on the collection itself, and which parts move to [Storage adapters](/docs/features/upload/storage-adapters).
+
+## The mental model
+
+An upload in Dyrected always has two parts:
+
+- the **stored file bytes**, handled by the root-level `storage` adapter
+- the **document that describes that file**, handled by an upload-enabled collection
+
+That distinction matters because editors work with the document, not the bucket key or filesystem path. The document is where you keep fields like `alt`, `caption`, or any other editorial metadata. The storage adapter is what decides where the actual file lives and what public URL Dyrected returns as `doc.url`.
+
+In practice, that means you usually create one dedicated `media` collection and let other collections point to it.
+
+## Recommended starting point
+
+The usual setup is one upload-enabled `media` collection plus one storage adapter. This keeps file handling in one place and gives other collections a stable thing to relate to.
+
+```ts
+import { defineCollection, defineConfig, defineTextField } from '@dyrected/core'
+import { localStorage } from '@dyrected/storage-local'
+
+export const Media = defineCollection({
+  slug: 'media',
+  upload: {
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    maxFileSize: 10 * 1024 * 1024,
+  },
+  fields: [
+    defineTextField({
+      name: 'alt',
+      label: 'Alternative text',
+      required: true,
+    }),
+  ],
+})
+
+export default defineConfig({
+  storage: localStorage({
+    uploadDir: './public/uploads',
+    staticUrlPrefix: '/uploads',
+  }),
+  collections: [Media],
+  globals: [],
+})
+```
+
+This is the recommended baseline because it does three things clearly:
+
+- the collection says which uploads are allowed
+- the storage adapter says where files live
+- the returned document gives the rest of your app a stable `url`, `filename`, `mimeType`, and other file metadata
+
+## When to use an upload collection
+
+Use an upload collection when each document in the collection should represent a real stored file such as an image, PDF, video, or downloadable asset.
+
+That is different from adding an [`image` field](/docs/basics/fields/image) to another collection. The `image` field stores a relationship to an existing upload document. The upload collection is the canonical home for the file itself.
+
+## What `upload` turns on
+
+Setting `upload: true` or `upload: { ... }` changes the collection in a few important ways:
+
+- documents gain file metadata such as `url`, `filename`, and `mimeType`
+- the create endpoint accepts `multipart/form-data`
+- the Admin UI treats that collection as a media library
+- deleting the document also gives Dyrected a place to remove the stored file through your configured adapter
+
+The CLI starter config uses `upload: true` for its first `media` collection because that is enough to get you to a working admin quickly. Switch to an object form when you want to enforce file rules or generate image sizes.
+
+## What belongs here versus in storage
+
+Think about upload setup in layers:
+
+| Layer | What it owns | Examples |
+| --- | --- | --- |
+| Collection `upload` config | Rules for this upload collection | MIME limits, file size limit, generated sizes, admin thumbnail |
+| Root `storage` config | Where bytes live and how URLs resolve | local disk, S3, B2, Cloudinary |
+| Root `image` config | Image processing for generated variants | dimensions, BlurHash, resized outputs |
+
+This split keeps the page boundaries clean:
+
+- stay on this page for collection-level behavior
+- go to [Storage adapters](/docs/features/upload/storage-adapters) when you are choosing a provider or wiring credentials
+
+## The collection options that matter first
+
+### `allowedMimeTypes`
+
+Use this to define which file types the collection accepts. Dyrected supports exact MIME types such as `image/png`, family wildcards such as `image/*`, and catch-all patterns such as `*/*`.
+
+When an uploaded file does not match, the current upload validator returns `415 Unsupported Media Type`.
+
+### `maxFileSize`
+
+Use this when you want a hard size limit in bytes. This is the main guardrail for keeping accidental uploads reasonable.
+
+When a file is too large, the current upload validator returns `413 Payload Too Large`.
+
+### `imageSizes`
+
+Use this when you want Dyrected to generate named image variants such as `thumbnail`, `card`, or `hero` after upload.
+
+This is where the page boundary matters again: `imageSizes` lives on the collection because the variants are content-model decisions, but the actual image processing happens through the root-level `image` service. If you define `imageSizes`, configure `image` in your main Dyrected config too.
+
+### `adminThumbnail`
+
+Use this to tell the Admin UI which generated size should represent the file in media listings. Reach for it once you already have `imageSizes` and want the admin to prefer a smaller preview image.
+
+## Recommended path and advanced paths
+
+For most projects, the recommended path is:
+
+1. create one `media` collection
+2. give it a small set of editorial fields such as `alt` and `caption`
+3. set `allowedMimeTypes` and `maxFileSize`
+4. choose a storage adapter separately
+5. add `imageSizes` only after you know which responsive sizes your frontend really needs
+
+If you need more control, there are three common advanced paths:
+
+### 1. Use more than one upload collection
+
+Do this when different file types need different rules or different editorial fields.
+
+For example, you might keep images in a `media` collection and downloadable documents in a separate `documents` collection:
+
+```ts
+export const Media = defineCollection({
+  slug: 'media',
+  upload: {
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    maxFileSize: 10 * 1024 * 1024,
+  },
+  fields: [
+    defineTextField({ name: 'alt', label: 'Alternative text', required: true }),
+  ],
+})
+
+export const Documents = defineCollection({
+  slug: 'documents',
+  upload: {
+    allowedMimeTypes: ['application/pdf'],
+    maxFileSize: 25 * 1024 * 1024,
+  },
+  fields: [
+    defineTextField({ name: 'title', label: 'Title', required: true }),
+  ],
+})
+```
+
+### 2. Let the storage provider control delivery details
+
+Do this when your storage setup needs a CDN, custom public domain, or provider-specific URL behavior.
+
+For example, the S3 adapter can point at a custom public base URL instead of exposing the default bucket URL:
+
+```ts
+storage: s3Storage({
+  bucket: process.env.S3_BUCKET!,
+  region: process.env.S3_REGION!,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+  },
+  baseUrl: process.env.S3_BASE_URL,
+})
+```
+
+In that setup, your frontend should still use `doc.url`. The adapter handles the public URL shape for you.
+
+### 3. Write a custom adapter
+
+Do this when the shipped adapters do not match your infrastructure.
+
+At minimum, a custom adapter needs to upload files, delete them, and return a public URL:
+
+```ts
+import type { FileData, StorageAdapter } from '@dyrected/core'
+
+export class MyStorageAdapter implements StorageAdapter {
+  async upload(args: {
+    filename: string
+    buffer: Uint8Array
+    mimeType: string
+    prefix?: string
+  }): Promise<FileData> {
+    return {
+      filename: args.filename,
+      mimeType: args.mimeType,
+      url: `https://cdn.example.com/${args.filename}`,
+    }
+  }
+
+  async delete(args: { filename: string }): Promise<void> {
+    // remove the stored file here
+  }
+
+  getURL(args: { filename: string }): string {
+    return `https://cdn.example.com/${args.filename}`
+  }
+}
+```
+
+Most projects do not need this. Start with a shipped adapter first, then reach for a custom one only when you have a concrete provider requirement.
+
+For deeper setup, use:
+
+- [Storage adapters](/docs/features/upload/storage-adapters) for provider setup and adapter behavior
+- [Image field](/docs/basics/fields/image) for relating other documents to uploads
+- [Installation](/docs/basics/getting-started/installation) for which adapters the CLI can scaffold for you
+
+## Success check
+
+You are ready to move on when you can answer these plainly:
+
+- which collection in this project owns uploaded files
+- which file rules belong in `upload`
+- which storage adapter will store and serve the bytes
+- whether this project really needs generated image sizes yet

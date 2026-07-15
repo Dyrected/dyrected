@@ -95,7 +95,7 @@ describe("generated knowledge contracts", () => {
 
   const newDocsRoot = path.join(
     repositoryRoot,
-    "apps/docs/content/new-docs",
+    "apps/docs/content/docs",
   );
   const fieldPageSlugs = [
     "text",
@@ -164,16 +164,16 @@ describe("generated knowledge contracts", () => {
       )
       .trim();
 
-  it("routes generated reference material into authored new-docs pages", () => {
+  it("routes generated reference material into authored docs pages", () => {
     const generator = fs.readFileSync(
       path.join(packageRoot, "scripts/generate.mjs"),
       "utf8",
     );
     expect(generator).toContain("function outputGeneratedRegion");
-    // Generation targets the new-docs tree through region replacement, not
+    // Generation targets the docs tree through region replacement, not
     // full-page overwrites, and no longer targets the old reference tree.
     expect(generator).toContain("newDocsRoot");
-    expect(generator).toContain("apps/docs/content/new-docs");
+    expect(generator).toContain("apps/docs/content/docs");
     expect(generator).toContain("referenceTargets");
     expect(generator).not.toContain('"reference/configuration.mdx"');
     expect(generator).not.toContain('"adapters/databases.mdx"');
@@ -209,7 +209,7 @@ describe("generated knowledge contracts", () => {
     expect(collectionsPage).toContain("<code>siteId</code> (optional)");
   });
 
-  it("gives the workflow reference one canonical home in new-docs", () => {
+  it("gives the workflow reference one canonical home in docs", () => {
     const page = path.join(newDocsRoot, "features/workflows/overview.mdx");
     expect(fs.existsSync(page), "workflow page is missing").toBe(true);
     const source = fs.readFileSync(page, "utf8");

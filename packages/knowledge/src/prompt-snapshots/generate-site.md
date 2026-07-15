@@ -67,16 +67,16 @@ Schema and initialData:
 https://docs.dyrected.com/docs/concepts/schema
 
 Fields:
-https://docs.dyrected.com/new-docs/basics/fields/overview
+https://docs.dyrected.com/docs/basics/fields/overview
 
 Configuration, admin options, useAsTitle, previewUrl, previewMode, and urlPattern:
-https://docs.dyrected.com/new-docs/basics/configuration/overview
+https://docs.dyrected.com/docs/basics/configuration/overview
 
 Admin and Live Preview:
 https://docs.dyrected.com/docs/admin/overview
 
 Storage and media:
-https://docs.dyrected.com/new-docs/features/upload/storage-adapters
+https://docs.dyrected.com/docs/features/upload/storage-adapters
 
 Use only APIs, configuration options, field types, hooks, preview options, media options, and behaviour supported by the installed Dyrected package and the current documentation.
 
@@ -1259,7 +1259,7 @@ Generated content must be internally consistent across the whole site.
 
 Trace the generated site as a whole before finishing. A link that points nowhere, an author with no posts, or a second page that contradicts the first is an incomplete result.
 
-Reference: https://docs.dyrected.com/new-docs/basics/fields/overview
+Reference: https://docs.dyrected.com/docs/basics/fields/overview
 
 ---
 
@@ -1287,7 +1287,7 @@ initialData does not behave identically for globals and collections. Know the tr
 - Seeding writes documents directly and does not run field change hooks. Provide already-valid values in seed data: lowercase and unique slugs, correctly shaped link and media values, and any value a hook would normally derive.
 - initialData is a seed, not the runtime source. The frontend still reads live content from Dyrected. Do not overwrite existing content with initialData; it applies only while the target is empty.
 
-Reference: https://docs.dyrected.com/docs/concepts/schema and https://docs.dyrected.com/new-docs/managing-data/rest-api/overview
+Reference: https://docs.dyrected.com/docs/concepts/schema and https://docs.dyrected.com/docs/managing-data/rest-api/overview
 
 ---
 
@@ -1299,7 +1299,7 @@ An `icon` field stores the name of an icon from the icon set the project renders
 - Do not invent icon names. An unknown name renders nothing.
 - Do not store arbitrary text, emoji, or file paths in an icon field.
 
-Reference: https://docs.dyrected.com/new-docs/basics/fields/overview
+Reference: https://docs.dyrected.com/docs/basics/fields/overview
 
 ---
 
@@ -1312,7 +1312,7 @@ How the configuration file is written affects whether it type-checks and loads.
 - A large configuration may be split into modules — one file per collection and global, imported into the main config. Keep cross-references (a collection referencing a media collection, a blog referencing an authors collection) as direct imports and avoid import cycles.
 - When splitting into modules, relative imports in the configuration must use the explicit file extension the config loader expects, because the configuration file is not part of the application's TypeScript project.
 
-Reference: https://docs.dyrected.com/new-docs/basics/configuration/overview
+Reference: https://docs.dyrected.com/docs/basics/configuration/overview
 
 ---
 
@@ -1326,7 +1326,7 @@ Choose database and storage adapters from the deployment target, not habit.
 - Confirm the deployment target before finalizing adapters. If the project uses Dyrected Cloud, follow the Cloud guidance rather than configuring custom database or storage adapters.
 - Drive adapter choice from environment configuration so local development and production can differ without code changes.
 
-Reference: https://docs.dyrected.com/new-docs/basics/database/overview and https://docs.dyrected.com/new-docs/features/upload/storage-adapters
+Reference: https://docs.dyrected.com/docs/basics/database/overview and https://docs.dyrected.com/docs/features/upload/storage-adapters
 <!-- GENERATED:MODELING_RULES:END -->
 
 <!-- GENERATED:FRONTEND_RULES:START -->
@@ -1450,7 +1450,7 @@ For link and URL fields:
 - A url field already carries its own label. Do not model a separate label field next to it, and do not require editors to enter the label twice.
 - Block calls-to-action generally need only the resolved href. Navigation, footer, and menus need the full internal-versus-external resolution.
 - Handle a missing or empty url safely. Do not render a broken or dead link.
-- Reference: https://docs.dyrected.com/new-docs/basics/fields/overview
+- Reference: https://docs.dyrected.com/docs/basics/fields/overview
 
 For site chrome:
 
@@ -1458,7 +1458,7 @@ For site chrome:
 - Read chrome globals on the server so the first render is not empty, and provide a safe fallback that matches the intended content until the global loads.
 - Render a managed logo from its media document, and fall back to a text or initials mark when no logo image is set.
 - Keep chrome fallbacks equal to the seeded defaults so a fresh site renders correctly before any edit.
-- Reference: https://docs.dyrected.com/new-docs/basics/configuration/overview
+- Reference: https://docs.dyrected.com/docs/basics/configuration/overview
 
 For live preview and click-to-edit:
 

@@ -1,0 +1,101 @@
+---
+title: Boolean
+description: A true/false toggle, shown to editors as a checkbox or switch.
+---
+
+The boolean field stores `true` or `false`, shown to editors as a checkbox. Use it for on/off flags such as `featured`, `published`, or `acceptsTerms`. The helper is `defineBooleanField`.
+
+```ts
+defineBooleanField({ name: 'featured', label: 'Featured', defaultValue: false })
+```
+
+Set a `defaultValue` so new documents start in a known state instead of an empty one.
+
+By default the admin panel renders a checkbox. Switch it to a toggle when that reads better for the flag — both store the same boolean:
+
+```ts
+defineBooleanField({
+  name: 'published',
+  label: 'Published',
+  defaultValue: false,
+  admin: { layout: 'switch' },
+})
+```
+
+## Customizing how the value displays
+
+In the admin list, a boolean shows a plain `Yes`/`No` badge by default. Set `admin.format` to give each state a label and a color that fits the flag — `Active`/`Inactive`, `In stock`/`Sold out`, and so on:
+
+```ts
+defineBooleanField({
+  name: 'inStock',
+  label: 'In stock',
+  defaultValue: true,
+  admin: {
+    format: {
+      type: 'boolean',
+      true: { label: 'In stock', tone: 'success' },
+      false: { label: 'Sold out', tone: 'danger' },
+    },
+  },
+})
+```
+
+`tone` is a semantic color — `neutral`, `primary`, `success`, `warning`, `danger`, or `info` — that the panel themes for you, so it stays readable in light and dark mode. You can set just a `label`, just a `tone`, or both; anything you leave out falls back to the default. This is display-only and changes nothing about the stored value.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-BOOLEAN:START */}
+## BooleanField
+
+A `true`/`false` value, shown to editors as a checkbox or switch.
+
+```ts
+export type BooleanField = TypedField<"boolean", boolean, BooleanFieldAdmin>;
+```
+
+
+## BooleanFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type BooleanFieldAdmin = {
+  /** Boolean presentation style. */
+  layout?: "checkbox" | "switch";
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: BooleanFormat;
+};
+```
+
+
+## BooleanFormat
+
+How a `boolean` value is presented in read-only Admin surfaces. Replaces the
+default `Yes`/`No` badge with your own labels and tones — for example
+`Active`/`Inactive` or `In stock`/`Sold out`. Display only.
+
+```ts
+export type BooleanFormat = {
+  type: "boolean";
+  /** Presentation for a `true` value. */
+  true?: { label?: string; tone?: DisplayTone };
+  /** Presentation for a `false` value. */
+  false?: { label?: string; tone?: DisplayTone };
+};
+```
+
+
+## DisplayTone
+
+A semantic color for a badge or status pill in the Admin UI. The Admin panel
+maps each tone to a themed color, so you pick meaning (`success`, `danger`)
+rather than a raw color and it stays consistent in light and dark mode.
+
+```ts
+export type DisplayTone =
+  "neutral" | "primary" | "success" | "warning" | "danger" | "info";
+```
+{/* GENERATED:REFERENCE-FIELD-BOOLEAN:END */}

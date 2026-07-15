@@ -1,0 +1,86 @@
+---
+title: Dashboard
+description: Add your own components above and below the built-in dashboard — a welcome banner, an analytics widget, a shortcut panel — using the dashboard slots.
+---
+
+The dashboard is the first screen editors see. You can't replace it, but you can frame it with your own content: a welcome banner up top, an analytics widget or team notice below. Dyrected gives you two slots on the dashboard for exactly this.
+
+By the end of this page you should know the two dashboard slots, what your slot components receive, and how to register them. If you haven't met the declare-then-provide pattern yet, read the [Custom Components overview](/docs/features/custom-components/overview) first — this page assumes it.
+
+## The two slots
+
+The dashboard has two injection points:
+
+- **`beforeDashboard`** — renders above the built-in dashboard content.
+- **`afterDashboard`** — renders below it.
+
+Each is a list, so you can stack several components in a slot. Declare the keys under the top-level `admin.components` in your config:
+
+```ts
+export default defineConfig({
+  collections: [...],
+  admin: {
+    components: {
+      beforeDashboard: ["welcome-banner"],
+      afterDashboard: ["analytics-widget"],
+    },
+  },
+});
+```
+
+Then provide the actual components under the `dashboard` group when you mount the admin, matched by the same keys:
+
+```tsx
+import { DyrectedAdmin } from "@dyrected/next/admin";
+import { WelcomeBanner } from "./WelcomeBanner";
+import { AnalyticsWidget } from "./AnalyticsWidget";
+
+export default function AdminPage() {
+  return (
+    <DyrectedAdmin
+      components={{
+        dashboard: {
+          "welcome-banner": WelcomeBanner,
+          "analytics-widget": AnalyticsWidget,
+        },
+      }}
+    />
+  );
+}
+```
+
+Once that's in place, the welcome banner renders above the dashboard and the analytics widget below it. A key declared in config with no matching component is skipped (and warns in development), and if your component throws, an error boundary isolates it so the dashboard still loads.
+
+## What your component receives
+
+Dashboard slot components are handed enough to fetch data and greet the user:
+
+| Prop | What it is |
+|---|---|
+| `client` | The authenticated Dyrected client — use it to call the API and fetch data |
+| `user` | The signed-in user document, or `null` if unauthenticated |
+| `schemas` | All loaded collection and global schemas, plus your admin config |
+
+A typical banner just reads `user`; a widget uses `client` to fetch a count or recent activity. Here's the welcome banner from above:
+
+```tsx
+import type { DashboardSlotProps } from "@dyrected/admin";
+
+export function WelcomeBanner({ user }: DashboardSlotProps) {
+  return (
+    <div className="dy-rounded-md dy-bg-muted dy-p-4">
+      Welcome back, {user?.email ?? "there"}.
+    </div>
+  );
+}
+```
+
+Because you get the `client`, a slot component can do real work — pull open tasks, show publishing stats, surface a link to a scheduled report — without any extra wiring.
+
+## Using Vue components
+
+In a Vue or Nuxt app, register Vue components in the same `dashboard` map. The integration wraps them so they render inside the admin, and the props above arrive as Vue props. See the [overview](/docs/features/custom-components/overview#using-vue-components) for the mechanism.
+
+## Recommended path
+
+Use `beforeDashboard` for a short, high-signal banner and `afterDashboard` for richer widgets that fetch their own data with `client`. Keep each component self-contained and let the error boundary do its job — a slot that fails should never take the dashboard down with it. For adding components to collection lists instead, see [List View](/docs/features/custom-components/list-view).

@@ -1,0 +1,101 @@
+---
+title: Deployment
+description: Ship Dyrected to production with the right boundary, durable infrastructure, stable secrets, and a deployment flow that matches how the product actually boots.
+---
+
+This page is the production baseline. By the end, you should know which parts Dyrected expects to exist before launch, what the recommended production shape is, and what happens during deploy for self-hosted and Cloud projects.
+
+The shortest useful mental model is this:
+
+- **Dyrected Cloud** needs a schema push as part of deploy.
+- **Self-hosted Dyrected** needs durable infrastructure at runtime: a real database, stable secrets, and storage that matches your host.
+- **Your frontend still owns the host-specific details** like cache invalidation, edge rules, and reverse-proxy protections.
+
+## The recommended production shape
+
+For most production projects, the safest default is:
+
+- **Postgres** for the database
+- **object storage** for uploads when the host filesystem is ephemeral or shared across instances
+- **stable environment variables** for secrets and URLs
+- **explicit type generation** in your workflow if another app or package consumes the schema
+
+That is the path to recommend unless your infrastructure already standardizes on MySQL, MongoDB, or a durable single-node setup.
+
+If you are deploying to serverless or multi-instance infrastructure, do not use a file-based SQLite database or local upload storage unless you also provide a durable shared volume. Those choices are good for local development and some single-server installs, but they are the wrong default for elastic hosting.
+
+## Choose the right deployment boundary
+
+### Dyrected Cloud
+
+Use Cloud when you want Dyrected to host the backend boundary and your app just consumes the API. In that model:
+
+- your app deploy does **not** boot the Dyrected core server
+- schema changes are pushed with `npx dyrected sync:schema`
+- the CLI can wire that sync into `postbuild` for you
+
+The production question here is mostly workflow: make sure the deploy that introduces a schema change also runs the schema sync.
+
+### Self-hosted Dyrected
+
+Use self-hosted when the Dyrected backend should run inside your Next.js or Nuxt app. In that model:
+
+- your app process serves the Dyrected API
+- the SQL adapters run startup schema sync when the Dyrected app initializes
+- your host must be able to reach the database at runtime
+
+For Next.js, `dyrectedNextHandler` initializes lazily on the first matching request. For Nuxt, the server handler creates the Dyrected app when the handler boots. In both cases, production readiness is really about runtime readiness, not just whether the code bundle built successfully.
+
+## Production env checklist
+
+Before you ship, make sure these are set correctly for the environment that will actually serve traffic:
+
+- `DYRECTED_JWT_SECRET` with a strong stable value
+- the database connection variables your adapter needs, usually `DATABASE_URL`
+- the public Dyrected base URL variables your integration expects, such as `NEXT_PUBLIC_DYRECTED_URL` or `NUXT_PUBLIC_DYRECTED_URL`
+- storage provider credentials if uploads do not live on a durable local disk
+- email, admin SSO, or other provider secrets for any feature you enabled
+
+The important production rule is consistency: if multiple instances or environments serve the same app, they must agree on the same secret values and the same backend URL assumptions.
+
+## What happens during deploy
+
+### Self-hosted
+
+The practical flow is:
+
+1. build and release your app
+2. start the new runtime with the correct environment
+3. let Dyrected initialize and, for SQL adapters, apply additive schema sync
+4. smoke-test the admin, API, and one real content route
+
+That startup sync is **additive only**. It creates missing tables and promoted columns, but it does not drop, rename, or retype existing data structures. Treat destructive schema changes as rollout work, not as something the runtime will clean up for you.
+
+### Cloud
+
+The practical flow is:
+
+1. deploy the app that consumes Dyrected
+2. run `npx dyrected sync:schema`
+3. regenerate types if your app uses a generated contract file
+4. smoke-test the routes that depend on the changed schema
+
+If `init` set up your Cloud workflow, `dyrected:sync-schema` is already designed to be safe in builds where credentials are absent: it warns and skips instead of crashing.
+
+## After deploy
+
+A production deploy is not finished when the build is green. Check the actual boundary:
+
+- open the admin and confirm it loads
+- hit the Dyrected API health or schema surface through the deployed app
+- load at least one content route that reads from Dyrected
+- create or edit one low-risk record and confirm the change flows through
+
+If you use seeded collection content, also make sure each seeded collection is listed once after a fresh deploy. Filtered page-by-slug reads do not seed those collections by themselves.
+
+## Related pages
+
+- [Building without a DB connection](/docs/deployment/production/building-without-a-db-connection)
+- [Preventing abuse](/docs/deployment/production/preventing-abuse)
+- [Migrations](/docs/basics/database/migrations)
+- [Storage adapters](/docs/features/upload/storage-adapters)

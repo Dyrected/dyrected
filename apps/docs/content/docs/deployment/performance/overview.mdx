@@ -1,0 +1,105 @@
+---
+title: Overview
+description: The main Dyrected performance levers are query shape, promoted fields, bounded reads, and infrastructure choices that match your deployment target.
+---
+
+Most Dyrected performance problems are not mysterious. They usually come from one of four places:
+
+- filtering or sorting on fields that were never promoted
+- reading more documents than the page actually needs
+- pulling relationships deeper than the UI actually uses
+- deploying onto infrastructure that fights the chosen database or storage setup
+
+This page is the practical guide to those levers.
+
+## Start with query shape
+
+The first performance win is almost always to ask for less.
+
+When you query collections:
+
+- set a real `limit`
+- filter as early as you can
+- sort on fields that are cheap to read
+- avoid using high `depth` values by default
+
+If a page only needs ten records and one level of relationships, do not fetch a hundred records at depth three just because the API allows it.
+
+## Promote the fields you query often
+
+On the SQL adapters, `promoted: true` is the main Dyrected-specific performance knob.
+
+Use it for fields that are:
+
+- used in frequent `where` filters
+- used for sorting
+- document lookup keys such as slugs and external IDs
+
+```ts
+defineTextField({
+  name: "slug",
+  label: "Slug",
+  promoted: true,
+  unique: true,
+});
+```
+
+That gives the database a real column instead of forcing repeated JSON extraction. For the full behavior, see [Indexes](/docs/basics/database/indexes).
+
+## Keep relationship depth intentional
+
+Dyrected defaults document reads to a population depth of `1`. That is a good default because it is useful without getting expensive too quickly.
+
+Go deeper only when the page really renders that deeper shape. A lot of performance regressions come from turning `depth` up globally when only one route actually needs the nested data.
+
+If most pages need shallow reads and one route needs a deep tree, keep the deep fetch local to that route.
+
+## Bound list reads
+
+Even a valid query can be too heavy if it reads too much.
+
+For production pages and app code:
+
+- always set list limits explicitly
+- paginate lists instead of loading everything
+- avoid "fetch all then slice in memory" patterns
+
+That is especially important for admin-adjacent tools, custom dashboards, and any page that can quietly grow over time.
+
+## Match infrastructure to the workload
+
+The wrong infrastructure choice can dominate everything else:
+
+- use Postgres for most production relational workloads
+- use object storage on ephemeral or horizontally scaled hosts
+- avoid SQLite or local upload storage on serverless platforms unless a durable shared disk is actually part of the host
+
+If the database and storage boundary fits the host correctly, the rest of the tuning becomes much simpler.
+
+## Know what promotion does not do
+
+Promotion helps because it creates a real column. It does not automatically solve every scale problem:
+
+- it does not backfill old rows for you
+- it does not automatically create every database-native index you might eventually want
+- it does not make an over-deep or over-wide query cheap by itself
+
+So use promotion first, then measure again before reaching for lower-level database tuning.
+
+## A practical order of operations
+
+When a route feels slow, work in this order:
+
+1. reduce `limit`
+2. reduce `depth`
+3. promote the fields used in `where` and `sort`
+4. verify the database and storage choice still fits the host
+5. only then drop into database-native indexing or host-specific tuning
+
+That order usually gets you the biggest wins with the smallest complexity.
+
+## Related pages
+
+- [Indexes](/docs/basics/database/indexes)
+- [Migrations](/docs/basics/database/migrations)
+- [Deployment](/docs/deployment/production/deployment)

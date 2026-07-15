@@ -1,4 +1,0 @@
-{
-  "title": "Core Concepts",
-  "pages": ["collections-and-globals", "schema", "fields", "relationships", "depth", "auth-model", "hooks", "dynamic-options", "access-control", "workflows", "lifecycle-events"]
-}

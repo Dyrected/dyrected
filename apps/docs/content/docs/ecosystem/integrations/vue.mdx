@@ -1,0 +1,131 @@
+---
+title: Vue
+description: Use Dyrected in a plain Vue 3 app with a provided SDK client, composables, live preview helpers, and a React-in-Vue admin bridge.
+---
+
+`@dyrected/vue` is the Vue 3 integration layer for Dyrected. Use it when you are in a plain Vue app and want first-party composables plus the admin bridge.
+
+If you are in Nuxt, prefer [`@dyrected/nuxt`](/docs/ecosystem/integrations/nuxt) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
+
+## What the package gives you
+
+The Vue package includes:
+
+- document, collection, and global composables
+- `useLivePreview`
+- auth and click-to-edit helpers
+- `DyrectedAdmin`
+- media, icon, rich-text, and blocks components
+
+It assumes you already have a running Dyrected API to talk to.
+
+## Install the packages
+
+```bash
+pnpm add @dyrected/vue @dyrected/sdk react react-dom
+```
+
+The React dependencies are needed because the admin UI is still React-based and the Vue package bridges it into Vue.
+
+## Provide one shared client
+
+Create the SDK client once and provide it at app boot:
+
+```ts
+// src/main.ts
+import { createApp } from "vue";
+import { createClient } from "@dyrected/sdk";
+import { DYRECTED_CLIENT_KEY } from "@dyrected/vue";
+import App from "./App.vue";
+
+const client = createClient({
+  baseUrl: import.meta.env.VITE_DYRECTED_URL,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+});
+
+const app = createApp(App);
+app.provide(DYRECTED_CLIENT_KEY, client);
+app.mount("#app");
+```
+
+That gives the composables one shared client to work with.
+
+## Fetch content with the composables
+
+```vue
+<script setup lang="ts">
+import { useDyrectedCollection } from "@dyrected/vue";
+
+const {
+  docs: posts,
+  pending,
+  error,
+} = useDyrectedCollection("posts", {
+  where: { status: { equals: "published" } },
+  limit: 10,
+  depth: 1,
+});
+</script>
+
+<template>
+  <p v-if="pending">Loading...</p>
+  <p v-else-if="error">Something went wrong.</p>
+  <ul v-else>
+    <li v-for="post in posts" :key="post.id">
+      {{ post.title }}
+    </li>
+  </ul>
+</template>
+```
+
+The same package also gives you `useDyrected`, `useDyrectedGlobal`, `useDyrectedAuth`, and `useLivePreview`.
+
+## Embed the admin
+
+`DyrectedAdmin` mounts the React admin bundle inside your Vue app:
+
+```vue
+<!-- src/pages/AdminPage.vue -->
+<script setup lang="ts">
+import { DyrectedAdmin } from "@dyrected/vue";
+</script>
+
+<template>
+  <DyrectedAdmin
+    :config="{
+      baseUrl: import.meta.env.VITE_DYRECTED_URL,
+      apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+      siteId: import.meta.env.VITE_DYRECTED_SITE_ID || '',
+    }"
+  />
+</template>
+```
+
+That is the practical path when the Vue app needs to host the dashboard instead of only consuming content.
+
+## Use live preview when a route is editable
+
+For preview-enabled pages, hand the published data into `useLivePreview` and render the returned `data` ref:
+
+```vue
+<script setup lang="ts">
+import { useLivePreview } from "@dyrected/vue";
+
+const props = defineProps<{ initialData: any }>();
+
+const { data: page } = useLivePreview({
+  initialData: props.initialData,
+  serverURL: import.meta.env.VITE_ADMIN_URL,
+});
+</script>
+
+<template>
+  <h1>{{ page.title }}</h1>
+</template>
+```
+
+## Related pages
+
+- [Nuxt](/docs/ecosystem/integrations/nuxt)
+- [Live preview](/docs/features/live-preview/overview)
+- [Admin](/docs/features/admin/overview)

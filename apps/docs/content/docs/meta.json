@@ -1,15 +1,11 @@
 {
   "title": "Docs",
   "pages": [
-    "getting-started",
-    "guides",
-    "recipes",
-    "concepts",
-    "admin",
-    "adapters",
-    "integrations",
-    "deployment",
-    "reference",
-    "cloud"
+    "basics",
+    "quick-start-guides",
+    "managing-data",
+    "features",
+    "ecosystem",
+    "deployment"
   ]
 }

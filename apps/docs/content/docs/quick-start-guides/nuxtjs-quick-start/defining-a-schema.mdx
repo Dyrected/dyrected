@@ -1,0 +1,175 @@
+---
+title: Defining a Schema
+description: Turn the starter Dyrected config into a small, Nuxt-friendly schema that matches the pages, shared content, and preview routes your site actually needs.
+---
+
+Use this page after [Installing Dyrected](/docs/quick-start-guides/nuxtjs-quick-start/installing-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
+
+By the end, you should know what to keep, what to remove, and how to shape the first version of the schema without modeling more than the frontend can safely render yet.
+
+## Start from the file `init` already gave you
+
+The schema for this quick start lives in `dyrected.config.ts`.
+
+That file controls more than form fields. It also decides:
+
+- which collections and globals exist
+- what editors can create and edit
+- which frontend routes preview can open
+- which document shapes your Nuxt code will receive
+
+So the first schema question is not "what might be editable one day?" It is "what does this site already need right now?"
+
+## Keep the first version small
+
+For most content-managed Nuxt sites, the best first schema is still small:
+
+- one `pages` collection for routable pages
+- one `media` collection for images and files
+- one `navigation` global for shared menus
+- one `settings` global for site-wide values
+
+That is already close to the starter config the CLI writes. In most quick starts, your real work is not inventing a schema from nothing. It is trimming and reshaping the starter config so it matches the frontend you already have.
+
+<Steps>
+<Step>
+### Review the starter config
+
+Open `dyrected.config.ts` and look at what `init` created.
+
+The starter config gives you:
+
+- a reserved `__admins` auth collection for dashboard users
+- a `media` upload collection
+- `pages` and `posts` collections
+- `navigation` and `settings` globals
+
+Do not feel pressure to keep all of it. The goal of the starter config is to make the admin useful on first boot, not to guess your final architecture perfectly.
+
+</Step>
+<Step>
+### Decide what belongs in collections and what belongs in globals
+
+Before you edit any fields, make the top-level shape clear.
+
+Use a **collection** when there can be many documents with the same shape:
+
+- pages
+- posts
+- authors
+- case studies
+
+Use a **global** when there should only be one shared record:
+
+- site settings
+- navigation
+- footer content
+- SEO defaults
+
+If you are unsure, ask one question: "Should there be more than one of these?" If the answer is yes, start with a collection.
+
+</Step>
+<Step>
+### Shape the first routable collection
+
+For a typical Nuxt site, the `pages` collection is usually the first content type worth getting right.
+
+These are the top-level collection options that matter most first:
+
+- `slug` for the stable machine name
+- `fields` for the document shape editors will fill in
+- `admin.useAsTitle` for the label editors see in the admin
+- `admin.previewUrl` for the real frontend route preview should open
+
+This is a practical first `pages` collection:
+
+```ts
+import {
+  defineCollection,
+  defineTextField,
+  defineRichTextField,
+  defineRelationshipField,
+} from "@dyrected/core";
+
+export const Pages = defineCollection({
+  slug: "pages",
+  labels: { singular: "Page", plural: "Pages" },
+  admin: {
+    useAsTitle: "title",
+    previewUrl: "slug == 'home' ? '/' : '/' + slug",
+    urlPattern: "/{slug}",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true }),
+    defineRichTextField({ name: "content", label: "Content" }),
+    defineRelationshipField({
+      name: "featuredImage",
+      label: "Featured image",
+      relationTo: "media",
+    }),
+  ],
+});
+```
+
+This is enough to prove the full loop: editors can create a page, the frontend can fetch it, and preview can open the real route.
+
+</Step>
+<Step>
+### Remove anything the frontend cannot use yet
+
+This is the part many quick starts skip too fast.
+
+If the frontend does not render posts yet, remove or ignore `posts` for now. If the site does not need flexible block layouts yet, do not add them just because the schema can support them.
+
+The safest quick-start rule is simple:
+
+- only model content the frontend already knows how to render
+- only add fields editors can use immediately
+- only add preview logic for routes that already exist
+
+Your schema should stay slightly behind the frontend's capabilities, not ahead of them.
+
+</Step>
+<Step>
+### Sync or restart after changing the schema
+
+After editing `dyrected.config.ts`, make sure the running app sees the new shape.
+
+- On the **Dyrected Cloud** path, run `npm run dyrected:sync-schema` again so Cloud receives the updated schema.
+- On the **self-hosted** path, restart the dev server if the new config is not reflected immediately.
+
+This is the point where the schema stops being generic starter content and starts becoming your project's real contract.
+
+</Step>
+</Steps>
+
+## Recommended first shape
+
+For a first handoff, the recommended path is:
+
+1. keep `media`
+2. keep one routable `pages` collection
+3. keep shared site chrome in `navigation` and `settings`
+4. remove or postpone anything the frontend does not use yet
+
+That gives editors useful control without asking them to create content structures the app cannot render safely.
+
+## Where to go deeper
+
+Use this page for the quick-start version of the decision. For the full configuration details, continue to:
+
+- [Collections](/docs/basics/configuration/collections)
+- [Globals](/docs/basics/configuration/globals)
+- [Concepts](/docs/basics/getting-started/concepts)
+
+## Success check
+
+You are ready for the next step when:
+
+- the schema matches the pages and shared content the site actually has
+- there is at least one routable collection
+- shared site content lives in globals where that makes sense
+- preview can open a real frontend route for that routable content
+
+Once that is true, continue to [Setting Up Initial Data](/docs/quick-start-guides/nuxtjs-quick-start/setting-up-initial-data).

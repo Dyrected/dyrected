@@ -34,10 +34,6 @@ export const docs = defineDocs({
   dir: 'content/docs',
 })
 
-export const newDocs = defineDocs({
-  dir: 'content/new-docs',
-})
-
 export default defineConfig({
   mdxOptions: {
     remarkPlugins: [remarkMermaid],

@@ -53,7 +53,7 @@ import type { WorkflowConfig } from "./workflows.js";
  * })
  * ```
  *
- * @see {@link https://dyrected.com/new-docs/basics/configuration/collections Collections documentation}
+ * @see {@link https://dyrected.com/docs/basics/configuration/collections Collections documentation}
  * @template TDoc The TypeScript shape of a document in this collection.
  * Defaults to `Record<string, unknown>` for untyped usage.
  */
@@ -95,7 +95,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * more naturally. For example, `slug: 'people'` might use
    * `labels: { singular: 'Person', plural: 'People' }`.
    *
-   * @see {@link https://dyrected.com/new-docs/basics/configuration/collections#labels Collections labels}
+   * @see {@link https://dyrected.com/docs/basics/configuration/collections#labels Collections labels}
    */
   labels?: {
     singular: string;
@@ -111,7 +111,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * in, hold credentials, and participate in user flows. Typical examples are
    * `users`, `admins`, `members`, or `customers`.
    *
-   * @see {@link https://dyrected.com/new-docs/features/authentication/overview Authentication overview}
+   * @see {@link https://dyrected.com/docs/features/authentication/overview Authentication overview}
    */
   auth?: boolean;
 
@@ -123,7 +123,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * Turn this on when each document in the collection should represent a
    * stored file, such as an image, PDF, video, or downloadable asset.
    *
-   * @see {@link https://dyrected.com/new-docs/features/upload/overview Upload overview}
+   * @see {@link https://dyrected.com/docs/features/upload/overview Upload overview}
    */
   upload?: boolean | UploadConfig;
 
@@ -139,8 +139,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    * collections, nested objects and arrays, and flexible `blocks` fields for
    * reusable page sections or long-form layouts.
    *
-   * @see {@link https://dyrected.com/new-docs/basics/fields/overview Fields overview}
-   * @see {@link https://dyrected.com/new-docs/basics/fields/blocks Blocks and page sections}
+   * @see {@link https://dyrected.com/docs/basics/fields/overview Fields overview}
+   * @see {@link https://dyrected.com/docs/basics/fields/blocks Blocks and page sections}
    */
   fields: Field[];
 
@@ -205,7 +205,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,
    * }
    *
-   * @see {@link https://dyrected.com/new-docs/basics/access-control/overview Access control overview}
+   * @see {@link https://dyrected.com/docs/basics/access-control/overview Access control overview}
    */
   access?: {
     read?: AccessRule<TDoc>;
@@ -231,8 +231,8 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
    *
    * See the Hooks reference for the full lifecycle diagram.
    *
-   * @see {@link https://dyrected.com/new-docs/basics/hooks/overview Hooks overview}
-   * @see {@link https://dyrected.com/new-docs/basics/hooks/collections Collection hooks}
+   * @see {@link https://dyrected.com/docs/basics/hooks/overview Hooks overview}
+   * @see {@link https://dyrected.com/docs/basics/hooks/collections Collection hooks}
    */
   hooks?: {
     /**
@@ -278,7 +278,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   /**
    * Admin UI configuration for this collection.
    *
-   * @see {@link https://dyrected.com/new-docs/basics/configuration/collections#admin-options Admin options}
+   * @see {@link https://dyrected.com/docs/basics/configuration/collections#admin-options Admin options}
    */
   admin?: {
     /**

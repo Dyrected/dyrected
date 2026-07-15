@@ -1,0 +1,152 @@
+---
+title: Defining a Schema
+description: Reshape the generated schema for your Vue app, keep the first content model small, and sync only what the frontend can actually render.
+---
+
+Use this page after [Installing Dyrected](/docs/quick-start-guides/vuejs-quick-start/installing-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your Vue app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
+
+By the end, you should know what the first collections and globals should be, what belongs in each, and how to avoid modeling more than the frontend can safely render yet.
+
+## Start with the right SPA mental model
+
+On the Vue SPA path, the CLI generates a starter `dyrected.config.ts` for you.
+
+That means this page can follow the same practical pattern as the other Cloud quick starts: open the generated config, trim it down to what your app actually needs, and sync that schema to Dyrected Cloud.
+
+The recommendation stays the same: start small and model only the content your app already knows how to display.
+
+## Keep the first version small
+
+For most content-managed Vue apps, the best first model is still small:
+
+- one `pages` collection for routable pages
+- one `media` collection for images and files
+- one `navigation` global for shared menus
+- one `settings` global for site-wide values
+
+If you are starting from the generated config, that is the shape to aim for first.
+
+<Steps>
+<Step>
+### Open the generated config and decide what stays
+
+Start in `dyrected.config.ts`.
+
+The starter config already includes `pages`, `posts`, `media`, `navigation`, and `settings`.
+
+Before you think about fields, decide which of those should stay for this app right now.
+
+Use a **collection** when there can be many documents with the same shape:
+
+- pages
+- posts
+- authors
+- case studies
+
+Use a **global** when there should only be one shared record:
+
+- site settings
+- navigation
+- footer content
+- SEO defaults
+
+If you are unsure, ask one question: "Should there be more than one of these?" If the answer is yes, start with a collection.
+
+</Step>
+<Step>
+### Shape the first routable collection
+
+For a typical Vue app, the `pages` collection is usually the first content type worth getting right.
+
+The top-level fields that matter most first are:
+
+- `title`
+- `slug`
+- `content`
+- `featuredImage`
+
+That is enough to prove the full loop:
+
+- editors can create a page
+- the frontend can fetch it
+- preview can later open the real route for it
+
+</Step>
+<Step>
+### Keep preview in mind while modeling
+
+Even before you wire preview, plan one stable route field for routable content.
+
+In most SPA quick starts, that means:
+
+- one `slug` field on the `pages` content type
+- one real frontend route that can read that slug
+
+If the app has no stable route for the content yet, do not promise preview too early.
+
+</Step>
+<Step>
+### Remove anything the frontend cannot use yet
+
+This is the part many quick starts skip too fast.
+
+If the frontend does not render posts yet, do not model posts first. If the app does not need flexible block layouts yet, do not add them just because the system can support them.
+
+The safest quick-start rule is simple:
+
+- only model content the frontend already knows how to render
+- only add fields editors can use immediately
+- only plan preview for routes that already exist
+
+</Step>
+<Step>
+### Sync the schema after each meaningful change
+
+Once the first shape is right, push it to Dyrected Cloud:
+
+```bash
+npm run dyrected:sync-schema
+```
+
+That keeps the hosted backend aligned with the config in your repo.
+
+Before you move on, make sure you can still describe the first model in plain language:
+
+- which repeatable content types exist
+- which one-off site settings exist
+- which content has a real route
+- which fields the frontend will actually render next
+
+</Step>
+</Steps>
+
+## Recommended first shape
+
+For a first handoff, the recommended path is:
+
+1. one routable `pages` collection
+2. one `media` collection
+3. `navigation` and `settings` as globals
+4. nothing extra until the frontend needs it
+
+That gives editors useful control without asking them to manage structures the app cannot render safely.
+
+## Where to go deeper
+
+Use this page for the quick-start version of the decision. For the broader model details, continue to:
+
+- [Collections](/docs/basics/configuration/collections)
+- [Globals](/docs/basics/configuration/globals)
+- [Concepts](/docs/basics/getting-started/concepts)
+
+## Success check
+
+You are ready for the next step when:
+
+- `dyrected.config.ts` reflects the content types you actually want
+- the schema has been synced to Dyrected Cloud
+- you know which content types are collections
+- you know which shared content belongs in globals
+- you have one small first model the frontend can actually consume
+
+Once that is true, continue to [Creating Your First Content](/docs/quick-start-guides/vuejs-quick-start/creating-your-first-content).

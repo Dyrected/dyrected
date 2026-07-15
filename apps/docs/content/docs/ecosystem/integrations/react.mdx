@@ -1,0 +1,130 @@
+---
+title: React
+description: Use Dyrected in a plain React app with a provider, hooks, live preview, and an embeddable admin route.
+---
+
+`@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
+
+If you are already in Next.js, prefer [`@dyrected/next`](/docs/ecosystem/integrations/nextjs) instead.
+
+## What the package gives you
+
+The React package adds:
+
+- `DyrectedProvider`
+- `useDyrected`
+- `useLivePreview`
+- `Blocks` and `useDyPath`
+- `DyrectedAdmin`
+- media and icon components
+
+It assumes you already have a running Dyrected API to talk to.
+
+## Install the packages
+
+```bash
+pnpm add @dyrected/react @dyrected/sdk
+```
+
+If you want to embed the admin UI too, make sure your app also has the admin peer dependencies available:
+
+```bash
+pnpm add react-router-dom @tanstack/react-query
+```
+
+## Provide one shared client
+
+Create the SDK client once and provide it to the app root:
+
+```tsx
+// src/main.tsx
+import ReactDOM from "react-dom/client";
+import { DyrectedProvider } from "@dyrected/react";
+import { createClient } from "@dyrected/sdk";
+import App from "./App";
+
+const client = createClient({
+  baseUrl: import.meta.env.VITE_DYRECTED_URL,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+});
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <DyrectedProvider client={client}>
+    <App />
+  </DyrectedProvider>,
+);
+```
+
+From there, every component can read the shared client through `useDyrected()`.
+
+## Fetch content in components
+
+```tsx
+import { useDyrected } from "@dyrected/react";
+import { useEffect, useState } from "react";
+
+export function PostList() {
+  const { client } = useDyrected();
+  const [posts, setPosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    client
+      .collection("posts")
+      .find({ where: { status: { equals: "published" } }, limit: 10, depth: 1 })
+      .then((result) => setPosts(result.docs));
+  }, [client]);
+
+  return (
+    <ul>
+      {posts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Add live preview when the page needs it
+
+When a route should update from the admin preview iframe, use `useLivePreview` with the published data you already fetched:
+
+```tsx
+import { useLivePreview } from "@dyrected/react";
+
+export function PagePreview({ initialData }: { initialData: any }) {
+  const { data: page } = useLivePreview({
+    initialData,
+    serverURL: import.meta.env.VITE_ADMIN_URL,
+  });
+
+  return <h1>{page.title}</h1>;
+}
+```
+
+That keeps live preview additive instead of forcing a separate page implementation.
+
+## Embed the admin
+
+If the React app should host the admin too, render `DyrectedAdmin` on a dedicated route:
+
+```tsx
+import { DyrectedAdmin } from "@dyrected/react";
+import "@dyrected/admin/styles";
+
+export function AdminPage() {
+  return (
+    <DyrectedAdmin
+      baseUrl={import.meta.env.VITE_DYRECTED_URL}
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+    />
+  );
+}
+```
+
+This is the right path when the React app is only an admin host or when it needs to embed the dashboard alongside the rest of the app.
+
+## Related pages
+
+- [SDK](/docs/ecosystem/integrations/sdk)
+- [Live preview](/docs/features/live-preview/overview)
+- [Admin](/docs/features/admin/overview)

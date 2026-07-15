@@ -1,0 +1,114 @@
+---
+title: Handing Off to Editors
+description: Onboard editors safely after your site is already working, using the right first-access path for either Dyrected Cloud or self-hosted admin.
+---
+
+Use this page when your site integration, schema, render path, and first preview flow already work and you are ready to give access to someone other than the person who built the setup.
+
+By the end, you should know which account path applies to your project, what the safest first editor handoff looks like, and where the current product experience differs between Dyrected Cloud and self-hosted admin.
+
+This page is intentionally shared across frameworks. The onboarding decision is not really about Next.js, Nuxt, Vue, or React. It is about where the admin is running and how new people get into it.
+
+## The first handoff rule
+
+Do not onboard anyone until one real content edit already makes it from Dyrected into the frontend.
+
+That is the success signal that matters most. If the builder cannot make one edit and see it appear on the site, an editor should not be the person discovering what is still unfinished.
+
+## Which accounts the dashboard uses
+
+The current starter creates a reserved `__admins` collection as the dashboard login gateway.
+
+That collection is where dashboard users live by default for self-hosted setups. The first user created during the initial setup flow becomes an admin automatically.
+
+## Start with the right handoff model
+
+The first editor handoff is different depending on where the admin is running:
+
+- **Dyrected Cloud:** add team members by invitation
+- **Self-hosted admin:** create the user directly in your own admin
+
+Treat those as two different operational paths. The right first step is not the same.
+
+## Dyrected Cloud
+
+Use the Cloud path when the project is connected to a hosted Dyrected site and the team will log in through the Cloud-managed admin experience.
+
+The practical first handoff is:
+
+1. Make sure the site, preview flow, and content routes already work.
+2. Invite the team member through the [Cloud Dashboard](https://app.dyrected.com/settings/team).
+3. Have them complete one real content edit.
+4. Confirm that the edit reaches the frontend as expected.
+
+For Cloud, the invitation flow is the important path to teach. That is how team members are added today.
+
+## Self-hosted admin
+
+Use the self-hosted path when the Dyrected backend and admin are running inside your own application.
+
+The practical first handoff is:
+
+1. Create the first admin account yourself.
+2. Confirm the admin route, content route, and preview route all work.
+3. Add one additional user in the `__admins` collection and give them the least powerful role your schema actually exposes.
+4. Watch them complete one real edit before you widen access.
+
+This is slower than bulk onboarding, but it catches schema and permission mistakes while the system is still easy to correct.
+
+## What the self-hosted starter gives you today
+
+In the current `dyrected init` starter, the generated `__admins` collection includes a `roles` field with these scaffolded options:
+
+- `admin`
+- `editor`
+
+Use that starter shape as the source of truth for the first self-hosted handoff. If you need more roles later, add them deliberately in your own schema instead of assuming the scaffold already created them.
+
+For Cloud, keep the focus on invitations rather than on editing roles in the hosted product for now.
+
+## Permission boundaries to think about early
+
+Before handing the site over, decide:
+
+- who can change schema versus content
+- who can publish or only draft
+- who should be able to edit shared globals such as navigation and settings
+
+Those decisions do not need to become a full workflow system on day one, but they do need to be explicit. A vague "they will probably only edit pages" is not a permission model.
+
+## Recommended path
+
+For most first handoffs:
+
+- keep admin access limited
+- use invitations for Cloud
+- create the first additional account directly in self-hosted admin
+- only mention roles where your self-hosted schema actually exposes them
+- test pages, globals, and preview before widening access
+
+The goal is confidence, not speed.
+
+## Known quick-start edge
+
+Some broader docs in the repo describe a scaffolded auth role set that includes `viewer`. This page keeps the first onboarding path narrower:
+
+- for self-hosted starter output, use the current `admin` and `editor` role shape
+- for Cloud, focus on the invitation flow instead of role editing
+
+## Where to go deeper
+
+Use this page for the first handoff. For the full underlying concepts, continue to:
+
+- [Authentication Overview](/docs/features/authentication/overview)
+- [Access Control Overview](/docs/basics/access-control/overview)
+
+## Success check
+
+You are ready to call the onboarding setup review-ready when:
+
+- the first admin account works
+- one additional editor account can complete a real content task
+- the frontend and preview experience behave correctly under that account
+
+At that point, you have moved past setup and into normal product-specific documentation and permission design.

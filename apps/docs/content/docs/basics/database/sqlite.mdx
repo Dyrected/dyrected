@@ -1,0 +1,49 @@
+---
+title: SQLite
+description: Run a self-hosted Dyrected app on SQLite — the fastest way to get started locally and a fine fit for small single-server apps.
+---
+
+SQLite is the easiest database to start with. There's no server to run and no connection string to manage — Dyrected stores everything in a single file on disk. Install `@dyrected/db-sqlite`, point it at a filename, and pass it as the `db` key in `dyrected.config.ts`.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { sqliteAdapter } from '@dyrected/db-sqlite'
+
+export default defineConfig({
+  db: sqliteAdapter({ filename: './data.db' }),
+  collections: [],
+  globals: [],
+})
+```
+
+Start your app and Dyrected creates `data.db` in your project (the file is created if it doesn't exist) and prepares the schema. That's the quickest path to a working local app — and `./data.db` is the same filename `dyrected init` scaffolds, so a generated project runs as-is.
+
+> **Dyrected Cloud manages the database for you.** You only configure a `db` adapter when you self-host. Cloud projects normally omit `db`. See the [Database overview](/docs/basics/database/overview).
+
+## Configuration
+
+The SQLite adapter takes a single `filename` option:
+
+```ts
+sqliteAdapter({ filename: './data.db' })
+```
+
+A relative path is resolved from wherever your app runs. If you do run SQLite on a server, prefer an absolute path on a durable volume so you always know where the file lives.
+
+## How your data is stored
+
+Each collection maps to a table named `collection_<slug>`. Every document is stored as a JSON `data` column alongside `id`, `created_at`, and `updated_at`. Globals live in an internal key/value table.
+
+You can filter and sort on any field because the document body is stored as JSON. Fields you mark with `promoted: true` are also lifted into their own real, typed columns so the database can work with them directly. See [Indexes](/docs/basics/database/indexes) for when to promote a field.
+
+## Transactions
+
+The SQLite adapter supports transactions, and workflow transitions rely on them. Because SQLite is a single file, transactions run one at a time — Dyrected serializes them rather than running them concurrently. That is exactly what you want for correctness on a small app, and it's rarely a bottleneck at that scale. See [Transactions](/docs/basics/database/transactions) for details.
+
+## When to choose SQLite
+
+SQLite is mainly for local development. It's the zero-setup way to get a Dyrected app running on your machine while you build out your schema and try things.
+
+It can also back a small, low-traffic app on a single persistent server — one that won't scale to multiple instances and doesn't expect heavy concurrent writes. For anything production-facing, though, [Postgres](/docs/basics/database/postgres) is the safer default. Move to it when you outgrow a single node, need higher write concurrency, or want a managed database service.
+
+> **Don't put the SQLite file on an ephemeral filesystem.** Serverless and container platforms (like Vercel functions) often reset the local disk between deploys or scale to more than one instance, which loses or splits your data. Use a durable volume, or use Postgres for those runtimes. See [Deployment](/docs/deployment/production/deployment).

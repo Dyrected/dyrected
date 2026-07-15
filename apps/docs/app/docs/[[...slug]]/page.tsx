@@ -15,6 +15,7 @@ import { Note, Warning } from '@/components/callouts'
 import { Mermaid } from '@/components/mermaid'
 import { SafeScriptTag } from '@/components/safe-script-tag'
 import { source } from '@/app/source'
+import { isUnpublishedSlug, showUnpublished } from '@/lib/unpublished'
 
 interface Props {
   params: Promise<{ slug?: string[] }>
@@ -22,6 +23,7 @@ interface Props {
 
 export default async function Page({ params }: Props) {
   const { slug } = await params
+  if (isUnpublishedSlug(slug) && !showUnpublished) notFound()
   const page = source.getPage(slug)
   if (!page) notFound()
 
@@ -38,12 +40,16 @@ export default async function Page({ params }: Props) {
     >
       <div className="flex items-center justify-between gap-4 mb-4">
         <div>
-          <DocsTitle>{page.data.title}</DocsTitle>
-          <DocsDescription>{page.data.description}</DocsDescription>
+          <DocsTitle style={{ fontFamily: 'var(--font-display, serif)', fontWeight: 500 }}>
+            {page.data.title}
+          </DocsTitle>
+          <DocsDescription style={{ fontFamily: 'var(--font-sans, sans-serif)' }}>
+            {page.data.description}
+          </DocsDescription>
         </div>
         <CopyPageButton content={rawContent} />
       </div>
-      <DocsBody>
+      <DocsBody style={{ fontFamily: 'var(--font-sans, sans-serif)' }}>
         <MDX
           components={{
             ...defaultMdxComponents,
@@ -71,11 +77,14 @@ export default async function Page({ params }: Props) {
 }
 
 export async function generateStaticParams() {
-  return source.generateParams()
+  const params = source.generateParams()
+  if (showUnpublished) return params
+  return params.filter((param) => !isUnpublishedSlug(param.slug))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
+  if (isUnpublishedSlug(slug) && !showUnpublished) notFound()
   const page = source.getPage(slug)
   if (!page) notFound()
 

@@ -1,0 +1,182 @@
+---
+title: Number
+description: A numeric field for integers and decimals.
+---
+
+The number field stores a numeric value — integers or decimals. Use it for prices, quantities, ratings, ordering weights, and any value you want to store, filter, and sort as a number rather than text.
+
+```ts
+defineNumberField({ name: 'price', label: 'Price', required: true })
+```
+
+## Guiding entry with a range
+
+Number fields accept advisory `min` and `max` values. The admin editor uses them to bound the number input, nudging editors toward valid values as they type.
+
+```ts
+defineNumberField({ name: 'rating', label: 'Rating', min: 1, max: 5 })
+```
+
+Like the text length limits, `min` and `max` guide the editing experience but do not reject an out-of-range value on their own. When you need a hard rule — a strict range, rounding, or a computed total — add a [hook](/docs/basics/hooks/overview) that runs on write, so it applies on every path and not just the admin form.
+
+## Filtering and sorting
+
+If you filter or sort on a number often, mark it `promoted` so it becomes an indexed column. See [Database indexes](/docs/basics/database/indexes).
+
+## Formatting how the value displays
+
+A raw number reads fine in your database, but `1234.5` is not how you want a price to look in the admin. Set `admin.format` to tell Dyrected how to present the value in read-only places — list columns and the preview beneath the input — without changing what's stored or how editors type it in.
+
+The quickest form is a shorthand string, which uses sensible defaults:
+
+```ts
+defineNumberField({ name: 'price', label: 'Price', admin: { format: 'currency' } })
+```
+
+That renders `1234.5` as `$1,234.50` in the list view. When you need to configure the format — a specific currency, a star count, fraction digits — pass an object with a `type` instead:
+
+```ts
+defineNumberField({
+  name: 'price',
+  label: 'Price',
+  admin: { format: { type: 'currency', currency: 'NGN' } },
+})
+```
+
+Formatting is display-only. The stored value stays a plain number, the API returns a plain number, and the editor still types into a normal number input — so filtering, sorting, and your frontend code are all unaffected. Think of it as a lens over the value in the admin, not a transformation of it.
+
+### Available formats
+
+Each format works as a shorthand string or as an object when you want to configure it.
+
+| Format | Example input → output | Notes |
+| --- | --- | --- |
+| `currency` | `1234.5` → `$1,234.50` | Defaults to `USD`. Set `currency` to any ISO 4217 code, e.g. `'NGN'`, `'EUR'`. |
+| `percent` | `0.5` → `50%` | Treats the value as a ratio by default. Set `scale: false` when you store `50` to mean 50%. |
+| `decimal` | `1234.5` → `1,234.5` | Grouped number. Set `minimumFractionDigits` / `maximumFractionDigits` to fix the decimals. |
+| `compact` | `1200` → `1.2K` | Abbreviates large numbers. Good for view counts, reach, follower totals. |
+| `bytes` | `1536` → `1.5 KB` | File sizes. Set `binary: true` for `KiB`/`MiB` (1024-based) units. |
+| `unit` | `5` → `5 km` | Requires a `unit`, e.g. `'kilometer'`, `'liter'`, `'celsius'`. |
+| `rating` | `4` → ★★★★☆ | Renders stars instead of text. Defaults to 5 stars; set `max` to change the count. |
+
+A rating is a good example of when to reach for the object form, since you almost always want to set the star count:
+
+```ts
+defineNumberField({ name: 'score', label: 'Score', admin: { format: { type: 'rating', max: 5 } } })
+```
+
+Every option is a plain string or JSON-serializable object, so formats round-trip through Dyrected Cloud unchanged.
+
+### When a format isn't enough
+
+`admin.format` only changes presentation. If you need the *stored* value to be rounded, clamped, or derived — a total that must always equal quantity × price, say — that's a job for a [hook](/docs/basics/hooks/overview) that runs on write, so the rule holds on every path and not just the admin form.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-NUMBER:START */}
+## NumberField
+
+A numeric value. Optional advisory `min`/`max` guide editors without enforcing server-side validation.
+
+```ts
+export type NumberField = TypedField<"number", number, NumberFieldAdmin> &
+  NumberLimitFieldConfig;
+```
+
+
+## NumberFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type NumberFieldAdmin = NumberLimitFieldAdmin & {
+  /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
+  format?: NumberFormat;
+};
+```
+
+
+## NumberFormat
+
+How a `number` field's value is presented in read-only Admin surfaces (list
+cells and read-only inputs). Display only — the stored value is unchanged, and
+editing still uses a plain numeric input. Every option is JSON-serializable so
+it round-trips through Dyrected Cloud.
+
+Pass a shorthand string for defaults (`format: "currency"`) or an object to
+configure it (`format: { type: "currency", currency: "NGN" }`).
+
+```ts
+export type NumberFormat =
+  /** Shorthand for the matching object form, using that format's defaults. */
+  | "decimal"
+  | "currency"
+  | "percent"
+  | "compact"
+  | "bytes"
+  | "rating"
+  /** Grouped number, e.g. `1234.5` → `1,234.5`. */
+  | {
+      type: "decimal";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      minimumFractionDigits?: number;
+      maximumFractionDigits?: number;
+    }
+  /** Currency amount, e.g. `1234.5` → `$1,234.50`. */
+  | {
+      type: "currency";
+      /** ISO 4217 currency code, e.g. `"USD"`, `"NGN"`, `"EUR"`. Defaults to `"USD"`. */
+      currency?: string;
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      minimumFractionDigits?: number;
+      maximumFractionDigits?: number;
+    }
+  /**
+   * Percentage. By default the stored value is a ratio, so `0.5` → `50%`. Set
+   * `scale: false` when the stored value is already a percentage, so `50` → `50%`.
+   */
+  | {
+      type: "percent";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      /** `false` when the stored number is already scaled to 0–100. Defaults to `true`. */
+      scale?: boolean;
+      minimumFractionDigits?: number;
+      maximumFractionDigits?: number;
+    }
+  /** A measurement unit, e.g. `5` → `5 km` with `unit: "kilometer"`. */
+  | {
+      type: "unit";
+      /** A [sanctioned Intl unit](https://tc39.es/proposal-unified-intl-numberformat/section6/locales-currencies-tz_proposed_out.html#sec-issanctionedsimpleunitidentifier), e.g. `"kilometer"`, `"liter"`, `"celsius"`. */
+      unit: string;
+      unitDisplay?: "short" | "long" | "narrow";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      maximumFractionDigits?: number;
+    }
+  /** Abbreviated large numbers, e.g. `1200` → `1.2K`. */
+  | {
+      type: "compact";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+      maximumFractionDigits?: number;
+    }
+  /** A byte count rendered with units, e.g. `1536` → `1.5 KB`. */
+  | {
+      type: "bytes";
+      /** Use 1024-based units (`KiB`, `MiB`) instead of 1000-based (`KB`, `MB`). Defaults to `false`. */
+      binary?: boolean;
+      maximumFractionDigits?: number;
+    }
+  /** A star rating, e.g. `4` → `★★★★☆` with `max: 5`. */
+  | {
+      type: "rating";
+      /** Total number of stars. Defaults to `5`. */
+      max?: number;
+    };
+```
+{/* GENERATED:REFERENCE-FIELD-NUMBER:END */}

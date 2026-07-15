@@ -1,0 +1,135 @@
+---
+title: Server-side integration
+description: Preview drafts on a server-rendered or statically generated frontend that can't receive postMessage — the admin hands your page a short-lived signed token, and your server redeems it for the draft.
+---
+
+Client-side preview delivers the draft over `postMessage`, which only works if your page is running in the browser to receive it. A page that renders entirely on the server — a statically generated route, or one you deliberately fetch server-side — never gets that message. Server-side (**token**) mode is for exactly that case.
+
+Instead of streaming the draft into the browser, the admin mints a short-lived signed token that carries the draft, puts it on the preview URL, and your page reads it **during its server render** to fetch the draft in place of published content.
+
+<Callout type="info">
+  This mode is **refresh-based**, not live-as-you-type. When you pause editing (changes are debounced ~1s), the admin
+  mints a fresh token and reloads the whole preview frame, which re-renders on the server with the new draft — so
+  updates land a moment after you stop typing, not on every keystroke. **Click-to-edit is not available** in token mode:
+  there's no return channel from a server-only page. If you want live-as-you-type and click-to-edit, use
+  [client-side (`postMessage`)](/docs/features/live-preview/client-side) instead.
+</Callout>
+
+## Turn it on
+
+Set `previewMode: "token"` on the collection, alongside the `previewUrl` you already configured (see [Preview](/docs/features/admin/preview)):
+
+```ts
+export default defineConfig({
+  collections: [
+    {
+      slug: "blog",
+      admin: {
+        previewUrl: "'/blog/' + slug",
+        previewMode: "token",
+      },
+    },
+  ],
+});
+```
+
+With this set, the admin loads the preview iframe at your URL with a `?dyPreview=<token>` query parameter added.
+
+## Redeem the token on your server
+
+On the page, read the `dyPreview` token from the query string. If it's there, fetch the draft with it; otherwise fetch published content as normal. `getPreviewToken` extracts the parameter, and `client.getPreviewData(token)` returns the draft.
+
+<Tabs items={['Nuxt', 'Next.js']}>
+<Tab value="Nuxt">
+
+`getPreviewToken` and `useDyrectedClient` are auto-imported by `@dyrected/nuxt`.
+
+```vue
+<!-- pages/blog/[slug].vue -->
+<script setup lang="ts">
+const route = useRoute();
+const client = useDyrectedClient();
+const token = getPreviewToken(route.query);
+
+const { data: article } = await useAsyncData(
+  // Key on the token so each distinct preview forces a fresh server fetch.
+  `blog:${route.params.slug}:${token ?? "published"}`,
+  async () => {
+    if (token) {
+      try {
+        // Server-side preview: redeem the token for the unsaved draft.
+        const payload = await client.getPreviewData<{ data: any }>(token);
+        return payload?.data ?? null;
+      } catch {
+        // Token invalid/expired — fall back to published below.
+      }
+    }
+    const res = await client
+      .collection("blog")
+      .find({ where: { slug: { equals: route.params.slug } }, limit: 1, depth: 1 })
+      .exec();
+    return res?.docs?.[0] ?? null;
+  },
+);
+</script>
+
+<template>
+  <article v-if="article">
+    <h1>{{ article.title }}</h1>
+    <div v-html="article.content" />
+  </article>
+</template>
+```
+
+</Tab>
+<Tab value="Next.js">
+
+```tsx
+// app/blog/[slug]/page.tsx — Server Component
+import { getDyrectedClient, getPreviewToken } from "@dyrected/next";
+
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const { slug } = await params;
+  const token = getPreviewToken(await searchParams);
+  const client = getDyrectedClient();
+
+  const article = token
+    ? (await client.getPreviewData<{ data: any }>(token)).data
+    : (await client.collection("blog").find({ where: { slug: { equals: slug } }, limit: 1, depth: 1 })).docs[0];
+
+  if (!article) return <div>Not found</div>;
+  return (
+    <article>
+      <h1>{article.title}</h1>
+      <div dangerouslySetInnerHTML={{ __html: article.content }} />
+    </article>
+  );
+}
+```
+
+</Tab>
+</Tabs>
+
+That's the whole integration. The draft the admin sends is the in-progress form state, so relationships may not be resolved to the same `depth` as your published fetch — guard for the unpopulated (id-only) case when you render them.
+
+## Security and limits
+
+<Callout type="warn">
+  Set **`DYRECTED_JWT_SECRET`** in your environment. Preview tokens are signed with it; without it, Dyrected falls back
+  to an insecure default and logs a warning at startup. Use a strong, private value in production.
+</Callout>
+
+- **The token carries the draft.** The signed token embeds the draft document, so very large documents produce very long URLs and can hit browser or server URL-length limits. For large content models, prefer client-side preview, or keep an eye out for a future server-side draft store.
+- **The token is a bearer credential.** Anyone with the token can read that draft until it expires (15 minutes). It travels in the URL, so it can appear in referer headers and logs — the short lifetime limits the exposure. If the preview path matters, guard it so only requests from your admin origin are served.
+- **No auth on redemption.** `getPreviewData` needs no login — possession of the valid, unexpired token is the credential. Only an authenticated admin can mint one.
+
+## Where to go next
+
+- [Client-side integration](/docs/features/live-preview/client-side) — the `postMessage` path, with live-as-you-type and click-to-edit.
+- [Preview configuration](/docs/features/admin/preview) — `previewUrl` and `previewMode` reference.

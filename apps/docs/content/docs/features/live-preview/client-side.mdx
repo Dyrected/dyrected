@@ -1,0 +1,267 @@
+---
+title: Client-side integration
+description: Wire useLivePreview into your pages, annotate elements for click-to-edit with useDyPath and Blocks, and lock the message origin for production — with runnable React, Next.js, Vue, and Nuxt code.
+---
+
+This is the implementation page. It assumes you've read the [overlay model](/docs/features/live-preview/frontend) and have `admin.previewUrl` set (see [Preview](/docs/features/admin/preview)). Here you'll wire the hook, make elements click-to-edit, and secure the message origin.
+
+## `useLivePreview`
+
+The hook listens for draft data from the admin and returns it, re-rendering your page on every edit. It takes your server-fetched document as `initialData` and hands back live `data`:
+
+```ts
+useLivePreview<T>({
+  initialData: T,
+  serverURL?: string, // admin origin; defaults to "*"
+}): { data, isLive }
+```
+
+- **`data`** — the document to render. It starts equal to `initialData` and is replaced by the draft whenever a message arrives.
+- **`isLive`** — `false` until the first draft message lands, then `true`. Use it to show a "Live preview" badge, or just ignore it.
+
+<Callout type="info">
+  In **React** (and Next.js), `data` and `isLive` are plain values. In **Vue** (and Nuxt), they are refs — read
+  `page.value` in script and let templates unwrap them for you. The examples below reflect each.
+</Callout>
+
+<Callout type="warn">
+  `useLivePreview` accepts only `initialData` and `serverURL`. If you need relationships resolved (a hero image, an
+  author), set `depth` on the **data fetch**, not on the hook. The hook re-renders whatever shape the admin sends.
+</Callout>
+
+## Wiring a page
+
+Fetch published data, pass it as `initialData`, render `data`. The same route serves the public page and the preview.
+
+<Tabs items={['Next.js', 'React', 'Nuxt', 'Vue']}>
+<Tab value="Next.js">
+
+```tsx
+// app/[slug]/page.tsx — Server Component: fetches published data
+import { getDyrectedClient } from "@dyrected/next";
+import PageView from "./page-view";
+
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { docs } = await getDyrectedClient()
+    .collection("pages")
+    .find({ where: { slug: { equals: slug } }, limit: 1, depth: 1 });
+  return <PageView initialData={docs[0] ?? null} />;
+}
+```
+
+```tsx
+// app/[slug]/page-view.tsx — Client Component: overlays draft data
+"use client";
+import { useLivePreview } from "@dyrected/next";
+import PageBlocks from "@/components/page-blocks";
+
+export default function PageView({ initialData }: { initialData: any }) {
+  const { data: page, isLive } = useLivePreview({
+    initialData,
+    serverURL: process.env.NEXT_PUBLIC_ADMIN_URL, // lock origin in prod
+  });
+
+  if (!page) return <div>Not found</div>;
+  return (
+    <>
+      {isLive && <span className="preview-badge">Live preview</span>}
+      <PageBlocks layout={page.layout} />
+    </>
+  );
+}
+```
+
+</Tab>
+<Tab value="React">
+
+Outside a meta-framework, fetch initial data client-side (via the SDK) and import from `@dyrected/react`.
+
+```tsx
+import { useLivePreview } from "@dyrected/react";
+import PageBlocks from "./page-blocks";
+
+export default function PageView({ initialData }: { initialData: any }) {
+  const { data: page, isLive } = useLivePreview({
+    initialData,
+    serverURL: import.meta.env.VITE_ADMIN_URL,
+  });
+
+  if (!page) return <div>Not found</div>;
+  return (
+    <>
+      {isLive && <span className="preview-badge">Live preview</span>}
+      <PageBlocks layout={page.layout} />
+    </>
+  );
+}
+```
+
+</Tab>
+<Tab value="Nuxt">
+
+`useLivePreview` is auto-imported — no import line.
+
+```vue
+<!-- pages/[slug].vue — serves both the public page and the preview -->
+<script setup lang="ts">
+const route = useRoute();
+
+const { data: response } = await useDyrectedCollection("pages", {
+  where: { slug: { equals: route.params.slug } },
+  limit: 1,
+  depth: 1,
+});
+
+// Draft data overlays the published fetch only inside the admin iframe
+const { data: page, isLive } = useLivePreview({
+  initialData: response.value?.docs?.[0] ?? null,
+});
+</script>
+
+<template>
+  <div v-if="!page">Not found</div>
+  <template v-else>
+    <span v-if="isLive" class="preview-badge">Live preview</span>
+    <PageBlocks :layout="page.layout" />
+  </template>
+</template>
+```
+
+</Tab>
+<Tab value="Vue">
+
+In plain Vue, import from `@dyrected/vue` and fetch initial data yourself.
+
+```vue
+<script setup lang="ts">
+import { useLivePreview } from "@dyrected/vue";
+
+const props = defineProps<{ initialData: any }>();
+
+const { data: page, isLive } = useLivePreview({
+  initialData: props.initialData,
+  serverURL: import.meta.env.VITE_ADMIN_URL,
+});
+</script>
+
+<template>
+  <div v-if="!page">Not found</div>
+  <template v-else>
+    <span v-if="isLive" class="preview-badge">Live preview</span>
+    <PageBlocks :layout="page.layout" />
+  </template>
+</template>
+```
+
+</Tab>
+</Tabs>
+
+## Click-to-edit with `useDyPath`
+
+Click-to-edit lets an editor click an element in the preview and have the form focus the field behind it. You opt an element in by spreading `useDyPath('fieldName')` onto it — that stamps a `data-dy-path` attribute the admin reads.
+
+```tsx
+// React / Next.js
+import { useDyPath } from "@dyrected/next";
+
+function Hero({ heading, subheading }: any) {
+  // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
+  const dyHeading = useDyPath("heading");
+  const dySubheading = useDyPath("subheading");
+  return (
+    <section>
+      <h1 {...dyHeading}>{heading}</h1>
+      {subheading && <p {...dySubheading}>{subheading}</p>}
+    </section>
+  );
+}
+```
+
+```vue
+<!-- Vue / Nuxt (useDyPath is auto-imported in Nuxt) -->
+<script setup lang="ts">
+defineProps<{ heading: string; subheading?: string }>();
+const dyHeading = useDyPath("heading");
+const dySubheading = useDyPath("subheading");
+</script>
+
+<template>
+  <section>
+    <h1 v-bind="dyHeading">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+  </section>
+</template>
+```
+
+You pass only the field name — `"heading"`, not `"layout.2.heading"`. The full path comes from the block wrapper, which is where `<Blocks>` comes in.
+
+## Rendering blocks with `<Blocks>`
+
+For a `blocks` field, `<Blocks>` (React) / `<DyrectedBlocks>` (Nuxt, auto-imported) maps each entry to a component **and** scopes its base path — `layout.0`, `layout.1`, … — so `useDyPath('heading')` inside a block resolves to `layout.<i>.heading` without you writing the index.
+
+<Tabs items={['Next.js', 'Nuxt']}>
+<Tab value="Next.js">
+
+```tsx
+"use client";
+import { Blocks } from "@dyrected/next";
+import Hero from "./blocks/hero";
+import Cta from "./blocks/cta";
+
+const components = { hero: Hero, cta: Cta };
+
+export default function PageBlocks({ layout }: { layout: any[] }) {
+  return <Blocks items={layout} components={components} path="layout" />;
+}
+```
+
+</Tab>
+<Tab value="Nuxt">
+
+```vue
+<script setup lang="ts">
+import { defineAsyncComponent } from "vue";
+
+const components = {
+  hero: defineAsyncComponent(() => import("~/components/blocks/Hero.vue")),
+  cta: defineAsyncComponent(() => import("~/components/blocks/Cta.vue")),
+};
+
+defineProps<{ layout: any[] }>();
+</script>
+
+<template>
+  <DyrectedBlocks :items="layout" :components="components" path="layout" />
+</template>
+```
+
+</Tab>
+</Tabs>
+
+`<Blocks>` also stamps a **block-level** path on each block, so clicking anywhere inside a block drills the editor into it — which is how repeatable array rows inside a block become editable, even though you don't annotate each row.
+
+<Callout type="info">
+  The `path` prop defaults to `"body"`. Set it to match your field name (`"layout"`, `"sections"`, …) so the paths the
+  admin receives line up with your schema.
+</Callout>
+
+## Securing the origin
+
+By default the hook accepts messages from any origin (`"*"`), which is fine for local development. In production, pass your admin's URL as `serverURL` so the frontend ignores messages from anywhere else:
+
+```ts
+useLivePreview({
+  initialData,
+  serverURL: "https://app.example.com/admin",
+});
+```
+
+With `serverURL` set, the outgoing "ready"/"clicked" messages are also targeted at that origin instead of broadcast, which is the safer default for a live site.
+
+## Troubleshooting
+
+- **The pane loads but never updates.** The frontend isn't receiving messages. Check that `serverURL` (if set) exactly matches the admin's origin — a mismatch silently drops every message. During development, try omitting `serverURL` to confirm the wiring, then lock it back down.
+- **Clicks in the preview don't focus fields.** The element needs a `data-dy-path`. Confirm you spread `useDyPath(...)` onto the rendered element, and that edit mode is on (the pointer button in the pane toolbar).
+- **A relationship shows as an ID, not an object.** Raise `depth` on your **data fetch** so the relationship is resolved before it reaches the page. The hook renders whatever shape it's given.
+- **Nothing renders outside the admin.** That's expected if `initialData` is null — make sure your server fetch returns the published document, since that's what visitors see.

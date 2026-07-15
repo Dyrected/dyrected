@@ -118,7 +118,7 @@ For link and URL fields:
 - A url field already carries its own label. Do not model a separate label field next to it, and do not require editors to enter the label twice.
 - Block calls-to-action generally need only the resolved href. Navigation, footer, and menus need the full internal-versus-external resolution.
 - Handle a missing or empty url safely. Do not render a broken or dead link.
-- Reference: https://docs.dyrected.com/new-docs/basics/fields/overview
+- Reference: https://docs.dyrected.com/docs/basics/fields/overview
 
 For site chrome:
 
@@ -126,7 +126,7 @@ For site chrome:
 - Read chrome globals on the server so the first render is not empty, and provide a safe fallback that matches the intended content until the global loads.
 - Render a managed logo from its media document, and fall back to a text or initials mark when no logo image is set.
 - Keep chrome fallbacks equal to the seeded defaults so a fresh site renders correctly before any edit.
-- Reference: https://docs.dyrected.com/new-docs/basics/configuration/overview
+- Reference: https://docs.dyrected.com/docs/basics/configuration/overview
 
 For live preview and click-to-edit:
 

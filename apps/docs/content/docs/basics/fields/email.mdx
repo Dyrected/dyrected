@@ -1,0 +1,71 @@
+---
+title: Email
+description: A text field that validates its value as an email address.
+---
+
+The email field is a text field that checks its value looks like an email address before it saves. Use it for editor-supplied addresses — a contact email, a notification recipient — where you want the format validated without writing your own check.
+
+```ts
+defineEmailField({ name: 'contactEmail', label: 'Contact email', required: true })
+```
+
+The format check is built in, so you don't need extra validation for the common case. Like other text fields, it accepts an advisory `maxLength`.
+
+<Note>
+Authentication collections already include an `email` field that Dyrected injects for you. You can define your own instead: Dyrected keeps your definition but always re-asserts the parts the login flow depends on — `required`, `unique`, and its [access `update` rule](/docs/basics/access-control/fields) — so a custom `email` field can never accidentally allow duplicate accounts.
+</Note>
+
+## Making the address clickable
+
+Set `admin.format` to `'link'` and the email renders as a `mailto:` link in the admin list, so you can reach someone straight from the table instead of copying the address out:
+
+```ts
+defineEmailField({ name: 'contactEmail', label: 'Contact email', admin: { format: 'link' } })
+```
+
+This only changes how the value displays; the stored string is a plain email address either way.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-EMAIL:START */}
+## EmailField
+
+Exported type from @dyrected/core.
+
+```ts
+export type EmailField = TypedField<"email", string, EmailFieldAdmin> &
+  CharacterLimitFieldConfig;
+```
+
+
+## EmailFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type EmailFieldAdmin = CharacterLimitFieldAdmin & {
+  /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+  format?: LinkFormat;
+};
+```
+
+
+## LinkFormat
+
+How a `url` or `email` value is presented in read-only Admin surfaces.
+Renders the value as a clickable link (a `mailto:` link for `email`) instead
+of plain text. Display only.
+
+```ts
+export type LinkFormat =
+  /** Shorthand for `{ type: "link" }`. */
+  | "link"
+  | {
+      type: "link";
+      /** Open the link in a new tab. Defaults to `true`. */
+      newTab?: boolean;
+    };
+```
+{/* GENERATED:REFERENCE-FIELD-EMAIL:END */}

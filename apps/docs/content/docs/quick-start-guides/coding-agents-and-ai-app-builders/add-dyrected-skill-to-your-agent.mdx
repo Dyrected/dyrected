@@ -1,0 +1,116 @@
+---
+title: Add Dyrected skill to your agent
+description: Install the Dyrected skill in a supported coding-agent runtime so the agent can load Dyrected rules and patterns on demand.
+---
+
+Use this page when you are working in a local coding-agent environment that supports installable skills and you want Dyrected knowledge available on demand during the session. This is the better fit for tools such as Cursor, Claude Code, Kiro, OpenCode, Windsurf, or similar agent runtimes that can read the repo directly and execute local setup work. By the end, you should know when the skill helps, how to install it, how to invoke it, and when the prompt workflow is still the better fit.
+
+The skill is optional. It does not replace Dyrected itself, and it does not replace the staged prompt for AI app builders that do not support installable skills.
+
+## What the skill does
+
+The Dyrected skill gives a supported agent runtime a Dyrected-specific instruction layer for common CMS work, including:
+
+- installation decisions
+- content modeling
+- field choices
+- hooks and access control
+- uploads, relationships, and workflows
+
+It is useful when you want the agent to load Dyrected context actively at the start of a task instead of relying only on whatever it infers from the repo.
+
+## When to use it
+
+Use the skill when:
+
+- you are working in a local coding-agent workflow
+- the runtime supports the `skills` command
+- you expect to do repeated Dyrected work in the same session
+
+## When not to use it
+
+Do not treat the skill as the default path for every AI tool.
+
+If you are working in an AI app builder such as Lovable, Bolt, or v0, the safer default is still [Using the Dyrected prompt](/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt). Those tools usually need a guided prompt and approval flow more than an installable local skill.
+
+## Install the skill
+
+Run:
+
+```bash
+npx skills add dyrected/agent-skills@dyrected
+```
+
+This is the command currently documented in Dyrected's getting-started material and echoed by the CLI after `npx dyrected init`.
+
+## Invoke the skill
+
+Once it is installed, start Dyrected tasks with:
+
+```text
+/dyrected
+```
+
+Then describe the task in plain language.
+
+For example:
+
+```text
+/dyrected add an editable team members section without changing the current layout
+```
+
+That pattern is useful because the skill can translate the request into Dyrected concepts such as collections, globals, blocks, access rules, and safe schema changes.
+
+## Choose the right setup path
+
+Use the setup path that matches how you are working:
+
+- Use the prompt when an AI app builder is driving the integration and you need a staged approval flow.
+- Use the skill when you are in a supported local coding-agent session and want Dyrected context loaded on demand.
+- Use both when the repo also contains `.dyrected/ai-rules.md` and you want both repo-local guidance and explicit session-level Dyrected context.
+
+## Skill vs. AI rules file
+
+The skill and `.dyrected/ai-rules.md` solve related problems, but they are not the same thing.
+
+### `.dyrected/ai-rules.md`
+
+This file is generated automatically by `npx dyrected init` when it does not already exist. It lives in the repo and teaches workspace-aware agents the main Dyrected rules.
+
+Use it when:
+
+- the project already contains Dyrected
+- you want repo-local guidance committed with the codebase
+- your agent reads project instruction files automatically
+
+### The Dyrected skill
+
+This is session-driven. You install it into a supported runtime and invoke it when you need Dyrected help.
+
+Use it when:
+
+- you want Dyrected knowledge available before the repo is fully set up
+- you are entering a fresh session and want to force the right context
+- you want an explicit Dyrected command surface instead of passive repo instructions
+
+The recommended setup for supported local agent workflows is to keep both: commit `.dyrected/ai-rules.md`, and use the skill when you want stronger on-demand guidance.
+
+## Recommended path
+
+For local coding-agent workflows:
+
+1. Run `npx dyrected init` when you are adding Dyrected to the repo.
+2. Commit `.dyrected/ai-rules.md` and the generated agent pointer files.
+3. Install the Dyrected skill in supported runtimes.
+4. Start Dyrected-heavy tasks with `/dyrected`.
+
+For AI app builders, skip the skill and use the prompt page instead.
+
+## Success check
+
+You are done here when:
+
+- the runtime supports installable skills
+- `npx skills add dyrected/agent-skills@dyrected` has succeeded
+- you can begin a task with `/dyrected`
+- you know whether this project should use the skill, the prompt, or both

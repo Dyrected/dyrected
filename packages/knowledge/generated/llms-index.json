@@ -952,6 +952,12 @@
       "sourcePackage": "@dyrected/sdk"
     },
     {
+      "id": "@dyrected/sdk:SchemaShape",
+      "name": "SchemaShape",
+      "category": "sdk",
+      "sourcePackage": "@dyrected/sdk"
+    },
+    {
       "id": "@dyrected/sdk:TransitionOptions",
       "name": "TransitionOptions",
       "category": "sdk",

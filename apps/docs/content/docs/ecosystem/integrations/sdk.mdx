@@ -1,0 +1,67 @@
+---
+title: SDK
+description: Use the typed Dyrected SDK in any JavaScript or TypeScript environment when you need a framework-agnostic client instead of a framework integration package.
+---
+
+`@dyrected/sdk` is the framework-agnostic client for Dyrected. Use it when you want one typed client that works in scripts, servers, browser code, or another app that should not depend on a framework wrapper.
+
+If your framework already has a higher-level package, prefer that package first and drop to the SDK when you need lower-level control.
+
+## Install the package
+
+```bash
+pnpm add @dyrected/sdk
+```
+
+## Create one client
+
+Point the client at the app origin or Dyrected base URL. The SDK adds `/api` itself.
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+export const client = createClient<DyrectedSchema>({
+  baseUrl: process.env.DYRECTED_URL!,
+  apiKey: process.env.DYRECTED_API_KEY,
+  siteId: process.env.DYRECTED_SITE_ID,
+});
+```
+
+If you already generated `dyrected-types.ts`, use `DyrectedSchema` directly instead of manually inferring the same contract again.
+
+## Read content
+
+```ts
+const { docs: posts } = await client.collection("posts").find({
+  where: { status: { equals: "published" } },
+  sort: "-createdAt",
+  limit: 10,
+  depth: 1,
+});
+```
+
+## Write content
+
+```ts
+await client.collection("posts").create({
+  title: "Hello world",
+  slug: "hello-world",
+  status: "draft",
+});
+```
+
+## Use the SDK when the package boundary matters
+
+The SDK is usually the right choice when:
+
+- another app or package needs to consume Dyrected content
+- you are writing scripts or one-off admin tasks
+- you want the typed client without bringing in framework glue
+- you are sharing a generated `DyrectedSchema` file across repo boundaries
+
+For the full API surface, deeper query pages, and the generated reference, use the dedicated SDK docs:
+
+- [SDK API overview](/docs/managing-data/sdk-api/overview)
+- [TypeScript overview](/docs/features/typescript/overview)
+- [Generating types](/docs/features/typescript/generating-types)

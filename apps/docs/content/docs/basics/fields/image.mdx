@@ -1,0 +1,30 @@
+---
+title: Image
+description: A reference to a document in an upload-enabled collection, such as an image or file.
+---
+
+The image field references a document in an upload-enabled collection, such as your media library, so editors pick a file instead of pasting a URL. Use it for images, documents, and other files. The helper is `defineImageField`, and the stored value is a reference to the upload document — set `hasMany: true` to reference several.
+
+```ts
+defineImageField({
+  name: 'coverImage',
+  label: 'Cover image',
+  relationTo: 'media',
+})
+```
+
+`relationTo` points at a collection configured with `upload: true`, which is what stores the file and its metadata. When you read the field, the referenced document exposes a resolved `url` alongside details like `filename`, `mimeType`, and image `width` and `height` — consume that `url` directly rather than reconstructing storage paths. On the frontend, the [`DyrectedImage` and `DyrectedMedia` components](/docs/managing-data/displaying-content/overview) render an upload value for you. See [Storage Adapters](/docs/features/upload/storage-adapters) for where the files actually live and how their URLs resolve.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-IMAGE:START */}
+## ImageField
+
+A reference to one or more documents in an upload-enabled collection, stored as an ID or array of IDs. Use `relationTo` to name the target and `hasMany` for multiple.
+
+```ts
+export type ImageField = TypedField<"image", string | string[]>;
+```
+{/* GENERATED:REFERENCE-FIELD-IMAGE:END */}

@@ -1,0 +1,640 @@
+---
+title: Collections
+description: Use collections for repeatable content such as posts, products, users, and submissions.
+---
+
+Collections are the repeatable side of a Dyrected content model. Use them when you expect more than one document with the same shape, such as blog posts, products, authors, events, form submissions, or users.
+
+Each collection lives in your `dyrected.config.ts` and automatically shapes the admin UI, API routes, and SDK methods for that content type.
+
+This page is the main home for how collections work in Dyrected. It should explain the collection model in prose and also hold the generated `@dyrected/knowledge` reference material for the collection contract.
+
+## What a collection is
+
+A collection stores many documents under one slug. Each document gets its own `id`, and each document follows the same field definition.
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Posts = defineCollection({
+  slug: "posts",
+  labels: { singular: "Post", plural: "Posts" },
+  admin: {
+    useAsTitle: "title",
+    defaultColumns: ["title", "status", "updatedAt"],
+    urlPattern: "/blog/{slug}",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", unique: true }),
+  ],
+});
+```
+
+In practice, the `slug` becomes a stable identifier for API paths, admin routes, and SDK calls.
+
+## What you get automatically
+
+When you define a collection, Dyrected generates the main content surfaces around it:
+
+- list, read, create, update, and delete collection endpoints
+- a generated admin list view and edit form
+- typed SDK access through `client.collection('slug')`
+- hooks and access points that run on the server
+
+Collections can also opt into behaviors such as authentication, uploads, workflows, and audit logging.
+
+## When to choose a collection
+
+Choose a collection when the answer to "how many of these exist?" is "more than one" or "probably more than one later."
+
+Common examples:
+
+- posts
+- products
+- pages
+- team members
+- FAQs
+- contact submissions
+- upload libraries
+
+If the content should exist once for the whole site, it likely belongs in a global instead.
+
+## The shape of a collection
+
+Most collections start with the same few decisions. If you can answer these clearly, the rest of the config usually falls into place.
+
+### Start with `slug`
+
+`slug` is the collection's stable machine name. Dyrected uses it in API routes, admin URLs, SDK calls, and the underlying database table or collection name.
+
+That means `slug` is part of the long-term data contract, not just display text. Choose a name you can keep, such as `posts`, `products`, `people`, or `contact-submissions`.
+
+### Define the document shape in `fields`
+
+`fields` is where the actual content model lives. This array defines what each document contains, what editors can fill in, how values are validated, and what the API returns.
+
+In practice, most collection design work happens here. This is where you model titles, slugs, dates, relationships, nested objects, repeated groups, and anything else that belongs to each document.
+
+For the full field system, read [Fields](/docs/basics/fields/overview).
+
+### Use blocks for page sections
+
+If one document needs a flexible sequence of reusable page sections, model that with a `blocks` field inside `fields`.
+
+Blocks are not a separate top-level collection option. They are part of the field model, and they are usually the right tool for landing pages, marketing pages, structured articles, and other page-like content where editors need to mix approved section types in different orders.
+
+For more on page sections, read [Blocks](/docs/basics/fields/blocks).
+
+### Turn on `auth` only when documents are users
+
+Use `auth` when each document in the collection should behave like an account that can sign in, hold credentials, and participate in login flows.
+
+This is usually right for collections like `users`, `admins`, `members`, or `customers`. It is usually not right for ordinary content collections such as posts, products, or pages.
+
+### Turn on `upload` when each document is a file
+
+Use `upload` when each collection entry should represent a stored file, such as an image, PDF, video, or downloadable asset.
+
+This is how you model media libraries and file-backed records. If the collection is normal content that only references files, keep the collection itself as a regular collection and use upload-related fields inside `fields` instead.
+
+### Use a global when there should only be one
+
+Collections are for repeatable content. If the content should exist once for the whole site or application, use a global instead.
+
+Good collection examples are `posts`, `authors`, `products`, and `events`. Good global examples are `site-settings`, `navigation`, `footer`, and `seo-defaults`.
+
+{/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:START */}
+## CollectionConfig
+
+Use this contract when you want the exact shape of a collection config.
+
+Most collection work comes down to a small set of top-level options: giving
+the collection a stable slug, defining its fields, deciding how it should
+appear in the Admin UI, and choosing whether it also handles access, hooks,
+auth, uploads, workflows, or other optional behavior.
+
+Pass your document's TypeScript type as the generic parameter `TDoc` to get
+fully typed hooks and access functions.
+
+```ts
+export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
+  /**
+   * Unique identifier for this collection.
+   *
+   * Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the
+   * underlying database table or collection name. Treat it as part of the
+   * long-term data contract rather than a cosmetic label.
+   *
+   * Use kebab-case, for example `'blog-posts'`, `'team-members'`, or
+   * `'contact-submissions'`.
+   */
+  slug: string;
+
+  /**
+   * Restricts this collection to one specific site in a multi-tenant setup.
+   *
+   * Use this when the collection should belong to a single site rather than
+   * the whole installation. When set, only requests bearing a matching
+   * `X-Site-Id` header can access it.
+   */
+  siteId?: string;
+
+  /**
+   * If `true`, this collection is shared across all sites in a multi-tenant
+   * setup and accessible regardless of the `X-Site-Id` header.
+   *
+   * Use this for content that should stay common across sites, such as shared
+   * taxonomies, reusable assets, or centrally managed reference data.
+   */
+  shared?: boolean;
+
+  /**
+   * Human-readable names for documents in this collection, shown in the Admin UI.
+   *
+   * Use this when the slug is technical or when you want the dashboard to read
+   * more naturally. For example, `slug: 'people'` might use
+   * `labels: { singular: 'Person', plural: 'People' }`.
+   *
+   * @see {@link https://dyrected.com/docs/basics/configuration/collections#labels Collections labels}
+   */
+  labels?: {
+    singular: string;
+    plural: string;
+  };
+
+  /**
+   * If `true`, this collection is an auth collection. It gains
+   * `POST /api/collections/:slug/login` and `POST /api/collections/:slug/logout`
+   * endpoints, and documents are expected to have a `password` field.
+   *
+   * Turn this on when each document should behave like an account that can log
+   * in, hold credentials, and participate in user flows. Typical examples are
+   * `users`, `admins`, `members`, or `customers`.
+   *
+   * @see {@link https://dyrected.com/docs/features/authentication/overview Authentication overview}
+   */
+  auth?: boolean;
+
+  /**
+   * If `true` or a config object, this collection supports file uploads.
+   * Documents gain file-related fields (`url`, `filename`, `mimeType`, etc.)
+   * and the create endpoint accepts `multipart/form-data`.
+   *
+   * Turn this on when each document in the collection should represent a
+   * stored file, such as an image, PDF, video, or downloadable asset.
+   *
+   * @see {@link https://dyrected.com/docs/features/upload/overview Upload overview}
+   */
+  upload?: boolean | UploadConfig;
+
+  /**
+   * Field definitions that make up the document schema for this collection.
+   *
+   * This is the main schema contract for every document in the collection. It
+   * decides what editors can fill in, how data is validated, how records are
+   * stored, and what the API and SDK return.
+   *
+   * In practice, fields are where you model the actual content structure of the
+   * collection: simple values such as text and dates, relationships to other
+   * collections, nested objects and arrays, and flexible `blocks` fields for
+   * reusable page sections or long-form layouts.
+   *
+   * @see {@link https://dyrected.com/docs/basics/fields/overview Fields overview}
+   * @see {@link https://dyrected.com/docs/basics/fields/blocks Blocks and page sections}
+   */
+  fields: Field[];
+
+  /**
+   * If `true`, Dyrected automatically adds the built-in system fields
+   * `createdAt`, `updatedAt`, `createdBy`, and `updatedBy` to every document.
+   * Defaults to `true`.
+   */
+  timestamps?: boolean;
+
+  /**
+   * Initial documents to seed into this collection the first time it is
+   * fetched and found to be empty.
+   *
+   * Use this for starter records, demo content, or sensible defaults that
+   * should appear automatically before editors create anything themselves.
+   */
+  initialData?: Partial<TDoc>[];
+
+  /**
+   * If `true`, every create, update, and delete operation on this collection
+   * is logged to the `__audit` collection with before/after snapshots and the
+   * acting user's identity.
+   *
+   * Turn this on when you need accountability around changes, such as knowing
+   * who changed what, inspecting before-and-after state, or supporting
+   * compliance and operational review.
+   */
+  audit?: boolean;
+
+  /**
+   * Optional state-machine workflow for this collection. Workflow-enabled
+   * entries keep an editable working revision and an independent public
+   * snapshot, so editing published content never changes the live response.
+   *
+   * Use this when content moves through stages such as draft, review, and
+   * published, or when teams need an approval process before changes go live.
+   */
+  workflow?: WorkflowConfig<TDoc>;
+
+  /**
+   * If `true`, enables zero-config draft and publish functionality.
+   * Documents start as drafts, editors can save working drafts without affecting
+   * live content, and any authorized editor can publish or unpublish entries.
+   */
+  drafts?: boolean;
+
+
+  /**
+   * Collection-level access control.
+   *
+   * Each key is an operation; the value can be a function, a Jexl string, a
+   * boolean, or a named policy reference. Returning `true` allows access and
+   * `false` denies it. Returning a `where`-style object grants access only to
+   * matching documents.
+   *
+   * @example
+   * access: {
+   *   read: () => true,
+   *   create: ({ user }) => !!user,
+   *   update: ({ user }) => user?.roles?.includes('editor') ?? false,
+   *   delete: ({ user }) => user?.roles?.includes('admin') ?? false,
+   * }
+   *
+   * @see {@link https://dyrected.com/docs/basics/access-control/overview Access control overview}
+   */
+  access?: {
+    read?: AccessRule<TDoc>;
+    create?: AccessRule<TDoc>;
+    update?: AccessRule<TDoc>;
+    delete?: AccessRule<TDoc>;
+    /**
+     * Controls who can read this collection's audit log (`GET /:slug/__audit`),
+     * for collections with `audit` enabled. Falls back to the `read` rule when
+     * omitted, so the audit trail is visible to whoever can read the documents.
+     * Set it explicitly to gate the audit log separately — for example, admins
+     * only, even on a collection anyone can read.
+     */
+    readAudit?: AccessRule<TDoc>;
+  };
+
+  /**
+   * Collection-level lifecycle hooks.
+   *
+   * Hooks run in the order they appear in the array. The return value of each
+   * hook is passed as the input to the next. Throwing inside any hook aborts
+   * the operation and returns a `500` error.
+   *
+   * See the Hooks reference for the full lifecycle diagram.
+   *
+   * @see {@link https://dyrected.com/docs/basics/hooks/overview Hooks overview}
+   * @see {@link https://dyrected.com/docs/basics/hooks/collections Collection hooks}
+   */
+  hooks?: {
+    /**
+     * Runs before the database is queried. Return a modified `where` object
+     * to override the query filter.
+     */
+    beforeRead?: CollectionBeforeReadHook[];
+
+    /**
+     * Runs after documents are fetched. Return a modified doc to change what
+     * the client receives. Runs on every document in a list response.
+     */
+    afterRead?: CollectionAfterReadHook<TDoc>[];
+
+    /**
+     * Runs before create or update. Return modified data to change what is
+     * written to the database. Throw to abort the write entirely.
+     */
+    beforeChange?: CollectionBeforeChangeHook<TDoc>[];
+
+    /**
+     * Runs after create or update is committed. For side-effects only:
+     * webhooks, cache busting, and notifications. Return value is ignored.
+     *
+     * Errors are isolated: caught, logged, and discarded so a failing
+     * side-effect never turns a successful write into an HTTP 500.
+     * See `CollectionAfterChangeHook` for await-vs-fire-and-forget guidance.
+     */
+    afterChange?: CollectionAfterChangeHook<TDoc>[];
+
+    /** Runs before a document is deleted. Throw to cancel the deletion. */
+    beforeDelete?: CollectionBeforeDeleteHook<TDoc>[];
+
+    /**
+     * Runs after a document has been deleted. For cleanup side-effects only.
+     *
+     * Errors are isolated: caught, logged, and discarded. The deletion is
+     * already committed and will not be undone.
+     */
+    afterDelete?: CollectionAfterDeleteHook<TDoc>[];
+  };
+
+  /**
+   * Admin UI configuration for this collection.
+   *
+   * @see {@link https://dyrected.com/docs/basics/configuration/collections#admin-options Admin options}
+   */
+  admin?: {
+    /**
+     * Lucide icon displayed beside this collection in the Admin sidebar.
+     * Uses Lucide component names, e.g. `'Newspaper'` or `'ShoppingBag'`.
+     */
+    icon?: AdminIconName;
+
+    /** Custom component slots for this collection's list view. */
+    components?: CollectionListComponentSlots;
+
+    /**
+     * The field name used as the document's display title in the Admin list
+     * view and breadcrumbs. Defaults to `'title'` if the field exists.
+     */
+    useAsTitle?: string;
+
+    /**
+     * Field names to show as columns in the Admin list view.
+     * Defaults to a sensible set of the first few non-structural fields.
+     */
+    defaultColumns?: string[];
+
+    /**
+     * Groups this collection under a named section in the Admin sidebar.
+     * Collections with the same `group` are visually grouped together.
+     */
+    group?: string;
+
+    /** If `true`, this collection is not shown in the Admin UI sidebar. */
+    hidden?: boolean;
+
+    /** If `false`, disables the filter UI entirely for this collection. Defaults to `true`. */
+    filterable?: boolean;
+
+    /**
+     * URL to open in the Live Preview pane when editing a document.
+     *
+     * Pass a Jexl string to keep the config serializable, for example
+     * `'slug == "home" ? "/" : "/blog/" + slug'`. This is usually the best
+     * default, especially when the schema needs to stay portable across
+     * environments such as Dyrected Cloud.
+     *
+     * Pass a function when you need custom runtime logic in a self-hosted
+     * project.
+     *
+     * @example
+     * previewUrl: 'slug == "home" ? "/" : "/blog/" + slug'
+     *
+     * @example
+     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
+     */
+    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
+
+    /**
+     * How the Live Preview pane communicates with the frontend.
+     * - `postMessage` sends a `postMessage` with the current doc data.
+     * - `token` passes a short-lived preview token as a query parameter.
+     */
+    previewMode?: "postMessage" | "token";
+
+    /**
+     * Frontend URL pattern for this collection, used by `url` fields to
+     * resolve internal links. Use `{fieldName}` placeholders.
+     *
+     * This is a plain route pattern string, not a Jexl expression.
+     *
+     * @example
+     * urlPattern: '/blog/{slug}' // /blog/my-post
+     * urlPattern: '/{slug}' // /about
+     */
+    urlPattern?: string;
+  };
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>slug</code> (required) | Unique identifier for this collection.  Dyrected uses the slug for API routes, SDK calls, Admin URLs, and as the underlying database table or collection name. Treat it as part of the long-term data contract rather than a cosmetic label.  Use kebab-case, for example &#96;'blog-posts'&#96;, &#96;'team-members'&#96;, or &#96;'contact-submissions'&#96;. |
+| <code>siteId</code> (optional) | Restricts this collection to one specific site in a multi-tenant setup.  Use this when the collection should belong to a single site rather than the whole installation. When set, only requests bearing a matching &#96;X-Site-Id&#96; header can access it. |
+| <code>shared</code> (optional) | If &#96;true&#96;, this collection is shared across all sites in a multi-tenant setup and accessible regardless of the &#96;X-Site-Id&#96; header.  Use this for content that should stay common across sites, such as shared taxonomies, reusable assets, or centrally managed reference data. |
+| <code>labels</code> (optional) | Human-readable names for documents in this collection, shown in the Admin UI.  Use this when the slug is technical or when you want the dashboard to read more naturally. For example, &#96;slug: 'people'&#96; might use &#96;labels: &#123; singular: 'Person', plural: 'People' &#125;&#96;.  See: [Collections labels](https://dyrected.com/docs/basics/configuration/collections#labels) |
+| <code>auth</code> (optional) | If &#96;true&#96;, this collection is an auth collection. It gains &#96;POST /api/collections/:slug/login&#96; and &#96;POST /api/collections/:slug/logout&#96; endpoints, and documents are expected to have a &#96;password&#96; field.  Turn this on when each document should behave like an account that can log in, hold credentials, and participate in user flows. Typical examples are &#96;users&#96;, &#96;admins&#96;, &#96;members&#96;, or &#96;customers&#96;.  See: [Authentication overview](https://dyrected.com/docs/features/authentication/overview) |
+| <code>upload</code> (optional) | If &#96;true&#96; or a config object, this collection supports file uploads. Documents gain file-related fields (&#96;url&#96;, &#96;filename&#96;, &#96;mimeType&#96;, etc.) and the create endpoint accepts &#96;multipart/form-data&#96;.  Turn this on when each document in the collection should represent a stored file, such as an image, PDF, video, or downloadable asset.  See: [Upload overview](https://dyrected.com/docs/features/upload/overview) |
+| <code>fields</code> (required) | Field definitions that make up the document schema for this collection.  This is the main schema contract for every document in the collection. It decides what editors can fill in, how data is validated, how records are stored, and what the API and SDK return.  In practice, fields are where you model the actual content structure of the collection: simple values such as text and dates, relationships to other collections, nested objects and arrays, and flexible &#96;blocks&#96; fields for reusable page sections or long-form layouts.  See: [Fields overview](https://dyrected.com/docs/basics/fields/overview), [Blocks and page sections](https://dyrected.com/docs/basics/fields/blocks) |
+| <code>timestamps</code> (optional) | If &#96;true&#96;, Dyrected automatically adds the built-in system fields &#96;createdAt&#96;, &#96;updatedAt&#96;, &#96;createdBy&#96;, and &#96;updatedBy&#96; to every document. Defaults to &#96;true&#96;. |
+| <code>initialData</code> (optional) | Initial documents to seed into this collection the first time it is fetched and found to be empty.  Use this for starter records, demo content, or sensible defaults that should appear automatically before editors create anything themselves. |
+| <code>audit</code> (optional) | If &#96;true&#96;, every create, update, and delete operation on this collection is logged to the &#96;__audit&#96; collection with before/after snapshots and the acting user's identity.  Turn this on when you need accountability around changes, such as knowing who changed what, inspecting before-and-after state, or supporting compliance and operational review. |
+| <code>workflow</code> (optional) | Optional state-machine workflow for this collection. Workflow-enabled entries keep an editable working revision and an independent public snapshot, so editing published content never changes the live response.  Use this when content moves through stages such as draft, review, and published, or when teams need an approval process before changes go live. |
+| <code>drafts</code> (optional) | If &#96;true&#96;, enables zero-config draft and publish functionality. Documents start as drafts, editors can save working drafts without affecting live content, and any authorized editor can publish or unpublish entries. |
+| <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://dyrected.com/docs/basics/access-control/overview) |
+| <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://dyrected.com/docs/basics/hooks/overview), [Collection hooks](https://dyrected.com/docs/basics/hooks/collections) |
+| <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/basics/configuration/collections#admin-options) |
+{/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:END */}
+
+## `admin` options
+
+Use `admin` to control how this collection feels inside the dashboard. These options do not change the stored schema, but they do change how editors find, scan, and work with documents.
+
+| Option           | What it does                                                                                                                                                                                                                                                                                                                                         |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useAsTitle`     | Chooses which field Dyrected should treat as the human-readable name for each document in list views, breadcrumbs, relationship pickers, and other admin surfaces. Use the field editors recognize fastest, usually something like `title`, `name`, or `email`.                                                                                      |
+| `defaultColumns` | Sets the columns shown in the collection list view before an editor customizes anything. Pick columns that help someone scan and make a decision quickly, such as `title`, `status`, `updatedAt`, `publishedAt`, or `author`.                                                                                                                        |
+| `group`          | Places the collection under a named section in the admin sidebar. Use it when several collections belong to one area of work, such as `Content`, `Commerce`, or `People`.                                                                                                                                                                            |
+| `icon`           | Adds a Lucide icon to the collection in the sidebar and related admin navigation. This is mostly a usability and visual organization option, but it helps large dashboards feel easier to scan.                                                                                                                                                      |
+| `hidden`         | Hides the collection from the admin sidebar while keeping it in the system. This can be useful for internal collections, support data, or collections managed indirectly through other workflows.                                                                                                                                                    |
+| `filterable`     | Controls whether the collection list view shows filter UI. Leave this on for most editorial collections, and turn it off only when filtering adds no value or when you want a simpler workflow.                                                                                                                                                      |
+| `previewUrl`     | Tells Dyrected where a document should open for live preview while someone is editing it. It can be a Jexl string or a function. Prefer a Jexl string as the default because it stays serializable and fits Dyrected Cloud-style schema synchronization more cleanly. Use a function only when you need custom runtime logic in a self-hosted setup. |
+| `previewMode`    | Controls how the live preview pane communicates with your frontend. Use the default approach that matches your preview setup, and only customize this when you need a specific integration behavior.                                                                                                                                                 |
+| `urlPattern`     | Gives Dyrected a route pattern for documents in this collection, such as `/blog/{slug}`. This is a placeholder pattern, not a Jexl expression. Use `{fieldName}` tokens to describe the path shape.                                                                                                                                                  |
+
+## `access`
+
+Collection access rules run on the server. They decide who can read, create, update, or delete documents.
+
+This is where you enforce business rules such as:
+
+- everyone can read published posts
+- only signed-in users can create submissions
+- editors can update content
+- only admins can delete records
+- users can only see documents that belong to them
+
+Use collection access when permissions depend on the request, the current user, or the document being queried.
+
+See [Access Control Overview](/docs/basics/access-control/overview) for the full model.
+
+## `hooks`
+
+Hooks let you run server-side logic around reads and writes. Use them to validate input, derive fields, trigger revalidation, send notifications, sync outside systems, or clean up related data.
+
+Collection hooks are especially useful when a rule should always run with the collection itself instead of being left to a frontend form or a separate script.
+
+See [Hooks Overview](/docs/basics/hooks/overview) for the lifecycle and [Collection Hooks](/docs/basics/hooks/collections) for collection-focused examples.
+
+## `auth`
+
+Set `auth: true` when this collection should represent application users and support login flows.
+
+An auth collection gains authentication endpoints such as login and logout, and its documents are treated as user records rather than plain content entries. In practice, this is what you use for collections like `users`, `members`, `customers`, or `admins`.
+
+Turning on `auth` changes the role of the collection. It is not just "add a password field" but "this collection now participates in authentication."
+
+For the full auth model, token behavior, and login strategies, read [Authentication Overview](/docs/features/authentication/overview).
+
+## `upload`
+
+Set `upload: true` or pass an upload config when each document in the collection should represent a stored file.
+
+An upload collection is how you model media libraries and file-backed entries. Dyrected adds file-related properties such as `url`, `filename`, and `mimeType`, and the collection can accept multipart file uploads instead of only JSON documents.
+
+Use this for collections like `media`, `documents`, or brand asset libraries.
+
+For storage behavior and adapter-level upload setup, read [Upload Overview](/docs/features/upload/overview). For the field-level side of file relationships, read [Upload Field](/docs/basics/fields/image).
+
+## `initialData`
+
+Set `initialData` when a collection should start with a few records instead of empty. Dyrected seeds these documents the first time the collection is fetched and found empty, so a fresh project or a new environment opens with content already in place.
+
+Because a collection holds many documents, `initialData` is an array, and each entry becomes one starter document:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Categories = defineCollection({
+  slug: "categories",
+  labels: { singular: "Category", plural: "Categories" },
+  fields: [
+    defineTextField({ name: "name", label: "Name", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+  ],
+  initialData: [
+    { name: "News", slug: "news" },
+    { name: "Guides", slug: "guides" },
+    { name: "Changelog", slug: "changelog" },
+  ],
+});
+```
+
+This is handy for reference data most projects need on day one, such as categories, tags, default pages, or demo content you want visible before an editor creates anything.
+
+Seeding only happens while the collection is still empty. Once any document exists, `initialData` no longer applies, so editors can add, edit, or delete records without Dyrected re-seeding them. Treat it as a starting point, not an ongoing sync.
+
+## `workflow`
+
+Set `workflow` when a collection needs editorial review or staged publishing. A workflow-enabled collection keeps an editable working revision separate from the public snapshot, so editing a document never changes live content until you transition it to a published state.
+
+This is a larger feature with its own states, transitions, and roles, so it lives on its own page. For the full model, read [Workflows Overview](/docs/features/workflows/overview).
+
+## `audit`
+
+Set `audit: true` when changes to a collection need accountability. Dyrected then logs every create, update, and delete to a hidden audit collection, each entry capturing a before-and-after snapshot and the acting user.
+
+For what gets recorded and how it works, read [Audit Overview](/docs/features/audit/overview).
+
+## Routable collections
+
+Some collections are not just stored records. They also map to real frontend URLs, such as pages, posts, case studies, projects, or products.
+
+When a collection is routable, the collection config and the frontend route need to agree. In practice, that usually means:
+
+- a document field such as `slug` that stores the URL segment
+- `admin.previewUrl` so editors can open the real frontend page while editing
+- `admin.urlPattern` so Dyrected knows how that document maps to a frontend path
+- a real frontend route that can fetch and render the document
+
+`admin.previewUrl` can be either:
+
+- a Jexl string evaluated against the document, usually the best default
+- a function that returns the URL from the document data
+
+Prefer the Jexl form when you can. It keeps the config serializable, is easier to reason about, and is the safer default when the schema needs to stay portable across environments such as Dyrected Cloud.
+
+`admin.urlPattern` is different. It is not Jexl. It is a plain route pattern string that uses `{fieldName}` placeholders, such as `/blog/{slug}` or `/{locale}/{slug}`.
+
+For example, this Jexl expression uses a condition to route the home page so any collection entry with the `slug == 'home'` be previewed at `/`:
+
+```ts
+previewUrl: "slug == 'home' ? '/' : '/' + slug";
+```
+
+Here is a typical blog-style example using Jexl:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Posts = defineCollection({
+  slug: "posts",
+  admin: {
+    useAsTitle: "title",
+    previewUrl: "'/blog/' + slug",
+    urlPattern: "/blog/{slug}",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+  ],
+});
+```
+
+If you are self-hosting and need logic that is easier to express in JavaScript, a function also works:
+
+```ts
+admin: {
+  previewUrl: (doc) => (doc.slug === "home" ? "/" : `/${doc.slug}`),
+}
+```
+
+In both examples, the collection itself is `posts`, but each document also has its own `slug` field. The frontend route pattern comes from the document field, not from the top-level collection slug.
+
+`urlPattern` placeholders can use any document field names that make sense for the route, not just `slug`. For example:
+
+- `/blog/{slug}`
+- `/projects/{projectCode}`
+- `/people/{username}`
+- `/{locale}/{slug}`
+
+Use `slug` only for routing and URL generation. For the admin display title, point `admin.useAsTitle` to a human-readable field such as `title` or `name`.
+
+If the frontend cannot actually render the route, the collection is not truly routable yet. Preview links and URL patterns should reflect routes that already exist in the application.
+
+For field-level modeling, read [Fields](/docs/basics/fields/overview).
+
+Hooks are optional here. You only need them if you want Dyrected to derive routable values automatically, such as generating a document slug from a title before save. For that workflow, read [Hooks Overview](/docs/basics/hooks/overview).
+
+## Changing slug names
+
+Change slugs carefully. In Dyrected, there are two different kinds of slug changes, and each has different consequences.
+
+### Changing the collection `slug`
+
+The top-level collection `slug` is infrastructure. Changing it affects API routes, SDK calls, admin URLs, and the underlying database table or collection name.
+
+That means renaming a collection slug is a schema and integration change, not a cosmetic edit. Any code that reads `client.collection("old-slug")`, any REST calls, and any tooling that depends on that slug will need to move with it.
+
+If a collection already has live data or production consumers, prefer keeping the collection slug stable unless you are doing a deliberate migration.
+
+### Changing a document slug field
+
+Many routable collections also have a document field named `slug`. That is different from the top-level collection slug.
+
+Changing a document slug field changes the frontend URL for that entry. That can break inbound links, bookmarks, SEO paths, preview expectations, or hard-coded links elsewhere in the app unless you handle redirects or route migration on the frontend.
+
+Treat those changes as URL migrations, not just content edits.
+
+## Practical habits
+
+- Use explicit human-readable labels for named fields.
+- Set `admin.useAsTitle` to the field editors will recognize fastest.
+- Set `admin.icon` to an appropriate icon for the collection.
+- Keep routable collections aligned with real frontend routes through `previewUrl` and `urlPattern`.
+- Treat field renames and slug changes as schema migrations, not cosmetic edits.
+
+## Related pages
+
+- See [Globals](/docs/basics/configuration/globals) for singleton content.
+- See [Overview](/docs/basics/configuration/overview) for the full root config shape.
+- See [Fields](/docs/basics/fields/overview) for the schema system that powers collection documents.

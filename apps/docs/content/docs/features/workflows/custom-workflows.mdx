@@ -1,0 +1,184 @@
+---
+title: Custom workflows
+description: A WorkflowConfig is a plain state machine — build your own when your process has different states, roles, or rules than the built-in publishing flow, with copy-paste recipes for approval chains, scheduling, and translation.
+---
+
+The [publishing workflow](/docs/features/workflows/overview) is one shape, but a `WorkflowConfig` is just a state machine you describe yourself. When your process has different steps, roles, or rules — a legal review, dual sign-off, an embargo date — write your own and attach it to the collection's `workflow`. Everything the built-in gets (server-enforced transitions, `expectedRevision` concurrency, workflow history, lifecycle events) applies to a custom workflow unchanged.
+
+## The four building blocks
+
+A `WorkflowConfig` is four fields:
+
+- **`states`** — every state a document can be in. Give **exactly one** `published: true`; that's the revision the public API serves. Everything else is internal.
+- **`transitions`** — the allowed moves. Each names a `from` and `to` state, the `requiredCapabilities` a user needs to perform it, and optionally `requireComment: true`. Mark the move that pulls content offline with `unpublish: true`.
+- **`roles`** — how your app's `user.roles` values map to capabilities. Capability names like `entry.edit` or `entry.approve` are **just strings you invent and grant** — the workflow only cares that a transition's `requiredCapabilities` are covered by the acting user's roles.
+- **`initialState`** — the state new documents start in.
+
+The five recipes below are complete and copy-paste ready — each a real-world pattern that swaps in a different state machine. The surrounding collection and the way you drive it (see [Performing a transition](/docs/features/workflows/overview)) never change.
+
+## Multi-stage approval
+
+A compliance flow that inserts a legal-review step and a dedicated approver role between drafting and publishing:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+import type { WorkflowConfig } from "@dyrected/core";
+
+const contractReview: WorkflowConfig = {
+  initialState: "draft",
+  states: [
+    { name: "draft", label: "Draft", color: "neutral" },
+    { name: "legal_review", label: "Legal review", color: "warning" },
+    { name: "approved", label: "Approved", color: "info" },
+    { name: "published", label: "Published", color: "success", published: true },
+  ],
+  transitions: [
+    { name: "submit", label: "Send to legal", from: "draft", to: "legal_review", requiredCapabilities: ["entry.submit"] },
+    { name: "approve", label: "Approve", from: "legal_review", to: "approved", requiredCapabilities: ["entry.approve"], requireComment: true },
+    { name: "reject", label: "Send back", from: "legal_review", to: "draft", requiredCapabilities: ["entry.approve"], requireComment: true },
+    { name: "publish", label: "Publish", from: "approved", to: "published", requiredCapabilities: ["entry.publish"] },
+    { name: "unpublish", label: "Unpublish", from: "published", to: "draft", requiredCapabilities: ["entry.publish"], unpublish: true },
+  ],
+  roles: [
+    { role: "author", capabilities: ["entry.edit", "entry.submit"] },
+    { role: "counsel", capabilities: ["entry.approve"] },
+    { role: "publisher", capabilities: ["entry.publish"] },
+  ],
+};
+
+export const Contracts = defineCollection({
+  slug: "contracts",
+  workflow: contractReview,
+  fields: [defineTextField({ name: "title", label: "Title", required: true })],
+});
+```
+
+An `author` drafts and submits; only `counsel` can approve or send it back (and must leave a comment either way); only a `publisher` takes the approved document live. Each rule is enforced on the server — a request for a transition the user's roles don't cover is rejected with `403`.
+
+## Two-key approval (maker–checker)
+
+Regulated settings — banking, finance, anything with separation-of-duties rules — often need two different people to sign off on a change, the classic **maker–checker** control. Add a state between the two approvals so a single role can't do both. Here a document must be checked, then independently approved, before it can publish:
+
+```ts
+import type { WorkflowConfig } from "@dyrected/core";
+
+const dualApproval: WorkflowConfig = {
+  initialState: "draft",
+  states: [
+    { name: "draft", label: "Draft", color: "neutral" },
+    { name: "checked", label: "First review", color: "warning" },
+    { name: "approved", label: "Second review", color: "info" },
+    { name: "published", label: "Published", color: "success", published: true },
+  ],
+  transitions: [
+    { name: "check", label: "First sign-off", from: "draft", to: "checked", requiredCapabilities: ["entry.check"] },
+    { name: "approve", label: "Second sign-off", from: "checked", to: "approved", requiredCapabilities: ["entry.approve"] },
+    { name: "publish", label: "Publish", from: "approved", to: "published", requiredCapabilities: ["entry.publish"] },
+    { name: "unpublish", label: "Unpublish", from: "published", to: "draft", requiredCapabilities: ["entry.publish"], unpublish: true },
+  ],
+  roles: [
+    { role: "reviewer", capabilities: ["entry.check"] },
+    { role: "approver", capabilities: ["entry.approve", "entry.publish"] },
+  ],
+};
+```
+
+Because `check` and `approve` require different capabilities held by different roles, no single person can push a document through both gates.
+
+## Scheduled or embargoed publishing
+
+Keep a document in an `approved` state and let a background job move it to `published` when its embargo time arrives. The workflow itself just adds the holding state:
+
+```ts
+import type { WorkflowConfig } from "@dyrected/core";
+
+const embargo: WorkflowConfig = {
+  initialState: "draft",
+  states: [
+    { name: "draft", label: "Draft", color: "neutral" },
+    { name: "scheduled", label: "Scheduled", color: "info" },
+    { name: "published", label: "Published", color: "success", published: true },
+  ],
+  transitions: [
+    { name: "schedule", label: "Schedule", from: "draft", to: "scheduled", requiredCapabilities: ["entry.publish"] },
+    { name: "publish", label: "Publish now", from: "scheduled", to: "published", requiredCapabilities: ["entry.publish"] },
+    { name: "unpublish", label: "Unpublish", from: "published", to: "draft", requiredCapabilities: ["entry.publish"], unpublish: true },
+  ],
+  roles: [{ role: "editor", capabilities: ["entry.edit", "entry.publish"] }],
+};
+```
+
+The "at the right time" part lives outside the workflow: a job compares each `scheduled` document's embargo field to the clock and calls the `publish` transition when it's due. Wire that up by reacting to workflow changes — see [Lifecycle events](/docs/features/workflows/lifecycle-events).
+
+## Translation gating
+
+For localized content, hold a document in a translation stage until every locale is ready, so a half-translated page never reaches the public:
+
+```ts
+import type { WorkflowConfig } from "@dyrected/core";
+
+const localization: WorkflowConfig = {
+  initialState: "draft",
+  states: [
+    { name: "draft", label: "Draft", color: "neutral" },
+    { name: "translating", label: "Translating", color: "warning" },
+    { name: "translated", label: "Translated", color: "info" },
+    { name: "published", label: "Published", color: "success", published: true },
+  ],
+  transitions: [
+    { name: "send", label: "Send to translation", from: "draft", to: "translating", requiredCapabilities: ["entry.submit"] },
+    { name: "complete", label: "Mark translated", from: "translating", to: "translated", requiredCapabilities: ["entry.translate"] },
+    { name: "publish", label: "Publish", from: "translated", to: "published", requiredCapabilities: ["entry.publish"] },
+    { name: "unpublish", label: "Unpublish", from: "published", to: "draft", requiredCapabilities: ["entry.publish"], unpublish: true },
+  ],
+  roles: [
+    { role: "writer", capabilities: ["entry.edit", "entry.submit"] },
+    { role: "translator", capabilities: ["entry.translate"] },
+    { role: "editor", capabilities: ["entry.publish"] },
+  ],
+};
+```
+
+## Newsroom editorial pipeline
+
+News and magazine desks route a story through specialists before it runs — a copy editor, then a fact checker, then an editor who publishes. Each hand-off is its own capability, and the fact checker can kick a story back to the writer:
+
+```ts
+import type { WorkflowConfig } from "@dyrected/core";
+
+const newsroom: WorkflowConfig = {
+  initialState: "draft",
+  states: [
+    { name: "draft", label: "Draft", color: "neutral" },
+    { name: "copy_edit", label: "Copy edit", color: "warning" },
+    { name: "fact_check", label: "Fact check", color: "warning" },
+    { name: "ready", label: "Ready", color: "info" },
+    { name: "published", label: "Published", color: "success", published: true },
+  ],
+  transitions: [
+    { name: "submit", label: "Submit for editing", from: "draft", to: "copy_edit", requiredCapabilities: ["entry.submit"] },
+    { name: "copyedited", label: "Copy edited", from: "copy_edit", to: "fact_check", requiredCapabilities: ["entry.copyedit"] },
+    { name: "verified", label: "Facts verified", from: "fact_check", to: "ready", requiredCapabilities: ["entry.factcheck"] },
+    { name: "kickback", label: "Return to writer", from: "fact_check", to: "draft", requiredCapabilities: ["entry.factcheck"], requireComment: true },
+    { name: "publish", label: "Run it", from: "ready", to: "published", requiredCapabilities: ["entry.publish"] },
+    { name: "unpublish", label: "Pull", from: "published", to: "draft", requiredCapabilities: ["entry.publish"], unpublish: true },
+  ],
+  roles: [
+    { role: "reporter", capabilities: ["entry.edit", "entry.submit"] },
+    { role: "copyeditor", capabilities: ["entry.copyedit"] },
+    { role: "factchecker", capabilities: ["entry.factcheck"] },
+    { role: "editor", capabilities: ["entry.publish"] },
+  ],
+};
+```
+
+Each desk only holds the capability for its own stage, so a story can't skip copy-editing or get published straight from a reporter's draft.
+
+## Tips for your own workflows
+
+- **One published state.** Exactly one state should carry `published: true` — it defines what the public API returns. States without it are internal and never leak.
+- **Capabilities are your vocabulary.** Invent whatever names fit (`entry.approve`, `entry.translate`), then grant them through `roles`. There's no fixed list to match.
+- **Reachability.** Make sure every state has a way in and a way out. A state no transition leads to (or out of) traps documents.
+- **The server is the gate.** Capability checks, `requireComment`, and `expectedRevision` are all enforced server-side, so you don't have to defend transitions in your UI — only present them.
+
+For the complete list of every `WorkflowConfig` field, see the reference at the bottom of the [Editorial workflows overview](/docs/features/workflows/overview).
