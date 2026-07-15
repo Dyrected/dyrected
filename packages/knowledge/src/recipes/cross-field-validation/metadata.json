@@ -2,6 +2,8 @@
   "id": "cross-field-validation",
   "title": "Validate related fields before saving",
   "description": "Reject invalid combinations of field values before they reach the database.",
+  "problem": "A field value is only valid in relation to another field, such as a start date and an end date.",
+  "summary": "Use a collection hook to reject invalid combinations before the document reaches the database.",
   "category": "data-lifecycle",
   "intents": [
     "validate fields before saving",
@@ -10,5 +12,10 @@
     "validate multiple fields together"
   ],
   "concepts": ["beforeChange", "validation", "throw to abort"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/data-lifecycle",
+    "/docs/basics/hooks/collections",
+    "/docs/basics/fields/datetime"
+  ],
   "requires": []
 }

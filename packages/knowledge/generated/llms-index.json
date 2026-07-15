@@ -5,7 +5,15 @@
       "id": "auto-slug",
       "title": "Generate a slug from a title",
       "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
-      "docsPath": "/docs/recipes/auto-slug",
+      "problem": "You want readable URLs without asking editors to hand-author slugs for every document.",
+      "summary": "Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.",
+      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/data-lifecycle",
+        "/docs/basics/configuration/collections",
+        "/docs/basics/hooks/collections"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "make the URL follow the title",
         "automatically generate a slug",
@@ -17,7 +25,15 @@
       "id": "conditional-admin-field",
       "title": "Show an Admin field only when it is relevant",
       "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
-      "docsPath": "/docs/recipes/conditional-admin-field",
+      "problem": "Some fields only make sense after an editor has made an earlier choice.",
+      "summary": "Use an Admin condition to hide irrelevant fields until the current form state makes them useful.",
+      "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/admin-experience",
+        "/docs/features/admin/overview",
+        "/docs/basics/configuration/collections"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "show a field conditionally",
         "hide irrelevant form fields",
@@ -29,7 +45,15 @@
       "id": "cross-field-validation",
       "title": "Validate related fields before saving",
       "description": "Reject invalid combinations of field values before they reach the database.",
-      "docsPath": "/docs/recipes/cross-field-validation",
+      "problem": "A field value is only valid in relation to another field, such as a start date and an end date.",
+      "summary": "Use a collection hook to reject invalid combinations before the document reaches the database.",
+      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/data-lifecycle",
+        "/docs/basics/hooks/collections",
+        "/docs/basics/fields/datetime"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "validate fields before saving",
         "make sure an end date is after the start date",
@@ -41,7 +65,15 @@
       "id": "dependent-dropdown",
       "title": "Update a dropdown from another field",
       "description": "Change available Admin UI options immediately when an editor changes a related field.",
-      "docsPath": "/docs/recipes/dependent-dropdown",
+      "problem": "The valid options for one field depend on what the editor picked in another field.",
+      "summary": "Update select options from sibling field data so the next choice stays constrained by the current form state.",
+      "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/admin-experience",
+        "/docs/features/admin/overview",
+        "/docs/basics/fields/select"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "make one dropdown depend on another",
         "show states based on the selected country",
@@ -53,7 +85,15 @@
       "id": "editorial-publishing-workflow",
       "title": "Add draft, review, and publishing states",
       "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
-      "docsPath": "/docs/recipes/editorial-publishing-workflow",
+      "problem": "Content should move through draft and review before the right person is allowed to publish it.",
+      "summary": "Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.",
+      "docsPath": "/docs/ecosystem/common-patterns/workflows",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/workflows",
+        "/docs/features/workflows/overview",
+        "/docs/features/workflows/custom-workflows"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "add draft and publish states",
         "require review before publishing",
@@ -65,7 +105,15 @@
       "id": "owner-scoped-access",
       "title": "Limit documents to their owner",
       "description": "Return a where constraint from access control so authenticated users only read their own records.",
-      "docsPath": "/docs/recipes/owner-scoped-access",
+      "problem": "Signed-in users should only see or manage the records they own.",
+      "summary": "Scope reads and writes to the current user in access control, then stamp ownership when records are created.",
+      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/access-control",
+        "/docs/basics/access-control/collections",
+        "/docs/basics/hooks/collections"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "users should only see their own records",
         "add row level access",
@@ -77,7 +125,15 @@
       "id": "page-builder-blocks",
       "title": "Build flexible pages from reusable blocks",
       "description": "Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.",
-      "docsPath": "/docs/recipes/page-builder-blocks",
+      "problem": "Editors need to build or rearrange page sections without turning every page into one giant content object.",
+      "summary": "Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.",
+      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/content-modeling",
+        "/docs/basics/fields/blocks",
+        "/docs/basics/configuration/collections"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "build a page builder",
         "let editors arrange page sections",
@@ -89,7 +145,15 @@
       "id": "relationship-and-reverse-join",
       "title": "Model a relationship and its reverse lookup",
       "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
-      "docsPath": "/docs/recipes/relationship-and-reverse-join",
+      "problem": "One record should point to another record, and you also want the reverse view without storing duplicate data.",
+      "summary": "Store the owning relationship on one side and use a join field for the reverse lookup when you need one-to-many content structures.",
+      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/content-modeling",
+        "/docs/basics/fields/relationship",
+        "/docs/basics/fields/join"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "connect posts to authors",
         "show every post written by a user",
@@ -101,7 +165,15 @@
       "id": "role-based-access",
       "title": "Restrict content operations by user role",
       "description": "Allow public reads, editor writes, and administrator deletion with collection access rules.",
-      "docsPath": "/docs/recipes/role-based-access",
+      "problem": "Different roles should have different permissions for reading, editing, publishing, or deleting content.",
+      "summary": "Check user roles in collection access control so each operation matches the responsibilities of the current user.",
+      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/access-control",
+        "/docs/basics/access-control/collections",
+        "/docs/features/authentication/overview"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "only editors can update content",
         "restrict deletion to admins",
@@ -113,7 +185,15 @@
       "id": "safe-field-rename",
       "title": "Rename a field without orphaning existing data",
       "description": "Use renameTo and a safe default while documents migrate lazily to a new field name.",
-      "docsPath": "/docs/recipes/safe-field-rename",
+      "problem": "You need to change a field name on a live schema without breaking the documents that already exist.",
+      "summary": "Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.",
+      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/data-lifecycle",
+        "/docs/basics/configuration/collections",
+        "/docs/basics/database/migrations"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "rename a field safely",
         "change a field name without losing data",
@@ -125,7 +205,15 @@
       "id": "upload-collection",
       "title": "Create a media upload collection",
       "description": "Enable file uploads and capture accessible metadata in a dedicated media collection.",
-      "docsPath": "/docs/recipes/upload-collection",
+      "problem": "Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents.",
+      "summary": "Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.",
+      "docsPath": "/docs/ecosystem/common-patterns/integrations",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/integrations",
+        "/docs/features/upload/overview",
+        "/docs/features/upload/storage-adapters"
+      ],
+      "snippetStatus": "validated",
       "intents": [
         "let editors upload images",
         "create a media library",

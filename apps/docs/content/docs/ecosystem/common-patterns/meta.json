@@ -1,0 +1,12 @@
+{
+  "title": "Common Patterns",
+  "pages": [
+    "overview",
+    "content-modeling",
+    "access-control",
+    "admin-experience",
+    "data-lifecycle",
+    "workflows",
+    "integrations"
+  ]
+}

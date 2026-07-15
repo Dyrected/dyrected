@@ -4,6 +4,7 @@
     "plugins",
     "ecommerce",
     "examples",
+    "common-patterns",
     "integrations"
   ]
 }

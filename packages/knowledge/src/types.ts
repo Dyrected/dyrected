@@ -11,13 +11,19 @@ export interface Recipe {
   id: string;
   title: string;
   description: string;
+  problem: string;
+  summary: string;
   category: RecipeCategory;
   /** Plain-language requests that should resolve to this recipe. */
   intents: string[];
   /** Dyrected APIs and concepts demonstrated by the recipe. */
   concepts: string[];
+  /** Canonical docs pages that explain this pattern in full. */
+  canonicalDocs: string[];
   /** Package names required in addition to @dyrected/core. */
   requires: string[];
+  /** Whether the snippet is a validated recipe source in @dyrected/knowledge. */
+  snippetStatus: "validated";
   /** Canonical TypeScript source, compiled and tested in this package. */
   source: string;
   docsPath: string;

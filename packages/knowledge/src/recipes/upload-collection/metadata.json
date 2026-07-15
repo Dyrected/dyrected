@@ -2,8 +2,15 @@
   "id": "upload-collection",
   "title": "Create a media upload collection",
   "description": "Enable file uploads and capture accessible metadata in a dedicated media collection.",
+  "problem": "Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents.",
+  "summary": "Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.",
   "category": "integrations",
   "intents": ["let editors upload images", "create a media library", "store uploaded files", "add image uploads to my project"],
   "concepts": ["upload", "StorageAdapter", "media"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/integrations",
+    "/docs/features/upload/overview",
+    "/docs/features/upload/storage-adapters"
+  ],
   "requires": []
 }

@@ -2,8 +2,15 @@
   "id": "owner-scoped-access",
   "title": "Limit documents to their owner",
   "description": "Return a where constraint from access control so authenticated users only read their own records.",
+  "problem": "Signed-in users should only see or manage the records they own.",
+  "summary": "Scope reads and writes to the current user in access control, then stamp ownership when records are created.",
   "category": "access-control",
   "intents": ["users should only see their own records", "add row level access", "scope documents by owner", "prevent users reading another user's data"],
   "concepts": ["access.read", "where", "row-level access"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/access-control",
+    "/docs/basics/access-control/collections",
+    "/docs/basics/hooks/collections"
+  ],
   "requires": []
 }

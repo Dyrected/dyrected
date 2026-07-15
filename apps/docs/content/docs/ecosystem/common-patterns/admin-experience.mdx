@@ -1,0 +1,28 @@
+---
+title: Admin Experience
+description: Common Dyrected patterns for making Admin forms react to editor input and stay easier to use as content gets more structured.
+---
+
+Use these patterns when the underlying content model is already clear, but the editing experience needs to be more guided. They help reduce clutter, keep related fields in sync, and make forms respond to what the editor is doing.
+
+## Show an Admin field only when it is relevant
+
+**Problem:** some fields only make sense after another field has been filled in or enabled.
+
+This pattern uses a serializable admin condition so the editor only sees the field when it is relevant. It is useful for optional discounts, feature toggles, and forms that should stay focused until a later choice unlocks more detail.
+
+Read the full docs:
+
+- [Admin overview](/docs/features/admin/overview)
+- [Collections](/docs/basics/configuration/collections)
+
+## Update a dropdown from another field
+
+**Problem:** the valid options for one field depend on what the editor picked in another field.
+
+This pattern updates select options from sibling field data in the Admin UI. It works well for country-and-region choices, dependent selectors, or any form where the next choice should be constrained by the last one.
+
+Read the full docs:
+
+- [Admin overview](/docs/features/admin/overview)
+- [Select fields](/docs/basics/fields/select)

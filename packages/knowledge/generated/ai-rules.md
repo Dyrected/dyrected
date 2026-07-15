@@ -1733,66 +1733,66 @@ Use `allowedMimeTypes` and `maxFileSize` for upload collections, consume returne
 ## Compiled recipes
 
 <!-- GENERATED:RECIPES:START -->
-- [Generate a slug from a title](https://docs.dyrected.com/docs/recipes/auto-slug) — Generate stable URL slugs on the server while showing editors the value live in the Admin UI.
-- [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/recipes/conditional-admin-field) — Use a serializable Admin condition to reveal a field from the editor's current form values.
-- [Validate related fields before saving](https://docs.dyrected.com/docs/recipes/cross-field-validation) — Reject invalid combinations of field values before they reach the database.
-- [Update a dropdown from another field](https://docs.dyrected.com/docs/recipes/dependent-dropdown) — Change available Admin UI options immediately when an editor changes a related field.
-- [Add draft, review, and publishing states](https://docs.dyrected.com/docs/recipes/editorial-publishing-workflow) — Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
-- [Limit documents to their owner](https://docs.dyrected.com/docs/recipes/owner-scoped-access) — Return a where constraint from access control so authenticated users only read their own records.
-- [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/recipes/page-builder-blocks) — Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
-- [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/recipes/relationship-and-reverse-join) — Store an author relationship on posts and expose the author's posts through a virtual join field.
-- [Restrict content operations by user role](https://docs.dyrected.com/docs/recipes/role-based-access) — Allow public reads, editor writes, and administrator deletion with collection access rules.
-- [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/recipes/safe-field-rename) — Use renameTo and a safe default while documents migrate lazily to a new field name.
-- [Create a media upload collection](https://docs.dyrected.com/docs/recipes/upload-collection) — Enable file uploads and capture accessible metadata in a dedicated media collection.
+- [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle) — Problem: You want readable URLs without asking editors to hand-author slugs for every document. Summary: Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.
+- [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience) — Problem: Some fields only make sense after an editor has made an earlier choice. Summary: Use an Admin condition to hide irrelevant fields until the current form state makes them useful.
+- [Validate related fields before saving](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle) — Problem: A field value is only valid in relation to another field, such as a start date and an end date. Summary: Use a collection hook to reject invalid combinations before the document reaches the database.
+- [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience) — Problem: The valid options for one field depend on what the editor picked in another field. Summary: Update select options from sibling field data so the next choice stays constrained by the current form state.
+- [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows) — Problem: Content should move through draft and review before the right person is allowed to publish it. Summary: Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.
+- [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Signed-in users should only see or manage the records they own. Summary: Scope reads and writes to the current user in access control, then stamp ownership when records are created.
+- [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: Editors need to build or rearrange page sections without turning every page into one giant content object. Summary: Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.
+- [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: One record should point to another record, and you also want the reverse view without storing duplicate data. Summary: Store the owning relationship on one side and use a join field for the reverse lookup when you need one-to-many content structures.
+- [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Different roles should have different permissions for reading, editing, publishing, or deleting content. Summary: Check user roles in collection access control so each operation matches the responsibilities of the current user.
+- [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle) — Problem: You need to change a field name on a live schema without breaking the documents that already exist. Summary: Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.
+- [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations) — Problem: Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents. Summary: Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.
 <!-- GENERATED:RECIPES:END -->
 
 ## Intent-to-pattern index
 
 <!-- GENERATED:INTENTS:START -->
-- “make the URL follow the title” → [Generate a slug from a title](https://docs.dyrected.com/docs/recipes/auto-slug)
-- “automatically generate a slug” → [Generate a slug from a title](https://docs.dyrected.com/docs/recipes/auto-slug)
-- “create friendly URLs from titles” → [Generate a slug from a title](https://docs.dyrected.com/docs/recipes/auto-slug)
-- “keep a slug synchronized with a title” → [Generate a slug from a title](https://docs.dyrected.com/docs/recipes/auto-slug)
-- “show a field conditionally” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/recipes/conditional-admin-field)
-- “hide irrelevant form fields” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/recipes/conditional-admin-field)
-- “show discount only with a coupon” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/recipes/conditional-admin-field)
-- “make the admin form react to another field” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/recipes/conditional-admin-field)
-- “validate fields before saving” → [Validate related fields before saving](https://docs.dyrected.com/docs/recipes/cross-field-validation)
-- “make sure an end date is after the start date” → [Validate related fields before saving](https://docs.dyrected.com/docs/recipes/cross-field-validation)
-- “reject invalid form submissions” → [Validate related fields before saving](https://docs.dyrected.com/docs/recipes/cross-field-validation)
-- “validate multiple fields together” → [Validate related fields before saving](https://docs.dyrected.com/docs/recipes/cross-field-validation)
-- “make one dropdown depend on another” → [Update a dropdown from another field](https://docs.dyrected.com/docs/recipes/dependent-dropdown)
-- “show states based on the selected country” → [Update a dropdown from another field](https://docs.dyrected.com/docs/recipes/dependent-dropdown)
-- “create a cascading dropdown” → [Update a dropdown from another field](https://docs.dyrected.com/docs/recipes/dependent-dropdown)
-- “update select options while editing” → [Update a dropdown from another field](https://docs.dyrected.com/docs/recipes/dependent-dropdown)
-- “add draft and publish states” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/recipes/editorial-publishing-workflow)
-- “require review before publishing” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/recipes/editorial-publishing-workflow)
-- “create an editorial workflow” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/recipes/editorial-publishing-workflow)
-- “let editors submit content for approval” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/recipes/editorial-publishing-workflow)
-- “users should only see their own records” → [Limit documents to their owner](https://docs.dyrected.com/docs/recipes/owner-scoped-access)
-- “add row level access” → [Limit documents to their owner](https://docs.dyrected.com/docs/recipes/owner-scoped-access)
-- “scope documents by owner” → [Limit documents to their owner](https://docs.dyrected.com/docs/recipes/owner-scoped-access)
-- “prevent users reading another user's data” → [Limit documents to their owner](https://docs.dyrected.com/docs/recipes/owner-scoped-access)
-- “build a page builder” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/recipes/page-builder-blocks)
-- “let editors arrange page sections” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/recipes/page-builder-blocks)
-- “create reusable content blocks” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/recipes/page-builder-blocks)
-- “model flexible landing pages” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/recipes/page-builder-blocks)
-- “connect posts to authors” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/recipes/relationship-and-reverse-join)
-- “show every post written by a user” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/recipes/relationship-and-reverse-join)
-- “create a reverse relationship” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/recipes/relationship-and-reverse-join)
-- “model one-to-many content” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/recipes/relationship-and-reverse-join)
-- “only editors can update content” → [Restrict content operations by user role](https://docs.dyrected.com/docs/recipes/role-based-access)
-- “restrict deletion to admins” → [Restrict content operations by user role](https://docs.dyrected.com/docs/recipes/role-based-access)
-- “make content publicly readable” → [Restrict content operations by user role](https://docs.dyrected.com/docs/recipes/role-based-access)
-- “add role based access” → [Restrict content operations by user role](https://docs.dyrected.com/docs/recipes/role-based-access)
-- “rename a field safely” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/recipes/safe-field-rename)
-- “change a field name without losing data” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/recipes/safe-field-rename)
-- “migrate an existing schema” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/recipes/safe-field-rename)
-- “keep old documents working after a rename” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/recipes/safe-field-rename)
-- “let editors upload images” → [Create a media upload collection](https://docs.dyrected.com/docs/recipes/upload-collection)
-- “create a media library” → [Create a media upload collection](https://docs.dyrected.com/docs/recipes/upload-collection)
-- “store uploaded files” → [Create a media upload collection](https://docs.dyrected.com/docs/recipes/upload-collection)
-- “add image uploads to my project” → [Create a media upload collection](https://docs.dyrected.com/docs/recipes/upload-collection)
+- “make the URL follow the title” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “automatically generate a slug” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “create friendly URLs from titles” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “keep a slug synchronized with a title” → [Generate a slug from a title](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “show a field conditionally” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “hide irrelevant form fields” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “show discount only with a coupon” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “make the admin form react to another field” → [Show an Admin field only when it is relevant](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “validate fields before saving” → [Validate related fields before saving](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “make sure an end date is after the start date” → [Validate related fields before saving](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “reject invalid form submissions” → [Validate related fields before saving](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “validate multiple fields together” → [Validate related fields before saving](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “make one dropdown depend on another” → [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “show states based on the selected country” → [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “create a cascading dropdown” → [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “update select options while editing” → [Update a dropdown from another field](https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience)
+- “add draft and publish states” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “require review before publishing” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “create an editorial workflow” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “let editors submit content for approval” → [Add draft, review, and publishing states](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “users should only see their own records” → [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “add row level access” → [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “scope documents by owner” → [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “prevent users reading another user's data” → [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “build a page builder” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “let editors arrange page sections” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “create reusable content blocks” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “model flexible landing pages” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “connect posts to authors” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “show every post written by a user” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “create a reverse relationship” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “model one-to-many content” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
+- “only editors can update content” → [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “restrict deletion to admins” → [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “make content publicly readable” → [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “add role based access” → [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control)
+- “rename a field safely” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “change a field name without losing data” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “migrate an existing schema” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “keep old documents working after a rename” → [Rename a field without orphaning existing data](https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle)
+- “let editors upload images” → [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “create a media library” → [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “store uploaded files” → [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
+- “add image uploads to my project” → [Create a media upload collection](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations)
 <!-- GENERATED:INTENTS:END -->
 
 ## Canonical references

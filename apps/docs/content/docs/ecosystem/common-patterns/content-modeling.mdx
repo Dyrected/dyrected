@@ -1,0 +1,28 @@
+---
+title: Content Modeling
+description: Common Dyrected patterns for reusable sections, relationships between records, and content structures that can grow with a project.
+---
+
+Use these patterns when the main question is how to shape the content itself. They help you decide how records relate to each other, how flexible a page should be, and how to avoid locking editors into brittle one-off structures.
+
+## Build flexible pages from reusable blocks
+
+**Problem:** you want editors to build or rearrange page sections without turning each page into one giant object.
+
+This pattern uses blocks to model page sections as reusable building blocks inside a page layout. It is the right starting point when you need flexible landing pages, marketing pages, or reusable content sections.
+
+Read the full docs:
+
+- [Blocks fields](/docs/basics/fields/blocks)
+- [Collections](/docs/basics/configuration/collections)
+
+## Model a relationship and its reverse lookup
+
+**Problem:** one record should point to another record, and you also want the reverse view without storing duplicate data.
+
+This pattern stores the owning relationship on one side and uses a join field for the reverse lookup. It is a good fit for authors and posts, products and categories, or any one-to-many content structure.
+
+Read the full docs:
+
+- [Relationship fields](/docs/basics/fields/relationship)
+- [Join fields](/docs/basics/fields/join)

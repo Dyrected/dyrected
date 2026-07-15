@@ -8442,6 +8442,218 @@ Before you ship, verify the basics:
 
 ---
 
+## Access Control
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control
+
+Use these patterns when your main concern is who should be allowed to read, create, update, or delete content. They help you move from broad permissions toward rules that match how real teams and users work.
+
+## Limit documents to their owner
+
+**Problem:** signed-in users should only see or manage the records they own.
+
+This pattern returns a where constraint from collection access control and usually pairs it with a server hook that stamps ownership during creation. It is a good fit for customer dashboards, project spaces, and user-owned records.
+
+Read the full docs:
+
+- [Collection access control](/docs/basics/access-control/collections)
+- [Collection hooks](/docs/basics/hooks/collections)
+
+## Restrict content operations by user role
+
+**Problem:** different team roles should have different permissions, such as public reads, editor writes, or admin-only deletion.
+
+This pattern uses collection access control to check roles on each operation. It is the right starting point when content needs a clearer separation between editors, reviewers, administrators, or public readers.
+
+Read the full docs:
+
+- [Collection access control](/docs/basics/access-control/collections)
+- [Authentication overview](/docs/features/authentication/overview)
+
+---
+
+## Admin Experience
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/admin-experience
+
+Use these patterns when the underlying content model is already clear, but the editing experience needs to be more guided. They help reduce clutter, keep related fields in sync, and make forms respond to what the editor is doing.
+
+## Show an Admin field only when it is relevant
+
+**Problem:** some fields only make sense after another field has been filled in or enabled.
+
+This pattern uses a serializable admin condition so the editor only sees the field when it is relevant. It is useful for optional discounts, feature toggles, and forms that should stay focused until a later choice unlocks more detail.
+
+Read the full docs:
+
+- [Admin overview](/docs/features/admin/overview)
+- [Collections](/docs/basics/configuration/collections)
+
+## Update a dropdown from another field
+
+**Problem:** the valid options for one field depend on what the editor picked in another field.
+
+This pattern updates select options from sibling field data in the Admin UI. It works well for country-and-region choices, dependent selectors, or any form where the next choice should be constrained by the last one.
+
+Read the full docs:
+
+- [Admin overview](/docs/features/admin/overview)
+- [Select fields](/docs/basics/fields/select)
+
+---
+
+## Content Modeling
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling
+
+Use these patterns when the main question is how to shape the content itself. They help you decide how records relate to each other, how flexible a page should be, and how to avoid locking editors into brittle one-off structures.
+
+## Build flexible pages from reusable blocks
+
+**Problem:** you want editors to build or rearrange page sections without turning each page into one giant object.
+
+This pattern uses blocks to model page sections as reusable building blocks inside a page layout. It is the right starting point when you need flexible landing pages, marketing pages, or reusable content sections.
+
+Read the full docs:
+
+- [Blocks fields](/docs/basics/fields/blocks)
+- [Collections](/docs/basics/configuration/collections)
+
+## Model a relationship and its reverse lookup
+
+**Problem:** one record should point to another record, and you also want the reverse view without storing duplicate data.
+
+This pattern stores the owning relationship on one side and uses a join field for the reverse lookup. It is a good fit for authors and posts, products and categories, or any one-to-many content structure.
+
+Read the full docs:
+
+- [Relationship fields](/docs/basics/fields/relationship)
+- [Join fields](/docs/basics/fields/join)
+
+---
+
+## Data Lifecycle
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle
+
+Use these patterns when the hard part is not the initial schema, but keeping data safe and predictable as editors create, update, and evolve content. They help protect URL structure, catch invalid changes, and handle schema evolution more carefully.
+
+## Generate a slug from a title
+
+**Problem:** you want readable URLs, but you do not want editors hand-authoring slugs for every document.
+
+This pattern generates the slug on the server and can also mirror it live in the Admin UI. It is a strong default for article pages, documentation content, and any collection that needs stable URL-friendly paths.
+
+Read the full docs:
+
+- [Collections](/docs/basics/configuration/collections)
+- [Collection hooks](/docs/basics/hooks/collections)
+
+## Validate related fields before saving
+
+**Problem:** one field value is only valid in relation to another field, such as a start date and an end date.
+
+This pattern uses a collection hook to reject invalid combinations before they reach the database. It is a good fit for dates, time windows, numeric ranges, and any rule that depends on multiple values together.
+
+Read the full docs:
+
+- [Collection hooks](/docs/basics/hooks/collections)
+- [Date and time fields](/docs/basics/fields/datetime)
+
+## Rename a field without orphaning existing data
+
+**Problem:** you need to change a field name on a live schema without breaking the documents that already exist.
+
+This pattern uses `renameTo` and a safe default so old content can continue working while the schema migrates. It is the safer path when a schema needs to evolve without forcing a risky big-bang rename.
+
+Read the full docs:
+
+- [Collections](/docs/basics/configuration/collections)
+- [Database migrations](/docs/basics/database/migrations)
+
+---
+
+## Integrations
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations
+
+Use these patterns when the content model depends on a supporting capability outside ordinary text and relationships. These are usually the patterns that connect your content schema to media handling, storage, or other infrastructure-backed features.
+
+## Create a media upload collection
+
+**Problem:** editors need a proper place to upload and manage files instead of scattering media fields across unrelated documents.
+
+This pattern creates a dedicated upload collection with file rules and supporting metadata fields. It is the usual starting point for image libraries, downloadable assets, and any project where media needs to be reused across multiple records.
+
+Read the full docs:
+
+- [Upload overview](/docs/features/upload/overview)
+- [Storage adapters](/docs/features/upload/storage-adapters)
+- [Collections](/docs/basics/configuration/collections)
+
+---
+
+## Overview
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/overview
+
+Common patterns are the problem-first layer of the docs. They are here to help when you know what you are trying to solve, but you do not yet know which Dyrected feature or page to reach for.
+
+These pages stay intentionally short. Each pattern gives you:
+
+- the problem it helps solve
+- a short summary of the approach
+- links to the canonical docs where the full explanation lives
+
+When a pattern also has a validated recipe in `@dyrected/knowledge`, the goal is discovery first, not duplicate teaching. Use these pages to orient quickly, then move to the deeper docs for the full implementation detail.
+
+## Browse by problem
+
+### [Content modeling](/docs/ecosystem/common-patterns/content-modeling)
+
+Patterns for reusable page sections, relationships between records, and other content-structure decisions that affect how editors work day to day.
+
+### [Access control](/docs/ecosystem/common-patterns/access-control)
+
+Patterns for row-level access, role-based permissions, and deciding who can read, update, or delete which records.
+
+### [Admin experience](/docs/ecosystem/common-patterns/admin-experience)
+
+Patterns for making the Admin UI react to editor input, reveal fields only when needed, and keep forms easier to use.
+
+### [Data lifecycle](/docs/ecosystem/common-patterns/data-lifecycle)
+
+Patterns for slugs, cross-field validation, and schema changes that need to stay safe as content evolves over time.
+
+### [Workflows](/docs/ecosystem/common-patterns/workflows)
+
+Patterns for draft, review, and publishing flows when content needs approval before it goes live.
+
+### [Integrations](/docs/ecosystem/common-patterns/integrations)
+
+Patterns that connect content structure to supporting capabilities such as uploads and media handling.
+
+---
+
+## Workflows
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows
+
+Use these patterns when content needs more than simple CRUD. Workflows help when a document should move through a defined editorial process, with clear transitions and role-aware control over who can change its public state.
+
+## Add draft, review, and publishing states
+
+**Problem:** editors need to work on content privately, send it for review, and only publish it when the right person approves.
+
+This pattern attaches Dyrected’s editorial workflow to a collection so documents move through named states instead of going live immediately. It is a good fit for content teams, documentation teams, and any publishing flow that needs controlled review.
+
+Read the full docs:
+
+- [Workflows overview](/docs/features/workflows/overview)
+- [Custom workflows](/docs/features/workflows/custom-workflows)
+
+---
+
 ## Advanced
 
 Canonical URL: https://docs.dyrected.com/docs/ecosystem/ecommerce/__advanced
@@ -8511,11 +8723,169 @@ Each ecommerce page should be published only after the public package behavior, 
 
 ---
 
+## Booking
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/examples/booking
+
+This example is planned for teams building a service-booking, appointment, or reservation flow where content and operational rules need to stay predictable. It is meant to show how Dyrected can support the editable side of the experience without turning business logic into fragile CMS configuration.
+
+The implementation is still coming soon, so this page points you to the core patterns worth learning now.
+
+## Example status
+
+**Coming soon.** The public example implementation is not ready yet.
+
+## What this example is meant to show
+
+- service and location content models
+- editor-managed content around scheduling and availability
+- validation rules for date, time, and related fields
+- access rules for staff-owned or team-owned records
+- admin behavior that adapts as editors fill in the booking form
+
+## Patterns used
+
+Because the full example is still in progress, treat this as the planned coverage for the first version.
+
+- [Validate related fields before saving](/docs/basics/hooks/collections)
+- [Limit documents to their owner](/docs/basics/access-control/collections)
+- [Restrict content operations by user role](/docs/basics/access-control/collections)
+- [Update a dropdown from another field](/docs/features/admin/overview)
+- [Show an Admin field only when it is relevant](/docs/features/admin/overview)
+- [Model a relationship and its reverse lookup](/docs/basics/fields/relationship)
+
+## Related docs
+
+- [Collections](/docs/basics/configuration/collections)
+- [Collection hooks](/docs/basics/hooks/collections)
+- [Access control](/docs/basics/access-control/collections)
+- [Relationship fields](/docs/basics/fields/relationship)
+- [Admin overview](/docs/features/admin/overview)
+
+---
+
+## Ecommerce
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/examples/ecommerce
+
+This example is planned as the closest Dyrected reference for teams building a storefront, catalog, or merchandised content experience. It is meant to cover the content structures that usually sit behind product pages, category pages, promotional content, and media-heavy landing pages.
+
+The full example is still coming soon, so use this page as a guide to the patterns that matter most while the repository work catches up.
+
+## Example status
+
+**Coming soon.** The public example implementation is not ready yet.
+
+## What this example is meant to show
+
+- a product and category content model
+- media collections for product imagery and supporting assets
+- relationships between products, categories, and editorial content
+- flexible page composition for merchandising and campaign pages
+- access and workflow patterns for teams managing storefront content
+
+## Patterns used
+
+Because the full example is still in progress, treat this as the planned coverage for the first version.
+
+- [Build flexible pages from reusable blocks](/docs/basics/fields/blocks)
+- [Model a relationship and its reverse lookup](/docs/basics/fields/relationship)
+- [Restrict content operations by user role](/docs/basics/access-control/collections)
+- [Create a media upload collection](/docs/features/upload/overview)
+- [Add draft, review, and publishing states](/docs/features/workflows/overview)
+- [Validate related fields before saving](/docs/basics/hooks/collections)
+
+## Related docs
+
+- [Collections](/docs/basics/configuration/collections)
+- [Relationship fields](/docs/basics/fields/relationship)
+- [Blocks fields](/docs/basics/fields/blocks)
+- [Access control](/docs/basics/access-control/collections)
+- [Upload](/docs/features/upload/overview)
+- [Workflows](/docs/features/workflows/overview)
+
+---
+
+## Knowledge Base
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/examples/knowledge-base
+
+This example is planned as the Dyrected reference for teams building a documentation site, support center, internal handbook, or searchable article library. It is meant to show the content patterns that help articles stay structured, easy to manage, and ready for a real publishing workflow.
+
+The full implementation is still coming soon, so this page keeps the focus on the patterns and docs that already matter today.
+
+## Example status
+
+**Coming soon.** The public example implementation is not ready yet.
+
+## What this example is meant to show
+
+- article, section, and supporting media content models
+- stable slugs for readable documentation URLs
+- relationships between articles and related content
+- review and publishing flow for editorial teams
+- flexible content structures for richer article layouts
+
+## Patterns used
+
+Because the full example is still in progress, treat this as the planned coverage for the first version.
+
+- [Generate a slug from a title](/docs/basics/configuration/collections)
+- [Model a relationship and its reverse lookup](/docs/basics/fields/relationship)
+- [Build flexible pages from reusable blocks](/docs/basics/fields/blocks)
+- [Add draft, review, and publishing states](/docs/features/workflows/overview)
+- [Restrict content operations by user role](/docs/basics/access-control/collections)
+- [Create a media upload collection](/docs/features/upload/overview)
+
+## Related docs
+
+- [Collections](/docs/basics/configuration/collections)
+- [Blocks fields](/docs/basics/fields/blocks)
+- [Relationship fields](/docs/basics/fields/relationship)
+- [Access control](/docs/basics/access-control/collections)
+- [Upload](/docs/features/upload/overview)
+- [Workflows](/docs/features/workflows/overview)
+
+---
+
 ## Overview
 
 Canonical URL: https://docs.dyrected.com/docs/ecosystem/examples/overview
 
+Examples are where Dyrected will show complete application shapes, not just isolated API features. The goal is to make it easier to answer a practical question: *which example is closest to what I am building?*
 
+This section is intentionally light for now. The full example repositories are still coming together, so these pages focus on two things:
+
+- what each example app is meant to demonstrate
+- which Dyrected patterns you should read today while the full example is still on the way
+
+## Current example roadmap
+
+### [Ecommerce](/docs/ecosystem/examples/ecommerce)
+
+An online catalog and merchandising example with products, media, editorial content, and structured relationships between records.
+
+### [Booking](/docs/ecosystem/examples/booking)
+
+A service-booking example focused on availability, editor-managed content, and the permissions and validation that keep booking flows predictable.
+
+### [Knowledge base](/docs/ecosystem/examples/knowledge-base)
+
+A documentation-style content example with slugs, structured content, publishing flow, and the content modeling needed for search-friendly article collections.
+
+## How to use these pages today
+
+Each example page tells you three things:
+
+- the shape of the app it is meant to represent
+- the Dyrected patterns the example is planned to use
+- the canonical docs pages that already explain those patterns in detail
+
+That means you can start learning the underlying building blocks now, even before the full example repositories are ready.
+
+## What comes later
+
+As the examples land, these pages can grow into fuller implementation guides with repository links, architecture notes, and code walkthroughs. For now, treat them as the public map for the examples Dyrected is actively preparing.
 
 ---
 

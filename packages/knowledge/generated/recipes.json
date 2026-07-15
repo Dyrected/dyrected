@@ -3,6 +3,8 @@
     "id": "auto-slug",
     "title": "Generate a slug from a title",
     "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
+    "problem": "You want readable URLs without asking editors to hand-author slugs for every document.",
+    "summary": "Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.",
     "category": "data-lifecycle",
     "intents": [
       "make the URL follow the title",
@@ -16,14 +18,22 @@
       "promoted",
       "unique"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/data-lifecycle",
+      "/docs/basics/configuration/collections",
+      "/docs/basics/hooks/collections"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({\n      name: \"slug\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange: ({ siblingData }) => toSlug(siblingData.title),\n        },\n      },\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/auto-slug"
+    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "snippetStatus": "validated"
   },
   {
     "id": "conditional-admin-field",
     "title": "Show an Admin field only when it is relevant",
     "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
+    "problem": "Some fields only make sense after an editor has made an earlier choice.",
+    "summary": "Use an Admin condition to hide irrelevant fields until the current form state makes them useful.",
     "category": "admin-experience",
     "intents": [
       "show a field conditionally",
@@ -36,14 +46,22 @@
       "Jexl",
       "conditional fields"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/admin-experience",
+      "/docs/features/admin/overview",
+      "/docs/basics/configuration/collections"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineNumberField, defineTextField } from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    defineTextField({ name: \"couponCode\", label: \"Coupon code\" }),\n    defineNumberField({\n      name: \"discountPercent\",\n      label: \"Discount percentage\",\n      admin: { condition: \"couponCode != null && couponCode != ''\" },\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/conditional-admin-field"
+    "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+    "snippetStatus": "validated"
   },
   {
     "id": "cross-field-validation",
     "title": "Validate related fields before saving",
     "description": "Reject invalid combinations of field values before they reach the database.",
+    "problem": "A field value is only valid in relation to another field, such as a start date and an end date.",
+    "summary": "Use a collection hook to reject invalid combinations before the document reaches the database.",
     "category": "data-lifecycle",
     "intents": [
       "validate fields before saving",
@@ -56,14 +74,22 @@
       "validation",
       "throw to abort"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/data-lifecycle",
+      "/docs/basics/hooks/collections",
+      "/docs/basics/fields/datetime"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineDateTimeField, defineTextField } from \"@dyrected/core\";\n\nexport const Events = defineCollection({\n  slug: \"events\",\n  hooks: {\n    beforeChange: [\n      ({ data, doc }) => {\n        const startsAt = data.startsAt ?? doc?.startsAt;\n        const endsAt = data.endsAt ?? doc?.endsAt;\n\n        const start = startsAt ? new Date(startsAt) : undefined;\n        const end = endsAt ? new Date(endsAt) : undefined;\n\n        if (start && Number.isNaN(start.getTime())) {\n          throw new Error(\"The event start time must be a valid date.\");\n        }\n        if (end && Number.isNaN(end.getTime())) {\n          throw new Error(\"The event end time must be a valid date.\");\n        }\n        if (start && end && end <= start) {\n          throw new Error(\"The event end time must be after its start time.\");\n        }\n\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineDateTimeField({\n      name: \"startsAt\",\n      label: \"Starts at\",\n      required: true,\n    }),\n    defineDateTimeField({\n      name: \"endsAt\",\n      label: \"Ends at\",\n      required: true,\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/cross-field-validation"
+    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "snippetStatus": "validated"
   },
   {
     "id": "dependent-dropdown",
     "title": "Update a dropdown from another field",
     "description": "Change available Admin UI options immediately when an editor changes a related field.",
+    "problem": "The valid options for one field depend on what the editor picked in another field.",
+    "summary": "Update select options from sibling field data so the next choice stays constrained by the current form state.",
     "category": "admin-experience",
     "intents": [
       "make one dropdown depend on another",
@@ -76,14 +102,22 @@
       "select",
       "siblingData"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/admin-experience",
+      "/docs/features/admin/overview",
+      "/docs/basics/fields/select"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineSelectField } from \"@dyrected/core\";\n\nexport const Locations = defineCollection({\n  slug: \"locations\",\n  fields: [\n    defineSelectField({\n      name: \"country\",\n      label: \"Country\",\n      required: true,\n      options: [\n        { label: \"Nigeria\", value: \"ng\" },\n        { label: \"United States\", value: \"us\" },\n      ],\n    }),\n    defineSelectField({\n      name: \"region\",\n      label: \"State or region\",\n      required: true,\n      options: [],\n      admin: {\n        hooks: {\n          options: ({ siblingData }) => {\n            if (siblingData.country === \"ng\") return [\"Lagos\", \"Abuja\", \"Oyo\"];\n            if (siblingData.country === \"us\")\n              return [\"California\", \"New York\", \"Texas\"];\n            return [];\n          },\n        },\n      },\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/dependent-dropdown"
+    "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+    "snippetStatus": "validated"
   },
   {
     "id": "editorial-publishing-workflow",
     "title": "Add draft, review, and publishing states",
     "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
+    "problem": "Content should move through draft and review before the right person is allowed to publish it.",
+    "summary": "Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.",
     "category": "workflows",
     "intents": [
       "add draft and publish states",
@@ -96,14 +130,22 @@
       "workflow transitions",
       "capabilities"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/workflows",
+      "/docs/features/workflows/overview",
+      "/docs/features/workflows/custom-workflows"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineRichTextField, defineTextField, publishingWorkflow } from \"@dyrected/core\";\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  workflow: publishingWorkflow(),\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRichTextField({ name: \"body\", label: \"Body\", required: true }),\n  ],\n});",
-    "docsPath": "/docs/recipes/editorial-publishing-workflow"
+    "docsPath": "/docs/ecosystem/common-patterns/workflows",
+    "snippetStatus": "validated"
   },
   {
     "id": "owner-scoped-access",
     "title": "Limit documents to their owner",
     "description": "Return a where constraint from access control so authenticated users only read their own records.",
+    "problem": "Signed-in users should only see or manage the records they own.",
+    "summary": "Scope reads and writes to the current user in access control, then stamp ownership when records are created.",
     "category": "access-control",
     "intents": [
       "users should only see their own records",
@@ -116,14 +158,22 @@
       "where",
       "row-level access"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/access-control",
+      "/docs/basics/access-control/collections",
+      "/docs/basics/hooks/collections"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Projects = defineCollection({\n  slug: \"projects\",\n  access: {\n    read: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    create: ({ user }) => Boolean(user),\n    update: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    delete: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        if (!user) throw new Error(\"Authentication is required to create a project.\");\n        return { ...data, owner: user.sub };\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"name\", label: \"Project name\", required: true }),\n    defineRelationshipField({\n      name: \"owner\",\n      label: \"Owner\",\n      relationTo: \"users\",\n      required: true,\n      admin: { readOnly: true },\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/owner-scoped-access"
+    "docsPath": "/docs/ecosystem/common-patterns/access-control",
+    "snippetStatus": "validated"
   },
   {
     "id": "page-builder-blocks",
     "title": "Build flexible pages from reusable blocks",
     "description": "Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.",
+    "problem": "Editors need to build or rearrange page sections without turning every page into one giant content object.",
+    "summary": "Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.",
     "category": "content-modeling",
     "intents": [
       "build a page builder",
@@ -136,14 +186,22 @@
       "Block",
       "content modeling"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/content-modeling",
+      "/docs/basics/fields/blocks",
+      "/docs/basics/configuration/collections"
+    ],
     "requires": [],
     "source": "import { defineBlock, defineBlocksField, defineCollection, defineTextField, defineTextareaField, defineUrlField } from \"@dyrected/core\";\n\nexport const HeroBlock = defineBlock({\n  slug: \"hero\",\n  labels: { singular: \"Hero\", plural: \"Heroes\" },\n  fields: [\n    defineTextField({ name: \"heading\", label: \"Heading\", required: true }),\n    defineTextareaField({ name: \"body\", label: \"Body\" }),\n  ],\n});\n\nexport const CallToActionBlock = defineBlock({\n  slug: \"callToAction\",\n  labels: { singular: \"Call to action\", plural: \"Calls to action\" },\n  fields: [\n    defineTextField({ name: \"label\", label: \"Link label\", required: true }),\n    defineUrlField({ name: \"url\", label: \"URL\", required: true }),\n  ],\n});\n\nexport const Pages = defineCollection({\n  slug: \"pages\",\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineBlocksField({\n      name: \"layout\",\n      label: \"Page layout\",\n      blocks: [HeroBlock, CallToActionBlock],\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/page-builder-blocks"
+    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "snippetStatus": "validated"
   },
   {
     "id": "relationship-and-reverse-join",
     "title": "Model a relationship and its reverse lookup",
     "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
+    "problem": "One record should point to another record, and you also want the reverse view without storing duplicate data.",
+    "summary": "Store the owning relationship on one side and use a join field for the reverse lookup when you need one-to-many content structures.",
     "category": "content-modeling",
     "intents": [
       "connect posts to authors",
@@ -157,14 +215,22 @@
       "relationTo",
       "depth"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/content-modeling",
+      "/docs/basics/fields/relationship",
+      "/docs/basics/fields/join"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineJoinField, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Users = defineCollection({\n  slug: \"users\",\n  auth: true,\n  fields: [\n    defineTextField({ name: \"name\", label: \"Name\", required: true }),\n    defineJoinField({\n      name: \"posts\",\n      label: \"Posts\",\n      collection: \"posts\",\n      on: \"author\",\n      limit: 20,\n    }),\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRelationshipField({\n      name: \"author\",\n      label: \"Author\",\n      relationTo: \"users\",\n      required: true,\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/relationship-and-reverse-join"
+    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "snippetStatus": "validated"
   },
   {
     "id": "role-based-access",
     "title": "Restrict content operations by user role",
     "description": "Allow public reads, editor writes, and administrator deletion with collection access rules.",
+    "problem": "Different roles should have different permissions for reading, editing, publishing, or deleting content.",
+    "summary": "Check user roles in collection access control so each operation matches the responsibilities of the current user.",
     "category": "access-control",
     "intents": [
       "only editors can update content",
@@ -177,14 +243,22 @@
       "AuthenticatedUser",
       "roles"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/access-control",
+      "/docs/basics/access-control/collections",
+      "/docs/features/authentication/overview"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Articles = defineCollection({\n  slug: \"articles\",\n  access: {\n    read: () => true,\n    create: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    update: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    delete: ({ user }) => user?.roles?.includes(\"admin\") ?? false,\n  },\n  fields: [defineTextField({ name: \"title\", label: \"Title\", required: true })],\n});",
-    "docsPath": "/docs/recipes/role-based-access"
+    "docsPath": "/docs/ecosystem/common-patterns/access-control",
+    "snippetStatus": "validated"
   },
   {
     "id": "safe-field-rename",
     "title": "Rename a field without orphaning existing data",
     "description": "Use renameTo and a safe default while documents migrate lazily to a new field name.",
+    "problem": "You need to change a field name on a live schema without breaking the documents that already exist.",
+    "summary": "Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.",
     "category": "data-lifecycle",
     "intents": [
       "rename a field safely",
@@ -197,14 +271,22 @@
       "defaultValue",
       "schema evolution"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/data-lifecycle",
+      "/docs/basics/configuration/collections",
+      "/docs/basics/database/migrations"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Customers = defineCollection({\n  slug: \"customers\",\n  fields: [\n    defineTextField({\n      name: \"fullName\",\n      label: \"Full name\",\n      renameTo: \"name\",\n      defaultValue: \"\",\n      required: true,\n    }),\n  ],\n});",
-    "docsPath": "/docs/recipes/safe-field-rename"
+    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "snippetStatus": "validated"
   },
   {
     "id": "upload-collection",
     "title": "Create a media upload collection",
     "description": "Enable file uploads and capture accessible metadata in a dedicated media collection.",
+    "problem": "Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents.",
+    "summary": "Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.",
     "category": "integrations",
     "intents": [
       "let editors upload images",
@@ -217,8 +299,14 @@
       "StorageAdapter",
       "media"
     ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/integrations",
+      "/docs/features/upload/overview",
+      "/docs/features/upload/storage-adapters"
+    ],
     "requires": [],
     "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n  },\n  fields: [\n    defineTextField({ name: \"alt\", label: \"Alternative text\", required: true }),\n    defineTextareaField({ name: \"caption\", label: \"Caption\" }),\n  ],\n});",
-    "docsPath": "/docs/recipes/upload-collection"
+    "docsPath": "/docs/ecosystem/common-patterns/integrations",
+    "snippetStatus": "validated"
   }
 ]

@@ -2,6 +2,8 @@
   "id": "dependent-dropdown",
   "title": "Update a dropdown from another field",
   "description": "Change available Admin UI options immediately when an editor changes a related field.",
+  "problem": "The valid options for one field depend on what the editor picked in another field.",
+  "summary": "Update select options from sibling field data so the next choice stays constrained by the current form state.",
   "category": "admin-experience",
   "intents": [
     "make one dropdown depend on another",
@@ -10,5 +12,10 @@
     "update select options while editing"
   ],
   "concepts": ["admin.hooks.options", "select", "siblingData"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/admin-experience",
+    "/docs/features/admin/overview",
+    "/docs/basics/fields/select"
+  ],
   "requires": []
 }

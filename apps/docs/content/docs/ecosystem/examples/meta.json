@@ -1,6 +1,9 @@
 {
   "title": "Examples",
   "pages": [
-    "overview"
+    "overview",
+    "ecommerce",
+    "booking",
+    "knowledge-base"
   ]
 }

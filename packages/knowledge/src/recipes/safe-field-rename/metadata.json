@@ -2,8 +2,15 @@
   "id": "safe-field-rename",
   "title": "Rename a field without orphaning existing data",
   "description": "Use renameTo and a safe default while documents migrate lazily to a new field name.",
+  "problem": "You need to change a field name on a live schema without breaking the documents that already exist.",
+  "summary": "Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.",
   "category": "data-lifecycle",
   "intents": ["rename a field safely", "change a field name without losing data", "migrate an existing schema", "keep old documents working after a rename"],
   "concepts": ["renameTo", "defaultValue", "schema evolution"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/data-lifecycle",
+    "/docs/basics/configuration/collections",
+    "/docs/basics/database/migrations"
+  ],
   "requires": []
 }

@@ -39,6 +39,19 @@ const categories = new Set([
   "workflows",
   "integrations",
 ]);
+const recipeDocsPathMap = {
+  "auto-slug": "/docs/ecosystem/common-patterns/data-lifecycle",
+  "conditional-admin-field": "/docs/ecosystem/common-patterns/admin-experience",
+  "cross-field-validation": "/docs/ecosystem/common-patterns/data-lifecycle",
+  "dependent-dropdown": "/docs/ecosystem/common-patterns/admin-experience",
+  "editorial-publishing-workflow": "/docs/ecosystem/common-patterns/workflows",
+  "owner-scoped-access": "/docs/ecosystem/common-patterns/access-control",
+  "page-builder-blocks": "/docs/ecosystem/common-patterns/content-modeling",
+  "relationship-and-reverse-join": "/docs/ecosystem/common-patterns/content-modeling",
+  "role-based-access": "/docs/ecosystem/common-patterns/access-control",
+  "safe-field-rename": "/docs/ecosystem/common-patterns/data-lifecycle",
+  "upload-collection": "/docs/ecosystem/common-patterns/integrations",
+};
 
 function fail(message) {
   console.error(`[knowledge] ${message}`);
@@ -46,7 +59,14 @@ function fail(message) {
 }
 
 function validateMetadata(directory, metadata) {
-  const requiredStrings = ["id", "title", "description", "category"];
+  const requiredStrings = [
+    "id",
+    "title",
+    "description",
+    "problem",
+    "summary",
+    "category",
+  ];
   for (const key of requiredStrings) {
     if (typeof metadata[key] !== "string" || metadata[key].trim() === "") {
       throw new Error(`${directory}/metadata.json requires a non-empty ${key}`);
@@ -67,6 +87,17 @@ function validateMetadata(directory, metadata) {
         `${directory}/metadata.json requires a string array for ${key}`,
       );
     }
+  }
+  if (
+    !Array.isArray(metadata.canonicalDocs) ||
+    metadata.canonicalDocs.length === 0 ||
+    metadata.canonicalDocs.some(
+      (item) => typeof item !== "string" || !item.startsWith("/docs/"),
+    )
+  ) {
+    throw new Error(
+      `${directory}/metadata.json requires a non-empty canonicalDocs array of /docs/ links`,
+    );
   }
   if (metadata.intents.length === 0)
     throw new Error(
@@ -357,7 +388,16 @@ const recipes = directories.map((directory) => {
     .readFileSync(path.join(directoryPath, "recipe.ts"), "utf8")
     .trimEnd();
   validateRecipeSource(directory, source);
-  return { ...metadata, source, docsPath: `/docs/recipes/${metadata.id}` };
+  const docsPath = recipeDocsPathMap[metadata.id];
+  if (!docsPath) {
+    throw new Error(`${directory}: missing docsPath mapping`);
+  }
+  return {
+    ...metadata,
+    source,
+    docsPath,
+    snippetStatus: "validated",
+  };
 });
 
 const ids = new Set();
@@ -879,7 +919,7 @@ if (fs.existsSync(docsRoot)) {
   const recipeCards = recipes
     .map(
       (recipe) =>
-        `- [${recipe.title}](${recipe.docsPath}) — ${recipe.description}`,
+        `- [${recipe.title}](${recipe.docsPath}) — Problem: ${recipe.problem} Summary: ${recipe.summary}`,
     )
     .join("\n");
   outputGeneratedRegion(
@@ -1015,7 +1055,7 @@ const generatedSections = {
   RECIPES: recipes
     .map(
       (recipe) =>
-        `- [${recipe.title}](https://docs.dyrected.com${recipe.docsPath}) — ${recipe.description}`,
+        `- [${recipe.title}](https://docs.dyrected.com${recipe.docsPath}) — Problem: ${recipe.problem} Summary: ${recipe.summary}`,
     )
     .join("\n"),
   INTENTS: intentLines.join("\n"),
@@ -1081,13 +1121,29 @@ outputFile(
 
 const llmsIndex = {
   generatedBy: "@dyrected/knowledge",
-  recipes: recipes.map(({ id, title, description, docsPath, intents }) => ({
-    id,
-    title,
-    description,
-    docsPath,
-    intents,
-  })),
+  recipes: recipes.map(
+    ({
+      id,
+      title,
+      description,
+      problem,
+      summary,
+      docsPath,
+      intents,
+      canonicalDocs,
+      snippetStatus,
+    }) => ({
+      id,
+      title,
+      description,
+      problem,
+      summary,
+      docsPath,
+      canonicalDocs,
+      snippetStatus,
+      intents,
+    }),
+  ),
   references: references.map(({ id, name, category, sourcePackage }) => ({
     id,
     name,

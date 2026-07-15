@@ -2,8 +2,15 @@
   "id": "editorial-publishing-workflow",
   "title": "Add draft, review, and publishing states",
   "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
+  "problem": "Content should move through draft and review before the right person is allowed to publish it.",
+  "summary": "Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.",
   "category": "workflows",
   "intents": ["add draft and publish states", "require review before publishing", "create an editorial workflow", "let editors submit content for approval"],
   "concepts": ["publishingWorkflow", "workflow transitions", "capabilities"],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/workflows",
+    "/docs/features/workflows/overview",
+    "/docs/features/workflows/custom-workflows"
+  ],
   "requires": []
 }
