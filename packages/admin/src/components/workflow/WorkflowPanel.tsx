@@ -61,29 +61,29 @@ interface WorkflowPanelProps {
 
 const STATE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
   success: {
-    bg: "dy-bg-emerald-50 dy-border-emerald-200",
-    text: "dy-text-emerald-700",
-    dot: "dy-bg-emerald-500",
+    bg: "dy-bg-emerald-50 dy-border-emerald-200 dark:dy-bg-emerald-500/12 dark:dy-border-emerald-500/30",
+    text: "dy-text-emerald-700 dark:dy-text-emerald-300",
+    dot: "dy-bg-emerald-500 dark:dy-bg-emerald-400",
   },
   warning: {
-    bg: "dy-bg-amber-50 dy-border-amber-200",
-    text: "dy-text-amber-700",
-    dot: "dy-bg-amber-500",
+    bg: "dy-bg-amber-50 dy-border-amber-200 dark:dy-bg-amber-500/12 dark:dy-border-amber-500/30",
+    text: "dy-text-amber-700 dark:dy-text-amber-300",
+    dot: "dy-bg-amber-500 dark:dy-bg-amber-400",
   },
   danger: {
-    bg: "dy-bg-red-50 dy-border-red-200",
-    text: "dy-text-red-700",
-    dot: "dy-bg-red-500",
+    bg: "dy-bg-red-50 dy-border-red-200 dark:dy-bg-red-500/12 dark:dy-border-red-500/30",
+    text: "dy-text-red-700 dark:dy-text-red-300",
+    dot: "dy-bg-red-500 dark:dy-bg-red-400",
   },
   info: {
-    bg: "dy-bg-blue-50 dy-border-blue-200",
-    text: "dy-text-blue-700",
-    dot: "dy-bg-blue-500",
+    bg: "dy-bg-blue-50 dy-border-blue-200 dark:dy-bg-blue-500/12 dark:dy-border-blue-500/30",
+    text: "dy-text-blue-700 dark:dy-text-blue-300",
+    dot: "dy-bg-blue-500 dark:dy-bg-blue-400",
   },
   neutral: {
-    bg: "dy-bg-muted/40 dy-border-border/60",
-    text: "dy-text-muted-foreground",
-    dot: "dy-bg-muted-foreground/60",
+    bg: "dy-bg-muted/40 dy-border-border/60 dark:dy-bg-muted/60 dark:dy-border-border/80",
+    text: "dy-text-muted-foreground dark:dy-text-foreground/80",
+    dot: "dy-bg-muted-foreground/60 dark:dy-bg-foreground/60",
   },
 }
 
@@ -253,7 +253,7 @@ export function WorkflowPanel({
                     t.unpublish || t.name === "reject" ? "outline" : "default"
                   }
                   className={cn(
-                    "dy-w-full dy-h-9 dy-rounded-xl dy-text-xs dy-font-semibold dy-justify-start dy-gap-2",
+                    "dy-w-full dy-h-9 dy-rounded-lg dy-text-xs dy-font-semibold dy-justify-start dy-gap-2",
                     isWaiting && "dy-ring-2 dy-ring-primary/30",
                   )}
                   disabled={transitionMutation.isPending}

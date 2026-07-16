@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@dyrected/core": "workspace:^",
+    "@dyrected/db-postgres": "workspace:^",
     "@dyrected/nuxt": "workspace:^",
     "@dyrected/sdk": "workspace:^",
     "chart.js": "^4.4.4",

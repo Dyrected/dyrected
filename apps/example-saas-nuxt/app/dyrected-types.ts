@@ -44,7 +44,7 @@ export interface Admin {
   id: string;
   firstName?: string;
   lastName?: string;
-  roles?: "admin" | "editor" | "viewer";
+  roles?: ("admin" | "editor" | "viewer")[];
   email: string;
   createdAt: string;
   updatedAt: string;

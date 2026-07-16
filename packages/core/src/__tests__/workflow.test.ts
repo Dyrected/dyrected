@@ -16,6 +16,7 @@ import {
 import type { AuthenticatedUser, WorkflowMetadata } from "../types/index.js";
 import { EditorialPosts } from "./fixtures/editorial-workflow.js";
 import { generateOpenApi } from "../utils/openapi.js";
+import { createDyrectedApp } from "../app.js";
 
 // ─── Shared config builders ───────────────────────────────────────────────────
 
@@ -129,6 +130,108 @@ describe("workflow document visibility", () => {
       collection: "users",
     })).toBeNull();
   });
+
+  it("keeps published-state docs readable even when the published snapshot is missing", () => {
+    const publishedWithoutSnapshot = {
+      id: "post-compat",
+      title: "Live title",
+      __workflow: { state: "published", revision: 3 },
+    };
+    expect(materializeWorkflowDocument(publishedWithoutSnapshot, publishingWorkflow(), {
+      sub: "viewer",
+      roles: ["viewer"],
+      collection: "users",
+    })?.title).toBe("Live title");
+  });
+
+  it("keeps legacy published docs queryable through public collection reads", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("pages", [
+      {
+        id: "page-about",
+        title: "About",
+        slug: "about",
+      },
+      {
+        id: "page-draft",
+        title: "Draft only",
+        slug: "draft-only",
+        __workflow: { state: "draft", revision: 1 },
+      },
+    ]);
+
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [
+          defineCollection({
+            slug: "pages",
+            drafts: true,
+            fields: [
+              { name: "title", type: "text" },
+              { name: "slug", type: "text" },
+            ],
+          }),
+        ],
+        globals: [],
+        db,
+      }),
+    );
+
+    const aboutRes = await app.request(
+      `/api/collections/pages?where=${encodeURIComponent(JSON.stringify({ slug: { equals: "about" } }))}`,
+    );
+    const aboutBody = await aboutRes.json();
+
+    expect(aboutRes.status).toBe(200);
+    expect(aboutBody.total).toBe(1);
+    expect(aboutBody.docs[0].slug).toBe("about");
+
+    const draftRes = await app.request(
+      `/api/collections/pages?where=${encodeURIComponent(JSON.stringify({ slug: { equals: "draft-only" } }))}`,
+    );
+    const draftBody = await draftRes.json();
+
+    expect(draftRes.status).toBe(200);
+    expect(draftBody.total).toBe(0);
+  });
+
+  it("keeps published-state docs queryable through public collection reads when __published is missing", async () => {
+    const db = new InMemoryAdapter();
+    db.seed("pages", [
+      {
+        id: "page-about",
+        title: "About",
+        slug: "about",
+        __workflow: { state: "published", revision: 2 },
+      },
+    ]);
+
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [
+          defineCollection({
+            slug: "pages",
+            drafts: true,
+            fields: [
+              { name: "title", type: "text" },
+              { name: "slug", type: "text" },
+            ],
+          }),
+        ],
+        globals: [],
+        db,
+      }),
+    );
+
+    const aboutRes = await app.request(
+      `/api/collections/pages?where=${encodeURIComponent(JSON.stringify({ slug: { equals: "about" } }))}`,
+    );
+    const aboutBody = await aboutRes.json();
+
+    expect(aboutRes.status).toBe(200);
+    expect(aboutBody.total).toBe(1);
+    expect(aboutBody.docs[0].slug).toBe("about");
+  });
 });
 
 describe("saveWorkflowDraft", () => {
@@ -163,6 +266,99 @@ describe("saveWorkflowDraft", () => {
     const event = events.docs[0];
     expect(event.name).toBe("revision.created");
     expect(event.status).toBe("pending");
+  });
+
+  it("upgrades a legacy published doc into workflow draft mode without breaking the public snapshot", async () => {
+    const collection = defineCollection({
+      slug: "pages",
+      workflow: simplePublishingWorkflow(),
+      fields: [
+        { name: "title", type: "text" },
+        { name: "slug", type: "text" },
+      ],
+    });
+    const legacyConfig = defineConfig({ collections: [collection], globals: [], db });
+
+    await db.create({
+      collection: "pages",
+      data: {
+        id: "page-about",
+        title: "About",
+        slug: "about",
+      },
+    });
+
+    const original = await db.findOne({ collection: "pages", id: "page-about" });
+    const workflowCollection = legacyConfig.collections[0];
+
+    await saveWorkflowDraft({
+      config: legacyConfig,
+      collection: workflowCollection,
+      id: "page-about",
+      originalDoc: original,
+      data: { title: "About us", slug: "about" },
+    });
+
+    const updated = await db.findOne({ collection: "pages", id: "page-about" });
+    expect(updated.title).toBe("About us");
+    expect((updated.__published as Record<string, unknown>).title).toBe("About");
+    expect(updated.__workflow).toMatchObject({
+      state: "draft",
+      revision: 2,
+      publishedRevision: 1,
+    });
+
+    const app = await createDyrectedApp(legacyConfig);
+    const publicRes = await app.request(
+      `/api/collections/pages?where=${encodeURIComponent(JSON.stringify({ slug: { equals: "about" } }))}`,
+    );
+    const publicBody = await publicRes.json();
+
+    expect(publicRes.status).toBe(200);
+    expect(publicBody.total).toBe(1);
+    expect(publicBody.docs[0].title).toBe("About");
+  });
+
+  it("returns materialized workflow metadata when updating a legacy published doc through the API", async () => {
+    const collection = defineCollection({
+      slug: "pages",
+      drafts: true,
+      fields: [
+        { name: "title", type: "text" },
+        { name: "slug", type: "text" },
+      ],
+    });
+    const app = await createDyrectedApp(
+      defineConfig({
+        collections: [collection],
+        globals: [],
+        db,
+      }),
+    );
+
+    await db.create({
+      collection: "pages",
+      data: {
+        id: "page-about",
+        title: "About",
+        slug: "about",
+      },
+    });
+
+    const res = await app.request("/api/collections/pages/page-about", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "About us" }),
+    });
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.title).toBe("About");
+    expect(body._workflow).toMatchObject({
+      state: "draft",
+      revision: 2,
+      publishedRevision: 1,
+    });
   });
 });
 

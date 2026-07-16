@@ -117,7 +117,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
           aria-expanded={open}
           disabled={disabled || (isDynamic && isLoading)}
           className={cn(
-            "dy-h-12 dy-w-full dy-justify-between dy-rounded-xl dy-border-border/40 dy-bg-background/50 dy-px-4 dy-font-normal dy-shadow-sm dy-transition-all hover:dy-shadow-md",
+            "dy-h-12 dy-w-full dy-justify-between dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-px-4 dy-font-normal dy-shadow-sm dy-transition-all hover:dy-shadow-md",
             !selectedOption && "dy-text-muted-foreground"
           )}
         >
@@ -147,7 +147,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">
+      <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-lg dy-border-border/40 dy-shadow-xl" align="start">
         <Command shouldFilter={!isDynamic}>
           <CommandInput
             placeholder={`Search ${label.toLowerCase()}...`}

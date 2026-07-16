@@ -1,6 +1,6 @@
 import { defineConfig } from "@dyrected/core";
 import { exampleSaasAccessPolicies } from "./dyrected/access-policies.ts";
-
+import { postgresAdapter } from "@dyrected/db-postgres";
 // Collections
 import { Media } from "./dyrected/collections/media.ts";
 import { Admin } from "./dyrected/collections/admin.ts";
@@ -14,6 +14,9 @@ import { Settings } from "./dyrected/globals/settings.ts";
 import { Navigation } from "./dyrected/globals/navigation.ts";
 import { Footer } from "./dyrected/globals/footer.ts";
 
+const db = postgresAdapter({
+  url: process.env.DATABASE_URL as string,
+});
 export default defineConfig({
   accessPolicies: exampleSaasAccessPolicies,
   collections: [Admin, Media, Pages, Blog, Products, Authors],
@@ -23,4 +26,5 @@ export default defineConfig({
       logoText: "SnackTrack CMS", // replaces the Dyrected logo
     },
   },
+  db,
 });

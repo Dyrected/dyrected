@@ -38,7 +38,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
   return (
     <div className="dy-space-y-3">
       {data && data.length > 0 ? (
-        <div className="dy-divide-y dy-divide-border/30 dy-rounded-xl dy-border dy-border-border/40 dy-overflow-hidden">
+        <div className="dy-divide-y dy-divide-border/30 dy-rounded-lg dy-border dy-border-border/40 dy-overflow-hidden">
           {data.map((item: any) => (
             <button
               key={item.id}
@@ -55,7 +55,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
           ))}
         </div>
       ) : (
-        <div className="dy-rounded-xl dy-border dy-border-dashed dy-border-border/40 dy-bg-muted/5 dy-px-4 dy-py-6 dy-text-center">
+        <div className="dy-rounded-lg dy-border dy-border-dashed dy-border-border/40 dy-bg-muted/5 dy-px-4 dy-py-6 dy-text-center">
           <p className="dy-text-xs dy-text-muted-foreground/60 dy-italic">
             No related {targetSchema?.labels?.plural || targetCollection} found.
           </p>
@@ -66,7 +66,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
         type="button"
         variant="outline"
         size="sm"
-        className="dy-h-8 dy-text-[11px] dy-font-bold dy-rounded-xl dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
+        className="dy-h-8 dy-text-[11px] dy-font-bold dy-rounded-lg dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
         onClick={() => navigate(`/collections/${targetCollection}/new?${onField}=${docId}`)}
       >
         <Plus className="dy-w-3 dy-h-3 dy-mr-1.5" />

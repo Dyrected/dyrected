@@ -202,7 +202,7 @@ export function AdminUI({
                   <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
                 </HashRouter>
               </QueryProvider>
-              <Toaster position="top-right" expand={true} richColors />
+              <Toaster position="top-center" expand={true} richColors />
             </AdminThemedRoot>
           </AdminThemeProvider>
         </DyrectedProvider>
@@ -278,7 +278,7 @@ export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProp
                 <AdminRoutes />
               </MemoryRouter>
             </QueryProvider>
-            <Toaster position="top-right" expand={true} richColors />
+            <Toaster position="top-center" expand={true} richColors />
           </AdminThemedRoot>
         </AdminThemeProvider>
       </DyrectedProvider>

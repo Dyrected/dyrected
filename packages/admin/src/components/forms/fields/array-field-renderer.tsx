@@ -224,7 +224,7 @@ function SortableArrayItem({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="dy-h-10 dy-w-10 dy-rounded-xl dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10 sm:dy-h-8 sm:dy-w-8"
+                className="dy-h-10 dy-w-10 dy-rounded-lg dy-text-muted-foreground/30 hover:dy-text-destructive hover:dy-bg-destructive/10 sm:dy-h-8 sm:dy-w-8"
                 onClick={(event) => { event.stopPropagation(); setShowDeleteConfirm(true) }}
                 title="Delete item"
               >
@@ -238,7 +238,7 @@ function SortableArrayItem({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="dy-h-10 dy-w-10 dy-rounded-xl dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
+                className="dy-h-10 dy-w-10 dy-rounded-lg dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
                 onClick={(event) => {
                   event.stopPropagation()
                   onToggleExpand()
@@ -254,7 +254,7 @@ function SortableArrayItem({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="dy-h-10 dy-w-10 dy-rounded-xl dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
+                    className="dy-h-10 dy-w-10 dy-rounded-lg dy-text-muted-foreground hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
                     onClick={(event) => event.stopPropagation()}
                     title="Item actions"
                   >
@@ -392,7 +392,7 @@ function SimpleArrayItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "dy-group dy-flex dy-items-center dy-gap-1.5 dy-rounded-xl dy-px-1 dy-py-1 dy-transition-colors",
+        "dy-group dy-flex dy-items-center dy-gap-1.5 dy-rounded-lg dy-px-1 dy-py-1 dy-transition-colors",
         isDragging ? "dy-bg-muted/40 dy-shadow-lg dy-ring-1 dy-ring-primary/30" : "hover:dy-bg-muted/30",
       )}
     >
@@ -415,7 +415,7 @@ function SimpleArrayItem({
             type="button"
             variant="ghost"
             size="icon"
-            className="dy-h-9 dy-w-9 dy-flex-shrink-0 dy-rounded-xl dy-text-muted-foreground/50 dy-opacity-0 dy-transition-opacity group-hover:dy-opacity-100 focus:dy-opacity-100 data-[state=open]:dy-opacity-100 hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
+            className="dy-h-9 dy-w-9 dy-flex-shrink-0 dy-rounded-lg dy-text-muted-foreground/50 dy-opacity-0 dy-transition-opacity group-hover:dy-opacity-100 focus:dy-opacity-100 data-[state=open]:dy-opacity-100 hover:dy-bg-muted hover:dy-text-foreground sm:dy-h-8 sm:dy-w-8"
             title="Item actions"
           >
             <MoreHorizontal className="dy-w-4 dy-h-4" />
@@ -657,7 +657,7 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
               type="button"
               variant="outline"
               size="sm"
-              className="dy-h-9 dy-text-[11px] dy-font-bold dy-rounded-xl dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
+              className="dy-h-9 dy-text-[11px] dy-font-bold dy-rounded-lg dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
               onClick={() => setIsBulkOpen(true)}
             >
               Bulk Add Images
@@ -667,7 +667,7 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
             type="button"
             variant="outline"
             size="sm"
-            className="dy-h-9 dy-text-[11px] dy-font-bold dy-rounded-xl dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
+            className="dy-h-9 dy-text-[11px] dy-font-bold dy-rounded-lg dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
             onClick={addItem}
           >
             <Plus className="dy-w-3.5 dy-h-3.5 dy-mr-1.5" />

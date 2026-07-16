@@ -151,7 +151,7 @@ export function initializeWorkflowDocument(data: Record<string, unknown>, workfl
 }
 
 /** The state a legacy document is treated as: the published one, else the last. */
-function publishedStateName(workflow: WorkflowConfig): string {
+export function publishedStateName(workflow: WorkflowConfig): string {
   return (
     workflow.states.find((state) => state.published)?.name ??
     workflow.states[workflow.states.length - 1]?.name ??
@@ -165,6 +165,7 @@ export function materializeWorkflowDocument(
   user?: AuthenticatedUser,
 ): BaseDocument | null {
   const meta = doc.__workflow as WorkflowMetadata | undefined;
+  const publishedState = publishedStateName(workflow);
 
   // Legacy content: a document that predates the workflow (no `__workflow`).
   // Treat it as already-published live content — its own fields are the
@@ -187,7 +188,12 @@ export function materializeWorkflowDocument(
   const { __published, __workflow, ...working } = doc;
 
   if (!canViewWorkflowDraft(workflow, user)) {
-    if (!__published || typeof __published !== "object") return null;
+    if (!__published || typeof __published !== "object") {
+      if (meta.state === publishedState) {
+        return { ...working, _workflow: publicMetadata(meta) };
+      }
+      return null;
+    }
     return { id: doc.id, ...(__published as Record<string, unknown>), _workflow: publicMetadata(meta) };
   }
 
@@ -303,22 +309,42 @@ export async function saveWorkflowDraft(args: {
   const db = config.db!;
   const workflow = collection.workflow!;
   if (!db.transaction) throw new Error(`The configured database adapter does not support workflow transactions.`);
-  const previous = originalDoc.__workflow as WorkflowMetadata;
+  const previous = originalDoc.__workflow as WorkflowMetadata | undefined;
+  const isLegacyPublishedDoc = !previous;
+  const baselineRevision = previous?.revision ?? 1;
   const event = createLifecycleEvent({
     name: "revision.created",
     collection: collection.slug,
     documentId: id,
     actorId: user?.sub,
-    payload: { revision: previous.revision + 1, previousRevision: previous.revision },
+    payload: {
+      revision: baselineRevision + 1,
+      previousRevision: isLegacyPublishedDoc ? baselineRevision : previous?.revision ?? null,
+    },
   });
 
   const doc = await db.transaction(async (tx) => {
     const nextMeta: WorkflowMetadata = {
-      ...previous,
-      state: originalDoc.__published ? workflow.draftState ?? workflow.initialState : previous.state,
-      revision: previous.revision + 1,
+      ...(previous ?? {}),
+      state: isLegacyPublishedDoc
+        ? workflow.draftState ?? workflow.initialState
+        : originalDoc.__published
+          ? workflow.draftState ?? workflow.initialState
+          : previous.state,
+      revision: baselineRevision + 1,
+      ...(isLegacyPublishedDoc ? { publishedRevision: baselineRevision } : {}),
     };
-    const updated = await tx.update({ collection: collection.slug, id, data: { ...data, __workflow: nextMeta } });
+    const updateData: Record<string, unknown> = {
+      ...data,
+      __workflow: nextMeta,
+    };
+
+    if (isLegacyPublishedDoc) {
+      const { __workflow: _legacyWorkflow, __published: _legacyPublished, ...publishedSnapshot } = originalDoc;
+      updateData.__published = publishedSnapshot;
+    }
+
+    const updated = await tx.update({ collection: collection.slug, id, data: updateData });
     await persistEvent(tx, event);
     return updated;
   });

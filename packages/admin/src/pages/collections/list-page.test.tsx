@@ -7,6 +7,7 @@ import { CollectionListPage } from "./list-page"
 
 const useDyrectedMock = vi.fn()
 const useQueryMock = vi.fn()
+const dataTableMock = vi.fn()
 
 vi.mock("../../providers/dyrected-context", () => ({
   useDyrected: () => useDyrectedMock(),
@@ -19,7 +20,10 @@ vi.mock("@tanstack/react-query", () => ({
 }))
 
 vi.mock("../../components/ui/data-table", () => ({
-  DataTable: () => <div data-testid="list-table" />,
+  DataTable: (props: unknown) => {
+    dataTableMock(props)
+    return <div data-testid="list-table" />
+  },
 }))
 
 vi.mock("../../components/ui/page-header", () => ({
@@ -69,6 +73,7 @@ describe("CollectionListPage component slots", () => {
   afterEach(cleanup)
 
   beforeEach(() => {
+    dataTableMock.mockClear()
     useQueryMock.mockImplementation((options: { queryKey: string[] }) => (
       options.queryKey[0] === "schemas"
         ? { data: { collections: [posts, pages], globals: [] }, isLoading: false }
@@ -120,5 +125,24 @@ describe("CollectionListPage component slots", () => {
     render(<MemoryRouter><CollectionListPage slug="private" /></MemoryRouter>)
     expect(screen.getByText("Access Denied")).toBeDefined()
     expect(screen.queryByTestId("before-list")).toBeNull()
+  })
+
+  it("adds a status column for draft-enabled collections", () => {
+    const draftCollection = {
+      ...collection("draft-posts"),
+      drafts: true,
+    }
+
+    useQueryMock.mockImplementation((options: { queryKey: string[] }) => (
+      options.queryKey[0] === "schemas"
+        ? { data: { collections: [draftCollection], globals: [] }, isLoading: false }
+        : { data: response, isLoading: false }
+    ))
+
+    render(<MemoryRouter><CollectionListPage slug="draft-posts" /></MemoryRouter>)
+
+    const props = dataTableMock.mock.calls.at(-1)?.[0] as { columns?: Array<{ id?: string; header?: string }> } | undefined
+    const headers = (props?.columns ?? []).map((column) => column.id ?? column.header)
+    expect(headers).toContain("publishingStatus")
   })
 })

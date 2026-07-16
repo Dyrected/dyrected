@@ -78,6 +78,8 @@ Enabling auth injects these fields into the collection. You can redefine them to
 | `password` | `text`   | Required, hashed on save, stripped from every API read response. A user can only change their own.                    |
 | `roles`    | `select` | Options `admin`, `editor`, `viewer` by default; starts empty. Only an existing admin can change another user's roles. |
 
+If you declare `roles` yourself on an auth collection, keep it as a multi-value field. Dyrected treats `user.roles` as an array of strings in access rules, workflow capability checks, and admin auth flows. A single-value field such as `radio` or a scalar `select` will drift from that shape and can surface validation errors such as `Expected string, received array`. Use `defineMultiSelectField(...)`, or a field that stores the same `string[]` shape.
+
 And it mounts a full set of endpoints under `/api/collections/{slug}/` — `login`, `logout`, `me`, `refresh-token`, `forgot-password`, `reset-password`, `invite`, `accept-invite`, plus `init` and `first-user` for bootstrapping the very first account. Each one, with its exact request and response shape, is documented in [Operations](/docs/features/authentication/operations), including how the login route behaves when an account is temporarily locked.
 
 ## Understand the session model

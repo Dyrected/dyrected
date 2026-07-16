@@ -10,7 +10,9 @@ import { type FilterRule, rulesToWhere, whereToRules } from "../../lib/filter-ru
 import { DataTable } from "../../components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
 import { Button } from "../../components/ui/button"
+import { Badge } from "../../components/ui/badge"
 import { Checkbox } from "../../components/ui/checkbox"
+import { getWorkflowBadgePresentation, WORKFLOW_BADGE_COLORS } from "../../lib/workflow-badge"
 import {
   Plus,
   Trash2,
@@ -26,14 +28,23 @@ import {
   Users,
 } from "lucide-react"
 import { resolveAdminIcon } from "../../lib/admin-icons"
-
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import type { DragEndEvent } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
 import { CsvImporter } from "../../components/ui/csv-importer"
+import { RenderCell } from "../../components/ui/render-cell"
+import { PageHeader } from "../../components/ui/page-header"
+import { Pagination } from "../../components/ui/pagination"
+import { AdminComponentSlot } from "../../components/admin-component-slot"
+import type { CollectionListSlotProps } from "../../types/admin-components"
+import { MediaGrid } from "../../components/media/media-grid"
+import { resolvePreviewUrl } from "../../lib/preview-url"
+import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
+import jexl from 'jexl'
+import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
+
 
 function SortableColumnItem({
   id,
@@ -84,20 +95,42 @@ function SortableColumnItem({
   )
 }
 
-
-import { RenderCell } from "../../components/ui/render-cell"
-import { PageHeader } from "../../components/ui/page-header"
-import { Pagination } from "../../components/ui/pagination"
-import { AdminComponentSlot } from "../../components/admin-component-slot"
-import type { CollectionListSlotProps } from "../../types/admin-components"
-import { MediaGrid } from "../../components/media/media-grid"
-import { resolvePreviewUrl } from "../../lib/preview-url"
-import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
-import jexl from 'jexl'
-import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
-
 interface CollectionListPageProps {
   slug: string
+}
+
+function resolvePublishedStateName(schema: CollectionConfig | undefined, item: Record<string, unknown>) {
+  const hasPublishingState = !!(schema?.workflow || schema?.drafts)
+  const workflowConfig = (schema as any)?.workflow
+  const workflowMeta = item?._workflow as { state?: string } | undefined
+  const workflowState = workflowConfig && workflowMeta
+    ? (workflowConfig.states as Array<{ name: string; published?: boolean }> | undefined)?.find(
+      (state) => state.name === workflowMeta.state,
+    )
+    : null
+
+  if (workflowState) {
+    return workflowState.published ? "Published" : "Draft"
+  }
+
+  if (!hasPublishingState) {
+    return null
+  }
+
+  const plainStatus = item.status
+  if (plainStatus === "published") return "Published"
+  if (plainStatus === "draft") return "Draft"
+  return null
+}
+
+function resolveWorkflowState(schema: CollectionConfig | undefined, item: Record<string, unknown>) {
+  const workflowConfig = (schema as any)?.workflow
+  const workflowMeta = item?._workflow as { state?: string } | undefined
+  return workflowConfig && workflowMeta
+    ? (workflowConfig.states as Array<{ name: string; label?: string; color?: string; published?: boolean }> | undefined)?.find(
+      (state) => state.name === workflowMeta.state,
+    ) ?? null
+    : null
 }
 
 export function CollectionListPage({ slug }: CollectionListPageProps) {
@@ -541,6 +574,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     const titleFieldName = visibleColumnNames.includes(schema.admin?.useAsTitle || "")
       ? schema.admin?.useAsTitle
       : firstVisibleFieldName
+    const showPublishingStatus = !!(schema.workflow || schema.drafts)
 
     const deleteAccess = (schema.access as { delete?: unknown })?.delete
 
@@ -706,6 +740,43 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       const systemColumn = makeSystemColumn(name)
       if (systemColumn) cols.push(systemColumn)
     })
+
+    if (showPublishingStatus) {
+      cols.push({
+        id: "publishingStatus",
+        header: "Status",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const status = resolvePublishedStateName(schema, row.original)
+          if (!status) {
+            return <span className="dy-text-xs dy-text-muted-foreground">-</span>
+          }
+
+          const workflowState = resolveWorkflowState(schema, row.original)
+          const badgePresentation = workflowState
+            ? getWorkflowBadgePresentation(workflowState.color)
+            : {
+              className: status === "Published"
+                ? WORKFLOW_BADGE_COLORS.success
+                : WORKFLOW_BADGE_COLORS.warning,
+              style: undefined,
+            }
+
+          return (
+            <Badge
+              variant="outline"
+              className={cn(
+                "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
+                badgePresentation.className,
+              )}
+              style={badgePresentation.style}
+            >
+              {status}
+            </Badge>
+          )
+        },
+      })
+    }
 
     return cols
   }, [schema, client, deleteMutation.isPending, user, handleDelete, slug, schemas, localPreference.columns])
@@ -1154,4 +1225,3 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     </div>
   )
 }
-

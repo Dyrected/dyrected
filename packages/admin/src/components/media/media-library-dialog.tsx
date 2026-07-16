@@ -163,7 +163,7 @@ export function MediaLibraryDialog({
   const handleConfirm = () => {
     if (onConfirm) {
       const selectedItems = sVals.map(val => {
-        return media?.find((m: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
+        return media?.find((m: { id?: string; filename?: string; url?: string;[key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
       }).filter(Boolean) as Media[]
       onConfirm(sVals, selectedItems)
     }
@@ -186,7 +186,7 @@ export function MediaLibraryDialog({
                 </div>
               )}
             </div>
-            <TabsList className="dy-grid dy-h-auto dy-grid-cols-3 dy-bg-muted/50 dy-p-1 dy-rounded-xl sm:dy-flex">
+            <TabsList className="dy-grid dy-h-auto dy-grid-cols-3 dy-bg-muted/50 dy-p-1 dy-rounded-lg sm:dy-flex">
               <TabsTrigger value="library" className="dy-gap-1.5 dy-rounded-lg dy-px-2 dy-font-bold dy-text-[10px] dy-uppercase dy-tracking-wider dy-transition-all data-[state=active]:dy-bg-background data-[state=active]:dy-shadow-sm sm:dy-gap-2 sm:dy-px-4 sm:dy-text-xs">
                 <Library className="dy-h-3.5 dy-w-3.5" /> Library
               </TabsTrigger>
@@ -208,7 +208,7 @@ export function MediaLibraryDialog({
                       <Search className="dy-absolute dy-left-3.5 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground dy-group-focus-within:dy-text-primary dy-transition-colors" />
                       <Input
                         placeholder="Search your media library..."
-                        className="dy-pl-11 dy-h-11 dy-rounded-xl dy-border-muted dy-bg-muted/10 focus:dy-bg-background dy-transition-all"
+                        className="dy-pl-11 dy-h-11 dy-rounded-lg dy-border-muted dy-bg-muted/10 focus:dy-bg-background dy-transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
@@ -220,25 +220,25 @@ export function MediaLibraryDialog({
                           size="sm"
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 hover:dy-bg-background dy-rounded-md"
                           onClick={() => {
-                            media?.forEach((item: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => {
-              if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
-                onSelect(item.id!, item as unknown as Media)
-              }
-            })
-          }}
-        >
-          Select All
-        </Button>
-        <div className="dy-hidden dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1 sm:dy-block" />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
-          onClick={() => {
-            sVals.forEach(val => {
-              const item = media?.find((m: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
-              onSelect(val, item as unknown as Media)
-            })                
+                            media?.forEach((item: { id?: string; filename?: string; url?: string;[key: string]: unknown }) => {
+                              if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
+                                onSelect(item.id!, item as unknown as Media)
+                              }
+                            })
+                          }}
+                        >
+                          Select All
+                        </Button>
+                        <div className="dy-hidden dy-w-px dy-h-4 dy-bg-border/50 dy-mx-1 sm:dy-block" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
+                          onClick={() => {
+                            sVals.forEach(val => {
+                              const item = media?.find((m: { id?: string; filename?: string; url?: string;[key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
+                              onSelect(val, item as unknown as Media)
+                            })
                           }}
                         >
                           Clear
@@ -253,17 +253,17 @@ export function MediaLibraryDialog({
                           key={item.id}
                           type="button"
                           onClick={() => {
-                             if (multiple) {
-                               onSelect(item.id!, item as unknown as Media)
-                               setSelectedItem(item as Media & { id?: string })
-                             } else {
-                               if (selectedItem?.id === item.id) {
-                                 onSelect(item.id!, item as unknown as Media)
-                                 onOpenChange(false)
-                               } else {
-                                 setSelectedItem(item as Media & { id?: string })
-                               }
-                             }
+                            if (multiple) {
+                              onSelect(item.id!, item as unknown as Media)
+                              setSelectedItem(item as Media & { id?: string })
+                            } else {
+                              if (selectedItem?.id === item.id) {
+                                onSelect(item.id!, item as unknown as Media)
+                                onOpenChange(false)
+                              } else {
+                                setSelectedItem(item as Media & { id?: string })
+                              }
+                            }
                           }}
                           className={cn(
                             "dy-relative dy-group dy-rounded-2xl dy-overflow-hidden dy-border-2 dy-aspect-square dy-transition-all hover:dy-scale-[1.02] active:dy-scale-95 dy-shadow-sm dy-bg-muted/5",
@@ -339,7 +339,7 @@ export function MediaLibraryDialog({
                         {multiple ? (
                           <>
                             <Button
-                              className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-sm dy-font-bold dy-tracking-tight dy-transition-all"
+                              className="dy-w-full dy-h-11 dy-rounded-lg dy-shadow-sm dy-font-bold dy-tracking-tight dy-transition-all"
                               variant={sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "outline" : "default"}
                               onClick={() => onSelect(selectedItem.id, selectedItem)}
                             >
@@ -347,7 +347,7 @@ export function MediaLibraryDialog({
                             </Button>
                             {sVals.length > 0 && (
                               <Button
-                                className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-xl dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-tracking-tight dy-transition-all dy-group"
+                                className="dy-w-full dy-h-11 dy-rounded-lg dy-shadow-xl dy-bg-primary hover:dy-bg-primary/90 dy-font-bold dy-tracking-tight dy-transition-all dy-group"
                                 onClick={handleConfirm}
                               >
                                 <span>Confirm {sVals.length} {sVals.length === 1 ? 'Asset' : 'Assets'}</span>
@@ -357,7 +357,7 @@ export function MediaLibraryDialog({
                           </>
                         ) : (
                           <Button
-                            className="dy-w-full dy-h-11 dy-rounded-xl dy-shadow-lg dy-font-bold dy-tracking-tight dy-bg-primary hover:dy-bg-primary/90 dy-transition-all"
+                            className="dy-w-full dy-h-11 dy-rounded-lg dy-shadow-lg dy-font-bold dy-tracking-tight dy-bg-primary hover:dy-bg-primary/90 dy-transition-all"
                             onClick={() => {
                               onSelect(selectedItem.id, selectedItem)
                               onOpenChange(false)
@@ -465,7 +465,7 @@ export function MediaLibraryDialog({
                   </div>
 
                   <div className="dy-flex dy-items-center dy-gap-3 dy-p-4 dy-rounded-2xl dy-bg-muted/20 dy-border dy-border-muted/30">
-                    <div className="dy-p-2 dy-bg-background dy-rounded-xl dy-shadow-sm dy-text-muted-foreground">
+                    <div className="dy-p-2 dy-bg-background dy-rounded-lg dy-shadow-sm dy-text-muted-foreground">
                       <Info className="dy-h-4 dy-w-4" />
                     </div>
                     <p className="dy-text-[11px] dy-text-muted-foreground/80 dy-font-medium dy-leading-relaxed">

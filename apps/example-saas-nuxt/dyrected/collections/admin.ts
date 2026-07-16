@@ -1,4 +1,4 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, defineMultiSelectField, defineTextField } from "@dyrected/core";
 
 export const Admin = defineCollection({
   slug: "admin",
@@ -9,30 +9,28 @@ export const Admin = defineCollection({
     icon: "UserCog",
   },
   fields: [
-    {
+    defineTextField({
       label: "First name",
       name: "firstName",
-      type: "text",
-    },
-    {
+    }),
+    defineTextField({
       label: "Last name",
       name: "lastName",
-      type: "text",
-    },
-    {
+    }),
+    defineMultiSelectField({
       name: "roles",
-      type: "radio",
       label: "Roles",
+      defaultValue: ["viewer"],
       access: {
         read: { policy: "hasRole", params: { role: "admin" } },
         update: { policy: "hasRole", params: { role: "admin" } },
       },
       options: [
         { label: "Admin", value: "admin" },
+        { label: "Publisher", value: "publisher" },
         { label: "Editor", value: "editor" },
         { label: "Viewer", value: "viewer" },
       ],
-      admin: { direction: "horizontal" },
-    },
+    }),
   ],
 });

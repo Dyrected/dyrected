@@ -54,7 +54,7 @@ export function RadioField({ schema, field, disabled, collection, siblingValues 
     return (
       <div className="dy-flex dy-gap-3">
         {[1, 2, 3].map(i => (
-          <div key={i} className="dy-h-12 dy-w-32 dy-rounded-xl dy-bg-muted dy-animate-pulse" />
+          <div key={i} className="dy-h-12 dy-w-32 dy-rounded-lg dy-bg-muted dy-animate-pulse" />
         ))}
       </div>
     )
@@ -83,7 +83,7 @@ export function RadioField({ schema, field, disabled, collection, siblingValues 
           <Label
             htmlFor={`${field.name}-${opt.value}`}
             className={cn(
-              "dy-flex dy-flex-1 dy-items-center dy-pl-12 dy-pr-4 dy-py-3 dy-rounded-xl dy-border dy-border-border/40 dy-bg-background/50 dy-cursor-pointer dy-transition-all hover:dy-bg-background/80 hover:dy-shadow-sm",
+              "dy-flex dy-flex-1 dy-items-center dy-pl-12 dy-pr-4 dy-py-3 dy-rounded-lg dy-border dy-border-border/40 dy-bg-background/50 dy-cursor-pointer dy-transition-all hover:dy-bg-background/80 hover:dy-shadow-sm",
               "dy-peer-data-[state=checked]:dy-border-primary dy-peer-data-[state=checked]:dy-bg-primary/5 dy-peer-data-[state=checked]:dy-shadow-md dy-peer-data-[state=checked]:dy-ring-1 dy-peer-data-[state=checked]:dy-ring-primary/20",
               "dy-text-sm dy-font-medium dy-text-foreground/70 dy-peer-data-[state=checked]:dy-text-primary"
             )}

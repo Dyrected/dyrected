@@ -8,6 +8,7 @@ import { ChevronLeft, Plus, ChevronDown } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl, getDisplayFilename, getSiteUrl } from "../../lib/utils"
+import { getWorkflowBadgePresentation, WORKFLOW_BADGE_COLORS } from "../../lib/workflow-badge"
 import { resolvePreviewUrl } from "../../lib/preview-url"
 import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil, History, Loader2 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -257,7 +258,7 @@ export function EditEntryPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showPreview, setShowPreview] = useState(false)
-  const [activeTab, setActiveTab] = useState<'edit' | 'versions' | 'audit'>('edit')
+  const [activeTab, setActiveTab] = useState<'edit' | 'workflow' | 'audit'>('edit')
   // Mobile only: the form and preview cannot sit side-by-side on a narrow
   // screen, so one pane is shown at a time. false = form, true = preview.
   const [mobilePreview, setMobilePreview] = useState(false)
@@ -405,7 +406,7 @@ export function EditEntryPage() {
 
   const hasWorkflow = !!(schema as { workflow?: unknown } | undefined)?.workflow
   const syncShowWorkflow = useState(() => (next: boolean) => {
-    setActiveTab((prev) => next ? "versions" : (prev === "versions" ? "edit" : prev))
+    setActiveTab((prev) => next ? "workflow" : (prev === "workflow" ? "edit" : prev))
   })[0]
 
   useEffect(() => {
@@ -569,6 +570,21 @@ export function EditEntryPage() {
     )
     : null
   const isPublished = workflowState ? !!workflowState.published : currentStatus === "published"
+  const statusBadgeLabel = workflowState
+    ? (workflowState as { label?: string; name: string }).label || workflowState.name
+    : currentStatus === "published"
+      ? "Published"
+      : currentStatus === "draft"
+        ? "Draft"
+        : String(currentStatus)
+  const workflowBadgePresentation = workflowState
+    ? getWorkflowBadgePresentation((workflowState as { color?: string }).color)
+    : {
+      className: isPublished
+        ? WORKFLOW_BADGE_COLORS.success
+        : WORKFLOW_BADGE_COLORS.warning,
+      style: undefined,
+    }
   const showStatusBadge = workflowConfig ? !!workflowMeta : hasStatus
 
   const siteUrl = getSiteUrl(schemas?.admin?.siteUrl);
@@ -720,9 +736,9 @@ export function EditEntryPage() {
             {showStatusBadge && (
               <Badge className={cn(
                 "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
-                isPublished ? "dy-bg-emerald-100 dy-text-emerald-700 dy-border-emerald-200" : "dy-bg-amber-100 dy-text-amber-700 dy-border-amber-200"
-              )} variant="outline">
-                {isPublished ? "Live" : "Draft"}
+                workflowBadgePresentation.className,
+              )} style={workflowBadgePresentation.style} variant="outline">
+                {statusBadgeLabel}
               </Badge>
             )}
           </div>
@@ -758,10 +774,10 @@ export function EditEntryPage() {
             {workflowAvailable && (
               <HeaderAction
                 icon={Workflow}
-                label="Versions"
-                active={activeTab === "versions"}
-                title={activeTab === "versions" ? "Hide Version History" : "Show Version History"}
-                onClick={() => setActiveTab((tab) => tab === "versions" ? "edit" : "versions")}
+                label="Workflow"
+                active={activeTab === "workflow"}
+                title={activeTab === "workflow" ? "Hide workflow transitions" : "Show workflow transitions"}
+                onClick={() => setActiveTab((tab) => tab === "workflow" ? "edit" : "workflow")}
               />
             )}
             {schema?.audit && isEdit && canReadAudit && (
@@ -897,7 +913,7 @@ export function EditEntryPage() {
             mobilePreview && showLivePreview ? "dy-hidden lg:dy-block" : ""
           )}>
             <div className="dy-space-y-4">
-              {activeTab === "versions" && workflowAvailable && (
+              {activeTab === "workflow" && workflowAvailable && (
                 <div className="dy-animate-in dy-fade-in dy-duration-200 dy-max-w-3xl dy-mx-auto dy-py-6">
                   <WorkflowPanel
                     collection={slug!}

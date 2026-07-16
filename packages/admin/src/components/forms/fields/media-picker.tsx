@@ -441,15 +441,15 @@ export function MediaPicker({
 
   if (multiple && !isIcon) {
     return (
-      <div 
-        {...getRootProps()} 
+      <div
+        {...getRootProps()}
         onPaste={handlePaste}
         className="dy-space-y-4 dy-relative"
       >
         <input {...getInputProps()} />
         {isDragActive && (
           <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-primary/10 dy-backdrop-blur-[2px] dy-border-2 dy-border-dashed dy-border-primary dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
-            <div className="dy-bg-card dy-p-4 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
+            <div className="dy-bg-card dy-p-4 dy-rounded-lg dy-shadow-xl dy-flex dy-items-center dy-gap-2">
               <UploadCloud className="dy-h-5 dy-w-5 dy-text-primary dy-animate-bounce" />
               <p className="dy-text-xs dy-font-bold">Drop to upload & select</p>
             </div>
@@ -457,7 +457,7 @@ export function MediaPicker({
         )}
         {uploading && (
           <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-background/60 dy-backdrop-blur-[1px] dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
-            <div className="dy-bg-card dy-p-4 dy-rounded-xl dy-shadow-xl dy-w-56 dy-max-w-[80%] dy-space-y-2">
+            <div className="dy-bg-card dy-p-4 dy-rounded-lg dy-shadow-xl dy-w-56 dy-max-w-[80%] dy-space-y-2">
               <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
                 <div className="dy-flex dy-items-center dy-gap-2">
                   <Loader2 className="dy-h-4 dy-w-4 dy-text-primary dy-animate-spin" />
@@ -480,7 +480,7 @@ export function MediaPicker({
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="dy-group dy-relative dy-aspect-square dy-rounded-xl dy-border-2 dy-border-dashed dy-border-muted hover:dy-border-primary/40 hover:dy-bg-primary/5 dy-transition-all dy-flex dy-flex-col dy-items-center dy-justify-center dy-gap-3 dy-overflow-hidden"
+            className="dy-group dy-relative dy-aspect-square dy-rounded-lg dy-border-2 dy-border-dashed dy-border-muted hover:dy-border-primary/40 hover:dy-bg-primary/5 dy-transition-all dy-flex dy-flex-col dy-items-center dy-justify-center dy-gap-3 dy-overflow-hidden"
           >
             <div className="dy-absolute dy-inset-0 dy-bg-primary/5 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity" />
             <div className="dy-h-12 dy-w-12 dy-bg-muted dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-muted-foreground dy-group-hover:dy-bg-primary/10 dy-group-hover:dy-text-primary dy-transition-all dy-shadow-inner">
@@ -498,7 +498,7 @@ export function MediaPicker({
             return (
               <div key={valId} className="dy-relative dy-group dy-animate-in dy-zoom-in dy-duration-300">
                 <div className={cn(
-                  "dy-relative dy-aspect-square dy-rounded-xl dy-overflow-hidden dy-border-2 dy-bg-muted/20 dy-transition-all dy-shadow-sm",
+                  "dy-relative dy-aspect-square dy-rounded-lg dy-overflow-hidden dy-border-2 dy-bg-muted/20 dy-transition-all dy-shadow-sm",
                   index === 0 ? "dy-border-primary dy-ring-4 dy-ring-primary/10" : "dy-border-border/40 hover:dy-border-border/80"
                 )}>
                   {item ? (
@@ -582,15 +582,15 @@ export function MediaPicker({
   }
 
   return (
-    <div 
-      {...getRootProps()} 
+    <div
+      {...getRootProps()}
       onPaste={handlePaste}
       className={cn("dy-relative", isIcon ? "" : "dy-space-y-3")}
     >
       <input {...getInputProps()} />
       {isDragActive && (
         <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-primary/10 dy-backdrop-blur-[2px] dy-border-2 dy-border-dashed dy-border-primary dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
-          <div className="dy-bg-card dy-p-3 dy-rounded-xl dy-shadow-xl dy-flex dy-items-center dy-gap-2">
+          <div className="dy-bg-card dy-p-3 dy-rounded-lg dy-shadow-xl dy-flex dy-items-center dy-gap-2">
             <UploadCloud className="dy-h-4 dy-w-4 dy-text-primary dy-animate-bounce" />
             <p className="dy-text-[11px] dy-font-bold">Drop file here</p>
           </div>
@@ -598,7 +598,7 @@ export function MediaPicker({
       )}
       {uploading && (
         <div className="dy-absolute dy-inset-0 dy-z-50 dy-bg-background/60 dy-backdrop-blur-[1px] dy-rounded-2xl dy-flex dy-items-center dy-justify-center dy-pointer-events-none">
-          <div className="dy-bg-card dy-p-3 dy-rounded-xl dy-shadow-xl dy-w-48 dy-max-w-[85%] dy-space-y-2">
+          <div className="dy-bg-card dy-p-3 dy-rounded-lg dy-shadow-xl dy-w-48 dy-max-w-[85%] dy-space-y-2">
             <div className="dy-flex dy-items-center dy-justify-between dy-gap-2">
               <div className="dy-flex dy-items-center dy-gap-2">
                 <Loader2 className="dy-h-4 dy-w-4 dy-text-primary dy-animate-spin" />
@@ -625,7 +625,7 @@ export function MediaPicker({
                 type="button"
                 onClick={() => setIsOpen(true)}
                 disabled={disabled}
-                className="dy-group dy-relative dy-aspect-square dy-rounded-xl dy-border-2 dy-border-dashed dy-border-muted hover:dy-border-primary/40 hover:dy-bg-primary/5 disabled:dy-cursor-not-allowed disabled:dy-opacity-60 dy-transition-all dy-flex dy-flex-col dy-items-center dy-justify-center dy-gap-3 dy-overflow-hidden"
+                className="dy-group dy-relative dy-aspect-square dy-rounded-lg dy-border-2 dy-border-dashed dy-border-muted hover:dy-border-primary/40 hover:dy-bg-primary/5 disabled:dy-cursor-not-allowed disabled:dy-opacity-60 dy-transition-all dy-flex dy-flex-col dy-items-center dy-justify-center dy-gap-3 dy-overflow-hidden"
               >
                 <div className="dy-absolute dy-inset-0 dy-bg-primary/5 dy-opacity-0 dy-group-hover:dy-opacity-100 dy-transition-opacity" />
                 <div className="dy-h-12 dy-w-12 dy-bg-muted dy-rounded-full dy-flex dy-items-center dy-justify-center dy-text-muted-foreground dy-group-hover:dy-bg-primary/10 dy-group-hover:dy-text-primary dy-transition-all dy-shadow-inner">
@@ -644,7 +644,7 @@ export function MediaPicker({
                 return (
                   <div
                     key={valId}
-                    className="dy-relative dy-aspect-square dy-group dy-rounded-xl dy-overflow-hidden dy-border-2 dy-border-primary dy-ring-4 dy-ring-primary/10 dy-transition-all dy-bg-muted/20 dy-shadow-sm"
+                    className="dy-relative dy-aspect-square dy-group dy-rounded-lg dy-overflow-hidden dy-border-2 dy-border-primary dy-ring-4 dy-ring-primary/10 dy-transition-all dy-bg-muted/20 dy-shadow-sm"
                   >
                     <button
                       type="button"

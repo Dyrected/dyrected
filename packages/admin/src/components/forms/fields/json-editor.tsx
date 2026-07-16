@@ -238,13 +238,13 @@ export function JsonEditor({ value, onChange, label, disabled }: JsonEditorProps
           onChange={handleChange}
           disabled={disabled}
           className={cn(
-            "dy-font-mono dy-text-xs dy-min-h-[180px] dy-bg-muted/15 dy-border-dashed focus-visible:dy-ring-1 dy-rounded-xl",
+            "dy-font-mono dy-text-xs dy-min-h-[180px] dy-bg-muted/15 dy-border-dashed focus-visible:dy-ring-1 dy-rounded-lg",
             error && "dy-border-destructive/60 focus-visible:dy-ring-destructive/30"
           )}
           placeholder='{ "key": "value" }'
         />
       ) : (
-        <ScrollArea className="dy-h-[180px] dy-w-full dy-rounded-xl dy-border dy-border-dashed dy-border-border/60 dy-bg-muted/15 dy-p-4">
+        <ScrollArea className="dy-h-[180px] dy-w-full dy-rounded-lg dy-border dy-border-dashed dy-border-border/60 dy-bg-muted/15 dy-p-4">
           {value ? (
             <div className="dy-flex dy-flex-col">
               <JsonTreeNode value={value} isLast={true} />

@@ -534,95 +534,115 @@ function FormEngineInner({
         </nav>
       )}
       <Form {...form}>
-      <form
-        id="dyrected-edit-form"
-        onSubmit={form.handleSubmit(handleFormSubmit)}
-        className="dy-space-y-8"
-      >
-        {/* Hidden fields */}
-        {resolvedFields
-          .filter((f) => f.admin?.hidden)
-          .map((field) => (
-            <input
-              key={field.name}
-              type="hidden"
-              {...form.register(field.name as Parameters<typeof form.register>[0])}
-            />
-          ))}
+        <form
+          id="dyrected-edit-form"
+          onSubmit={form.handleSubmit(handleFormSubmit)}
+          className="dy-space-y-8"
+        >
+          {/* Hidden fields */}
+          {resolvedFields
+            .filter((f) => f.admin?.hidden)
+            .map((field) => (
+              <input
+                key={field.name}
+                type="hidden"
+                {...form.register(field.name as Parameters<typeof form.register>[0])}
+              />
+            ))}
 
-        {/* Global validation error summary */}
-        {flatErrors.length > 0 && (
-          <div className="dy-p-4 dy-rounded-xl dy-bg-destructive/10 dy-border dy-border-destructive/20 dy-text-destructive dy-space-y-2">
-            <div className="dy-flex dy-items-center dy-gap-2 dy-font-semibold">
-              <AlertCircle className="dy-h-4 dy-w-4 dy-shrink-0" />
-              <span>Please resolve the following validation errors:</span>
-            </div>
-            <ul className="dy-list-disc dy-list-inside dy-text-sm dy-space-y-1">
-              {flatErrors.map((err, idx) => (
-                <li
-                  key={idx}
-                  className="dy-cursor-pointer hover:dy-underline"
-                  onClick={() => {
-                    // Navigate the nested editor to the field's container path first
-                    const trail = resolveContainerPath(
-                      resolvedFields,
-                      err.path,
-                      getStableId
-                    )
-                    if (trail && trail.length > 0) {
-                      navigateToPath(trail)
-                    }
-                    // One-tick wait so the drilled-in sub-form mounts before scroll
-                    setTimeout(() => {
-                      const el = (
-                        document.querySelector(`[data-dy-field="${err.path}"]`) ||
-                        document.querySelector(`[name="${err.path}"]`)
-                      ) as HTMLElement | null
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" })
-                        const input =
-                          el.querySelector<HTMLElement>(
-                            'input, textarea, [contenteditable], button[role="combobox"]',
-                          ) || el
-                        input?.focus()
+          {/* Global validation error summary */}
+          {flatErrors.length > 0 && (
+            <div className="dy-p-4 dy-rounded-lg dy-bg-destructive/10 dy-border dy-border-destructive/20 dy-text-destructive dy-space-y-2">
+              <div className="dy-flex dy-items-center dy-gap-2 dy-font-semibold">
+                <AlertCircle className="dy-h-4 dy-w-4 dy-shrink-0" />
+                <span>Please resolve the following validation errors:</span>
+              </div>
+              <ul className="dy-list-disc dy-list-inside dy-text-sm dy-space-y-1">
+                {flatErrors.map((err, idx) => (
+                  <li
+                    key={idx}
+                    className="dy-cursor-pointer hover:dy-underline"
+                    onClick={() => {
+                      // Navigate the nested editor to the field's container path first
+                      const trail = resolveContainerPath(
+                        resolvedFields,
+                        err.path,
+                        getStableId
+                      )
+                      if (trail && trail.length > 0) {
+                        navigateToPath(trail)
                       }
-                    }, 0)
-                  }}
-                >
-                  <span className="dy-font-medium">{formatPath(err.path)}:</span> {err.message}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {fieldsContent}
-
-        {/* ── Change Password Section (edit mode + auth collections only) ── */}
-        {hasPassword && passwordChangeMode !== null && (
-          <div className="dy-rounded-xl dy-border dy-border-border dy-p-5 dy-space-y-4">
-            <div className="dy-flex dy-items-center dy-gap-2 dy-text-sm dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wide">
-              <Lock className="dy-h-4 dy-w-4" />
-              Change Password
+                      // One-tick wait so the drilled-in sub-form mounts before scroll
+                      setTimeout(() => {
+                        const el = (
+                          document.querySelector(`[data-dy-field="${err.path}"]`) ||
+                          document.querySelector(`[name="${err.path}"]`)
+                        ) as HTMLElement | null
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth", block: "center" })
+                          const input =
+                            el.querySelector<HTMLElement>(
+                              'input, textarea, [contenteditable], button[role="combobox"]',
+                            ) || el
+                          input?.focus()
+                        }
+                      }, 0)
+                    }}
+                  >
+                    <span className="dy-font-medium">{formatPath(err.path)}:</span> {err.message}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="dy-text-xs dy-text-muted-foreground">
-              {passwordChangeMode === 'admin'
-                ? 'As an admin, you can reset this user\'s password without their current password.'
-                : 'Leave these fields blank to keep the current password unchanged.'}
-            </p>
-            <div className="dy-grid dy-gap-4">
-              {passwordChangeMode === 'self' && (
+          )}
+
+          {fieldsContent}
+
+          {/* ── Change Password Section (edit mode + auth collections only) ── */}
+          {hasPassword && passwordChangeMode !== null && (
+            <div className="dy-rounded-lg dy-border dy-border-border dy-p-5 dy-space-y-4">
+              <div className="dy-flex dy-items-center dy-gap-2 dy-text-sm dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wide">
+                <Lock className="dy-h-4 dy-w-4" />
+                Change Password
+              </div>
+              <p className="dy-text-xs dy-text-muted-foreground">
+                {passwordChangeMode === 'admin'
+                  ? 'As an admin, you can reset this user\'s password without their current password.'
+                  : 'Leave these fields blank to keep the current password unchanged.'}
+              </p>
+              <div className="dy-grid dy-gap-4">
+                {passwordChangeMode === 'self' && (
+                  <FormField
+                    control={form.control}
+                    name={"oldPassword" as Parameters<typeof form.control.register>[0]}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Current Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Enter current password"
+                            autoComplete="current-password"
+                            {...field}
+                            value={(field.value as string) ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <FormField
                   control={form.control}
-                  name={"oldPassword" as Parameters<typeof form.control.register>[0]}
+                  name={"newPassword" as Parameters<typeof form.control.register>[0]}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Current Password</FormLabel>
+                      <FormLabel>New Password</FormLabel>
                       <FormControl>
                         <Input
                           type="password"
-                          placeholder="Enter current password"
-                          autoComplete="current-password"
+                          placeholder="Min. 8 characters"
+                          autoComplete="new-password"
                           {...field}
                           value={(field.value as string) ?? ""}
                         />
@@ -631,59 +651,39 @@ function FormEngineInner({
                     </FormItem>
                   )}
                 />
-              )}
-              <FormField
-                control={form.control}
-                name={"newPassword" as Parameters<typeof form.control.register>[0]}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Min. 8 characters"
-                        autoComplete="new-password"
-                        {...field}
-                        value={(field.value as string) ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name={"confirmPassword" as Parameters<typeof form.control.register>[0]}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm New Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Repeat new password"
-                        autoComplete="new-password"
-                        {...field}
-                        value={(field.value as string) ?? ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name={"confirmPassword" as Parameters<typeof form.control.register>[0]}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="Repeat new password"
+                          autoComplete="new-password"
+                          {...field}
+                          value={(field.value as string) ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {!hideSubmit && (
-          <div className="dy-flex dy-justify-end dy-gap-4">
-            {!readOnly && (
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Saving..." : submitLabel}
-              </Button>
-            )}
-          </div>
-        )}
-      </form>
+          {!hideSubmit && (
+            <div className="dy-flex dy-justify-end dy-gap-4">
+              {!readOnly && (
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Saving..." : submitLabel}
+                </Button>
+              )}
+            </div>
+          )}
+        </form>
       </Form>
     </>
   )

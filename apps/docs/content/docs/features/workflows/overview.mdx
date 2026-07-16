@@ -304,6 +304,15 @@ export function materializeWorkflowDocument(
 ```
 
 
+## publishedStateName
+
+The state a legacy document is treated as: the published one, else the last.
+
+```ts
+export function publishedStateName(workflow: WorkflowConfig): string
+```
+
+
 ## publishingWorkflow
 
 Exported function from @dyrected/core.

@@ -7,6 +7,11 @@ import type { DatabaseAdapter, PaginatedResult } from '../types/index.js';
 export class InMemoryAdapter implements DatabaseAdapter {
   private store: Record<string, Record<string, any>> = {};
 
+  private getValue(doc: any, field: string) {
+    if (!field.includes(".")) return doc[field];
+    return field.split(".").reduce((value, segment) => value?.[segment], doc);
+  }
+
   private getCollection(slug: string): Record<string, any> {
     if (!this.store[slug]) this.store[slug] = {};
     return this.store[slug];
@@ -32,7 +37,7 @@ export class InMemoryAdapter implements DatabaseAdapter {
         continue;
       }
 
-      const docVal = doc[field];
+      const docVal = this.getValue(doc, field);
       if (typeof condition !== 'object' || condition === null) {
         if (docVal !== condition) return false;
         continue;

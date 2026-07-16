@@ -40,7 +40,7 @@ function InlinePicker({
       // Use visibility:hidden + pointer-events:none instead of unmounting so
       // react-day-picker keeps its internal month-navigation state alive.
       className={cn(
-        "dy-absolute dy-left-0 dy-top-full dy-z-50 dy-mt-1 dy-rounded-xl dy-border dy-border-border/50 dy-bg-popover dy-shadow-2xl dy-transition-[opacity,transform] dy-duration-100 dy-origin-top-left",
+        "dy-absolute dy-left-0 dy-top-full dy-z-50 dy-mt-1 dy-rounded-lg dy-border dy-border-border/50 dy-bg-popover dy-shadow-2xl dy-transition-[opacity,transform] dy-duration-100 dy-origin-top-left",
         open
           ? "dy-opacity-100 dy-scale-100 dy-pointer-events-auto"
           : "dy-opacity-0 dy-scale-95 dy-pointer-events-none dy-invisible"

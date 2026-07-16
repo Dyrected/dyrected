@@ -324,7 +324,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
           <Search className="dy-absolute dy-left-3 dy-top-1/2 dy--translate-y-1/2 dy-h-4 dy-w-4 dy-text-muted-foreground/60" />
           <Input
             placeholder="Search assets by filename..."
-            className="dy-pl-10 dy-h-11 dy-bg-card dy-border-border/60 dy-rounded-xl dy-shadow-sm focus-visible:dy-ring-primary/20"
+            className="dy-pl-10 dy-h-11 dy-bg-card dy-border-border/60 dy-rounded-lg dy-shadow-sm focus-visible:dy-ring-primary/20"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -332,7 +332,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
 
         <div className="dy-flex dy-items-center dy-gap-2 sm:dy-ml-auto">
           <Select value={sortValue} onValueChange={(v) => setSortValue(v as SortValue)}>
-            <SelectTrigger className="dy-h-11 dy-w-full dy-rounded-xl dy-bg-card dy-border-border/60 dy-shadow-sm sm:dy-w-44">
+            <SelectTrigger className="dy-h-11 dy-w-full dy-rounded-lg dy-bg-card dy-border-border/60 dy-shadow-sm sm:dy-w-44">
               <ArrowUpDown className="dy-h-4 dy-w-4 dy-text-muted-foreground/70" />
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
@@ -343,7 +343,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             </SelectContent>
           </Select>
 
-          <div className="dy-flex dy-h-11 dy-items-center dy-rounded-xl dy-border dy-border-border/60 dy-bg-card dy-p-1 dy-shadow-sm">
+          <div className="dy-flex dy-h-11 dy-items-center dy-rounded-lg dy-border dy-border-border/60 dy-bg-card dy-p-1 dy-shadow-sm">
             <Button
               type="button"
               variant="ghost"
@@ -586,7 +586,7 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
   return (
     <Card
       className={cn(
-        "dy-overflow-hidden dy-group dy-relative dy-border-border/40 dy-bg-card dy-shadow-sm hover:dy-shadow-xl dy-transition-all dy-duration-300 dy-rounded-xl dy-cursor-pointer",
+        "dy-overflow-hidden dy-group dy-relative dy-border-border/40 dy-bg-card dy-shadow-sm hover:dy-shadow-xl dy-transition-all dy-duration-300 dy-rounded-lg dy-cursor-pointer",
         isSelected && "dy-ring-2 dy-ring-primary dy-ring-offset-2 dy-shadow-lg dy-scale-[0.98]"
       )}
       onClick={onClick}
@@ -733,7 +733,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
         <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-overflow-y-auto md:dy-flex-row md:dy-overflow-hidden">
           {/* Left Side: Large Preview */}
           <div className="dy-relative dy-flex dy-w-full dy-flex-none dy-items-center dy-justify-center dy-border-b dy-border-border/40 dy-bg-muted/15 dy-p-3 sm:dy-p-5 md:dy-h-full md:dy-min-h-0 md:dy-w-3/5 md:dy-flex-shrink md:dy-border-b-0 md:dy-border-r lg:dy-w-2/3">
-            <div className="dy-relative dy-flex dy-h-[40dvh] dy-min-h-[220px] dy-max-h-80 dy-w-full dy-max-w-full dy-items-center dy-justify-center dy-overflow-hidden dy-rounded-xl dy-border dy-border-border/40 dy-bg-checkered dy-shadow-inner md:dy-h-full md:dy-max-h-full">
+            <div className="dy-relative dy-flex dy-h-[40dvh] dy-min-h-[220px] dy-max-h-80 dy-w-full dy-max-w-full dy-items-center dy-justify-center dy-overflow-hidden dy-rounded-lg dy-border dy-border-border/40 dy-bg-checkered dy-shadow-inner md:dy-h-full md:dy-max-h-full">
               {embedUrl ? (
                 <iframe
                   src={embedUrl}
@@ -784,7 +784,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                     <p className="dy-text-xs dy-text-muted-foreground">Uploaded on {item.createdAt ? new Date(item.createdAt as string).toLocaleDateString() : 'N/A'}</p>
                   </div>
 
-                  <div className="dy-grid dy-grid-cols-2 dy-gap-x-4 dy-gap-y-3 dy-bg-muted/30 dy-p-3.5 dy-rounded-xl dy-border dy-border-border/40">
+                  <div className="dy-grid dy-grid-cols-2 dy-gap-x-4 dy-gap-y-3 dy-bg-muted/30 dy-p-3.5 dy-rounded-lg dy-border dy-border-border/40">
                     <div className="dy-space-y-0.5">
                       <span className="dy-text-[9px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground/80">File Size</span>
                       <p className="dy-text-xs dy-font-semibold">{((item.filesize || (item.size as number) || 0) / 1024).toFixed(1)} KB</p>
@@ -849,7 +849,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
             <div className="dy-flex dy-flex-shrink-0 dy-flex-col dy-gap-3 dy-border-t dy-border-border/40 dy-bg-muted/5 dy-p-4 sm:dy-p-6">
               {hasChanges && (
                 <Button
-                  className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-card dy-shadow-lg dy-shadow-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-bottom-2"
+                  className="dy-w-full dy-h-11 dy-rounded-lg dy-font-bold dy-bg-primary dy-text-card dy-shadow-lg dy-shadow-primary/20 dy-animate-in dy-fade-in dy-slide-in-from-bottom-2"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -858,7 +858,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
               )}
               <div className="dy-grid dy-grid-cols-2 dy-gap-2 sm:dy-flex">
                 {collectionSlug && (
-                  <Button className="dy-col-span-2 dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card sm:dy-flex-1" variant="outline" asChild>
+                  <Button className="dy-col-span-2 dy-h-11 dy-rounded-lg dy-font-bold dy-gap-2 dy-bg-card sm:dy-flex-1" variant="outline" asChild>
                     <Link to={`/collections/${collectionSlug}/edit/${item.id}`}>
                       <Pencil className="dy-h-4 dy-w-4" />
                       Edit Full Details
@@ -867,7 +867,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                 )}
                 <Button
                   className={cn(
-                    "dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card",
+                    "dy-h-11 dy-rounded-lg dy-font-bold dy-gap-2 dy-bg-card",
                     collectionSlug ? "dy-px-3" : "dy-flex-1"
                   )}
                   variant="outline"
@@ -883,7 +883,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                   <Button
                     onClick={() => setIsCropOpen(true)}
                     className={cn(
-                      "dy-h-11 dy-rounded-xl dy-font-bold dy-gap-2 dy-bg-card",
+                      "dy-h-11 dy-rounded-lg dy-font-bold dy-gap-2 dy-bg-card",
                       collectionSlug ? "dy-px-3" : "dy-flex-1"
                     )}
                     variant="outline"
@@ -896,7 +896,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
                 {onDelete && (
                   <Button
                     onClick={onDelete}
-                    className="dy-h-11 dy-px-4 dy-rounded-xl dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive dy-transition-colors"
+                    className="dy-h-11 dy-px-4 dy-rounded-lg dy-text-destructive hover:dy-bg-destructive/10 hover:dy-text-destructive dy-transition-colors"
                     variant="ghost"
                     title="Delete Permanently"
                   >
@@ -1015,72 +1015,72 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
       </TabsList>
 
       <TabsContent value="files" className="dy-mt-0 dy-space-y-6 dy-py-6 dy-px-4">
-      <div
-        {...getRootProps()}
-        className={`dy-border-2 dy-border-dashed dy-rounded-2xl dy-p-12 dy-text-center dy-cursor-pointer dy-transition-all dy-duration-300 ${isDragActive
-          ? "dy-border-primary dy-bg-primary/5 dy-scale-[0.98]"
-          : "dy-border-muted-foreground/20 hover:dy-border-primary/40 hover:dy-bg-muted/5"
-          }`}
-      >
-        <input {...getInputProps()} />
-        <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-4">
-          <Upload className="dy-h-8 dy-w-8 dy-text-primary" />
+        <div
+          {...getRootProps()}
+          className={`dy-border-2 dy-border-dashed dy-rounded-2xl dy-p-12 dy-text-center dy-cursor-pointer dy-transition-all dy-duration-300 ${isDragActive
+            ? "dy-border-primary dy-bg-primary/5 dy-scale-[0.98]"
+            : "dy-border-muted-foreground/20 hover:dy-border-primary/40 hover:dy-bg-muted/5"
+            }`}
+        >
+          <input {...getInputProps()} />
+          <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-primary/10 dy-flex dy-items-center dy-justify-center dy-mx-auto dy-mb-4">
+            <Upload className="dy-h-8 dy-w-8 dy-text-primary" />
+          </div>
+          <p className="dy-text-xl dy-font-bold dy-text-foreground">Drag & drop assets</p>
+          <p className="dy-text-sm dy-text-muted-foreground dy-mt-1">or click to browse your files</p>
         </div>
-        <p className="dy-text-xl dy-font-bold dy-text-foreground">Drag & drop assets</p>
-        <p className="dy-text-sm dy-text-muted-foreground dy-mt-1">or click to browse your files</p>
-      </div>
 
-      {files.length > 0 && (
-        <div className="dy-space-y-4 dy-animate-in dy-fade-in dy-slide-in-from-bottom-4">
-          <div className="dy-flex dy-items-center dy-justify-between">
-            <p className="dy-text-sm dy-font-bold dy-text-foreground">{files.length} assets selected</p>
-            <Button variant="ghost" size="sm" onClick={() => setFiles([])} disabled={uploading} className="dy-text-xs dy-h-8">
-              Clear All
-            </Button>
-          </div>
-
-          <div className="dy-max-h-[240px] dy-overflow-auto dy-space-y-2 dy-pr-2 dy-custom-scrollbar">
-            {files.map((file, idx) => (
-              <div key={idx} className="dy-flex dy-items-center dy-justify-between dy-p-3 dy-bg-muted/30 dy-border dy-border-border/40 dy-rounded-xl dy-text-sm dy-group dy-transition-colors hover:dy-bg-muted/50">
-                <div className="dy-flex dy-items-center dy-gap-3 dy-truncate">
-                  <div className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-card dy-border dy-border-border/60 dy-flex dy-items-center dy-justify-center dy-flex-shrink-0">
-                    <FileIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
-                  </div>
-                  <span className="dy-truncate dy-font-medium dy-text-foreground/80">{file.name}</span>
-                </div>
-                <span className="dy-text-muted-foreground dy-text-[10px] dy-font-bold dy-bg-card dy-px-2 dy-py-1 dy-rounded dy-border dy-border-border/40 dy-ml-4">
-                  {(file.size / 1024).toFixed(1)} KB
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {uploading && (
-            <div className="dy-space-y-2 dy-pt-2">
-              <div className="dy-flex dy-justify-between dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
-                <span>Uploading...</span>
-                <span>{Math.round(progress)}%</span>
-              </div>
-              <Progress value={progress} className="dy-h-2 dy-rounded-full" />
+        {files.length > 0 && (
+          <div className="dy-space-y-4 dy-animate-in dy-fade-in dy-slide-in-from-bottom-4">
+            <div className="dy-flex dy-items-center dy-justify-between">
+              <p className="dy-text-sm dy-font-bold dy-text-foreground">{files.length} assets selected</p>
+              <Button variant="ghost" size="sm" onClick={() => setFiles([])} disabled={uploading} className="dy-text-xs dy-h-8">
+                Clear All
+              </Button>
             </div>
-          )}
 
-          <div className="dy-flex dy-justify-end dy-pt-4 dy-border-t dy-border-border/40">
-            <Button
-              onClick={handleUpload}
-              disabled={uploading || files.length === 0}
-              className="dy-w-full dy-h-12 dy-rounded-xl dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98]"
-            >
-              {uploading ? (
-                <span className="dy-flex dy-items-center dy-gap-2">
-                  <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-card/30 dy-border-t-card dy-rounded-full dy-animate-spin" />
-                  Uploading Assets...
-                </span>
-              ) : `Upload ${files.length} Assets`}
-            </Button>
+            <div className="dy-max-h-[240px] dy-overflow-auto dy-space-y-2 dy-pr-2 dy-custom-scrollbar">
+              {files.map((file, idx) => (
+                <div key={idx} className="dy-flex dy-items-center dy-justify-between dy-p-3 dy-bg-muted/30 dy-border dy-border-border/40 dy-rounded-lg dy-text-sm dy-group dy-transition-colors hover:dy-bg-muted/50">
+                  <div className="dy-flex dy-items-center dy-gap-3 dy-truncate">
+                    <div className="dy-h-8 dy-w-8 dy-rounded-lg dy-bg-card dy-border dy-border-border/60 dy-flex dy-items-center dy-justify-center dy-flex-shrink-0">
+                      <FileIcon className="dy-h-4 dy-w-4 dy-text-muted-foreground" />
+                    </div>
+                    <span className="dy-truncate dy-font-medium dy-text-foreground/80">{file.name}</span>
+                  </div>
+                  <span className="dy-text-muted-foreground dy-text-[10px] dy-font-bold dy-bg-card dy-px-2 dy-py-1 dy-rounded dy-border dy-border-border/40 dy-ml-4">
+                    {(file.size / 1024).toFixed(1)} KB
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {uploading && (
+              <div className="dy-space-y-2 dy-pt-2">
+                <div className="dy-flex dy-justify-between dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">
+                  <span>Uploading...</span>
+                  <span>{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="dy-h-2 dy-rounded-full" />
+              </div>
+            )}
+
+            <div className="dy-flex dy-justify-end dy-pt-4 dy-border-t dy-border-border/40">
+              <Button
+                onClick={handleUpload}
+                disabled={uploading || files.length === 0}
+                className="dy-w-full dy-h-12 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98]"
+              >
+                {uploading ? (
+                  <span className="dy-flex dy-items-center dy-gap-2">
+                    <div className="dy-h-4 dy-w-4 dy-border-2 dy-border-card/30 dy-border-t-card dy-rounded-full dy-animate-spin" />
+                    Uploading Assets...
+                  </span>
+                ) : `Upload ${files.length} Assets`}
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </TabsContent>
 
       <TabsContent value="url" className="dy-mt-0 dy-space-y-5 dy-py-6 dy-px-4">
@@ -1110,7 +1110,7 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
           <Button
             onClick={handleAddUrl}
             disabled={addingUrl || !externalUrl.trim()}
-            className="dy-h-12 dy-rounded-xl dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98] sm:dy-w-auto"
+            className="dy-h-12 dy-rounded-lg dy-bg-primary hover:dy-bg-primary/90 dy-text-card dy-font-bold dy-shadow-lg dy-shadow-primary/20 dy-transition-all active:dy-scale-[0.98] sm:dy-w-auto"
           >
             {addingUrl ? (
               <span className="dy-flex dy-items-center dy-gap-2">

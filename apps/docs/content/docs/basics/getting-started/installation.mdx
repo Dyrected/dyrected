@@ -170,7 +170,7 @@ import {
   defineGlobal,
   defineConfig,
   defineTextField,
-  defineSelectField,
+  defineMultiSelectField,
   defineRichTextField,
   defineRelationshipField,
   defineArrayField,
@@ -190,10 +190,10 @@ const Admins = defineCollection({
   admin: { icon: "Users", useAsTitle: "name" },
   fields: [
     defineTextField({ name: "name", required: true }),
-    defineSelectField({
+    defineMultiSelectField({
       name: "roles",
       options: ["admin", "editor"],
-      defaultValue: "admin",
+      defaultValue: ["admin"],
     }),
   ],
 });

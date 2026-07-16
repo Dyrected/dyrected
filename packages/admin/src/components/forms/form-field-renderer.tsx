@@ -153,7 +153,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
 
   if (jexlError) {
     return (
-      <div className="dy-space-y-2 dy-border dy-border-destructive/30 dy-bg-destructive/5 dy-p-3 dy-rounded-xl dy-my-2">
+      <div className="dy-space-y-2 dy-border dy-border-destructive/30 dy-bg-destructive/5 dy-p-3 dy-rounded-lg dy-my-2">
         <div className="dy-text-xs dy-font-semibold dy-text-destructive dy-flex dy-items-center dy-gap-2">
           <span>⚠️ JEXL Rule Evaluation Error on field "{schema.label || schema.name}":</span>
           <span className="dy-font-mono dy-text-[11px] dy-bg-destructive/10 dy-px-1.5 dy-py-0.5 dy-rounded">{jexlError}</span>
@@ -324,7 +324,7 @@ function FormFieldRendererInner({
           data-dy-field={schema.name}
           className={cn(
             isSwitchBoolean
-              ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-xl dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
+              ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-lg dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
               : isBoolean
                 ? "dy-flex dy-flex-row-reverse dy-items-start dy-justify-end dy-gap-3 dy-space-y-0"
                 : hideLabel
@@ -333,25 +333,25 @@ function FormFieldRendererInner({
           )}
         >
           {!hideLabel && (
-          <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-flex-wrap dy-gap-2 dy-mb-1")}>
-            <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
-              {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
-              {schema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
-            </FormLabel>
-            {schema.admin?.description && (
-              <p className={cn(
-                "dy-text-muted-foreground/60 dy-italic",
-                isBoolean ? "dy-text-[11px] dy-leading-tight" : "dy-text-[11px] dy-leading-relaxed"
-              )}>
-                {schema.admin.description}
-              </p>
-            )}
-            {!isBoolean && schema.unique && (
-              <span className="dy-inline-flex dy-items-center dy-rounded-full dy-bg-primary/10 dy-px-1.5 dy-py-0.5 dy-text-[10px] dy-font-medium dy-text-primary dy-ring-1 dy-ring-inset dy-ring-primary/10">
-                Unique
-              </span>
-            )}
-          </div>
+            <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-flex-wrap dy-gap-2 dy-mb-1")}>
+              <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
+                {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
+                {schema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
+              </FormLabel>
+              {schema.admin?.description && (
+                <p className={cn(
+                  "dy-text-muted-foreground/60 dy-italic",
+                  isBoolean ? "dy-text-[11px] dy-leading-tight" : "dy-text-[11px] dy-leading-relaxed"
+                )}>
+                  {schema.admin.description}
+                </p>
+              )}
+              {!isBoolean && schema.unique && (
+                <span className="dy-inline-flex dy-items-center dy-rounded-full dy-bg-primary/10 dy-px-1.5 dy-py-0.5 dy-text-[10px] dy-font-medium dy-text-primary dy-ring-1 dy-ring-inset dy-ring-primary/10">
+                  Unique
+                </span>
+              )}
+            </div>
           )}
           <FormControl>
             <FieldRenderer

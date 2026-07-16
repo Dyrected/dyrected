@@ -45,7 +45,7 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
             type="button"
             variant="outline"
             disabled={disabled}
-            className="dy-flex-1 dy-justify-start dy-gap-3 dy-h-12 dy-rounded-xl dy-border-border/40 dy-bg-background/50 dy-font-normal hover:dy-shadow-md dy-transition-all"
+            className="dy-flex-1 dy-justify-start dy-gap-3 dy-h-12 dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-font-normal hover:dy-shadow-md dy-transition-all"
           >
             {SelectedIcon ? (
               <>
@@ -151,7 +151,7 @@ export function IconPicker({ schema, field, disabled }: IconPickerProps) {
       </Popover>
 
       {SelectedIcon && (
-        <div className="dy-flex dy-items-center dy-justify-center dy-h-12 dy-w-12 dy-rounded-xl dy-border dy-border-border/40 dy-bg-background/50 dy-shrink-0">
+        <div className="dy-flex dy-items-center dy-justify-center dy-h-12 dy-w-12 dy-rounded-lg dy-border dy-border-border/40 dy-bg-background/50 dy-shrink-0">
           {React.createElement(SelectedIcon, { className: "dy-h-6 dy-w-6 dy-text-foreground/70" })}
         </div>
       )}

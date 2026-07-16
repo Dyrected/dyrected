@@ -1686,6 +1686,16 @@ export const references: readonly ReferenceEntry[] = [
     ]
   },
   {
+    "id": "@dyrected/core:publishedStateName",
+    "name": "publishedStateName",
+    "kind": "function",
+    "category": "workflows",
+    "sourcePackage": "@dyrected/core",
+    "description": "The state a legacy document is treated as: the published one, else the last.",
+    "signature": "export function publishedStateName(workflow: WorkflowConfig): string",
+    "members": []
+  },
+  {
     "id": "@dyrected/core:publishingWorkflow",
     "name": "publishingWorkflow",
     "kind": "function",

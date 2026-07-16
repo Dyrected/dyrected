@@ -29,6 +29,7 @@ import {
   canViewWorkflowDraft,
   initializeWorkflowDocument,
   materializeWorkflowDocument,
+  publishedStateName,
   saveWorkflowDraft,
   transitionWorkflow,
 } from "../workflows.js";
@@ -186,9 +187,27 @@ export class CollectionController {
       this.collection.workflow &&
       !canViewWorkflowDraft(this.collection.workflow, user)
     ) {
+      const publicWorkflowState = publishedStateName(this.collection.workflow);
       where = where
-        ? { AND: [where, { __published: { exists: true } }] }
-        : { __published: { exists: true } };
+        ? {
+            AND: [
+              where,
+              {
+                OR: [
+                  { __published: { exists: true } },
+                  { __workflow: { exists: false } },
+                  { "__workflow.state": { equals: publicWorkflowState } },
+                ],
+              },
+            ],
+          }
+        : {
+            OR: [
+              { __published: { exists: true } },
+              { __workflow: { exists: false } },
+              { "__workflow.state": { equals: publicWorkflowState } },
+            ],
+          };
     }
 
     const access = await this.evaluateAccess(c, "read");
@@ -852,9 +871,13 @@ export class CollectionController {
       { isolated: true },
     );
 
+    const responseDoc = this.collection.workflow
+      ? materializeWorkflowDocument(doc, this.collection.workflow, user)!
+      : doc;
+
     // Run afterRead hooks
     const readDoc = await runCollectionHooks(this.collection.hooks?.afterRead, {
-      doc,
+      doc: responseDoc,
       req: c.req,
       user,
       db: readonlyDb,

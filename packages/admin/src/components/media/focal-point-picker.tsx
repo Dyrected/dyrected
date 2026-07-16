@@ -35,7 +35,7 @@ export function FocalPointPicker({ url, value, onChange, className }: FocalPoint
     <div className="dy-space-y-2">
       <div
         ref={containerRef}
-        className={cn("dy-relative dy-cursor-crosshair dy-overflow-hidden dy-rounded-xl dy-border dy-border-border/40 dy-bg-muted/20 dy-group", className)}
+        className={cn("dy-relative dy-cursor-crosshair dy-overflow-hidden dy-rounded-lg dy-border dy-border-border/40 dy-bg-muted/20 dy-group", className)}
         onClick={handleClick}
       >
         <img

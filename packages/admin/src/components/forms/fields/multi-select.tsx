@@ -126,7 +126,7 @@ export function MultiSelect({
             role="combobox"
             aria-expanded={open}
             disabled={disabled || (isDynamic && isLoading)}
-            className="dy-min-h-12 dy-w-full dy-justify-between dy-rounded-xl dy-border-border/40 dy-bg-background/50 dy-px-4 dy-font-normal dy-shadow-sm dy-transition-all hover:dy-shadow-md"
+            className="dy-min-h-12 dy-w-full dy-justify-between dy-rounded-lg dy-border-border/40 dy-bg-background/50 dy-px-4 dy-font-normal dy-shadow-sm dy-transition-all hover:dy-shadow-md"
           >
             <div className="dy-flex dy-min-w-0 dy-flex-1 dy-flex-wrap dy-items-center dy-gap-1">
               {value.length === 0 && (
@@ -189,7 +189,7 @@ export function MultiSelect({
             </div>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-xl dy-border-border/40 dy-shadow-xl" align="start">
+        <PopoverContent className="dy-w-[var(--radix-popover-trigger-width)] dy-p-0 dy-rounded-lg dy-border-border/40 dy-shadow-xl" align="start">
           <Command shouldFilter={!isDynamic}>
             <CommandInput
               placeholder="Search options..."

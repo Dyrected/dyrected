@@ -193,7 +193,7 @@ function SortableBlockItem({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "dy-group dy-bg-card dy-border dy-rounded-xl dy-overflow-hidden dy-transition-all",
+        "dy-group dy-bg-card dy-border dy-rounded-lg dy-overflow-hidden dy-transition-all",
         active
           ? "dy-border-primary dy-ring-1 dy-ring-primary/40 dy-shadow-sm"
           : "dy-border-border/50 hover:dy-border-border hover:dy-shadow-sm",
@@ -459,7 +459,7 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                     <Plus className="dy-w-3 dy-h-3 dy-ml-1.5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="dy-max-w-md md:dy-max-w-4xl dy-p-6 dy-rounded-xl dy-border-border/40 dy-shadow-2xl !dy-flex dy-flex-col dy-max-h-[85vh] dy-overflow-hidden">
+                <DialogContent className="dy-max-w-md md:dy-max-w-4xl dy-p-6 dy-rounded-lg dy-border-border/40 dy-shadow-2xl !dy-flex dy-flex-col dy-max-h-[85vh] dy-overflow-hidden">
                   <DialogHeader className="dy-pb-2 dy-flex-shrink-0">
                     <DialogTitle className="dy-text-lg dy-font-bold dy-text-foreground">Block Library</DialogTitle>
                     <DialogDescription className="dy-text-xs dy-text-muted-foreground">
@@ -490,7 +490,7 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                             <div
                               key={block.slug}
                               onClick={() => handleAddBlock(block)}
-                              className="dy-group dy-border dy-border-muted/30 dy-rounded-xl dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
+                              className="dy-group dy-border dy-border-muted/30 dy-rounded-lg dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
                             >
                               <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
                                 <LibIcon className="dy-w-4 dy-h-4" />
@@ -517,7 +517,7 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
       </div>
 
       {fields.length === 0 ? (
-        <div className="dy-text-center dy-p-8 dy-border dy-border-dashed dy-border-border/40 dy-rounded-xl dy-bg-muted/10 dy-flex dy-flex-col dy-items-center dy-gap-3">
+        <div className="dy-text-center dy-p-8 dy-border dy-border-dashed dy-border-border/40 dy-rounded-lg dy-bg-muted/10 dy-flex dy-flex-col dy-items-center dy-gap-3">
           <p className="dy-text-[11px] dy-text-muted-foreground/50">No blocks added yet.</p>
           {schema.blocks && schema.blocks.length > 0 && (
             <Button

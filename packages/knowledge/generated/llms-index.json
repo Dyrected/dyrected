@@ -959,6 +959,12 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:publishedStateName",
+      "name": "publishedStateName",
+      "category": "workflows",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:publishingWorkflow",
       "name": "publishingWorkflow",
       "category": "workflows",
