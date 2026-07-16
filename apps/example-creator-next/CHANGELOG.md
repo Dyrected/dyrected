@@ -1,5 +1,16 @@
 # example-creator-next
 
+## 0.1.17
+
+### Patch Changes
+
+- Updated dependencies [42f92d0]
+  - @dyrected/admin@2.5.63
+  - @dyrected/core@2.5.63
+  - @dyrected/react@2.5.63
+  - @dyrected/next@2.5.63
+  - @dyrected/sdk@2.5.63
+
 ## 0.1.16
 
 ### Patch Changes

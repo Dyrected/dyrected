@@ -1,5 +1,12 @@
 # @dyrected/storage-b2
 
+## 2.5.63
+
+### Patch Changes
+
+- Updated dependencies [42f92d0]
+  - @dyrected/core@2.5.63
+
 ## 2.5.62
 
 ### Patch Changes
