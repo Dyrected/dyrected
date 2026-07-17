@@ -1,5 +1,16 @@
 # @dyrected/next
 
+## 2.5.64
+
+### Patch Changes
+
+- 95bca9a: Add a dedicated `@dyrected/next/server` export for App Router route files and
+  other server-only helpers so Next server code does not pull the client React
+  entrypoints from the package root.
+  - @dyrected/core@2.5.64
+  - @dyrected/react@2.5.64
+  - @dyrected/sdk@2.5.64
+
 ## 2.5.63
 
 ### Patch Changes

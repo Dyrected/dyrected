@@ -1,5 +1,14 @@
 # @dyrected/nuxt
 
+## 2.5.64
+
+### Patch Changes
+
+- @dyrected/admin@2.5.64
+- @dyrected/core@2.5.64
+- @dyrected/sdk@2.5.64
+- @dyrected/vue@2.5.64
+
 ## 2.5.63
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @dyrected/storage-cloudinary
 
+## 2.5.64
+
+### Patch Changes
+
+- @dyrected/core@2.5.64
+
 ## 2.5.63
 
 ### Patch Changes
