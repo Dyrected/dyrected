@@ -50,7 +50,7 @@ The recommended path is to mount Dyrected at `/dyrected`, because that matches t
 
 ```ts
 // app/dyrected/[...route]/route.ts
-import { dyrectedNextHandler } from "@dyrected/next";
+import { dyrectedNextHandler } from "@dyrected/next/server";
 import config from "../../../dyrected.config";
 
 export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } =
@@ -58,6 +58,9 @@ export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } =
 ```
 
 That creates the Dyrected routes under `/dyrected`, including `/dyrected/api/...`.
+Use the dedicated server entrypoint in route files so Next keeps the server
+module graph separate from the client React exports re-exported by
+`@dyrected/next`.
 
 If you want a different mount path, move the catch-all route and pass the matching `basePath` explicitly.
 
@@ -95,7 +98,7 @@ For normal app reads, use the preconfigured client helper:
 
 ```tsx
 // app/blog/page.tsx
-import { getDyrectedClient } from "@dyrected/next";
+import { getDyrectedClient } from "@dyrected/next/server";
 
 export default async function BlogPage() {
   const client = getDyrectedClient();

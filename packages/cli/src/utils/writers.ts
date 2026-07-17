@@ -85,7 +85,7 @@ export async function writeNextFiles(cwd: string, adminPath: string, backend: Ba
           : "../../../dyrected.config";
         await fs.outputFile(
           apiRoutePath,
-          `import { dyrectedNextHandler } from '@dyrected/next'
+          `import { dyrectedNextHandler } from '@dyrected/next/server'
 import config from '${configImport}'
 
 export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } = dyrectedNextHandler(config)

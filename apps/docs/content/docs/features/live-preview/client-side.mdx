@@ -38,7 +38,7 @@ Fetch published data, pass it as `initialData`, render `data`. The same route se
 
 ```tsx
 // app/[slug]/page.tsx — Server Component: fetches published data
-import { getDyrectedClient } from "@dyrected/next";
+import { getDyrectedClient } from "@dyrected/next/server";
 import PageView from "./page-view";
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {

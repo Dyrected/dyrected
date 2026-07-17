@@ -12,6 +12,8 @@ export interface DyrectedNextHandlerOptions {
  * Creates a lazily initialized Next.js App Router handler for Dyrected CMS.
  *
  * @example
+ * import { dyrectedNextHandler } from "@dyrected/next/server";
+ *
  * export const { GET, POST, PATCH, DELETE } = dyrectedNextHandler(config);
  */
 export function dyrectedNextHandler(

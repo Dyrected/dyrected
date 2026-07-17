@@ -9172,6 +9172,9 @@ export const { GET, POST, PUT, PATCH, DELETE, OPTIONS } =
 ```
 
 That creates the Dyrected routes under `/dyrected`, including `/dyrected/api/...`.
+Use the dedicated server entrypoint in route files so Next keeps the server
+module graph separate from the client React exports re-exported by
+`@dyrected/next`.
 
 If you want a different mount path, move the catch-all route and pass the matching `basePath` explicitly.
 
@@ -19365,6 +19368,7 @@ That helper creates a Dyrected SDK client from the current environment variables
 This example fetches one document from the `pages` collection and renders it in a route segment:
 
 ```tsx
+
 
 
 

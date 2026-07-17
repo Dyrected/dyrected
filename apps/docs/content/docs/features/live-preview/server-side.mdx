@@ -86,7 +86,7 @@ const { data: article } = await useAsyncData(
 
 ```tsx
 // app/blog/[slug]/page.tsx — Server Component
-import { getDyrectedClient, getPreviewToken } from "@dyrected/next";
+import { getDyrectedClient, getPreviewToken } from "@dyrected/next/server";
 
 export default async function Page({
   params,

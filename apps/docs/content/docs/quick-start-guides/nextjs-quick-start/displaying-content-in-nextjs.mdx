@@ -29,7 +29,7 @@ Most fields are plain values. The special cases are usually:
 For a Next.js app, the simplest starting point is the framework package's server-side client helper:
 
 ```tsx
-import { getDyrectedClient } from "@dyrected/next";
+import { getDyrectedClient } from "@dyrected/next/server";
 
 const client = getDyrectedClient();
 ```
@@ -42,7 +42,8 @@ This example fetches one document from the `pages` collection and renders it in 
 
 ```tsx
 import { notFound } from "next/navigation";
-import { getDyrectedClient, DyrectedImage, DyrectedRichText } from "@dyrected/next";
+import { getDyrectedClient } from "@dyrected/next/server";
+import { DyrectedImage, DyrectedRichText } from "@dyrected/next";
 
 export default async function CmsPage({
   params,

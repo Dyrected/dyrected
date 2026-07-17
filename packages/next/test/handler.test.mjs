@@ -21,7 +21,15 @@ test("awaits app initialization and mounts routes at /dyrected", async () => {
   const second = await GET(new Request("http://localhost/dyrected/health"));
 
   assert.equal(first.status, 200);
-  assert.deepEqual(await first.json(), { collections: [], globals: [], admin: {} });
+  assert.deepEqual(await first.json(), {
+    collections: [],
+    globals: [],
+    admin: {},
+    adminAuth: {
+      mode: "local",
+      providers: [],
+    },
+  });
   assert.equal(second.status, 200);
   assert.equal(syncCalls, 1);
 });
