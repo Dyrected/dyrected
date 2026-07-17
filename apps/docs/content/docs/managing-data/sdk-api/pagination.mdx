@@ -25,7 +25,7 @@ So to render the documents you reach for `result.docs`; to build page controls y
 
 ## Choosing the page and its size
 
-Two options steer pagination. `limit` sets how many documents a page holds (default `10`), and `page` picks which page to return (default `1`):
+Two options steer pagination. The `limit` option sets how many documents a page holds (default `10`, with a maximum allowed value of `100`). The `page` option picks which page to return (default `1`):
 
 ```ts
 // The second page, 20 posts per page
@@ -54,7 +54,7 @@ while (true) {
 }
 ```
 
-Dyrected always paginates list reads, so this loop — rather than a single unbounded request — is the way to pull an entire collection. A larger `limit` means fewer round-trips; keep it to a sane page size rather than a number that would return tens of thousands of documents at once.
+Dyrected always paginates list reads, so this loop — rather than a single unbounded request — is the way to pull an entire collection. A larger `limit` means fewer round-trips; keep in mind that the `limit` parameter has a hard cap of `100` to keep responses fast and reliable. Note that this cap applies only to list pagination page sizes; other operations, such as generating mock data via seeding, are not restricted by this limit.
 
 ## Fetching a single expected match
 

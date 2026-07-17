@@ -31,7 +31,7 @@ An endpoint is public only when its access rule allows the operation.
 
 ## Listing and filtering
 
-Collection list routes accept `limit`, `page`, `sort`, `depth`, and a JSON-encoded `where` object.
+Collection list routes accept `limit` (default `10`, maximum `100`), `page`, `sort`, `depth`, and a JSON-encoded `where` object.
 
 ```ts
 const query = new URLSearchParams({
@@ -44,7 +44,7 @@ const query = new URLSearchParams({
 const response = await fetch(`/api/collections/posts?${query}`)
 ```
 
-Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`.
+Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`. Note that the `limit` parameter is capped at `100` for list operations to ensure performance and reliability.
 
 ## Error responses
 
