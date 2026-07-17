@@ -357,6 +357,7 @@ function FormEngineInner({
     })
   const topFields = visibleFields.filter((f) => !f.admin?.tab)
   const tabbedFields = visibleFields.filter((f) => !!f.admin?.tab)
+  const showPasswordSection = hasPassword && passwordChangeMode !== null
 
   let fieldsContent: React.ReactNode
 
@@ -376,6 +377,81 @@ function FormEngineInner({
     </div>
   )
 
+  const renderChangePasswordSection = () => (
+    <div className="dy-rounded-lg dy-border dy-border-border dy-p-5 dy-space-y-4">
+      <div className="dy-flex dy-items-center dy-gap-2 dy-text-sm dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wide">
+        <Lock className="dy-h-4 dy-w-4" />
+        Change Password
+      </div>
+      <p className="dy-text-xs dy-text-muted-foreground">
+        {passwordChangeMode === 'admin'
+          ? 'As an admin, you can reset this user\'s password without their current password.'
+          : 'Leave these fields blank to keep the current password unchanged.'}
+      </p>
+      <div className="dy-grid dy-gap-4">
+        {passwordChangeMode === 'self' && (
+          <FormField
+            control={form.control}
+            name={"oldPassword" as Parameters<typeof form.control.register>[0]}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Current Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="Enter current password"
+                    autoComplete="current-password"
+                    {...field}
+                    value={(field.value as string) ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+        <FormField
+          control={form.control}
+          name={"newPassword" as Parameters<typeof form.control.register>[0]}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>New Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder="Min. 8 characters"
+                  autoComplete="new-password"
+                  {...field}
+                  value={(field.value as string) ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name={"confirmPassword" as Parameters<typeof form.control.register>[0]}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm New Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  placeholder="Repeat new password"
+                  autoComplete="new-password"
+                  {...field}
+                  value={(field.value as string) ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  )
+
   const tabOrder: string[] = []
   const tabGroups = new Map<string, FieldSchema[]>()
 
@@ -383,7 +459,7 @@ function FormEngineInner({
   // leading tab named after the collection's singular label (e.g. "Page")
   // instead of floating above the tab bar.
   const defaultTab = defaultTabLabel || (collection.charAt(0).toUpperCase() + collection.slice(1))
-  if (tabbedFields.length > 0 && topFields.length > 0) {
+  if (tabbedFields.length > 0 && (topFields.length > 0 || showPasswordSection)) {
     tabGroups.set(defaultTab, [...topFields])
     tabOrder.push(defaultTab)
   }
@@ -489,6 +565,11 @@ function FormEngineInner({
               <div className="dy--mx-3 dy-flex dy-flex-wrap dy-gap-y-6 dy-pt-2">
                 {tabGroups.get(tab)!.map(renderFieldColumn)}
               </div>
+              {tab === defaultTab && showPasswordSection && (
+                <div className="dy-pt-6">
+                  {renderChangePasswordSection()}
+                </div>
+              )}
             </TabsContent>
           ))}
         </Tabs>
@@ -599,80 +680,7 @@ function FormEngineInner({
           {fieldsContent}
 
           {/* ── Change Password Section (edit mode + auth collections only) ── */}
-          {hasPassword && passwordChangeMode !== null && (
-            <div className="dy-rounded-lg dy-border dy-border-border dy-p-5 dy-space-y-4">
-              <div className="dy-flex dy-items-center dy-gap-2 dy-text-sm dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wide">
-                <Lock className="dy-h-4 dy-w-4" />
-                Change Password
-              </div>
-              <p className="dy-text-xs dy-text-muted-foreground">
-                {passwordChangeMode === 'admin'
-                  ? 'As an admin, you can reset this user\'s password without their current password.'
-                  : 'Leave these fields blank to keep the current password unchanged.'}
-              </p>
-              <div className="dy-grid dy-gap-4">
-                {passwordChangeMode === 'self' && (
-                  <FormField
-                    control={form.control}
-                    name={"oldPassword" as Parameters<typeof form.control.register>[0]}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Password</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Enter current password"
-                            autoComplete="current-password"
-                            {...field}
-                            value={(field.value as string) ?? ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-                <FormField
-                  control={form.control}
-                  name={"newPassword" as Parameters<typeof form.control.register>[0]}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>New Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Min. 8 characters"
-                          autoComplete="new-password"
-                          {...field}
-                          value={(field.value as string) ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={"confirmPassword" as Parameters<typeof form.control.register>[0]}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm New Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Repeat new password"
-                          autoComplete="new-password"
-                          {...field}
-                          value={(field.value as string) ?? ""}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          )}
+          {showPasswordSection && tabbedFields.length === 0 && renderChangePasswordSection()}
 
           {!hideSubmit && (
             <div className="dy-flex dy-justify-end dy-gap-4">

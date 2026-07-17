@@ -10,6 +10,25 @@ export interface PostgresAdapterConfig {
   url: string;
 }
 
+type SharedPostgresClient = {
+  sql?: postgres.Sql;
+  initPromise?: Promise<postgres.Sql>;
+};
+
+const POSTGRES_CLIENT_CACHE_KEY = "__dyrectedPostgresClientCache";
+
+function getSharedPostgresClientCache(): Map<string, SharedPostgresClient> {
+  const globalScope = globalThis as typeof globalThis & {
+    [POSTGRES_CLIENT_CACHE_KEY]?: Map<string, SharedPostgresClient>;
+  };
+
+  if (!globalScope[POSTGRES_CLIENT_CACHE_KEY]) {
+    globalScope[POSTGRES_CLIENT_CACHE_KEY] = new Map();
+  }
+
+  return globalScope[POSTGRES_CLIENT_CACHE_KEY];
+}
+
 function escapePgIdentifier(identifier: string) {
   return `"${identifier.replace(/"/g, '""')}"`;
 }
@@ -54,6 +73,20 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   private async initialize() {
+    const cache = getSharedPostgresClientCache();
+    const cached = cache.get(this.config.url);
+
+    if (cached?.sql) {
+      this.sql = cached.sql;
+      return;
+    }
+
+    if (cached?.initPromise) {
+      this.sql = await cached.initPromise;
+      return;
+    }
+
+    const initPromise = (async () => {
     let dbName = "";
     let defaultUrl = "";
     try {
@@ -89,12 +122,24 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
     }
 
-    this.sql = postgres(this.config.url);
-    await this.initInternalTables();
+      const sql = postgres(this.config.url);
+      await this.initInternalTables(sql);
+      return sql;
+    })();
+
+    cache.set(this.config.url, { initPromise });
+
+    try {
+      this.sql = await initPromise;
+      cache.set(this.config.url, { sql: this.sql });
+    } catch (error) {
+      cache.delete(this.config.url);
+      throw error;
+    }
   }
 
-  private async initInternalTables() {
-    await this.sql`
+  private async initInternalTables(sql: postgres.Sql) {
+    await sql`
       CREATE TABLE IF NOT EXISTS dyrected_internal (
         key TEXT PRIMARY KEY,
         value JSONB

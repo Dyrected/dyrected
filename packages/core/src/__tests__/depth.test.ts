@@ -16,6 +16,11 @@ describe('depth — relation population', () => {
       { id: 'author-2', name: 'Bob' },
     ]);
 
+    db.seed('comments', [
+      { id: 'comment-1', body: 'First', post: 'post-1' },
+      { id: 'comment-2', body: 'Second', post: 'post-1' },
+    ]);
+
     // Posts with author relation stored as a plain ID string
     db.seed('posts', [
       { id: 'post-1', title: 'Hello', author: 'author-1', status: 'published' },
@@ -34,7 +39,22 @@ describe('depth — relation population', () => {
         }),
         defineCollection({
           slug: 'authors',
-          fields: [{ name: 'name', type: 'text' }],
+          fields: [
+            { name: 'name', type: 'text' },
+            {
+              name: 'posts',
+              type: 'join',
+              collection: 'posts',
+              on: 'author',
+            },
+          ],
+        }),
+        defineCollection({
+          slug: 'comments',
+          fields: [
+            { name: 'body', type: 'text' },
+            { name: 'post', type: 'relationship', relationTo: 'posts' },
+          ],
         }),
       ],
       globals: [],
@@ -89,5 +109,24 @@ describe('depth — relation population', () => {
     expect(data.total).toBe(1);
     expect(data.docs[0].title).toBe('Hello');
     expect(data.docs[0].author.name).toBe('Alice');
+  });
+
+  it('populates nested join fields when depth allows it', async () => {
+    const res = await app.request('/api/collections/posts/post-1?depth=2');
+    const doc = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(doc.author.name).toBe('Alice');
+    expect(doc.author.posts.totalDocs).toBe(1);
+    expect(doc.author.posts.docs[0].id).toBe('post-1');
+  });
+
+  it('does not populate nested join fields when depth is exhausted', async () => {
+    const res = await app.request('/api/collections/posts/post-1?depth=1');
+    const doc = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(doc.author.name).toBe('Alice');
+    expect(doc.author.posts).toBeUndefined();
   });
 });

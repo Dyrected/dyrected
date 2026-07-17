@@ -40,12 +40,12 @@ export class PopulationService {
     const populatedDoc = { ...data };
 
     for (const field of fields) {
-      // Handle Join Fields - only populate at top level (depth 0) to prevent infinite recursion
+      // Handle Join Fields within the remaining depth budget.
       if (
         (field.type as string) === "join" &&
         field.collection &&
         field.on &&
-        currentDepth === 0
+        currentDepth < maxDepth
       ) {
         const targetCollection = this.collections.find(
           (c) => c.slug === field.collection,
@@ -61,13 +61,13 @@ export class PopulationService {
               limit: joinLimit,
             });
 
-            // Apply defaults and populate the joined documents (depth 1, so joins inside are skipped)
+            // Join population consumes one depth level, matching relationship fields.
             const populatedDocs = await this.populate({
               data: result.docs.map((doc) =>
                 DefaultsService.apply(targetCollection.fields, doc),
               ),
               fields: targetCollection.fields,
-              currentDepth: 1,
+              currentDepth: currentDepth + 1,
               maxDepth,
             });
 

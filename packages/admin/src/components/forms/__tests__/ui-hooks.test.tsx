@@ -60,6 +60,51 @@ function renderWithQueryClient(ui: React.ReactElement) {
 }
 
 describe("Frontend UI Hooks Reactivity", () => {
+  it("keeps the change-password section in the default tab when explicit tabs exist", async () => {
+    const user = userEvent.setup()
+
+    const fields: FieldSchema[] = [
+      { name: "password", type: "password", label: "Password" },
+      {
+        name: "title",
+        type: "text",
+        label: "Title",
+        admin: { tab: "Content" },
+      },
+      {
+        name: "seoTitle",
+        type: "text",
+        label: "SEO Title",
+        admin: { tab: "SEO" },
+      },
+    ]
+
+    renderWithQueryClient(
+      <FormEngine
+        collection="users"
+        fields={fields}
+        defaultValues={{ id: "user-1", title: "Alice", seoTitle: "Alice SEO" }}
+        onSubmit={() => {}}
+        passwordChangeMode="admin"
+        defaultTabLabel="General"
+      />
+    )
+
+    expect(screen.getByRole("button", { name: "General" })).toBeTruthy()
+    expect(screen.getByText("Change Password")).toBeTruthy()
+    expect(screen.getByLabelText("New Password")).toBeTruthy()
+
+    await user.click(screen.getByRole("button", { name: "SEO" }))
+
+    expect(screen.queryByText("Change Password")).not.toBeInTheDocument()
+    expect(screen.getByLabelText("SEO Title")).toBeTruthy()
+
+    await user.click(screen.getByRole("button", { name: "General" }))
+
+    expect(screen.getByText("Change Password")).toBeTruthy()
+    expect(screen.getByLabelText("New Password")).toBeTruthy()
+  })
+
   it("should dynamically update slug field when title changes", async () => {
     const user = userEvent.setup()
     const onChangeSpy = vi.fn(({ siblingData }) => {
