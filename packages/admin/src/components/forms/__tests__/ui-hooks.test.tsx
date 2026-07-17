@@ -64,7 +64,7 @@ describe("Frontend UI Hooks Reactivity", () => {
     const user = userEvent.setup()
 
     const fields: FieldSchema[] = [
-      { name: "password", type: "password", label: "Password" },
+      { name: "password", type: "text", label: "Password" },
       {
         name: "title",
         type: "text",
@@ -96,7 +96,7 @@ describe("Frontend UI Hooks Reactivity", () => {
 
     await user.click(screen.getByRole("button", { name: "SEO" }))
 
-    expect(screen.queryByText("Change Password")).not.toBeInTheDocument()
+    expect(screen.queryByText("Change Password")).toBeNull()
     expect(screen.getByLabelText("SEO Title")).toBeTruthy()
 
     await user.click(screen.getByRole("button", { name: "General" }))

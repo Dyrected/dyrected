@@ -1,5 +1,15 @@
 # @dyrected/db-postgres
 
+## 2.5.65
+
+### Patch Changes
+
+- 812fef0: - Keep the edit-form change-password section inside the default tab when a collection has multiple tabs.
+  - Populate nested join fields when the requested depth budget allows it, while leaving them unpopulated when depth is exhausted.
+  - Reuse a shared Postgres client per connection URL so repeated adapter construction in dev servers does not exhaust database connections.
+- Updated dependencies [812fef0]
+  - @dyrected/core@2.5.65
+
 ## 2.5.64
 
 ### Patch Changes
