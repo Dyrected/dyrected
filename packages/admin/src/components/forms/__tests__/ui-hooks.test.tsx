@@ -5,7 +5,7 @@ import { act, cleanup, fireEvent, render, waitFor, screen } from "@testing-libra
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { MemoryRouter } from "react-router-dom"
-import { FormEngine } from "../form-engine"
+import { FormEngine, type FormEngineHandle } from "../form-engine"
 import type { FieldSchema } from "../form-engine"
 import { afterEach } from "vitest"
 
@@ -60,6 +60,33 @@ function renderWithQueryClient(ui: React.ReactElement) {
 }
 
 describe("Frontend UI Hooks Reactivity", () => {
+  it("exposes an imperative draft submit handle for host workflow actions", async () => {
+    const submitSpy = vi.fn(async (data: Record<string, unknown>) => ({ doc: { id: "post-1", ...data } }))
+    const ref = React.createRef<FormEngineHandle>()
+
+    renderWithQueryClient(
+      <FormEngine
+        ref={ref}
+        collection="posts"
+        fields={[{ name: "title", type: "text", label: "Title" }]}
+        defaultValues={{ id: "post-1", title: "Old title" }}
+        onSubmit={submitSpy}
+      />
+    )
+
+    const titleInput = document.querySelector('input[name="title"]') as HTMLInputElement
+    fireEvent.change(titleInput, { target: { value: "Updated title" } })
+
+    await act(async () => {
+      await ref.current?.submitCurrentDraft()
+    })
+
+    expect(submitSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Updated title" }),
+    )
+    expect(ref.current?.isDirty()).toBe(false)
+  })
+
   it("autosaves dirty forms after the configured debounce and reports status changes", async () => {
     vi.useFakeTimers()
 

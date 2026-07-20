@@ -4,6 +4,7 @@ import {
   getAvailableWorkflowTransitions,
   getCommonWorkflowTransitions,
   getPrimaryWorkflowTransition,
+  groupWorkflowTransitions,
   resolvePublishingStatus,
 } from "./workflow-ui"
 
@@ -50,6 +51,22 @@ describe("workflow-ui helpers", () => {
     ])
 
     expect(primary?.name).toBe("retract")
+  })
+
+  it("groups unpublish actions after normal transitions without changing labels", () => {
+    const grouped = groupWorkflowTransitions([
+      workflowConfig.transitions[0]!,
+      workflowConfig.transitions[2]!,
+      workflowConfig.transitions[1]!,
+    ])
+
+    expect(grouped.normal.map((transition) => transition.label)).toEqual([
+      "Send to review",
+      "Go live now",
+    ])
+    expect(grouped.unpublish.map((transition) => transition.label)).toEqual([
+      "Pull from site",
+    ])
   })
 
   it("returns only transitions shared by every selected workflow document", () => {

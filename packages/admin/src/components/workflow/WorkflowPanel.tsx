@@ -3,9 +3,14 @@ import { useQuery } from "@tanstack/react-query"
 import { ChevronDown, ChevronUp, CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-context"
 import { cn } from "../../lib/utils"
+import { Button } from "../ui/button"
 import type { WorkflowMetadata } from "@dyrected/core"
 import type { PaginatedResult, WorkflowHistoryEntry } from "@dyrected/sdk"
-import { WorkflowTransitionPanelActions, type WorkflowCapableClient } from "./workflow-transition-controls"
+import {
+  WorkflowTransitionPanelActions,
+  type PrepareWorkflowTransition,
+  type WorkflowCapableClient,
+} from "./workflow-transition-controls"
 
 interface WorkflowHistoryCapableClient extends WorkflowCapableClient {
   workflowHistory(
@@ -47,6 +52,12 @@ interface WorkflowPanelProps {
   documentId: string
   workflowMeta: WorkflowMetadata & { availableTransitions?: string[] }
   workflowConfig: WorkflowConfig
+  onCompareToLive?: () => void
+  compareToLiveEnabled?: boolean
+  compareToLiveReason?: string | null
+  onSaveDraft?: () => Promise<void> | void
+  saveDraftPending?: boolean
+  prepareTransition?: PrepareWorkflowTransition
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -98,6 +109,12 @@ export function WorkflowPanel({
   documentId,
   workflowMeta,
   workflowConfig,
+  onCompareToLive,
+  compareToLiveEnabled = false,
+  compareToLiveReason = null,
+  onSaveDraft,
+  saveDraftPending,
+  prepareTransition,
 }: WorkflowPanelProps) {
   const { client } = useDyrected()
   const [showHistory, setShowHistory] = useState(false)
@@ -148,7 +165,30 @@ export function WorkflowPanel({
         documentId={documentId}
         workflowConfig={workflowConfig}
         workflowMeta={workflowMeta}
+        onSaveDraft={onSaveDraft}
+        saveDraftPending={saveDraftPending}
+        prepareTransition={prepareTransition}
       />
+
+      {onCompareToLive && (
+        <Button
+          type="button"
+          variant="outline"
+          className="dy-w-full dy-justify-between dy-rounded-xl dy-border-border/60 dy-bg-background/70 dy-text-left"
+          onClick={onCompareToLive}
+          disabled={!compareToLiveEnabled}
+          title={!compareToLiveEnabled && compareToLiveReason ? compareToLiveReason : "Compare draft to live"}
+        >
+          <span className="dy-flex dy-flex-col dy-items-start">
+            <span className="dy-text-sm dy-font-semibold dy-text-foreground">Compare to live</span>
+            <span className="dy-text-xs dy-font-normal dy-text-muted-foreground">
+              {compareToLiveEnabled
+                ? "See exactly what will change on publish."
+                : (compareToLiveReason ?? "Publish this entry once to unlock live comparisons.")}
+            </span>
+          </span>
+        </Button>
+      )}
 
       {/* History toggle */}
       <div>

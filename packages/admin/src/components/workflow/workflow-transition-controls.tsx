@@ -10,8 +10,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import {
   Dialog,
@@ -22,7 +22,11 @@ import {
   DialogTitle,
 } from "../ui/dialog"
 import { cn } from "../../lib/utils"
-import { getAvailableWorkflowTransitions, getPrimaryWorkflowTransition } from "../../lib/workflow-ui"
+import {
+  getAvailableWorkflowTransitions,
+  getPrimaryWorkflowTransition,
+  groupWorkflowTransitions,
+} from "../../lib/workflow-ui"
 
 export interface WorkflowCapableClient {
   transition<T = unknown>(
@@ -33,11 +37,27 @@ export interface WorkflowCapableClient {
   ): Promise<T>
 }
 
+export type PreparedWorkflowTransitionContext = {
+  documentIds: string[]
+  documentLabels?: Record<string, string | undefined>
+  expectedRevisions?: Record<string, number | undefined>
+  invalidateQueryKeys?: Array<readonly unknown[]>
+}
+
+export type PrepareWorkflowTransition = (
+  transition: WorkflowTransition,
+) => Promise<PreparedWorkflowTransitionContext | null>
+
 type TransitionExecutionResult = {
   transition: WorkflowTransition
   successCount: number
   failureCount: number
   firstError?: Error
+}
+
+type PendingCommentTransition = {
+  transition: WorkflowTransition
+  context: PreparedWorkflowTransitionContext
 }
 
 function formatSingleTransitionSuccessMessage(
@@ -128,27 +148,23 @@ function WorkflowTransitionActionItems({
   onSelect: (transition: WorkflowTransition) => void
   disabled?: boolean
 }) {
-  return (
-    <>
-      {transitions.map((transition) => {
-        const targetState = workflowConfig.states.find((state) => state.name === transition.to)
-        return (
-          <DropdownMenuItem
-            key={transition.name}
-            onClick={() => onSelect(transition)}
-            disabled={disabled}
-            className="dy-flex dy-items-center dy-gap-2"
-          >
-            <StateIcon color={targetState?.color} />
-            <span className="dy-flex-1">{transition.label}</span>
-            {transition.requireComment && (
-              <MessageSquarePlus className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
-            )}
-          </DropdownMenuItem>
-        )
-      })}
-    </>
-  )
+  return transitions.map((transition) => {
+    const targetState = workflowConfig.states.find((state) => state.name === transition.to)
+    return (
+      <DropdownMenuItem
+        key={transition.name}
+        onClick={() => onSelect(transition)}
+        disabled={disabled}
+        className="dy-flex dy-items-center dy-gap-2"
+      >
+        <StateIcon color={targetState?.color} />
+        <span className="dy-flex-1">{transition.label}</span>
+        {transition.requireComment && (
+          <MessageSquarePlus className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+        )}
+      </DropdownMenuItem>
+    )
+  })
 }
 
 function useWorkflowTransitionExecutor({
@@ -158,6 +174,7 @@ function useWorkflowTransitionExecutor({
   expectedRevisions,
   invalidateQueryKeys,
   onComplete,
+  prepareTransition,
 }: {
   collection: string
   documentIds: string[]
@@ -165,28 +182,39 @@ function useWorkflowTransitionExecutor({
   expectedRevisions?: Record<string, number | undefined>
   invalidateQueryKeys?: Array<readonly unknown[]>
   onComplete?: (result: TransitionExecutionResult) => void
+  prepareTransition?: PrepareWorkflowTransition
 }) {
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const wfClient = client as unknown as WorkflowCapableClient
-  const [commentTransition, setCommentTransition] = React.useState<WorkflowTransition | null>(null)
+  const [commentTransition, setCommentTransition] = React.useState<PendingCommentTransition | null>(null)
+  const [isPreparing, setIsPreparing] = React.useState(false)
+
+  const getDefaultContext = React.useCallback((): PreparedWorkflowTransitionContext => ({
+    documentIds,
+    documentLabels,
+    expectedRevisions,
+    invalidateQueryKeys,
+  }), [documentIds, documentLabels, expectedRevisions, invalidateQueryKeys])
 
   const mutation = useMutation({
     mutationFn: async ({
       transition,
       comment,
+      context,
     }: {
       transition: WorkflowTransition
       comment?: string
+      context: PreparedWorkflowTransitionContext
     }) => {
       let successCount = 0
       let failureCount = 0
       let firstError: Error | undefined
 
-      for (const id of documentIds) {
+      for (const id of context.documentIds) {
         try {
           await wfClient.transition(collection, id, transition.name, {
-            expectedRevision: expectedRevisions?.[id],
+            expectedRevision: context.expectedRevisions?.[id],
             comment,
           })
           successCount += 1
@@ -198,21 +226,23 @@ function useWorkflowTransitionExecutor({
         }
       }
 
-      return { transition, successCount, failureCount, firstError }
+      return { transition, successCount, failureCount, firstError, context }
     },
     onSuccess: async (result) => {
       setCommentTransition(null)
-      if (invalidateQueryKeys?.length) {
+      const queryKeys = [...(invalidateQueryKeys ?? []), ...(result.context.invalidateQueryKeys ?? [])]
+      if (queryKeys.length > 0) {
         await Promise.all(
-          invalidateQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey: [...queryKey] })),
+          queryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey: [...queryKey] })),
         )
       }
 
       if (result.failureCount === 0) {
-        if (documentIds.length === 1) {
+        if (result.context.documentIds.length === 1) {
+          const singleDocumentId = result.context.documentIds[0] ?? ""
           toast.success(formatSingleTransitionSuccessMessage(
             result.transition.label,
-            documentLabels?.[documentIds[0] ?? ""],
+            result.context.documentLabels?.[singleDocumentId],
           ))
         } else {
           toast.success(`Applied "${result.transition.label}" to ${result.successCount} ${result.successCount === 1 ? "entry" : "entries"}`)
@@ -237,17 +267,33 @@ function useWorkflowTransitionExecutor({
     },
   })
 
-  const requestTransition = React.useCallback((transition: WorkflowTransition) => {
-    if (transition.requireComment) {
-      setCommentTransition(transition)
-      return
+  const requestTransition = React.useCallback(async (transition: WorkflowTransition) => {
+    try {
+      setIsPreparing(true)
+      const context = await (prepareTransition?.(transition) ?? Promise.resolve(getDefaultContext()))
+      if (!context || context.documentIds.length === 0) return
+      if (transition.requireComment) {
+        setCommentTransition({ transition, context })
+        return
+      }
+      mutation.mutate({ transition, context })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The workflow action could not be prepared."
+      toast.error("Could not continue", {
+        description: message,
+      })
+    } finally {
+      setIsPreparing(false)
     }
-    mutation.mutate({ transition })
-  }, [mutation])
+  }, [getDefaultContext, mutation, prepareTransition])
 
   const confirmComment = React.useCallback((comment: string) => {
     if (!commentTransition) return
-    mutation.mutate({ transition: commentTransition, comment })
+    mutation.mutate({
+      transition: commentTransition.transition,
+      comment,
+      context: commentTransition.context,
+    })
   }, [commentTransition, mutation])
 
   return {
@@ -256,6 +302,7 @@ function useWorkflowTransitionExecutor({
     setCommentTransition,
     confirmComment,
     mutation,
+    isPreparing,
   }
 }
 
@@ -271,6 +318,7 @@ export function WorkflowTransitionSplitButton({
   saveDraftPending,
   documentLabel,
   className,
+  prepareTransition,
 }: {
   collection: string
   documentId: string
@@ -283,10 +331,15 @@ export function WorkflowTransitionSplitButton({
   saveDraftPending?: boolean
   documentLabel?: string
   className?: string
+  prepareTransition?: PrepareWorkflowTransition
 }) {
   const transitions = React.useMemo(
     () => getAvailableWorkflowTransitions(workflowConfig, workflowMeta),
     [workflowConfig, workflowMeta],
+  )
+  const groupedTransitions = React.useMemo(
+    () => groupWorkflowTransitions(transitions),
+    [transitions],
   )
   const primaryTransition = React.useMemo(
     () => getPrimaryWorkflowTransition(transitions),
@@ -298,6 +351,7 @@ export function WorkflowTransitionSplitButton({
     setCommentTransition,
     confirmComment,
     mutation,
+    isPreparing,
   } = useWorkflowTransitionExecutor({
     collection,
     documentIds: [documentId],
@@ -305,17 +359,18 @@ export function WorkflowTransitionSplitButton({
     expectedRevisions: { [documentId]: workflowMeta.revision },
     invalidateQueryKeys,
     onComplete,
+    prepareTransition,
   })
 
   const activeTransitionName = (mutation.variables as { transition?: WorkflowTransition } | undefined)?.transition?.name
   const isPrimaryLoading = mutation.isPending && activeTransitionName === primaryTransition?.name
   const hasTransitions = transitions.length > 0
   const hasMenuItems = hasTransitions || !!onSaveDraft
-  const isBusy = mutation.isPending || !!saveDraftPending
+  const isBusy = mutation.isPending || isPreparing || !!saveDraftPending
 
   React.useEffect(() => {
-    onPendingChange?.(mutation.isPending)
-  }, [mutation.isPending, onPendingChange])
+    onPendingChange?.(mutation.isPending || isPreparing)
+  }, [isPreparing, mutation.isPending, onPendingChange])
 
   return (
     <>
@@ -326,13 +381,17 @@ export function WorkflowTransitionSplitButton({
             size="sm"
             className="dy-h-9 dy-rounded-none dy-border-0 dy-px-4 dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90"
             disabled={!primaryTransition || isBusy}
-            onClick={() => primaryTransition && requestTransition(primaryTransition)}
+            onClick={() => {
+              if (primaryTransition) {
+                void requestTransition(primaryTransition)
+              }
+            }}
             title={primaryTransition?.label ?? "No workflow actions available"}
           >
-            {isPrimaryLoading ? (
+            {isPrimaryLoading || isPreparing ? (
               <span className="dy-flex dy-items-center dy-gap-2">
                 <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
-                Applying…
+                {isPreparing ? "Saving…" : "Applying…"}
               </span>
             ) : (
               primaryTransition?.label ?? "No actions"
@@ -351,31 +410,44 @@ export function WorkflowTransitionSplitButton({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="dy-min-w-56">
-              {hasTransitions && (
-                <WorkflowTransitionActionItems
-                  transitions={transitions}
-                  workflowConfig={workflowConfig}
-                  onSelect={requestTransition}
-                  disabled={isBusy}
-                />
-              )}
               {onSaveDraft && (
+                <DropdownMenuItem
+                  onClick={() => void onSaveDraft()}
+                  disabled={isBusy}
+                  className="dy-flex dy-items-center dy-gap-2"
+                >
+                  {saveDraftPending ? (
+                    <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
+                  ) : (
+                    <Save className="dy-h-3.5 dy-w-3.5" />
+                  )}
+                  <span className="dy-flex-1">
+                    {saveDraftPending ? "Saving draft..." : "Save draft"}
+                  </span>
+                </DropdownMenuItem>
+              )}
+              {hasTransitions && (
                 <>
-                  {hasTransitions && <DropdownMenuSeparator />}
-                  <DropdownMenuItem
-                    onClick={() => void onSaveDraft()}
+                  {onSaveDraft && <DropdownMenuSeparator />}
+                  <WorkflowTransitionActionItems
+                    transitions={groupedTransitions.normal}
+                    workflowConfig={workflowConfig}
+                    onSelect={(transition) => {
+                      void requestTransition(transition)
+                    }}
                     disabled={isBusy}
-                    className="dy-flex dy-items-center dy-gap-2"
-                  >
-                    {saveDraftPending ? (
-                      <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
-                    ) : (
-                      <Save className="dy-h-3.5 dy-w-3.5" />
-                    )}
-                    <span className="dy-flex-1">
-                      {saveDraftPending ? "Saving draft..." : "Save draft"}
-                    </span>
-                  </DropdownMenuItem>
+                  />
+                  {groupedTransitions.unpublish.length > 0 && groupedTransitions.normal.length > 0 && (
+                    <DropdownMenuSeparator />
+                  )}
+                  <WorkflowTransitionActionItems
+                    transitions={groupedTransitions.unpublish}
+                    workflowConfig={workflowConfig}
+                    onSelect={(transition) => {
+                      void requestTransition(transition)
+                    }}
+                    disabled={isBusy}
+                  />
                 </>
               )}
             </DropdownMenuContent>
@@ -383,7 +455,7 @@ export function WorkflowTransitionSplitButton({
         </div>
       </div>
       <WorkflowCommentDialog
-        transition={commentTransition}
+        transition={commentTransition?.transition ?? null}
         pending={mutation.isPending}
         onOpenChange={(open) => !open && setCommentTransition(null)}
         onConfirm={confirmComment}
@@ -425,6 +497,7 @@ export function WorkflowTransitionMenu({
     setCommentTransition,
     confirmComment,
     mutation,
+    isPreparing,
   } = useWorkflowTransitionExecutor({
     collection,
     documentIds,
@@ -444,13 +517,15 @@ export function WorkflowTransitionMenu({
           <WorkflowTransitionActionItems
             transitions={transitions}
             workflowConfig={workflowConfig}
-            onSelect={requestTransition}
-            disabled={mutation.isPending}
+            onSelect={(transition) => {
+              void requestTransition(transition)
+            }}
+            disabled={mutation.isPending || isPreparing}
           />
         </DropdownMenuContent>
       </DropdownMenu>
       <WorkflowCommentDialog
-        transition={commentTransition}
+        transition={commentTransition?.transition ?? null}
         pending={mutation.isPending}
         onOpenChange={(open) => !open && setCommentTransition(null)}
         onConfirm={confirmComment}
@@ -464,15 +539,25 @@ export function WorkflowTransitionPanelActions({
   documentId,
   workflowConfig,
   workflowMeta,
+  onSaveDraft,
+  saveDraftPending,
+  prepareTransition,
 }: {
   collection: string
   documentId: string
   workflowConfig: WorkflowConfig
   workflowMeta: WorkflowMetadata
+  onSaveDraft?: () => Promise<void> | void
+  saveDraftPending?: boolean
+  prepareTransition?: PrepareWorkflowTransition
 }) {
   const transitions = React.useMemo(
     () => getAvailableWorkflowTransitions(workflowConfig, workflowMeta),
     [workflowConfig, workflowMeta],
+  )
+  const groupedTransitions = React.useMemo(
+    () => groupWorkflowTransitions(transitions),
+    [transitions],
   )
   const {
     requestTransition,
@@ -480,20 +565,21 @@ export function WorkflowTransitionPanelActions({
     setCommentTransition,
     confirmComment,
     mutation,
+    isPreparing,
   } = useWorkflowTransitionExecutor({
     collection,
     documentIds: [documentId],
-    documentLabels: undefined,
     expectedRevisions: { [documentId]: workflowMeta.revision },
     invalidateQueryKeys: [
       ["entry", collection, documentId],
       ["collection", collection],
       ["workflow-history", collection, documentId],
     ],
+    prepareTransition,
   })
   const activeTransitionName = (mutation.variables as { transition?: WorkflowTransition } | undefined)?.transition?.name
 
-  if (transitions.length === 0) {
+  if (transitions.length === 0 && !onSaveDraft) {
     return (
       <p className="dy-text-xs dy-text-muted-foreground/50 dy-italic">
         No transitions available from this state.
@@ -504,17 +590,55 @@ export function WorkflowTransitionPanelActions({
   return (
     <>
       <div className="dy-space-y-2">
-        {transitions.map((transition) => {
+        {onSaveDraft && (
+          <Button
+            size="sm"
+            variant="secondary"
+            className="dy-w-full dy-h-9 dy-rounded-lg dy-text-xs dy-font-semibold dy-justify-start dy-gap-2"
+            disabled={mutation.isPending || isPreparing || saveDraftPending}
+            onClick={() => void onSaveDraft()}
+          >
+            {saveDraftPending ? <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" /> : <Save className="dy-h-3.5 dy-w-3.5" />}
+            {saveDraftPending ? "Saving draft..." : "Save draft"}
+          </Button>
+        )}
+        {groupedTransitions.normal.map((transition) => {
           const isLoading = mutation.isPending && activeTransitionName === transition.name
           const targetState = workflowConfig.states.find((state) => state.name === transition.to)
           return (
             <Button
               key={transition.name}
               size="sm"
-              variant={transition.unpublish || transition.name === "reject" ? "outline" : "default"}
+              variant="default"
               className="dy-w-full dy-h-9 dy-rounded-lg dy-text-xs dy-font-semibold dy-justify-start dy-gap-2"
-              disabled={mutation.isPending}
-              onClick={() => requestTransition(transition)}
+              disabled={mutation.isPending || isPreparing}
+              onClick={() => {
+                void requestTransition(transition)
+              }}
+            >
+              {isLoading ? <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" /> : <StateIcon color={targetState?.color} />}
+              {transition.label}
+            </Button>
+          )
+        })}
+        {groupedTransitions.unpublish.length > 0 && groupedTransitions.normal.length > 0 && (
+          <div className="dy-px-1 dy-pt-2">
+            <div className="dy-h-px dy-bg-border/60" />
+          </div>
+        )}
+        {groupedTransitions.unpublish.map((transition) => {
+          const isLoading = mutation.isPending && activeTransitionName === transition.name
+          const targetState = workflowConfig.states.find((state) => state.name === transition.to)
+          return (
+            <Button
+              key={transition.name}
+              size="sm"
+              variant="outline"
+              className="dy-w-full dy-h-9 dy-rounded-lg dy-text-xs dy-font-semibold dy-justify-start dy-gap-2"
+              disabled={mutation.isPending || isPreparing}
+              onClick={() => {
+                void requestTransition(transition)
+              }}
             >
               {isLoading ? <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" /> : <StateIcon color={targetState?.color} />}
               {transition.label}
@@ -523,7 +647,7 @@ export function WorkflowTransitionPanelActions({
         })}
       </div>
       <WorkflowCommentDialog
-        transition={commentTransition}
+        transition={commentTransition?.transition ?? null}
         pending={mutation.isPending}
         onOpenChange={(open) => !open && setCommentTransition(null)}
         onConfirm={confirmComment}

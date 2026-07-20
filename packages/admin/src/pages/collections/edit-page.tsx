@@ -2,13 +2,13 @@ import { useState, useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
-import { FormEngine } from "../../components/forms/form-engine"
+import { FormEngine, type FormEngineHandle } from "../../components/forms/form-engine"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ChevronLeft, Plus, ChevronDown } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl, getDisplayFilename, getSiteUrl } from "../../lib/utils"
-import { getWorkflowBadgePresentation, WORKFLOW_BADGE_COLORS } from "../../lib/workflow-badge"
+import { getWorkflowBadgePresentation, /*WORKFLOW_BADGE_COLORS */ } from "../../lib/workflow-badge"
 import { resolvePreviewUrl } from "../../lib/preview-url"
 import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil, History, Loader2, AlertCircle } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -21,6 +21,7 @@ import type { Field as FieldSchema, PaginatedResult } from "@dyrected/sdk"
 import { WorkflowPanel } from "../../components/workflow/WorkflowPanel"
 import { WorkflowTransitionSplitButton } from "../../components/workflow/workflow-transition-controls"
 import { resolveDocumentTitle } from "../../lib/document-title"
+import { DraftLiveCompareSheet } from "../../components/workflow/draft-live-compare-sheet"
 import {
   resolveWorkflowAutosaveSettings,
   type WorkflowAutosaveState,
@@ -40,6 +41,8 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { CSS } from "@dnd-kit/utilities"
 import { useCallback, useMemo } from "react"
 import { resolvePublishingStatus, resolveWorkflowState } from "../../lib/workflow-ui"
+import { buildDraftLiveComparison } from "../../lib/draft-live-compare"
+import type { WorkflowTransition } from "@dyrected/core"
 
 function SortableFieldItem({
   id,
@@ -319,6 +322,9 @@ export function EditEntryPage() {
   const [previewData, setPreviewData] = useState<Record<string, unknown> | null>(null)
   const [workflowAutosaveState, setWorkflowAutosaveState] = useState<WorkflowAutosaveState>("idle")
   const [workflowTransitionPending, setWorkflowTransitionPending] = useState(false)
+  const [compareSheetOpen, setCompareSheetOpen] = useState(false)
+  const formEngineRef = useRef<FormEngineHandle | null>(null)
+  const draftSavePromiseRef = useRef<Promise<{ doc?: unknown; passwordChanged?: boolean }> | null>(null)
   const isEdit = !!id
 
   const [isConfiguringView, setIsConfiguringView] = useState(false)
@@ -504,7 +510,7 @@ export function EditEntryPage() {
       data,
     }: {
       data: Record<string, unknown>
-      mode: "manual" | "autosave"
+      mode: "manual" | "autosave" | "transition"
     }) => {
       const { oldPassword, newPassword, confirmPassword, ...rest } = data as {
         oldPassword?: string
@@ -557,7 +563,7 @@ export function EditEntryPage() {
       }
     },
     onError: (error: Error, variables) => {
-      if (variables.mode !== "manual") return
+      if (variables.mode === "autosave") return
       toast.error("Failed to save entry", {
         description: error.message || "An unexpected error occurred.",
       })
@@ -570,7 +576,7 @@ export function EditEntryPage() {
   const workflowMeta = isEdit && entry ? (entry as any)._workflow ?? null : null
 
   const hasStatus = schema?.fields.some((f: { name?: string }) => f.name === "status")
-  const currentStatus = entry?.status || "draft"
+  // const currentStatus = entry?.status || "draft"
 
   // Publishing badge. When the collection has a workflow (including one
   // synthesized from `drafts: true`), the source of truth is the workflow
@@ -578,7 +584,7 @@ export function EditEntryPage() {
   // Collections without a workflow fall back to a plain `status` field.
   const workflowState = resolveWorkflowState(workflowConfig, workflowMeta)
   const publishingStatus = resolvePublishingStatus(schema, entry ?? {})
-  const workflowBadgePresentation = publishingStatus
+  /*const workflowBadgePresentation = publishingStatus
     ? {
       className: WORKFLOW_BADGE_COLORS[publishingStatus.color],
       style: undefined,
@@ -590,7 +596,7 @@ export function EditEntryPage() {
           ? WORKFLOW_BADGE_COLORS.success
           : WORKFLOW_BADGE_COLORS.warning,
         style: undefined,
-      }
+      }*/
   const workflowStagePresentation = workflowState && publishingStatus?.workflowStateLabel
     ? getWorkflowBadgePresentation((workflowState as { color?: string }).color)
     : null
@@ -650,6 +656,20 @@ export function EditEntryPage() {
   }
 
   const workflowAvailable = !!(workflowConfig && isEdit && workflowMeta)
+  const liveSnapshot = (entry?.__published && typeof entry.__published === "object"
+    ? entry.__published
+    : null) as Record<string, unknown> | null
+  const compareToLiveEnabled = workflowAvailable && !!liveSnapshot
+  const compareToLiveReason = !workflowAvailable
+    ? "Workflow is not enabled for this entry."
+    : liveSnapshot
+      ? null
+      : "No live snapshot exists yet. Publish this entry once to compare future draft changes."
+  const draftLiveComparison = useMemo(() => buildDraftLiveComparison({
+    fields: orderedFields as FieldSchema[],
+    draft: (previewData || entry || null) as Record<string, unknown> | null,
+    live: liveSnapshot,
+  }), [entry, liveSnapshot, orderedFields, previewData])
   const workflowAutosaveConfig = resolveWorkflowAutosaveSettings(schema)
   const workflowAutosaveEnabled = Boolean(
     isEdit
@@ -657,13 +677,34 @@ export function EditEntryPage() {
     && (schema?.workflow || schema?.drafts)
     && canUpdate,
   )
-  const handleManualSave = useCallback((data: Record<string, unknown>) => {
-    return saveMutation.mutateAsync({ data, mode: "manual" })
+  const documentLabel = useMemo(() => (
+    entry ? resolveDocumentTitle({
+      entry,
+      collection: schema,
+      collections: schemas?.collections,
+    }) : undefined
+  ), [entry, schema, schemas?.collections])
+
+  const persistDraft = useCallback((
+    data: Record<string, unknown>,
+    mode: "manual" | "autosave" | "transition",
+  ) => {
+    const promise = saveMutation.mutateAsync({ data, mode })
+    draftSavePromiseRef.current = promise.finally(() => {
+      if (draftSavePromiseRef.current === promise) {
+        draftSavePromiseRef.current = null
+      }
+    })
+    return promise
   }, [saveMutation])
 
+  const handleManualSave = useCallback((data: Record<string, unknown>) => {
+    return persistDraft(data, "manual")
+  }, [persistDraft])
+
   const handleWorkflowAutosave = useCallback(async (data: Record<string, unknown>) => {
-    await saveMutation.mutateAsync({ data, mode: "autosave" })
-  }, [saveMutation])
+    await persistDraft(data, "autosave")
+  }, [persistDraft])
 
   const autosaveConfig = useMemo(() => {
     if (!workflowAutosaveEnabled) return undefined
@@ -680,6 +721,67 @@ export function EditEntryPage() {
   const showManualSaveChrome = !workflowAutosaveEnabled
   const showLivePreview = activeTab === 'edit' && showPreview && !!previewUrl
   const showWorkflowSidebar = false
+
+  const resolveTransitionContextFromDoc = useCallback((doc?: Record<string, unknown> | null) => {
+    const resolvedDocumentId = String(doc?.id ?? id ?? "")
+    const resolvedWorkflowMeta = (doc?._workflow ?? workflowMeta ?? null) as { revision?: number } | null
+    const resolvedDocumentLabel = doc ? resolveDocumentTitle({
+      entry: doc,
+      collection: schema,
+      collections: schemas?.collections,
+    }) : documentLabel
+
+    return {
+      documentIds: resolvedDocumentId ? [resolvedDocumentId] : [],
+      documentLabels: resolvedDocumentId
+        ? { [resolvedDocumentId]: resolvedDocumentLabel }
+        : undefined,
+      expectedRevisions: resolvedDocumentId && typeof resolvedWorkflowMeta?.revision === "number"
+        ? { [resolvedDocumentId]: resolvedWorkflowMeta.revision }
+        : undefined,
+      invalidateQueryKeys: resolvedDocumentId
+        ? [
+          ["entry", slug!, resolvedDocumentId],
+          ["collection", slug!],
+          ["workflow-history", slug!, resolvedDocumentId],
+        ]
+        : [["collection", slug!]],
+    }
+  }, [documentLabel, id, schema, schemas?.collections, slug, workflowMeta])
+
+  const saveCurrentDraftNow = useCallback(async (
+    mode: "manual" | "transition" = "manual",
+  ) => {
+    if (draftSavePromiseRef.current) {
+      await draftSavePromiseRef.current
+    }
+
+    if (!formEngineRef.current) {
+      throw new Error("The editor is not ready yet.")
+    }
+
+    const result = await formEngineRef.current.submitCurrentDraft()
+    const savedDoc = ((result as { doc?: Record<string, unknown> } | undefined)?.doc ?? null) as Record<string, unknown> | null
+
+    return {
+      result,
+      context: resolveTransitionContextFromDoc(savedDoc),
+      mode,
+    }
+  }, [resolveTransitionContextFromDoc])
+
+  const prepareWorkflowTransition = useCallback(async (_transition: WorkflowTransition) => {
+    if (draftSavePromiseRef.current) {
+      await draftSavePromiseRef.current
+    }
+
+    if (formEngineRef.current?.isDirty()) {
+      const { context } = await saveCurrentDraftNow("transition")
+      return context
+    }
+
+    return resolveTransitionContextFromDoc((entry ?? null) as Record<string, unknown> | null)
+  }, [entry, resolveTransitionContextFromDoc, saveCurrentDraftNow])
 
   // Admin-initiated password reset — sends an email to the target user
   const [sendingReset, setSendingReset] = useState(false)
@@ -801,12 +903,12 @@ export function EditEntryPage() {
             )}
             {showStatusBadge && (
               <>
-                <Badge className={cn(
+                {/* <Badge className={cn(
                   "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
                   workflowBadgePresentation.className,
                 )} style={workflowBadgePresentation.style} variant="outline">
                   {publishingStatus?.label ?? (currentStatus === "published" ? "Published" : "Draft")}
-                </Badge>
+                </Badge> */}
                 {publishingStatus?.workflowStateLabel && workflowStagePresentation && (
                   <Badge
                     className={cn(
@@ -940,20 +1042,13 @@ export function EditEntryPage() {
                   <WorkflowTransitionSplitButton
                     collection={slug!}
                     documentId={id!}
-                    documentLabel={entry ? resolveDocumentTitle({
-                      entry,
-                      collection: schema,
-                      collections: schemas?.collections,
-                    }) : undefined}
+                    documentLabel={documentLabel}
                     workflowConfig={workflowConfig}
                     workflowMeta={workflowMeta}
                     onPendingChange={setWorkflowTransitionPending}
-                    onSaveDraft={isEdit
-                      ? () => {
-                        document.getElementById("dyrected-form-submit")?.click()
-                      }
-                      : undefined}
+                    onSaveDraft={() => saveCurrentDraftNow("manual").then(() => undefined)}
                     saveDraftPending={saveMutation.isPending}
+                    prepareTransition={prepareWorkflowTransition}
                     invalidateQueryKeys={[
                       ["entry", slug!, id!],
                       ["collection", slug!],
@@ -967,7 +1062,7 @@ export function EditEntryPage() {
                     <Button
                       size="sm"
                       className="dy-h-9 dy-rounded-lg dy-px-4 dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
-                      onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                      onClick={() => void saveCurrentDraftNow("manual")}
                       disabled={saveMutation.isPending}
                       title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
                     >
@@ -1032,6 +1127,12 @@ export function EditEntryPage() {
                     documentId={id!}
                     workflowMeta={workflowMeta}
                     workflowConfig={workflowConfig}
+                    compareToLiveEnabled={compareToLiveEnabled}
+                    compareToLiveReason={compareToLiveReason}
+                    onCompareToLive={() => setCompareSheetOpen(true)}
+                    onSaveDraft={() => saveCurrentDraftNow("manual").then(() => undefined)}
+                    saveDraftPending={saveMutation.isPending}
+                    prepareTransition={prepareWorkflowTransition}
                   />
                 </div>
               )}
@@ -1206,6 +1307,7 @@ export function EditEntryPage() {
 
                     return (
                       <FormEngine
+                        ref={formEngineRef}
                         collection={slug!}
                         fields={orderedFields}
                         defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
@@ -1237,7 +1339,7 @@ export function EditEntryPage() {
                           <Button
                             size="sm"
                             className="dy-h-9 dy-px-5 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
-                            onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                            onClick={() => void saveCurrentDraftNow("manual")}
                             disabled={saveMutation.isPending}
                           >
                             {saveMutation.isPending ? (
@@ -1265,7 +1367,7 @@ export function EditEntryPage() {
                     <div className="md:dy-hidden dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-border-t dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-4 dy-py-3">
                       <Button
                         className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm"
-                        onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                        onClick={() => void saveCurrentDraftNow("manual")}
                         disabled={saveMutation.isPending || !(isDirty || !isEdit)}
                       >
                         {saveMutation.isPending ? (
@@ -1289,6 +1391,13 @@ export function EditEntryPage() {
 
         </div>
       </div>
+      {workflowAvailable && compareToLiveEnabled && (
+        <DraftLiveCompareSheet
+          open={compareSheetOpen}
+          onOpenChange={setCompareSheetOpen}
+          comparison={draftLiveComparison}
+        />
+      )}
     </NestedEditorProvider>
   )
 }

@@ -29,7 +29,7 @@ interface FormEngineProps {
   collection: string
   fields: FieldSchema[]
   defaultValues?: Record<string, unknown>
-  onSubmit: (data: Record<string, unknown>) => void
+  onSubmit: (data: Record<string, unknown>) => Promise<unknown> | unknown
   onChange?: (isDirty: boolean) => void
   isLoading?: boolean
   submitLabel?: string
@@ -62,6 +62,11 @@ interface FormEngineProps {
   }
 }
 
+export interface FormEngineHandle {
+  submitCurrentDraft: () => Promise<unknown>
+  isDirty: () => boolean
+}
+
 function FormEngineInner({
   collection,
   fields,
@@ -77,7 +82,7 @@ function FormEngineInner({
   documentId,
   defaultTabLabel,
   autosave,
-}: FormEngineProps) {
+}: FormEngineProps, ref: React.ForwardedRef<FormEngineHandle>) {
   const { activePath, navigateToPath, getStableId } = useNestedEditor()
   const [searchParams, setSearchParams] = useSearchParams()
   const isDrilledIn = activePath.length > 0
@@ -186,7 +191,7 @@ function FormEngineInner({
 
   const persistFormData = useCallback(async (
     data: Record<string, unknown>,
-    persist: (data: Record<string, unknown>) => Promise<void> | void,
+    persist: (data: Record<string, unknown>) => Promise<unknown> | unknown,
     options?: {
       reportAutosaveStatus?: boolean
     },
@@ -198,11 +203,12 @@ function FormEngineInner({
 
     try {
       localStorage.removeItem(draftKey)
-      await persist(data)
+      const result = await persist(data)
       form.reset(data as z.infer<typeof formSchema>)
       if (options?.reportAutosaveStatus) {
         emitAutosaveState("saved")
       }
+      return result
     } catch (error) {
       if (options?.reportAutosaveStatus) {
         emitAutosaveState(classifyWorkflowAutosaveError(error))
@@ -212,8 +218,34 @@ function FormEngineInner({
   }, [collection, defaultValues, emitAutosaveState, form])
 
   const handleFormSubmit = useCallback(async (data: Record<string, unknown>) => {
-    await persistFormData(data, onSubmit, { reportAutosaveStatus: autosaveEnabled })
+    return persistFormData(data, onSubmit, { reportAutosaveStatus: autosaveEnabled })
   }, [autosaveEnabled, onSubmit, persistFormData])
+
+  const submitCurrentDraft = useCallback(() => {
+    return new Promise<unknown>((resolve, reject) => {
+      void form.handleSubmit(
+        async (data) => {
+          try {
+            const result = await handleFormSubmit(data as Record<string, unknown>)
+            resolve(result)
+          } catch (error) {
+            reject(error)
+          }
+        },
+        () => {
+          if (autosaveEnabled) {
+            emitAutosaveState("dirty")
+          }
+          reject(new Error("Please resolve validation errors before continuing."))
+        },
+      )()
+    })
+  }, [autosaveEnabled, emitAutosaveState, form, handleFormSubmit])
+
+  React.useImperativeHandle(ref, () => ({
+    submitCurrentDraft,
+    isDirty: () => form.formState.isDirty,
+  }), [form.formState.isDirty, submitCurrentDraft])
 
   // Cmd+S / Ctrl+S shortcut
   useEffect(() => {
@@ -779,15 +811,17 @@ function FormEngineInner({
   )
 }
 
-export function FormEngine(props: FormEngineProps) {
+const ForwardedFormEngineInner = React.forwardRef<FormEngineHandle, FormEngineProps>(FormEngineInner)
+
+export const FormEngine = React.forwardRef<FormEngineHandle, FormEngineProps>(function FormEngine(props, ref) {
   // Reuse an ancestor provider (e.g. the edit page wraps both the form and the
   // live-preview pane in one provider so they share activePath + the field-array
   // registry). Only self-provide when rendered standalone.
   const existing = React.useContext(NestedEditorContext)
-  if (existing) return <FormEngineInner {...props} />
+  if (existing) return <ForwardedFormEngineInner {...props} ref={ref} />
   return (
     <NestedEditorProvider>
-      <FormEngineInner {...props} />
+      <ForwardedFormEngineInner {...props} ref={ref} />
     </NestedEditorProvider>
   )
-}
+})

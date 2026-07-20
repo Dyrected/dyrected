@@ -94,6 +94,27 @@ export function getPrimaryWorkflowTransition(
   return transitions.find((transition) => !transition.unpublish) ?? transitions[0] ?? null
 }
 
+export type GroupedWorkflowTransitions = {
+  normal: WorkflowTransition[]
+  unpublish: WorkflowTransition[]
+}
+
+export function groupWorkflowTransitions(
+  transitions: WorkflowTransition[],
+): GroupedWorkflowTransitions {
+  return transitions.reduce<GroupedWorkflowTransitions>((groups, transition) => {
+    if (transition.unpublish) {
+      groups.unpublish.push(transition)
+    } else {
+      groups.normal.push(transition)
+    }
+    return groups
+  }, {
+    normal: [],
+    unpublish: [],
+  })
+}
+
 export function getCommonWorkflowTransitions(
   workflowConfig: WorkflowConfig | null | undefined,
   docs: WorkflowDocumentLike[],
