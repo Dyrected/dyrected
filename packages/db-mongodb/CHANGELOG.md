@@ -1,5 +1,12 @@
 # @dyrected/db-mongodb
 
+## 2.6.0
+
+### Patch Changes
+
+- Updated dependencies [42f007b]
+  - @dyrected/core@2.6.0
+
 ## 2.5.65
 
 ### Patch Changes
