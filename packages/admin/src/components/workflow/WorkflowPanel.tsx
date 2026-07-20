@@ -1,26 +1,18 @@
 import { useState } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { CheckCircle, Clock, AlertCircle, XCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { ChevronDown, ChevronUp, CheckCircle, Clock, AlertCircle, XCircle } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-context"
-import { Button } from "../ui/button"
 import { cn } from "../../lib/utils"
 import type { WorkflowMetadata } from "@dyrected/core"
-import type { PaginatedResult, TransitionOptions, WorkflowHistoryEntry } from "@dyrected/sdk"
+import type { PaginatedResult, WorkflowHistoryEntry } from "@dyrected/sdk"
+import { WorkflowTransitionPanelActions, type WorkflowCapableClient } from "./workflow-transition-controls"
 
-/** Subset of DyrectedClient that covers the workflow methods added in this release. */
-interface WorkflowCapableClient {
+interface WorkflowHistoryCapableClient extends WorkflowCapableClient {
   workflowHistory(
     collection: string,
     id: string,
     args?: { limit?: number },
   ): Promise<PaginatedResult<WorkflowHistoryEntry>>
-  transition<T = unknown>(
-    collection: string,
-    id: string,
-    transitionName: string,
-    opts?: TransitionOptions,
-  ): Promise<T>
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -99,56 +91,6 @@ function StateIcon({ color }: { color?: string }) {
   return <Clock className="dy-h-3.5 dy-w-3.5" />
 }
 
-// ─── Comment Dialog ───────────────────────────────────────────────────────────
-
-function CommentDialog({
-  transitionLabel,
-  onConfirm,
-  onCancel,
-  isPending,
-}: {
-  transitionLabel: string
-  onConfirm: (comment: string) => void
-  onCancel: () => void
-  isPending: boolean
-}) {
-  const [comment, setComment] = useState("")
-  return (
-    <div className="dy-mt-3 dy-space-y-2">
-      <label className="dy-text-xs dy-font-medium dy-text-muted-foreground">
-        Comment <span className="dy-text-destructive">*</span>
-      </label>
-      <textarea
-        className="dy-w-full dy-rounded-lg dy-border dy-border-border/60 dy-bg-background dy-px-3 dy-py-2 dy-text-sm dy-text-foreground placeholder:dy-text-muted-foreground focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-primary/30 dy-resize-none"
-        rows={3}
-        placeholder={`Required for "${transitionLabel}"…`}
-        value={comment}
-        onChange={(e) => setComment(e.target.value)}
-        autoFocus
-      />
-      <div className="dy-flex dy-gap-2">
-        <Button
-          size="sm"
-          className="dy-h-8 dy-px-3 dy-rounded-lg dy-text-xs dy-font-semibold"
-          disabled={!comment.trim() || isPending}
-          onClick={() => onConfirm(comment.trim())}
-        >
-          {isPending ? <Loader2 className="dy-h-3 dy-w-3 dy-animate-spin" /> : transitionLabel}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="dy-h-8 dy-px-3 dy-rounded-lg dy-text-xs"
-          onClick={onCancel}
-          disabled={isPending}
-        >
-          Cancel
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function WorkflowPanel({
@@ -158,20 +100,11 @@ export function WorkflowPanel({
   workflowConfig,
 }: WorkflowPanelProps) {
   const { client } = useDyrected()
-  const queryClient = useQueryClient()
   const [showHistory, setShowHistory] = useState(false)
-  const [pendingComment, setPendingComment] = useState<string | null>(null) // transition name awaiting comment
 
   const currentState = workflowConfig.states.find((s) => s.name === workflowMeta.state)
   const colors = stateColors(currentState?.color)
-
-  // Available transitions come from the server (already capability-filtered per user)
-  const available = workflowMeta.availableTransitions ?? []
-  const availableTransitions = workflowConfig.transitions.filter((t) =>
-    available.includes(t.name),
-  )
-
-  const wfClient = client as unknown as WorkflowCapableClient
+  const wfClient = client as unknown as WorkflowHistoryCapableClient
 
   const { data: historyResult, isLoading: historyLoading } = useQuery({
     queryKey: ["workflow-history", collection, documentId],
@@ -179,33 +112,6 @@ export function WorkflowPanel({
     enabled: showHistory && !!client,
   })
   const history: WorkflowHistoryEntry[] = historyResult?.docs ?? []
-
-  // ── Transition mutation ─────────────────────────────────────────────────
-  const transitionMutation = useMutation({
-    mutationFn: ({ name, comment }: { name: string; comment?: string }) =>
-      wfClient.transition(collection, documentId, name, {
-        expectedRevision: workflowMeta.revision,
-        comment,
-      }),
-    onSuccess: () => {
-      setPendingComment(null)
-      queryClient.invalidateQueries({ queryKey: ["entry", collection, documentId] })
-      queryClient.invalidateQueries({ queryKey: ["workflow-history", collection, documentId] })
-      toast.success("Transition applied")
-    },
-    onError: (err: Error) => {
-      setPendingComment(null)
-      toast.error("Transition failed", { description: err.message })
-    },
-  })
-
-  function handleTransitionClick(t: WorkflowTransition) {
-    if (t.requireComment) {
-      setPendingComment(t.name)
-    } else {
-      transitionMutation.mutate({ name: t.name })
-    }
-  }
 
   return (
     <div className="dy-rounded-2xl dy-border dy-border-border/50 dy-bg-muted/10 dy-p-4 dy-space-y-4">
@@ -237,61 +143,12 @@ export function WorkflowPanel({
       </div>
 
       {/* Transition buttons */}
-      {availableTransitions.length > 0 && (
-        <div className="dy-space-y-2">
-          {availableTransitions.map((t) => {
-            const isWaiting = pendingComment === t.name
-            const isLoading =
-              transitionMutation.isPending &&
-              (transitionMutation.variables as Record<string, unknown> | undefined)?.name === t.name
-
-            return (
-              <div key={t.name}>
-                <Button
-                  size="sm"
-                  variant={
-                    t.unpublish || t.name === "reject" ? "outline" : "default"
-                  }
-                  className={cn(
-                    "dy-w-full dy-h-9 dy-rounded-lg dy-text-xs dy-font-semibold dy-justify-start dy-gap-2",
-                    isWaiting && "dy-ring-2 dy-ring-primary/30",
-                  )}
-                  disabled={transitionMutation.isPending}
-                  onClick={() => handleTransitionClick(t)}
-                >
-                  {isLoading ? (
-                    <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
-                  ) : (
-                    <StateIcon
-                      color={
-                        workflowConfig.states.find((s) => s.name === t.to)?.color
-                      }
-                    />
-                  )}
-                  {t.label}
-                </Button>
-
-                {isWaiting && (
-                  <CommentDialog
-                    transitionLabel={t.label}
-                    isPending={transitionMutation.isPending}
-                    onConfirm={(comment) =>
-                      transitionMutation.mutate({ name: t.name, comment })
-                    }
-                    onCancel={() => setPendingComment(null)}
-                  />
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {available.length === 0 && (
-        <p className="dy-text-xs dy-text-muted-foreground/50 dy-italic">
-          No transitions available from this state.
-        </p>
-      )}
+      <WorkflowTransitionPanelActions
+        collection={collection}
+        documentId={documentId}
+        workflowConfig={workflowConfig}
+        workflowMeta={workflowMeta}
+      />
 
       {/* History toggle */}
       <div>

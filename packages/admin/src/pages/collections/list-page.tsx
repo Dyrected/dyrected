@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { Link, useSearchParams } from "react-router-dom"
 import { useDyrected } from "../../providers/dyrected-context"
 import { FilterBuilder } from "../../components/ui/filter-builder"
-import type { CollectionConfig, Field } from "@dyrected/core"
+import type { CollectionConfig, Field, WorkflowConfig, WorkflowMetadata } from "@dyrected/core"
 import { type FilterRule, rulesToWhere, whereToRules } from "../../lib/filter-rules"
 import { DataTable } from "../../components/ui/data-table"
 import { type ColumnDef } from "@tanstack/react-table"
@@ -45,6 +45,14 @@ import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
 import jexl from 'jexl'
 import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
 import { useDebouncedValue } from "../../hooks/use-debounced-value"
+import { WorkflowTransitionMenu } from "../../components/workflow/workflow-transition-controls"
+import {
+  getAvailableWorkflowTransitions,
+  getCommonWorkflowTransitions,
+  resolvePublishingStatus,
+  resolveWorkflowStateFromDocument,
+} from "../../lib/workflow-ui"
+import { resolveDocumentTitle } from "../../lib/document-title"
 
 
 function SortableColumnItem({
@@ -100,41 +108,103 @@ interface CollectionListPageProps {
   slug: string
 }
 
-function resolvePublishedStateName(schema: CollectionConfig | undefined, item: Record<string, unknown>) {
-  const hasPublishingState = !!(schema?.workflow || schema?.drafts)
-  const workflowConfig = (schema as any)?.workflow
-  const workflowMeta = item?._workflow as { state?: string } | undefined
-  const workflowState = workflowConfig && workflowMeta
-    ? (workflowConfig.states as Array<{ name: string; published?: boolean }> | undefined)?.find(
-      (state) => state.name === workflowMeta.state,
-    )
-    : null
+function WorkflowStatusCell({
+  schema,
+  slug,
+  item,
+}: {
+  schema: CollectionConfig
+  slug: string
+  item: Record<string, unknown>
+}) {
+  const workflowConfig = (schema.workflow as WorkflowConfig | undefined) ?? null
+  const workflowMeta = (item._workflow as WorkflowMetadata | undefined) ?? null
+  const publishingStatus = resolvePublishingStatus(schema, item)
+  const documentLabel = resolveDocumentTitle({
+    entry: item,
+    collection: schema,
+    collections: [schema],
+  })
 
-  if (workflowState) {
-    return workflowState.published ? "Published" : "Draft"
+  if (!publishingStatus) {
+    return <span className="dy-text-xs dy-text-muted-foreground">-</span>
   }
 
-  if (!hasPublishingState) {
-    return null
+  const workflowState = resolveWorkflowStateFromDocument(workflowConfig, item)
+  const badgePresentation = {
+    className: WORKFLOW_BADGE_COLORS[publishingStatus.color],
+    style: undefined,
+  }
+  const workflowStagePresentation = workflowState && publishingStatus.workflowStateLabel
+    ? getWorkflowBadgePresentation(workflowState.color)
+    : null
+
+  const transitions = getAvailableWorkflowTransitions(workflowConfig, workflowMeta)
+  const badge = (
+    <div className="dy-inline-flex dy-items-center dy-gap-1.5">
+      <Badge
+        variant="outline"
+        className={cn(
+          "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
+          transitions.length > 0 && "hover:dy-opacity-85",
+          badgePresentation.className,
+        )}
+        style={badgePresentation.style}
+      >
+        {publishingStatus.label}
+      </Badge>
+      {publishingStatus.workflowStateLabel && workflowStagePresentation && (
+        <Badge
+          variant="outline"
+          className={cn(
+            "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-semibold dy-tracking-wide dy-shrink-0",
+            transitions.length > 0 && "hover:dy-opacity-85",
+            workflowStagePresentation.className,
+          )}
+          style={workflowStagePresentation.style}
+        >
+          {publishingStatus.workflowStateLabel}
+        </Badge>
+      )}
+    </div>
+  )
+
+  if (!workflowConfig || !workflowMeta || transitions.length === 0 || typeof item.id !== "string") {
+    return badge
   }
 
-  const plainStatus = item.status
-  if (plainStatus === "published") return "Published"
-  if (plainStatus === "draft") return "Draft"
-  return null
-}
-
-function resolveWorkflowState(schema: CollectionConfig | undefined, item: Record<string, unknown>) {
-  const workflowConfig = (schema as any)?.workflow
-  const workflowMeta = item?._workflow as { state?: string } | undefined
-  return workflowConfig && workflowMeta
-    ? (workflowConfig.states as Array<{ name: string; label?: string; color?: string; published?: boolean }> | undefined)?.find(
-      (state) => state.name === workflowMeta.state,
-    ) ?? null
-    : null
+  return (
+    <WorkflowTransitionMenu
+      collection={slug}
+      documentIds={[item.id]}
+      documentLabels={{ [item.id]: documentLabel }}
+      workflowConfig={workflowConfig}
+      transitions={transitions}
+      expectedRevisions={{ [item.id]: workflowMeta.revision }}
+      invalidateQueryKeys={[
+        ["collection", slug],
+        ["entry", slug, item.id],
+        ["workflow-history", slug, item.id],
+      ]}
+      trigger={
+        <button
+          type="button"
+          className="dy-inline-flex"
+          title="Change workflow state"
+          aria-label="Change workflow state"
+        >
+          {badge}
+        </button>
+      }
+    />
+  )
 }
 
 export function CollectionListPage({ slug }: CollectionListPageProps) {
+  return <CollectionListPageContent key={slug} slug={slug} />
+}
+
+function CollectionListPageContent({ slug }: CollectionListPageProps) {
   const { client, components, user } = useDyrected()
   const queryClient = useQueryClient()
   const [page, setPage] = React.useState(1)
@@ -166,14 +236,6 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }, { replace: true })
     setPage(1)
   }, [setSearchParams]);
-
-  // Reset page and selection when slug changes
-  const [prevSlug, setPrevSlug] = React.useState(slug)
-  if (prevSlug !== slug) {
-    setPrevSlug(slug)
-    setPage(1)
-    setRowSelection({})
-  }
 
   // Fetch schema to know fields
   const { data: schemas } = useQuery({
@@ -564,6 +626,26 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
     }
   }
 
+  const workflowConfig = (schema?.workflow as WorkflowConfig | undefined) ?? null
+  const selectedWorkflowDocs = React.useMemo(() => (
+    Object.keys(rowSelection)
+      .filter((id) => rowSelection[id])
+      .map((id) => response?.docs?.find((doc: Record<string, unknown>) => String(doc.id) === id))
+      .filter((doc): doc is Record<string, unknown> & { id: string; _workflow: WorkflowMetadata } =>
+        !!doc && typeof doc.id === "string" && !!doc._workflow,
+      )
+  ), [rowSelection, response])
+  const sharedWorkflowTransitions = React.useMemo(
+    () => getCommonWorkflowTransitions(workflowConfig, selectedWorkflowDocs),
+    [workflowConfig, selectedWorkflowDocs],
+  )
+  const selectedWorkflowRevisions = React.useMemo(
+    () => Object.fromEntries(
+      selectedWorkflowDocs.map((doc) => [doc.id, (doc._workflow as WorkflowMetadata | undefined)?.revision]),
+    ),
+    [selectedWorkflowDocs],
+  )
+
   const columns: ColumnDef<Record<string, unknown>>[] = React.useMemo(() => {
     if (!schema) return []
 
@@ -753,33 +835,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         header: "Status",
         enableHiding: false,
         cell: ({ row }) => {
-          const status = resolvePublishedStateName(schema, row.original)
-          if (!status) {
-            return <span className="dy-text-xs dy-text-muted-foreground">-</span>
-          }
-
-          const workflowState = resolveWorkflowState(schema, row.original)
-          const badgePresentation = workflowState
-            ? getWorkflowBadgePresentation(workflowState.color)
-            : {
-              className: status === "Published"
-                ? WORKFLOW_BADGE_COLORS.success
-                : WORKFLOW_BADGE_COLORS.warning,
-              style: undefined,
-            }
-
-          return (
-            <Badge
-              variant="outline"
-              className={cn(
-                "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
-                badgePresentation.className,
-              )}
-              style={badgePresentation.style}
-            >
-              {status}
-            </Badge>
-          )
+          return <WorkflowStatusCell schema={schema} slug={slug} item={row.original} />
         },
       })
     }
@@ -1193,6 +1249,42 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
               return (
                 <>
+                  {workflowConfig && selectedWorkflowDocs.length > 0 && sharedWorkflowTransitions.length > 0 && (
+                    <WorkflowTransitionMenu
+                      collection={slug}
+                      documentIds={selectedWorkflowDocs.map((doc) => doc.id)}
+                      documentLabels={Object.fromEntries(
+                        selectedWorkflowDocs.map((doc) => [
+                          doc.id,
+                          resolveDocumentTitle({
+                            entry: doc,
+                            collection: schema,
+                            collections: [schema],
+                          }),
+                        ]),
+                      )}
+                      workflowConfig={workflowConfig}
+                      transitions={sharedWorkflowTransitions}
+                      expectedRevisions={selectedWorkflowRevisions}
+                      invalidateQueryKeys={[["collection", slug]]}
+                      onComplete={() => setRowSelection({})}
+                      trigger={
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="dy-h-8"
+                          disabled={selectedWorkflowDocs.length === 0}
+                        >
+                          Change state ({selectedWorkflowDocs.length})
+                        </Button>
+                      }
+                    />
+                  )}
+                  {workflowConfig && selectedWorkflowDocs.length > 0 && sharedWorkflowTransitions.length === 0 && (
+                    <span className="dy-text-xs dy-text-muted-foreground">
+                      No shared workflow action for this selection.
+                    </span>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

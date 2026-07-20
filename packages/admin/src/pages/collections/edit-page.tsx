@@ -10,7 +10,7 @@ import { Badge } from "../../components/ui/badge"
 import { cn, getMediaUrl, getDisplayFilename, getSiteUrl } from "../../lib/utils"
 import { getWorkflowBadgePresentation, WORKFLOW_BADGE_COLORS } from "../../lib/workflow-badge"
 import { resolvePreviewUrl } from "../../lib/preview-url"
-import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil, History, Loader2 } from "lucide-react"
+import { Archive, Save, Volume2, FileIcon, Mail, GripVertical, Settings2, Workflow, Info, Eye, EyeOff, Pencil, History, Loader2, AlertCircle } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "../../components/ui/popover"
 import { LivePreviewPane } from "../../components/live-preview/LivePreviewPane"
@@ -19,7 +19,12 @@ import { resolveContainerPath } from "../../components/forms/utils"
 import { useSidebarControl } from "../../components/layout/sidebar-control"
 import type { Field as FieldSchema, PaginatedResult } from "@dyrected/sdk"
 import { WorkflowPanel } from "../../components/workflow/WorkflowPanel"
+import { WorkflowTransitionSplitButton } from "../../components/workflow/workflow-transition-controls"
 import { resolveDocumentTitle } from "../../lib/document-title"
+import {
+  resolveWorkflowAutosaveSettings,
+  type WorkflowAutosaveState,
+} from "../../lib/workflow-autosave"
 import {
   Command,
   CommandEmpty,
@@ -33,7 +38,8 @@ import { useLayoutPreference, type LayoutItem } from "../../hooks/useLayoutPrefe
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { useMemo } from "react"
+import { useCallback, useMemo } from "react"
+import { resolvePublishingStatus, resolveWorkflowState } from "../../lib/workflow-ui"
 
 function SortableFieldItem({
   id,
@@ -98,9 +104,9 @@ function SortableFieldItem({
 }
 
 /**
- * A single top-bar action: a compact square icon button with active / disabled /
- * busy states. Groups into the horizontal action cluster on the right of the
- * editor header (Storyblok-style top bar rather than a far-right vertical rail).
+ * A single top-bar action. It stays icon-only on smaller screens and expands to
+ * an icon + label button on desktop so action meaning is visible without relying
+ * on tooltips.
  */
 function HeaderAction({
   icon: Icon,
@@ -129,7 +135,7 @@ function HeaderAction({
       title={title || label}
       aria-label={title || label}
       className={cn(
-        "dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-lg dy-transition-all",
+        "dy-inline-flex dy-h-9 dy-w-9 lg:dy-w-auto dy-items-center dy-justify-center lg:dy-justify-start lg:dy-gap-2 dy-rounded-lg lg:dy-px-3 dy-transition-all",
         active
           ? "dy-bg-muted dy-text-primary"
           : "dy-text-muted-foreground hover:dy-bg-muted/60 hover:dy-text-foreground",
@@ -142,7 +148,65 @@ function HeaderAction({
       ) : (
         <Icon className="dy-h-4 dy-w-4" />
       )}
+      <span className="dy-hidden lg:dy-inline dy-text-xs dy-font-medium">
+        {label}
+      </span>
     </button>
+  )
+}
+
+function DraftSaveStatusBadge({
+  state,
+}: {
+  state: WorkflowAutosaveState
+}) {
+  const presentation = (() => {
+    switch (state) {
+      case "dirty":
+        return {
+          icon: Save,
+          label: "Unsaved changes",
+          className: "dy-text-amber-700 dy-bg-amber-50 dy-border-amber-200",
+        }
+      case "saving":
+        return {
+          icon: Loader2,
+          label: "Saving...",
+          className: "dy-text-sky-700 dy-bg-sky-50 dy-border-sky-200",
+        }
+      case "saved":
+      case "idle":
+        return {
+          icon: Save,
+          label: "Changes saved",
+          className: "dy-text-emerald-700 dy-bg-emerald-50 dy-border-emerald-200",
+        }
+      case "conflict":
+        return {
+          icon: AlertCircle,
+          label: "Refresh required",
+          className: "dy-text-rose-700 dy-bg-rose-50 dy-border-rose-200",
+        }
+      case "error":
+      default:
+        return {
+          icon: AlertCircle,
+          label: "Save failed",
+          className: "dy-text-rose-700 dy-bg-rose-50 dy-border-rose-200",
+        }
+    }
+  })()
+
+  const Icon = presentation.icon
+
+  return (
+    <div className={cn(
+      "dy-inline-flex dy-items-center dy-gap-1.5 dy-rounded-full dy-border dy-px-2.5 dy-py-1 dy-text-[11px] dy-font-semibold",
+      presentation.className,
+    )}>
+      <Icon className={cn("dy-h-3.5 dy-w-3.5", state === "saving" && "dy-animate-spin")} />
+      <span>{presentation.label}</span>
+    </div>
   )
 }
 
@@ -253,6 +317,8 @@ export function EditEntryPage() {
   const [mobilePreview, setMobilePreview] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [previewData, setPreviewData] = useState<Record<string, unknown> | null>(null)
+  const [workflowAutosaveState, setWorkflowAutosaveState] = useState<WorkflowAutosaveState>("idle")
+  const [workflowTransitionPending, setWorkflowTransitionPending] = useState(false)
   const isEdit = !!id
 
   const [isConfiguringView, setIsConfiguringView] = useState(false)
@@ -369,19 +435,6 @@ export function EditEntryPage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
   }, [isDirty])
 
-  // Cmd+S to save
-  useEffect(() => {
-    const handleSave = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        e.preventDefault()
-        document.getElementById('dyrected-form-submit')?.click()
-      }
-    }
-    window.addEventListener("keydown", handleSave)
-    return () => window.removeEventListener("keydown", handleSave)
-  }, [])
-
-
   const schemaSlug = schema?.slug
   const schemaPreviewUrl = schema?.admin?.previewUrl
   const syncShowPreview = useState(() => (next: boolean) => {
@@ -392,19 +445,6 @@ export function EditEntryPage() {
     if (!schemaSlug || !schemaPreviewUrl) return
     syncShowPreview(true) // Preview ON by default for pages with preview url
   }, [schemaSlug, schemaPreviewUrl, syncShowPreview])
-
-  const hasWorkflow = !!(schema as { workflow?: unknown } | undefined)?.workflow
-  const syncShowWorkflow = useState(() => (next: boolean) => {
-    setActiveTab((prev) => next ? "workflow" : (prev === "workflow" ? "edit" : prev))
-  })[0]
-
-  useEffect(() => {
-    // Default the workflow panel ON when the collection has a workflow but no
-    // live preview competing for horizontal space; otherwise leave it off and
-    // let the user toggle it from the rail.
-    if (!hasWorkflow || schemaPreviewUrl) return
-    syncShowWorkflow(true)
-  }, [hasWorkflow, schemaPreviewUrl, syncShowWorkflow])
 
   // Fetch entry data if in edit mode
   const { data: entry, isLoading: isEntryLoading } = useQuery({
@@ -460,7 +500,12 @@ export function EditEntryPage() {
       : null
 
   const saveMutation = useMutation({
-    mutationFn: async (data: Record<string, unknown>) => {
+    mutationFn: async ({
+      data,
+    }: {
+      data: Record<string, unknown>
+      mode: "manual" | "autosave"
+    }) => {
       const { oldPassword, newPassword, confirmPassword, ...rest } = data as {
         oldPassword?: string
         newPassword?: string
@@ -489,18 +534,20 @@ export function EditEntryPage() {
 
       return results
     },
-    onSuccess: (results) => {
+    onSuccess: (results, variables) => {
       setIsDirty(false)
       queryClient.invalidateQueries({ queryKey: ["collection", slug] })
       if (isEdit) {
         queryClient.invalidateQueries({ queryKey: ["entry", slug, id] })
       }
 
-      toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
-        description: `${schema?.labels?.singular || schema?.slug} has been saved.`,
-      })
+      if (variables.mode === "manual") {
+        toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
+          description: `${schema?.labels?.singular || schema?.slug} has been saved.`,
+        })
+      }
 
-      if (results.passwordChanged) {
+      if (results.passwordChanged && variables.mode === "manual") {
         toast.success("Password changed successfully")
       }
 
@@ -509,12 +556,130 @@ export function EditEntryPage() {
         navigate(`/collections/${slug}/edit/${doc.id}`, { replace: true })
       }
     },
-    onError: (error: Error) => {
+    onError: (error: Error, variables) => {
+      if (variables.mode !== "manual") return
       toast.error("Failed to save entry", {
         description: error.message || "An unexpected error occurred.",
       })
     },
   })
+
+  // Workflow — available when the schema declares a workflow config and we
+  // have an existing entry with a _workflow metadata object.
+  const workflowConfig = (schema as any)?.workflow ?? null
+  const workflowMeta = isEdit && entry ? (entry as any)._workflow ?? null : null
+
+  const hasStatus = schema?.fields.some((f: { name?: string }) => f.name === "status")
+  const currentStatus = entry?.status || "draft"
+
+  // Publishing badge. When the collection has a workflow (including one
+  // synthesized from `drafts: true`), the source of truth is the workflow
+  // state — a state flagged `published` renders "Live", anything else "Draft".
+  // Collections without a workflow fall back to a plain `status` field.
+  const workflowState = resolveWorkflowState(workflowConfig, workflowMeta)
+  const publishingStatus = resolvePublishingStatus(schema, entry ?? {})
+  const workflowBadgePresentation = publishingStatus
+    ? {
+      className: WORKFLOW_BADGE_COLORS[publishingStatus.color],
+      style: undefined,
+    }
+    : workflowState
+      ? getWorkflowBadgePresentation((workflowState as { color?: string }).color)
+      : {
+        className: currentStatus === "published"
+          ? WORKFLOW_BADGE_COLORS.success
+          : WORKFLOW_BADGE_COLORS.warning,
+        style: undefined,
+      }
+  const workflowStagePresentation = workflowState && publishingStatus?.workflowStateLabel
+    ? getWorkflowBadgePresentation((workflowState as { color?: string }).color)
+    : null
+  const showStatusBadge = workflowConfig ? !!workflowMeta : hasStatus
+
+  const siteUrl = getSiteUrl(schemas?.admin?.siteUrl)
+  const previewUrl = resolvePreviewUrl(schema?.admin?.previewUrl, previewData || entry, siteUrl)
+
+  // Evaluate collection-level read access
+  const readAccess = (schema?.access as Record<string, unknown> | undefined)?.read
+  let canRead = true
+  if (readAccess === false) {
+    canRead = false
+  } else if (typeof readAccess === 'string') {
+    try {
+      canRead = jexl.evalSync(readAccess, { user, ...(previewData || entry || {}) })
+    } catch (e) {
+      console.warn("Read access eval failed:", e)
+    }
+  }
+
+  const createAccess = (schema?.access as Record<string, unknown> | undefined)?.create
+  let canCreate = true
+  if (createAccess === false) {
+    canCreate = false
+  } else if (typeof createAccess === 'string') {
+    try {
+      canCreate = jexl.evalSync(createAccess, { user })
+    } catch (e) {
+      console.warn("Create access eval failed:", e)
+    }
+  }
+
+  const updateAccess = (schema?.access as Record<string, unknown> | undefined)?.update
+  let canUpdate = true
+  if (updateAccess === false) {
+    canUpdate = false
+  } else if (typeof updateAccess === 'string') {
+    try {
+      canUpdate = jexl.evalSync(updateAccess, { user, ...(previewData || entry || {}) })
+    } catch (e) {
+      console.warn("Update access eval failed:", e)
+    }
+  }
+
+  // Evaluate collection-level audit log access
+  const auditAccess = (schema?.access as any)?.readAudit ?? readAccess
+  let canReadAudit = true
+  if (auditAccess === false) {
+    canReadAudit = false
+  } else if (typeof auditAccess === 'string') {
+    try {
+      canReadAudit = jexl.evalSync(auditAccess, { user, ...(previewData || entry || {}) })
+    } catch {
+      canReadAudit = false
+    }
+  }
+
+  const workflowAvailable = !!(workflowConfig && isEdit && workflowMeta)
+  const workflowAutosaveConfig = resolveWorkflowAutosaveSettings(schema)
+  const workflowAutosaveEnabled = Boolean(
+    isEdit
+    && workflowAutosaveConfig.enabled
+    && (schema?.workflow || schema?.drafts)
+    && canUpdate,
+  )
+  const handleManualSave = useCallback((data: Record<string, unknown>) => {
+    return saveMutation.mutateAsync({ data, mode: "manual" })
+  }, [saveMutation])
+
+  const handleWorkflowAutosave = useCallback(async (data: Record<string, unknown>) => {
+    await saveMutation.mutateAsync({ data, mode: "autosave" })
+  }, [saveMutation])
+
+  const autosaveConfig = useMemo(() => {
+    if (!workflowAutosaveEnabled) return undefined
+
+    return {
+      enabled: true,
+      delayMs: workflowAutosaveConfig.delayMs,
+      onSave: handleWorkflowAutosave,
+      onStatusChange: setWorkflowAutosaveState,
+    }
+  }, [handleWorkflowAutosave, workflowAutosaveConfig.delayMs, workflowAutosaveEnabled])
+
+  const showWorkflowAutosaveStatus = workflowAutosaveEnabled && activeTab === "edit"
+  const showManualSaveChrome = !workflowAutosaveEnabled
+  const showLivePreview = activeTab === 'edit' && showPreview && !!previewUrl
+  const showWorkflowSidebar = false
 
   // Admin-initiated password reset — sends an email to the target user
   const [sendingReset, setSendingReset] = useState(false)
@@ -537,58 +702,6 @@ export function EditEntryPage() {
 
   if (!schema) return <div>Collection not found</div>
   if (isEdit && isEntryLoading) return <div>Loading entry...</div>
-
-  // Workflow — available when the schema declares a workflow config and we
-  // have an existing entry with a _workflow metadata object.
-  const workflowConfig = (schema as any).workflow ?? null
-  const workflowMeta = isEdit && entry ? (entry as any)._workflow ?? null : null
-
-  const hasStatus = schema?.fields.some((f: { name?: string }) => f.name === "status")
-  const currentStatus = entry?.status || "draft"
-
-  // Publishing badge. When the collection has a workflow (including one
-  // synthesized from `drafts: true`), the source of truth is the workflow
-  // state — a state flagged `published` renders "Live", anything else "Draft".
-  // Collections without a workflow fall back to a plain `status` field.
-  const workflowState = workflowConfig && workflowMeta
-    ? (workflowConfig.states as Array<{ name: string; published?: boolean }> | undefined)?.find(
-      (s) => s.name === (workflowMeta as { state?: string }).state,
-    )
-    : null
-  const isPublished = workflowState ? !!workflowState.published : currentStatus === "published"
-  const statusBadgeLabel = workflowState
-    ? (workflowState as { label?: string; name: string }).label || workflowState.name
-    : currentStatus === "published"
-      ? "Published"
-      : currentStatus === "draft"
-        ? "Draft"
-        : String(currentStatus)
-  const workflowBadgePresentation = workflowState
-    ? getWorkflowBadgePresentation((workflowState as { color?: string }).color)
-    : {
-      className: isPublished
-        ? WORKFLOW_BADGE_COLORS.success
-        : WORKFLOW_BADGE_COLORS.warning,
-      style: undefined,
-    }
-  const showStatusBadge = workflowConfig ? !!workflowMeta : hasStatus
-
-  const siteUrl = getSiteUrl(schemas?.admin?.siteUrl);
-  const previewUrl = resolvePreviewUrl(schema.admin?.previewUrl, previewData || entry, siteUrl)
-
-  // Evaluate collection-level read access
-  const readAccess = (schema.access as Record<string, unknown> | undefined)?.read
-  let canRead = true
-  if (readAccess === false) {
-    canRead = false
-  } else if (typeof readAccess === 'string') {
-    try {
-      canRead = jexl.evalSync(readAccess, { user, ...(previewData || entry || {}) })
-    } catch (e) {
-      console.warn("Read access eval failed:", e)
-    }
-  }
-
   if (!canRead) {
     return (
       <div className="dy-flex dy-items-center dy-justify-center dy-h-[calc(100vh-200px)]">
@@ -602,47 +715,6 @@ export function EditEntryPage() {
       </div>
     )
   }
-
-  const createAccess = (schema.access as Record<string, unknown> | undefined)?.create
-  let canCreate = true
-  if (createAccess === false) {
-    canCreate = false
-  } else if (typeof createAccess === 'string') {
-    try {
-      canCreate = jexl.evalSync(createAccess, { user })
-    } catch (e) {
-      console.warn("Create access eval failed:", e)
-    }
-  }
-
-  const updateAccess = (schema.access as Record<string, unknown> | undefined)?.update
-  let canUpdate = true
-  if (updateAccess === false) {
-    canUpdate = false
-  } else if (typeof updateAccess === 'string') {
-    try {
-      canUpdate = jexl.evalSync(updateAccess, { user, ...(previewData || entry || {}) })
-    } catch (e) {
-      console.warn("Update access eval failed:", e)
-    }
-  }
-
-  // Evaluate collection-level audit log access
-  const auditAccess = (schema.access as any)?.readAudit ?? readAccess
-  let canReadAudit = true
-  if (auditAccess === false) {
-    canReadAudit = false
-  } else if (typeof auditAccess === 'string') {
-    try {
-      canReadAudit = jexl.evalSync(auditAccess, { user, ...(previewData || entry || {}) })
-    } catch {
-      canReadAudit = false
-    }
-  }
-
-  const workflowAvailable = !!(workflowConfig && isEdit && workflowMeta)
-  const showLivePreview = activeTab === 'edit' && showPreview && !!previewUrl
-  const showWorkflowSidebar = false
 
 
   const docsToDisplay = debouncedSearchQuery
@@ -728,12 +800,29 @@ export function EditEntryPage() {
               </h1>
             )}
             {showStatusBadge && (
-              <Badge className={cn(
-                "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
-                workflowBadgePresentation.className,
-              )} style={workflowBadgePresentation.style} variant="outline">
-                {statusBadgeLabel}
-              </Badge>
+              <>
+                <Badge className={cn(
+                  "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-shrink-0",
+                  workflowBadgePresentation.className,
+                )} style={workflowBadgePresentation.style} variant="outline">
+                  {publishingStatus?.label ?? (currentStatus === "published" ? "Published" : "Draft")}
+                </Badge>
+                {publishingStatus?.workflowStateLabel && workflowStagePresentation && (
+                  <Badge
+                    className={cn(
+                      "dy-px-2 dy-py-0 dy-rounded-full dy-text-[10px] dy-font-semibold dy-tracking-wide dy-shrink-0",
+                      workflowStagePresentation.className,
+                    )}
+                    style={workflowStagePresentation.style}
+                    variant="outline"
+                  >
+                    {publishingStatus.workflowStateLabel}
+                  </Badge>
+                )}
+                {showWorkflowAutosaveStatus && (
+                  <DraftSaveStatusBadge state={workflowAutosaveState} />
+                )}
+              </>
             )}
           </div>
 
@@ -768,9 +857,9 @@ export function EditEntryPage() {
             {workflowAvailable && (
               <HeaderAction
                 icon={Workflow}
-                label="Workflow"
+                label="Workflow details"
                 active={activeTab === "workflow"}
-                title={activeTab === "workflow" ? "Hide workflow transitions" : "Show workflow transitions"}
+                title={activeTab === "workflow" ? "Hide workflow details" : "Show workflow details"}
                 onClick={() => setActiveTab((tab) => tab === "workflow" ? "edit" : "workflow")}
               />
             )}
@@ -846,28 +935,57 @@ export function EditEntryPage() {
             {(isEdit ? canUpdate : canCreate) && activeTab === "edit" && (
               /* Desktop save lives in the header. On mobile it moves to the
                  docked bottom save bar, so this is hidden below md. */
-              <div className="dy-hidden md:dy-flex dy-items-center">
-                <div className="dy-mx-1 dy-h-6 dy-w-px dy-bg-border/60" />
-                <Button
-                  size="sm"
-                  className="dy-h-9 dy-rounded-lg dy-px-4 dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
-                  onClick={() => document.getElementById('dyrected-form-submit')?.click()}
-                  disabled={saveMutation.isPending}
-                  title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
-                >
-                  {saveMutation.isPending ? (
-                    <span className="dy-flex dy-items-center dy-gap-2">
-                      <span className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent" />
-                      Saving…
-                    </span>
-                  ) : (
-                    <span className="dy-flex dy-items-center dy-gap-2">
-                      <Save className="dy-h-3.5 dy-w-3.5" />
-                      {isEdit ? "Save" : "Create"}
-                    </span>
-                  )}
-                </Button>
-              </div>
+              <>
+                {workflowAvailable && (
+                  <WorkflowTransitionSplitButton
+                    collection={slug!}
+                    documentId={id!}
+                    documentLabel={entry ? resolveDocumentTitle({
+                      entry,
+                      collection: schema,
+                      collections: schemas?.collections,
+                    }) : undefined}
+                    workflowConfig={workflowConfig}
+                    workflowMeta={workflowMeta}
+                    onPendingChange={setWorkflowTransitionPending}
+                    onSaveDraft={isEdit
+                      ? () => {
+                        document.getElementById("dyrected-form-submit")?.click()
+                      }
+                      : undefined}
+                    saveDraftPending={saveMutation.isPending}
+                    invalidateQueryKeys={[
+                      ["entry", slug!, id!],
+                      ["collection", slug!],
+                      ["workflow-history", slug!, id!],
+                    ]}
+                  />
+                )}
+                {showManualSaveChrome && (
+                  <div className="dy-hidden md:dy-flex dy-items-center">
+                    <div className="dy-mx-1 dy-h-6 dy-w-px dy-bg-border/60" />
+                    <Button
+                      size="sm"
+                      className="dy-h-9 dy-rounded-lg dy-px-4 dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm dy-shrink-0"
+                      onClick={() => document.getElementById('dyrected-form-submit')?.click()}
+                      disabled={saveMutation.isPending}
+                      title={isEdit ? "Save Changes (⌘S)" : "Create Entry (⌘S)"}
+                    >
+                      {saveMutation.isPending ? (
+                        <span className="dy-flex dy-items-center dy-gap-2">
+                          <span className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-rounded-full dy-border-2 dy-border-current dy-border-t-transparent" />
+                          Saving…
+                        </span>
+                      ) : (
+                        <span className="dy-flex dy-items-center dy-gap-2">
+                          <Save className="dy-h-3.5 dy-w-3.5" />
+                          {isEdit ? "Save" : "Create"}
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1091,10 +1209,11 @@ export function EditEntryPage() {
                         collection={slug!}
                         fields={orderedFields}
                         defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
-                        onSubmit={(data) => saveMutation.mutate(data)}
+                        onSubmit={handleManualSave}
+                        autosave={autosaveConfig}
                         onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
                         onChange={(dirty) => setIsDirty(dirty)}
-                        isLoading={saveMutation.isPending || isPreferenceLoading}
+                        isLoading={saveMutation.isPending || workflowTransitionPending || isPreferenceLoading}
                         submitLabel={isEdit ? "Save Changes" : "Create Entry"}
                         hideSubmit
                         readOnly={isEdit ? !canUpdate : !canCreate}
@@ -1108,7 +1227,7 @@ export function EditEntryPage() {
 
                   {/* Desktop save bar — floating pill, only surfaces when there
                       are changes to save. Hidden on mobile (see docked bar below). */}
-                  {(isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
+                  {showManualSaveChrome && (isDirty || !isEdit) && (isEdit ? canUpdate : canCreate) && (
                     <div className="dy-hidden md:dy-block dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-pointer-events-none">
                       <div className="dy-pointer-events-auto dy-mx-auto dy-max-w-2xl dy-px-4 dy-pb-4">
                         <div className="dy-flex dy-items-center dy-justify-between dy-gap-3 dy-rounded-2xl dy-border dy-border-border/50 dy-bg-background/80 dy-backdrop-blur-xl dy-px-4 dy-py-3 dy-shadow-xl dy-shadow-black/10 dy-animate-in dy-slide-in-from-bottom-2 dy-fade-in dy-duration-200">
@@ -1142,7 +1261,7 @@ export function EditEntryPage() {
                       app action bar. Always present while the entry is editable,
                       but the button stays disabled until there is something to
                       save. This is the only save affordance on mobile. */}
-                  {(isEdit ? canUpdate : canCreate) && (
+                  {showManualSaveChrome && (isEdit ? canUpdate : canCreate) && (
                     <div className="md:dy-hidden dy-sticky dy-bottom-0 dy-left-0 dy-right-0 dy-z-20 dy-border-t dy-border-border dy-bg-background/95 dy-backdrop-blur-sm dy-px-4 dy-py-3">
                       <Button
                         className="dy-w-full dy-h-11 dy-rounded-xl dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90 dy-shadow-sm"

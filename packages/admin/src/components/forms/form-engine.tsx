@@ -15,6 +15,10 @@ import { toast } from "sonner"
 import { useSearchParams } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { NestedEditorProvider, NestedEditorContext, useNestedEditor } from "./nested-editor-context"
+import {
+  classifyWorkflowAutosaveError,
+  type WorkflowAutosaveState,
+} from "../../lib/workflow-autosave"
 
 export type { FieldSchema, BlockSchema }
 
@@ -50,6 +54,12 @@ interface FormEngineProps {
    * (e.g. "Page"). Falls back to a capitalised collection slug.
    */
   defaultTabLabel?: string
+  autosave?: {
+    enabled: boolean
+    delayMs?: number
+    onSave: (data: Record<string, unknown>) => Promise<void>
+    onStatusChange?: (state: WorkflowAutosaveState) => void
+  }
 }
 
 function FormEngineInner({
@@ -66,6 +76,7 @@ function FormEngineInner({
   passwordChangeMode = null,
   documentId,
   defaultTabLabel,
+  autosave,
 }: FormEngineProps) {
   const { activePath, navigateToPath, getStableId } = useNestedEditor()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -135,6 +146,13 @@ function FormEngineInner({
 
   const { isDirty } = form.formState
   const flatErrors = getFlatErrors(form.formState.errors as Record<string, unknown>)
+  const autosaveEnabled = Boolean(autosave?.enabled && autosave.onSave && !readOnly)
+  const autosaveStateRef = React.useRef<WorkflowAutosaveState>("idle")
+
+  const emitAutosaveState = useCallback((state: WorkflowAutosaveState) => {
+    autosaveStateRef.current = state
+    autosave?.onStatusChange?.(state)
+  }, [autosave])
 
   useEffect(() => {
     if (flatErrors.length > 0 && form.formState.submitCount > 0) {
@@ -146,13 +164,56 @@ function FormEngineInner({
     onChange?.(isDirty)
   }, [isDirty, onChange])
 
+  useEffect(() => {
+    if (!autosaveEnabled) {
+      emitAutosaveState("idle")
+      return
+    }
+
+    if (!isDirty) {
+      if (autosaveStateRef.current !== "saving") {
+        emitAutosaveState("saved")
+      }
+      return
+    }
+
+    if (autosaveStateRef.current !== "saving") {
+      emitAutosaveState("dirty")
+    }
+  }, [autosaveEnabled, emitAutosaveState, isDirty])
+
   const watchedValues = useWatch({ control: form.control })
 
-  const handleFormSubmit = useCallback(async (data: Record<string, unknown>) => {
+  const persistFormData = useCallback(async (
+    data: Record<string, unknown>,
+    persist: (data: Record<string, unknown>) => Promise<void> | void,
+    options?: {
+      reportAutosaveStatus?: boolean
+    },
+  ) => {
     const draftKey = `dyrected_draft:${collection}:${defaultValues?.id || "global"}`
-    localStorage.removeItem(draftKey)
-    await onSubmit(data)
-  }, [collection, defaultValues, onSubmit])
+    if (options?.reportAutosaveStatus) {
+      emitAutosaveState("saving")
+    }
+
+    try {
+      localStorage.removeItem(draftKey)
+      await persist(data)
+      form.reset(data as z.infer<typeof formSchema>)
+      if (options?.reportAutosaveStatus) {
+        emitAutosaveState("saved")
+      }
+    } catch (error) {
+      if (options?.reportAutosaveStatus) {
+        emitAutosaveState(classifyWorkflowAutosaveError(error))
+      }
+      throw error
+    }
+  }, [collection, defaultValues, emitAutosaveState, form])
+
+  const handleFormSubmit = useCallback(async (data: Record<string, unknown>) => {
+    await persistFormData(data, onSubmit, { reportAutosaveStatus: autosaveEnabled })
+  }, [autosaveEnabled, onSubmit, persistFormData])
 
   // Cmd+S / Ctrl+S shortcut
   useEffect(() => {
@@ -216,6 +277,27 @@ function FormEngineInner({
     }, 1000)
     return () => clearTimeout(handler)
   }, [watchedValues, isDirty, collection, defaultValues])
+
+  useEffect(() => {
+    if (!autosaveEnabled || !isDirty || isLoading) return
+
+    const handler = setTimeout(() => {
+      form.handleSubmit(
+        async (data) => {
+          await persistFormData(
+            data as Record<string, unknown>,
+            autosave!.onSave,
+            { reportAutosaveStatus: true },
+          ).catch(() => {
+            // Autosave failures are surfaced via status + local draft retention.
+          })
+        },
+        () => emitAutosaveState("dirty"),
+      )()
+    }, autosave?.delayMs ?? 1500)
+
+    return () => clearTimeout(handler)
+  }, [autosave, autosaveEnabled, emitAutosaveState, form, isDirty, isLoading, persistFormData, watchedValues])
 
   useEffect(() => {
     if (onDataChange) {

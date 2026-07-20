@@ -352,6 +352,19 @@ export interface CollectionConfig<
     filterable?: boolean;
 
     /**
+     * Enables draft autosave in the Admin editor for workflow-enabled
+     * collections. Defaults to `true` when the collection uses `workflow` or
+     * `drafts: true`.
+     */
+    autosave?: boolean;
+
+    /**
+     * Debounce duration in milliseconds for Admin draft autosave.
+     * Defaults to `1500`.
+     */
+    autosaveDelayMs?: number;
+
+    /**
      * URL to open in the Live Preview pane when editing a document.
      *
      * Pass a Jexl string to keep the config serializable, for example

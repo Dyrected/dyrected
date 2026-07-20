@@ -139,12 +139,26 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   private async initInternalTables(sql: postgres.Sql) {
-    await sql`
-      CREATE TABLE IF NOT EXISTS dyrected_internal (
-        key TEXT PRIMARY KEY,
-        value JSONB
-      )
+    const relation = await sql<{ table_name: string | null }[]>`
+      SELECT to_regclass('dyrected_internal') AS table_name
     `;
+
+    if (relation[0]?.table_name) {
+      return;
+    }
+
+    try {
+      await sql`
+        CREATE TABLE dyrected_internal (
+          key TEXT PRIMARY KEY,
+          value JSONB
+        )
+      `;
+    } catch (error: any) {
+      if (error?.code !== "42P07") {
+        throw error;
+      }
+    }
   }
 
   private getTableIdentifier(slug: string) {
@@ -156,8 +170,23 @@ export class PostgresAdapter implements DatabaseAdapter {
     return this.sql(`collection_${slug}`);
   }
 
+  private getPhysicalTableName(slug: string) {
+    if (slug.includes(".")) {
+      const parts = slug.split(".");
+      return parts[parts.length - 1].replace(/"/g, "");
+    }
+
+    return `collection_${slug}`;
+  }
+
   private async ensureTable(slug: string, fields: any[] = []) {
     await this.ensureInitialized();
+    const tableNameOnly = this.getPhysicalTableName(slug);
+    const relation = await this.sql<{ table_name: string | null }[]>`
+      SELECT to_regclass(${tableNameOnly}) AS table_name
+    `;
+
+    if (!relation[0]?.table_name) {
     const table = this.getTableIdentifier(slug);
     await this.sql`
       CREATE TABLE IF NOT EXISTS ${table} (
@@ -167,16 +196,9 @@ export class PostgresAdapter implements DatabaseAdapter {
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
     `;
-
-    // Handle Promoted Fields
-    let tableNameOnly = slug;
-    if (slug.includes(".")) {
-      const parts = slug.split(".");
-      tableNameOnly = parts[parts.length - 1].replace(/"/g, "");
-    } else {
-      tableNameOnly = `collection_${slug}`;
     }
 
+    // Handle Promoted Fields
     const cols = await this.sql`
       SELECT column_name 
       FROM information_schema.columns 

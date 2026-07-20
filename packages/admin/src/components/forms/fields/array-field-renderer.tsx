@@ -478,7 +478,9 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
   const { schemas } = useDyrected()
   const { drillInEnabled, drillInto, reconcileAfterMutation, activePath, registerFieldArray, unregisterFieldArray } = useNestedEditor()
   const [isBulkOpen, setIsBulkOpen] = React.useState(false)
-  const [expandedIds, setExpandedIds] = React.useState<Record<string, boolean>>({})
+  const [expandedIds, setExpandedIds] = React.useState<Record<string, boolean>>(() =>
+    Object.fromEntries(fields.map((field) => [field.id, true])),
+  )
   const watchedItems = useWatch({ control, name: basePath as never }) || []
 
   // Drill-in opt-in: only when admin.drillIn === true AND drill-in is enabled
@@ -582,7 +584,7 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
 
       nextIds.forEach((id) => {
         if (next[id] === undefined) {
-          next[id] = false
+          next[id] = true
           changed = true
         }
       })

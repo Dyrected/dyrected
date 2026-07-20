@@ -72,10 +72,15 @@ function collection(slug: string, access?: CollectionConfig["access"]): Collecti
 describe("CollectionListPage component slots", () => {
   const posts = collection("posts")
   const pages = collection("pages")
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>
 
-  afterEach(cleanup)
+  afterEach(() => {
+    cleanup()
+    consoleErrorSpy.mockRestore()
+  })
 
   beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     dataTableMock.mockClear()
     pageHeaderMock.mockClear()
     useQueryMock.mockImplementation((options: { queryKey: string[] }) => (
@@ -116,6 +121,9 @@ describe("CollectionListPage component slots", () => {
 
     view.rerender(<MemoryRouter><CollectionListPage slug="pages" /></MemoryRouter>)
     expect(screen.getByTestId("before-list").textContent).toBe("pages")
+    expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining("Cannot update a component while rendering a different component")
+    )
   })
 
   it("does not render slots when read access is denied", () => {

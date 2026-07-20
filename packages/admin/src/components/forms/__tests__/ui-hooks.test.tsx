@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import * as React from "react"
 import { describe, it, expect, vi } from "vitest"
-import { cleanup, render, waitFor, screen } from "@testing-library/react"
+import { act, cleanup, fireEvent, render, waitFor, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { MemoryRouter } from "react-router-dom"
@@ -60,6 +60,91 @@ function renderWithQueryClient(ui: React.ReactElement) {
 }
 
 describe("Frontend UI Hooks Reactivity", () => {
+  it("autosaves dirty forms after the configured debounce and reports status changes", async () => {
+    vi.useFakeTimers()
+
+    const autosaveSpy = vi.fn(async () => {})
+    const statusSpy = vi.fn()
+
+    try {
+      renderWithQueryClient(
+        <FormEngine
+          collection="posts"
+          fields={[{ name: "title", type: "text", label: "Title" }]}
+          defaultValues={{ id: "post-1", title: "Old title" }}
+          onSubmit={() => {}}
+          autosave={{
+            enabled: true,
+            delayMs: 1500,
+            onSave: autosaveSpy,
+            onStatusChange: statusSpy,
+          }}
+        />
+      )
+
+      const titleInput = document.querySelector('input[name="title"]') as HTMLInputElement
+      fireEvent.change(titleInput, { target: { value: "Updated title" } })
+
+      await act(async () => {
+        vi.advanceTimersByTime(1499)
+      })
+
+      expect(autosaveSpy).not.toHaveBeenCalled()
+
+      await act(async () => {
+        vi.advanceTimersByTime(1)
+        await vi.runOnlyPendingTimersAsync()
+      })
+
+      expect(autosaveSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Updated title" }),
+      )
+      expect(statusSpy).toHaveBeenCalledWith("dirty")
+      expect(statusSpy).toHaveBeenCalledWith("saving")
+      expect(statusSpy).toHaveBeenCalledWith("saved")
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("surfaces autosave conflicts without swallowing local changes", async () => {
+    vi.useFakeTimers()
+
+    const statusSpy = vi.fn()
+
+    try {
+      renderWithQueryClient(
+        <FormEngine
+          collection="posts"
+          fields={[{ name: "title", type: "text", label: "Title" }]}
+          defaultValues={{ id: "post-1", title: "Old title" }}
+          onSubmit={() => {}}
+          autosave={{
+            enabled: true,
+            delayMs: 1500,
+            onSave: async () => {
+              throw Object.assign(new Error("stale revision"), { statusCode: 409 })
+            },
+            onStatusChange: statusSpy,
+          }}
+        />
+      )
+
+      const titleInput = document.querySelector('input[name="title"]') as HTMLInputElement
+      fireEvent.change(titleInput, { target: { value: "Updated title" } })
+
+      await act(async () => {
+        vi.advanceTimersByTime(1500)
+        await vi.runOnlyPendingTimersAsync()
+      })
+
+      expect(statusSpy).toHaveBeenCalledWith("conflict")
+      expect(titleInput.value).toBe("Updated title")
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it("keeps the change-password section in the default tab when explicit tabs exist", async () => {
     const user = userEvent.setup()
 
@@ -97,7 +182,7 @@ describe("Frontend UI Hooks Reactivity", () => {
     await user.click(screen.getByRole("button", { name: "SEO" }))
 
     expect(screen.queryByText("Change Password")).toBeNull()
-    expect(screen.getByLabelText("SEO Title")).toBeTruthy()
+    expect(document.querySelector('input[name="seoTitle"]')).toBeTruthy()
 
     await user.click(screen.getByRole("button", { name: "General" }))
 

@@ -7,9 +7,11 @@ import { execSync } from "child_process";
 import {
   detectFramework,
   detectPackageManager,
+  resolveAppSrcDir,
   type SupportedFramework,
 } from "../utils/detect.js";
 import { buildAiRules } from "@dyrected/knowledge";
+import { runGenerateTypes } from "../utils/type-generator.js";
 import {
   type BackendMode,
   buildDbConfig,
@@ -126,6 +128,26 @@ async function ensureGenerateTypesScript(cwd: string) {
   console.log(
     chalk.green("✔  package.json updated with Dyrected type generation script"),
   );
+}
+
+async function generateInitialTypes(cwd: string) {
+  const srcDir = resolveAppSrcDir(cwd);
+  const configInSrc = path.join(cwd, srcDir, "dyrected.config.ts");
+  const config = (await fs.pathExists(configInSrc))
+    ? path.join(srcDir, "dyrected.config.ts")
+    : "./dyrected.config.ts";
+  const output = path.join(srcDir, "dyrected-types.ts");
+
+  try {
+    await runGenerateTypes({ config, output });
+  } catch (error: any) {
+    console.log(
+      chalk.yellow(
+        `⚠  Could not generate initial Dyrected types automatically: ${error.message}`,
+      ),
+    );
+    console.log(chalk.cyan("  Run `npm run dyrected:generate-types` after init.\n"));
+  }
 }
 
 export function registerInit(program: Command) {
@@ -385,12 +407,16 @@ After running init:
         if (isSpa) {
           const frameworkPkg =
             framework === "react" ? "@dyrected/react" : "@dyrected/vue";
-          deps = ["@dyrected/core", frameworkPkg].join(" ");
+          deps = ["@dyrected/core", "@dyrected/sdk", frameworkPkg].join(" ");
           devDeps.push("dyrected");
         } else {
           const frameworkPkg =
             framework === "next" ? "@dyrected/next" : "@dyrected/nuxt";
-          const fullStackDeps = ["@dyrected/core", frameworkPkg];
+          const fullStackDeps = [
+            "@dyrected/core",
+            "@dyrected/sdk",
+            frameworkPkg,
+          ];
           if (backend === "self-hosted") {
             fullStackDeps.push(
               `@dyrected/db-${db}`,
@@ -564,6 +590,8 @@ After running init:
           }
         }
 
+        await generateInitialTypes(cwd);
+
         // ── AI rules ──────────────────────────────────────────────────────────
         const aiRulesPath = path.join(cwd, ".dyrected", "ai-rules.md");
         if (!(await fs.pathExists(aiRulesPath))) {
@@ -617,7 +645,7 @@ After running init:
           );
           console.log(
             chalk.cyan(
-              "  4. Run npm run dyrected:generate-types after schema changes",
+              "  4. Run npm run dyrected:generate-types after schema changes to refresh the generated file",
             ),
           );
           console.log(
@@ -641,7 +669,7 @@ After running init:
           );
           console.log(
             chalk.cyan(
-              "  3. Run npm run dyrected:generate-types if you want a generated types file",
+              "  3. Run npm run dyrected:generate-types after schema changes to refresh the generated file",
             ),
           );
           console.log(
@@ -660,7 +688,7 @@ After running init:
           );
           console.log(
             chalk.cyan(
-              "  3. Run npm run dyrected:generate-types to create your typed contract file\n",
+              "  3. Run npm run dyrected:generate-types after schema changes to refresh your typed contract file\n",
             ),
           );
         }

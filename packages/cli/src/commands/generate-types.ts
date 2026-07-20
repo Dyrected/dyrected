@@ -4,6 +4,7 @@ import fs from "fs-extra";
 import path from "path";
 import { runGenerateTypes } from "../utils/type-generator.js";
 import { resolveAppSrcDir } from "../utils/detect.js";
+import { loadCommandEnv } from "../utils/env.js";
 
 /**
  * Resolve where `dyrected.config.ts` lives. Prefer the framework source dir
@@ -29,6 +30,10 @@ export function registerGenerateTypes(program: Command) {
       "Path to your dyrected.config.ts (defaults to your app source dir, then the project root)",
     )
     .option(
+      "--env-path <path>",
+      "Path to an env file to load before importing dyrected.config.ts",
+    )
+    .option(
       "-o, --output <path>",
       "Output file path (defaults to <srcDir>/dyrected-types.ts so your framework's TypeScript program picks up the generated types)",
     )
@@ -42,6 +47,9 @@ Examples:
   # Generate from a running self-hosted instance
   $ npx dyrected generate:types --url http://localhost:3000
 
+  # Generate after loading a specific env file
+  $ npx dyrected generate:types --env-path ./.env.local
+
   # Custom config and output paths
   $ npx dyrected generate:types --config ./cms/dyrected.config.ts --output ./types/cms.ts
 `,
@@ -49,6 +57,7 @@ Examples:
     .action(async (options) => {
       try {
         const cwd = process.cwd();
+        await loadCommandEnv({ cwd, envPath: options.envPath });
         const srcDir = resolveAppSrcDir(cwd);
         const config = options.config ?? resolveConfigPath(cwd, srcDir);
         const output = options.output ?? path.join(srcDir, "dyrected-types.ts");
