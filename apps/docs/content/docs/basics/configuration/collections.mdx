@@ -389,6 +389,19 @@ export interface CollectionConfig<
     filterable?: boolean;
 
     /**
+     * Enables draft autosave in the Admin editor for workflow-enabled
+     * collections. Defaults to `true` when the collection uses `workflow` or
+     * `drafts: true`.
+     */
+    autosave?: boolean;
+
+    /**
+     * Debounce duration in milliseconds for Admin draft autosave.
+     * Defaults to `1500`.
+     */
+    autosaveDelayMs?: number;
+
+    /**
      * URL to open in the Live Preview pane when editing a document.
      *
      * Pass a Jexl string to keep the config serializable, for example
@@ -561,6 +574,40 @@ Seeding only happens while the collection is still empty. Once any document exis
 Set `workflow` when a collection needs editorial review or staged publishing. A workflow-enabled collection keeps an editable working revision separate from the public snapshot, so editing a document never changes live content until you transition it to a published state.
 
 This is a larger feature with its own states, transitions, and roles, so it lives on its own page. For the full model, read [Workflows Overview](/docs/features/workflows/overview).
+
+### Workflow draft autosave
+
+Workflow-enabled collections also control how draft saving behaves in the Admin. If a collection uses either `workflow` or `drafts: true`, Dyrected treats it as a workflow editing surface:
+
+- the working draft is separate from the published snapshot
+- publishing and every other workflow transition stay explicit
+- draft autosave is on by default in the Admin
+
+Use the collection's `admin` config when you need to tune that editor behavior. The simplest example is a collection using `drafts: true`:
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Posts = defineCollection({
+  slug: "posts",
+  drafts: true,
+  admin: {
+    autosave: true,
+    autosaveDelayMs: 1500,
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+  ],
+});
+```
+
+- `admin.autosave` defaults to `true` for collections that use `workflow` or `drafts: true`
+- `admin.autosave: false` keeps explicit manual draft saving for that collection
+- `admin.autosaveDelayMs` sets the debounce in milliseconds and defaults to `1500`
+
+The same admin options work the same way on custom `workflow` collections too. The difference is only the workflow model itself, not the autosave config surface.
+
+This setting is Admin-only. It changes how the working draft is persisted while someone edits, but it never publishes content, bypasses review, or changes the public snapshot.
 
 ## `audit`
 

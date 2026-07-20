@@ -367,6 +367,13 @@
     "id": "/basics/configuration/collections#example-6",
     "page": "/basics/configuration/collections",
     "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/collections#example-7",
+    "page": "/basics/configuration/collections",
+    "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
@@ -3230,8 +3237,8 @@
     "id": "/features/workflows/overview#example-4",
     "page": "/features/workflows/overview",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/features/workflows/overview#example-5",
@@ -3417,6 +3424,20 @@
   },
   {
     "id": "/features/workflows/overview#example-31",
+    "page": "/features/workflows/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/features/workflows/overview#example-32",
+    "page": "/features/workflows/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/features/workflows/overview#example-33",
     "page": "/features/workflows/overview",
     "language": "ts",
     "classification": "syntax-checked",

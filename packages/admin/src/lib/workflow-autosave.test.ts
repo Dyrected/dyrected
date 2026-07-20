@@ -15,6 +15,16 @@ describe("workflow autosave helpers", () => {
       enabled: true,
       delayMs: DEFAULT_WORKFLOW_AUTOSAVE_DELAY_MS,
     })
+
+    expect(resolveWorkflowAutosaveSettings({
+      workflow: {
+        initialState: "draft",
+      },
+      admin: {},
+    })).toEqual({
+      enabled: true,
+      delayMs: DEFAULT_WORKFLOW_AUTOSAVE_DELAY_MS,
+    })
   })
 
   it("honors an explicit collection-level autosave disable", () => {

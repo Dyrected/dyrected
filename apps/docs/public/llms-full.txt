@@ -1408,6 +1408,19 @@ export interface CollectionConfig<
     filterable?: boolean;
 
     /**
+     * Enables draft autosave in the Admin editor for workflow-enabled
+     * collections. Defaults to `true` when the collection uses `workflow` or
+     * `drafts: true`.
+     */
+    autosave?: boolean;
+
+    /**
+     * Debounce duration in milliseconds for Admin draft autosave.
+     * Defaults to `1500`.
+     */
+    autosaveDelayMs?: number;
+
+    /**
      * URL to open in the Live Preview pane when editing a document.
      *
      * Pass a Jexl string to keep the config serializable, for example
@@ -1580,6 +1593,38 @@ Seeding only happens while the collection is still empty. Once any document exis
 Set `workflow` when a collection needs editorial review or staged publishing. A workflow-enabled collection keeps an editable working revision separate from the public snapshot, so editing a document never changes live content until you transition it to a published state.
 
 This is a larger feature with its own states, transitions, and roles, so it lives on its own page. For the full model, read [Workflows Overview](/docs/features/workflows/overview).
+
+### Workflow draft autosave
+
+Workflow-enabled collections also control how draft saving behaves in the Admin. If a collection uses either `workflow` or `drafts: true`, Dyrected treats it as a workflow editing surface:
+
+- the working draft is separate from the published snapshot
+- publishing and every other workflow transition stay explicit
+- draft autosave is on by default in the Admin
+
+Use the collection's `admin` config when you need to tune that editor behavior:
+
+```ts
+
+
+export const Posts = defineCollection({
+  slug: "posts",
+  workflow: definePublishingWorkflow(),
+  admin: {
+    autosave: true,
+    autosaveDelayMs: 1500,
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+  ],
+});
+```
+
+- `admin.autosave` defaults to `true` for collections that use `workflow` or `drafts: true`
+- `admin.autosave: false` keeps explicit manual draft saving for that collection
+- `admin.autosaveDelayMs` sets the debounce in milliseconds and defaults to `1500`
+
+This setting is Admin-only. It changes how the working draft is persisted while someone edits, but it never publishes content, bypasses review, or changes the public snapshot.
 
 ## `audit`
 
@@ -10148,7 +10193,18 @@ Canonical URL: https://docs.dyrected.com/docs/features/__rich-text/views
 
 Canonical URL: https://docs.dyrected.com/docs/features/__versions/autosave
 
+Autosave for draft editing is now documented in the canonical workflow and collection-config pages, because it only applies to workflow-enabled collections.
 
+Use these pages instead:
+
+- [Workflows Overview](/docs/features/workflows/overview) for how autosave fits the working-draft versus published-snapshot model
+- [Collections](/docs/basics/configuration/collections#workflow-draft-autosave) for `admin.autosave` and `admin.autosaveDelayMs`
+
+The short version:
+
+- collections with `workflow` or `drafts: true` autosave draft revisions in the Admin by default
+- `admin.autosave: false` switches a collection back to explicit manual draft saves
+- autosave never publishes content or performs a workflow transition
 
 ---
 
@@ -15474,7 +15530,7 @@ That single flag gives you:
 
 - **Two states, `draft` and `published`**, with `publish` and `unpublish` transitions — the same machinery the rest of this page describes, just pre-configured.
 - **A working draft that never touches live content.** While you edit, the public API keeps serving the last published version. New documents start as drafts, so they stay invisible to the public until you publish them.
-- **Admin affordances**: a Live/Draft badge in the editor header, and a Versions panel with the document's history.
+- **Admin affordances**: clear live-vs-draft status in the list and editor, fast transition actions, and workflow details kept as a secondary surface.
 
 Drafts are visible to any signed-in admin user, so editors can see and work on unpublished content in both the list and the editor. The public API only ever returns published content, so drafts never leak to your live site. Publishing is just as open: any signed-in user can publish or unpublish — the simple drafts workflow adds no role gate. If you need role-based review — editors submit, publishers approve, only some roles can publish — reach for a full workflow (below), which gates each transition by capability.
 
@@ -15518,6 +15574,41 @@ When your states or transitions differ too — not just the role names — build
 - Named states and transitions, each gated by capabilities and with optional required comments.
 - An atomic transition route and paginated workflow history for every document.
 - Durable lifecycle events you can handle to trigger side effects when documents move between states.
+
+## Editing workflow entries in the Admin
+
+Workflow-enabled editing is designed around one rule: **saving a draft and changing workflow state are different actions**.
+
+- Saving updates the working revision only.
+- Publishing, unpublishing, submitting for review, rejecting, and every custom transition stay explicit.
+- The public snapshot changes only when a transition moves the document into or out of a published state.
+
+By default, collections that use `workflow` or `drafts: true` autosave the working draft in the Admin. This applies to the built-in drafts flow and to custom workflows alike.
+
+If a team needs explicit manual draft saving for a specific collection, disable it in that collection's admin config:
+
+```ts
+export const Posts = defineCollection({
+  slug: "posts",
+  workflow: definePublishingWorkflow(),
+  admin: {
+    autosave: false,
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+  ],
+});
+```
+
+You can also tune the debounce:
+
+```ts
+admin: {
+  autosaveDelayMs: 2000,
+}
+```
+
+The important boundary is that autosave never performs a transition. It only persists the working draft revision. If a document is already live, the previously published snapshot stays on the site until someone explicitly runs a transition such as `publish`.
 
 ## Performing a transition
 
