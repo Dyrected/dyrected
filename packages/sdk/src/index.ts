@@ -449,6 +449,7 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           if (args.limit) qb.limit(args.limit);
           if (args.page) qb.page(args.page);
           if (args.depth !== undefined) qb.depth(args.depth);
+          if (args.search) qb.search(args.search);
           if (args.initialData) qb.seed(args.initialData);
         }
         return qb;

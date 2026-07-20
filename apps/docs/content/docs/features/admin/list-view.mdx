@@ -9,7 +9,9 @@ By the end you should know how editors navigate the list, how to control what it
 
 ## Finding records
 
-The search box queries the field you set as `admin.useAsTitle` (or the first visible field if you haven't set one). The title column is a link, so clicking a record's title opens its edit form directly.
+The search box queries the backend, not the rows already loaded in the browser. That means pagination, access control, filters, and search all stay in sync.
+
+If you set `admin.searchableFields`, Dyrected searches those top-level fields. If you leave it unset, Dyrected falls back to a conservative inferred set: `admin.useAsTitle` first, then common text-like fields such as `title`, `name`, `label`, `slug`, `email`, `caption`, and `description`, plus rich text fields. The title column is a link, so clicking a record's title opens its edit form directly.
 
 For narrowing rather than searching, the **filter builder** lets editors add rules against filterable fields. It uses a draft-then-apply flow: editors build up their filter rules first and apply them to the list when ready, so the table doesn't re-query on every keystroke.
 
@@ -24,11 +26,15 @@ export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
+    description: "Long-form content for the marketing site and docs.",
     defaultColumns: ["title", "status", "publishedAt"],
+    searchableFields: ["title", "slug", "excerpt", "author"],
   },
   fields: [...],
 });
 ```
+
+If you set `admin.description`, it appears under the collection title on the list page. This is a good place for a short operational note such as what the collection is for, who uses it, or what editors should expect to find there.
 
 ## Acting on a row
 
@@ -57,4 +63,4 @@ Deleting is one kind of bulk work; editing and moving data are others. Two featu
 
 ## Recommended path
 
-Set `admin.useAsTitle` and `admin.defaultColumns` so the list is useful the moment a collection exists. Let editors tailor their own view with the **View** button, use single-row Edit/Delete for everyday changes, and reach for bulk selection when clearing several records. When the work is editing rather than deleting, move to [Spreadsheet View](/docs/features/admin/spreadsheet-view) or [CSV Import & Export](/docs/features/admin/csv-import-export).
+Set `admin.useAsTitle`, `admin.defaultColumns`, and `admin.searchableFields` so the list is useful the moment a collection exists. Add `admin.description` when editors would benefit from a one-line explanation under the page title. Let editors tailor their own view with the **View** button, use single-row Edit/Delete for everyday changes, and reach for bulk selection when clearing several records. When the work is editing rather than deleting, move to [Spreadsheet View](/docs/features/admin/spreadsheet-view) or [CSV Import & Export](/docs/features/admin/csv-import-export).

@@ -53,7 +53,14 @@ export class InMemoryAdapter implements DatabaseAdapter {
         case 'gte':         if (!(docVal >= operand)) return false; break;
         case 'lt':          if (!(docVal < operand)) return false; break;
         case 'lte':         if (!(docVal <= operand)) return false; break;
-        case 'contains':    if (typeof docVal !== 'string' || !docVal.includes(operand)) return false; break;
+        case 'contains':
+          if (Array.isArray(docVal)) {
+            const needle = typeof operand === "string" ? operand.replaceAll('"', '') : operand;
+            if (!docVal.some((value) => String(value).includes(String(needle)))) return false;
+            break;
+          }
+          if (typeof docVal !== 'string' || !docVal.includes(operand)) return false;
+          break;
         case 'starts_with': if (typeof docVal !== 'string' || !docVal.startsWith(operand)) return false; break;
         case 'exists':      if (operand ? docVal == null : docVal != null) return false; break;
       }

@@ -151,6 +151,8 @@ export interface FieldBase {
 export interface BaseFieldAdmin {
   /** Placeholder text shown when the input has no value. */
   placeholder?: string;
+  /** For nested object-like fields, choose which child field should summarize the value in admin surfaces. */
+  useAsTitle?: string;
   /** Custom component key registered in the Admin UI. */
   component?: string;
   /** Help text rendered below the field. */
@@ -596,6 +598,12 @@ export type DateFieldAdmin = {
   /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
   format?: DateFormat;
 };
+export type JoinFieldAdmin = {
+  /** Whether the join field should show the "Create new" action in the Admin UI. Defaults to `true`. */
+  showCreateButton?: boolean;
+  /** Whether the join field should show the "View all" action in the Admin UI. Defaults to `true`. */
+  showViewButton?: boolean;
+};
 
 export interface UrlLinkValue {
   /** Whether the link is a custom URL or a reference to an internal document. */
@@ -706,7 +714,7 @@ export type ArrayField = TypedField<"array", unknown>;
 /** Flexible content built from a controlled set of typed `blocks`, stored as an ordered array where each row records its `blockType`. */
 export type BlocksField = TypedField<"blocks", unknown>;
 /** A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document. */
-export type JoinField = TypedField<"join", unknown>;
+export type JoinField = TypedField<"join", unknown, JoinFieldAdmin>;
 /** A layout-only container that arranges its child `fields` horizontally in the admin UI. Stores no value of its own. */
 export type RowField = TypedField<"row", unknown>;
 

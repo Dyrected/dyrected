@@ -676,7 +676,6 @@ export function registerRoutes(
     app.get(`${path}/:id`, (c) => controller.findOne(c));
     app.patch(`${path}/:id`, (c) => controller.update(c));
     app.delete(`${path}/:id`, (c) => controller.delete(c));
-    app.post(`${path}/seed`, (c) => controller.seed(c));
     // Dedicated password-change endpoint (auth collections only)
     if (collection.auth) {
       app.post(`${path}/:id/change-password`, requireAuth(config), (c) =>
@@ -703,7 +702,6 @@ export function registerRoutes(
 
     app.get(path, (c) => controller.get(c));
     app.patch(path, (c) => controller.update(c));
-    app.post(`${path}/seed`, (c) => controller.seed(c));
   }
 
   // 6. Preview Routes
@@ -887,7 +885,6 @@ export function registerRoutes(
             return controller.deleteMany(c);
           if (method === "DELETE") return controller.delete(c);
           if (method === "POST" && id === "media") return controller.create(c);
-          if (method === "POST" && id === "seed") return controller.seed(c);
         } else {
           if (method === "GET") return controller.find(c);
           if (method === "POST") return controller.create(c);
@@ -919,9 +916,7 @@ export function registerRoutes(
       if (global) {
         const controller = new GlobalController(global);
         const method = c.req.method;
-        if (id) {
-          if (method === "POST" && id === "seed") return controller.seed(c);
-        } else {
+        if (!id) {
           if (method === "GET") return controller.get(c);
           if (method === "PATCH") return controller.update(c);
         }

@@ -367,6 +367,15 @@ export interface CollectionConfig<
      */
     defaultColumns?: string[];
 
+    /** Short helper copy rendered under the collection title in the Admin list view. */
+    description?: string;
+
+    /**
+     * Field names included in backend free-text search for this collection.
+     * When omitted, Dyrected infers a conservative default from common text-like fields.
+     */
+    searchableFields?: string[];
+
     /**
      * Groups this collection under a named section in the Admin sidebar.
      * Collections with the same `group` are visually grouped together.
@@ -446,8 +455,10 @@ Use `admin` to control how this collection feels inside the dashboard. These opt
 
 | Option           | What it does                                                                                                                                                                                                                                                                                                                                         |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useAsTitle`     | Chooses which field Dyrected should treat as the human-readable name for each document in list views, breadcrumbs, relationship pickers, and other admin surfaces. Use the field editors recognize fastest, usually something like `title`, `name`, or `email`.                                                                                      |
+| `useAsTitle`     | Chooses which field Dyrected should treat as the human-readable name for each document in list views, breadcrumbs, relationship pickers, and other admin surfaces. Use the field editors recognize fastest, usually something like `title`, `name`, or `email`. This is type-checked at config authoring time against your real top-level field names. |
 | `defaultColumns` | Sets the columns shown in the collection list view before an editor customizes anything. Pick columns that help someone scan and make a decision quickly, such as `title`, `status`, `updatedAt`, `publishedAt`, or `author`.                                                                                                                        |
+| `searchableFields` | Sets which top-level fields backend list search should query for this collection. Use this when editors need search to cover more than the title, or when you want tighter control over query cost and match quality. This is type-checked at config authoring time against your real top-level field names.                                       |
+| `description`    | Adds a short line of helper text under the collection title on the admin list page. Use it for context such as what the collection powers, what belongs there, or any quick editorial guidance.                                                                                                                                                   |
 | `group`          | Places the collection under a named section in the admin sidebar. Use it when several collections belong to one area of work, such as `Content`, `Commerce`, or `People`.                                                                                                                                                                            |
 | `icon`           | Adds a Lucide icon to the collection in the sidebar and related admin navigation. This is mostly a usability and visual organization option, but it helps large dashboards feel easier to scan.                                                                                                                                                      |
 | `hidden`         | Hides the collection from the admin sidebar while keeping it in the system. This can be useful for internal collections, support data, or collections managed indirectly through other workflows.                                                                                                                                                    |
@@ -471,6 +482,23 @@ This is where you enforce business rules such as:
 Use collection access when permissions depend on the request, the current user, or the document being queried.
 
 See [Access Control Overview](/docs/basics/access-control/overview) for the full model.
+
+## Authoring-time validation
+
+Dyrected validates several string references in TypeScript while you are writing config, so editors and developers get immediate feedback instead of a broken admin screen later.
+
+Today that includes:
+
+- collection `admin.useAsTitle`, `admin.defaultColumns`, and `admin.searchableFields`
+- nested `array` and `object` field `admin.useAsTitle`
+- named access policy references such as `{ policy: "canReadPosts" }`
+- relationship collection slugs in `relationTo`
+- reusable block slugs in `blockReferences`
+- upload-enabled collection references for rich text uploads and image fields
+- auth collection references such as `adminAuth.collectionSlug`
+- workflow state names in transitions and initial state
+
+This is only authoring-time validation. Dyrected still normalizes and runs your schema at runtime, but the TypeScript layer now catches many of the most common "why is this config not working?" mistakes much earlier.
 
 ## `hooks`
 
@@ -634,6 +662,8 @@ Treat those changes as URL migrations, not just content edits.
 
 - Use explicit human-readable labels for named fields.
 - Set `admin.useAsTitle` to the field editors will recognize fastest.
+- Set `admin.searchableFields` when backend search should cover more than the title or when you want tighter control over which fields participate.
+- Add `admin.description` when the collection benefits from one short line of context on the list page.
 - Set `admin.icon` to an appropriate icon for the collection.
 - Keep routable collections aligned with real frontend routes through `previewUrl` and `urlPattern`.
 - Treat field renames and slug changes as schema migrations, not cosmetic edits.

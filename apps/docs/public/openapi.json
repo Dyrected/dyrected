@@ -564,6 +564,14 @@
             "description": "JSON filter"
           },
           {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free-text search across configured searchable fields"
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -750,19 +758,6 @@
         "responses": {
           "200": {
             "description": "Deleted and failed document IDs"
-          }
-        }
-      }
-    },
-    "/api/collections/users/seed": {
-      "post": {
-        "tags": [
-          "Collection: Users"
-        ],
-        "summary": "Seed initial Users",
-        "responses": {
-          "200": {
-            "description": "Seeded documents"
           }
         }
       }
@@ -1045,6 +1040,14 @@
             "description": "JSON filter"
           },
           {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free-text search across configured searchable fields"
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -1235,19 +1238,6 @@
         }
       }
     },
-    "/api/collections/media/seed": {
-      "post": {
-        "tags": [
-          "Collection: Media"
-        ],
-        "summary": "Seed initial Media",
-        "responses": {
-          "200": {
-            "description": "Seeded documents"
-          }
-        }
-      }
-    },
     "/api/collections/media/media": {
       "get": {
         "tags": [
@@ -1348,6 +1338,14 @@
               "type": "string"
             },
             "description": "JSON filter"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Free-text search across configured searchable fields"
           },
           {
             "name": "sort",
@@ -1618,19 +1616,6 @@
         }
       }
     },
-    "/api/collections/posts/seed": {
-      "post": {
-        "tags": [
-          "Collection: Posts"
-        ],
-        "summary": "Seed initial Posts",
-        "responses": {
-          "200": {
-            "description": "Seeded documents"
-          }
-        }
-      }
-    },
     "/api/collections/posts/{id}/transitions/{transition}": {
       "post": {
         "tags": [
@@ -1796,19 +1781,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/globals/settings/seed": {
-      "post": {
-        "tags": [
-          "Global: Site settings"
-        ],
-        "summary": "Seed Site settings",
-        "responses": {
-          "200": {
-            "description": "Seeded global"
           }
         }
       }

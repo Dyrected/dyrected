@@ -8,6 +8,7 @@ import { CollectionListPage } from "./list-page"
 const useDyrectedMock = vi.fn()
 const useQueryMock = vi.fn()
 const dataTableMock = vi.fn()
+const pageHeaderMock = vi.fn()
 
 vi.mock("../../providers/dyrected-context", () => ({
   useDyrected: () => useDyrectedMock(),
@@ -27,9 +28,10 @@ vi.mock("../../components/ui/data-table", () => ({
 }))
 
 vi.mock("../../components/ui/page-header", () => ({
-  PageHeader: ({ title, children }: { title: string; children: ReactNode }) => (
-    <div data-testid="list-header"><span>{title}</span>{children}</div>
-  ),
+  PageHeader: (props: { title: string; description?: string; children: ReactNode }) => {
+    pageHeaderMock(props)
+    return <div data-testid="list-header"><span>{props.title}</span>{props.children}</div>
+  },
 }))
 
 vi.mock("../../components/ui/pagination", () => ({
@@ -54,8 +56,9 @@ function collection(slug: string, access?: CollectionConfig["access"]): Collecti
   return {
     slug,
     access,
-    fields: [{ name: "title", type: "text" }],
+    fields: [{ name: "title", type: "text", label: "Title" }],
     admin: {
+      description: `${slug} description`,
       components: {
         beforeList: ["before"],
         beforeListTable: ["before-table"],
@@ -74,6 +77,7 @@ describe("CollectionListPage component slots", () => {
 
   beforeEach(() => {
     dataTableMock.mockClear()
+    pageHeaderMock.mockClear()
     useQueryMock.mockImplementation((options: { queryKey: string[] }) => (
       options.queryKey[0] === "schemas"
         ? { data: { collections: [posts, pages], globals: [] }, isLoading: false }
@@ -144,5 +148,19 @@ describe("CollectionListPage component slots", () => {
     const props = dataTableMock.mock.calls.at(-1)?.[0] as { columns?: Array<{ id?: string; header?: string }> } | undefined
     const headers = (props?.columns ?? []).map((column) => column.id ?? column.header)
     expect(headers).toContain("publishingStatus")
+  })
+
+  it("passes backend search props to the table and uses the collection description in the header", () => {
+    render(<MemoryRouter initialEntries={["/collections/posts?search=Grace"]}><CollectionListPage slug="posts" /></MemoryRouter>)
+
+    const tableProps = dataTableMock.mock.calls.at(-1)?.[0] as {
+      searchValue?: string
+      onSearchChange?: (value: string) => void
+    } | undefined
+    expect(tableProps?.searchValue).toBe("Grace")
+    expect(typeof tableProps?.onSearchChange).toBe("function")
+
+    const headerProps = pageHeaderMock.mock.calls.at(-1)?.[0] as { description?: string } | undefined
+    expect(headerProps?.description).toBe("posts description")
   })
 })

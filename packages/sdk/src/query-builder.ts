@@ -6,6 +6,7 @@ export interface QueryArgs<TDoc = UnknownRecord> {
   limit?: number;
   page?: number;
   depth?: number;
+  search?: string;
   where?: UnknownRecord | string;
   sort?: string;
   initialData?: TDoc[];
@@ -45,6 +46,11 @@ export class QueryBuilder<T = UnknownRecord> {
 
   depth(depth: number): this {
     this.args.depth = depth;
+    return this;
+  }
+
+  search(search: string): this {
+    this.args.search = search;
     return this;
   }
 

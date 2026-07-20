@@ -2,6 +2,8 @@
 import { Badge } from "./badge"
 import { Calendar, ExternalLink, Star } from "lucide-react"
 import { cn, getMediaUrl } from "../../lib/utils"
+import { isAdminIconName, resolveAdminIcon } from "../../lib/admin-icons"
+import { resolveValueTitle } from "../../lib/document-title"
 import {
   displayToneClass,
   formatDate,
@@ -97,6 +99,23 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
     )
   }
 
+  // Handle Icon fields
+  if (field.type === "icon") {
+    if (!isAdminIconName(value)) {
+      return <span className="dy-text-muted-foreground">-</span>
+    }
+
+    const Icon = resolveAdminIcon(value, Calendar)
+    return (
+      <div className="dy-inline-flex dy-items-center dy-gap-2 dy-text-foreground">
+        <Icon className="dy-h-4 dy-w-4 dy-shrink-0" aria-hidden="true" />
+        <span className="dy-text-sm dy-font-medium" title={String(value)}>
+          {String(value)}
+        </span>
+      </div>
+    )
+  }
+
   // Handle Image/Media (from upload collections)
   const relationTo = field.relationTo || field.collection
   if (field.type === "image" || (field.type === "relationship" && isUploadCollection(relationTo, schemas))) {
@@ -116,10 +135,7 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
 
   // Handle Relationship (Populated)
   if (field.type === "relationship" && typeof value === "object") {
-    const relTo = field.relationTo || field.collection
-    const relatedCollection = schemas?.collections?.find((c: any) => c?.slug === relTo)
-    const displayField = relatedCollection?.admin?.useAsTitle || "title"
-    const displayValue = value[displayField] || value.name || value.id || "Unknown"
+    const displayValue = resolveValueTitle(value, field, schemas?.collections) || "Unknown"
 
     return (
       <div className="dy-flex dy-items-center dy-gap-2">
@@ -141,6 +157,15 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
 
   // Handle Array of strings or IDs
   if (Array.isArray(value)) {
+    const structuredTitle = resolveValueTitle(value, field, schemas?.collections)
+    if (structuredTitle) {
+      return (
+        <span className="dy-text-[11px] dy-text-muted-foreground dy-font-medium dy-leading-tight">
+          {structuredTitle}
+        </span>
+      )
+    }
+
     return (
       <div className="dy-flex dy-flex-wrap dy-gap-1">
         {value.slice(0, 2).map((item, i) => (
@@ -157,6 +182,15 @@ export function RenderCell({ value, field, client, schemas }: RenderCellProps) {
 
   // Handle Generic Object (Summary)
   if (typeof value === "object" && !Array.isArray(value)) {
+    const structuredTitle = resolveValueTitle(value, field, schemas?.collections)
+    if (structuredTitle) {
+      return (
+        <span className="dy-text-[11px] dy-text-muted-foreground dy-font-medium dy-leading-tight">
+          {structuredTitle}
+        </span>
+      )
+    }
+
     const entries = Object.entries(value)
       .filter(([, v]) => typeof v !== 'object' && v !== null && v !== undefined)
       .slice(0, 3)

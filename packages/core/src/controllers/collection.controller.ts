@@ -16,6 +16,7 @@ import { createReadonlyDb } from "../utils/readonly-db.js";
 import { validateUpload } from "../utils/upload-validation.js";
 import { resolveAccess } from "../auth/access.js";
 import { getAdminAuthCollection } from "../utils/admin-auth.js";
+import { buildCollectionSearchWhere } from "../utils/collection-search.js";
 import {
   applyFieldReadAccess,
   applyFieldWriteAccess,
@@ -93,12 +94,23 @@ export class CollectionController {
       const limit = Number(c.req.query("limit")) || 10;
       const page = Number(c.req.query("page")) || 1;
       const sort = c.req.query("sort") || undefined;
+      const search = c.req.query("search") || undefined;
       let where: any = undefined;
       const whereRaw = c.req.query("where");
       if (whereRaw) {
         try {
           where = JSON.parse(decodeURIComponent(whereRaw));
         } catch {}
+      }
+
+      const searchWhere = await buildCollectionSearchWhere({
+        collection: this.collection,
+        search,
+        db: createReadonlyDb(db),
+        collections: config.collections,
+      });
+      if (searchWhere) {
+        where = mergeWhereConstraint(where, searchWhere);
       }
 
       const paginatedResult = await provider.members.list({
@@ -141,6 +153,7 @@ export class CollectionController {
     const depth =
       c.req.query("depth") !== undefined ? Number(c.req.query("depth")) : 1;
     const sort = c.req.query("sort") || undefined;
+    const search = c.req.query("search") || undefined;
     const user = c.get("user");
 
     let where: any = undefined;
@@ -165,6 +178,16 @@ export class CollectionController {
           where = undefined;
         }
       }
+    }
+
+    const searchWhere = await buildCollectionSearchWhere({
+      collection: this.collection,
+      search,
+      db: readonlyDb,
+      collections: config.collections,
+    });
+    if (searchWhere) {
+      where = mergeWhereConstraint(where, searchWhere);
     }
 
     // Run beforeRead collection hook

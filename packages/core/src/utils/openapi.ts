@@ -311,6 +311,12 @@ export function generateOpenApi(config: DyrectedConfig) {
             description: "JSON filter",
           },
           {
+            name: "search",
+            in: "query",
+            schema: { type: "string" },
+            description: "Free-text search across configured searchable fields",
+          },
+          {
             name: "sort",
             in: "query",
             schema: { type: "string" },
@@ -508,14 +514,6 @@ export function generateOpenApi(config: DyrectedConfig) {
         },
       };
     }
-    spec.paths[`${path}/seed`] = {
-      post: {
-        tags: [collectionTag],
-        summary: `Seed initial ${labels.plural}`,
-        responses: { 200: { description: "Seeded documents" } },
-      },
-    };
-
     if (collection.upload) {
       spec.paths[`${path}/media`] = {
         get: {
@@ -823,13 +821,6 @@ export function generateOpenApi(config: DyrectedConfig) {
             },
           },
         },
-      },
-    };
-    spec.paths[`${path}/seed`] = {
-      post: {
-        tags: [globalTag],
-        summary: `Seed ${global.label || slug}`,
-        responses: { 200: { description: "Seeded global" } },
       },
     };
   }

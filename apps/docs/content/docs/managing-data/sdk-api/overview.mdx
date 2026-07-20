@@ -42,8 +42,19 @@ If your app and schema live in the same codebase and you prefer not to generate 
 
 - Read and write collections through `client.collection('slug')`.
 - Read and update singletons through `client.global('slug')`.
-- Shape reads with [sort](/docs/managing-data/sdk-api/sort), [filter](/docs/managing-data/sdk-api/filter), [depth](/docs/managing-data/sdk-api/depth), and [pagination](/docs/managing-data/sdk-api/pagination).
+- Shape reads with [sort](/docs/managing-data/sdk-api/sort), [filter](/docs/managing-data/sdk-api/filter), [depth](/docs/managing-data/sdk-api/depth), [pagination](/docs/managing-data/sdk-api/pagination), and free-text `search`.
 - Upload files and run workflow transitions on documents that support them.
+
+For example, collection search is now first-class in the SDK:
+
+```ts
+const { docs } = await client.collection("posts").find({
+  search: "grace hopper",
+  where: { status: { equals: "published" } },
+})
+```
+
+Use `search` when you want the collection's configured backend search behavior. The server merges it with your `where` clause using `AND`, so free-text search and structured filters work together.
 
 ## Handling errors
 

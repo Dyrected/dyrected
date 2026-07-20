@@ -5,6 +5,7 @@ import {
   defineConfig,
   defineCollection,
   defineGlobal,
+  defineRichTextField,
   defineTextField,
   normalizeConfig,
   type AdminIconName,
@@ -24,7 +25,7 @@ describe("Configuration Helpers", () => {
   it("should define a collection correctly", () => {
     const posts = defineCollection({
       slug: "posts",
-      fields: [{ name: "title", type: "text", required: true }],
+      fields: [{ name: "title", type: "text", label: "Title", required: true }],
     });
 
     expect(posts.slug).toBe("posts");
@@ -34,7 +35,7 @@ describe("Configuration Helpers", () => {
   it("should define a global correctly", () => {
     const navbar = defineGlobal({
       slug: "navbar",
-      fields: [{ name: "logo", type: "text" }],
+      fields: [{ name: "logo", type: "text", label: "Logo" }],
     });
 
     expect(navbar.slug).toBe("navbar");
@@ -145,6 +146,92 @@ describe("Configuration Helpers", () => {
     ]);
   });
 
+  it("type-checks collection admin field references against declared top-level fields", () => {
+    const valid = defineCollection({
+      slug: "articles",
+      fields: [
+        { name: "title", type: "text", label: "Title" },
+        { name: "summary", type: "textarea", label: "Summary" },
+        { name: "author", type: "relationship", label: "Author", relationTo: "authors" },
+      ],
+      admin: {
+        useAsTitle: "title",
+        defaultColumns: ["title", "summary"],
+        searchableFields: ["title", "summary", "author"],
+      },
+    });
+
+    const invalid = defineCollection({
+      slug: "articles-invalid",
+      fields: [
+        { name: "title", type: "text", label: "Title" },
+        { name: "summary", type: "textarea", label: "Summary" },
+      ],
+      admin: {
+        // @ts-expect-error -- must match a declared top-level field name
+        useAsTitle: "headline",
+        // @ts-expect-error -- every column must match a declared top-level field name
+        defaultColumns: ["title", "headline"],
+        // @ts-expect-error -- every searchable field must match a declared top-level field name
+        searchableFields: ["summary", "seoTitle"],
+      },
+    });
+
+    expect(valid.admin?.useAsTitle).toBe("title");
+    expect(valid.admin?.defaultColumns).toEqual(["title", "summary"]);
+    expect(valid.admin?.searchableFields).toEqual(["title", "summary", "author"]);
+    expect(invalid.admin?.useAsTitle).toBe("headline");
+  });
+
+  it("type-checks nested array/object admin.useAsTitle against declared child fields", () => {
+    const valid = defineCollection({
+      slug: "pages",
+      fields: [
+        {
+          name: "links",
+          type: "array",
+          label: "Links",
+          admin: { useAsTitle: "label" },
+          fields: [
+            { name: "label", type: "text", label: "Label" },
+            { name: "url", type: "text", label: "URL" },
+          ],
+        },
+        {
+          name: "seo",
+          type: "object",
+          label: "SEO",
+          admin: { useAsTitle: "title" },
+          fields: [
+            { name: "title", type: "text", label: "Meta title" },
+            { name: "description", type: "textarea", label: "Meta description" },
+          ],
+        },
+      ],
+    });
+
+    const invalid = defineCollection({
+      slug: "pages-invalid",
+      fields: [
+        {
+          name: "links",
+          type: "array",
+          label: "Links",
+          // @ts-expect-error -- nested admin.useAsTitle must match a declared child field name
+          admin: { useAsTitle: "headline" },
+          fields: [
+            { name: "label", type: "text", label: "Label" },
+            { name: "url", type: "text", label: "URL" },
+          ],
+        },
+      ],
+    });
+
+    expect(valid.fields[0].admin?.useAsTitle).toBe("label");
+    expect(valid.fields[1].admin?.useAsTitle).toBe("title");
+    expect((invalid.fields[0].admin as { useAsTitle?: string } | undefined)?.useAsTitle).toBe("headline");
+  });
+
   it("normalizes drafts: true to simplePublishingWorkflow", () => {
     const normalized = normalizeConfig(
       defineConfig({
@@ -203,5 +290,165 @@ describe("Configuration Helpers", () => {
     expect(layoutField?.blockReferences).toEqual(["hero"]);
     expect(layoutField?.blocks?.map((block) => block.slug)).toEqual(["hero"]);
     expect(layoutField?.blocks?.[0]?.fields[0]?.name).toBe("heading");
+  });
+
+  it("type-checks named access policies and cross-config string references", () => {
+    const HeroBlock = defineBlock({
+      slug: "hero",
+      fields: [
+        defineTextField({ name: "heading", label: "Heading" }),
+        defineRichTextField({
+          name: "content",
+          label: "Content",
+          uploadCollection: "media",
+        }),
+      ],
+    });
+
+    const Users = defineCollection({
+      slug: "users",
+      auth: true,
+      fields: [{ name: "name", type: "text", label: "Name" }],
+    });
+
+    const Media = defineCollection({
+      slug: "media",
+      upload: true,
+      fields: [{ name: "alt", type: "text", label: "Alt" }],
+    });
+
+    const Posts = defineCollection({
+      slug: "posts",
+      access: {
+        read: { policy: "canReadPosts" },
+      },
+      workflow: {
+        initialState: "draft",
+        states: [
+          { name: "draft", label: "Draft" },
+          { name: "published", label: "Published", published: true },
+        ],
+        transitions: [
+          {
+            name: "publish",
+            label: "Publish",
+            from: "draft",
+            to: "published",
+          },
+        ],
+      },
+      fields: [
+        {
+          name: "title",
+          type: "text",
+          label: "Title",
+          access: { read: { policy: "canReadPosts" } },
+        },
+        {
+          name: "author",
+          type: "relationship",
+          label: "Author",
+          relationTo: "users",
+        },
+        defineBlocksField({
+          name: "layout",
+          label: "Layout",
+          blockReferences: ["hero"],
+        }),
+      ],
+    });
+
+    const valid = defineConfig({
+      blocks: [HeroBlock],
+      collections: [Users, Media, Posts],
+      globals: [
+        defineGlobal({
+          slug: "settings",
+          access: { read: { policy: "canReadPosts" } },
+          fields: [
+            defineRichTextField({
+              name: "homepageBody",
+              label: "Homepage body",
+              uploadCollection: "media",
+            }),
+          ],
+        }),
+      ],
+      adminAuth: {
+        mode: "local",
+        collectionSlug: "users",
+        providers: [],
+      },
+      accessPolicies: {
+        canReadPosts: true,
+      },
+      db: new MockDatabaseAdapter(),
+    });
+
+    const invalid = defineConfig({
+      blocks: [HeroBlock],
+      collections: [
+        Users,
+        Media,
+        defineCollection({
+          slug: "articles",
+          access: {
+            // @ts-expect-error -- policy names must exist on accessPolicies
+            read: { policy: "missingPolicy" },
+          },
+          workflow: {
+            // @ts-expect-error -- initialState must exist in workflow.states
+            initialState: "queued",
+            states: [{ name: "draft", label: "Draft" }],
+            transitions: [
+              {
+                name: "publish",
+                label: "Publish",
+                // @ts-expect-error -- transition from/to values must reference workflow.states
+                from: "queued",
+                // @ts-expect-error -- transition from/to values must reference workflow.states
+                to: "published",
+              },
+            ],
+          },
+          fields: [
+            {
+              name: "author",
+              type: "relationship",
+              label: "Author",
+              // @ts-expect-error -- relationTo must match a configured collection slug
+              relationTo: "people",
+            },
+            defineBlocksField({
+              name: "layout",
+              label: "Layout",
+              // @ts-expect-error -- blockReferences must match defineConfig({ blocks })
+              blockReferences: ["cta"],
+            }),
+            defineRichTextField({
+              name: "body",
+              label: "Body",
+              // @ts-expect-error -- uploadCollection must reference an upload-enabled collection
+              uploadCollection: "users",
+            }),
+          ],
+        }),
+      ],
+      globals: [],
+      adminAuth: {
+        mode: "local",
+        // @ts-expect-error -- admin auth collectionSlug must reference an auth-enabled collection
+        collectionSlug: "media",
+        providers: [],
+      },
+      accessPolicies: {
+        canReadPosts: true,
+      },
+      db: new MockDatabaseAdapter(),
+    });
+
+    expect(valid.collections).toHaveLength(3);
+    expect(valid.adminAuth?.collectionSlug).toBe("users");
+    expect(invalid.adminAuth?.collectionSlug).toBe("media");
   });
 });

@@ -330,6 +330,15 @@ export interface CollectionConfig<
      */
     defaultColumns?: string[];
 
+    /** Short helper copy rendered under the collection title in the Admin list view. */
+    description?: string;
+
+    /**
+     * Field names included in backend free-text search for this collection.
+     * When omitted, Dyrected infers a conservative default from common text-like fields.
+     */
+    searchableFields?: string[];
+
     /**
      * Groups this collection under a named section in the Admin sidebar.
      * Collections with the same `group` are visually grouped together.

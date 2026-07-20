@@ -18,6 +18,26 @@ defineArrayField({
 
 Each row is stored as an object, so the field saves as an array like `[{ label, url }, ...]`, in the order editors arrange them. The rows live inside the parent document and share its lifecycle. Reach for a [Collection](/docs/basics/configuration/collections) with a [Relationship](/docs/basics/fields/relationship) instead when the entries need their own IDs, their own access rules, or to be queried and reused on their own. An array is for content that only makes sense as part of its parent.
 
+## Choosing the row label in the admin
+
+When an array field appears in admin list cells or other compact summary views, Dyrected needs one short label for each row. Set `admin.useAsTitle` on the array field to choose which child field should represent the row.
+
+```ts
+defineArrayField({
+  name: "links",
+  label: "Links",
+  admin: {
+    useAsTitle: "label",
+  },
+  fields: [
+    defineTextField({ name: "label", label: "Label" }),
+    defineTextField({ name: "url", label: "URL" }),
+  ],
+})
+```
+
+If you leave `admin.useAsTitle` off, Dyrected falls back to common child field names such as `title`, `name`, and `label`, then to the first usable child field. The field name is type-checked while you author config, so TypeScript can flag a wrong child field name immediately.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.

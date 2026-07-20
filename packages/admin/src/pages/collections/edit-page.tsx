@@ -19,6 +19,7 @@ import { resolveContainerPath } from "../../components/forms/utils"
 import { useSidebarControl } from "../../components/layout/sidebar-control"
 import type { Field as FieldSchema, PaginatedResult } from "@dyrected/sdk"
 import { WorkflowPanel } from "../../components/workflow/WorkflowPanel"
+import { resolveDocumentTitle } from "../../lib/document-title"
 import {
   Command,
   CommandEmpty,
@@ -239,18 +240,6 @@ function PreviewPaneWithNav({
   )
 }
 
-
-function getEntryTitle(entry: any, schema: any): string {
-  if (!entry) return ""
-  const titleField = schema?.admin?.useAsTitle || "title"
-  if (entry[titleField]) return String(entry[titleField])
-  const commonFields = ["title", "name", "label", "heading", "email", "subject"]
-  for (const f of commonFields) {
-    if (entry[f]) return String(entry[f])
-  }
-  return String(entry.id)
-}
-
 export function EditEntryPage() {
   const { slug, id } = useParams()
   const [searchParams] = useSearchParams()
@@ -437,14 +426,11 @@ export function EditEntryPage() {
   // Fetch collection entries for the dropdown switcher
   const { data: siblingEntries, isLoading: isSiblingsLoading } = useQuery({
     queryKey: ["collection-siblings", slug, debouncedSearchQuery],
-    queryFn: async () => {
-      const displayField = schema?.admin?.useAsTitle || "title"
-      let qb = client!.collection(slug!).find({ limit: 50 })
-      if (debouncedSearchQuery) {
-        qb = qb.where({ [displayField]: { like: `%${debouncedSearchQuery}%` } })
-      }
-      return qb.exec() as Promise<{ docs: Record<string, unknown>[] }>
-    },
+    queryFn: () =>
+      client!.collection(slug!).find({
+        limit: 50,
+        search: debouncedSearchQuery || undefined,
+      }).exec() as Promise<{ docs: Record<string, unknown>[] }>,
     enabled: !!client && !!slug && isEdit && switcherOpen,
   })
   const syncPreviewData = useState(() => (next: Record<string, unknown> | null) => {
@@ -687,7 +673,11 @@ export function EditEntryPage() {
                 <Popover open={switcherOpen} onOpenChange={setSwitcherOpen}>
                   <PopoverTrigger className="dy-flex dy-items-center dy-gap-1 dy-text-base dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground hover:dy-bg-muted/80 dy-px-2 dy-py-1 dy-rounded-lg dy-transition-all dy-outline-none dy-min-w-0">
                     <span className="dy-truncate dy-max-w-[150px] sm:dy-max-w-none dy-inline-block">
-                      {isEdit && entry ? getEntryTitle(entry, schema) : "..."}
+                      {isEdit && entry ? resolveDocumentTitle({
+                        entry,
+                        collection: schema,
+                        collections: schemas?.collections,
+                      }) : "..."}
                     </span>
                     <ChevronDown className="dy-h-4 dy-w-4 dy-text-muted-foreground/80 dy-shrink-0" />
                   </PopoverTrigger>
@@ -718,7 +708,11 @@ export function EditEntryPage() {
                                 }}
                                 className="dy-cursor-pointer dy-py-2 dy-px-3 dy-rounded-lg"
                               >
-                                <span className="dy-text-sm dy-text-foreground">{getEntryTitle(sibling, schema)}</span>
+                                <span className="dy-text-sm dy-text-foreground">{resolveDocumentTitle({
+                                  entry: sibling,
+                                  collection: schema,
+                                  collections: schemas?.collections,
+                                })}</span>
                               </CommandItem>
                             ))}
                           </CommandGroup>

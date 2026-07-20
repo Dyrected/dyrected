@@ -31,11 +31,12 @@ An endpoint is public only when its access rule allows the operation.
 
 ## Listing and filtering
 
-Collection list routes accept `limit` (default `10`, maximum `100`), `page`, `sort`, `depth`, and a JSON-encoded `where` object.
+Collection list routes accept `limit` (default `10`, maximum `100`), `page`, `sort`, `depth`, optional free-text `search`, and a JSON-encoded `where` object.
 
 ```ts
 const query = new URLSearchParams({
   limit: '10',
+  search: 'hello',
   sort: '-createdAt',
   depth: '1',
   where: JSON.stringify({ status: { equals: 'published' } }),
@@ -43,6 +44,8 @@ const query = new URLSearchParams({
 
 const response = await fetch(`/api/collections/posts?${query}`)
 ```
+
+`search` runs on the backend against the collection's configured searchable fields, then combines with `where` using `AND`. That keeps free-text search aligned with access control, pagination, and any structured filters you already apply.
 
 Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`. Note that the `limit` parameter is capped at `100` for list operations to ensure performance and reliability.
 
@@ -89,7 +92,6 @@ The table below is generated from a representative maximal configuration so it c
 | GET | `/api/collections/media/media` | List Media | Required |
 | POST | `/api/collections/media/media` | Upload Media item | Required |
 | GET | `/api/collections/media/media/{filename}` | Serve Media item bytes | Public |
-| POST | `/api/collections/media/seed` | Seed initial Media | Required |
 | GET | `/api/collections/posts` | Find Posts | Required |
 | POST | `/api/collections/posts` | Create Post | Required |
 | GET | `/api/collections/posts/__audit` | Get Post audit entries | Required |
@@ -99,7 +101,6 @@ The table below is generated from a representative maximal configuration so it c
 | POST | `/api/collections/posts/{id}/transitions/{transition}` | Transition Post workflow | Required |
 | GET | `/api/collections/posts/{id}/workflow-history` | Get Post workflow history | Required |
 | DELETE | `/api/collections/posts/delete-many` | Delete multiple Posts | Required |
-| POST | `/api/collections/posts/seed` | Seed initial Posts | Required |
 | GET | `/api/collections/users` | Find Users | Required |
 | POST | `/api/collections/users` | Create User | Required |
 | DELETE | `/api/collections/users/{id}` | Delete User | Required |
@@ -117,12 +118,10 @@ The table below is generated from a representative maximal configuration so it c
 | GET | `/api/collections/users/me` | Get the current User | Required |
 | POST | `/api/collections/users/refresh-token` | Refresh an authentication token | Required |
 | POST | `/api/collections/users/reset-password` | Reset a password | Public |
-| POST | `/api/collections/users/seed` | Seed initial Users | Required |
 | GET | `/api/docs` | Open interactive API documentation | Public |
 | GET | `/api/dyrected/options/{collection}/{field}` | Resolve dynamic field options | Required |
 | GET | `/api/globals/settings` | Get Site settings | Required |
 | PATCH | `/api/globals/settings` | Update Site settings | Required |
-| POST | `/api/globals/settings/seed` | Seed Site settings | Required |
 | GET | `/api/media/{filename}` | Serve a stored file | Public |
 | GET | `/api/openapi.json` | Get the OpenAPI specification | Public |
 | GET | `/api/preferences/{key}` | Get an authenticated user preference | Required |
@@ -135,5 +134,5 @@ The table below is generated from a representative maximal configuration so it c
 ## Representative facts
 
 {/* GENERATED:REFERENCE-OPENAPI:START */}
-The representative document currently contains **51 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+The representative document currently contains **47 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
 {/* GENERATED:REFERENCE-OPENAPI:END */}

@@ -1386,6 +1386,15 @@ export interface CollectionConfig<
      */
     defaultColumns?: string[];
 
+    /** Short helper copy rendered under the collection title in the Admin list view. */
+    description?: string;
+
+    /**
+     * Field names included in backend free-text search for this collection.
+     * When omitted, Dyrected infers a conservative default from common text-like fields.
+     */
+    searchableFields?: string[];
+
     /**
      * Groups this collection under a named section in the Admin sidebar.
      * Collections with the same `group` are visually grouped together.
@@ -1465,8 +1474,10 @@ Use `admin` to control how this collection feels inside the dashboard. These opt
 
 | Option           | What it does                                                                                                                                                                                                                                                                                                                                         |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useAsTitle`     | Chooses which field Dyrected should treat as the human-readable name for each document in list views, breadcrumbs, relationship pickers, and other admin surfaces. Use the field editors recognize fastest, usually something like `title`, `name`, or `email`.                                                                                      |
+| `useAsTitle`     | Chooses which field Dyrected should treat as the human-readable name for each document in list views, breadcrumbs, relationship pickers, and other admin surfaces. Use the field editors recognize fastest, usually something like `title`, `name`, or `email`. This is type-checked at config authoring time against your real top-level field names. |
 | `defaultColumns` | Sets the columns shown in the collection list view before an editor customizes anything. Pick columns that help someone scan and make a decision quickly, such as `title`, `status`, `updatedAt`, `publishedAt`, or `author`.                                                                                                                        |
+| `searchableFields` | Sets which top-level fields backend list search should query for this collection. Use this when editors need search to cover more than the title, or when you want tighter control over query cost and match quality. This is type-checked at config authoring time against your real top-level field names.                                       |
+| `description`    | Adds a short line of helper text under the collection title on the admin list page. Use it for context such as what the collection powers, what belongs there, or any quick editorial guidance.                                                                                                                                                   |
 | `group`          | Places the collection under a named section in the admin sidebar. Use it when several collections belong to one area of work, such as `Content`, `Commerce`, or `People`.                                                                                                                                                                            |
 | `icon`           | Adds a Lucide icon to the collection in the sidebar and related admin navigation. This is mostly a usability and visual organization option, but it helps large dashboards feel easier to scan.                                                                                                                                                      |
 | `hidden`         | Hides the collection from the admin sidebar while keeping it in the system. This can be useful for internal collections, support data, or collections managed indirectly through other workflows.                                                                                                                                                    |
@@ -1490,6 +1501,23 @@ This is where you enforce business rules such as:
 Use collection access when permissions depend on the request, the current user, or the document being queried.
 
 See [Access Control Overview](/docs/basics/access-control/overview) for the full model.
+
+## Authoring-time validation
+
+Dyrected validates several string references in TypeScript while you are writing config, so editors and developers get immediate feedback instead of a broken admin screen later.
+
+Today that includes:
+
+- collection `admin.useAsTitle`, `admin.defaultColumns`, and `admin.searchableFields`
+- nested `array` and `object` field `admin.useAsTitle`
+- named access policy references such as `{ policy: "canReadPosts" }`
+- relationship collection slugs in `relationTo`
+- reusable block slugs in `blockReferences`
+- upload-enabled collection references for rich text uploads and image fields
+- auth collection references such as `adminAuth.collectionSlug`
+- workflow state names in transitions and initial state
+
+This is only authoring-time validation. Dyrected still normalizes and runs your schema at runtime, but the TypeScript layer now catches many of the most common "why is this config not working?" mistakes much earlier.
 
 ## `hooks`
 
@@ -1653,6 +1681,8 @@ Treat those changes as URL migrations, not just content edits.
 
 - Use explicit human-readable labels for named fields.
 - Set `admin.useAsTitle` to the field editors will recognize fastest.
+- Set `admin.searchableFields` when backend search should cover more than the title or when you want tighter control over which fields participate.
+- Add `admin.description` when the collection benefits from one short line of context on the list page.
 - Set `admin.icon` to an appropriate icon for the collection.
 - Keep routable collections aligned with real frontend routes through `previewUrl` and `urlPattern`.
 - Treat field renames and slug changes as schema migrations, not cosmetic edits.
@@ -3532,6 +3562,26 @@ defineArrayField({
 
 Each row is stored as an object, so the field saves as an array like `[{ label, url }, ...]`, in the order editors arrange them. The rows live inside the parent document and share its lifecycle. Reach for a [Collection](/docs/basics/configuration/collections) with a [Relationship](/docs/basics/fields/relationship) instead when the entries need their own IDs, their own access rules, or to be queried and reused on their own. An array is for content that only makes sense as part of its parent.
 
+## Choosing the row label in the admin
+
+When an array field appears in admin list cells or other compact summary views, Dyrected needs one short label for each row. Set `admin.useAsTitle` on the array field to choose which child field should represent the row.
+
+```ts
+defineArrayField({
+  name: "links",
+  label: "Links",
+  admin: {
+    useAsTitle: "label",
+  },
+  fields: [
+    defineTextField({ name: "label", label: "Label" }),
+    defineTextField({ name: "url", label: "URL" }),
+  ],
+})
+```
+
+If you leave `admin.useAsTitle` off, Dyrected falls back to common child field names such as `title`, `name`, and `label`, then to the first usable child field. The field name is type-checked while you author config, so TypeScript can flag a wrong child field name immediately.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
@@ -4301,6 +4351,30 @@ defineJoinField({
 
 Because a join is virtual, it stores nothing and is read-only in the admin panel — the link is owned entirely by the relationship field on the other collection. It is the natural partner to a [Relationship](/docs/basics/fields/relationship): one side stores the reference, the other surfaces it in reverse.
 
+## Join field actions in the admin
+
+On an existing document, the join field can show two helper actions in the admin:
+
+- `Create new` opens the target collection's new-document page and pre-fills the join's `on` relationship field with the current document id.
+- `View all` opens the target collection list page with a `where` filter that matches the join's `on` field to the current document id.
+
+Both actions are shown by default. You can hide either one with join-field admin config:
+
+```ts
+defineJoinField({
+  name: "comments",
+  label: "Comments",
+  collection: "comments",
+  on: "post",
+  admin: {
+    showCreateButton: true,
+    showViewButton: true,
+  },
+})
+```
+
+If the current document has not been saved yet, Dyrected cannot build those links, so it shows the usual “save first” message instead.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
@@ -4311,7 +4385,7 @@ The contract below is generated from the public `@dyrected/core` exports by `@dy
 A virtual reverse relationship that surfaces documents pointing back at this one via `collection` and `on`. Read-only; nothing is stored on this document.
 
 ```ts
-export type JoinField = TypedField<"join", unknown>;
+export type JoinField = TypedField<"join", unknown, JoinFieldAdmin>;
 ```
 
 ---
@@ -4700,6 +4774,26 @@ defineObjectField({
 
 The fields are stored under the object field's `name`, so the example above saves as `{ seo: { title, description } }`. The nested fields behave like any others — they validate, hook, and render the same way — they just live one level down. An object field shares its parent document's lifecycle: it is created, updated, and deleted with the document, never on its own. When the same shape instead repeats, use an [Array](/docs/basics/fields/array); when the content should be its own record with its own lifecycle, give it a [Collection](/docs/basics/configuration/collections) and point at it with a [Relationship](/docs/basics/fields/relationship).
 
+## Choosing the summary field in the admin
+
+Object fields also need a readable summary in compact admin surfaces such as collection list cells. Set `admin.useAsTitle` on the object field when one child field should clearly represent the whole object.
+
+```ts
+defineObjectField({
+  name: "seo",
+  label: "SEO",
+  admin: {
+    useAsTitle: "title",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Meta title" }),
+    defineTextareaField({ name: "description", label: "Meta description" }),
+  ],
+})
+```
+
+If you leave it unset, Dyrected falls back to common child field names such as `title`, `name`, and `label`, then to the first usable child field. Like collection-level `admin.useAsTitle`, this child field reference is type-checked while you author config.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.
@@ -4755,6 +4849,8 @@ Most field types accept a common set of base options:
 - `access` — per-field `read` and `update` rules that hide or lock the field for some users. See [Field access control](/docs/basics/access-control/fields).
 - `admin` — per-field admin options such as descriptions, placeholders, and conditional display.
 
+Some field types add a few more admin-only options of their own. For example, nested `array` and `object` fields can use `admin.useAsTitle` for compact summaries, and `join` fields can use `admin.showCreateButton` / `admin.showViewButton` to control their helper actions.
+
 ## Choosing a field type
 
 Each field type has its own page with a focused example and its generated contract:
@@ -4792,6 +4888,8 @@ Exported interface from @dyrected/core.
 export interface BaseFieldAdmin {
   /** Placeholder text shown when the input has no value. */
   placeholder?: string;
+  /** For nested object-like fields, choose which child field should summarize the value in admin surfaces. */
+  useAsTitle?: string;
   /** Custom component key registered in the Admin UI. */
   component?: string;
   /** Help text rendered below the field. */
@@ -4821,6 +4919,7 @@ export interface BaseFieldAdmin {
 | Option | Description |
 | --- | --- |
 | <code>placeholder</code> (optional) | Placeholder text shown when the input has no value. |
+| <code>useAsTitle</code> (optional) | For nested object-like fields, choose which child field should summarize the value in admin surfaces. |
 | <code>component</code> (optional) | Custom component key registered in the Admin UI. |
 | <code>description</code> (optional) | Help text rendered below the field. |
 | <code>hidden</code> (optional) | Hides the field from the Admin form without deleting stored data. |
@@ -10511,7 +10610,9 @@ By the end you should know how editors navigate the list, how to control what it
 
 ## Finding records
 
-The search box queries the field you set as `admin.useAsTitle` (or the first visible field if you haven't set one). The title column is a link, so clicking a record's title opens its edit form directly.
+The search box queries the backend, not the rows already loaded in the browser. That means pagination, access control, filters, and search all stay in sync.
+
+If you set `admin.searchableFields`, Dyrected searches those top-level fields. If you leave it unset, Dyrected falls back to a conservative inferred set: `admin.useAsTitle` first, then common text-like fields such as `title`, `name`, `label`, `slug`, `email`, `caption`, and `description`, plus rich text fields. The title column is a link, so clicking a record's title opens its edit form directly.
 
 For narrowing rather than searching, the **filter builder** lets editors add rules against filterable fields. It uses a draft-then-apply flow: editors build up their filter rules first and apply them to the list when ready, so the table doesn't re-query on every keystroke.
 
@@ -10526,11 +10627,15 @@ export const Posts = defineCollection({
   slug: "posts",
   admin: {
     useAsTitle: "title",
+    description: "Long-form content for the marketing site and docs.",
     defaultColumns: ["title", "status", "publishedAt"],
+    searchableFields: ["title", "slug", "excerpt", "author"],
   },
   fields: [...],
 });
 ```
+
+If you set `admin.description`, it appears under the collection title on the list page. This is a good place for a short operational note such as what the collection is for, who uses it, or what editors should expect to find there.
 
 ## Acting on a row
 
@@ -10559,7 +10664,7 @@ Deleting is one kind of bulk work; editing and moving data are others. Two featu
 
 ## Recommended path
 
-Set `admin.useAsTitle` and `admin.defaultColumns` so the list is useful the moment a collection exists. Let editors tailor their own view with the **View** button, use single-row Edit/Delete for everyday changes, and reach for bulk selection when clearing several records. When the work is editing rather than deleting, move to [Spreadsheet View](/docs/features/admin/spreadsheet-view) or [CSV Import & Export](/docs/features/admin/csv-import-export).
+Set `admin.useAsTitle`, `admin.defaultColumns`, and `admin.searchableFields` so the list is useful the moment a collection exists. Add `admin.description` when editors would benefit from a one-line explanation under the page title. Let editors tailor their own view with the **View** button, use single-row Edit/Delete for everyday changes, and reach for bulk selection when clearing several records. When the work is editing rather than deleting, move to [Spreadsheet View](/docs/features/admin/spreadsheet-view) or [CSV Import & Export](/docs/features/admin/csv-import-export).
 
 ---
 
@@ -16049,11 +16154,12 @@ An endpoint is public only when its access rule allows the operation.
 
 ## Listing and filtering
 
-Collection list routes accept `limit`, `page`, `sort`, `depth`, and a JSON-encoded `where` object.
+Collection list routes accept `limit` (default `10`, maximum `100`), `page`, `sort`, `depth`, optional free-text `search`, and a JSON-encoded `where` object.
 
 ```ts
 const query = new URLSearchParams({
   limit: '10',
+  search: 'hello',
   sort: '-createdAt',
   depth: '1',
   where: JSON.stringify({ status: { equals: 'published' } }),
@@ -16062,7 +16168,9 @@ const query = new URLSearchParams({
 const response = await fetch(`/api/collections/posts?${query}`)
 ```
 
-Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`.
+`search` runs on the backend against the collection's configured searchable fields, then combines with `where` using `AND`. That keeps free-text search aligned with access control, pagination, and any structured filters you already apply.
+
+Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`. Note that the `limit` parameter is capped at `100` for list operations to ensure performance and reliability.
 
 ## Error responses
 
@@ -16107,7 +16215,6 @@ The table below is generated from a representative maximal configuration so it c
 | GET | `/api/collections/media/media` | List Media | Required |
 | POST | `/api/collections/media/media` | Upload Media item | Required |
 | GET | `/api/collections/media/media/{filename}` | Serve Media item bytes | Public |
-| POST | `/api/collections/media/seed` | Seed initial Media | Required |
 | GET | `/api/collections/posts` | Find Posts | Required |
 | POST | `/api/collections/posts` | Create Post | Required |
 | GET | `/api/collections/posts/__audit` | Get Post audit entries | Required |
@@ -16117,7 +16224,6 @@ The table below is generated from a representative maximal configuration so it c
 | POST | `/api/collections/posts/{id}/transitions/{transition}` | Transition Post workflow | Required |
 | GET | `/api/collections/posts/{id}/workflow-history` | Get Post workflow history | Required |
 | DELETE | `/api/collections/posts/delete-many` | Delete multiple Posts | Required |
-| POST | `/api/collections/posts/seed` | Seed initial Posts | Required |
 | GET | `/api/collections/users` | Find Users | Required |
 | POST | `/api/collections/users` | Create User | Required |
 | DELETE | `/api/collections/users/{id}` | Delete User | Required |
@@ -16135,12 +16241,10 @@ The table below is generated from a representative maximal configuration so it c
 | GET | `/api/collections/users/me` | Get the current User | Required |
 | POST | `/api/collections/users/refresh-token` | Refresh an authentication token | Required |
 | POST | `/api/collections/users/reset-password` | Reset a password | Public |
-| POST | `/api/collections/users/seed` | Seed initial Users | Required |
 | GET | `/api/docs` | Open interactive API documentation | Public |
 | GET | `/api/dyrected/options/{collection}/{field}` | Resolve dynamic field options | Required |
 | GET | `/api/globals/settings` | Get Site settings | Required |
 | PATCH | `/api/globals/settings` | Update Site settings | Required |
-| POST | `/api/globals/settings/seed` | Seed Site settings | Required |
 | GET | `/api/media/{filename}` | Serve a stored file | Public |
 | GET | `/api/openapi.json` | Get the OpenAPI specification | Public |
 | GET | `/api/preferences/{key}` | Get an authenticated user preference | Required |
@@ -16153,7 +16257,7 @@ The table below is generated from a representative maximal configuration so it c
 ## Representative facts
 
 
-The representative document currently contains **51 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+The representative document currently contains **47 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
 
 ---
 
@@ -16375,8 +16479,19 @@ If your app and schema live in the same codebase and you prefer not to generate 
 
 - Read and write collections through `client.collection('slug')`.
 - Read and update singletons through `client.global('slug')`.
-- Shape reads with [sort](/docs/managing-data/sdk-api/sort), [filter](/docs/managing-data/sdk-api/filter), [depth](/docs/managing-data/sdk-api/depth), and [pagination](/docs/managing-data/sdk-api/pagination).
+- Shape reads with [sort](/docs/managing-data/sdk-api/sort), [filter](/docs/managing-data/sdk-api/filter), [depth](/docs/managing-data/sdk-api/depth), [pagination](/docs/managing-data/sdk-api/pagination), and free-text `search`.
 - Upload files and run workflow transitions on documents that support them.
+
+For example, collection search is now first-class in the SDK:
+
+```ts
+const { docs } = await client.collection("posts").find({
+  search: "grace hopper",
+  where: { status: { equals: "published" } },
+})
+```
+
+Use `search` when you want the collection's configured backend search behavior. The server merges it with your `where` clause using `AND`, so free-text search and structured filters work together.
 
 ## Handling errors
 
@@ -16737,7 +16852,7 @@ So to render the documents you reach for `result.docs`; to build page controls y
 
 ## Choosing the page and its size
 
-Two options steer pagination. `limit` sets how many documents a page holds (default `10`), and `page` picks which page to return (default `1`):
+Two options steer pagination. The `limit` option sets how many documents a page holds (default `10`, with a maximum allowed value of `100`). The `page` option picks which page to return (default `1`):
 
 ```ts
 // The second page, 20 posts per page
@@ -16766,7 +16881,7 @@ while (true) {
 }
 ```
 
-Dyrected always paginates list reads, so this loop — rather than a single unbounded request — is the way to pull an entire collection. A larger `limit` means fewer round-trips; keep it to a sane page size rather than a number that would return tens of thousands of documents at once.
+Dyrected always paginates list reads, so this loop — rather than a single unbounded request — is the way to pull an entire collection. A larger `limit` means fewer round-trips; keep in mind that the `limit` parameter has a hard cap of `100` to keep responses fast and reliable. Note that this cap applies only to list pagination page sizes; other operations, such as generating mock data via seeding, are not restricted by this limit.
 
 ## Fetching a single expected match
 

@@ -658,6 +658,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/basics/fields/array#example-3",
+    "page": "/basics/fields/array",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/basics/fields/blocks#example-1",
     "page": "/basics/fields/blocks",
     "language": "ts",
@@ -938,6 +945,13 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/basics/fields/join#example-3",
+    "page": "/basics/fields/join",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/basics/fields/json#example-1",
     "page": "/basics/fields/json",
     "language": "ts",
@@ -1079,6 +1093,13 @@
   },
   {
     "id": "/basics/fields/object#example-2",
+    "page": "/basics/fields/object",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/fields/object#example-3",
     "page": "/basics/fields/object",
     "language": "ts",
     "classification": "syntax-checked",
@@ -3648,6 +3669,13 @@
   },
   {
     "id": "/managing-data/sdk-api/overview#example-17",
+    "page": "/managing-data/sdk-api/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/managing-data/sdk-api/overview#example-18",
     "page": "/managing-data/sdk-api/overview",
     "language": "ts",
     "classification": "syntax-checked",

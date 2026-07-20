@@ -39,6 +39,8 @@ Most field types accept a common set of base options:
 - `access` — per-field `read` and `update` rules that hide or lock the field for some users. See [Field access control](/docs/basics/access-control/fields).
 - `admin` — per-field admin options such as descriptions, placeholders, and conditional display.
 
+Some field types add a few more admin-only options of their own. For example, nested `array` and `object` fields can use `admin.useAsTitle` for compact summaries, and `join` fields can use `admin.showCreateButton` / `admin.showViewButton` to control their helper actions.
+
 ## Choosing a field type
 
 Each field type has its own page with a focused example and its generated contract:
@@ -76,6 +78,8 @@ Exported interface from @dyrected/core.
 export interface BaseFieldAdmin {
   /** Placeholder text shown when the input has no value. */
   placeholder?: string;
+  /** For nested object-like fields, choose which child field should summarize the value in admin surfaces. */
+  useAsTitle?: string;
   /** Custom component key registered in the Admin UI. */
   component?: string;
   /** Help text rendered below the field. */
@@ -105,6 +109,7 @@ export interface BaseFieldAdmin {
 | Option | Description |
 | --- | --- |
 | <code>placeholder</code> (optional) | Placeholder text shown when the input has no value. |
+| <code>useAsTitle</code> (optional) | For nested object-like fields, choose which child field should summarize the value in admin surfaces. |
 | <code>component</code> (optional) | Custom component key registered in the Admin UI. |
 | <code>description</code> (optional) | Help text rendered below the field. |
 | <code>hidden</code> (optional) | Hides the field from the Admin form without deleting stored data. |

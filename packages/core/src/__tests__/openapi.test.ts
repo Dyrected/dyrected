@@ -58,7 +58,6 @@ describe("OpenAPI generation", () => {
         "/api/collections/posts/__audit",
         "/api/collections/posts/{id}",
         "/api/collections/posts/delete-many",
-        "/api/collections/posts/seed",
         "/api/collections/posts/{id}/transitions/{transition}",
         "/api/collections/posts/{id}/workflow-history",
         "/api/collections/users/login",
@@ -67,12 +66,19 @@ describe("OpenAPI generation", () => {
         "/api/collections/media/media",
         "/api/collections/media/media/{filename}",
         "/api/globals/settings",
-        "/api/globals/settings/seed",
         "/api/media/{filename}",
       ]),
     );
 
     expect(spec.paths["/api/collections/posts"]?.get?.tags).toEqual(["Collection: posts"]);
+    expect(spec.paths["/api/collections/posts"]?.get?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "search",
+          in: "query",
+        }),
+      ]),
+    );
     expect(spec.paths["/api/collections/users/login"]?.post?.tags).toEqual(["Collection: users"]);
     expect(spec.paths["/api/globals/settings"]?.get?.tags).toEqual(["Global: settings"]);
   });

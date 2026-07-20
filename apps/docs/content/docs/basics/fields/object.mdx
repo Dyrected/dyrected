@@ -18,6 +18,26 @@ defineObjectField({
 
 The fields are stored under the object field's `name`, so the example above saves as `{ seo: { title, description } }`. The nested fields behave like any others — they validate, hook, and render the same way — they just live one level down. An object field shares its parent document's lifecycle: it is created, updated, and deleted with the document, never on its own. When the same shape instead repeats, use an [Array](/docs/basics/fields/array); when the content should be its own record with its own lifecycle, give it a [Collection](/docs/basics/configuration/collections) and point at it with a [Relationship](/docs/basics/fields/relationship).
 
+## Choosing the summary field in the admin
+
+Object fields also need a readable summary in compact admin surfaces such as collection list cells. Set `admin.useAsTitle` on the object field when one child field should clearly represent the whole object.
+
+```ts
+defineObjectField({
+  name: "seo",
+  label: "SEO",
+  admin: {
+    useAsTitle: "title",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Meta title" }),
+    defineTextareaField({ name: "description", label: "Meta description" }),
+  ],
+})
+```
+
+If you leave it unset, Dyrected falls back to common child field names such as `title`, `name`, and `label`, then to the first usable child field. Like collection-level `admin.useAsTitle`, this child field reference is type-checked while you author config.
+
 ## Generated reference
 
 The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/basics/fields/overview) for the shared field options every type accepts.

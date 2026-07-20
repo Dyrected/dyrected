@@ -1329,11 +1329,6 @@
       "summary": "Serve Media item bytes"
     },
     {
-      "method": "POST",
-      "path": "/api/collections/media/seed",
-      "summary": "Seed initial Media"
-    },
-    {
       "method": "GET",
       "path": "/api/collections/posts",
       "summary": "Find Posts"
@@ -1377,11 +1372,6 @@
       "method": "DELETE",
       "path": "/api/collections/posts/delete-many",
       "summary": "Delete multiple Posts"
-    },
-    {
-      "method": "POST",
-      "path": "/api/collections/posts/seed",
-      "summary": "Seed initial Posts"
     },
     {
       "method": "GET",
@@ -1469,11 +1459,6 @@
       "summary": "Reset a password"
     },
     {
-      "method": "POST",
-      "path": "/api/collections/users/seed",
-      "summary": "Seed initial Users"
-    },
-    {
       "method": "GET",
       "path": "/api/docs",
       "summary": "Open interactive API documentation"
@@ -1492,11 +1477,6 @@
       "method": "PATCH",
       "path": "/api/globals/settings",
       "summary": "Update Site settings"
-    },
-    {
-      "method": "POST",
-      "path": "/api/globals/settings/seed",
-      "summary": "Seed Site settings"
     },
     {
       "method": "GET",

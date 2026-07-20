@@ -62,6 +62,12 @@
         "description": "JSON filter"
       },
       {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "description": "Free-text search across configured searchable fields"
+      },
+      {
         "name": "sort",
         "in": "query",
         "required": false,
@@ -210,20 +216,6 @@
     ]
   },
   {
-    "id": "POST /api/collections/media/seed",
-    "method": "POST",
-    "path": "/api/collections/media/seed",
-    "summary": "Seed initial Media",
-    "tags": [
-      "Collection: Media"
-    ],
-    "authenticated": true,
-    "parameters": [],
-    "responses": [
-      "200"
-    ]
-  },
-  {
     "id": "GET /api/collections/posts",
     "method": "GET",
     "path": "/api/collections/posts",
@@ -248,6 +240,12 @@
         "in": "query",
         "required": false,
         "description": "JSON filter"
+      },
+      {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "description": "Free-text search across configured searchable fields"
       },
       {
         "name": "sort",
@@ -441,20 +439,6 @@
     ]
   },
   {
-    "id": "POST /api/collections/posts/seed",
-    "method": "POST",
-    "path": "/api/collections/posts/seed",
-    "summary": "Seed initial Posts",
-    "tags": [
-      "Collection: Posts"
-    ],
-    "authenticated": true,
-    "parameters": [],
-    "responses": [
-      "200"
-    ]
-  },
-  {
     "id": "GET /api/collections/users",
     "method": "GET",
     "path": "/api/collections/users",
@@ -479,6 +463,12 @@
         "in": "query",
         "required": false,
         "description": "JSON filter"
+      },
+      {
+        "name": "search",
+        "in": "query",
+        "required": false,
+        "description": "Free-text search across configured searchable fields"
       },
       {
         "name": "sort",
@@ -752,20 +742,6 @@
     ]
   },
   {
-    "id": "POST /api/collections/users/seed",
-    "method": "POST",
-    "path": "/api/collections/users/seed",
-    "summary": "Seed initial Users",
-    "tags": [
-      "Collection: Users"
-    ],
-    "authenticated": true,
-    "parameters": [],
-    "responses": [
-      "200"
-    ]
-  },
-  {
     "id": "GET /api/docs",
     "method": "GET",
     "path": "/api/docs",
@@ -823,20 +799,6 @@
     "method": "PATCH",
     "path": "/api/globals/settings",
     "summary": "Update Site settings",
-    "tags": [
-      "Global: Site settings"
-    ],
-    "authenticated": true,
-    "parameters": [],
-    "responses": [
-      "200"
-    ]
-  },
-  {
-    "id": "POST /api/globals/settings/seed",
-    "method": "POST",
-    "path": "/api/globals/settings/seed",
-    "summary": "Seed Site settings",
     "tags": [
       "Global: Site settings"
     ],

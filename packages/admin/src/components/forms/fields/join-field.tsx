@@ -3,6 +3,7 @@ import { useDyrected } from "../../../providers/dyrected-context"
 import { useNavigate, useParams } from "react-router-dom"
 import { ExternalLink, FileText, Plus } from "lucide-react"
 import { Button } from "../../ui/button"
+import { cn } from "../../../lib/utils"
 
 interface JoinFieldProps {
   schema: any
@@ -26,6 +27,23 @@ export function JoinField({ schema, control }: JoinFieldProps) {
 
   const getLabel = (item: any) =>
     item[displayField] || item.name || item.slug || item.id
+
+  const showCreateButton = schema.admin?.showCreateButton !== false
+  const showViewButton = schema.admin?.showViewButton !== false
+
+  const handleCreateNew = () => {
+    const params = new URLSearchParams({ [onField]: docId! })
+    navigate(`/collections/${targetCollection}/new?${params.toString()}`)
+  }
+
+  const handleViewAll = () => {
+    const params = new URLSearchParams({
+      where: JSON.stringify({
+        [onField]: { equals: docId },
+      }),
+    })
+    navigate(`/collections/${targetCollection}?${params.toString()}`)
+  }
 
   if (!docId) {
     return (
@@ -62,16 +80,44 @@ export function JoinField({ schema, control }: JoinFieldProps) {
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="dy-h-8 dy-text-[11px] dy-font-bold dy-rounded-lg dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
-        onClick={() => navigate(`/collections/${targetCollection}/new?${onField}=${docId}`)}
-      >
-        <Plus className="dy-w-3 dy-h-3 dy-mr-1.5" />
-        Create new {targetSchema?.labels?.singular || targetCollection}
-      </Button>
+      {(showCreateButton || showViewButton) && (
+        <div
+          className={cn(
+            "dy-flex dy-items-center dy-gap-3",
+            showCreateButton && showViewButton
+              ? "dy-justify-between"
+              : showCreateButton
+                ? "dy-justify-end"
+                : "dy-justify-start",
+          )}
+        >
+          {showViewButton && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="dy-h-8 dy-text-[11px] dy-font-semibold dy-rounded-lg dy-text-muted-foreground hover:dy-text-foreground hover:dy-bg-muted/60 dy-transition-all"
+              onClick={handleViewAll}
+            >
+              <ExternalLink className="dy-w-3 dy-h-3 dy-mr-1.5" />
+              View all
+            </Button>
+          )}
+
+          {showCreateButton && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="dy-h-8 dy-text-[11px] dy-font-bold dy-rounded-lg dy-border-primary/20 hover:dy-bg-primary/5 hover:dy-text-primary dy-transition-all dy-shadow-sm"
+              onClick={handleCreateNew}
+            >
+              <Plus className="dy-w-3 dy-h-3 dy-mr-1.5" />
+              Create new {targetSchema?.labels?.singular || targetCollection}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

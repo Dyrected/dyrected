@@ -3,12 +3,10 @@
 import * as React from "react"
 import {
   type ColumnDef,
-  type ColumnFiltersState,
   type SortingState,
   type VisibilityState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
@@ -38,7 +36,9 @@ const EMPTY_VISIBILITY: VisibilityState = {}
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
-  searchKey?: string
+  searchPlaceholder?: string
+  searchValue?: string
+  onSearchChange?: (value: string) => void
   rowSelection?: any
   onRowSelectionChange?: any
   bulkActions?: (selectedIds: string[]) => React.ReactNode
@@ -51,7 +51,9 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
-  searchKey,
+  searchPlaceholder,
+  searchValue,
+  onSearchChange,
   rowSelection: externalRowSelection,
   onRowSelectionChange,
   bulkActions,
@@ -61,9 +63,6 @@ export function DataTable<TData, TValue>({
   hideViewButton = false,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
   const [columnVisibility, setColumnVisibility] = usePreferences<VisibilityState>(
     persistenceKey ? `visibility_${persistenceKey}` : "temp_visibility",
     initialColumnVisibility ?? EMPTY_VISIBILITY
@@ -77,15 +76,12 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       rowSelection,
     },
@@ -125,20 +121,14 @@ export function DataTable<TData, TValue>({
           )}
         </div>
 
-        {searchKey && (() => {
-          const col = table.getColumn(searchKey)
-          const searchLabel = col && typeof col.columnDef.header === "string" ? col.columnDef.header : searchKey
-          return (
-            <Input
-              placeholder={`Search by ${searchLabel.toLowerCase()}...`}
-              value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-              onChange={(event) =>
-                table.getColumn(searchKey)?.setFilterValue(event.target.value)
-              }
-              className="dy-order-2 dy-h-9 dy-w-full sm:dy-order-1 sm:dy-max-w-sm"
-            />
-          )
-        })()}
+        {onSearchChange ? (
+          <Input
+            placeholder={searchPlaceholder || "Search..."}
+            value={searchValue ?? ""}
+            onChange={(event) => onSearchChange(event.target.value)}
+            className="dy-order-2 dy-h-9 dy-w-full sm:dy-order-1 sm:dy-max-w-sm"
+          />
+        ) : null}
         {bulkActions && table.getFilteredSelectedRowModel().rows.length > 0 && (
           <div className="dy-order-3 dy-flex dy-w-full dy-items-center dy-gap-2 dy-animate-in dy-slide-in-from-left-2 sm:dy-order-2 sm:dy-w-auto">
             {bulkActions(

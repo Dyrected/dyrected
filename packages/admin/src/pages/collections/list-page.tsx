@@ -44,6 +44,7 @@ import { resolvePreviewUrl } from "../../lib/preview-url"
 import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
 import jexl from 'jexl'
 import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
+import { useDebouncedValue } from "../../hooks/use-debounced-value"
 
 
 function SortableColumnItem({
@@ -141,6 +142,8 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
   const [isImportOpen, setIsImportOpen] = React.useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const whereParam = searchParams.get('where')
+  const searchParam = searchParams.get("search") || ""
+  const debouncedSearch = useDebouncedValue(searchParam.trim(), 250)
 
   const rules = React.useMemo(() => {
     if (!whereParam) return [];
@@ -364,7 +367,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
 
   // Fetch collection data
   const { data: response, isLoading } = useQuery({
-    queryKey: ["collection", slug, page, whereParam],
+    queryKey: ["collection", slug, page, whereParam, debouncedSearch],
     queryFn: () => {
       const queryParams: Record<string, unknown> = { page, limit: 20, depth: 1 };
       if (whereParam) {
@@ -373,6 +376,9 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
         } catch {
           // invalid json
         }
+      }
+      if (debouncedSearch) {
+        queryParams.search = debouncedSearch
       }
       return client!.collection(slug).find(queryParams).exec()
     },
@@ -961,7 +967,7 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
       />
       <PageHeader
         title={schema.labels?.plural || schema.slug}
-        description={`Manage your ${schema.labels?.plural || schema.slug} entries and update content.`}
+        description={schema.admin?.description || `Manage your ${schema.labels?.plural || schema.slug} entries and update content.`}
         icon={resolveAdminIcon(schema.admin?.icon, schema.auth ? Users : Database)}
       >
         <div className="dy-flex dy-items-center dy-gap-2 dy-w-full sm:dy-w-auto">
@@ -1129,7 +1135,19 @@ export function CollectionListPage({ slug }: CollectionListPageProps) {
             key={slug}
             columns={columns}
             data={response?.docs || []}
-            searchKey={schema.admin?.useAsTitle || schema.fields.find((f: Field) => !f.admin?.hidden)?.name || "id"}
+            searchPlaceholder={`Search ${schema.labels?.plural || schema.slug}...`}
+            searchValue={searchParam}
+            onSearchChange={(value) => {
+              setSearchParams(prev => {
+                if (value.trim()) {
+                  prev.set("search", value)
+                } else {
+                  prev.delete("search")
+                }
+                return prev
+              }, { replace: true })
+              setPage(1)
+            }}
             onRowSelectionChange={setRowSelection}
             rowSelection={rowSelection}
             hideViewButton={true}

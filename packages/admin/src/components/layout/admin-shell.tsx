@@ -274,6 +274,8 @@ function SidebarInner({
   const collections = (schemas?.collections as unknown as AdminSidebarCollection[] | undefined)?.filter((c) => !c?.admin?.hidden && !c?.slug.startsWith('platform_')) ?? []
   const globals = (schemas?.globals as unknown as AdminSidebarGlobal[] | undefined)?.filter((g) => !g?.admin?.hidden && !g?.slug.startsWith('platform_')) ?? []
   const uploadCollections = collections.filter((c) => c.upload)
+  const standardCollections = collections.filter((c) => !c.upload && !c.auth)
+  const authCollections = collections.filter((c) => !c.upload && c.auth)
 
   const groupLabel = (text: string) =>
     !collapsed ? (
@@ -283,6 +285,70 @@ function SidebarInner({
     ) : (
       <div className="dy-my-2 dy-mx-3 dy-h-px dy-bg-border" />
     )
+
+  const renderCollectionItem = (col: AdminSidebarCollection) => {
+    const isReadOnly = col.access?.read && !col.access?.create && !col.access?.update && !col.access?.delete
+    const navLabel = (
+      <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
+        <span className="dy-truncate">{col.labels?.plural ?? col.label ?? col.slug}</span>
+        {!collapsed && (
+          <div className="dy-flex dy-gap-1 dy-shrink-0">
+            {col.auth && <Shield className="dy-h-4 dy-w-4 dy-text-primary/70" />}
+            {col.shared && <Share2 className="dy-h-4 dy-w-4 dy-text-purple-500/70" />}
+            {isReadOnly && <Lock className="dy-h-4 dy-w-4 dy-text-muted-foreground/40" />}
+          </div>
+        )}
+      </div>
+    )
+
+    return (
+      <NavItem
+        key={col.slug}
+        to={`/collections/${col.slug}`}
+        icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
+        label={navLabel}
+        active={location.pathname.startsWith(`/collections/${col.slug}`)}
+        collapsed={collapsed}
+        onClick={onNavigate}
+      />
+    )
+  }
+
+  const renderCollectionSection = (
+    sectionCollections: Array<AdminSidebarCollection>,
+    ungroupedLabel: string,
+  ) => {
+    if (sectionCollections.length === 0) return null
+
+    const groups = new Map<string, Array<AdminSidebarCollection>>()
+    const ungrouped: Array<AdminSidebarCollection> = []
+
+    sectionCollections.forEach((col) => {
+      const groupName = col.admin?.group
+      if (groupName) {
+        if (!groups.has(groupName)) groups.set(groupName, [])
+        groups.get(groupName)!.push(col)
+        return
+      }
+      ungrouped.push(col)
+    })
+
+    return (
+      <div className="dy-space-y-1">
+        {Array.from(groups.entries()).map(([groupName, cols]) => (
+          <NavGroup key={groupName} label={groupName} collapsed={collapsed} defaultExpanded={true}>
+            {cols.map((col) => renderCollectionItem(col))}
+          </NavGroup>
+        ))}
+
+        {ungrouped.length > 0 && (
+          <NavGroup label={ungroupedLabel} collapsed={collapsed} defaultExpanded={true}>
+            {ungrouped.map((col) => renderCollectionItem(col))}
+          </NavGroup>
+        )}
+      </div>
+    )
+  }
 
   const branding = schemas?.admin?.branding;
   const meta = schemas?.admin?.meta;
@@ -379,7 +445,7 @@ function SidebarInner({
           </div>
         )}
 
-        {(isLoading || collections.filter((c) => !c.upload).length > 0) && (
+        {(isLoading || standardCollections.length > 0 || authCollections.length > 0) && (
           <div>
             {isLoading ? (
               <div className="dy-space-y-1 dy-px-1">
@@ -387,69 +453,12 @@ function SidebarInner({
                   <div key={i} className={cn("dy-h-8 dy-rounded-md dy-bg-muted/60 dy-animate-pulse", collapsed ? "dy-mx-1" : "dy-mx-2")} />
                 ))}
               </div>
-            ) : (() => {
-              const nonUpload = collections.filter((col) => !col.upload)
-              const groups = new Map<string, Array<AdminSidebarCollection>>()
-              const ungrouped: Array<AdminSidebarCollection> = []
-
-              nonUpload.forEach((col) => {
-                let g = col.admin?.group
-                if (!g && col.auth) g = "System"
-
-                if (g) {
-                  if (!groups.has(g)) groups.set(g, [])
-                  groups.get(g)!.push(col)
-                } else {
-                  ungrouped.push(col)
-                }
-              })
-
-              const renderCollectionItem = (col: AdminSidebarCollection) => {
-                const isReadOnly = col.access?.read && !col.access?.create && !col.access?.update && !col.access?.delete
-                const navLabel = (
-                  <div className="dy-flex dy-items-center dy-gap-1.5 dy-min-w-0">
-                    <span className="dy-truncate">{col.labels?.plural ?? col.label ?? col.slug}</span>
-                    {!collapsed && (
-                      <div className="dy-flex dy-gap-1 dy-shrink-0">
-                        {col.auth && <Shield className="dy-h-4 dy-w-4 dy-text-primary/70" />}
-                        {col.shared && <Share2 className="dy-h-4 dy-w-4 dy-text-purple-500/70" />}
-                        {isReadOnly && <Lock className="dy-h-4 dy-w-4 dy-text-muted-foreground/40" />}
-                      </div>
-                    )}
-                  </div>
-                )
-
-                return (
-                  <NavItem
-                    key={col.slug}
-                    to={`/collections/${col.slug}`}
-                    icon={resolveAdminIcon(col.admin?.icon, col.auth ? Users : Database)}
-                    label={navLabel}
-                    active={location.pathname.startsWith(`/collections/${col.slug}`)}
-                    collapsed={collapsed}
-                    onClick={onNavigate}
-                  />
-                )
-              }
-
-              return (
-                <div className="dy-space-y-1">
-                  {/* Grouped sections */}
-                  {Array.from(groups.entries()).map(([groupName, cols]) => (
-                    <NavGroup key={groupName} label={groupName} collapsed={collapsed} defaultExpanded={true}>
-                      {cols.map(col => renderCollectionItem(col))}
-                    </NavGroup>
-                  ))}
-
-                  {/* Ungrouped */}
-                  {ungrouped.length > 0 && (
-                    <NavGroup label="Collections" collapsed={collapsed} defaultExpanded={true}>
-                      {ungrouped.map(col => renderCollectionItem(col))}
-                    </NavGroup>
-                  )}
-                </div>
-              )
-            })()}
+            ) : (
+              <div className="dy-space-y-1">
+                {renderCollectionSection(standardCollections, "Collections")}
+                {renderCollectionSection(authCollections, "Auth")}
+              </div>
+            )}
           </div>
         )}
 
