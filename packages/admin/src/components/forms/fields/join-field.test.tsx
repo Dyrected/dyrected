@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-import * as React from "react"
 import { describe, it, expect, beforeEach, vi } from "vitest"
 import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"

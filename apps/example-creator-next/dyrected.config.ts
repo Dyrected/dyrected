@@ -1,4 +1,14 @@
-import { defineCollection, defineConfig, defineGlobal } from "@dyrected/core";
+import {
+  defineArrayField,
+  defineCollection,
+  defineConfig,
+  defineGlobal,
+  defineObjectField,
+  defineRelationshipField,
+  defineSelectField,
+  defineTextField,
+  defineTextareaField,
+} from "@dyrected/core";
 import type { Block, Field } from "@dyrected/core";
 
 import aboutContent from "./src/app/about/about-content.json";
@@ -16,39 +26,38 @@ const staffWrite = "user.roles != null && ('owner' in user.roles || 'admin' in u
 const adminOnly = "user.roles != null && ('owner' in user.roles || 'admin' in user.roles)";
 
 const linkFields = [
-  { name: "label", label: "Label", type: "text", required: true },
-  { name: "href", label: "Link URL", type: "text", required: true },
+  defineTextField({ name: "label", label: "Label", required: true }),
+  defineTextField({ name: "href", label: "Link URL", required: true }),
 ] satisfies Field[];
 
 const actionFields = [
   ...linkFields,
-  {
+  defineSelectField({
     name: "variant",
     label: "Variant",
-    type: "select",
     options: ["primary", "secondary"],
-  },
+  }),
 ] satisfies Field[];
 
 const imageFields = [
-  { name: "asset", label: "Media asset", type: "relationship", relationTo: "media" },
-  { name: "src", label: "Fallback image path", type: "text", required: true },
-  { name: "alt", label: "Alt text", type: "text", required: true },
+  defineRelationshipField({ name: "asset", label: "Media asset", relationTo: "media" }),
+  defineTextField({ name: "src", label: "Fallback image path", required: true }),
+  defineTextField({ name: "alt", label: "Alt text", required: true }),
 ] satisfies Field[];
 
 const heroFields = [
-  { name: "badge", label: "Badge", type: "text" },
-  { name: "titlePrefix", label: "Title prefix", type: "text", required: true },
-  { name: "titleHighlight", label: "Title highlight", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea", required: true },
-  { name: "image", label: "Image", type: "object", fields: imageFields },
-  { name: "actions", label: "Actions", type: "array", fields: actionFields },
+  defineTextField({ name: "badge", label: "Badge" }),
+  defineTextField({ name: "titlePrefix", label: "Title prefix", required: true }),
+  defineTextField({ name: "titleHighlight", label: "Title highlight", required: true }),
+  defineTextareaField({ name: "description", label: "Description", required: true }),
+  defineObjectField({ name: "image", label: "Image", fields: imageFields }),
+  defineArrayField({ name: "actions", label: "Actions", fields: actionFields }),
 ] satisfies Field[];
 
 const ctaFields = [
-  { name: "title", label: "Title", type: "text", required: true },
-  { name: "description", label: "Description", type: "textarea", required: true },
-  { name: "actions", label: "Actions", type: "array", fields: actionFields },
+  defineTextField({ name: "title", label: "Title", required: true }),
+  defineTextareaField({ name: "description", label: "Description", required: true }),
+  defineArrayField({ name: "actions", label: "Actions", fields: actionFields }),
 ] satisfies Field[];
 
 const SimulatorBlock = {
