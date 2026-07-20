@@ -1602,14 +1602,14 @@ Workflow-enabled collections also control how draft saving behaves in the Admin.
 - publishing and every other workflow transition stay explicit
 - draft autosave is on by default in the Admin
 
-Use the collection's `admin` config when you need to tune that editor behavior:
+Use the collection's `admin` config when you need to tune that editor behavior. The simplest example is a collection using `drafts: true`:
 
 ```ts
 
 
 export const Posts = defineCollection({
   slug: "posts",
-  workflow: definePublishingWorkflow(),
+  drafts: true,
   admin: {
     autosave: true,
     autosaveDelayMs: 1500,
@@ -1623,6 +1623,8 @@ export const Posts = defineCollection({
 - `admin.autosave` defaults to `true` for collections that use `workflow` or `drafts: true`
 - `admin.autosave: false` keeps explicit manual draft saving for that collection
 - `admin.autosaveDelayMs` sets the debounce in milliseconds and defaults to `1500`
+
+The same admin options work the same way on custom `workflow` collections too. The difference is only the workflow model itself, not the autosave config surface.
 
 This setting is Admin-only. It changes how the working draft is persisted while someone edits, but it never publishes content, bypasses review, or changes the public snapshot.
 
