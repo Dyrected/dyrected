@@ -19,6 +19,8 @@ import {
   classifyWorkflowAutosaveError,
   type WorkflowAutosaveState,
 } from "../../lib/workflow-autosave"
+import { createDyrectedFormController } from "../../controllers/form"
+import { DyrectedFormProvider } from "../../providers/dyrected-form-context"
 
 export type { FieldSchema, BlockSchema }
 
@@ -65,6 +67,35 @@ interface FormEngineProps {
 export interface FormEngineHandle {
   submitCurrentDraft: () => Promise<unknown>
   isDirty: () => boolean
+}
+
+function flattenFlagTree(
+  value: unknown,
+  prefix: string = "",
+  result: Record<string, boolean> = {}
+): Record<string, boolean> {
+  if (!value || typeof value !== "object") {
+    return result
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      const nextPath = prefix ? `${prefix}.${index}` : String(index)
+      flattenFlagTree(item, nextPath, result)
+    })
+    return result
+  }
+
+  Object.entries(value as Record<string, unknown>).forEach(([key, nestedValue]) => {
+    const nextPath = prefix ? `${prefix}.${key}` : key
+    if (nestedValue === true) {
+      result[nextPath] = true
+      return
+    }
+    flattenFlagTree(nestedValue, nextPath, result)
+  })
+
+  return result
 }
 
 function FormEngineInner({
@@ -188,6 +219,21 @@ function FormEngineInner({
   }, [autosaveEnabled, emitAutosaveState, isDirty])
 
   const watchedValues = useWatch({ control: form.control })
+  const errorMap = useMemo(
+    () =>
+      Object.fromEntries(
+        flatErrors.map((error) => [error.path, error.message])
+      ),
+    [flatErrors]
+  )
+  const dirtyFieldMap = useMemo(
+    () => flattenFlagTree(form.formState.dirtyFields),
+    [form.formState.dirtyFields]
+  )
+  const touchedFieldMap = useMemo(
+    () => flattenFlagTree(form.formState.touchedFields),
+    [form.formState.touchedFields]
+  )
 
   const persistFormData = useCallback(async (
     data: Record<string, unknown>,
@@ -246,6 +292,77 @@ function FormEngineInner({
     submitCurrentDraft,
     isDirty: () => form.formState.isDirty,
   }), [form.formState.isDirty, submitCurrentDraft])
+
+  const submitCurrentDraftRef = React.useRef(submitCurrentDraft)
+  submitCurrentDraftRef.current = submitCurrentDraft
+
+  const formControllerRef = React.useRef(
+    createDyrectedFormController({
+      collection,
+      fields: resolvedFields,
+      documentId,
+      readOnly: Boolean(readOnly),
+      initialValues: form.getValues() as Record<string, unknown>,
+      initialErrors: errorMap,
+      initialDirtyFields: dirtyFieldMap,
+      initialTouchedFields: touchedFieldMap,
+      initialIsDirty: form.formState.isDirty,
+      initialIsSubmitting: form.formState.isSubmitting,
+      initialIsValid: form.formState.isValid,
+      initialSubmitCount: form.formState.submitCount,
+      adapters: {
+        setValue: (path, value, options) => {
+          const setValueFn = form.setValue as unknown as (
+            name: string,
+            value: unknown,
+            config?: { shouldDirty?: boolean; shouldTouch?: boolean; shouldValidate?: boolean }
+          ) => void
+          setValueFn(path, value, options)
+        },
+        reset: (values) => {
+          form.reset(values as z.infer<typeof formSchema> | undefined)
+        },
+        validate: async (paths) => {
+          if (!paths) return form.trigger()
+          const names = Array.isArray(paths) ? paths : [paths]
+          return form.trigger(names as Parameters<typeof form.trigger>[0])
+        },
+        submit: () => submitCurrentDraftRef.current(),
+      },
+    })
+  )
+  const formController = formControllerRef.current
+
+  useEffect(() => {
+    formController.setState({
+      collection,
+      fields: resolvedFields,
+      documentId,
+      readOnly: Boolean(readOnly),
+      values: (watchedValues ?? {}) as Record<string, unknown>,
+      errors: errorMap,
+      dirtyFields: dirtyFieldMap,
+      touchedFields: touchedFieldMap,
+      isDirty: form.formState.isDirty,
+      isSubmitting: form.formState.isSubmitting,
+      isValid: form.formState.isValid,
+      submitCount: form.formState.submitCount,
+    })
+  }, [
+    collection,
+    resolvedFields,
+    documentId,
+    readOnly,
+    watchedValues,
+    errorMap,
+    dirtyFieldMap,
+    touchedFieldMap,
+    form.formState.isDirty,
+    form.formState.isSubmitting,
+    form.formState.isValid,
+    form.formState.submitCount,
+    formController,
+  ])
 
   // Cmd+S / Ctrl+S shortcut
   useEffect(() => {
@@ -728,12 +845,13 @@ function FormEngineInner({
           ))}
         </nav>
       )}
-      <Form {...form}>
-        <form
-          id="dyrected-edit-form"
-          onSubmit={form.handleSubmit(handleFormSubmit)}
-          className="dy-space-y-8"
-        >
+      <DyrectedFormProvider controller={formController}>
+        <Form {...form}>
+          <form
+            id="dyrected-edit-form"
+            onSubmit={form.handleSubmit(handleFormSubmit)}
+            className="dy-space-y-8"
+          >
           {/* Hidden fields */}
           {resolvedFields
             .filter((f) => f.admin?.hidden)
@@ -805,8 +923,9 @@ function FormEngineInner({
               )}
             </div>
           )}
-        </form>
-      </Form>
+          </form>
+        </Form>
+      </DyrectedFormProvider>
     </>
   )
 }

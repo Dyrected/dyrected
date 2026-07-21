@@ -247,7 +247,9 @@ export function registerRoutes(
       globals: filteredGlobals,
       admin: requestConfig.admin || {},
       adminAuth: getPublicAdminAuthConfig(requestConfig.adminAuth, collections),
+      hasStorage: !!requestConfig.storage,
     });
+
   });
 
   app.get(

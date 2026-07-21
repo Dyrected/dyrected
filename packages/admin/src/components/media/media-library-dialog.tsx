@@ -130,12 +130,12 @@ export function MediaLibraryDialog({
 
   const {
     queue,
-    isUploading,
     uploadFiles,
     retryUpload,
     removeQueueItem,
     clearQueue,
   } = useMediaUpload({
+
     collectionSlug: activeMediaCollection,
     onCompletedItem: async (result) => {
       await refetch()

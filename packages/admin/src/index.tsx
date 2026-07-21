@@ -31,15 +31,37 @@ import { cn } from "./lib/utils";
 
 export type {
   AdminComponents,
+  AdminFieldComponentContext,
+  AdminFieldComponentProps,
   AdminSchemas,
   CollectionListSlotProps,
   DashboardSlotProps,
 } from "./types/admin-components";
 export {
+  createDyrectedFieldController,
+} from "./controllers/field";
+export {
+  createDyrectedFormController,
+  getValueAtPath,
+  setValueAtPath,
+} from "./controllers/form";
+export {
   createMediaLibraryController,
   createMediaUploadController,
   createMediaURLController,
 } from "./controllers/media";
+export type {
+  DyrectedFieldController,
+} from "./controllers/field";
+export type {
+  DyrectedFieldState,
+  DyrectedFormController,
+  DyrectedFormControllerAdapters,
+  DyrectedFormControllerOptions,
+  DyrectedFormState,
+  DyrectedFormValues,
+  DyrectedSetValueOptions,
+} from "./controllers/form";
 export type {
   MediaLibraryController,
   MediaLibraryControllerOptions,
@@ -60,6 +82,19 @@ export {
   isExternalMedia,
   resolveActiveMediaCollection,
 } from "./lib/media-utils";
+export {
+  buildDefaultValues,
+  buildSchemaShape,
+  formatPath,
+  getFlatErrors,
+  resolveContainerPath,
+} from "./components/forms/utils";
+export {
+  DyrectedFieldPathProvider,
+  DyrectedFormProvider,
+} from "./providers/dyrected-form-context";
+export { useDyrectedForm } from "./hooks/use-dyrected-form";
+export { useField } from "./hooks/use-field";
 export { useMediaLibrary } from "./hooks/use-media-library";
 export { useMediaUpload } from "./hooks/use-media-upload";
 export { useMediaURL } from "./hooks/use-media-url";

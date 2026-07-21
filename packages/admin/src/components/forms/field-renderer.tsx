@@ -8,9 +8,8 @@ import type {
   UrlField as UrlFieldSchema,
   RelationshipField as RelationFieldSchema,
   RichTextField as RichTextFieldSchema,
-  CollectionConfig,
-  GlobalConfig,
 } from "@dyrected/core"
+
 import { TextField } from "./fields/text-field"
 import { TextAreaField } from "./fields/text-area-field"
 import { SwitchField } from "./fields/switch-field"
@@ -29,6 +28,8 @@ import { UrlField as UrlFieldComponent } from "./fields/url-field"
 import jexl from 'jexl'
 import { useDyrected } from "../../providers/dyrected-context"
 import { ErrorBoundary } from "../error-boundary"
+import { DyrectedFieldPathProvider } from "../../providers/dyrected-form-context"
+import type { AdminFieldComponentContext, AdminFieldComponentProps } from "../../types/admin-components"
 
 type DefaultTextInputSchema = TextFieldSchema | EmailField | NumberField
 type TextAreaSchema = TextareaFieldSchema
@@ -47,14 +48,7 @@ interface FieldRendererProps {
     ref: any
   }
   collection: string
-  context?: {
-    user: Record<string, unknown> | null
-    schemas?: {
-      collections: CollectionConfig[]
-      globals: GlobalConfig[]
-    }
-    siblingData: Record<string, unknown>
-  }
+  context?: AdminFieldComponentContext
 }
 
 /**
@@ -88,18 +82,21 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
   const customComponentKey = schema.admin?.component
   if (customComponentKey && components?.fields?.[customComponentKey]) {
     const CustomComponent = components.fields[customComponentKey]
+    const customProps: AdminFieldComponentProps = {
+      value: field.value,
+      onChange: field.onChange,
+      field: schema,
+      path: field.name,
+      disabled,
+      collection,
+      context,
+    }
     return (
-      <ErrorBoundary fieldName={schema.name ?? customComponentKey}>
-        <CustomComponent
-          value={field.value}
-          onChange={field.onChange}
-          field={schema}
-          path={field.name}
-          disabled={disabled}
-          collection={collection}
-          context={context}
-        />
-      </ErrorBoundary>
+      <DyrectedFieldPathProvider path={field.name}>
+        <ErrorBoundary fieldName={schema.name ?? customComponentKey}>
+          <CustomComponent {...customProps} />
+        </ErrorBoundary>
+      </DyrectedFieldPathProvider>
     )
   }
 

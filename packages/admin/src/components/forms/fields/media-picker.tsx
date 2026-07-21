@@ -92,7 +92,114 @@ export function MediaPicker({
     return item.id
   }, [valueType, client])
 
+  const missingIds = React.useMemo(() => {
+
+    return selectedIds.filter(id => !localMediaCache.some(m => m.id === id || m.filename === id || m.url === id))
+  }, [selectedIds, localMediaCache])
+
+  // Fetch missing media for previews
+  const { data: fetchedMedia } = useQuery({
+    queryKey: [activeMediaCollection, "previews", missingIds],
+    queryFn: () => {
+      if (missingIds.length === 0) return []
+      return client!.listMedia({
+        where: {
+          OR: [
+            { id: { in: missingIds } },
+            { filename: { in: missingIds } }
+          ]
+        }
+      }, activeMediaCollection).then((r: any) => r.docs)
+    },
+    enabled: !!client && missingIds.length > 0,
+  })
+
+  React.useEffect(() => {
+    if (fetchedMedia && fetchedMedia.length > 0) {
+      Promise.resolve().then(() => {
+        setLocalMediaCache((prev) => {
+          const next = [...prev]
+          fetchedMedia.forEach((obj: any) => {
+            if (obj.id && !next.some((m) => m.id === obj.id)) {
+              next.push(obj)
+            }
+          })
+          return next
+        })
+      })
+    }
+  }, [fetchedMedia])
+
+  const toggleValue = (id: string, item?: any) => {
+    if (item && item.id) {
+      setLocalMediaCache(prev => {
+        if (!prev.some(m => m.id === item.id)) {
+          return [...prev, item]
+        }
+        return prev
+      })
+    }
+
+    const resolvedItem = item || localMediaCache.find(m => m.id === id || m.filename === id || m.url === id)
+    const matchId = resolvedItem?.id || id
+    const isSelected = selectedIds.includes(matchId)
+
+    if (multiple) {
+      let nextIds: string[]
+      if (isSelected) {
+        nextIds = selectedIds.filter(v => v !== matchId)
+      } else {
+        nextIds = [...selectedIds, matchId]
+      }
+      const nextValues = nextIds.map(nid => {
+        const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid)
+        return cached ? getFullUrl(cached) : nid
+      })
+      onChange(nextValues)
+    } else {
+      if (isSelected) {
+        onChange("")
+      } else {
+        onChange(resolvedItem ? getFullUrl(resolvedItem) : id)
+      }
+    }
+  }
+
+  const handleConfirm = React.useCallback((ids: string[], items?: any[]) => {
+    if (items && items.length > 0) {
+      setLocalMediaCache(prev => {
+        const next = [...prev]
+        items.forEach(item => {
+          if (item && item.id && !next.some(m => m.id === item.id)) {
+            next.push(item)
+          }
+        })
+        return next
+      })
+    }
+
+    if (multiple) {
+      const nextIds = [...selectedIds]
+      ids.forEach(id => {
+        if (!nextIds.includes(id)) {
+          nextIds.push(id)
+        }
+      })
+      const nextValues = nextIds.map(nid => {
+        const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || items?.find(m => m.id === nid || m.filename === nid || m.url === nid)
+        return cached ? getFullUrl(cached) : nid
+      })
+      onChange(nextValues)
+    } else if (ids.length > 0) {
+      const nid = ids[0]
+      const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || items?.find(m => m.id === nid || m.filename === nid || m.url === nid)
+      onChange(cached ? getFullUrl(cached) : nid)
+    }
+    setIsOpen(false)
+  }, [multiple, selectedIds, localMediaCache, getFullUrl, onChange])
+
   const handleUploadedItems = React.useCallback((uploadedItems: (Media & { id: string })[]) => {
+
     setLocalMediaCache(prev => {
       const next = [...prev]
       uploadedItems.forEach(item => {

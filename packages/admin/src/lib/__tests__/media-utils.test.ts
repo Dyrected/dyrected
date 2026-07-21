@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest"
-import { resolveActiveMediaCollection, getMediaSourceInfo, isExternalMedia } from "../media-utils"
+import {
+  resolveActiveMediaCollection,
+  getMediaSourceInfo,
+  isExternalMedia,
+  isStorageNotConfiguredError,
+  formatMediaErrorMessage,
+} from "../media-utils"
 
 describe("resolveActiveMediaCollection", () => {
   const schemas = {
@@ -69,5 +75,21 @@ describe("getMediaSourceInfo & isExternalMedia", () => {
     expect(info.source).toBe("internal")
     expect(info.type).toBe("storage")
     expect(isExternalMedia(item)).toBe(false)
+  })
+})
+
+describe("storage error detection & formatting", () => {
+  it("detects 'Storage not configured' error patterns", () => {
+    expect(isStorageNotConfiguredError("[DyrectedError] {message: 'Storage not configured'} 500")).toBe(true)
+    expect(isStorageNotConfiguredError(new Error("Storage is not configured"))).toBe(true)
+    expect(isStorageNotConfiguredError("Generic network error")).toBe(false)
+    expect(isStorageNotConfiguredError(null)).toBe(false)
+  })
+
+  it("formats unconfigured storage errors into friendly user text", () => {
+    const error = new Error("Storage not configured")
+    const formatted = formatMediaErrorMessage(error)
+    expect(formatted).toContain("Media storage is not configured yet")
+    expect(formatted).toContain("Please ask your developer")
   })
 })

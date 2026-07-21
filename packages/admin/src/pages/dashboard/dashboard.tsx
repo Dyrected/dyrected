@@ -3,7 +3,9 @@ import { AlertCircle, ArrowRight, ChevronDown, Clock3, FileText, Globe, Plus, Se
 import { Link } from "react-router-dom"
 import { useQueries, useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
+import { isStorageNotConfiguredError } from "../../lib/media-utils"
 import { Button } from "../../components/ui/button"
+
 import { Badge } from "../../components/ui/badge"
 import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { AdminSchemas, DashboardSlotProps } from "../../types/admin-components"
@@ -182,7 +184,25 @@ export function Dashboard() {
     })
     .slice(0, 6)
 
+  const { error: storageQueryError } = useQuery({
+    queryKey: ["dashboard-storage-check", uploadCollection?.slug],
+    queryFn: () => client!.listMedia({ limit: 1 }, uploadCollection?.slug || "media"),
+    enabled: !!client && !!uploadCollection,
+    retry: false,
+  })
+
+  const isStorageNotConfigured = schemas?.hasStorage === false || isStorageNotConfiguredError(storageQueryError)
+
   const attentionItems = [
+    ...(isStorageNotConfigured
+      ? [{
+          key: "storage-not-configured",
+          title: "Media storage is not set up",
+          description: "File uploads are disabled. Ask your developer to configure a media storage provider in Dyrected.",
+          to: "/setup",
+        }]
+      : []),
+
     ...(hasUpdate
       ? [{
           key: "dyrected-update",
@@ -218,6 +238,7 @@ export function Dashboard() {
       }]
       : []),
   ].slice(0, 4)
+
 
   if (isLoadingSchemas) {
     return (

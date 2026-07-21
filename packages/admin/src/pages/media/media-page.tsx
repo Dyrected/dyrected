@@ -55,11 +55,8 @@ import {
 import { getMediaPreviewUrl, getVideoEmbedUrl } from "../../lib/external-media"
 import { getMediaSourceInfo, isStorageNotConfiguredError } from "../../lib/media-utils"
 import { StorageNotConfiguredNotice } from "../../components/media/storage-notice"
-import { useAddMediaFromUrl } from "../../hooks/use-add-media-from-url"
 import { useMediaURL } from "../../hooks/use-media-url"
 import { useMediaUpload } from "../../hooks/use-media-upload"
-
-
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
 import { Separator } from "../../components/ui/separator"
@@ -87,7 +84,8 @@ const SORT_OPTIONS: { value: SortValue; label: string }[] = [
 ]
 
 export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, schema: CollectionConfig }) {
-  const { client, components, user } = useDyrected()
+  const { client, components, user, schemas } = useDyrected()
+
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const [isUploadOpen, setIsUploadOpen] = React.useState(false)
@@ -271,6 +269,9 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
     )
   }
 
+  const hasStorageError = schemas?.hasStorage === false || isStorageNotConfiguredError(queryError)
+
+
   return (
     <div {...getRootProps()} onPaste={handlePaste} className="dy-min-h-full dy-space-y-6 dy-animate-in dy-relative lg:dy-space-y-8">
       <input {...getInputProps()} />
@@ -285,6 +286,11 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
           </div>
         </div>
       )}
+
+      {hasStorageError && (
+        <StorageNotConfiguredNotice variant="banner" />
+      )}
+
       <AdminComponentSlot
         slot="beforeList"
         componentKeys={collectionSlots?.beforeList}
@@ -601,7 +607,18 @@ function MediaCard({ item, baseUrl, onDelete, onClick, isSelected }: {
     >
       <CardHeader className="!dy-p-0 dy-border-b dy-border-border/10">
         <AspectRatio ratio={1 / 1} className="dy-bg-muted/30 dy-overflow-hidden dy-relative">
+          {(() => {
+            const info = getMediaSourceInfo(item)
+            if (info.source !== "external") return null
+            return (
+              <div className="dy-absolute dy-top-2 dy-left-2 dy-z-30 dy-flex dy-items-center dy-gap-1 dy-rounded-md dy-bg-black/60 dy-backdrop-blur-md dy-px-2 dy-py-0.5 dy-text-[9px] dy-font-bold dy-text-white dy-uppercase">
+                <Globe className="dy-h-2.5 dy-w-2.5" />
+                {info.label}
+              </div>
+            )
+          })()}
           {hasPreview ? (
+
             <>
               {item.blurhash && (
                 <div className="dy-absolute dy-inset-0 dy-z-0">

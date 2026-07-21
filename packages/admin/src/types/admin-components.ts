@@ -3,6 +3,7 @@ import type {
   AdminConfig,
   Block,
   CollectionConfig,
+  Field as FieldSchema,
   GlobalConfig,
   PublicAdminAuthConfig,
 } from "@dyrected/core";
@@ -15,7 +16,9 @@ export interface AdminSchemas {
   globals: GlobalConfig[];
   admin?: AdminConfig;
   adminAuth?: PublicAdminAuthConfig;
+  hasStorage?: boolean;
 }
+
 
 /** Props injected into custom dashboard slot components. */
 export interface DashboardSlotProps {
@@ -64,6 +67,22 @@ export interface CollectionListSlotProps {
   };
 }
 
+export interface AdminFieldComponentContext {
+  user: Record<string, unknown> | null;
+  schemas?: AdminSchemas;
+  siblingData: Record<string, unknown>;
+}
+
+export interface AdminFieldComponentProps {
+  value: unknown;
+  onChange: (...event: any[]) => void;
+  field: FieldSchema;
+  path: string;
+  disabled?: boolean;
+  collection: string;
+  context?: AdminFieldComponentContext;
+}
+
 /**
  * Custom component overrides passed to `<DyrectedAdmin />`. Each key is a
  * registry: you reference a component by a string key in your schema config,
@@ -90,7 +109,7 @@ export interface AdminComponents {
    * registered under that key replaces the built-in input for that field.
    * Keys are arbitrary — this is a per-field override, not a per-type one.
    */
-  fields?: Record<string, ComponentType<any>>;
+  fields?: Record<string, ComponentType<AdminFieldComponentProps>>;
   /**
    * Dashboard slot components keyed by the slot-key names declared in the
    * top-level `admin.components` (`beforeDashboard` / `afterDashboard`).

@@ -28,7 +28,9 @@ type SchemaResponse = {
   globals: GlobalConfig[];
   admin?: AdminConfig;
   adminAuth?: PublicAdminAuthConfig;
+  hasStorage?: boolean;
 };
+
 
 export type {
   PaginatedResult,

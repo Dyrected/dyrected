@@ -3,9 +3,9 @@ import {
   buildExternalMediaPayload,
   isEmbeddableVideoUrl,
   isDirectImageUrl,
-  getMediaPreviewUrl,
   getVideoEmbedUrl,
 } from "../external-media"
+
 
 describe("external-media helpers", () => {
   describe("isEmbeddableVideoUrl", () => {
