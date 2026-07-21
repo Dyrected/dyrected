@@ -53,7 +53,11 @@ import {
   Download
 } from "lucide-react"
 import { getMediaPreviewUrl, getVideoEmbedUrl } from "../../lib/external-media"
+import { getMediaSourceInfo } from "../../lib/media-utils"
 import { useAddMediaFromUrl } from "../../hooks/use-add-media-from-url"
+import { useMediaUpload } from "../../hooks/use-media-upload"
+
+
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../../components/ui/progress"
 import { Separator } from "../../components/ui/separator"
@@ -952,9 +956,25 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
   setFiles: React.Dispatch<React.SetStateAction<File[]>>,
   onComplete: () => void
 }) {
-  const { client } = useDyrected()
-  const [uploading, setUploading] = React.useState(false)
-  const [progress, setProgress] = React.useState(0)
+  const {
+    isUploading: uploading,
+    queue,
+    uploadFiles,
+  } = useMediaUpload({
+    collectionSlug: collectionSlug || "media",
+    onAllCompleted: (items) => {
+      setFiles([])
+      onComplete()
+      toast.success(`${items.length} asset(s) uploaded successfully`)
+    },
+    onError: (error) => toast.error("Failed to upload assets", { description: error.message }),
+  })
+
+  const progress = React.useMemo(() => {
+    if (queue.length === 0) return 0
+    const total = queue.reduce((acc, q) => acc + q.progress, 0)
+    return Math.round(total / queue.length)
+  }, [queue])
 
   const {
     url: externalUrl,
@@ -978,28 +998,9 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
 
   const handleUpload = async () => {
     if (files.length === 0) return
-    setUploading(true)
-    setProgress(0)
-
-    try {
-      const total = files.length
-      for (let i = 0; i < files.length; i++) {
-        await client!.collection(collectionSlug || "media").upload(files[i], undefined, {
-          onProgress: (pct) => setProgress(Math.round(((i + pct / 100) / total) * 100)),
-        })
-      }
-      setProgress(100)
-      onComplete()
-      toast.success(`${files.length} assets uploaded successfully`)
-    } catch (error: unknown) {
-      console.error("Upload failed", error)
-      toast.error("Failed to upload assets", {
-        description: (error as Error).message
-      })
-    } finally {
-      setUploading(false)
-    }
+    await uploadFiles(files)
   }
+
 
   return (
     <Tabs defaultValue="files" className="dy-w-full">

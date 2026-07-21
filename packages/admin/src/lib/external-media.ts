@@ -4,10 +4,9 @@ import { getMediaUrl } from "./utils";
  * Detects the kind of external media a URL points to and builds the document
  * payload used to store it as a media record (no file bytes — just a reference).
  *
- * Supports YouTube and Vimeo video links, direct image URLs, and generic files.
- * The resulting `mimeType` (`video/youtube`, `video/vimeo`, `image/external`, or a
- * generic type) is what the media grid/preview components key off to render the
- * asset correctly.
+ * Supports YouTube and Vimeo video links, direct image URLs, direct video URLs, and generic files.
+ * The resulting `mimeType` (`video/youtube`, `video/vimeo`, `image/external`, `video/external`, or a
+ * generic type) is what the media grid/preview components key off to render the asset correctly.
  */
 export interface ExternalMediaPayload {
   filename: string;
@@ -20,10 +19,22 @@ export interface ExternalMediaPayload {
 const YOUTUBE_RE = /(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=))([^#&?]*)/;
 const VIMEO_RE = /vimeo\.com\/(?:video\/)?([0-9]+)/;
 const IMAGE_RE = /\.(jpeg|jpg|gif|png|webp|svg|avif)(?:\?.*)?$/i;
+const VIDEO_RE = /\.(mp4|webm|ogg|mov|m4v|mkv)(?:\?.*)?$/i;
 
 /** Extract the trailing filename from a URL, stripping any query string. */
-function filenameFromUrl(url: string, fallback: string): string {
+export function filenameFromUrl(url: string, fallback: string): string {
   return url.split("/").pop()?.split("?")[0] || fallback;
+}
+
+/** Check if a URL points to an embeddable video streaming site (YouTube or Vimeo). */
+export function isEmbeddableVideoUrl(url: string): boolean {
+  const trimmed = url.trim();
+  return YOUTUBE_RE.test(trimmed) || VIMEO_RE.test(trimmed);
+}
+
+/** Check if a URL points directly to a raster/vector image file. */
+export function isDirectImageUrl(url: string): boolean {
+  return IMAGE_RE.test(url.trim());
 }
 
 /**
@@ -54,10 +65,21 @@ export function buildExternalMediaPayload(rawUrl: string): ExternalMediaPayload 
     };
   }
 
+  if (VIDEO_RE.test(url)) {
+    const ext = url.split(".").pop()?.split("?")[0] || "mp4";
+    return {
+      filename: filenameFromUrl(url, "External Video"),
+      url,
+      mimeType: `video/${ext === "mov" ? "quicktime" : ext}`,
+      filesize: 0,
+      id: `vid_${Math.random().toString(36).substring(7)}`,
+    };
+  }
+
   return {
     filename: filenameFromUrl(url, "External File"),
     url,
-    mimeType: "application/octet-stream",
+    mimeType: "application/external",
     filesize: 0,
     id: `ext_${Math.random().toString(36).substring(7)}`,
   };

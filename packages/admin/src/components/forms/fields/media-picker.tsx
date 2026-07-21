@@ -18,70 +18,10 @@ import { ImageCropDialog } from "./image-crop-dialog"
 import type { Media } from "@dyrected/sdk"
 import { useDropzone } from "react-dropzone"
 import { toast } from "sonner"
+import { compressImage } from "../../../lib/compress-image"
 
-/**
- * Compress a raster image file client-side using the Canvas API before upload.
- * - Skips SVGs, GIFs, and non-images (returned unchanged).
- * - Skips if the result would be larger than the original.
- * - maxDimension: longest edge cap in pixels (default 2048).
- * - quality: JPEG/WebP quality 0–1 (default 0.85).
- */
-async function compressImage(file: File, maxDimension = 2048, quality = 0.85): Promise<File> {
-  if (
-    !file.type.startsWith('image/') ||
-    file.type === 'image/svg+xml' ||
-    file.type === 'image/gif'
-  ) {
-    return file
-  }
-
-  return new Promise((resolve) => {
-    const img = new Image()
-    const objectUrl = URL.createObjectURL(file)
-
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl)
-      resolve(file)
-    }
-
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl)
-
-      let { width, height } = img
-      if (width > maxDimension || height > maxDimension) {
-        const ratio = Math.min(maxDimension / width, maxDimension / height)
-        width = Math.round(width * ratio)
-        height = Math.round(height * ratio)
-      }
-
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { resolve(file); return }
-
-      ctx.drawImage(img, 0, 0, width, height)
-
-      // PNG → keep as PNG (lossless). Everything else → JPEG.
-      const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
-
-      canvas.toBlob(
-        (blob) => {
-          if (!blob || blob.size >= file.size) {
-            // Never make the file bigger
-            resolve(file)
-            return
-          }
-          resolve(new File([blob], file.name, { type: outputType, lastModified: Date.now() }))
-        },
-        outputType,
-        quality
-      )
-    }
-
-    img.src = objectUrl
-  })
-}
+import { resolveActiveMediaCollection } from "../../../lib/media-utils"
+import { useMediaUpload } from "../../../hooks/use-media-upload"
 
 interface MediaPickerProps {
   collection: string
@@ -116,9 +56,11 @@ export function MediaPicker({
   const { client, schemas } = useDyrected()
   const [isOpen, setIsOpen] = React.useState(false)
   const [localMediaCache, setLocalMediaCache] = React.useState<CachedMedia[]>([])
-  const [uploading, setUploading] = React.useState(false)
-  const [uploadProgress, setUploadProgress] = React.useState(0)
   const [cropState, setCropState] = React.useState<{ targetId: string; imageUrl: string; filename: string } | null>(null)
+
+  const activeMediaCollection = React.useMemo(() => {
+    return resolveActiveMediaCollection(schemas, collection)
+  }, [schemas, collection])
 
   const selectedValues = React.useMemo(() => {
     if (!value) return []
@@ -141,69 +83,6 @@ export function MediaPicker({
     return selectedValues.map(getIdentifier).filter(Boolean)
   }, [selectedValues, getIdentifier])
 
-  // Seed cache from populated objects in value
-  React.useEffect(() => {
-    if (!value) return
-    const vals = Array.isArray(value) ? value : [value]
-    const objects = vals.filter((v: any) => typeof v === "object" && v !== null)
-    if (objects.length > 0) {
-      Promise.resolve().then(() => {
-        setLocalMediaCache((prev) => {
-          const next = [...prev]
-          objects.forEach((obj: any) => {
-            if (obj.id && !next.some((m) => m.id === obj.id)) {
-              next.push(obj)
-            }
-          })
-          return next
-        })
-      })
-    }
-  }, [value])
-
-  const activeMediaCollection = React.useMemo(() => {
-    const targetColl = schemas?.collections?.find((c: any) => c.slug === collection)
-    if (targetColl?.upload) return collection
-    return "media"
-  }, [schemas, collection])
-
-  const missingIds = React.useMemo(() => {
-    return selectedIds.filter(id => !localMediaCache.some(m => m.id === id || m.filename === id || m.url === id))
-  }, [selectedIds, localMediaCache])
-
-  // Fetch missing media for previews
-  const { data: fetchedMedia } = useQuery({
-    queryKey: [activeMediaCollection, "previews", missingIds],
-    queryFn: () => {
-      if (missingIds.length === 0) return []
-      return client!.listMedia({
-        where: {
-          OR: [
-            { id: { in: missingIds } },
-            { filename: { in: missingIds } }
-          ]
-        }
-      }, activeMediaCollection).then((r: any) => r.docs)
-    },
-    enabled: !!client && missingIds.length > 0,
-  })
-
-  React.useEffect(() => {
-    if (fetchedMedia && fetchedMedia.length > 0) {
-      Promise.resolve().then(() => {
-        setLocalMediaCache((prev) => {
-          const next = [...prev]
-          fetchedMedia.forEach((obj: any) => {
-            if (obj.id && !next.some((m) => m.id === obj.id)) {
-              next.push(obj)
-            }
-          })
-          return next
-        })
-      })
-    }
-  }, [fetchedMedia])
-
   const getFullUrl = React.useCallback((item: any): string => {
     if (!item) return ""
     if (valueType === "url") {
@@ -215,129 +94,63 @@ export function MediaPicker({
     return item.id
   }, [valueType, client])
 
-  const toggleValue = (id: string, item?: any) => {
-    if (item && item.id) {
-      setLocalMediaCache(prev => {
-        if (!prev.some(m => m.id === item.id)) {
-          return [...prev, item]
+  const handleUploadedItems = React.useCallback((uploadedItems: (Media & { id: string })[]) => {
+    setLocalMediaCache(prev => {
+      const next = [...prev]
+      uploadedItems.forEach(item => {
+        if (item && item.id && !next.some(m => m.id === item.id)) {
+          next.push(item as CachedMedia)
         }
-        return prev
       })
-    }
+      return next
+    })
 
-    const resolvedItem = item || localMediaCache.find(m => m.id === id || m.filename === id || m.url === id)
-    const matchId = resolvedItem?.id || id
-    const isSelected = selectedIds.includes(matchId)
-
-    if (multiple) {
-      let nextIds: string[]
-      if (isSelected) {
-        nextIds = selectedIds.filter(v => v !== matchId)
-      } else {
-        nextIds = [...selectedIds, matchId]
-      }
-      const nextValues = nextIds.map(nid => {
-        const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid)
-        return cached ? getFullUrl(cached) : nid
-      })
-      onChange(nextValues)
-    } else {
-      if (isSelected) {
-        onChange("")
-      } else {
-        onChange(resolvedItem ? getFullUrl(resolvedItem) : id)
-      }
-    }
-  }
-
-  const handleConfirm = React.useCallback((ids: string[], items?: any[]) => {
-    if (items && items.length > 0) {
-      setLocalMediaCache(prev => {
-        const next = [...prev]
-        items.forEach(item => {
-          if (item && item.id && !next.some(m => m.id === item.id)) {
-            next.push(item)
-          }
-        })
-        return next
-      })
-    }
+    const newIds = uploadedItems.map(item => item.id)
 
     if (multiple) {
       const nextIds = [...selectedIds]
-      ids.forEach(id => {
+      newIds.forEach(id => {
         if (!nextIds.includes(id)) {
           nextIds.push(id)
         }
       })
       const nextValues = nextIds.map(nid => {
-        const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || items?.find(m => m.id === nid || m.filename === nid || m.url === nid)
+        const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || uploadedItems.find(m => m.id === nid || m.filename === nid || m.url === nid)
         return cached ? getFullUrl(cached) : nid
       })
       onChange(nextValues)
-    } else if (ids.length > 0) {
-      const nid = ids[0]
-      const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || items?.find(m => m.id === nid || m.filename === nid || m.url === nid)
+    } else if (newIds.length > 0) {
+      const nid = newIds[0]
+      const cached = uploadedItems.find(m => m.id === nid || m.filename === nid || m.url === nid)
       onChange(cached ? getFullUrl(cached) : nid)
     }
-    setIsOpen(false)
   }, [multiple, selectedIds, localMediaCache, getFullUrl, onChange])
 
-  const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0 || !client) return
-    setUploading(true)
-    setUploadProgress(0)
-    const toastId = toast.loading(`Uploading ${acceptedFiles.length} file(s)...`)
-    try {
-      const uploadedItems: any[] = []
-      const total = acceptedFiles.length
-      for (let i = 0; i < acceptedFiles.length; i++) {
-        const processedFile = await compressImage(acceptedFiles[i])
-        const res = await client.collection(activeMediaCollection).upload(processedFile, undefined, {
-          onProgress: (pct) => setUploadProgress(Math.round(((i + pct / 100) / total) * 100)),
-        })
-        uploadedItems.push(res)
-      }
-      setUploadProgress(100)
+  const {
+    isUploading: uploading,
+    queue,
+    uploadFiles,
+  } = useMediaUpload({
+    collectionSlug: activeMediaCollection,
+    onAllCompleted: (items) => {
+      handleUploadedItems(items)
+      toast.success(`Successfully uploaded and selected ${items.length} asset(s)`)
+    },
+    onError: (err) => toast.error("Upload failed", { description: err.message }),
+  })
 
-      setLocalMediaCache(prev => {
-        const next = [...prev]
-        uploadedItems.forEach(item => {
-          if (item && item.id && !next.some(m => m.id === item.id)) {
-            next.push(item)
-          }
-        })
-        return next
-      })
+  const uploadProgress = React.useMemo(() => {
+    if (queue.length === 0) return 0
+    const total = queue.reduce((acc, q) => acc + q.progress, 0)
+    return Math.round(total / queue.length)
+  }, [queue])
 
-      const newIds = uploadedItems.map(item => item.id)
-
-      if (multiple) {
-        const nextIds = [...selectedIds]
-        newIds.forEach(id => {
-          if (!nextIds.includes(id)) {
-            nextIds.push(id)
-          }
-        })
-        const nextValues = nextIds.map(nid => {
-          const cached = localMediaCache.find(m => m.id === nid || m.filename === nid || m.url === nid) || uploadedItems.find(m => m.id === nid || m.filename === nid || m.url === nid)
-          return cached ? getFullUrl(cached) : nid
-        })
-        onChange(nextValues)
-      } else if (newIds.length > 0) {
-        const nid = newIds[0]
-        const cached = uploadedItems.find(m => m.id === nid || m.filename === nid || m.url === nid)
-        onChange(cached ? getFullUrl(cached) : nid)
-      }
-
-      toast.success(`Successfully uploaded and selected ${acceptedFiles.length} asset(s)`, { id: toastId })
-    } catch (err: any) {
-      toast.error("Upload failed", { description: err.message, id: toastId })
-    } finally {
-      setUploading(false)
-      setUploadProgress(0)
+  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      uploadFiles(acceptedFiles)
     }
-  }, [client, activeMediaCollection, multiple, selectedIds, localMediaCache, getFullUrl, onChange])
+  }, [uploadFiles])
+
 
   const checkIsCropable = React.useCallback((id: string, item?: any) => {
     if (item) {
