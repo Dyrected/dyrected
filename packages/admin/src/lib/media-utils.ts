@@ -58,3 +58,30 @@ export function getMediaSourceInfo(item: unknown): MediaSourceInfo {
 export function isExternalMedia(item: unknown): boolean {
   return getMediaSourceInfo(item).source === "external"
 }
+
+/**
+ * Checks whether an error indicates that Dyrected media storage is not configured.
+ */
+export function isStorageNotConfiguredError(error: unknown): boolean {
+  if (!error) return false
+  const msg = typeof error === "string"
+    ? error
+    : (error as { message?: string; description?: string })?.message ||
+      (error as { description?: string })?.description ||
+      String(error)
+
+  const lower = msg.toLowerCase()
+  return lower.includes("storage not configured") || lower.includes("storage is not configured")
+}
+
+/**
+ * Formats a media error into a friendly, non-technical message.
+ */
+export function formatMediaErrorMessage(error: unknown): string {
+  if (isStorageNotConfiguredError(error)) {
+    return "Media storage is not configured yet. Please ask your developer to set up a storage provider in Dyrected."
+  }
+  if (error instanceof Error) return error.message
+  if (typeof error === "string") return error
+  return (error as { message?: string })?.message || "An unexpected media error occurred"
+}

@@ -34,12 +34,14 @@ import { ScrollArea } from "../ui/scroll-area"
 import { Input } from "../ui/input"
 import { cn, getDisplayFilename } from "../../lib/utils"
 import { getMediaPreviewUrl } from "../../lib/external-media"
-import { getMediaSourceInfo, resolveActiveMediaCollection } from "../../lib/media-utils"
-import { useAddMediaFromUrl } from "../../hooks/use-add-media-from-url"
-import { useMediaUpload, type UploadQueueItem } from "../../hooks/use-media-upload"
+import { getMediaSourceInfo, resolveActiveMediaCollection, isStorageNotConfiguredError } from "../../lib/media-utils"
+import { StorageNotConfiguredNotice } from "./storage-notice"
+import { useMediaURL } from "../../hooks/use-media-url"
+import { useMediaUpload } from "../../hooks/use-media-upload"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../ui/progress"
 import type { Media } from "@dyrected/sdk"
+
 
 interface MediaLibraryDialogProps {
   collection: string
@@ -82,7 +84,8 @@ export function MediaLibraryDialog({
     refetch,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    error: mediaQueryError,
   } = useInfiniteQuery({
     queryKey: [activeMediaCollection, searchQuery],
     queryFn: ({ pageParam = 1 }) => client!.listMedia({
@@ -140,6 +143,11 @@ export function MediaLibraryDialog({
     },
   })
 
+  const hasStorageError = React.useMemo(() => {
+    return isStorageNotConfiguredError(mediaQueryError) || queue.some(item => isStorageNotConfiguredError(item.error))
+  }, [mediaQueryError, queue])
+
+
   const onDrop = React.useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
@@ -163,7 +171,7 @@ export function MediaLibraryDialog({
     setUrl: setExternalUrl,
     submit: handleExternalUrlSubmit,
     isSubmitting: isAddingUrl,
-  } = useAddMediaFromUrl({
+  } = useMediaURL({
     collection: activeMediaCollection,
     onAdded: async (result) => {
       await refetch()
@@ -238,7 +246,14 @@ export function MediaLibraryDialog({
             </TabsList>
           </div>
 
+          {hasStorageError && (
+            <div className="dy-px-4 dy-pt-4 sm:dy-px-6">
+              <StorageNotConfiguredNotice variant="banner" />
+            </div>
+          )}
+
           <div className="dy-min-h-0 dy-flex-1 dy-overflow-hidden">
+
             <TabsContent value="library" className="dy-h-full dy-m-0 dy-p-0 focus-visible:dy-ring-0">
               <div className="dy-flex dy-h-full dy-flex-col md:dy-flex-row">
                 <div className="dy-flex dy-min-h-0 dy-flex-1 dy-flex-col dy-space-y-4 dy-border-b dy-p-4 md:dy-border-b-0 md:dy-border-r md:dy-p-6">

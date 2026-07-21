@@ -35,6 +35,35 @@ export type {
   CollectionListSlotProps,
   DashboardSlotProps,
 } from "./types/admin-components";
+export {
+  createMediaLibraryController,
+  createMediaUploadController,
+  createMediaURLController,
+} from "./controllers/media";
+export type {
+  MediaLibraryController,
+  MediaLibraryControllerOptions,
+  MediaLibraryControllerState,
+  MediaRecord,
+  MediaUploadController,
+  MediaUploadControllerOptions,
+  MediaUploadControllerState,
+  MediaUploadQueueItem,
+  MediaURLClassification,
+  MediaURLController,
+  MediaURLControllerOptions,
+  MediaURLControllerState,
+} from "./controllers/media";
+export { compressImage } from "./lib/compress-image";
+export {
+  getMediaSourceInfo,
+  isExternalMedia,
+  resolveActiveMediaCollection,
+} from "./lib/media-utils";
+export { useMediaLibrary } from "./hooks/use-media-library";
+export { useMediaUpload } from "./hooks/use-media-upload";
+export { useMediaURL } from "./hooks/use-media-url";
+export { useAddMediaFromUrl } from "./hooks/use-add-media-from-url";
 
 // ─── Route that resolves collection → list or media page ─────────────────────
 

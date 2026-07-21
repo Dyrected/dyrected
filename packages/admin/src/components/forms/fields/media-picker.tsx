@@ -18,8 +18,6 @@ import { ImageCropDialog } from "./image-crop-dialog"
 import type { Media } from "@dyrected/sdk"
 import { useDropzone } from "react-dropzone"
 import { toast } from "sonner"
-import { compressImage } from "../../../lib/compress-image"
-
 import { resolveActiveMediaCollection } from "../../../lib/media-utils"
 import { useMediaUpload } from "../../../hooks/use-media-upload"
 

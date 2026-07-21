@@ -53,8 +53,10 @@ import {
   Download
 } from "lucide-react"
 import { getMediaPreviewUrl, getVideoEmbedUrl } from "../../lib/external-media"
-import { getMediaSourceInfo } from "../../lib/media-utils"
+import { getMediaSourceInfo, isStorageNotConfiguredError } from "../../lib/media-utils"
+import { StorageNotConfiguredNotice } from "../../components/media/storage-notice"
 import { useAddMediaFromUrl } from "../../hooks/use-add-media-from-url"
+import { useMediaURL } from "../../hooks/use-media-url"
 import { useMediaUpload } from "../../hooks/use-media-upload"
 
 
@@ -99,8 +101,10 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isLoading
+    isLoading,
+    error: queryError
   } = useInfiniteQuery({
+
     queryKey: ["media", collectionSlug, search, sortValue],
     queryFn: ({ pageParam = 1 }) =>
       client!.listMedia(
@@ -981,7 +985,7 @@ function FileUploader({ collectionSlug, files, setFiles, onComplete }: {
     setUrl: setExternalUrl,
     submit: handleAddUrl,
     isSubmitting: addingUrl,
-  } = useAddMediaFromUrl({
+  } = useMediaURL({
     collection: collectionSlug || "media",
     onAdded: () => {
       toast.success("External media added")
