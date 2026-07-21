@@ -42,9 +42,16 @@ export {
 } from "./controllers/field";
 export {
   createDyrectedFormController,
+  getFieldPathSegments,
+  getParentFieldPath,
   getValueAtPath,
+  joinFieldPath,
+  normalizeFieldPath,
   setValueAtPath,
 } from "./controllers/form";
+export {
+  createAdminThemeController,
+} from "./controllers/theme";
 export {
   createMediaLibraryController,
   createMediaUploadController,
@@ -58,10 +65,16 @@ export type {
   DyrectedFormController,
   DyrectedFormControllerAdapters,
   DyrectedFormControllerOptions,
+  DyrectedFieldPathPart,
   DyrectedFormState,
   DyrectedFormValues,
   DyrectedSetValueOptions,
 } from "./controllers/form";
+export type {
+  AdminThemeController,
+  AdminThemeControllerOptions,
+  AdminThemeControllerState,
+} from "./controllers/theme";
 export type {
   MediaLibraryController,
   MediaLibraryControllerOptions,
@@ -93,6 +106,20 @@ export {
   DyrectedFieldPathProvider,
   DyrectedFormProvider,
 } from "./providers/dyrected-form-context";
+export {
+  AdminThemeProvider,
+  AdminThemedRoot,
+} from "./hooks/admin-theme-provider";
+export {
+  adminThemeClassName,
+  getSystemAdminTheme,
+  resolveAdminTheme,
+} from "./hooks/admin-theme";
+export type {
+  AdminThemePreference,
+  ResolvedAdminTheme,
+} from "./hooks/admin-theme";
+export { useAdminTheme } from "./hooks/use-admin-theme";
 export { useDyrectedForm } from "./hooks/use-dyrected-form";
 export { useField } from "./hooks/use-field";
 export { useMediaLibrary } from "./hooks/use-media-library";

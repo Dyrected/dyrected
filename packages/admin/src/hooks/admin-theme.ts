@@ -13,3 +13,9 @@ export function adminThemeClassName(resolvedTheme: ResolvedAdminTheme) {
     ? "dy-admin-ui dark"
     : "dy-admin-ui"
 }
+
+export function getSystemAdminTheme(): ResolvedAdminTheme {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "light"
+  const media = window.matchMedia("(prefers-color-scheme: dark)")
+  return media?.matches ? "dark" : "light"
+}

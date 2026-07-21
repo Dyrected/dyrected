@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
-import { createDyrectedFormController } from "../form"
+import {
+  createDyrectedFormController,
+  getFieldPathSegments,
+  getParentFieldPath,
+  joinFieldPath,
+  normalizeFieldPath,
+} from "../form"
 
 const fields = [
   {
@@ -22,6 +28,14 @@ const fields = [
 ] as any
 
 describe("createDyrectedFormController", () => {
+  it("normalizes and joins nested field paths", () => {
+    expect(normalizeFieldPath(" seo.slug ")).toEqual(["seo", "slug"])
+    expect(getFieldPathSegments("items.0.title")).toEqual(["items", "0", "title"])
+    expect(getParentFieldPath("items.0.title")).toBe("items.0")
+    expect(joinFieldPath("items", 0, "title")).toBe("items.0.title")
+    expect(joinFieldPath("seo", "meta.title")).toBe("seo.meta.title")
+  })
+
   it("tracks nested values and resolves field schema metadata", () => {
     const controller = createDyrectedFormController({
       collection: "posts",

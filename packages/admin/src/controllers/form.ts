@@ -1,6 +1,7 @@
 import type { Field as FieldSchema } from "@dyrected/sdk"
 
 type Listener = () => void
+export type DyrectedFieldPathPart = string | number | null | undefined | false
 
 export interface DyrectedFormValues {
   [key: string]: unknown
@@ -80,23 +81,44 @@ export interface DyrectedFormController {
   submit(): Promise<unknown>
 }
 
-function normalizePath(path: string): string[] {
+export function normalizeFieldPath(path: string): string[] {
   return path
     .split(".")
     .map((segment) => segment.trim())
     .filter(Boolean)
 }
 
+export function getFieldPathSegments(path: string): string[] {
+  return normalizeFieldPath(path)
+}
+
+export function joinFieldPath(...parts: DyrectedFieldPathPart[]): string {
+  return parts
+    .flatMap((part) => {
+      if (part === null || part === undefined || part === false) return []
+      return String(part)
+        .split(".")
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+    })
+    .join(".")
+}
+
+export function getParentFieldPath(path: string): string {
+  const segments = normalizeFieldPath(path)
+  return segments.slice(0, -1).join(".")
+}
+
 export function getValueAtPath(value: unknown, path: string): unknown {
   if (!path) return value
-  return normalizePath(path).reduce<unknown>((currentValue, segment) => {
+  return normalizeFieldPath(path).reduce<unknown>((currentValue, segment) => {
     if (currentValue == null) return undefined
     return (currentValue as Record<string, unknown>)[segment]
   }, value)
 }
 
 export function setValueAtPath<T>(value: T, path: string, nextValue: unknown): T {
-  const segments = normalizePath(path)
+  const segments = normalizeFieldPath(path)
   if (segments.length === 0) return nextValue as T
 
   const root = Array.isArray(value) ? [...value] : { ...(value as Record<string, unknown> ?? {}) }
@@ -128,7 +150,7 @@ export function setValueAtPath<T>(value: T, path: string, nextValue: unknown): T
 }
 
 function findFieldSchema(fields: FieldSchema[], path: string): FieldSchema | null {
-  const segments = normalizePath(path).filter((segment) => !/^\d+$/.test(segment))
+  const segments = normalizeFieldPath(path).filter((segment) => !/^\d+$/.test(segment))
   if (segments.length === 0) return null
 
   let currentFields = fields

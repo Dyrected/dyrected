@@ -294,9 +294,11 @@ function FormEngineInner({
   }), [form.formState.isDirty, submitCurrentDraft])
 
   const submitCurrentDraftRef = React.useRef(submitCurrentDraft)
-  submitCurrentDraftRef.current = submitCurrentDraft
+  React.useLayoutEffect(() => {
+    submitCurrentDraftRef.current = submitCurrentDraft
+  })
 
-  const formControllerRef = React.useRef(
+  const [formController] = React.useState(() =>
     createDyrectedFormController({
       collection,
       fields: resolvedFields,
@@ -331,7 +333,7 @@ function FormEngineInner({
       },
     })
   )
-  const formController = formControllerRef.current
+
 
   useEffect(() => {
     formController.setState({
