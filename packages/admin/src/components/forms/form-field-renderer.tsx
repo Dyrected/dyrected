@@ -13,10 +13,13 @@ import { JoinField } from "./fields/join-field"
 import { cn } from "../../lib/utils"
 import jexl from 'jexl'
 import type { Field as FieldSchema } from "@dyrected/sdk"
+import { joinFieldPath } from "../../controllers/form"
 import { FieldRenderer } from "./field-renderer"
 import { BlockBuilder } from "./fields/block-builder"
 import { ObjectFieldRenderer } from "./fields/object-field-renderer"
 import { ArrayFieldRenderer } from "./fields/array-field-renderer"
+import { useDyrectedForm } from "../../hooks/use-dyrected-form"
+import { useField } from "../../hooks/use-field"
 
 import { Input } from "../ui/input"
 
@@ -26,6 +29,87 @@ interface FormFieldRendererProps {
   control: Control<FieldValues>
   collection: string
   documentId?: string
+}
+
+function FormValidationFieldShell({
+  schema,
+  fullPath,
+  collection,
+  user,
+  schemas,
+  conditionData,
+  isBoolean,
+  isSwitchBoolean,
+  hideLabel,
+  formField,
+}: {
+  schema: FieldSchema
+  fullPath: string
+  collection: string
+  user: Record<string, unknown> | null
+  schemas: unknown
+  conditionData: Record<string, unknown>
+  isBoolean: boolean
+  isSwitchBoolean: boolean
+  hideLabel: boolean
+  formField: ControllerRenderProps<FieldValues, string>
+}) {
+  const fieldState = useField(fullPath)
+  const formState = useDyrectedForm()
+  const resolvedSchema = formState.getFieldSchema(fullPath) ?? schema
+
+  return (
+    <FormItem
+      data-dy-field={fieldState.path}
+      className={cn(
+        isSwitchBoolean
+          ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-lg dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
+          : isBoolean
+            ? "dy-flex dy-flex-row-reverse dy-items-start dy-justify-end dy-gap-3 dy-space-y-0"
+            : hideLabel
+              ? "dy-space-y-0"
+              : "dy-space-y-3"
+      )}
+    >
+      {!hideLabel && (
+        <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-flex-wrap dy-gap-2 dy-mb-1")}>
+          <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
+            {resolvedSchema.label || resolvedSchema.name!.charAt(0).toUpperCase() + resolvedSchema.name!.slice(1)}
+            {resolvedSchema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
+          </FormLabel>
+          {resolvedSchema.admin?.description && (
+            <p className={cn(
+              "dy-text-muted-foreground/60 dy-italic",
+              isBoolean ? "dy-text-[11px] dy-leading-tight" : "dy-text-[11px] dy-leading-relaxed"
+            )}>
+              {resolvedSchema.admin.description}
+            </p>
+          )}
+          {!isBoolean && resolvedSchema.unique && (
+            <span className="dy-inline-flex dy-items-center dy-rounded-full dy-bg-primary/10 dy-px-1.5 dy-py-0.5 dy-text-[10px] dy-font-medium dy-text-primary dy-ring-1 dy-ring-inset dy-ring-primary/10">
+              Unique
+            </span>
+          )}
+        </div>
+      )}
+      <FormControl>
+        <FieldRenderer
+          schema={resolvedSchema}
+          field={formField}
+          collection={collection}
+          context={{
+            user,
+            schemas: schemas as never,
+            siblingData: conditionData
+          }}
+        />
+      </FormControl>
+      {!isBoolean && resolvedSchema.admin?.description && (
+        <p className="dy-text-[11px] dy-text-muted-foreground/70 dy-leading-relaxed dy-italic">{resolvedSchema.admin.description}</p>
+      )}
+      <FormMessage className="dy-text-xs dy-font-medium" />
+    </FormItem>
+  )
 }
 
 /**
@@ -187,7 +271,7 @@ function FormFieldRendererInner({
     return null
   }
 
-  const fullPath = basePath ? `${basePath}.${schema.name!}` : schema.name!
+  const fullPath = joinFieldPath(basePath, schema.name!)
   const renderNestedField = (subField: FieldSchema, nextBasePath: string) => (
     <FormFieldRenderer
       schema={subField}
@@ -320,56 +404,18 @@ function FormFieldRendererInner({
       control={control}
       name={fullPath}
       render={({ field: formField }: { field: ControllerRenderProps<FieldValues, string> }) => (
-        <FormItem
-          data-dy-field={schema.name}
-          className={cn(
-            isSwitchBoolean
-              ? "dy-flex dy-flex-row dy-items-center dy-justify-between dy-rounded-lg dy-border dy-border-border/40 dy-p-4 dy-bg-background/50 dy-shadow-sm dy-space-y-0"
-              : isBoolean
-                ? "dy-flex dy-flex-row-reverse dy-items-start dy-justify-end dy-gap-3 dy-space-y-0"
-                : hideLabel
-                  ? "dy-space-y-0"
-                  : "dy-space-y-3"
-          )}
-        >
-          {!hideLabel && (
-            <div className={cn(isBoolean ? "dy-space-y-1" : "dy-flex dy-items-center dy-flex-wrap dy-gap-2 dy-mb-1")}>
-              <FormLabel className="dy-text-sm dy-font-semibold dy-text-foreground/80 dy-cursor-pointer">
-                {schema.label || schema.name!.charAt(0).toUpperCase() + schema.name!.slice(1)}
-                {schema.required && <span className="dy-text-destructive dy-ml-1">*</span>}
-              </FormLabel>
-              {schema.admin?.description && (
-                <p className={cn(
-                  "dy-text-muted-foreground/60 dy-italic",
-                  isBoolean ? "dy-text-[11px] dy-leading-tight" : "dy-text-[11px] dy-leading-relaxed"
-                )}>
-                  {schema.admin.description}
-                </p>
-              )}
-              {!isBoolean && schema.unique && (
-                <span className="dy-inline-flex dy-items-center dy-rounded-full dy-bg-primary/10 dy-px-1.5 dy-py-0.5 dy-text-[10px] dy-font-medium dy-text-primary dy-ring-1 dy-ring-inset dy-ring-primary/10">
-                  Unique
-                </span>
-              )}
-            </div>
-          )}
-          <FormControl>
-            <FieldRenderer
-              schema={schema}
-              field={formField}
-              collection={collection}
-              context={{
-                user,
-                schemas,
-                siblingData: conditionData
-              }}
-            />
-          </FormControl>
-          {!isBoolean && schema.admin?.description && (
-            <p className="dy-text-[11px] dy-text-muted-foreground/70 dy-leading-relaxed dy-italic">{schema.admin.description}</p>
-          )}
-          <FormMessage className="dy-text-xs dy-font-medium" />
-        </FormItem>
+        <FormValidationFieldShell
+          schema={schema}
+          fullPath={fullPath}
+          collection={collection}
+          user={user}
+          schemas={schemas}
+          conditionData={conditionData as Record<string, unknown>}
+          isBoolean={isBoolean}
+          isSwitchBoolean={isSwitchBoolean}
+          hideLabel={hideLabel}
+          formField={formField}
+        />
       )}
     />
   )

@@ -1,5 +1,4 @@
 import * as React from "react"
-import { useInfiniteQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
 import { Button } from "../ui/button"
 import {
@@ -36,6 +35,7 @@ import { cn, getDisplayFilename } from "../../lib/utils"
 import { getMediaPreviewUrl } from "../../lib/external-media"
 import { getMediaSourceInfo, resolveActiveMediaCollection, isStorageNotConfiguredError } from "../../lib/media-utils"
 import { StorageNotConfiguredNotice } from "./storage-notice"
+import { useMediaLibrary } from "../../hooks/use-media-library"
 import { useMediaURL } from "../../hooks/use-media-url"
 import { useMediaUpload } from "../../hooks/use-media-upload"
 import { useDropzone } from "react-dropzone"
@@ -78,31 +78,49 @@ export function MediaLibraryDialog({
   const [searchQuery, setSearchQuery] = React.useState("")
   const [activeTab, setActiveTab] = React.useState("library")
   const [selectedItem, setSelectedItem] = React.useState<(Media & { id?: string }) | null>(null)
+  const getIdentifier = React.useCallback((v: unknown): string => {
+    if (!v) return ""
+    if (typeof v === "object" && v !== null) {
+      const obj = v as Record<string, unknown>
+      return String(obj.id || obj._id || obj.filename || "")
+    }
+    const strVal = String(v)
+    if (strVal.includes("/")) {
+      return strVal.split("/").pop() || strVal
+    }
+    return strVal
+  }, [])
+
+  const sVals = React.useMemo(() => {
+    return (selectedValues || []).map(getIdentifier).filter(Boolean)
+  }, [selectedValues, getIdentifier])
 
   const {
-    data,
-    refetch,
-    fetchNextPage,
+    items: media,
+    load,
+    search,
+    loadNextPage,
     hasNextPage,
-    isFetchingNextPage,
+    isLoading: isFetchingMedia,
     error: mediaQueryError,
-  } = useInfiniteQuery({
-    queryKey: [activeMediaCollection, searchQuery],
-    queryFn: ({ pageParam = 1 }) => client!.listMedia({
-      where: searchQuery ? { filename: { contains: searchQuery } } : undefined,
-      limit: 12,
-      page: pageParam
-    }, activeMediaCollection),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      return lastPage.hasNextPage ? lastPage.page + 1 : undefined
-    },
-    enabled: isOpen && !!client,
+    selectedItems,
+    setSelectedIds,
+    select,
+    deselect,
+    clearSelection,
+  } = useMediaLibrary({
+    collection: activeMediaCollection,
+    initialSelectedIds: sVals,
   })
 
-  const media = React.useMemo(() => {
-    return data?.pages.flatMap((page) => page.docs) || []
-  }, [data])
+  React.useEffect(() => {
+    if (!isOpen) return
+    void (searchQuery ? search(searchQuery) : load())
+  }, [isOpen, load, search, searchQuery])
+
+  React.useEffect(() => {
+    setSelectedIds(sVals)
+  }, [sVals, setSelectedIds])
 
   const observerRef = React.useRef<IntersectionObserver | null>(null)
 
@@ -113,11 +131,11 @@ export function MediaLibraryDialog({
         observerRef.current = null
       }
 
-      if (node && hasNextPage && !isFetchingNextPage) {
+      if (node && hasNextPage && !isFetchingMedia) {
         observerRef.current = new IntersectionObserver(
           (entries) => {
             if (entries[0].isIntersecting) {
-              fetchNextPage()
+              void loadNextPage()
             }
           },
           { rootMargin: "100px" }
@@ -125,7 +143,7 @@ export function MediaLibraryDialog({
         observerRef.current.observe(node)
       }
     },
-    [hasNextPage, isFetchingNextPage, fetchNextPage]
+    [hasNextPage, isFetchingMedia, loadNextPage]
   )
 
   const {
@@ -138,7 +156,7 @@ export function MediaLibraryDialog({
 
     collectionSlug: activeMediaCollection,
     onCompletedItem: async (result) => {
-      await refetch()
+      await (searchQuery ? search(searchQuery) : load())
       onSelect(result.id, result)
     },
   })
@@ -174,7 +192,7 @@ export function MediaLibraryDialog({
   } = useMediaURL({
     collection: activeMediaCollection,
     onAdded: async (result) => {
-      await refetch()
+      await (searchQuery ? search(searchQuery) : load())
       onSelect(result.id, result)
       setSelectedItem(result)
       setActiveTab("library")
@@ -185,28 +203,8 @@ export function MediaLibraryDialog({
   const getPreviewUrl = (item: { url?: string; mimeType?: string; [key: string]: unknown }) =>
     getMediaPreviewUrl(item, client?.getBaseUrl() || "")
 
-  const getIdentifier = React.useCallback((v: unknown): string => {
-    if (!v) return ""
-    if (typeof v === "object" && v !== null) {
-      const obj = v as Record<string, unknown>
-      return String(obj.id || obj._id || obj.filename || "")
-    }
-    const strVal = String(v)
-    if (strVal.includes("/")) {
-      return strVal.split("/").pop() || strVal
-    }
-    return strVal
-  }, [])
-
-  const sVals = React.useMemo(() => {
-    return (selectedValues || []).map(getIdentifier).filter(Boolean)
-  }, [selectedValues, getIdentifier])
-
   const handleConfirm = () => {
     if (onConfirm) {
-      const selectedItems = sVals.map(val => {
-        return media?.find((m: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
-      }).filter(Boolean) as Media[]
       onConfirm(sVals, selectedItems)
     }
     onOpenChange(false)
@@ -274,11 +272,12 @@ export function MediaLibraryDialog({
                           size="sm"
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 hover:dy-bg-background dy-rounded-md"
                           onClick={() => {
-                            media?.forEach((item: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => {
-                              if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
-                                onSelect(item.id!, item as unknown as Media)
-                              }
-                            })
+                              media?.forEach((item: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => {
+                                if (!sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
+                                  select(item.id!)
+                                  onSelect(item.id!, item as unknown as Media)
+                                }
+                              })
                           }}
                         >
                           Select All
@@ -289,6 +288,7 @@ export function MediaLibraryDialog({
                           size="sm"
                           className="dy-h-8 dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-wider dy-px-3 dy-text-destructive hover:dy-text-destructive hover:dy-bg-destructive/10 dy-rounded-md"
                           onClick={() => {
+                            clearSelection()
                             sVals.forEach(val => {
                               const item = media?.find((m: { id?: string; filename?: string; url?: string; [key: string]: unknown }) => m.id === val || m.filename === val || m.url === val)
                               onSelect(val, item as unknown as Media)
@@ -310,6 +310,11 @@ export function MediaLibraryDialog({
                             type="button"
                             onClick={() => {
                               if (multiple) {
+                                if (sVals.some(v => v === item.id || v === item.filename || v === item.url)) {
+                                  deselect(item.id!)
+                                } else {
+                                  select(item.id!)
+                                }
                                 onSelect(item.id!, item as unknown as Media)
                                 setSelectedItem(item as Media & { id?: string })
                               } else {
@@ -367,7 +372,7 @@ export function MediaLibraryDialog({
                       })}
                       {/* Sentinel for infinite scroll */}
                       <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
-                        {isFetchingNextPage && (
+                        {isFetchingMedia && (
                           <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-6 dy-w-6"></div>
                         )}
                       </div>
@@ -423,7 +428,14 @@ export function MediaLibraryDialog({
                             <Button
                               className="dy-w-full dy-h-11 dy-rounded-lg dy-shadow-sm dy-font-bold dy-tracking-tight dy-transition-all"
                               variant={sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "outline" : "default"}
-                              onClick={() => onSelect(selectedItem.id, selectedItem)}
+                              onClick={() => {
+                                if (sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url)) {
+                                  deselect(selectedItem.id!)
+                                } else {
+                                  select(selectedItem.id!)
+                                }
+                                onSelect(selectedItem.id, selectedItem)
+                              }}
                             >
                               {sVals.some(v => v === selectedItem.id || v === selectedItem.filename || v === selectedItem.url) ? "Deselect Item" : "Add to Selection"}
                             </Button>

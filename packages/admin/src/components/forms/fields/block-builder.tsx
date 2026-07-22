@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react"
+import { createElement, useState, useEffect } from "react"
 import { useFieldArray, useWatch, useController } from "react-hook-form"
 import type { Control, FieldValues } from "react-hook-form"
 import { FormFieldRenderer } from "../form-field-renderer"
 import { cn } from "../../../lib/utils"
 import { buildDefaultValues } from "../utils"
 import type { FieldSchema, BlockSchema } from "../form-engine"
+import { joinFieldPath } from "../../../controllers/form"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { X, GripVertical, Layers, Plus, Copy, Search, ChevronRight, ChevronDown } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { resolveAdminIcon } from "../../../lib/admin-icons"
 import { useNestedEditor, isActiveOrChild } from "../nested-editor-context"
 import type { PathSegment } from "../nested-editor-context"
@@ -45,6 +47,18 @@ interface BlockBuilderProps {
   documentId?: string
 }
 
+function AdminIcon({
+  icon,
+  fallback,
+  className,
+}: {
+  icon: unknown
+  fallback: LucideIcon
+  className: string
+}) {
+  return createElement(resolveAdminIcon(icon, fallback), { className, "aria-hidden": true })
+}
+
 /**
  * Variant switcher — a compact pill row shown at the top of a block's editor
  * when the block defines `variants`. Changing the variant writes the reserved
@@ -71,7 +85,6 @@ function VariantSwitcher({
       <div className="dy-flex dy-flex-wrap dy-gap-1.5">
         {variants.map((v) => {
           const isActive = current === v.slug
-          const Icon = v.icon ? resolveAdminIcon(v.icon, Layers) : null
           return (
             <button
               key={v.slug}
@@ -86,7 +99,7 @@ function VariantSwitcher({
                   : "dy-border-border/60 dy-text-muted-foreground hover:dy-border-border hover:dy-text-foreground"
               )}
             >
-              {Icon && <Icon className="dy-h-3.5 dy-w-3.5" />}
+              {v.icon ? <AdminIcon icon={v.icon} fallback={Layers} className="dy-h-3.5 dy-w-3.5" /> : null}
               {v.label || v.slug}
             </button>
           )
@@ -178,7 +191,6 @@ function SortableBlockItem({
   }
 
   const previewText = getPreviewText()
-  const BlockIcon = resolveAdminIcon(blockConfig.icon, Layers)
   const activeVariant = blockConfig.variants?.find(
     (v) => v.slug === (itemValues as Record<string, unknown>)?.variant
   ) ?? blockConfig.variants?.[0]
@@ -208,7 +220,7 @@ function SortableBlockItem({
             setExpanded((v) => !v)
             return
           }
-          const itemPath = `${basePath}.${index}`
+          const itemPath = joinFieldPath(basePath, index)
           const blockConfig = schema.blocks?.find(b => b.slug === item.blockType)
           onDrillInto({
             fieldName: basePath.split('.').pop() ?? basePath,
@@ -232,7 +244,7 @@ function SortableBlockItem({
           "dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-lg dy-shrink-0 dy-transition-colors",
           active ? "dy-bg-primary/10 dy-text-primary" : "dy-bg-muted dy-text-muted-foreground group-hover:dy-text-foreground"
         )}>
-          <BlockIcon className="dy-h-4 dy-w-4" />
+          <AdminIcon icon={blockConfig.icon} fallback={Layers} className="dy-h-4 dy-w-4" />
         </div>
 
         <div className="dy-min-w-0 dy-flex-1">
@@ -329,8 +341,8 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
   const { drillInEnabled, activePath, drillInto, reconcileAfterMutation, registerFieldArray, unregisterFieldArray } = useNestedEditor()
 
   // Check if this builder has a drilled-in item
-  const drivenPath = activePath.find(s => isActiveOrChild([s], basePath) || s.basePath.startsWith(basePath + '.'))
-  const focusedSegment = activePath.find(s => s.basePath.startsWith(basePath + '.') && s.stableId)
+  const drivenPath = activePath.find(s => isActiveOrChild([s], basePath) || s.basePath.startsWith(`${joinFieldPath(basePath)}.`))
+  const focusedSegment = activePath.find(s => s.basePath.startsWith(`${joinFieldPath(basePath)}.`) && s.stableId)
   const focusedStableId = focusedSegment?.stableId
   let focusedIndex = focusedStableId ? fields.findIndex(f => f.id === focusedStableId) : -1
   // On deep-link/refresh the trail comes from the URL, where the stored
@@ -485,7 +497,6 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                         </div>
                       ) : (
                         filteredBlocks.map((block) => {
-                          const LibIcon = resolveAdminIcon(block.icon, Layers)
                           return (
                             <div
                               key={block.slug}
@@ -493,7 +504,7 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
                               className="dy-group dy-border dy-border-muted/30 dy-rounded-lg dy-p-4 dy-flex dy-items-start dy-gap-3 hover:dy-border-primary/40 hover:dy-bg-primary/[0.02] dy-transition-all dy-cursor-pointer dy-select-none"
                             >
                               <div className="dy-p-2.5 dy-bg-muted/50 dy-rounded-lg dy-text-muted-foreground/60 group-hover:dy-text-primary group-hover:dy-bg-primary/10 dy-transition-colors">
-                                <LibIcon className="dy-w-4 dy-h-4" />
+                                <AdminIcon icon={block.icon} fallback={Layers} className="dy-w-4 dy-h-4" />
                               </div>
                               <div className="dy-min-w-0 dy-flex-1">
                                 <h5 className="dy-font-semibold dy-text-sm dy-text-foreground dy-tracking-tight group-hover:dy-text-primary dy-transition-colors">
@@ -545,9 +556,9 @@ export function BlockBuilder({ schema, basePath, control, collection, documentId
             >
               <div className="dy-pt-2 dy-space-y-4">
                 {fields.map((item, index) => {
-                  const itemPath = `${basePath}.${index}`
+                  const itemPath = joinFieldPath(basePath, index)
                   const isItemActive = activePath.some(
-                    (s) => s.basePath === itemPath || s.basePath.startsWith(itemPath + ".")
+                    (s) => s.basePath === itemPath || s.basePath.startsWith(`${itemPath}.`)
                   )
                   return (
                     <SortableBlockItem

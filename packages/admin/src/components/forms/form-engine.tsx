@@ -19,7 +19,7 @@ import {
   classifyWorkflowAutosaveError,
   type WorkflowAutosaveState,
 } from "../../lib/workflow-autosave"
-import { createDyrectedFormController } from "../../controllers/form"
+import { createDyrectedFormController, joinFieldPath } from "../../controllers/form"
 import { DyrectedFormProvider } from "../../providers/dyrected-form-context"
 
 export type { FieldSchema, BlockSchema }
@@ -753,7 +753,7 @@ function FormEngineInner({
       let errorCount = 0
       for (const field of tabFields) {
         errorCount += flatErrors.filter(
-          (err) => err.path === field.name || err.path.startsWith(field.name + "."),
+          (err) => err.path === field.name || err.path.startsWith(`${joinFieldPath(field.name ?? "")}.`),
         ).length
       }
       tabErrorsCount.set(tab, errorCount)

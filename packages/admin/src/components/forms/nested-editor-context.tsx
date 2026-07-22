@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { joinFieldPath } from '../../controllers/form'
 
 export interface PathSegment {
   /** Schema field name at this level (e.g. "body", "cta"). */
@@ -215,7 +216,7 @@ export function useNestedEditor(): NestedEditorContextValue {
  */
 export function isActiveOrChild(activePath: PathSegment[], basePath: string): boolean {
   if (activePath.length === 0) return false
-  return activePath.some(s => s.basePath === basePath || s.basePath.startsWith(basePath + '.'))
+  return activePath.some(s => s.basePath === basePath || s.basePath.startsWith(`${joinFieldPath(basePath)}.`))
 }
 
 /**

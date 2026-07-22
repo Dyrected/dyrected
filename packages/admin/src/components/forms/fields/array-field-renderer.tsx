@@ -30,6 +30,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { joinFieldPath } from "../../../controllers/form"
 import type { FieldSchema } from "../form-engine"
 import { buildDefaultValues } from "../utils"
 import { useDyrected } from "../../../providers/dyrected-context"
@@ -495,7 +496,7 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
 
   // If drilled in, find the focused item for this array
   const focusedSegment = isDrillIn
-    ? activePath.find(s => s.basePath.startsWith(basePath + '.') && s.stableId)
+    ? activePath.find(s => s.basePath.startsWith(`${joinFieldPath(basePath)}.`) && s.stableId)
     : undefined
   const focusedIndex = focusedSegment?.stableId
     ? fields.findIndex(f => f.id === focusedSegment.stableId)
@@ -519,7 +520,7 @@ export function ArrayFieldRenderer({ schema, basePath, control, renderField }: A
     const label = schema.label || schema.name.charAt(0).toUpperCase() + schema.name.slice(1)
     drillInto({
       fieldName: basePath.split('.').pop() ?? basePath,
-      basePath: `${basePath}.${index}`,
+      basePath: joinFieldPath(basePath, index),
       stableId: id,
       breadcrumbLabel: `${label} #${index + 1}`,
     })
