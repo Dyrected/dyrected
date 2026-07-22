@@ -9,16 +9,21 @@ export default function Layout({ children }: { children: ReactNode }) {
         title: (
           <span className="flex items-center">
             <Image
-              className="brand-logo-light"
+              className="dark:hidden"
               src="/dyrected.svg"
               alt="Dyrected"
-              width={120}
+              width={110}
               height={28}
               priority
             />
-            <span className="brand-logo-dark" aria-label="Dyrected">
-              dyrected <i className="brand-logo-accent" aria-hidden="true" />
-            </span>
+            <Image
+              className="hidden dark:block"
+              src="/dyrected-dark.svg"
+              alt="Dyrected"
+              width={110}
+              height={28}
+              priority
+            />
           </span>
         ),
       }}

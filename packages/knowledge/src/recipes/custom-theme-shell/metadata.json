@@ -1,0 +1,26 @@
+{
+  "id": "custom-theme-shell",
+  "title": "Build a theme-aware shell around Dyrected UI",
+  "description": "Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.",
+  "problem": "The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode.",
+  "summary": "Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.",
+  "category": "custom-app-surfaces",
+  "intents": [
+    "build a theme aware shell around dyrected ui",
+    "share dyrected theme state across a dashboard",
+    "add a dyrected theme switcher to my app shell",
+    "keep my product page and dyrected ui on the same theme"
+  ],
+  "concepts": [
+    "AdminThemeProvider",
+    "AdminThemedRoot",
+    "useAdminTheme"
+  ],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "/docs/features/admin/theme-hooks"
+  ],
+  "requires": [
+    "@dyrected/react"
+  ]
+}

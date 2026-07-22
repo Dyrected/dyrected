@@ -35,6 +35,7 @@ const categories = new Set([
   "content-modeling",
   "data-lifecycle",
   "admin-experience",
+  "custom-app-surfaces",
   "access-control",
   "workflows",
   "integrations",
@@ -45,6 +46,9 @@ const recipeDocsPathMap = {
   "category-taxonomy": "/docs/ecosystem/common-patterns/content-modeling",
   "conditional-admin-field": "/docs/ecosystem/common-patterns/admin-experience",
   "cross-field-validation": "/docs/ecosystem/common-patterns/data-lifecycle",
+  "custom-page-field-editor": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+  "custom-page-media-picker": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+  "custom-theme-shell": "/docs/ecosystem/common-patterns/custom-app-surfaces",
   "dependent-dropdown": "/docs/ecosystem/common-patterns/admin-experience",
   "document-download-library": "/docs/ecosystem/common-patterns/integrations",
   "editorial-publishing-workflow": "/docs/ecosystem/common-patterns/workflows",
@@ -439,6 +443,7 @@ const categoryLabels = {
   "content-modeling": "Content modeling",
   "data-lifecycle": "Data lifecycle",
   "admin-experience": "Admin experience",
+  "custom-app-surfaces": "Custom app surfaces",
   "access-control": "Access control",
   workflows: "Workflows",
   integrations: "Integrations",
@@ -479,6 +484,42 @@ ${recipe.source}
       generatedRecipe,
     );
   }
+}
+
+function outputRecipeFenceRegion(target, region, recipeId) {
+  const recipe = recipes.find((entry) => entry.id === recipeId);
+  if (!recipe) {
+    throw new Error(`Missing recipe for generated region: ${recipeId}`);
+  }
+
+  outputGeneratedRegion(
+    target,
+    region,
+    `\`\`\`tsx\n${recipe.source}\n\`\`\``,
+  );
+}
+
+const customAppSurfacesPage = path.join(
+  newDocsRoot,
+  "ecosystem/common-patterns/custom-app-surfaces.mdx",
+);
+
+if (fs.existsSync(customAppSurfacesPage)) {
+  outputRecipeFenceRegion(
+    customAppSurfacesPage,
+    "CUSTOM-APP-SURFACES-MEDIA",
+    "custom-page-media-picker",
+  );
+  outputRecipeFenceRegion(
+    customAppSurfacesPage,
+    "CUSTOM-APP-SURFACES-FIELD",
+    "custom-page-field-editor",
+  );
+  outputRecipeFenceRegion(
+    customAppSurfacesPage,
+    "CUSTOM-APP-SURFACES-THEME",
+    "custom-theme-shell",
+  );
 }
 
 const groupedPages = [];

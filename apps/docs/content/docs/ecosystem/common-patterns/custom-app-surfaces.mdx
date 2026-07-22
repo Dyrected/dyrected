@@ -1,0 +1,358 @@
+---
+title: Custom App Surfaces
+description: Common Dyrected patterns for building media tools, editing UI, and theme-aware product surfaces directly inside your own app.
+---
+
+Use these patterns when you are not trying to register a custom Admin component. Instead, you are building normal product UI in your own app and you want it to work with Dyrected data and state.
+
+That might mean:
+
+- a media picker inside an ecommerce dashboard
+- a merchant-facing asset library
+- a document editor inside an internal tool
+- a theme-aware shell around Dyrected-powered UI
+
+These examples stay at the page level on purpose. They show how to use the public APIs directly in your app without wrapping everything in a custom component system first.
+
+## Build a media picker on a normal page
+
+**Problem:** users need to upload new media, browse existing assets, and pick one item from the library without leaving your app.
+
+This pattern combines Dyrected's public media hooks into one page-level flow:
+
+- `useMediaUpload` for local files
+- `useMediaURL` for pasted links
+- `useMediaLibrary` for existing assets
+
+### Example implementation
+
+{/* GENERATED:CUSTOM-APP-SURFACES-MEDIA:START */}
+```tsx
+import { useState } from "react";
+import { createClient } from "@dyrected/sdk";
+import {
+  DyrectedProvider,
+  useMediaLibrary,
+  useMediaUpload,
+  useMediaURL,
+} from "@dyrected/react";
+
+const client = createClient({
+  baseUrl: "https://example.com/dyrected",
+  apiKey: "YOUR_API_KEY",
+});
+
+const signedInCustomer = {
+  id: "cus_42",
+  fullName: "Amara Okafor",
+  orderNumber: "ORD-2048",
+};
+
+function ComplaintAttachmentPage() {
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+
+  const library = useMediaLibrary({
+    collection: "media",
+    multiple: false,
+  });
+
+  const upload = useMediaUpload({
+    collectionSlug: "media",
+    onAllCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  const mediaURL = useMediaURL({
+    collection: "media",
+    onCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h1>Submit complaint for {signedInCustomer.orderNumber}</h1>
+        <p>
+          {signedInCustomer.fullName} can attach screenshots of the damaged item,
+          delivery label, or chat transcript before sending the complaint.
+        </p>
+
+        <input
+          type="file"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            void upload.uploadFiles(files);
+          }}
+        />
+
+        {upload.items.map((item) => (
+          <div key={item.id}>
+            <div>{item.file.name}</div>
+            <div>{item.status}</div>
+            <div>{item.progress}%</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <h2>Import proof from URL</h2>
+
+        <input
+          type="url"
+          value={mediaURL.url}
+          onChange={(event) => mediaURL.setUrl(event.target.value)}
+          placeholder="https://example.com/delivery-photo.jpg"
+        />
+
+        <button onClick={() => void mediaURL.submit()} disabled={mediaURL.isSubmitting}>
+          Import attachment
+        </button>
+
+        {mediaURL.error ? <p>{mediaURL.error}</p> : null}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <h2>Previous attachments</h2>
+          <button onClick={() => void library.load()} disabled={library.isLoading}>
+            Refresh
+          </button>
+        </div>
+
+        <input
+          type="search"
+          value={library.search}
+          onChange={(event) => library.setSearch(event.target.value)}
+          placeholder="Search files"
+        />
+
+        <div className="grid grid-cols-3 gap-4">
+          {library.items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                library.select(item);
+                setSelectedAttachmentId(item.id);
+              }}
+            >
+              <div>{item.filename ?? item.url}</div>
+              <div>{item.mimeType}</div>
+            </button>
+          ))}
+        </div>
+
+        <p>Selected complaint attachment: {selectedAttachmentId ?? "None"}</p>
+      </section>
+    </div>
+  );
+}
+
+export default function ComplaintAttachmentRoute() {
+  return (
+    <DyrectedProvider client={client}>
+      <ComplaintAttachmentPage />
+    </DyrectedProvider>
+  );
+}
+```
+{/* GENERATED:CUSTOM-APP-SURFACES-MEDIA:END */}
+
+Use the full docs when you need the individual APIs in more detail:
+
+- [Media Hooks & Composables](/docs/features/admin/media-hooks)
+- [Upload overview](/docs/features/upload/overview)
+
+If your app is Vue or Nuxt, use the same pattern with composables from `@dyrected/vue`.
+
+## Build a field editor directly into a page
+
+**Problem:** you want one part of your app to edit a Dyrected document or a nested section of a document, but you do not want to rebuild field state, validation, and nested path handling yourself.
+
+This pattern mounts one form boundary near the page root, then lets smaller components use `useDyrectedForm()` and `useField()` wherever they need them.
+
+### Example implementation
+
+{/* GENERATED:CUSTOM-APP-SURFACES-FIELD:START */}
+```tsx
+import {
+  DyrectedFieldPathProvider,
+  DyrectedFormProvider,
+  useDyrectedForm,
+  useField,
+} from "@dyrected/react";
+import { createDyrectedFormController } from "@dyrected/admin/public";
+
+const controller = createDyrectedFormController({
+  collection: "customers",
+  fields: [
+    { name: "fullName", type: "text", label: "Full name" },
+    { name: "email", type: "email", label: "Email address" },
+    {
+      name: "complaintDraft",
+      type: "object",
+      label: "Complaint draft",
+      fields: [
+        { name: "orderNumber", type: "text", label: "Order number" },
+        { name: "subject", type: "text", label: "Subject" },
+        { name: "message", type: "textarea", label: "Complaint message" },
+      ],
+    },
+  ],
+  initialValues: {
+    fullName: "Amara Okafor",
+    email: "amara@example.com",
+    complaintDraft: {
+      orderNumber: "ORD-2048",
+      subject: "Damaged package on arrival",
+      message: "The shipping box arrived wet and the product inside is scratched.",
+    },
+  },
+});
+
+function CustomerIdentityCard() {
+  const fullName = useField("fullName");
+  const email = useField("email");
+
+  return (
+    <section className="space-y-4">
+      <input
+        value={String(fullName.value ?? "")}
+        onChange={(event) => fullName.setValue(event.target.value)}
+      />
+
+      <input
+        type="email"
+        value={String(email.value ?? "")}
+        onChange={(event) => email.setValue(event.target.value)}
+      />
+    </section>
+  );
+}
+
+function ComplaintDraftEditor() {
+  const orderNumber = useField("orderNumber");
+  const subject = useField("subject");
+  const message = useField("message");
+
+  return (
+    <section className="space-y-4">
+      <input
+        value={String(orderNumber.value ?? "")}
+        onChange={(event) => orderNumber.setValue(event.target.value)}
+      />
+
+      <input
+        value={String(subject.value ?? "")}
+        onChange={(event) => subject.setValue(event.target.value)}
+      />
+
+      <textarea
+        value={String(message.value ?? "")}
+        onChange={(event) => message.setValue(event.target.value)}
+      />
+    </section>
+  );
+}
+
+function CustomerComplaintPage() {
+  const form = useDyrectedForm();
+
+  return (
+    <form
+      className="space-y-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.submit();
+      }}
+    >
+      <h1>Complaint draft for signed-in customer</h1>
+
+      <CustomerIdentityCard />
+
+      <DyrectedFieldPathProvider path="complaintDraft">
+        <ComplaintDraftEditor />
+      </DyrectedFieldPathProvider>
+
+      <button type="submit" disabled={form.isSubmitting}>
+        Save complaint draft
+      </button>
+    </form>
+  );
+}
+
+export default function CustomerComplaintRoute() {
+  return (
+    <DyrectedFormProvider controller={controller}>
+      <CustomerComplaintPage />
+    </DyrectedFormProvider>
+  );
+}
+```
+{/* GENERATED:CUSTOM-APP-SURFACES-FIELD:END */}
+
+Use the deeper docs when you need the full contract for form state, field helpers, or nested paths:
+
+- [Form & Field Hooks](/docs/features/admin/form-and-field-hooks)
+
+If your app is Vue or Nuxt, use the same pattern with `provideDyrectedForm()`, `provideDyrectedFieldPath()`, `useDyrectedForm()`, and `useField()` from `@dyrected/vue`.
+
+## Build a theme-aware shell around Dyrected UI
+
+**Problem:** you want the page, layout shell, and Dyrected-powered UI to agree on the same light and dark mode.
+
+This pattern mounts one theme boundary near the top of the app and uses `useAdminTheme()` anywhere below it.
+
+### Example implementation
+
+{/* GENERATED:CUSTOM-APP-SURFACES-THEME:START */}
+```tsx
+import {
+  AdminThemeProvider,
+  AdminThemedRoot,
+  useAdminTheme,
+} from "@dyrected/react";
+
+function ThemeSwitcher() {
+  const { theme, setTheme } = useAdminTheme();
+
+  return (
+    <select
+      value={theme}
+      onChange={(event) => setTheme(event.target.value as "system" | "light" | "dark")}
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  );
+}
+
+export default function DashboardRoute() {
+  return (
+    <AdminThemeProvider>
+      <AdminThemedRoot>
+        <header>
+          <ThemeSwitcher />
+        </header>
+
+        <main>{/* page content */}</main>
+      </AdminThemedRoot>
+    </AdminThemeProvider>
+  );
+}
+```
+{/* GENERATED:CUSTOM-APP-SURFACES-THEME:END */}
+
+Read the full docs:
+
+- [Theme Hooks](/docs/features/admin/theme-hooks)
+
+## When to use this pattern
+
+Use these public APIs when the UI lives in your app and the main job is to get Dyrected-aware behavior onto a normal page.
+
+Reach for custom component registration only when you specifically need to plug UI into the built-in Admin shell itself.

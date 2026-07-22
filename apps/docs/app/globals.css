@@ -275,26 +275,6 @@ body {
 
 .cta-lime-copy { color: rgba(17, 17, 16, 0.68); }
 
-.brand-logo-dark {
-  display: none;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--primary);
-  font-family: var(--font-display), ui-serif, Georgia, serif;
-  font-size: 1.2rem;
-  font-weight: 500;
-  letter-spacing: 0;
-  line-height: 1;
-}
-
-.brand-logo-accent {
-  display: inline-block;
-  width: 0.35rem;
-  height: 1rem;
-  background: var(--accent);
-  transform: skewX(-18deg);
-}
-
 .prose {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
@@ -304,9 +284,6 @@ body {
   font-weight: 500;
   letter-spacing: 0;
 }
-
-.dark .brand-logo-light { display: none; }
-.dark .brand-logo-dark { display: flex; }
 
 @media (prefers-reduced-motion: reduce) {
   .btn-lime,

@@ -102,6 +102,64 @@
       ]
     },
     {
+      "id": "custom-page-field-editor",
+      "title": "Build a field editor directly into a page",
+      "description": "Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.",
+      "problem": "A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling.",
+      "summary": "Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.",
+      "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/custom-app-surfaces",
+        "/docs/features/admin/form-and-field-hooks"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "build a custom field editor in my app",
+        "edit a dyrected document inside a customer dashboard",
+        "mount dyrected form state in a customer route",
+        "edit nested customer complaint fields without the admin page"
+      ]
+    },
+    {
+      "id": "custom-page-media-picker",
+      "title": "Build a media picker directly into a page",
+      "description": "Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.",
+      "problem": "Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app.",
+      "summary": "Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.",
+      "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/custom-app-surfaces",
+        "/docs/features/admin/media-hooks",
+        "/docs/features/upload/overview"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "build a media picker in my app",
+        "add upload and media selection to a customer dashboard page",
+        "let customers attach screenshots without using the admin modal",
+        "create a complaint attachment picker"
+      ]
+    },
+    {
+      "id": "custom-theme-shell",
+      "title": "Build a theme-aware shell around Dyrected UI",
+      "description": "Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.",
+      "problem": "The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode.",
+      "summary": "Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.",
+      "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "canonicalDocs": [
+        "/docs/ecosystem/common-patterns/custom-app-surfaces",
+        "/docs/features/admin/theme-hooks"
+      ],
+      "snippetStatus": "validated",
+      "intents": [
+        "build a theme aware shell around dyrected ui",
+        "share dyrected theme state across a dashboard",
+        "add a dyrected theme switcher to my app shell",
+        "keep my product page and dyrected ui on the same theme"
+      ]
+    },
+    {
       "id": "dependent-dropdown",
       "title": "Update a dropdown from another field",
       "description": "Change available Admin UI options immediately when an editor changes a related field.",

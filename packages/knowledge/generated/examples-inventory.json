@@ -2016,6 +2016,27 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/ecosystem/common-patterns/custom-app-surfaces#example-1",
+    "page": "/ecosystem/common-patterns/custom-app-surfaces",
+    "language": "tsx",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/ecosystem/common-patterns/custom-app-surfaces#example-2",
+    "page": "/ecosystem/common-patterns/custom-app-surfaces",
+    "language": "tsx",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
+    "id": "/ecosystem/common-patterns/custom-app-surfaces#example-3",
+    "page": "/ecosystem/common-patterns/custom-app-surfaces",
+    "language": "tsx",
+    "classification": "compiled-recipe",
+    "validation": "Compiled and behavior-tested by @dyrected/knowledge"
+  },
+  {
     "id": "/ecosystem/integrations/nextjs#example-1",
     "page": "/ecosystem/integrations/nextjs",
     "language": "bash",
@@ -2275,11 +2296,39 @@
     "validation": "Inventoried css example"
   },
   {
+    "id": "/features/admin/form-and-field-hooks#example-1",
+    "page": "/features/admin/form-and-field-hooks",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/features/admin/form-and-field-hooks#example-2",
+    "page": "/features/admin/form-and-field-hooks",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
     "id": "/features/admin/list-view#example-1",
     "page": "/features/admin/list-view",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/features/admin/media-hooks#example-1",
+    "page": "/features/admin/media-hooks",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/features/admin/media-hooks#example-2",
+    "page": "/features/admin/media-hooks",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
   },
   {
     "id": "/features/admin/metadata#example-1",
@@ -2338,29 +2387,15 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/features/admin/react-hooks#example-1",
-    "page": "/features/admin/react-hooks",
-    "language": "tsx",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/features/admin/react-hooks#example-2",
-    "page": "/features/admin/react-hooks",
+    "id": "/features/admin/theme-hooks#example-1",
+    "page": "/features/admin/theme-hooks",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/features/admin/react-hooks#example-3",
-    "page": "/features/admin/react-hooks",
-    "language": "vue",
-    "classification": "syntax-checked",
-    "validation": "Inventoried vue example"
-  },
-  {
-    "id": "/features/admin/react-hooks#example-4",
-    "page": "/features/admin/react-hooks",
+    "id": "/features/admin/theme-hooks#example-2",
+    "page": "/features/admin/theme-hooks",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"

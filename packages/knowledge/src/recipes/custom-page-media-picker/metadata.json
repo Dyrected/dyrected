@@ -1,0 +1,29 @@
+{
+  "id": "custom-page-media-picker",
+  "title": "Build a media picker directly into a page",
+  "description": "Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.",
+  "problem": "Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app.",
+  "summary": "Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.",
+  "category": "custom-app-surfaces",
+  "intents": [
+    "build a media picker in my app",
+    "add upload and media selection to a customer dashboard page",
+    "let customers attach screenshots without using the admin modal",
+    "create a complaint attachment picker"
+  ],
+  "concepts": [
+    "DyrectedProvider",
+    "useMediaUpload",
+    "useMediaURL",
+    "useMediaLibrary"
+  ],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "/docs/features/admin/media-hooks",
+    "/docs/features/upload/overview"
+  ],
+  "requires": [
+    "@dyrected/react",
+    "@dyrected/sdk"
+  ]
+}

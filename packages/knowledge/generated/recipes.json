@@ -141,6 +141,99 @@
     "snippetStatus": "validated"
   },
   {
+    "id": "custom-page-field-editor",
+    "title": "Build a field editor directly into a page",
+    "description": "Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.",
+    "problem": "A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling.",
+    "summary": "Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.",
+    "category": "custom-app-surfaces",
+    "intents": [
+      "build a custom field editor in my app",
+      "edit a dyrected document inside a customer dashboard",
+      "mount dyrected form state in a customer route",
+      "edit nested customer complaint fields without the admin page"
+    ],
+    "concepts": [
+      "createDyrectedFormController",
+      "DyrectedFormProvider",
+      "DyrectedFieldPathProvider",
+      "useDyrectedForm",
+      "useField"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "/docs/features/admin/form-and-field-hooks"
+    ],
+    "requires": [
+      "@dyrected/admin",
+      "@dyrected/react"
+    ],
+    "source": "import {\n  DyrectedFieldPathProvider,\n  DyrectedFormProvider,\n  useDyrectedForm,\n  useField,\n} from \"@dyrected/react\";\nimport { createDyrectedFormController } from \"@dyrected/admin/public\";\n\nconst controller = createDyrectedFormController({\n  collection: \"customers\",\n  fields: [\n    { name: \"fullName\", type: \"text\", label: \"Full name\" },\n    { name: \"email\", type: \"email\", label: \"Email address\" },\n    {\n      name: \"complaintDraft\",\n      type: \"object\",\n      label: \"Complaint draft\",\n      fields: [\n        { name: \"orderNumber\", type: \"text\", label: \"Order number\" },\n        { name: \"subject\", type: \"text\", label: \"Subject\" },\n        { name: \"message\", type: \"textarea\", label: \"Complaint message\" },\n      ],\n    },\n  ],\n  initialValues: {\n    fullName: \"Amara Okafor\",\n    email: \"amara@example.com\",\n    complaintDraft: {\n      orderNumber: \"ORD-2048\",\n      subject: \"Damaged package on arrival\",\n      message: \"The shipping box arrived wet and the product inside is scratched.\",\n    },\n  },\n});\n\nfunction CustomerIdentityCard() {\n  const fullName = useField(\"fullName\");\n  const email = useField(\"email\");\n\n  return (\n    <section className=\"space-y-4\">\n      <input\n        value={String(fullName.value ?? \"\")}\n        onChange={(event) => fullName.setValue(event.target.value)}\n      />\n\n      <input\n        type=\"email\"\n        value={String(email.value ?? \"\")}\n        onChange={(event) => email.setValue(event.target.value)}\n      />\n    </section>\n  );\n}\n\nfunction ComplaintDraftEditor() {\n  const orderNumber = useField(\"orderNumber\");\n  const subject = useField(\"subject\");\n  const message = useField(\"message\");\n\n  return (\n    <section className=\"space-y-4\">\n      <input\n        value={String(orderNumber.value ?? \"\")}\n        onChange={(event) => orderNumber.setValue(event.target.value)}\n      />\n\n      <input\n        value={String(subject.value ?? \"\")}\n        onChange={(event) => subject.setValue(event.target.value)}\n      />\n\n      <textarea\n        value={String(message.value ?? \"\")}\n        onChange={(event) => message.setValue(event.target.value)}\n      />\n    </section>\n  );\n}\n\nfunction CustomerComplaintPage() {\n  const form = useDyrectedForm();\n\n  return (\n    <form\n      className=\"space-y-6\"\n      onSubmit={(event) => {\n        event.preventDefault();\n        void form.submit();\n      }}\n    >\n      <h1>Complaint draft for signed-in customer</h1>\n\n      <CustomerIdentityCard />\n\n      <DyrectedFieldPathProvider path=\"complaintDraft\">\n        <ComplaintDraftEditor />\n      </DyrectedFieldPathProvider>\n\n      <button type=\"submit\" disabled={form.isSubmitting}>\n        Save complaint draft\n      </button>\n    </form>\n  );\n}\n\nexport default function CustomerComplaintRoute() {\n  return (\n    <DyrectedFormProvider controller={controller}>\n      <CustomerComplaintPage />\n    </DyrectedFormProvider>\n  );\n}",
+    "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "custom-page-media-picker",
+    "title": "Build a media picker directly into a page",
+    "description": "Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.",
+    "problem": "Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app.",
+    "summary": "Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.",
+    "category": "custom-app-surfaces",
+    "intents": [
+      "build a media picker in my app",
+      "add upload and media selection to a customer dashboard page",
+      "let customers attach screenshots without using the admin modal",
+      "create a complaint attachment picker"
+    ],
+    "concepts": [
+      "DyrectedProvider",
+      "useMediaUpload",
+      "useMediaURL",
+      "useMediaLibrary"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "/docs/features/admin/media-hooks",
+      "/docs/features/upload/overview"
+    ],
+    "requires": [
+      "@dyrected/react",
+      "@dyrected/sdk"
+    ],
+    "source": "import { useState } from \"react\";\nimport { createClient } from \"@dyrected/sdk\";\nimport {\n  DyrectedProvider,\n  useMediaLibrary,\n  useMediaUpload,\n  useMediaURL,\n} from \"@dyrected/react\";\n\nconst client = createClient({\n  baseUrl: \"https://example.com/dyrected\",\n  apiKey: \"YOUR_API_KEY\",\n});\n\nconst signedInCustomer = {\n  id: \"cus_42\",\n  fullName: \"Amara Okafor\",\n  orderNumber: \"ORD-2048\",\n};\n\nfunction ComplaintAttachmentPage() {\n  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);\n\n  const library = useMediaLibrary({\n    collection: \"media\",\n    multiple: false,\n  });\n\n  const upload = useMediaUpload({\n    collectionSlug: \"media\",\n    onAllCompleted: async () => {\n      await library.load();\n    },\n  });\n\n  const mediaURL = useMediaURL({\n    collection: \"media\",\n    onCompleted: async () => {\n      await library.load();\n    },\n  });\n\n  return (\n    <div className=\"space-y-6\">\n      <section className=\"space-y-3\">\n        <h1>Submit complaint for {signedInCustomer.orderNumber}</h1>\n        <p>\n          {signedInCustomer.fullName} can attach screenshots of the damaged item,\n          delivery label, or chat transcript before sending the complaint.\n        </p>\n\n        <input\n          type=\"file\"\n          multiple\n          onChange={(event) => {\n            const files = Array.from(event.target.files ?? []);\n            void upload.uploadFiles(files);\n          }}\n        />\n\n        {upload.items.map((item) => (\n          <div key={item.id}>\n            <div>{item.file.name}</div>\n            <div>{item.status}</div>\n            <div>{item.progress}%</div>\n          </div>\n        ))}\n      </section>\n\n      <section className=\"space-y-3\">\n        <h2>Import proof from URL</h2>\n\n        <input\n          type=\"url\"\n          value={mediaURL.url}\n          onChange={(event) => mediaURL.setUrl(event.target.value)}\n          placeholder=\"https://example.com/delivery-photo.jpg\"\n        />\n\n        <button onClick={() => void mediaURL.submit()} disabled={mediaURL.isSubmitting}>\n          Import attachment\n        </button>\n\n        {mediaURL.error ? <p>{mediaURL.error}</p> : null}\n      </section>\n\n      <section className=\"space-y-3\">\n        <div className=\"flex items-center gap-3\">\n          <h2>Previous attachments</h2>\n          <button onClick={() => void library.load()} disabled={library.isLoading}>\n            Refresh\n          </button>\n        </div>\n\n        <input\n          type=\"search\"\n          value={library.search}\n          onChange={(event) => library.setSearch(event.target.value)}\n          placeholder=\"Search files\"\n        />\n\n        <div className=\"grid grid-cols-3 gap-4\">\n          {library.items.map((item) => (\n            <button\n              key={item.id}\n              type=\"button\"\n              onClick={() => {\n                library.select(item);\n                setSelectedAttachmentId(item.id);\n              }}\n            >\n              <div>{item.filename ?? item.url}</div>\n              <div>{item.mimeType}</div>\n            </button>\n          ))}\n        </div>\n\n        <p>Selected complaint attachment: {selectedAttachmentId ?? \"None\"}</p>\n      </section>\n    </div>\n  );\n}\n\nexport default function ComplaintAttachmentRoute() {\n  return (\n    <DyrectedProvider client={client}>\n      <ComplaintAttachmentPage />\n    </DyrectedProvider>\n  );\n}",
+    "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "snippetStatus": "validated"
+  },
+  {
+    "id": "custom-theme-shell",
+    "title": "Build a theme-aware shell around Dyrected UI",
+    "description": "Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.",
+    "problem": "The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode.",
+    "summary": "Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.",
+    "category": "custom-app-surfaces",
+    "intents": [
+      "build a theme aware shell around dyrected ui",
+      "share dyrected theme state across a dashboard",
+      "add a dyrected theme switcher to my app shell",
+      "keep my product page and dyrected ui on the same theme"
+    ],
+    "concepts": [
+      "AdminThemeProvider",
+      "AdminThemedRoot",
+      "useAdminTheme"
+    ],
+    "canonicalDocs": [
+      "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "/docs/features/admin/theme-hooks"
+    ],
+    "requires": [
+      "@dyrected/react"
+    ],
+    "source": "import {\n  AdminThemeProvider,\n  AdminThemedRoot,\n  useAdminTheme,\n} from \"@dyrected/react\";\n\nfunction ThemeSwitcher() {\n  const { theme, setTheme } = useAdminTheme();\n\n  return (\n    <select\n      value={theme}\n      onChange={(event) => setTheme(event.target.value as \"system\" | \"light\" | \"dark\")}\n    >\n      <option value=\"system\">System</option>\n      <option value=\"light\">Light</option>\n      <option value=\"dark\">Dark</option>\n    </select>\n  );\n}\n\nexport default function DashboardRoute() {\n  return (\n    <AdminThemeProvider>\n      <AdminThemedRoot>\n        <header>\n          <ThemeSwitcher />\n        </header>\n\n        <main>{/* page content */}</main>\n      </AdminThemedRoot>\n    </AdminThemeProvider>\n  );\n}",
+    "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "snippetStatus": "validated"
+  },
+  {
     "id": "dependent-dropdown",
     "title": "Update a dropdown from another field",
     "description": "Change available Admin UI options immediately when an editor changes a related field.",

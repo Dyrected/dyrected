@@ -1,0 +1,130 @@
+import { useState } from "react";
+import { createClient } from "@dyrected/sdk";
+import {
+  DyrectedProvider,
+  useMediaLibrary,
+  useMediaUpload,
+  useMediaURL,
+} from "@dyrected/react";
+
+const client = createClient({
+  baseUrl: "https://example.com/dyrected",
+  apiKey: "YOUR_API_KEY",
+});
+
+const signedInCustomer = {
+  id: "cus_42",
+  fullName: "Amara Okafor",
+  orderNumber: "ORD-2048",
+};
+
+function ComplaintAttachmentPage() {
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+
+  const library = useMediaLibrary({
+    collection: "media",
+    multiple: false,
+  });
+
+  const upload = useMediaUpload({
+    collectionSlug: "media",
+    onAllCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  const mediaURL = useMediaURL({
+    collection: "media",
+    onCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h1>Submit complaint for {signedInCustomer.orderNumber}</h1>
+        <p>
+          {signedInCustomer.fullName} can attach screenshots of the damaged item,
+          delivery label, or chat transcript before sending the complaint.
+        </p>
+
+        <input
+          type="file"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            void upload.uploadFiles(files);
+          }}
+        />
+
+        {upload.items.map((item) => (
+          <div key={item.id}>
+            <div>{item.file.name}</div>
+            <div>{item.status}</div>
+            <div>{item.progress}%</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <h2>Import proof from URL</h2>
+
+        <input
+          type="url"
+          value={mediaURL.url}
+          onChange={(event) => mediaURL.setUrl(event.target.value)}
+          placeholder="https://example.com/delivery-photo.jpg"
+        />
+
+        <button onClick={() => void mediaURL.submit()} disabled={mediaURL.isSubmitting}>
+          Import attachment
+        </button>
+
+        {mediaURL.error ? <p>{mediaURL.error}</p> : null}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <h2>Previous attachments</h2>
+          <button onClick={() => void library.load()} disabled={library.isLoading}>
+            Refresh
+          </button>
+        </div>
+
+        <input
+          type="search"
+          value={library.search}
+          onChange={(event) => library.setSearch(event.target.value)}
+          placeholder="Search files"
+        />
+
+        <div className="grid grid-cols-3 gap-4">
+          {library.items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                library.select(item);
+                setSelectedAttachmentId(item.id);
+              }}
+            >
+              <div>{item.filename ?? item.url}</div>
+              <div>{item.mimeType}</div>
+            </button>
+          ))}
+        </div>
+
+        <p>Selected complaint attachment: {selectedAttachmentId ?? "None"}</p>
+      </section>
+    </div>
+  );
+}
+
+export default function ComplaintAttachmentRoute() {
+  return (
+    <DyrectedProvider client={client}>
+      <ComplaintAttachmentPage />
+    </DyrectedProvider>
+  );
+}

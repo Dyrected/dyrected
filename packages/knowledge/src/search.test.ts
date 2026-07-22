@@ -11,7 +11,8 @@ describe("Dyrected knowledge catalogue", () => {
       recipes.every(
         (recipe) =>
           recipe.source.includes("defineCollection") ||
-          recipe.source.includes("defineGlobal"),
+          recipe.source.includes("defineGlobal") ||
+          recipe.category === "custom-app-surfaces",
       ),
     ).toBe(true);
   });

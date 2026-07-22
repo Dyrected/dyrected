@@ -12,6 +12,13 @@ export const metadata: Metadata = {
     default: 'Dyrected Docs',
   },
   description: 'Documentation for Dyrected — the AI-first headless CMS.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

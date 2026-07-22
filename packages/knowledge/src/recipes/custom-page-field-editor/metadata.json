@@ -1,0 +1,29 @@
+{
+  "id": "custom-page-field-editor",
+  "title": "Build a field editor directly into a page",
+  "description": "Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.",
+  "problem": "A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling.",
+  "summary": "Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.",
+  "category": "custom-app-surfaces",
+  "intents": [
+    "build a custom field editor in my app",
+    "edit a dyrected document inside a customer dashboard",
+    "mount dyrected form state in a customer route",
+    "edit nested customer complaint fields without the admin page"
+  ],
+  "concepts": [
+    "createDyrectedFormController",
+    "DyrectedFormProvider",
+    "DyrectedFieldPathProvider",
+    "useDyrectedForm",
+    "useField"
+  ],
+  "canonicalDocs": [
+    "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "/docs/features/admin/form-and-field-hooks"
+  ],
+  "requires": [
+    "@dyrected/admin",
+    "@dyrected/react"
+  ]
+}

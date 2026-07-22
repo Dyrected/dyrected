@@ -8793,6 +8793,366 @@ Read the full docs:
 
 ---
 
+## Custom App Surfaces
+
+Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/custom-app-surfaces
+
+Use these patterns when you are not trying to register a custom Admin component. Instead, you are building normal product UI in your own app and you want it to work with Dyrected data and state.
+
+That might mean:
+
+- a media picker inside an ecommerce dashboard
+- a merchant-facing asset library
+- a document editor inside an internal tool
+- a theme-aware shell around Dyrected-powered UI
+
+These examples stay at the page level on purpose. They show how to use the public APIs directly in your app without wrapping everything in a custom component system first.
+
+## Build a media picker on a normal page
+
+**Problem:** users need to upload new media, browse existing assets, and pick one item from the library without leaving your app.
+
+This pattern combines Dyrected's public media hooks into one page-level flow:
+
+- `useMediaUpload` for local files
+- `useMediaURL` for pasted links
+- `useMediaLibrary` for existing assets
+
+### Example implementation
+
+
+```tsx
+
+
+
+  DyrectedProvider,
+  useMediaLibrary,
+  useMediaUpload,
+  useMediaURL,
+} from "@dyrected/react";
+
+const client = createClient({
+  baseUrl: "https://example.com/dyrected",
+  apiKey: "YOUR_API_KEY",
+});
+
+const signedInCustomer = {
+  id: "cus_42",
+  fullName: "Amara Okafor",
+  orderNumber: "ORD-2048",
+};
+
+function ComplaintAttachmentPage() {
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+
+  const library = useMediaLibrary({
+    collection: "media",
+    multiple: false,
+  });
+
+  const upload = useMediaUpload({
+    collectionSlug: "media",
+    onAllCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  const mediaURL = useMediaURL({
+    collection: "media",
+    onCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h1>Submit complaint for {signedInCustomer.orderNumber}</h1>
+        <p>
+          {signedInCustomer.fullName} can attach screenshots of the damaged item,
+          delivery label, or chat transcript before sending the complaint.
+        </p>
+
+        <input
+          type="file"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            void upload.uploadFiles(files);
+          }}
+        />
+
+        {upload.items.map((item) => (
+          <div key={item.id}>
+            <div>{item.file.name}</div>
+            <div>{item.status}</div>
+            <div>{item.progress}%</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <h2>Import proof from URL</h2>
+
+        <input
+          type="url"
+          value={mediaURL.url}
+          onChange={(event) => mediaURL.setUrl(event.target.value)}
+          placeholder="https://example.com/delivery-photo.jpg"
+        />
+
+        <button onClick={() => void mediaURL.submit()} disabled={mediaURL.isSubmitting}>
+          Import attachment
+        </button>
+
+        {mediaURL.error ? <p>{mediaURL.error}</p> : null}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <h2>Previous attachments</h2>
+          <button onClick={() => void library.load()} disabled={library.isLoading}>
+            Refresh
+          </button>
+        </div>
+
+        <input
+          type="search"
+          value={library.search}
+          onChange={(event) => library.setSearch(event.target.value)}
+          placeholder="Search files"
+        />
+
+        <div className="grid grid-cols-3 gap-4">
+          {library.items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                library.select(item);
+                setSelectedAttachmentId(item.id);
+              }}
+            >
+              <div>{item.filename ?? item.url}</div>
+              <div>{item.mimeType}</div>
+            </button>
+          ))}
+        </div>
+
+        <p>Selected complaint attachment: {selectedAttachmentId ?? "None"}</p>
+      </section>
+    </div>
+  );
+}
+
+export default function ComplaintAttachmentRoute() {
+  return (
+    <DyrectedProvider client={client}>
+      <ComplaintAttachmentPage />
+    </DyrectedProvider>
+  );
+}
+```
+
+
+Use the full docs when you need the individual APIs in more detail:
+
+- [Media Hooks & Composables](/docs/features/admin/media-hooks)
+- [Upload overview](/docs/features/upload/overview)
+
+If your app is Vue or Nuxt, use the same pattern with composables from `@dyrected/vue`.
+
+## Build a field editor directly into a page
+
+**Problem:** you want one part of your app to edit a Dyrected document or a nested section of a document, but you do not want to rebuild field state, validation, and nested path handling yourself.
+
+This pattern mounts one form boundary near the page root, then lets smaller components use `useDyrectedForm()` and `useField()` wherever they need them.
+
+### Example implementation
+
+
+```tsx
+
+  DyrectedFieldPathProvider,
+  DyrectedFormProvider,
+  useDyrectedForm,
+  useField,
+} from "@dyrected/react";
+
+
+const controller = createDyrectedFormController({
+  collection: "customers",
+  fields: [
+    { name: "fullName", type: "text", label: "Full name" },
+    { name: "email", type: "email", label: "Email address" },
+    {
+      name: "complaintDraft",
+      type: "object",
+      label: "Complaint draft",
+      fields: [
+        { name: "orderNumber", type: "text", label: "Order number" },
+        { name: "subject", type: "text", label: "Subject" },
+        { name: "message", type: "textarea", label: "Complaint message" },
+      ],
+    },
+  ],
+  initialValues: {
+    fullName: "Amara Okafor",
+    email: "amara@example.com",
+    complaintDraft: {
+      orderNumber: "ORD-2048",
+      subject: "Damaged package on arrival",
+      message: "The shipping box arrived wet and the product inside is scratched.",
+    },
+  },
+});
+
+function CustomerIdentityCard() {
+  const fullName = useField("fullName");
+  const email = useField("email");
+
+  return (
+    <section className="space-y-4">
+      <input
+        value={String(fullName.value ?? "")}
+        onChange={(event) => fullName.setValue(event.target.value)}
+      />
+
+      <input
+        type="email"
+        value={String(email.value ?? "")}
+        onChange={(event) => email.setValue(event.target.value)}
+      />
+    </section>
+  );
+}
+
+function ComplaintDraftEditor() {
+  const orderNumber = useField("orderNumber");
+  const subject = useField("subject");
+  const message = useField("message");
+
+  return (
+    <section className="space-y-4">
+      <input
+        value={String(orderNumber.value ?? "")}
+        onChange={(event) => orderNumber.setValue(event.target.value)}
+      />
+
+      <input
+        value={String(subject.value ?? "")}
+        onChange={(event) => subject.setValue(event.target.value)}
+      />
+
+      <textarea
+        value={String(message.value ?? "")}
+        onChange={(event) => message.setValue(event.target.value)}
+      />
+    </section>
+  );
+}
+
+function CustomerComplaintPage() {
+  const form = useDyrectedForm();
+
+  return (
+    <form
+      className="space-y-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.submit();
+      }}
+    >
+      <h1>Complaint draft for signed-in customer</h1>
+
+      <CustomerIdentityCard />
+
+      <DyrectedFieldPathProvider path="complaintDraft">
+        <ComplaintDraftEditor />
+      </DyrectedFieldPathProvider>
+
+      <button type="submit" disabled={form.isSubmitting}>
+        Save complaint draft
+      </button>
+    </form>
+  );
+}
+
+export default function CustomerComplaintRoute() {
+  return (
+    <DyrectedFormProvider controller={controller}>
+      <CustomerComplaintPage />
+    </DyrectedFormProvider>
+  );
+}
+```
+
+
+Use the deeper docs when you need the full contract for form state, field helpers, or nested paths:
+
+- [Form & Field Hooks](/docs/features/admin/form-and-field-hooks)
+
+If your app is Vue or Nuxt, use the same pattern with `provideDyrectedForm()`, `provideDyrectedFieldPath()`, `useDyrectedForm()`, and `useField()` from `@dyrected/vue`.
+
+## Build a theme-aware shell around Dyrected UI
+
+**Problem:** you want the page, layout shell, and Dyrected-powered UI to agree on the same light and dark mode.
+
+This pattern mounts one theme boundary near the top of the app and uses `useAdminTheme()` anywhere below it.
+
+### Example implementation
+
+
+```tsx
+
+  AdminThemeProvider,
+  AdminThemedRoot,
+  useAdminTheme,
+} from "@dyrected/react";
+
+function ThemeSwitcher() {
+  const { theme, setTheme } = useAdminTheme();
+
+  return (
+    <select
+      value={theme}
+      onChange={(event) => setTheme(event.target.value as "system" | "light" | "dark")}
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  );
+}
+
+export default function DashboardRoute() {
+  return (
+    <AdminThemeProvider>
+      <AdminThemedRoot>
+        <header>
+          <ThemeSwitcher />
+        </header>
+
+        <main></main>
+      </AdminThemedRoot>
+    </AdminThemeProvider>
+  );
+}
+```
+
+
+Read the full docs:
+
+- [Theme Hooks](/docs/features/admin/theme-hooks)
+
+## When to use this pattern
+
+Use these public APIs when the UI lives in your app and the main job is to get Dyrected-aware behavior onto a normal page.
+
+Reach for custom component registration only when you specifically need to plug UI into the built-in Admin shell itself.
+
+---
+
 ## Data Lifecycle
 
 Canonical URL: https://docs.dyrected.com/docs/ecosystem/common-patterns/data-lifecycle
@@ -8942,6 +9302,10 @@ Patterns for row-level access, role-based permissions, and deciding who can read
 ### [Admin experience](/docs/ecosystem/common-patterns/admin-experience)
 
 Patterns for making the Admin UI react to editor input, reveal fields only when needed, and keep forms easier to use.
+
+### [Custom app surfaces](/docs/ecosystem/common-patterns/custom-app-surfaces)
+
+Patterns for building media tools, document editors, and theme-aware Dyrected UI directly inside your own product pages and dashboards.
 
 ### [Data lifecycle](/docs/ecosystem/common-patterns/data-lifecycle)
 
@@ -10658,6 +11022,242 @@ Set `primaryColor`, `accentColor`, `logo`, and fonts in `admin.branding` first �
 
 ---
 
+## Form & Field Hooks
+
+Canonical URL: https://docs.dyrected.com/docs/features/admin/form-and-field-hooks
+
+If you are building UI that edits a Dyrected document, you usually do not want to rebuild the hard parts yourself.
+
+That includes things like:
+
+- keeping a whole document form in sync
+- building a custom field input
+- editing nested object or array values
+- showing validation and dirty state
+- respecting read-only mode automatically
+
+That is what the form and field APIs are for.
+
+By the end of this page you should know when to use the form API, when to use the field API, and how the React and Vue setup differs.
+
+## Start with the level of state you need
+
+There are two levels of state:
+
+- **form state** for the whole document
+- **field state** for one path inside that document
+
+Use the form API when your component needs to understand the document as a whole.
+
+Use the field API when your component only cares about one field or one nested subtree.
+
+The field API is built for the parts that are annoying to get right by hand:
+
+- nested dotted paths
+- object children
+- array item paths
+- block-style nested values
+- dirty and validation state at the field level
+
+In normal component code, the hook or composable is the API you work with.
+
+## What these APIs save you from
+
+Without a shared form API, custom field code usually ends up re-solving the same problems over and over:
+
+- where the current value lives
+- how nested paths are resolved
+- how validation state is surfaced
+- how read-only mode is respected
+- how one field updates without breaking the rest of the document
+
+Dyrected's public form and field APIs already solve those problems, so your custom components can focus on the UI instead.
+
+## Typical setups
+
+In React, the field APIs are available from `@dyrected/react`, but they are mounted through a provider.
+
+That means the usual flow is:
+
+1. create a form controller once
+2. pass it to `DyrectedFormProvider`
+3. call `useDyrectedForm()` or `useField()` inside descendants
+
+```tsx
+
+  DyrectedFieldPathProvider,
+  DyrectedFormProvider,
+  useDyrectedForm,
+  useField,
+} from "@dyrected/react";
+
+
+const controller = createDyrectedFormController({
+  collection: "posts",
+  fields: [
+    { name: "title", type: "text" },
+    {
+      name: "hero",
+      type: "object",
+      fields: [{ name: "headline", type: "text" }],
+    },
+  ],
+  initialValues: {
+    title: "Hello",
+    hero: { headline: "Welcome" },
+  },
+});
+
+function TitleField() {
+  const field = useField("title");
+
+  return (
+    <input
+      value={String(field.value ?? "")}
+      onChange={(event) => field.setValue(event.target.value)}
+    />
+  );
+}
+
+function HeadlineField() {
+  const field = useField();
+
+  return (
+    <input
+      value={String(field.value ?? "")}
+      onChange={(event) => field.setValue(event.target.value)}
+    />
+  );
+}
+
+export function PostForm() {
+  const form = useDyrectedForm();
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.submit();
+      }}
+    >
+      <TitleField />
+
+      <DyrectedFieldPathProvider path="hero.headline">
+        <HeadlineField />
+      </DyrectedFieldPathProvider>
+    </form>
+  );
+}
+
+export function PostFormRoot() {
+  return (
+    <DyrectedFormProvider controller={controller}>
+      <PostForm />
+    </DyrectedFormProvider>
+  );
+}
+```
+
+In Vue, the same split exists, but the setup boundary uses `provideDyrectedForm()` and `provideDyrectedFieldPath()` instead of React providers.
+
+```vue
+<script setup lang="ts">
+
+  provideDyrectedFieldPath,
+  provideDyrectedForm,
+  useDyrectedForm,
+  useField,
+} from "@dyrected/vue";
+
+
+const controller = createDyrectedFormController({
+  collection: "posts",
+  fields: [
+    { name: "title", type: "text" },
+    {
+      name: "hero",
+      type: "object",
+      fields: [{ name: "headline", type: "text" }],
+    },
+  ],
+  initialValues: {
+    title: "Hello",
+    hero: { headline: "Welcome" },
+  },
+});
+
+provideDyrectedForm(controller);
+
+const form = useDyrectedForm();
+const title = useField("title");
+
+provideDyrectedFieldPath("hero.headline");
+const headline = useField();
+</script>
+
+<template>
+  <form @submit.prevent="form.submit()">
+    <input
+      :value="String(title.value.value ?? '')"
+      @input="title.setValue(($event.target as HTMLInputElement).value)"
+    />
+
+    <input
+      :value="String(headline.value.value ?? '')"
+      @input="headline.setValue(($event.target as HTMLInputElement).value)"
+    />
+  </form>
+</template>
+```
+
+In Vue, the semantic contract matches React, but the state fields are refs.
+
+## `useDyrectedForm`
+
+Use `useDyrectedForm` when the component cares about the whole document:
+
+- submit state
+- dirty state
+- validation state
+- full values
+- looking up one field schema or one field state from the document root
+
+This is the right API for:
+
+- custom document shells
+- custom side panels
+- save bars
+- validation summaries
+- any component that needs more than one field at a time
+
+## `useField`
+
+Use `useField` when the component is responsible for one field path.
+
+This is the right API for:
+
+- custom field inputs
+- object field sections
+- array row editors
+- block-level UI
+
+`useField` also includes child-path helpers such as:
+
+- `getChildPath`
+- `getItemPath`
+- `getChildValue`
+- `setChildValue`
+
+Those helpers are what save you from hand-building nested dotted paths everywhere.
+
+## Recommended path
+
+Reach for `useDyrectedForm` when your component needs document-level state, and `useField` when your component only cares about one field or one nested subtree.
+
+Import them from `@dyrected/react` or `@dyrected/vue`, wire the one-time form boundary near the top of your editing UI, and then keep the rest of your code at the hook or composable level.
+
+---
+
 ## The Collection List
 
 Canonical URL: https://docs.dyrected.com/docs/features/admin/list-view
@@ -10723,6 +11323,240 @@ Deleting is one kind of bulk work; editing and moving data are others. Two featu
 ## Recommended path
 
 Set `admin.useAsTitle`, `admin.defaultColumns`, and `admin.searchableFields` so the list is useful the moment a collection exists. Add `admin.description` when editors would benefit from a one-line explanation under the page title. Let editors tailor their own view with the **View** button, use single-row Edit/Delete for everyday changes, and reach for bulk selection when clearing several records. When the work is editing rather than deleting, move to [Spreadsheet View](/docs/features/admin/spreadsheet-view) or [CSV Import & Export](/docs/features/admin/csv-import-export).
+
+---
+
+## Media Hooks & Composables
+
+Canonical URL: https://docs.dyrected.com/docs/features/admin/media-hooks
+
+If you need to let a user work with media, this is usually the page you want.
+
+Use these APIs when you need to:
+
+- upload files from disk
+- paste a media URL
+- show a media library
+- let someone pick an existing asset
+
+By the end of this page you should know which media API fits each job, what setup it needs, and what the React and Vue versions look like.
+
+## Pick the API by the job you need done
+
+Most custom media UI falls into one of three jobs:
+
+- the user is choosing local files from disk
+- the user is pasting a URL
+- the user is picking something that already exists in the library
+
+Each job has one public API:
+
+| API | Use it for |
+| --- | --- |
+| `useMediaUpload` | File uploads with queue state and progress |
+| `useMediaURL` | Importing media from a URL |
+| `useMediaLibrary` | Browsing, searching, and selecting assets |
+
+If you are not sure which one to start with, use this rule:
+
+- local files: `useMediaUpload`
+- pasted link: `useMediaURL`
+- existing assets: `useMediaLibrary`
+
+You can use these APIs from:
+
+- `@dyrected/react` in React and Next.js apps
+- `@dyrected/vue` in Vue and Nuxt apps
+
+## What you get without rebuilding it yourself
+
+The reason to use these APIs is simple: media workflows get messy quickly.
+
+Instead of rebuilding all the moving parts yourself, you get Dyrected's shared media pipeline:
+
+- upload queue state
+- progress updates
+- client-side image compression
+- URL classification
+- external vs internal asset handling
+- media library loading and selection state
+
+That means your custom media UI behaves like the built-in Dyrected media UI instead of becoming a separate system with different rules.
+
+## Typical setups
+
+For most apps, media is the simplest surface to adopt.
+
+In React, wrap the part of your tree that needs Dyrected state in `DyrectedProvider`. That provider only needs a configured SDK client.
+
+```tsx
+"use client";
+
+
+
+  DyrectedProvider,
+  useMediaLibrary,
+  useMediaUpload,
+  useMediaURL,
+} from "@dyrected/react";
+
+const client = createClient({
+  baseUrl: "https://example.com/dyrected",
+  apiKey: "YOUR_API_KEY",
+});
+
+function MediaTools() {
+  const upload = useMediaUpload({ collectionSlug: "media" });
+  const mediaURL = useMediaURL({ collection: "media" });
+  const library = useMediaLibrary({ collection: "media" });
+
+  return (
+    <div>
+      <input
+        type="file"
+        multiple
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          void upload.uploadFiles(files);
+        }}
+      />
+
+      <button onClick={() => void library.load()}>Load library</button>
+
+      <button
+        onClick={() => {
+          mediaURL.setUrl("https://example.com/photo.jpg");
+          void mediaURL.submit();
+        }}
+      >
+        Import URL
+      </button>
+    </div>
+  );
+}
+
+export default function MediaPage() {
+  return (
+    <DyrectedProvider client={client}>
+      <MediaTools />
+    </DyrectedProvider>
+  );
+}
+```
+
+The React hooks return plain values and methods, so they feel like normal React component state.
+
+In Vue, use the same public API through composables from `@dyrected/vue`. They expose the same behavior, but the state fields are refs.
+
+```vue
+<script setup lang="ts">
+
+
+const upload = useMediaUpload({ collectionSlug: "media" });
+const mediaURL = useMediaURL({ collection: "media" });
+const library = useMediaLibrary({ collection: "media" });
+
+async function handleFiles(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  await upload.uploadFiles(files);
+}
+</script>
+
+<template>
+  <div>
+    <input type="file" multiple @change="handleFiles" />
+
+    <button @click="library.load()">Load library</button>
+
+    <button
+      @click="
+        mediaURL.setUrl('https://example.com/photo.jpg');
+        mediaURL.submit();
+      "
+    >
+      Import URL
+    </button>
+  </div>
+</template>
+```
+
+This page assumes your Vue app already has a Dyrected client available to `@dyrected/vue`.
+
+## `useMediaUpload`
+
+Use `useMediaUpload` when the user is choosing local files from disk.
+
+It handles the parts people usually do not want to rebuild by hand:
+
+- multiple files in one batch
+- upload queue state
+- byte-level progress
+- client-side image compression
+- collection fallback to `media` when the target collection is not upload-enabled
+
+The most important options are:
+
+- `collectionSlug`
+- `compressImages`
+- `maxDimension`
+- `quality`
+- `onCompletedItem`
+- `onAllCompleted`
+
+This is the API to reach for when you want a custom upload button, dropzone, or inline uploader.
+
+## `useMediaURL`
+
+Use `useMediaURL` when the user is pasting a URL instead of choosing a local file.
+
+It handles the full URL ingestion flow:
+
+- YouTube and Vimeo links become external video records
+- direct image URLs can be fetched, compressed, and uploaded
+- direct video URLs can stay external instead of forcing a file transfer
+- generic files are classified before import
+
+This is the right API for:
+
+- "Upload via URL" dialogs
+- paste-to-import flows
+- tools that migrate or seed media from remote URLs
+
+## `useMediaLibrary`
+
+Use `useMediaLibrary` when the user needs to browse and select existing assets.
+
+It gives you:
+
+- paginated loading
+- filename search
+- selected ids
+- selected items
+- selection helpers like `select`, `toggle`, and `clearSelection`
+
+This is the API for custom pickers, asset drawers, and media selection dialogs.
+
+## External vs internal assets
+
+The media APIs work with both uploaded assets and external references. That matters because the library can contain:
+
+- files uploaded into Dyrected storage
+- externally referenced images
+- externally referenced videos
+- YouTube or Vimeo records
+
+The classification behavior lives in the shared media pipeline, so your custom UI sees the same distinction the built-in admin sees.
+
+## Recommended path
+
+Start with the highest-level media API that matches the UI you are building:
+
+- local files: `useMediaUpload`
+- pasted URL: `useMediaURL`
+- existing assets: `useMediaLibrary`
+
+Use them from `@dyrected/react` or `@dyrected/vue`. There is a lower-level controller layer under the hood, but for most readers it is just an implementation detail.
 
 ---
 
@@ -10851,6 +11685,7 @@ Most customization lives in the schema; a few things reach into the UI. Here is 
 - **Browser tab title and favicon** — [Metadata](/docs/features/admin/metadata).
 - **Preview links and the live preview pane** — [Preview](/docs/features/admin/preview), with the full client sync flow under [Live Preview](/docs/features/live-preview/overview).
 - **Custom field inputs and injected panels** — [Custom Components](/docs/features/custom-components/overview).
+- **Hooks and composables for custom admin UI** — [Hooks & Composables](/docs/features/admin/react-hooks), then the focused pages for [media](/docs/features/admin/media-hooks), [form and field state](/docs/features/admin/form-and-field-hooks), and [theme state](/docs/features/admin/theme-hooks).
 - **Per-editor column and field layout** — [Preferences](/docs/features/admin/preferences).
 - **Where the panel is mounted** — [Custom Admin Panel Location](/docs/features/admin/custom-admin-panel-location).
 - **Accessibility posture** — [Accessibility](/docs/features/admin/accessibility).
@@ -11048,109 +11883,141 @@ Start with a Jexl string `previewUrl` and the default `postMessage` mode. That g
 
 ---
 
-## React Hooks & Vue Composables
+## Hooks & Composables
 
 Canonical URL: https://docs.dyrected.com/docs/features/admin/react-hooks
 
-If you're coming from another CMS, you might expect a long catalog of admin hooks — `useField`, `useForm`, `useDocumentInfo`, and so on — for building custom pieces of the admin. Dyrected works differently, and it's worth setting that expectation up front. The hooks and composables Dyrected ships run in **your frontend** — reading content and powering live preview — not inside the admin. Customizing the admin itself is done with component props.
+These APIs are for any UI that needs to work closely with Dyrected data and state, not only the built-in admin.
 
-By the end of this page you should know which hooks and composables exist for React and Vue, how they surface in Next and Nuxt, and where to go when you want to change how the admin renders.
+You might reach for them when you are building:
 
-## The three you'll use everywhere
+- a custom media picker
+- an "upload via URL" flow
+- a document editor inside your own product
+- a merchant dashboard for managing content or assets
+- an internal tool that needs Dyrected form or theme state
+- a custom admin component that should behave like the built-in UI
 
-Across frameworks, the same three integration primitives show up, just spelled as React hooks or Vue composables:
+By the end of this page you should know:
 
-- **Access the client** — get the configured Dyrected client from context so any component can fetch content.
-- **`useLivePreview`** — subscribe to the draft data the admin posts while an editor is typing, and re-render with it.
-- **`useDyPath`** — tag a rendered element with its document field path so live preview can map clicks back to fields.
+- what kinds of problems these APIs solve
+- which public surfaces exist today
+- which page to open next for the thing you are trying to build
+- where to go next for media, form, field, and theme examples
 
-`useLivePreview` and `useDyPath` are the frontend half of the [Preview](/docs/features/admin/preview) feature; the full setup lives under [Live Preview](/docs/features/live-preview/overview).
+## Start with the job to be done
 
-## React (`@dyrected/react`)
+Most teams land here because they need one of a few practical things:
 
-Wrap your app once in `DyrectedProvider`, then call the hooks anywhere below it.
+- let a user upload files with progress
+- let a user paste a media URL
+- show a media library and let the user pick an asset
+- build a custom document editing experience
+- build a custom field input
+- keep theme state shared across a custom shell
 
-```tsx
+If that sounds like you, jump straight to the matching page:
 
+- [Media Hooks & Composables](/docs/features/admin/media-hooks)
+- [Form & Field Hooks](/docs/features/admin/form-and-field-hooks)
+- [Theme Hooks](/docs/features/admin/theme-hooks)
 
-function Heading({ initialData }) {
-  const { client } = useDyrected();           // configured client from context
-  const { data, isLive } = useLivePreview({ initialData }); // live draft data
-  const dyPath = useDyPath("title");           // { 'data-dy-path': 'title' }
+This page is the short orientation guide for how those pieces fit together.
 
-  return <h1 {...dyPath}>{data.title}</h1>;
-}
-```
+## What exists today
 
-`useDyrected` returns the client from context, `useLivePreview<T>` takes your published `initialData` and returns `{ data, isLive }`, and `useDyPath(field?)` returns a spreadable `{ 'data-dy-path': string }` prop. The package also exports ready-made components — `DyrectedImage`, `DyrectedMedia`, `DyrectedIcon`, `DyrectedRichText`, and `Blocks` — for rendering field values directly.
+There are three public areas:
 
-### In Next.js
+- **Media APIs**
+  - upload queue
+  - URL import
+  - media library browsing and selection
+  - documented on [Media Hooks & Composables](/docs/features/admin/media-hooks)
+- **Form and field APIs**
+  - form state
+  - field state
+  - nested field path helpers
+  - documented on [Form & Field Hooks](/docs/features/admin/form-and-field-hooks)
+- **Theme APIs**
+  - theme preference
+  - resolved theme
+  - themed root setup
+  - documented on [Theme Hooks](/docs/features/admin/theme-hooks)
 
-Next uses these same `@dyrected/react` hooks — there's no separate Next hook package. They read context and browser messages, so any component that calls them is a **client component**: put `"use client"` at the top of the file (or in an ancestor).
+## Start with the highest-level API
 
-```tsx
-"use client";
+In most cases, you should start with the hook or composable and stay there.
 
+In practice that means:
 
-export function LivePost({ initialData }) {
-  const { data } = useLivePreview({ initialData });
-  return <article>{data.title}</article>;
-}
-```
+- use the public hook or composable inside your component
+- follow the page-level setup steps when a provider or root wrapper is needed
+- ignore the lower-level pieces unless a guide explicitly brings them up
 
-Fetch your published data in a server component, then pass it as `initialData` into a client component that runs `useLivePreview`.
+Most readers can stop there.
 
-## Vue (`@dyrected/vue`)
+## The same ideas exist in both frameworks
 
-The same primitives ship as composables. Import them from `@dyrected/vue` and use them inside `<script setup>`:
+The examples later in this section show both React and Vue versions of the same ideas.
 
-```vue
-<script setup lang="ts">
+The names are slightly different because the frameworks work differently:
 
+- React returns plain values from hooks
+- Vue returns refs from composables
 
-const client = useDyrectedClient();                 // configured client
-const { data, isLive } = useLivePreview({ initialData: props.initialData });
-const dyPath = useDyPath("title");                  // v-bind this onto an element
-</script>
+But the public behavior stays aligned:
 
-<template>
-  <h1 v-bind="dyPath">{{ data.title }}</h1>
-</template>
-```
+- media upload works the same way
+- media URL import works the same way
+- media library state works the same way
+- form and field state follow the same contract
+- theme state follows the same contract
 
-Vue exposes a couple more composables than React:
+## Custom components and hooks solve different problems
 
-- `useDyrectedClient()` returns the client; `useDyrected()`, `useDyrectedCollection()`, and `useDyrectedGlobal()` are reactive data-fetching composables (see [Displaying Content](/docs/managing-data/displaying-content/overview)).
-- `useDyrectedAuth(collection, options)` manages a frontend auth session, for building your own login against an auth collection.
+Custom components and hooks/composables are related, but they are not the same thing:
 
-Like React, the Vue package also ships `DyrectedImage`, `DyrectedMedia`, `DyrectedIcon`, `DyrectedRichText`, and `Blocks` components.
+- **Custom components** decide where your UI plugs into the admin: custom field inputs, dashboard slots, list slots
+- **Hooks and composables** decide how any Dyrected-aware UI reads and updates state once it is mounted
 
-### In Nuxt
+If you need to register a field component or a slot, start with [Custom Components](/docs/features/custom-components/overview). If you already know where your UI goes and now need state, use the pages in this section.
 
-`@dyrected/nuxt` **auto-imports** these composables — you don't write import statements for them. `useDyrectedClient`, `useLivePreview`, `useDyPath`, `useDyrectedAuth`, and the data-fetching composables are all available directly in any component:
+## Where to import from
 
-```vue
-<script setup lang="ts">
-// no imports needed — auto-provided by the Nuxt module
-const { data } = useLivePreview({ initialData: props.initialData });
-const dyPath = useDyPath("title");
-</script>
-```
+Once you know which API layer you need, choose the package that matches your app:
 
-The module also auto-registers the components — `<DyrectedAdmin>`, `<DyrectedImage>`, `<DyrectedMedia>`, `<DyrectedBlocks>`, `<DyrectedIcon>`, and `<DyrectedRichText>` — so they're usable in templates without importing them either.
+| Package | Use it for |
+| --- | --- |
+| `@dyrected/react` | React and Next.js apps |
+| `@dyrected/vue` | Vue and Nuxt apps |
+| `@dyrected/admin/public` | Lower-level controller setup and advanced integrations |
 
-## Customizing the admin uses props, not hooks
+That means:
 
-There is no `useField` or `useForm` to import for admin work — the admin package intentionally exposes no hooks for consumers. When you replace a field's input or inject a panel, your component receives everything it needs as **props**:
-
-- A custom **field** component is handed `value`, `onChange`, the `field` schema, its `path`, a `disabled` flag, the `collection`, and a `context` with the current `user`, `schemas`, and `siblingData`.
-- A custom **slot** (a panel around the dashboard or a list) is handed props like the initialized `client`, the current `user`, the loaded `schemas`, and — for list slots — the current documents and pagination.
-
-You read from those props and call `onChange`; you don't reach into admin internals through a hook. This holds for both React and Vue custom components. The full prop shapes and registration flow are documented under [Custom Components](/docs/features/custom-components/overview).
+- if your app is React or Next.js, import the public hooks from `@dyrected/react`
+- if your app is Vue or Nuxt, import the public composables from `@dyrected/vue`
+- you can ignore the lower-level package unless a guide explicitly brings it up
 
 ## Recommended path
 
-Use the client accessor to fetch content anywhere in your frontend, and `useLivePreview` with `useDyPath` to make pages update live while editors preview — importing from `@dyrected/react` or `@dyrected/vue`, or relying on Nuxt's auto-imports. When your goal is to change the admin itself — a custom input, an injected panel — build a component that reads its props and register it through [Custom Components](/docs/features/custom-components/overview), rather than looking for an admin hook that doesn't exist.
+Start from the job you need to get done:
+
+- uploading files
+- importing media from a URL
+- browsing and selecting assets
+- editing document state
+- building custom field inputs
+- sharing theme state across a shell
+
+Then pick the matching page below. Each page will show the React and Vue version when it matters.
+
+From here:
+
+- Go to [Media Hooks & Composables](/docs/features/admin/media-hooks) if you are building uploaders, URL import, media pickers, or asset workflows in your own app.
+- Go to [Form & Field Hooks](/docs/features/admin/form-and-field-hooks) if you are building custom field UI or document-editing interfaces.
+- Go to [Theme Hooks](/docs/features/admin/theme-hooks) if you are building a themed custom shell around Dyrected-powered UI.
+
+The controller layer exists underneath these APIs so the behavior stays consistent, but most readers do not need to think about it directly.
 
 ---
 
@@ -11219,6 +12086,152 @@ The grid supports the spreadsheet keys you'd expect — `Tab`/`Shift+Tab` to mov
 ## Recommended path
 
 Reach for Spreadsheet View when you're changing the same few fields across many records and don't need the full form. Make your edits, glance at the pending-changes bar, and **Save Changes** in one go. For pulling data in or out of the collection rather than editing in place, use [CSV Import & Export](/docs/features/admin/csv-import-export).
+
+---
+
+## Theme Hooks
+
+Canonical URL: https://docs.dyrected.com/docs/features/admin/theme-hooks
+
+If your UI needs a theme switcher or a shared light and dark mode, this is the page you want.
+
+You usually need theme state when you are building:
+
+- a custom admin shell
+- a dashboard around Dyrected-powered UI
+- a settings page with theme controls
+- a themed wrapper that should stay in sync with Dyrected light and dark mode
+
+The goal is simple: every component should agree on the same theme state instead of guessing independently.
+
+That includes:
+
+- the saved theme preference
+- the current system theme
+- the resolved theme after applying the preference
+- the CSS class that should be applied to the themed root
+
+The theme APIs give you that shared state without forcing you to wire it yourself.
+
+By the end of this page you should know what the theme API owns, how to mount it, and how to use it in your own shell or dashboard.
+
+## What the theme API owns
+
+The public theme API is intentionally small. It exposes:
+
+- `theme`
+- `systemTheme`
+- `resolvedTheme`
+- `themeClassName`
+- `setTheme`
+
+That is enough to build:
+
+- a custom theme switcher
+- a themed layout shell
+- a custom root wrapper that stays in sync with Dyrected light and dark mode
+
+## Why use the shared theme API
+
+Theme state looks simple until different parts of the app start making different assumptions.
+
+Using the shared theme API means:
+
+- every component reads the same current theme
+- theme preference and resolved theme stay in one place
+- your custom shell stays aligned with Dyrected light and dark mode
+- you do not need to write your own preference and system-theme sync logic
+
+## Typical setups
+
+In React, import the theme API from `@dyrected/react`. The highest-level entry is `AdminThemeProvider`, and the easiest way to apply the resolved theme class is `AdminThemedRoot`.
+
+```tsx
+
+  AdminThemeProvider,
+  AdminThemedRoot,
+  useAdminTheme,
+} from "@dyrected/react";
+
+function ThemeSwitcher() {
+  const { theme, setTheme } = useAdminTheme();
+
+  return (
+    <select
+      value={theme}
+      onChange={(event) => setTheme(event.target.value as "system" | "light" | "dark")}
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  );
+}
+
+export function CustomAdminShell({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminThemeProvider>
+      <AdminThemedRoot>
+        <ThemeSwitcher />
+        {children}
+      </AdminThemedRoot>
+    </AdminThemeProvider>
+  );
+}
+```
+
+In Vue, the equivalent setup is `provideAdminTheme()` plus `useAdminTheme()`.
+
+```vue
+<script setup lang="ts">
+
+
+provideAdminTheme();
+
+const theme = useAdminTheme();
+</script>
+
+<template>
+  <div :class="theme.themeClassName.value" :data-theme="theme.resolvedTheme.value">
+    <select
+      :value="theme.theme.value"
+      @change="theme.setTheme(($event.target as HTMLSelectElement).value as 'system' | 'light' | 'dark')"
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+
+    <slot />
+  </div>
+</template>
+```
+
+In Vue, the same semantic contract exists, but the state fields are refs.
+
+## Fallback behavior
+
+Both frameworks allow `useAdminTheme()` to return a usable fallback even if no provider is mounted yet.
+
+That fallback is intentionally limited:
+
+- you still get a resolved theme
+- you still get a theme class name
+- `setTheme` becomes a no-op
+- there is no real controller instance behind the result
+
+That behavior is useful for rendering consistency, but it should not replace mounting the provider in a real custom shell.
+
+## Recommended path
+
+Mount one theme boundary near the root of your custom admin shell:
+
+- React: `AdminThemeProvider`
+- Vue: `provideAdminTheme()`
+
+Then use `useAdminTheme()` anywhere below it for toggles, themed roots, and theme-aware UI.
+
+There is a lower-level controller layer behind this, but most readers can ignore it.
 
 ---
 

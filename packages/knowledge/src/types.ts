@@ -2,6 +2,7 @@ export type RecipeCategory =
   | "content-modeling"
   | "data-lifecycle"
   | "admin-experience"
+  | "custom-app-surfaces"
   | "access-control"
   | "workflows"
   | "integrations";
