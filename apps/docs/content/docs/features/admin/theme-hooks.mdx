@@ -1,0 +1,144 @@
+---
+title: Theme Hooks
+description: Share theme state across a custom admin shell in React or Vue, while keeping the same resolved light and dark behavior the built-in admin uses.
+---
+
+If your UI needs a theme switcher or a shared light and dark mode, this is the page you want.
+
+You usually need theme state when you are building:
+
+- a custom admin shell
+- a dashboard around Dyrected-powered UI
+- a settings page with theme controls
+- a themed wrapper that should stay in sync with Dyrected light and dark mode
+
+The goal is simple: every component should agree on the same theme state instead of guessing independently.
+
+That includes:
+
+- the saved theme preference
+- the current system theme
+- the resolved theme after applying the preference
+- the CSS class that should be applied to the themed root
+
+The theme APIs give you that shared state without forcing you to wire it yourself.
+
+By the end of this page you should know what the theme API owns, how to mount it, and how to use it in your own shell or dashboard.
+
+## What the theme API owns
+
+The public theme API is intentionally small. It exposes:
+
+- `theme`
+- `systemTheme`
+- `resolvedTheme`
+- `themeClassName`
+- `setTheme`
+
+That is enough to build:
+
+- a custom theme switcher
+- a themed layout shell
+- a custom root wrapper that stays in sync with Dyrected light and dark mode
+
+## Why use the shared theme API
+
+Theme state looks simple until different parts of the app start making different assumptions.
+
+Using the shared theme API means:
+
+- every component reads the same current theme
+- theme preference and resolved theme stay in one place
+- your custom shell stays aligned with Dyrected light and dark mode
+- you do not need to write your own preference and system-theme sync logic
+
+## Typical setups
+
+In React, import the theme API from `@dyrected/react`. The highest-level entry is `AdminThemeProvider`, and the easiest way to apply the resolved theme class is `AdminThemedRoot`.
+
+```tsx
+import {
+  AdminThemeProvider,
+  AdminThemedRoot,
+  useAdminTheme,
+} from "@dyrected/react";
+
+function ThemeSwitcher() {
+  const { theme, setTheme } = useAdminTheme();
+
+  return (
+    <select
+      value={theme}
+      onChange={(event) => setTheme(event.target.value as "system" | "light" | "dark")}
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  );
+}
+
+export function CustomAdminShell({ children }: { children: React.ReactNode }) {
+  return (
+    <AdminThemeProvider>
+      <AdminThemedRoot>
+        <ThemeSwitcher />
+        {children}
+      </AdminThemedRoot>
+    </AdminThemeProvider>
+  );
+}
+```
+
+In Vue, the equivalent setup is `provideAdminTheme()` plus `useAdminTheme()`.
+
+```vue
+<script setup lang="ts">
+import { provideAdminTheme, useAdminTheme } from "@dyrected/vue";
+
+provideAdminTheme();
+
+const theme = useAdminTheme();
+</script>
+
+<template>
+  <div :class="theme.themeClassName.value" :data-theme="theme.resolvedTheme.value">
+    <select
+      :value="theme.theme.value"
+      @change="theme.setTheme(($event.target as HTMLSelectElement).value as 'system' | 'light' | 'dark')"
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+
+    <slot />
+  </div>
+</template>
+```
+
+In Vue, the same semantic contract exists, but the state fields are refs.
+
+## Fallback behavior
+
+Both frameworks allow `useAdminTheme()` to return a usable fallback even if no provider is mounted yet.
+
+That fallback is intentionally limited:
+
+- you still get a resolved theme
+- you still get a theme class name
+- `setTheme` becomes a no-op
+- there is no real controller instance behind the result
+
+That behavior is useful for rendering consistency, but it should not replace mounting the provider in a real custom shell.
+
+## Recommended path
+
+Mount one theme boundary near the root of your custom admin shell:
+
+- React: `AdminThemeProvider`
+- Vue: `provideAdminTheme()`
+
+Then use `useAdminTheme()` anywhere below it for toggles, themed roots, and theme-aware UI.
+
+There is a lower-level controller layer behind this, but most readers can ignore it.

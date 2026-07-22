@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { DyrectedFieldHookResult } from "../public/contracts"
 import { createDyrectedFieldController } from "../controllers/field"
 import {
   getFieldPathSegments,
@@ -12,7 +13,7 @@ import {
   useDyrectedFormControllerContext,
 } from "../providers/dyrected-form-context"
 
-export function useField(path?: string) {
+export function useField(path?: string): DyrectedFieldHookResult {
   const formController = useDyrectedFormControllerContext()
   const contextPath = useDyrectedFieldPathContext()
   const resolvedPath = path ?? contextPath

@@ -15,6 +15,12 @@
       "browser": "./dist/index.mjs",
       "default": "./dist/index.mjs"
     },
+    "./public": {
+      "types": "./dist/public/index.d.ts",
+      "import": "./dist/public/index.js",
+      "browser": "./dist/public/index.js",
+      "default": "./dist/public/index.js"
+    },
     "./styles": "./dist/admin.css"
   },
   "scripts": {

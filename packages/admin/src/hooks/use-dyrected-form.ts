@@ -1,7 +1,8 @@
 import * as React from "react"
+import type { DyrectedFormHookResult } from "../public/contracts"
 import { useDyrectedFormControllerContext } from "../providers/dyrected-form-context"
 
-export function useDyrectedForm() {
+export function useDyrectedForm(): DyrectedFormHookResult {
   const controller = useDyrectedFormControllerContext()
   const state = React.useSyncExternalStore(
     controller.subscribe,

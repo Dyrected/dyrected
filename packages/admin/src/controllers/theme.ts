@@ -32,6 +32,12 @@ export interface AdminThemeControllerOptions {
   onThemeChange?: (theme: AdminThemePreference) => void
 }
 
+/**
+ * Creates a framework-agnostic admin theme controller.
+ *
+ * This controller is the shared theme engine used by the React and Vue public
+ * APIs, and can also be used directly by other framework adapters.
+ */
 export function createAdminThemeController({
   theme = "system",
   systemTheme = "light",

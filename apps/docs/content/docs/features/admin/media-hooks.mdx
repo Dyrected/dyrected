@@ -1,0 +1,232 @@
+---
+title: Media Hooks & Composables
+description: Build custom uploaders, URL import flows, and media pickers with `@dyrected/react` and `@dyrected/vue` without reimplementing the media pipeline yourself.
+---
+
+If you need to let a user work with media, this is usually the page you want.
+
+Use these APIs when you need to:
+
+- upload files from disk
+- paste a media URL
+- show a media library
+- let someone pick an existing asset
+
+By the end of this page you should know which media API fits each job, what setup it needs, and what the React and Vue versions look like.
+
+## Pick the API by the job you need done
+
+Most custom media UI falls into one of three jobs:
+
+- the user is choosing local files from disk
+- the user is pasting a URL
+- the user is picking something that already exists in the library
+
+Each job has one public API:
+
+| API | Use it for |
+| --- | --- |
+| `useMediaUpload` | File uploads with queue state and progress |
+| `useMediaURL` | Importing media from a URL |
+| `useMediaLibrary` | Browsing, searching, and selecting assets |
+
+If you are not sure which one to start with, use this rule:
+
+- local files: `useMediaUpload`
+- pasted link: `useMediaURL`
+- existing assets: `useMediaLibrary`
+
+You can use these APIs from:
+
+- `@dyrected/react` in React and Next.js apps
+- `@dyrected/vue` in Vue and Nuxt apps
+
+## What you get without rebuilding it yourself
+
+The reason to use these APIs is simple: media workflows get messy quickly.
+
+Instead of rebuilding all the moving parts yourself, you get Dyrected's shared media pipeline:
+
+- upload queue state
+- progress updates
+- client-side image compression
+- URL classification
+- external vs internal asset handling
+- media library loading and selection state
+
+That means your custom media UI behaves like the built-in Dyrected media UI instead of becoming a separate system with different rules.
+
+## Typical setups
+
+For most apps, media is the simplest surface to adopt.
+
+In React, wrap the part of your tree that needs Dyrected state in `DyrectedProvider`. That provider only needs a configured SDK client.
+
+```tsx
+"use client";
+
+import { createClient } from "@dyrected/sdk";
+import {
+  DyrectedProvider,
+  useMediaLibrary,
+  useMediaUpload,
+  useMediaURL,
+} from "@dyrected/react";
+
+const client = createClient({
+  baseUrl: "https://example.com/dyrected",
+  apiKey: "YOUR_API_KEY",
+});
+
+function MediaTools() {
+  const upload = useMediaUpload({ collectionSlug: "media" });
+  const mediaURL = useMediaURL({ collection: "media" });
+  const library = useMediaLibrary({ collection: "media" });
+
+  return (
+    <div>
+      <input
+        type="file"
+        multiple
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          void upload.uploadFiles(files);
+        }}
+      />
+
+      <button onClick={() => void library.load()}>Load library</button>
+
+      <button
+        onClick={() => {
+          mediaURL.setUrl("https://example.com/photo.jpg");
+          void mediaURL.submit();
+        }}
+      >
+        Import URL
+      </button>
+    </div>
+  );
+}
+
+export default function MediaPage() {
+  return (
+    <DyrectedProvider client={client}>
+      <MediaTools />
+    </DyrectedProvider>
+  );
+}
+```
+
+The React hooks return plain values and methods, so they feel like normal React component state.
+
+In Vue, use the same public API through composables from `@dyrected/vue`. They expose the same behavior, but the state fields are refs.
+
+```vue
+<script setup lang="ts">
+import { useMediaLibrary, useMediaUpload, useMediaURL } from "@dyrected/vue";
+
+const upload = useMediaUpload({ collectionSlug: "media" });
+const mediaURL = useMediaURL({ collection: "media" });
+const library = useMediaLibrary({ collection: "media" });
+
+async function handleFiles(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  await upload.uploadFiles(files);
+}
+</script>
+
+<template>
+  <div>
+    <input type="file" multiple @change="handleFiles" />
+
+    <button @click="library.load()">Load library</button>
+
+    <button
+      @click="
+        mediaURL.setUrl('https://example.com/photo.jpg');
+        mediaURL.submit();
+      "
+    >
+      Import URL
+    </button>
+  </div>
+</template>
+```
+
+This page assumes your Vue app already has a Dyrected client available to `@dyrected/vue`.
+
+## `useMediaUpload`
+
+Use `useMediaUpload` when the user is choosing local files from disk.
+
+It handles the parts people usually do not want to rebuild by hand:
+
+- multiple files in one batch
+- upload queue state
+- byte-level progress
+- client-side image compression
+- collection fallback to `media` when the target collection is not upload-enabled
+
+The most important options are:
+
+- `collectionSlug`
+- `compressImages`
+- `maxDimension`
+- `quality`
+- `onCompletedItem`
+- `onAllCompleted`
+
+This is the API to reach for when you want a custom upload button, dropzone, or inline uploader.
+
+## `useMediaURL`
+
+Use `useMediaURL` when the user is pasting a URL instead of choosing a local file.
+
+It handles the full URL ingestion flow:
+
+- YouTube and Vimeo links become external video records
+- direct image URLs can be fetched, compressed, and uploaded
+- direct video URLs can stay external instead of forcing a file transfer
+- generic files are classified before import
+
+This is the right API for:
+
+- "Upload via URL" dialogs
+- paste-to-import flows
+- tools that migrate or seed media from remote URLs
+
+## `useMediaLibrary`
+
+Use `useMediaLibrary` when the user needs to browse and select existing assets.
+
+It gives you:
+
+- paginated loading
+- filename search
+- selected ids
+- selected items
+- selection helpers like `select`, `toggle`, and `clearSelection`
+
+This is the API for custom pickers, asset drawers, and media selection dialogs.
+
+## External vs internal assets
+
+The media APIs work with both uploaded assets and external references. That matters because the library can contain:
+
+- files uploaded into Dyrected storage
+- externally referenced images
+- externally referenced videos
+- YouTube or Vimeo records
+
+The classification behavior lives in the shared media pipeline, so your custom UI sees the same distinction the built-in admin sees.
+
+## Recommended path
+
+Start with the highest-level media API that matches the UI you are building:
+
+- local files: `useMediaUpload`
+- pasted URL: `useMediaURL`
+- existing assets: `useMediaLibrary`
+
+Use them from `@dyrected/react` or `@dyrected/vue`. There is a lower-level controller layer under the hood, but for most readers it is just an implementation detail.

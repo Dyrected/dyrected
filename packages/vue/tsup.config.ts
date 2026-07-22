@@ -6,7 +6,7 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: true,
   clean: true,
-  external: ['vue', 'react', 'react-dom'],
+  external: ['vue', 'react', 'react-dom', /^@dyrected\/admin(\/.*)?$/],
   esbuildPlugins: [
     vue() as any
   ],

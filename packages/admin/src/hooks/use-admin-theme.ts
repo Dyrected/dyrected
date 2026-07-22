@@ -1,15 +1,15 @@
 import * as React from "react"
+import type { AdminThemeHookResult } from "../public/contracts"
 import {
   adminThemeClassName,
   getSystemAdminTheme,
   type AdminThemePreference,
 } from "./admin-theme"
 import { AdminThemeContext } from "./admin-theme-context"
-import type { AdminThemeControllerState } from "../controllers/theme"
 
 export type { AdminThemePreference, ResolvedAdminTheme } from "./admin-theme"
 
-export function useAdminTheme() {
+export function useAdminTheme(): AdminThemeHookResult {
   const context = React.useContext(AdminThemeContext)
   if (!context) {
     const resolvedTheme = getSystemAdminTheme()
@@ -19,6 +19,7 @@ export function useAdminTheme() {
       resolvedTheme,
       setTheme: () => undefined,
       themeClassName: adminThemeClassName(resolvedTheme),
+      controller: null,
     }
   }
 
@@ -29,10 +30,11 @@ export function useAdminTheme() {
   )
 
   return React.useMemo(
-    (): AdminThemeControllerState & { setTheme: typeof context.setTheme } => ({
+    (): AdminThemeHookResult => ({
       ...state,
       setTheme: context.setTheme,
+      controller: context,
     }),
-    [context.setTheme, state]
+    [context, context.setTheme, state]
   )
 }

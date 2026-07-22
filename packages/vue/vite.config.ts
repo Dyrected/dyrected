@@ -19,7 +19,13 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: ['vue', 'react', 'react-dom', '@dyrected/sdk', '@dyrected/admin'],
+      external: [
+        'vue',
+        'react',
+        'react-dom',
+        '@dyrected/sdk',
+        /^@dyrected\/admin(\/.*)?$/,
+      ],
       output: {
         globals: {
           vue: 'Vue',

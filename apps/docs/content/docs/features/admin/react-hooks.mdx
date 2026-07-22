@@ -1,104 +1,136 @@
 ---
-title: React Hooks & Vue Composables
-description: The hooks and composables Dyrected exports are for your frontend and live preview — with React, Vue, Nuxt, and Next covered — and why customizing the admin itself uses props.
+title: Hooks & Composables
+description: Use Dyrected's hooks and composables to build media flows, editing UI, and themed product surfaces without rebuilding the state layer yourself.
 ---
 
-If you're coming from another CMS, you might expect a long catalog of admin hooks — `useField`, `useForm`, `useDocumentInfo`, and so on — for building custom pieces of the admin. Dyrected works differently, and it's worth setting that expectation up front. The hooks and composables Dyrected ships run in **your frontend** — reading content and powering live preview — not inside the admin. Customizing the admin itself is done with component props.
+These APIs are for any UI that needs to work closely with Dyrected data and state, not only the built-in admin.
 
-By the end of this page you should know which hooks and composables exist for React and Vue, how they surface in Next and Nuxt, and where to go when you want to change how the admin renders.
+You might reach for them when you are building:
 
-## The three you'll use everywhere
+- a custom media picker
+- an "upload via URL" flow
+- a document editor inside your own product
+- a merchant dashboard for managing content or assets
+- an internal tool that needs Dyrected form or theme state
+- a custom admin component that should behave like the built-in UI
 
-Across frameworks, the same three integration primitives show up, just spelled as React hooks or Vue composables:
+By the end of this page you should know:
 
-- **Access the client** — get the configured Dyrected client from context so any component can fetch content.
-- **`useLivePreview`** — subscribe to the draft data the admin posts while an editor is typing, and re-render with it.
-- **`useDyPath`** — tag a rendered element with its document field path so live preview can map clicks back to fields.
+- what kinds of problems these APIs solve
+- which public surfaces exist today
+- which page to open next for the thing you are trying to build
+- where to go next for media, form, field, and theme examples
 
-`useLivePreview` and `useDyPath` are the frontend half of the [Preview](/docs/features/admin/preview) feature; the full setup lives under [Live Preview](/docs/features/live-preview/overview).
+## Start with the job to be done
 
-## React (`@dyrected/react`)
+Most teams land here because they need one of a few practical things:
 
-Wrap your app once in `DyrectedProvider`, then call the hooks anywhere below it.
+- let a user upload files with progress
+- let a user paste a media URL
+- show a media library and let the user pick an asset
+- build a custom document editing experience
+- build a custom field input
+- keep theme state shared across a custom shell
 
-```tsx
-import { useDyrected, useLivePreview, useDyPath } from "@dyrected/react";
+If that sounds like you, jump straight to the matching page:
 
-function Heading({ initialData }) {
-  const { client } = useDyrected();           // configured client from context
-  const { data, isLive } = useLivePreview({ initialData }); // live draft data
-  const dyPath = useDyPath("title");           // { 'data-dy-path': 'title' }
+- [Media Hooks & Composables](/docs/features/admin/media-hooks)
+- [Form & Field Hooks](/docs/features/admin/form-and-field-hooks)
+- [Theme Hooks](/docs/features/admin/theme-hooks)
 
-  return <h1 {...dyPath}>{data.title}</h1>;
-}
-```
+This page is the short orientation guide for how those pieces fit together.
 
-`useDyrected` returns the client from context, `useLivePreview<T>` takes your published `initialData` and returns `{ data, isLive }`, and `useDyPath(field?)` returns a spreadable `{ 'data-dy-path': string }` prop. The package also exports ready-made components — `DyrectedImage`, `DyrectedMedia`, `DyrectedIcon`, `DyrectedRichText`, and `Blocks` — for rendering field values directly.
+## What exists today
 
-### In Next.js
+There are three public areas:
 
-Next uses these same `@dyrected/react` hooks — there's no separate Next hook package. They read context and browser messages, so any component that calls them is a **client component**: put `"use client"` at the top of the file (or in an ancestor).
+- **Media APIs**
+  - upload queue
+  - URL import
+  - media library browsing and selection
+  - documented on [Media Hooks & Composables](/docs/features/admin/media-hooks)
+- **Form and field APIs**
+  - form state
+  - field state
+  - nested field path helpers
+  - documented on [Form & Field Hooks](/docs/features/admin/form-and-field-hooks)
+- **Theme APIs**
+  - theme preference
+  - resolved theme
+  - themed root setup
+  - documented on [Theme Hooks](/docs/features/admin/theme-hooks)
 
-```tsx
-"use client";
-import { useLivePreview } from "@dyrected/react";
+## Start with the highest-level API
 
-export function LivePost({ initialData }) {
-  const { data } = useLivePreview({ initialData });
-  return <article>{data.title}</article>;
-}
-```
+In most cases, you should start with the hook or composable and stay there.
 
-Fetch your published data in a server component, then pass it as `initialData` into a client component that runs `useLivePreview`.
+In practice that means:
 
-## Vue (`@dyrected/vue`)
+- use the public hook or composable inside your component
+- follow the page-level setup steps when a provider or root wrapper is needed
+- ignore the lower-level pieces unless a guide explicitly brings them up
 
-The same primitives ship as composables. Import them from `@dyrected/vue` and use them inside `<script setup>`:
+Most readers can stop there.
 
-```vue
-<script setup lang="ts">
-import { useDyrectedClient, useLivePreview, useDyPath } from "@dyrected/vue";
+## The same ideas exist in both frameworks
 
-const client = useDyrectedClient();                 // configured client
-const { data, isLive } = useLivePreview({ initialData: props.initialData });
-const dyPath = useDyPath("title");                  // v-bind this onto an element
-</script>
+The examples later in this section show both React and Vue versions of the same ideas.
 
-<template>
-  <h1 v-bind="dyPath">{{ data.title }}</h1>
-</template>
-```
+The names are slightly different because the frameworks work differently:
 
-Vue exposes a couple more composables than React:
+- React returns plain values from hooks
+- Vue returns refs from composables
 
-- `useDyrectedClient()` returns the client; `useDyrected()`, `useDyrectedCollection()`, and `useDyrectedGlobal()` are reactive data-fetching composables (see [Displaying Content](/docs/managing-data/displaying-content/overview)).
-- `useDyrectedAuth(collection, options)` manages a frontend auth session, for building your own login against an auth collection.
+But the public behavior stays aligned:
 
-Like React, the Vue package also ships `DyrectedImage`, `DyrectedMedia`, `DyrectedIcon`, `DyrectedRichText`, and `Blocks` components.
+- media upload works the same way
+- media URL import works the same way
+- media library state works the same way
+- form and field state follow the same contract
+- theme state follows the same contract
 
-### In Nuxt
+## Custom components and hooks solve different problems
 
-`@dyrected/nuxt` **auto-imports** these composables — you don't write import statements for them. `useDyrectedClient`, `useLivePreview`, `useDyPath`, `useDyrectedAuth`, and the data-fetching composables are all available directly in any component:
+Custom components and hooks/composables are related, but they are not the same thing:
 
-```vue
-<script setup lang="ts">
-// no imports needed — auto-provided by the Nuxt module
-const { data } = useLivePreview({ initialData: props.initialData });
-const dyPath = useDyPath("title");
-</script>
-```
+- **Custom components** decide where your UI plugs into the admin: custom field inputs, dashboard slots, list slots
+- **Hooks and composables** decide how any Dyrected-aware UI reads and updates state once it is mounted
 
-The module also auto-registers the components — `<DyrectedAdmin>`, `<DyrectedImage>`, `<DyrectedMedia>`, `<DyrectedBlocks>`, `<DyrectedIcon>`, and `<DyrectedRichText>` — so they're usable in templates without importing them either.
+If you need to register a field component or a slot, start with [Custom Components](/docs/features/custom-components/overview). If you already know where your UI goes and now need state, use the pages in this section.
 
-## Customizing the admin uses props, not hooks
+## Where to import from
 
-There is no `useField` or `useForm` to import for admin work — the admin package intentionally exposes no hooks for consumers. When you replace a field's input or inject a panel, your component receives everything it needs as **props**:
+Once you know which API layer you need, choose the package that matches your app:
 
-- A custom **field** component is handed `value`, `onChange`, the `field` schema, its `path`, a `disabled` flag, the `collection`, and a `context` with the current `user`, `schemas`, and `siblingData`.
-- A custom **slot** (a panel around the dashboard or a list) is handed props like the initialized `client`, the current `user`, the loaded `schemas`, and — for list slots — the current documents and pagination.
+| Package | Use it for |
+| --- | --- |
+| `@dyrected/react` | React and Next.js apps |
+| `@dyrected/vue` | Vue and Nuxt apps |
+| `@dyrected/admin/public` | Lower-level controller setup and advanced integrations |
 
-You read from those props and call `onChange`; you don't reach into admin internals through a hook. This holds for both React and Vue custom components. The full prop shapes and registration flow are documented under [Custom Components](/docs/features/custom-components/overview).
+That means:
+
+- if your app is React or Next.js, import the public hooks from `@dyrected/react`
+- if your app is Vue or Nuxt, import the public composables from `@dyrected/vue`
+- you can ignore the lower-level package unless a guide explicitly brings it up
 
 ## Recommended path
 
-Use the client accessor to fetch content anywhere in your frontend, and `useLivePreview` with `useDyPath` to make pages update live while editors preview — importing from `@dyrected/react` or `@dyrected/vue`, or relying on Nuxt's auto-imports. When your goal is to change the admin itself — a custom input, an injected panel — build a component that reads its props and register it through [Custom Components](/docs/features/custom-components/overview), rather than looking for an admin hook that doesn't exist.
+Start from the job you need to get done:
+
+- uploading files
+- importing media from a URL
+- browsing and selecting assets
+- editing document state
+- building custom field inputs
+- sharing theme state across a shell
+
+Then pick the matching page below. Each page will show the React and Vue version when it matters.
+
+From here:
+
+- Go to [Media Hooks & Composables](/docs/features/admin/media-hooks) if you are building uploaders, URL import, media pickers, or asset workflows in your own app.
+- Go to [Form & Field Hooks](/docs/features/admin/form-and-field-hooks) if you are building custom field UI or document-editing interfaces.
+- Go to [Theme Hooks](/docs/features/admin/theme-hooks) if you are building a themed custom shell around Dyrected-powered UI.
+
+The controller layer exists underneath these APIs so the behavior stays consistent, but most readers do not need to think about it directly.

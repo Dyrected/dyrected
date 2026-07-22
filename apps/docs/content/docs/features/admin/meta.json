@@ -11,6 +11,9 @@
     "metadata",
     "custom-admin-panel-location",
     "react-hooks",
+    "media-hooks",
+    "form-and-field-hooks",
+    "theme-hooks",
     "accessibility",
     "__document-locking"
   ]

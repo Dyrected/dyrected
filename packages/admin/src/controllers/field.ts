@@ -13,6 +13,9 @@ export interface DyrectedFieldController {
   validate(): Promise<boolean>
 }
 
+/**
+ * Creates a field-scoped controller from a Dyrected form controller and a path.
+ */
 export function createDyrectedFieldController(
   formController: DyrectedFormController,
   path: string

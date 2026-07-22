@@ -49,6 +49,13 @@ export interface MediaUploadControllerOptions {
   onError?: (error: Error, file: File) => void
 }
 
+/**
+ * Creates a framework-agnostic media upload controller.
+ *
+ * This is the low-level engine behind the React and Vue media upload APIs. Use
+ * it directly only when you need to build your own adapter layer outside the
+ * shipped framework packages.
+ */
 export interface MediaUploadController {
   getState(): MediaUploadControllerState
   subscribe(listener: Listener): () => void
@@ -85,6 +92,9 @@ export interface MediaURLControllerOptions {
   onError?: (error: Error) => void
 }
 
+/**
+ * Creates a framework-agnostic media URL ingestion controller.
+ */
 export interface MediaURLController {
   getState(): MediaURLControllerState
   subscribe(listener: Listener): () => void
@@ -112,6 +122,10 @@ export interface MediaLibraryControllerOptions {
   initialSelectedIds?: string[]
 }
 
+/**
+ * Creates a framework-agnostic media library controller for search, pagination,
+ * and selection state.
+ */
 export interface MediaLibraryController {
   getState(): MediaLibraryControllerState
   subscribe(listener: Listener): () => void

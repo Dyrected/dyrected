@@ -82,6 +82,9 @@ export interface DyrectedFormController {
   submit(): Promise<unknown>
 }
 
+/**
+ * Normalizes a dotted field path into path segments.
+ */
 export function normalizeFieldPath(path: string): string[] {
   return path
     .split(".")
@@ -89,10 +92,16 @@ export function normalizeFieldPath(path: string): string[] {
     .filter(Boolean)
 }
 
+/**
+ * Alias for `normalizeFieldPath` used in public field/path helpers.
+ */
 export function getFieldPathSegments(path: string): string[] {
   return normalizeFieldPath(path)
 }
 
+/**
+ * Joins path parts into one dotted Dyrected field path.
+ */
 export function joinFieldPath(...parts: DyrectedFieldPathPart[]): string {
   return parts
     .flatMap((part) => {
@@ -105,11 +114,17 @@ export function joinFieldPath(...parts: DyrectedFieldPathPart[]): string {
     .join(".")
 }
 
+/**
+ * Returns the parent path for a given dotted field path.
+ */
 export function getParentFieldPath(path: string): string {
   const segments = normalizeFieldPath(path)
   return segments.slice(0, -1).join(".")
 }
 
+/**
+ * Reads a nested value using a dotted Dyrected field path.
+ */
 export function getValueAtPath(value: unknown, path: string): unknown {
   if (!path) return value
   return normalizeFieldPath(path).reduce<unknown>((currentValue, segment) => {
@@ -118,6 +133,9 @@ export function getValueAtPath(value: unknown, path: string): unknown {
   }, value)
 }
 
+/**
+ * Writes a nested value immutably using a dotted Dyrected field path.
+ */
 export function setValueAtPath<T>(value: T, path: string, nextValue: unknown): T {
   const segments = normalizeFieldPath(path)
   if (segments.length === 0) return nextValue as T
@@ -172,6 +190,11 @@ function findFieldSchema(fields: FieldSchema[], path: string): FieldSchema | nul
   return currentField
 }
 
+/**
+ * Creates a framework-agnostic Dyrected form controller.
+ *
+ * This is the low-level state contract behind the React and Vue form APIs.
+ */
 export function createDyrectedFormController({
   collection,
   fields,

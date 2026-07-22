@@ -31,9 +31,13 @@ export default defineConfig({
   build: {
     minify: false,
     lib: {
-      entry: path.resolve(__dirname, "src/index.tsx"),
+      entry: {
+        index: path.resolve(__dirname, "src/index.tsx"),
+        public: path.resolve(__dirname, "src/public/index.ts"),
+      },
       name: "DyrectedAdmin",
-      fileName: () => "index.mjs",
+      fileName: (_format, entryName) =>
+        entryName === "public" ? "public/index.js" : "index.mjs",
       formats: ["es"],
     },
     rollupOptions: {

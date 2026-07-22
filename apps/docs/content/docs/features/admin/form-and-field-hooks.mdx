@@ -1,0 +1,234 @@
+---
+title: Form & Field Hooks
+description: Use Dyrected's form and field state APIs to build custom admin inputs without reinventing nested path handling, validation wiring, or read-only behavior.
+---
+
+If you are building UI that edits a Dyrected document, you usually do not want to rebuild the hard parts yourself.
+
+That includes things like:
+
+- keeping a whole document form in sync
+- building a custom field input
+- editing nested object or array values
+- showing validation and dirty state
+- respecting read-only mode automatically
+
+That is what the form and field APIs are for.
+
+By the end of this page you should know when to use the form API, when to use the field API, and how the React and Vue setup differs.
+
+## Start with the level of state you need
+
+There are two levels of state:
+
+- **form state** for the whole document
+- **field state** for one path inside that document
+
+Use the form API when your component needs to understand the document as a whole.
+
+Use the field API when your component only cares about one field or one nested subtree.
+
+The field API is built for the parts that are annoying to get right by hand:
+
+- nested dotted paths
+- object children
+- array item paths
+- block-style nested values
+- dirty and validation state at the field level
+
+In normal component code, the hook or composable is the API you work with.
+
+## What these APIs save you from
+
+Without a shared form API, custom field code usually ends up re-solving the same problems over and over:
+
+- where the current value lives
+- how nested paths are resolved
+- how validation state is surfaced
+- how read-only mode is respected
+- how one field updates without breaking the rest of the document
+
+Dyrected's public form and field APIs already solve those problems, so your custom components can focus on the UI instead.
+
+## Typical setups
+
+In React, the field APIs are available from `@dyrected/react`, but they are mounted through a provider.
+
+That means the usual flow is:
+
+1. create a form controller once
+2. pass it to `DyrectedFormProvider`
+3. call `useDyrectedForm()` or `useField()` inside descendants
+
+```tsx
+import {
+  DyrectedFieldPathProvider,
+  DyrectedFormProvider,
+  useDyrectedForm,
+  useField,
+} from "@dyrected/react";
+import { createDyrectedFormController } from "@dyrected/admin/public";
+
+const controller = createDyrectedFormController({
+  collection: "posts",
+  fields: [
+    { name: "title", type: "text" },
+    {
+      name: "hero",
+      type: "object",
+      fields: [{ name: "headline", type: "text" }],
+    },
+  ],
+  initialValues: {
+    title: "Hello",
+    hero: { headline: "Welcome" },
+  },
+});
+
+function TitleField() {
+  const field = useField("title");
+
+  return (
+    <input
+      value={String(field.value ?? "")}
+      onChange={(event) => field.setValue(event.target.value)}
+    />
+  );
+}
+
+function HeadlineField() {
+  const field = useField();
+
+  return (
+    <input
+      value={String(field.value ?? "")}
+      onChange={(event) => field.setValue(event.target.value)}
+    />
+  );
+}
+
+export function PostForm() {
+  const form = useDyrectedForm();
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.submit();
+      }}
+    >
+      <TitleField />
+
+      <DyrectedFieldPathProvider path="hero.headline">
+        <HeadlineField />
+      </DyrectedFieldPathProvider>
+    </form>
+  );
+}
+
+export function PostFormRoot() {
+  return (
+    <DyrectedFormProvider controller={controller}>
+      <PostForm />
+    </DyrectedFormProvider>
+  );
+}
+```
+
+In Vue, the same split exists, but the setup boundary uses `provideDyrectedForm()` and `provideDyrectedFieldPath()` instead of React providers.
+
+```vue
+<script setup lang="ts">
+import {
+  provideDyrectedFieldPath,
+  provideDyrectedForm,
+  useDyrectedForm,
+  useField,
+} from "@dyrected/vue";
+import { createDyrectedFormController } from "@dyrected/admin/public";
+
+const controller = createDyrectedFormController({
+  collection: "posts",
+  fields: [
+    { name: "title", type: "text" },
+    {
+      name: "hero",
+      type: "object",
+      fields: [{ name: "headline", type: "text" }],
+    },
+  ],
+  initialValues: {
+    title: "Hello",
+    hero: { headline: "Welcome" },
+  },
+});
+
+provideDyrectedForm(controller);
+
+const form = useDyrectedForm();
+const title = useField("title");
+
+provideDyrectedFieldPath("hero.headline");
+const headline = useField();
+</script>
+
+<template>
+  <form @submit.prevent="form.submit()">
+    <input
+      :value="String(title.value.value ?? '')"
+      @input="title.setValue(($event.target as HTMLInputElement).value)"
+    />
+
+    <input
+      :value="String(headline.value.value ?? '')"
+      @input="headline.setValue(($event.target as HTMLInputElement).value)"
+    />
+  </form>
+</template>
+```
+
+In Vue, the semantic contract matches React, but the state fields are refs.
+
+## `useDyrectedForm`
+
+Use `useDyrectedForm` when the component cares about the whole document:
+
+- submit state
+- dirty state
+- validation state
+- full values
+- looking up one field schema or one field state from the document root
+
+This is the right API for:
+
+- custom document shells
+- custom side panels
+- save bars
+- validation summaries
+- any component that needs more than one field at a time
+
+## `useField`
+
+Use `useField` when the component is responsible for one field path.
+
+This is the right API for:
+
+- custom field inputs
+- object field sections
+- array row editors
+- block-level UI
+
+`useField` also includes child-path helpers such as:
+
+- `getChildPath`
+- `getItemPath`
+- `getChildValue`
+- `setChildValue`
+
+Those helpers are what save you from hand-building nested dotted paths everywhere.
+
+## Recommended path
+
+Reach for `useDyrectedForm` when your component needs document-level state, and `useField` when your component only cares about one field or one nested subtree.
+
+Import them from `@dyrected/react` or `@dyrected/vue`, wire the one-time form boundary near the top of your editing UI, and then keep the rest of your code at the hook or composable level.
