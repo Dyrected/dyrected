@@ -2079,6 +2079,20 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/ecosystem/integrations/nextjs#example-7",
+    "page": "/ecosystem/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/ecosystem/integrations/nextjs#example-8",
+    "page": "/ecosystem/integrations/nextjs",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/ecosystem/integrations/nuxt#example-1",
     "page": "/ecosystem/integrations/nuxt",
     "language": "bash",
@@ -2108,6 +2122,13 @@
   },
   {
     "id": "/ecosystem/integrations/nuxt#example-5",
+    "page": "/ecosystem/integrations/nuxt",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/ecosystem/integrations/nuxt#example-6",
     "page": "/ecosystem/integrations/nuxt",
     "language": "vue",
     "classification": "syntax-checked",
@@ -2150,6 +2171,13 @@
   },
   {
     "id": "/ecosystem/integrations/react#example-6",
+    "page": "/ecosystem/integrations/react",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/ecosystem/integrations/react#example-7",
     "page": "/ecosystem/integrations/react",
     "language": "tsx",
     "classification": "syntax-checked",
@@ -2213,6 +2241,13 @@
   },
   {
     "id": "/ecosystem/integrations/vue#example-5",
+    "page": "/ecosystem/integrations/vue",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/ecosystem/integrations/vue#example-6",
     "page": "/ecosystem/integrations/vue",
     "language": "vue",
     "classification": "syntax-checked",

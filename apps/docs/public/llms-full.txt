@@ -9716,6 +9716,48 @@ If your environment variables follow the usual Next naming, the admin wrapper ca
 
 Pass props manually only when you want to override those defaults.
 
+## `DyrectedAdmin` theme props
+
+When the rest of the Next app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` so the embedded admin follows the same preference.
+
+The component accepts:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `systemTheme`: the currently resolved system theme, either `light` or `dark`
+- `onThemeChange`: callback fired when the admin changes its preferred theme
+
+Because Next App Router pages are server components by default, keep this state in a client component:
+
+```tsx
+// app/admin/page.tsx
+
+
+export default function AdminPage() {
+  return <AdminClientPage />;
+}
+```
+
+```tsx
+// app/admin/AdminClientPage.tsx
+"use client";
+
+
+
+
+export function AdminClientPage() {
+  const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [systemTheme] = useState<"light" | "dark">("light");
+
+  return (
+    <DyrectedAdmin
+      theme={theme}
+      systemTheme={systemTheme}
+      onThemeChange={setTheme}
+    />
+  );
+}
+```
+
 ## Fetch content in server code
 
 For normal app reads, use the preconfigured client helper:
@@ -9857,6 +9899,37 @@ definePageMeta({ layout: false });
 ```
 
 Use `ClientOnly` here because the admin UI needs the browser DOM.
+
+## `DyrectedAdmin` theme props
+
+When the Nuxt app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` instead of letting the embedded admin keep a separate theme preference.
+
+The component accepts three theme-control props:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `system-theme`: the current resolved OS theme, either `light` or `dark`
+- `on-theme-change`: callback fired when the admin changes its preferred theme
+
+```vue
+<!-- app/pages/admin.vue -->
+<script setup lang="ts">
+definePageMeta({ layout: false });
+
+const { preference, systemTheme, setTheme } = useTheme();
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin
+      :theme="preference"
+      :system-theme="systemTheme"
+      :on-theme-change="setTheme"
+    />
+  </ClientOnly>
+</template>
+```
+
+This keeps the site and embedded admin on the same preference while still letting admin-side theme controls update the host app state.
 
 ## Fetch content with the auto-imported composables
 
@@ -10100,6 +10173,37 @@ export function AdminPage() {
 
 This is the right path when the React app is only an admin host or when it needs to embed the dashboard alongside the rest of the app.
 
+## `DyrectedAdmin` theme props
+
+When the React app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` so the embedded admin uses the same preference.
+
+The component accepts:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `systemTheme`: the currently resolved system theme, either `light` or `dark`
+- `onThemeChange`: callback fired when the admin changes its preferred theme
+
+```tsx
+
+
+
+
+export function AdminPage() {
+  const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [systemTheme] = useState<"light" | "dark">("light");
+
+  return (
+    <DyrectedAdmin
+      baseUrl={import.meta.env.VITE_DYRECTED_URL}
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      theme={theme}
+      systemTheme={systemTheme}
+      onThemeChange={setTheme}
+    />
+  );
+}
+```
+
 ## Related pages
 
 - [SDK](/docs/ecosystem/integrations/sdk)
@@ -10280,6 +10384,43 @@ The same package also gives you `useDyrected`, `useDyrectedGlobal`, `useDyrected
 ```
 
 That is the practical path when the Vue app needs to host the dashboard instead of only consuming content.
+
+## `DyrectedAdmin` theme props
+
+When the Vue app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` so the embedded admin follows the same preference.
+
+The component accepts:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `system-theme`: the currently resolved system theme, either `light` or `dark`
+- `on-theme-change`: callback fired when the admin changes its preferred theme
+
+```vue
+<script setup lang="ts">
+
+
+
+const theme = ref<"system" | "light" | "dark">("system");
+const systemTheme = ref<"light" | "dark">("light");
+
+function setTheme(next: "system" | "light" | "dark") {
+  theme.value = next;
+}
+</script>
+
+<template>
+  <DyrectedAdmin
+    :config="{
+      baseUrl: import.meta.env.VITE_DYRECTED_URL,
+      apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+      siteId: import.meta.env.VITE_DYRECTED_SITE_ID || '',
+    }"
+    :theme="theme"
+    :system-theme="systemTheme"
+    :on-theme-change="setTheme"
+  />
+</template>
+```
 
 ## Use live preview when a route is editable
 
@@ -11665,6 +11806,23 @@ export default function AdminPage() {
 
 Once that route loads, you have a working admin against your configured API. If you want it somewhere other than `/admin`, see [Custom Admin Panel Location](/docs/features/admin/custom-admin-panel-location).
 
+## `DyrectedAdmin` props you will commonly touch
+
+Most embedded setups only need the default wrapper, but `DyrectedAdmin` does expose a few props that are useful when the host app should stay in control.
+
+- `components` injects custom admin UI such as custom field renderers, dashboards, or list slots.
+- `theme` sets the preferred admin theme: `system`, `light`, or `dark`.
+- `systemTheme` provides the currently resolved OS theme: `light` or `dark`.
+- `onThemeChange` lets the admin push theme changes back to the host app.
+- `onNavigate` lets the host app own routing when the admin is mounted under a custom path.
+
+The exact prop naming follows the framework wrapper:
+
+- React and Next use `systemTheme` and `onThemeChange`
+- Vue and Nuxt use `system-theme` and `on-theme-change` in templates
+
+Use these theme props when your site already has a shared dark and light mode preference and the embedded admin should follow that same state.
+
 ## What you get out of the box
 
 The generated admin is a small, opinionated set of screens:
@@ -12232,6 +12390,8 @@ Mount one theme boundary near the root of your custom admin shell:
 Then use `useAdminTheme()` anywhere below it for toggles, themed roots, and theme-aware UI.
 
 There is a lower-level controller layer behind this, but most readers can ignore it.
+
+If your product app already has its own theme state and the admin is only one embedded surface inside it, do not promote `useAdminTheme()` to become the app-wide source of truth. Keep the preference at the host-app level and pass it into `DyrectedAdmin` through its theme props instead.
 
 ---
 
