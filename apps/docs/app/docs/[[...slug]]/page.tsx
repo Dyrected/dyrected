@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { readFile } from 'node:fs/promises'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import Link from 'fumadocs-core/link'
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page'
@@ -27,13 +28,24 @@ interface Props {
 function CloudRailCard() {
   return (
     <div className="mt-4 rounded-2xl border border-fd-border bg-linear-to-br from-fd-card via-fd-card to-fd-muted/55 p-4 shadow-[0_18px_46px_-42px_var(--surface-shadow)]">
-      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[0_10px_28px_-18px_rgba(182,255,46,0.8)]">
-        <Cloud className="h-4 w-4" />
+      <div className="mt-2 mb-4 inline-flex items-center gap-1.5">
+        <Image
+          className="dark:hidden"
+          src="/dyrected.svg"
+          alt="Dyrected"
+          width={120}
+          height={24}
+        />
+        <Image
+          className="hidden dark:block"
+          src="/dyrected-dark.svg"
+          alt="Dyrected"
+          width={120}
+          height={24}
+        />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-fd-primary">| Cloud</span>
       </div>
       <div className="space-y-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-fd-primary">
-          Dyrected Cloud
-        </p>
         <h3 className="text-sm font-semibold leading-5 text-fd-foreground">
           Get your backend ready in minutes
         </h3>
@@ -42,7 +54,8 @@ function CloudRailCard() {
         </p>
       </div>
       <Link
-        href="/docs/quick-start-guides/nextjs-quick-start/setting-up-your-cloud-site"
+        target='__blank'
+        href="https://app.dyrected.com"
         className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[color:var(--accent)] px-3 py-2 text-sm font-medium text-[color:var(--accent-foreground)] transition-transform transition-colors hover:bg-[color:var(--accent-hover)] hover:-translate-y-px"
       >
         Set Up My Backend
