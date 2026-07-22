@@ -7,7 +7,7 @@ Use this page when your Next.js route already renders Dyrected content and you w
 
 By the end, you should understand the minimum preview contract, the recommended first preview mode, and how Dyrected's click-to-edit helpers fit into a Next.js page that already knows how to render its own content.
 
-In the quick-start flow, this page turns a working content route into an editor-friendly preview route. After that, the final setup step is handing the system to another user safely.
+In the quick-start flow, this page turns a working content route into an editor-friendly preview route. The next page then uses that previewable route as the foundation for a controlled landing-page workflow.
 
 ## Start with the right mental model
 
@@ -18,6 +18,22 @@ That means a working visual editor depends on three things:
 - the collection knows which frontend URL to open
 - the frontend can receive draft data
 - rendered fields expose stable paths when you want click-to-edit behavior
+
+## What this page does and does not do
+
+This page is the preview integration step.
+
+It does:
+
+- connect a real route to `previewUrl`
+- swap server-fetched content for draft content in the browser
+- add the field-path support needed for click-to-edit
+
+It does not yet:
+
+- define a library of reusable landing-page sections
+- let editors assemble new page layouts from approved blocks
+- complete the full editorial page-building workflow on its own
 
 <Steps>
 <Step>
@@ -130,12 +146,22 @@ That order prevents the preview system from becoming the first place a page ever
 
 If you need broader background on preview semantics, keep this page as the quick-start integration step and use [Collections](/docs/basics/configuration/collections) for `previewUrl` and `previewMode`, plus [Displaying Content Overview](/docs/managing-data/displaying-content/overview) for the shared rendering helpers.
 
+## What this unlocks next
+
+Once preview works on one real route, you are ready to turn that route into a controlled page builder. The next guide adds:
+
+- a `layout` blocks field with approved section types
+- matching frontend components for those sections
+- one real workflow where editors create and arrange a landing page in preview
+
+Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing).
+
 ## Success check
 
-You are ready to invite editors only when:
+You are ready for the next step when:
 
 - a collection opens the correct frontend route from the admin
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing).
+Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing).
