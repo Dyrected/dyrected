@@ -6,6 +6,7 @@ import {
   getPrimaryWorkflowTransition,
   groupWorkflowTransitions,
   resolvePublishingStatus,
+  shouldUseSaveDraftAsPrimaryAction,
 } from "./workflow-ui"
 
 const workflowConfig: WorkflowConfig = {
@@ -45,12 +46,29 @@ describe("workflow-ui helpers", () => {
     expect(primary?.name).toBe("publish")
   })
 
-  it("falls back to the first available transition when all options unpublish", () => {
+  it("does not expose an unpublish action as the primary action", () => {
     const primary = getPrimaryWorkflowTransition([
       workflowConfig.transitions[2]!,
     ])
 
-    expect(primary?.name).toBe("retract")
+    expect(primary).toBeNull()
+  })
+
+  it("prefers save draft as the primary action when the workflow state is published", () => {
+    expect(shouldUseSaveDraftAsPrimaryAction(workflowConfig, {
+      state: "published",
+      revision: 1,
+      availableTransitions: ["retract"],
+    })).toBe(true)
+  })
+
+  it("does not prefer save draft when the workflow state is not published", () => {
+    expect(shouldUseSaveDraftAsPrimaryAction(workflowConfig, {
+      state: "review",
+      revision: 2,
+      publishedRevision: 1,
+      availableTransitions: ["publish"],
+    })).toBe(false)
   })
 
   it("groups unpublish actions after normal transitions without changing labels", () => {

@@ -20,6 +20,44 @@ export const Pages = defineCollection({
     icon: "ListCheck",
   },
   drafts: true,
+  /*workflow: {
+    transitions: [
+      {
+        name: "submit-for-review",
+        label: "Submit for Review",
+        from: "draft",
+        to: "in-review",
+      },
+      {
+        name: "approve",
+        label: "Approve",
+        from: "in-review",
+        to: "published",
+      },
+      {
+        name: "reject",
+        label: "Reject",
+        from: "in-review",
+        to: "draft",
+        requireComment: true,
+      },
+      {
+        name: "close",
+        label: "Close",
+        from: "published",
+        to: "draft",
+        unpublish: true,
+        requireComment: true,
+      },
+    ],
+    states: [
+      { name: "draft", label: "Draft" },
+      { name: "in-review", label: "In Review" },
+      { name: "published", label: "Published", published: true },
+    ],
+    initialState: "draft",
+    draftState: "draft",
+  },*/
   audit: true,
   fields: [
     { name: "title", type: "text", required: true },

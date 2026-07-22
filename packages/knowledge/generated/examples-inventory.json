@@ -3873,9 +3873,30 @@
   {
     "id": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing#example-1",
     "page": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing#example-2",
+    "page": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing#example-3",
+    "page": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing#example-4",
+    "page": "/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing",
+    "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/quick-start-guides/nextjs-quick-start/defining-a-schema#example-1",

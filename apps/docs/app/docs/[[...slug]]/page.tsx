@@ -33,17 +33,17 @@ function CloudRailCard() {
           className="dark:hidden"
           src="/dyrected.svg"
           alt="Dyrected"
-          width={120}
+          width={100}
           height={24}
         />
         <Image
           className="hidden dark:block"
           src="/dyrected-dark.svg"
           alt="Dyrected"
-          width={120}
+          width={100}
           height={24}
         />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-fd-primary">| Cloud</span>
+        <span className="text-sm font-semibold uppercase tracking-[0.16em]">| Cloud</span>
       </div>
       <div className="space-y-2">
         <h3 className="text-sm font-semibold leading-5 text-fd-foreground">

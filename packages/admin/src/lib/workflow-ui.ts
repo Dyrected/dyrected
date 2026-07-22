@@ -90,8 +90,14 @@ export function getPrimaryWorkflowTransition(
   transitions: WorkflowTransition[],
 ): WorkflowTransition | null {
   if (transitions.length === 0) return null
-  if (transitions.length === 1) return transitions[0] ?? null
-  return transitions.find((transition) => !transition.unpublish) ?? transitions[0] ?? null
+  return transitions.find((transition) => !transition.unpublish) ?? null
+}
+
+export function shouldUseSaveDraftAsPrimaryAction(
+  workflowConfig: WorkflowConfig | null | undefined,
+  workflowMeta: WorkflowMetadata | null | undefined,
+): boolean {
+  return !!resolveWorkflowState(workflowConfig, workflowMeta)?.published
 }
 
 export type GroupedWorkflowTransitions = {

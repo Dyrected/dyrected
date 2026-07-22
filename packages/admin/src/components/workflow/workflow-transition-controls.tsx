@@ -26,6 +26,7 @@ import {
   getAvailableWorkflowTransitions,
   getPrimaryWorkflowTransition,
   groupWorkflowTransitions,
+  shouldUseSaveDraftAsPrimaryAction,
 } from "../../lib/workflow-ui"
 
 export interface WorkflowCapableClient {
@@ -77,6 +78,58 @@ function StateIcon({ color }: { color?: string }) {
   return <Clock className="dy-h-3.5 dy-w-3.5" />
 }
 
+function WorkflowCommentDialogBody({
+  transition,
+  pending,
+  onConfirm,
+  onCancel,
+}: {
+  transition: WorkflowTransition
+  pending: boolean
+  onConfirm: (comment: string) => void
+  onCancel: () => void
+}) {
+  const [comment, setComment] = React.useState("")
+
+  return (
+    <DialogContent className="sm:dy-max-w-md">
+      <DialogHeader>
+        <DialogTitle>{transition.label}</DialogTitle>
+        <DialogDescription>
+          Add the required comment before applying this workflow transition.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="dy-space-y-2">
+        <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground">
+          Comment
+        </label>
+        <textarea
+          className="dy-min-h-28 dy-w-full dy-rounded-lg dy-border dy-border-border/60 dy-bg-background dy-px-3 dy-py-2 dy-text-sm dy-text-foreground placeholder:dy-text-muted-foreground focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-primary/30"
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          placeholder={`Required for "${transition.label}"`}
+          autoFocus
+        />
+      </div>
+      <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          disabled={pending}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={() => onConfirm(comment.trim())}
+          disabled={pending || !comment.trim()}
+        >
+          {pending ? <Loader2 className="dy-h-4 dy-w-4 dy-animate-spin" /> : transition.label}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  )
+}
+
 function WorkflowCommentDialog({
   transition,
   pending,
@@ -88,51 +141,17 @@ function WorkflowCommentDialog({
   onOpenChange: (open: boolean) => void
   onConfirm: (comment: string) => void
 }) {
-  const [comment, setComment] = React.useState("")
-
-  React.useEffect(() => {
-    if (!transition) {
-      setComment("")
-    }
-  }, [transition])
-
   return (
     <Dialog open={!!transition} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:dy-max-w-md">
-        <DialogHeader>
-          <DialogTitle>{transition?.label}</DialogTitle>
-          <DialogDescription>
-            Add the required comment before applying this workflow transition.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="dy-space-y-2">
-          <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground">
-            Comment
-          </label>
-          <textarea
-            className="dy-min-h-28 dy-w-full dy-rounded-lg dy-border dy-border-border/60 dy-bg-background dy-px-3 dy-py-2 dy-text-sm dy-text-foreground placeholder:dy-text-muted-foreground focus:dy-outline-none focus:dy-ring-2 focus:dy-ring-primary/30"
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder={`Required for "${transition?.label ?? "this transition"}"`}
-            autoFocus
-          />
-        </div>
-        <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={pending}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => onConfirm(comment.trim())}
-            disabled={pending || !comment.trim()}
-          >
-            {pending ? <Loader2 className="dy-h-4 dy-w-4 dy-animate-spin" /> : transition?.label}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+      {transition ? (
+        <WorkflowCommentDialogBody
+          key={transition.name}
+          transition={transition}
+          pending={pending}
+          onConfirm={onConfirm}
+          onCancel={() => onOpenChange(false)}
+        />
+      ) : null}
     </Dialog>
   )
 }
@@ -345,6 +364,10 @@ export function WorkflowTransitionSplitButton({
     () => getPrimaryWorkflowTransition(transitions),
     [transitions],
   )
+  const saveDraftIsPrimary = React.useMemo(
+    () => Boolean(onSaveDraft && shouldUseSaveDraftAsPrimaryAction(workflowConfig, workflowMeta)),
+    [onSaveDraft, workflowConfig, workflowMeta],
+  )
   const {
     requestTransition,
     commentTransition,
@@ -365,8 +388,14 @@ export function WorkflowTransitionSplitButton({
   const activeTransitionName = (mutation.variables as { transition?: WorkflowTransition } | undefined)?.transition?.name
   const isPrimaryLoading = mutation.isPending && activeTransitionName === primaryTransition?.name
   const hasTransitions = transitions.length > 0
-  const hasMenuItems = hasTransitions || !!onSaveDraft
+  const hasMenuItems = hasTransitions || (!!onSaveDraft && !saveDraftIsPrimary)
   const isBusy = mutation.isPending || isPreparing || !!saveDraftPending
+  const primaryLabel = saveDraftIsPrimary
+    ? (saveDraftPending ? "Saving draft..." : "Save draft")
+    : (primaryTransition?.label ?? "No actions")
+  const primaryDisabled = saveDraftIsPrimary
+    ? isBusy
+    : (!primaryTransition || isBusy)
 
   React.useEffect(() => {
     onPendingChange?.(mutation.isPending || isPreparing)
@@ -380,21 +409,30 @@ export function WorkflowTransitionSplitButton({
           <Button
             size="sm"
             className="dy-h-9 dy-rounded-none dy-border-0 dy-px-4 dy-font-bold dy-bg-primary dy-text-primary-foreground hover:dy-bg-primary/90"
-            disabled={!primaryTransition || isBusy}
+            disabled={primaryDisabled}
             onClick={() => {
+              if (saveDraftIsPrimary) {
+                void onSaveDraft?.()
+                return
+              }
               if (primaryTransition) {
                 void requestTransition(primaryTransition)
               }
             }}
-            title={primaryTransition?.label ?? "No workflow actions available"}
+            title={saveDraftIsPrimary ? "Save draft" : (primaryTransition?.label ?? "No workflow actions available")}
           >
-            {isPrimaryLoading || isPreparing ? (
+            {saveDraftIsPrimary && saveDraftPending ? (
+              <span className="dy-flex dy-items-center dy-gap-2">
+                <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
+                Saving draft...
+              </span>
+            ) : isPrimaryLoading || isPreparing ? (
               <span className="dy-flex dy-items-center dy-gap-2">
                 <Loader2 className="dy-h-3.5 dy-w-3.5 dy-animate-spin" />
                 {isPreparing ? "Saving…" : "Applying…"}
               </span>
             ) : (
-              primaryTransition?.label ?? "No actions"
+              primaryLabel
             )}
           </Button>
           <DropdownMenu>
@@ -410,7 +448,7 @@ export function WorkflowTransitionSplitButton({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="dy-min-w-56">
-              {onSaveDraft && (
+              {onSaveDraft && !saveDraftIsPrimary && (
                 <DropdownMenuItem
                   onClick={() => void onSaveDraft()}
                   disabled={isBusy}

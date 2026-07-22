@@ -20011,7 +20011,7 @@ Use this page when your Next.js route already renders Dyrected content and you w
 
 By the end, you should understand the minimum preview contract, the recommended first preview mode, and how Dyrected's click-to-edit helpers fit into a Next.js page that already knows how to render its own content.
 
-In the quick-start flow, this page turns a working content route into an editor-friendly preview route. After that, the final setup step is handing the system to another user safely.
+In the quick-start flow, this page turns a working content route into an editor-friendly preview route. The next page then uses that previewable route as the foundation for a controlled landing-page workflow.
 
 ## Start with the right mental model
 
@@ -20022,6 +20022,22 @@ That means a working visual editor depends on three things:
 - the collection knows which frontend URL to open
 - the frontend can receive draft data
 - rendered fields expose stable paths when you want click-to-edit behavior
+
+## What this page does and does not do
+
+This page is the preview integration step.
+
+It does:
+
+- connect a real route to `previewUrl`
+- swap server-fetched content for draft content in the browser
+- add the field-path support needed for click-to-edit
+
+It does not yet:
+
+- define a library of reusable landing-page sections
+- let editors assemble new page layouts from approved blocks
+- complete the full editorial page-building workflow on its own
 
 <Steps>
 <Step>
@@ -20134,15 +20150,25 @@ That order prevents the preview system from becoming the first place a page ever
 
 If you need broader background on preview semantics, keep this page as the quick-start integration step and use [Collections](/docs/basics/configuration/collections) for `previewUrl` and `previewMode`, plus [Displaying Content Overview](/docs/managing-data/displaying-content/overview) for the shared rendering helpers.
 
+## What this unlocks next
+
+Once preview works on one real route, you are ready to turn that route into a controlled page builder. The next guide adds:
+
+- a `layout` blocks field with approved section types
+- matching frontend components for those sections
+- one real workflow where editors create and arrange a landing page in preview
+
+Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing).
+
 ## Success check
 
-You are ready to invite editors only when:
+You are ready for the next step when:
 
 - a collection opens the correct frontend route from the admin
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing).
+Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing).
 
 ---
 
@@ -20150,7 +20176,7 @@ Once that is true, continue to [Let Editors Build Custom Pages in Next.js with D
 
 Canonical URL: https://docs.dyrected.com/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in Next.js](/docs/quick-start-guides/nextjs-quick-start/adding-a-visual-editor-in-nextjs). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Next.js](/docs/quick-start-guides/nextjs-quick-start/adding-a-visual-editor-in-nextjs). This is the page where schema, rendering, and visual preview finally become one complete workflow for editors. At this point, the important pieces should already exist:
 
 - the `pages` collection exists
 - the frontend can render Dyrected content
@@ -20159,6 +20185,19 @@ Use this page after [Adding a Visual Editor in Next.js](/docs/quick-start-guides
 Now the goal changes. Instead of proving the integration works, you are deciding whether the setup is ready for editors to build real campaign and landing pages without developer help for every change.
 
 By the end, you should know what a safe custom-page workflow looks like, which parts must stay controlled by code, and how the schema, rendering, and preview pieces fit together into one editor-ready system.
+
+Before this page:
+
+- editors can preview and click into content on a real route
+- the frontend can render Dyrected content correctly
+
+After this page:
+
+- editors can assemble a new landing page from approved sections
+- preview still shows the real route while they work
+- the frontend keeps the design system and layout guardrails
+
+This guide assumes you already have some real landing-page sections in your frontend. The missing job is turning those existing sections into reusable Dyrected blocks one by one.
 
 ## Start with the right mental model
 
@@ -20193,9 +20232,87 @@ If a section is not already designed in the frontend, do not add it yet. The fas
 
 </Step>
 <Step>
+### Start from existing frontend components
+
+Do not design the block schema in a vacuum. Pick one existing section from the site and treat that component as the source of truth for the first block.
+
+For each section you want editors to use:
+
+1. find the real React component that already renders that section
+2. list the props or content inputs it already expects
+3. separate true content fields from styling and layout internals
+4. keep only the content fields editors should control
+
+For example, an existing hero section might already look roughly like this:
+
+```tsx
+type HeroSectionProps = {
+  heading: string;
+  subheading?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  image?: Media;
+};
+
+export function HeroSection({
+  heading,
+  subheading,
+  ctaLabel,
+  ctaUrl,
+  image,
+}: HeroSectionProps) {
+  return (
+    <section>
+      <h1>{heading}</h1>
+      {subheading ? <p>{subheading}</p> : null}
+      {ctaLabel && ctaUrl ? <a href={ctaUrl}>{ctaLabel}</a> : null}
+      {image ? <DyrectedImage media={image} alt={heading} /> : null}
+    </section>
+  );
+}
+```
+
+That is a good first block candidate because the editable inputs are already clear. The component already owns the layout and styling, so the block only needs to expose the content fields.
+
+</Step>
+<Step>
+### Turn one component into one reusable block
+
+Once you know which existing section you are modeling, create a block that matches the content inputs that component really needs.
+
+The safest quick-start rule is:
+
+- one visible section type equals one block
+- one block should map cleanly to one existing frontend component
+- block fields should describe content, not implementation details
+
+For the hero example above, the block can look like this:
+
+```ts
+const HeroBlock = defineBlock({
+  slug: "hero",
+  labels: { singular: "Hero", plural: "Heroes" },
+  fields: [
+    defineTextField({ name: "heading", label: "Heading", required: true }),
+    defineTextareaField({ name: "subheading", label: "Subheading" }),
+    defineTextField({ name: "ctaLabel", label: "CTA label" }),
+    defineUrlField({ name: "ctaUrl", label: "CTA URL" }),
+    defineRelationshipField({
+      name: "image",
+      label: "Image",
+      relationTo: "media",
+    }),
+  ],
+});
+```
+
+That mapping should feel boring on purpose. If the component already works, the block should usually mirror its content inputs instead of inventing a new API.
+
+</Step>
+<Step>
 ### Add a `layout` blocks field to the `pages` collection
 
-If you have not already done it during the earlier schema steps, this is the key schema change that turns a basic page model into a controlled landing-page builder.
+After you have converted the first few existing sections into blocks, add them to a `layout` field on the `pages` collection. This is the key schema change that turns a basic page model into a controlled landing-page builder.
 
 ```ts
 
@@ -20291,6 +20408,56 @@ That means:
 
 If one of those pieces is missing, this stops being a custom-page workflow and turns back into a schema exercise.
 
+In practice, the simplest path is usually to keep your existing section component and add a thin adapter only if the prop shape needs cleanup.
+
+For example, a route can render the approved blocks like this:
+
+```tsx
+
+
+
+
+
+
+function HeroBlockView(props: {
+  heading: string;
+  subheading?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  image?: Media;
+}) {
+  return <HeroSection {...props} />;
+}
+
+<Blocks
+  items={page.layout}
+  path="layout"
+  components={{
+    hero: HeroBlockView,
+    featureGrid: FeatureGridSection,
+    testimonial: TestimonialSection,
+    callToAction: CallToActionSection,
+  }}
+/>;
+```
+
+If you need the shared rendering pattern first, go back to [Displaying Content in Next.js](/docs/quick-start-guides/nextjs-quick-start/displaying-content-in-nextjs), especially the section on rendering blocks.
+
+</Step>
+<Step>
+### Repeat that conversion for each approved section
+
+At this point, the workflow for every new landing-page section is the same:
+
+1. start from an existing frontend component
+2. identify the content inputs editors should control
+3. define a matching Dyrected block
+4. add that block to the `layout` field
+5. register the matching component in the frontend `Blocks` mapping
+6. confirm the section renders and previews correctly
+
+That repetition is normal. A landing-page builder is not one magic switch. It is a small library of approved section components that you wire into the schema and renderer one by one.
+
 </Step>
 <Step>
 ### Keep the page builder controlled
@@ -20366,7 +20533,7 @@ You are ready for the next step when:
 - preview reflects changes on a real page
 - the dashboard can create at least one landing page from those approved sections
 
-Once that is true, your Next.js quick start is complete. When you are ready to give access to another person, continue to [Handing Off to Editors](/docs/features/authentication/handing-off-to-editors).
+Once that is true, editors can create a page, add approved sections, reorder them, preview the result on the real route, and publish routine content changes without developer help. When you are ready to give access to another person, continue to [Handing Off to Editors](/docs/features/authentication/handing-off-to-editors).
 
 ---
 
@@ -20543,7 +20710,7 @@ You are ready for the next step when:
 - shared site content lives in globals where that makes sense
 - preview can open a real frontend route for that routable content
 
-Once that is true, continue to [Building Landing Pages for Marketing](/docs/quick-start-guides/nextjs-quick-start/building-landing-pages-for-marketing).
+Once that is true, continue to [Setting Up Initial Data](/docs/quick-start-guides/nextjs-quick-start/setting-up-initial-data).
 
 ---
 
