@@ -1,6 +1,6 @@
 {
   "name": "@dyrected/nuxt",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "type": "module",
   "main": "./dist/module.mjs",
   "types": "./dist/module.d.ts",

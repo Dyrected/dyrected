@@ -1,5 +1,104 @@
 # @dyrected/admin
 
+## 2.6.2
+
+### Patch Changes
+
+- d99e703: Add controlled theme props to `DyrectedAdmin` across the admin and framework wrappers:
+
+  - `theme` sets the preferred admin theme to `system`, `light`, or `dark`.
+  - `systemTheme` supplies the currently resolved system theme for React and Next hosts.
+  - `onThemeChange` lets embedded admin theme controls update host-managed theme state in React and Next.
+  - Nuxt and Vue wrappers expose the same controlled theme surface through `theme`, `system-theme`, and `on-theme-change`.
+
+  This makes it possible for host apps to keep one shared dark and light mode preference while the embedded admin stays in sync.
+
+- e15d27b: Dogfood the public admin controller APIs inside the built-in UI:
+
+  - Move `MediaLibraryDialog` onto `useMediaLibrary` for internal library loading, paging, and selection state.
+  - Use the public field/form APIs inside the built-in form renderer so nested field state flows through `useField` and `useDyrectedForm`.
+  - Replace manual nested path string building in array, block, form, and nested-editor internals with the exported path helpers.
+  - Align internal nested field targeting with full field paths, improving consistency with the public custom-field contract.
+
+- 637b9b2: Implemented the framework-level public API first, which was the right prerequisite for docs.
+  Added a framework-level public API across the admin, React, and Vue packages.
+
+  - `@dyrected/admin` now ships a side-effect-free public entrypoint for controllers, helpers, and React admin primitives, without pulling in the admin app entry or its CSS.
+  - `@dyrected/react` now exposes the intended top-level admin and media hooks, and re-exports the form, field, and theme React APIs from the admin public surface.
+  - `@dyrected/vue` now exposes first-class composables for admin schemas, media flows, forms, fields, and theming, and includes a Vue module shim so plain TypeScript validation works.
+
+- 1eb9525: Add a reusable public form and field API foundation to `@dyrected/admin`:
+
+  - Introduce framework-agnostic form and field controllers:
+    - `createDyrectedFormController`
+    - `createDyrectedFieldController`
+  - Add React adapters for the shared controller layer:
+    - `DyrectedFormProvider`
+    - `DyrectedFieldPathProvider`
+    - `useDyrectedForm`
+    - `useField`
+  - Publish custom field component prop/context types so host apps can build `admin.component` field overrides against a stable contract.
+  - Export form utility helpers (`buildSchemaShape`, `buildDefaultValues`, `getFlatErrors`, `formatPath`, `resolveContainerPath`) for advanced custom form surfaces.
+  - Keep the existing admin form engine on `react-hook-form` internally while syncing its state into the shared controller layer so public consumers and built-in forms use the same source of truth.
+
+- ae674d9: Add a reusable public media API foundation to `@dyrected/admin`:
+
+  - Introduce framework-agnostic media controllers for uploads, URL imports, and media library state:
+    - `createMediaUploadController`
+    - `createMediaURLController`
+    - `createMediaLibraryController`
+  - Refactor the React media hooks to become adapters over the shared controller layer:
+    - `useMediaUpload`
+    - `useMediaURL`
+    - `useMediaLibrary`
+  - Keep `useAddMediaFromUrl` as a backward-compatible alias while shifting the preferred public naming to `useMediaURL`.
+  - Export the new media controllers, React hooks, and supporting media utilities from `@dyrected/admin` so host apps can build custom media interfaces without reimplementing ingestion logic.
+  - Preserve the existing admin media experience by keeping `MediaLibraryDialog`, `MediaPicker`, and `MediaPage` on the same controller-backed upload and URL import pipeline.
+
+- e467cb2: Extend the public admin API with theme controller support and field-path ergonomics:
+
+  - Introduce `createAdminThemeController` as a framework-agnostic theme state foundation for React, Vue, and other host apps.
+  - Export the public React theme adapter surface:
+    - `AdminThemeProvider`
+    - `AdminThemedRoot`
+    - `useAdminTheme`
+  - Export pure theme helpers:
+    - `resolveAdminTheme`
+    - `adminThemeClassName`
+    - `getSystemAdminTheme`
+  - Add higher-level nested field path helpers for custom field authors:
+    - `normalizeFieldPath`
+    - `getFieldPathSegments`
+    - `joinFieldPath`
+    - `getParentFieldPath`
+  - Extend `useField` with object/array convenience helpers so nested custom fields can work with child and item paths without hand-building dot-path strings.
+  - Document the controller-first public API pattern in `packages/admin/docs/public-controller-pattern.md`.
+
+- 80b8942: Refine workflow action behavior in the admin collection editor:
+
+  - Prefer `Save draft` as the primary workflow button when an entry is currently in a published workflow state.
+  - Keep unpublish-style workflow transitions out of the primary button and available from the workflow dropdown instead.
+  - Preserve normal forward workflow transitions as the primary action for non-published entries.
+  - Remove the workflow comment dialog's effect-based local state reset to satisfy React Hooks lint rules without changing the required-comment flow.
+
+- 70e570b: Overhaul media library upload experience with a unified media ingestion pipeline and non-technical storage notices:
+  - Add multi-file drag-and-drop dropzone with live byte-level upload progress queue in `MediaLibraryDialog`.
+  - Unify file ingestion across `MediaLibraryDialog`, `MediaPicker`, and `MediaPage` using `useMediaUpload`.
+  - Add client-side Canvas API image compression (`compressImage`) capping long edges to 2048px before network transfer.
+  - Add safe upload collection resolution (`resolveActiveMediaCollection`) falling back to `"media"` for non-upload collections.
+  - Optimize URL media import pipeline with 0-byte bandwidth transfer for YouTube/Vimeo embeds and direct remote video CDN links, with client-side fetch and CORS fallbacks for direct images.
+  - Add semantic source classification and visual badges (`getMediaSourceInfo`) for internal vs external media items across grid, list, and detail views.
+  - Add non-technical, user-friendly `StorageNotConfiguredNotice` banner on `MediaPage` and `MediaLibraryDialog` when media storage is not configured.
+  - Add "Media storage is not set up" alert item to the Dashboard "Needs attention" section when an upload collection exists without a configured storage provider.
+  - Catch `Storage not configured` errors gracefully across upload forms and format them into clear instructions asking the user to contact their developer.
+- 637b9b2: Rewrite the public API docs around end-user goals instead of internal architecture.
+
+  - Rework the overview for hooks and composables so it starts from the jobs developers are trying to get done, such as media uploads, media picking, document editing, custom fields, and theme-aware shells.
+  - Add focused documentation pages for media, form and field, and theme APIs in `apps/docs`, with practical guidance for custom components, dashboards, and host apps rather than framing them only as admin internals.
+  - Keep the lower-level controller layer documented only as supporting context, while steering most readers toward the public React hooks in `@dyrected/react` and Vue composables in `@dyrected/vue`.
+  - @dyrected/core@2.6.2
+  - @dyrected/sdk@2.6.2
+
 ## 2.6.1
 
 ### Patch Changes

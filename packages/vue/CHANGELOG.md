@@ -1,5 +1,44 @@
 # @dyrected/vue
 
+## 2.6.2
+
+### Patch Changes
+
+- d99e703: Add controlled theme props to `DyrectedAdmin` across the admin and framework wrappers:
+
+  - `theme` sets the preferred admin theme to `system`, `light`, or `dark`.
+  - `systemTheme` supplies the currently resolved system theme for React and Next hosts.
+  - `onThemeChange` lets embedded admin theme controls update host-managed theme state in React and Next.
+  - Nuxt and Vue wrappers expose the same controlled theme surface through `theme`, `system-theme`, and `on-theme-change`.
+
+  This makes it possible for host apps to keep one shared dark and light mode preference while the embedded admin stays in sync.
+
+- 637b9b2: Implemented the framework-level public API first, which was the right prerequisite for docs.
+  Added a framework-level public API across the admin, React, and Vue packages.
+
+  - `@dyrected/admin` now ships a side-effect-free public entrypoint for controllers, helpers, and React admin primitives, without pulling in the admin app entry or its CSS.
+  - `@dyrected/react` now exposes the intended top-level admin and media hooks, and re-exports the form, field, and theme React APIs from the admin public surface.
+  - `@dyrected/vue` now exposes first-class composables for admin schemas, media flows, forms, fields, and theming, and includes a Vue module shim so plain TypeScript validation works.
+
+- 637b9b2: Rewrite the public API docs around end-user goals instead of internal architecture.
+
+  - Rework the overview for hooks and composables so it starts from the jobs developers are trying to get done, such as media uploads, media picking, document editing, custom fields, and theme-aware shells.
+  - Add focused documentation pages for media, form and field, and theme APIs in `apps/docs`, with practical guidance for custom components, dashboards, and host apps rather than framing them only as admin internals.
+  - Keep the lower-level controller layer documented only as supporting context, while steering most readers toward the public React hooks in `@dyrected/react` and Vue composables in `@dyrected/vue`.
+
+- Updated dependencies [d99e703]
+- Updated dependencies [e15d27b]
+- Updated dependencies [637b9b2]
+- Updated dependencies [1eb9525]
+- Updated dependencies [ae674d9]
+- Updated dependencies [e467cb2]
+- Updated dependencies [80b8942]
+- Updated dependencies [70e570b]
+- Updated dependencies [637b9b2]
+  - @dyrected/admin@2.6.2
+  - @dyrected/core@2.6.2
+  - @dyrected/sdk@2.6.2
+
 ## 2.6.1
 
 ### Patch Changes
