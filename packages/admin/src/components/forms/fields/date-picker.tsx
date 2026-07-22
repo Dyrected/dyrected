@@ -1,8 +1,10 @@
 import * as React from "react"
 import { format } from "date-fns"
+import type { DateFormat } from "@dyrected/core"
 import { Calendar as CalendarIcon, Clock, X, ChevronDown } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
+import { formatDate } from "../../../lib/format"
 import { cn } from "../../../lib/utils"
 import { Button } from "../../ui/button"
 import { Calendar } from "../../ui/calendar"
@@ -61,9 +63,11 @@ interface DatePickerProps {
   label?: string
   disabled?: boolean
   withTime?: boolean
+  fieldType: "date" | "datetime" | "time"
+  format?: DateFormat
 }
 
-export function DatePicker({ value, onChange, label, disabled, withTime }: DatePickerProps) {
+export function DatePicker({ value, onChange, label, disabled, withTime, fieldType, format: valueFormat }: DatePickerProps) {
   const [open, setOpen] = React.useState(false)
   const wrapperRef = React.useRef<HTMLDivElement>(null)
   const date = value ? new Date(value) : undefined
@@ -93,7 +97,8 @@ export function DatePicker({ value, onChange, label, disabled, withTime }: DateP
     onChange(newDate.toISOString())
   }
 
-  const displayFormat = withTime ? "PPP p" : "PPP"
+  const triggerLabelFormat = withTime ? "PPP p" : "PPP"
+  const helperText = date ? formatDate(date.toISOString(), valueFormat, fieldType) : null
 
   return (
     <div className="dy-flex dy-flex-col dy-gap-2">
@@ -116,7 +121,7 @@ export function DatePicker({ value, onChange, label, disabled, withTime }: DateP
         >
           <CalendarIcon className="dy-mr-3 dy-h-4 dy-w-4 dy-text-primary dy-shrink-0" />
           <span className="dy-flex-1 dy-truncate">
-            {date ? format(date, displayFormat) : withTime ? "Pick a date & time..." : "Pick a date..."}
+            {date ? format(date, triggerLabelFormat) : withTime ? "Pick a date & time..." : "Pick a date..."}
           </span>
           {date ? (
             <X
@@ -159,6 +164,11 @@ export function DatePicker({ value, onChange, label, disabled, withTime }: DateP
           )}
         </InlinePicker>
       </div>
+      {helperText && (
+        <p className="dy-text-xs dy-text-muted-foreground">
+          Display: {helperText}
+        </p>
+      )}
     </div>
   )
 }

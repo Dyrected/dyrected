@@ -1,9 +1,12 @@
+import type { RadioField as RadioFieldSchema } from "@dyrected/core"
 import { useQuery } from "@tanstack/react-query"
 import { useDyrected } from "../../../providers/dyrected-context"
 import { RadioGroup, RadioGroupItem } from "../../ui/radio-group"
 import { Label } from "../../ui/label"
 import { cn } from "../../../lib/utils"
+import { displayToneClass, getOptionBadge } from "../../../lib/format"
 import { normalizeOptions } from "../utils"
+import { Badge } from "../../ui/badge"
 import type { Field as FieldSchema } from "@dyrected/sdk"
 
 interface RadioFieldProps {
@@ -48,6 +51,7 @@ export function RadioField({ schema, field, disabled, collection, siblingValues 
 
   const rawOptions = isDynamic ? (dynamicOptions || []) : (Array.isArray(schema.options) ? schema.options : [])
   const options = normalizeOptions(rawOptions)
+  const optionFormat = (schema as RadioFieldSchema).admin?.format
   const isHorizontal = (schema.admin as { direction?: string })?.direction === "horizontal"
 
   if (isDynamic && isLoading) {
@@ -88,7 +92,11 @@ export function RadioField({ schema, field, disabled, collection, siblingValues 
               "dy-text-sm dy-font-medium dy-text-foreground/70 dy-peer-data-[state=checked]:dy-text-primary"
             )}
           >
-            {opt.label}
+            {(() => {
+              const badge = getOptionBadge(opt.value, optionFormat, rawOptions as Array<string | { label: string; value: unknown }>)
+              if (!badge) return opt.label
+              return <Badge className={cn(displayToneClass(badge.tone))}>{badge.label}</Badge>
+            })()}
           </Label>
         </div>
       ))}

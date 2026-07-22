@@ -45,6 +45,23 @@ export default function AdminPage() {
 
 Once that route loads, you have a working admin against your configured API. If you want it somewhere other than `/admin`, see [Custom Admin Panel Location](/docs/features/admin/custom-admin-panel-location).
 
+## `DyrectedAdmin` props you will commonly touch
+
+Most embedded setups only need the default wrapper, but `DyrectedAdmin` does expose a few props that are useful when the host app should stay in control.
+
+- `components` injects custom admin UI such as custom field renderers, dashboards, or list slots.
+- `theme` sets the preferred admin theme: `system`, `light`, or `dark`.
+- `systemTheme` provides the currently resolved OS theme: `light` or `dark`.
+- `onThemeChange` lets the admin push theme changes back to the host app.
+- `onNavigate` lets the host app own routing when the admin is mounted under a custom path.
+
+The exact prop naming follows the framework wrapper:
+
+- React and Next use `systemTheme` and `onThemeChange`
+- Vue and Nuxt use `system-theme` and `on-theme-change` in templates
+
+Use these theme props when your site already has a shared dark and light mode preference and the embedded admin should follow that same state.
+
 ## What you get out of the box
 
 The generated admin is a small, opinionated set of screens:

@@ -1,5 +1,7 @@
 import type {
   EmailField,
+  DateField,
+  DateTimeField,
   Field as FieldSchema,
   IconField,
   NumberField,
@@ -155,9 +157,9 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "json":
       return <JsonEditor value={field.value} onChange={field.onChange} disabled={disabled} />
     case "date":
-      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} fieldType="date" format={(schema as DateField).admin?.format} />
     case "datetime":
-      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime />
+      return <DatePicker value={field.value} onChange={field.onChange} disabled={disabled} withTime fieldType="datetime" format={(schema as DateTimeField).admin?.format} />
     case "daterange":
       return <DateRangePicker value={field.value} onChange={field.onChange} disabled={disabled} />
     case "time":

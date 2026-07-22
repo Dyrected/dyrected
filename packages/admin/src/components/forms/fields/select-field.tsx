@@ -1,8 +1,11 @@
 import * as React from "react"
 import { Check, ChevronsUpDown, X, Plus } from "lucide-react"
+import type { SelectField as SelectFieldSchema } from "@dyrected/core"
 
 import { cn } from "../../../lib/utils"
+import { displayToneClass, getOptionBadge } from "../../../lib/format"
 import { Button } from "../../ui/button"
+import { Badge } from "../../ui/badge"
 import {
   Command,
   CommandEmpty,
@@ -87,6 +90,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
     label: opt.label,
     value: String(opt.value ?? ""),
   }))
+  const optionFormat = (schema as SelectFieldSchema).admin?.format
 
   const currentValue =
     field.value === "" || field.value === undefined || field.value === null
@@ -94,6 +98,7 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
       : String(field.value)
   const selectedOption = options.find((opt) => opt.value === currentValue)
   const placeholder = isDynamic && isLoading ? "Loading options..." : schema.admin?.placeholder || `Select ${label.toLowerCase()}`
+  const selectedBadge = selectedOption ? getOptionBadge(selectedOption.value, optionFormat, rawOptions as Array<string | { label: string; value: string }>) : null
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen)
@@ -122,7 +127,13 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
           )}
         >
           <span className="dy-truncate">
-            {selectedOption?.label || (currentValue && !selectedOption ? currentValue : placeholder)}
+            {selectedBadge ? (
+              <Badge className={cn("dy-max-w-full dy-truncate", displayToneClass(selectedBadge.tone))}>
+                {selectedBadge.label}
+              </Badge>
+            ) : (
+              selectedOption?.label || (currentValue && !selectedOption ? currentValue : placeholder)
+            )}
           </span>
           <div className="dy-flex dy-items-center dy-gap-1.5 dy-shrink-0">
             {selectedOption && !disabled && (
@@ -193,7 +204,11 @@ export function SelectField({ schema, field, disabled, collection, siblingValues
                       currentValue === opt.value ? "dy-opacity-100" : "dy-opacity-0"
                     )}
                   />
-                  <span className="dy-truncate">{opt.label}</span>
+                  {(() => {
+                    const badge = getOptionBadge(opt.value, optionFormat, rawOptions as Array<string | { label: string; value: string }>)
+                    if (!badge) return <span className="dy-truncate">{opt.label}</span>
+                    return <Badge className={cn(displayToneClass(badge.tone))}>{badge.label}</Badge>
+                  })()}
                 </CommandItem>
               ))}
             </CommandGroup>

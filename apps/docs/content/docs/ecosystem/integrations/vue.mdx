@@ -103,6 +103,43 @@ import { DyrectedAdmin } from "@dyrected/vue";
 
 That is the practical path when the Vue app needs to host the dashboard instead of only consuming content.
 
+## `DyrectedAdmin` theme props
+
+When the Vue app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` so the embedded admin follows the same preference.
+
+The component accepts:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `system-theme`: the currently resolved system theme, either `light` or `dark`
+- `on-theme-change`: callback fired when the admin changes its preferred theme
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { DyrectedAdmin } from "@dyrected/vue";
+
+const theme = ref<"system" | "light" | "dark">("system");
+const systemTheme = ref<"light" | "dark">("light");
+
+function setTheme(next: "system" | "light" | "dark") {
+  theme.value = next;
+}
+</script>
+
+<template>
+  <DyrectedAdmin
+    :config="{
+      baseUrl: import.meta.env.VITE_DYRECTED_URL,
+      apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+      siteId: import.meta.env.VITE_DYRECTED_SITE_ID || '',
+    }"
+    :theme="theme"
+    :system-theme="systemTheme"
+    :on-theme-change="setTheme"
+  />
+</template>
+```
+
 ## Use live preview when a route is editable
 
 For preview-enabled pages, hand the published data into `useLivePreview` and render the returned `data` ref:

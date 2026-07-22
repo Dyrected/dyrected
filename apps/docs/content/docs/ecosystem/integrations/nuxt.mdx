@@ -84,6 +84,37 @@ definePageMeta({ layout: false });
 
 Use `ClientOnly` here because the admin UI needs the browser DOM.
 
+## `DyrectedAdmin` theme props
+
+When the Nuxt app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` instead of letting the embedded admin keep a separate theme preference.
+
+The component accepts three theme-control props:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `system-theme`: the current resolved OS theme, either `light` or `dark`
+- `on-theme-change`: callback fired when the admin changes its preferred theme
+
+```vue
+<!-- app/pages/admin.vue -->
+<script setup lang="ts">
+definePageMeta({ layout: false });
+
+const { preference, systemTheme, setTheme } = useTheme();
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin
+      :theme="preference"
+      :system-theme="systemTheme"
+      :on-theme-change="setTheme"
+    />
+  </ClientOnly>
+</template>
+```
+
+This keeps the site and embedded admin on the same preference while still letting admin-side theme controls update the host app state.
+
 ## Fetch content with the auto-imported composables
 
 For normal reads, the module gives you a configured SDK client and a few Nuxt-friendly shortcuts.

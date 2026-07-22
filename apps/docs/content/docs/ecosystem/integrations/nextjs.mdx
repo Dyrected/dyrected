@@ -92,6 +92,48 @@ If your environment variables follow the usual Next naming, the admin wrapper ca
 
 Pass props manually only when you want to override those defaults.
 
+## `DyrectedAdmin` theme props
+
+When the rest of the Next app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` so the embedded admin follows the same preference.
+
+The component accepts:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `systemTheme`: the currently resolved system theme, either `light` or `dark`
+- `onThemeChange`: callback fired when the admin changes its preferred theme
+
+Because Next App Router pages are server components by default, keep this state in a client component:
+
+```tsx
+// app/admin/page.tsx
+import { AdminClientPage } from "./AdminClientPage";
+
+export default function AdminPage() {
+  return <AdminClientPage />;
+}
+```
+
+```tsx
+// app/admin/AdminClientPage.tsx
+"use client";
+
+import { useState } from "react";
+import { DyrectedAdmin } from "@dyrected/next/admin";
+
+export function AdminClientPage() {
+  const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [systemTheme] = useState<"light" | "dark">("light");
+
+  return (
+    <DyrectedAdmin
+      theme={theme}
+      systemTheme={systemTheme}
+      onThemeChange={setTheme}
+    />
+  );
+}
+```
+
 ## Fetch content in server code
 
 For normal app reads, use the preconfigured client helper:

@@ -142,3 +142,5 @@ Mount one theme boundary near the root of your custom admin shell:
 Then use `useAdminTheme()` anywhere below it for toggles, themed roots, and theme-aware UI.
 
 There is a lower-level controller layer behind this, but most readers can ignore it.
+
+If your product app already has its own theme state and the admin is only one embedded surface inside it, do not promote `useAdminTheme()` to become the app-wide source of truth. Keep the preference at the host-app level and pass it into `DyrectedAdmin` through its theme props instead.

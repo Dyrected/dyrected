@@ -1,7 +1,9 @@
 import * as React from "react"
 import { Check, ChevronsUpDown, X } from "lucide-react"
+import type { MultiSelectField as MultiSelectFieldSchema } from "@dyrected/core"
 
 import { cn } from "../../../lib/utils"
+import { displayToneClass, getOptionBadge } from "../../../lib/format"
 import { Button } from "../../ui/button"
 import {
   Command,
@@ -98,6 +100,7 @@ export function MultiSelect({
   })
 
   const rawOptions = isDynamic ? (dynamicOptions || []) : options
+  const optionFormat = (schema as MultiSelectFieldSchema | undefined)?.admin?.format
   const normalizedOpts = (Array.isArray(rawOptions) ? rawOptions : []).map((opt: string | Option) => {
     if (typeof opt === "string") return { label: opt, value: opt }
     return { label: opt?.label || "", value: opt?.value || "" }
@@ -140,9 +143,18 @@ export function MultiSelect({
                   <Badge
                     key={val}
                     variant="secondary"
-                    className="dy-mr-1 dy-items-center dy-gap-1 dy-rounded-md"
+                    className={cn(
+                      "dy-mr-1 dy-items-center dy-gap-1 dy-rounded-md",
+                      (() => {
+                        const spec = getOptionBadge(val, optionFormat, rawOptions as Array<string | { label: string; value: unknown }>)
+                        return spec ? displayToneClass(spec.tone) : ""
+                      })()
+                    )}
                   >
-                    {option?.label || val}
+                    {(() => {
+                      const spec = getOptionBadge(val, optionFormat, rawOptions as Array<string | { label: string; value: unknown }>)
+                      return spec?.label || option?.label || val
+                    })()}
                     {!disabled && (
                       <div
                         role="button"
@@ -219,7 +231,11 @@ export function MultiSelect({
                           isSelected ? "dy-opacity-100" : "dy-opacity-0"
                         )}
                       />
-                      {option.label}
+                      {(() => {
+                        const spec = getOptionBadge(option.value, optionFormat, rawOptions as Array<string | { label: string; value: unknown }>)
+                        if (!spec) return option.label
+                        return <Badge className={cn(displayToneClass(spec.tone))}>{spec.label}</Badge>
+                      })()}
                     </CommandItem>
                   )
                 })}

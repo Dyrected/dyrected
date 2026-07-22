@@ -7,6 +7,13 @@ import siteContent from "@/lib/site-content.json";
 export const metadata: Metadata = {
   title: siteContent.seo.title,
   description: siteContent.seo.description,
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

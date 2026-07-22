@@ -14,9 +14,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../../ui/popover"
-import { Check } from "lucide-react"
+import { Check, ExternalLink } from "lucide-react"
+import { getLinkSpec } from "../../../lib/format"
 import { cn, getSiteUrl } from "../../../lib/utils"
-import type { Field as FieldSchema } from "@dyrected/sdk"
+import type { Field as FieldSchema, UrlField as UrlFieldSchema } from "@dyrected/sdk"
 import { interpolateUrlPattern } from "../../../lib/url-pattern"
 import jexl from "jexl"
 
@@ -55,7 +56,7 @@ const parseValue = (val: any, siteUrl: string): { type: "custom" | "internal", u
   return { type: "custom", url: String(val) }
 }
 
-export function UrlField({ field, disabled }: UrlFieldProps) {
+export function UrlField({ schema, field, disabled }: UrlFieldProps) {
   const { client, schemas } = useDyrected()
   const siteUrl = React.useMemo(() => getSiteUrl(schemas?.admin?.siteUrl), [schemas?.admin?.siteUrl])
   const [openPopover, setOpenPopover] = React.useState(false)
@@ -230,84 +231,102 @@ export function UrlField({ field, disabled }: UrlFieldProps) {
 
   const selectedDoc = documents.find((d: any) => d.id === docValue && d.__collectionSlug === collectionValue)
   const selectedCollectionLabel = collections.find((c: any) => c.slug === collectionValue)?.labels?.singular || collectionValue
+  const linkSpec = getLinkSpec(urlValue, (schema as UrlFieldSchema).admin?.format, "url")
 
   return (
     <div className="dy-space-y-3">
       <div>
-        <Popover open={openPopover && !disabled} onOpenChange={setOpenPopover}>
-          <PopoverTrigger asChild>
-            <div className="dy-w-full">
-              <Input
-                type="text"
-                value={urlValue}
-                onChange={(e) => handleUrlInputChange(e.target.value)}
-                onFocus={() => setOpenPopover(true)}
-                placeholder="Type or paste a URL, or search pages..."
-                disabled={disabled}
-                className="dy-bg-background dy-border-border/50 dy-h-11 dy-w-full"
-              />
-            </div>
-          </PopoverTrigger>
-          <PopoverContent
-            className="dy-p-0 dy-w-[var(--radix-popover-trigger-width)] dy-max-h-60 dy-overflow-y-auto"
-            align="start"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-          >
-            <Command className="dy-border-none" shouldFilter={false}>
-              <CommandList>
-                <CommandEmpty className="dy-py-2.5 dy-px-3 dy-text-xs dy-text-muted-foreground">
-                  {docsLoading ? "Loading pages..." : "No matching pages found. Press Enter to use as custom link."}
-                </CommandEmpty>
+        <div className="dy-flex dy-items-stretch dy-gap-2">
+          <Popover open={openPopover && !disabled} onOpenChange={setOpenPopover}>
+            <PopoverTrigger asChild>
+              <div className="dy-w-full">
+                <Input
+                  type="text"
+                  value={urlValue}
+                  onChange={(e) => handleUrlInputChange(e.target.value)}
+                  onFocus={() => setOpenPopover(true)}
+                  placeholder="Type or paste a URL, or search pages..."
+                  disabled={disabled}
+                  className="dy-bg-background dy-border-border/50 dy-h-11 dy-w-full"
+                />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent
+              className="dy-p-0 dy-w-[var(--radix-popover-trigger-width)] dy-max-h-60 dy-overflow-y-auto"
+              align="start"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <Command className="dy-border-none" shouldFilter={false}>
+                <CommandList>
+                  <CommandEmpty className="dy-py-2.5 dy-px-3 dy-text-xs dy-text-muted-foreground">
+                    {docsLoading ? "Loading pages..." : "No matching pages found. Press Enter to use as custom link."}
+                  </CommandEmpty>
 
-                {urlValue && (
-                  <CommandGroup heading="Custom Link">
-                    <CommandItem
-                      value={`custom-${urlValue}`}
-                      onSelect={() => {
-                        handleUrlInputChange(urlValue)
-                        setOpenPopover(false)
-                      }}
-                      className="dy-text-primary"
-                    >
-                      Use link "{urlValue}"
-                    </CommandItem>
-                  </CommandGroup>
-                )}
-
-                {(() => {
-                  const grouped: Record<string, any[]> = {}
-                  filteredDocs.forEach((doc: any) => {
-                    const key = doc.__collectionLabel
-                    if (!grouped[key]) grouped[key] = []
-                    grouped[key].push(doc)
-                  })
-
-                  return Object.entries(grouped).map(([groupName, docs]) => (
-                    <CommandGroup key={groupName} heading={groupName}>
-                      {docs.map((doc: any) => (
-                        <CommandItem
-                          key={`${doc.__collectionSlug}-${doc.id}`}
-                          value={`${doc.__collectionSlug}-${doc.id}-${getDocumentDisplay(doc, doc.__collectionSlug)}`}
-                          onSelect={() => handleDocumentSelect(doc)}
-                        >
-                          <Check
-                            className={cn(
-                              "dy-mr-2 dy-h-4 dy-w-4",
-                              docValue === doc.id && collectionValue === doc.__collectionSlug ? "dy-opacity-100" : "dy-opacity-0"
-                            )}
-                          />
-                          <span className="dy-flex-1">
-                            {getDocumentDisplay(doc, doc.__collectionSlug)}
-                          </span>
-                        </CommandItem>
-                      ))}
+                  {urlValue && (
+                    <CommandGroup heading="Custom Link">
+                      <CommandItem
+                        value={`custom-${urlValue}`}
+                        onSelect={() => {
+                          handleUrlInputChange(urlValue)
+                          setOpenPopover(false)
+                        }}
+                        className="dy-text-primary"
+                      >
+                        Use link "{urlValue}"
+                      </CommandItem>
                     </CommandGroup>
-                  ))
-                })()}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                  )}
+
+                  {(() => {
+                    const grouped: Record<string, any[]> = {}
+                    filteredDocs.forEach((doc: any) => {
+                      const key = doc.__collectionLabel
+                      if (!grouped[key]) grouped[key] = []
+                      grouped[key].push(doc)
+                    })
+
+                    return Object.entries(grouped).map(([groupName, docs]) => (
+                      <CommandGroup key={groupName} heading={groupName}>
+                        {docs.map((doc: any) => (
+                          <CommandItem
+                            key={`${doc.__collectionSlug}-${doc.id}`}
+                            value={`${doc.__collectionSlug}-${doc.id}-${getDocumentDisplay(doc, doc.__collectionSlug)}`}
+                            onSelect={() => handleDocumentSelect(doc)}
+                          >
+                            <Check
+                              className={cn(
+                                "dy-mr-2 dy-h-4 dy-w-4",
+                                docValue === doc.id && collectionValue === doc.__collectionSlug ? "dy-opacity-100" : "dy-opacity-0"
+                              )}
+                            />
+                            <span className="dy-flex-1">
+                              {getDocumentDisplay(doc, doc.__collectionSlug)}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    ))
+                  })()}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {linkSpec && (
+            <a
+              href={linkSpec.href}
+              target={linkSpec.newTab ? "_blank" : undefined}
+              rel={linkSpec.newTab ? "noreferrer" : undefined}
+              aria-disabled={disabled ? true : undefined}
+              className={cn(
+                "dy-inline-flex dy-h-11 dy-w-11 dy-items-center dy-justify-center dy-rounded-xl dy-border dy-border-border/50 dy-bg-background dy-text-muted-foreground dy-shadow-sm dy-transition-all hover:dy-bg-muted hover:dy-text-foreground",
+                disabled && "dy-pointer-events-none dy-opacity-50"
+              )}
+              title="Open link"
+            >
+              <ExternalLink className="dy-h-4 dy-w-4" />
+            </a>
+          )}
+        </div>
 
         {selectedDoc && (
           <p className="dy-text-[11px] dy-text-muted-foreground dy-mt-1.5">

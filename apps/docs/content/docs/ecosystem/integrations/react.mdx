@@ -123,6 +123,37 @@ export function AdminPage() {
 
 This is the right path when the React app is only an admin host or when it needs to embed the dashboard alongside the rest of the app.
 
+## `DyrectedAdmin` theme props
+
+When the React app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` so the embedded admin uses the same preference.
+
+The component accepts:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `systemTheme`: the currently resolved system theme, either `light` or `dark`
+- `onThemeChange`: callback fired when the admin changes its preferred theme
+
+```tsx
+import { useState } from "react";
+import { DyrectedAdmin } from "@dyrected/react";
+import "@dyrected/admin/styles";
+
+export function AdminPage() {
+  const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [systemTheme] = useState<"light" | "dark">("light");
+
+  return (
+    <DyrectedAdmin
+      baseUrl={import.meta.env.VITE_DYRECTED_URL}
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      theme={theme}
+      systemTheme={systemTheme}
+      onThemeChange={setTheme}
+    />
+  );
+}
+```
+
 ## Related pages
 
 - [SDK](/docs/ecosystem/integrations/sdk)

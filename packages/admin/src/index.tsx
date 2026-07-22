@@ -28,6 +28,7 @@ import { AdminSplash } from "./components/layout/admin-splash";
 import { Toaster } from "./components/ui/sonner";
 import { AdminThemeProvider, AdminThemedRoot } from "./hooks/admin-theme-provider";
 import { cn } from "./lib/utils";
+import type { AdminThemeController } from "./controllers/theme";
 
 export type {
   AdminComponents,
@@ -238,6 +239,8 @@ export interface AdminUIProps {
   // minted server-side by the cloud backend and is short-lived (1h).
   initialToken?: string;
   defaultTechStack?: string;
+  /** Optional externally controlled admin theme controller. */
+  themeController?: AdminThemeController;
 }
 
 // ─── Embedded component (HashRouter — no host-router conflicts) ──────────────
@@ -263,6 +266,7 @@ export function AdminUI({
   components,
   initialToken,
   defaultTechStack,
+  themeController,
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -286,7 +290,7 @@ export function AdminUI({
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
         <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken} defaultTechStack={defaultTechStack}>
-          <AdminThemeProvider>
+          <AdminThemeProvider controller={themeController}>
             <AdminThemedRoot>
               <QueryProvider>
                 <HashRouter>
@@ -337,6 +341,8 @@ export interface AdminStandaloneProps {
   baseUrl: string;
   /** Site ID for multi-tenant deployments. */
   siteId?: string;
+  /** Optional externally controlled admin theme controller. */
+  themeController?: AdminThemeController;
 }
 
 /**
@@ -344,7 +350,7 @@ export interface AdminStandaloneProps {
  * Intended for iframe or self-hosted deployments where the admin owns
  * the entire page and does not share URL history with a host app.
  */
-export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProps) {
+export function AdminStandalone({ apiKey, baseUrl, siteId, themeController }: AdminStandaloneProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -362,7 +368,7 @@ export function AdminStandalone({ apiKey, baseUrl, siteId }: AdminStandaloneProp
   return (
     <div className="dy-admin-ui dy-h-full">
       <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
-        <AdminThemeProvider>
+        <AdminThemeProvider controller={themeController}>
           <AdminThemedRoot>
             <QueryProvider>
               <MemoryRouter>

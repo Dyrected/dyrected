@@ -2,6 +2,7 @@
 import RsvpLink from "~/components/RsvpLink.vue";
 // DyrectedAdmin is auto-imported by @dyrected/nuxt.
 definePageMeta({ layout: false });
+const { preference, systemTheme, setTheme } = useTheme()
 
 const customComponents = {
   fields: {
@@ -13,7 +14,12 @@ const customComponents = {
 <template>
   <div>
     <ClientOnly>
-      <DyrectedAdmin :components="customComponents" />
+      <DyrectedAdmin
+        :components="customComponents"
+        :theme="preference"
+        :system-theme="systemTheme"
+        :on-theme-change="setTheme"
+      />
     </ClientOnly>
   </div>
 </template>

@@ -8,6 +8,7 @@ import { Pages } from "./dyrected/collections/pages.ts";
 import { Blog } from "./dyrected/collections/blog.ts";
 import { Products } from "./dyrected/collections/products.ts";
 import { Authors } from "./dyrected/collections/authors.ts";
+import { exampleSaasTheme } from "./theme/site-theme.ts";
 
 // Globals
 import { Settings } from "./dyrected/globals/settings.ts";
@@ -22,9 +23,7 @@ export default defineConfig({
   collections: [Admin, Media, Pages, Blog, Products, Authors],
   globals: [Settings, Navigation, Footer],
   admin: {
-    branding: {
-      logoText: "SnackTrack CMS", // replaces the Dyrected logo
-    },
+    branding: exampleSaasTheme.adminBranding,
   },
   db,
 });
