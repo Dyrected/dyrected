@@ -14,7 +14,7 @@ import {
   SidebarViewport,
   useSidebar,
 } from 'fumadocs-ui/components/sidebar/base'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ArrowUpRight, Cloud, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type TreePageNode = {
@@ -167,6 +167,35 @@ function GroupsNav({
   )
 }
 
+function CloudSidebarCard() {
+  return (
+    <div className="mt-6 rounded-2xl border border-fd-border bg-linear-to-br from-fd-card via-fd-card to-fd-muted/55 p-4 shadow-[0_18px_46px_-42px_var(--surface-shadow)]">
+      <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[0_10px_28px_-18px_rgba(182,255,46,0.8)]">
+        <Cloud className="h-4 w-4" />
+      </div>
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-fd-primary">
+          Dyrected Cloud
+        </p>
+        <h3 className="text-sm font-semibold leading-5 text-fd-foreground">
+          Want the fastest path to a live Dyrected backend?
+        </h3>
+        <p className="text-sm leading-5 text-fd-muted-foreground">
+          Start with Cloud and get your project provisioned before you wire schemas,
+          uploads, and the admin into your app.
+        </p>
+      </div>
+      <Link
+        href="/docs/quick-start-guides/nextjs-quick-start/setting-up-your-cloud-site"
+        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[color:var(--accent)] px-3 py-2 text-sm font-medium text-[color:var(--accent-foreground)] transition-transform transition-colors hover:bg-[color:var(--accent-hover)] hover:-translate-y-px"
+      >
+        Get Started with Cloud
+        <ArrowUpRight className="h-4 w-4" />
+      </Link>
+    </div>
+  )
+}
+
 function SidebarInner({
   groups,
   pathname,
@@ -239,15 +268,25 @@ function SidebarInner({
       </div>
 
       <SidebarViewport>
-        <GroupsNav
-          groups={groups}
-          pathname={pathname}
-          openTopics={openTopics}
-          onToggleTopic={handleToggleTopic}
-        />
+        <div className="flex flex-col">
+          <GroupsNav
+            groups={groups}
+            pathname={pathname}
+            openTopics={openTopics}
+            onToggleTopic={handleToggleTopic}
+          />
+          <CloudSidebarCard />
+        </div>
       </SidebarViewport>
 
-      {footer ? <div className="border-t p-4">{footer}</div> : null}
+      {slots.themeSwitch || footer ? (
+        <div className="flex items-center gap-3 border-t p-4">
+          {footer ? <div className="min-w-0 flex-1">{footer}</div> : <div className="flex-1" />}
+          {slots.themeSwitch ? (
+            <slots.themeSwitch className="shrink-0 rounded-lg border bg-fd-background p-1 text-fd-muted-foreground transition-colors hover:bg-fd-accent/40 hover:text-fd-foreground" />
+          ) : null}
+        </div>
+      ) : null}
     </>
   )
 }
