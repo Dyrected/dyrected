@@ -66,6 +66,7 @@ export interface DyrectedFieldState {
 export interface DyrectedFormController {
   getState(): DyrectedFormState
   subscribe(listener: Listener): () => void
+  setAdapters(adapters?: DyrectedFormControllerAdapters): void
   setState(
     nextState:
       | Partial<DyrectedFormState>
@@ -202,6 +203,7 @@ export function createDyrectedFormController({
   }
 
   const listeners = new Set<Listener>()
+  let controllerAdapters = adapters
 
   const emit = () => {
     listeners.forEach((listener) => listener())
@@ -221,11 +223,14 @@ export function createDyrectedFormController({
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
+    setAdapters: (nextAdapters) => {
+      controllerAdapters = nextAdapters
+    },
     setState,
     getValue: (path) => getValueAtPath(state.values, path),
     getValues: () => state.values,
     setValue: (path, value, options) => {
-      adapters?.setValue?.(path, value, options)
+      controllerAdapters?.setValue?.(path, value, options)
       state = {
         ...state,
         values: setValueAtPath(state.values, path, value),
@@ -262,7 +267,7 @@ export function createDyrectedFormController({
       }
     },
     reset: (values) => {
-      adapters?.reset?.(values)
+      controllerAdapters?.reset?.(values)
       state = {
         ...state,
         values: values ?? {},
@@ -273,10 +278,10 @@ export function createDyrectedFormController({
       }
       emit()
     },
-    validate: async (paths) => adapters?.validate?.(paths) ?? true,
+    validate: async (paths) => controllerAdapters?.validate?.(paths) ?? true,
     submit: async () => {
-      if (!adapters?.submit) return state.values
-      return adapters.submit()
+      if (!controllerAdapters?.submit) return state.values
+      return controllerAdapters.submit()
     },
   }
 

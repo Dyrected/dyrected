@@ -267,36 +267,68 @@ function FormEngineInner({
     return persistFormData(data, onSubmit, { reportAutosaveStatus: autosaveEnabled })
   }, [autosaveEnabled, onSubmit, persistFormData])
 
+  const handleFormSubmitRef = React.useRef(handleFormSubmit)
+  const emitAutosaveStateRef = React.useRef(emitAutosaveState)
+  const autosaveEnabledRef = React.useRef(autosaveEnabled)
+
+  React.useLayoutEffect(() => {
+    handleFormSubmitRef.current = handleFormSubmit
+    emitAutosaveStateRef.current = emitAutosaveState
+    autosaveEnabledRef.current = autosaveEnabled
+  }, [autosaveEnabled, emitAutosaveState, handleFormSubmit])
+
   const submitCurrentDraft = useCallback(() => {
     return new Promise<unknown>((resolve, reject) => {
       void form.handleSubmit(
         async (data) => {
           try {
-            const result = await handleFormSubmit(data as Record<string, unknown>)
+            const result = await handleFormSubmitRef.current(data as Record<string, unknown>)
             resolve(result)
           } catch (error) {
             reject(error)
           }
         },
         () => {
-          if (autosaveEnabled) {
-            emitAutosaveState("dirty")
+          if (autosaveEnabledRef.current) {
+            emitAutosaveStateRef.current("dirty")
           }
           reject(new Error("Please resolve validation errors before continuing."))
         },
       )()
     })
-  }, [autosaveEnabled, emitAutosaveState, form, handleFormSubmit])
+  }, [form])
 
   React.useImperativeHandle(ref, () => ({
     submitCurrentDraft,
     isDirty: () => form.formState.isDirty,
   }), [form.formState.isDirty, submitCurrentDraft])
 
-  const submitCurrentDraftRef = React.useRef(submitCurrentDraft)
-  React.useLayoutEffect(() => {
-    submitCurrentDraftRef.current = submitCurrentDraft
-  })
+  const setFormValue = useCallback((
+    path: string,
+    value: unknown,
+    options?: { shouldDirty?: boolean; shouldTouch?: boolean; shouldValidate?: boolean },
+  ) => {
+    const setValueFn = form.setValue as unknown as (
+      name: string,
+      value: unknown,
+      config?: { shouldDirty?: boolean; shouldTouch?: boolean; shouldValidate?: boolean }
+    ) => void
+    setValueFn(path, value, options)
+  }, [form])
+
+  const resetFormValues = useCallback((values?: Record<string, unknown>) => {
+    form.reset(values as z.infer<typeof formSchema> | undefined)
+  }, [form])
+
+  const validateFormPaths = useCallback(async (paths?: string | string[]) => {
+    if (!paths) return form.trigger()
+    const names = Array.isArray(paths) ? paths : [paths]
+    return form.trigger(names as Parameters<typeof form.trigger>[0])
+  }, [form])
+
+  const handleSubmitEvent = useCallback((event?: React.BaseSyntheticEvent) => {
+    void form.handleSubmit((data) => handleFormSubmitRef.current(data as Record<string, unknown>))(event)
+  }, [form])
 
   const [formController] = React.useState(() =>
     createDyrectedFormController({
@@ -304,7 +336,7 @@ function FormEngineInner({
       fields: resolvedFields,
       documentId,
       readOnly: Boolean(readOnly),
-      initialValues: form.getValues() as Record<string, unknown>,
+      initialValues: (watchedValues ?? buildDefaultValues(fields, defaultValues)) as Record<string, unknown>,
       initialErrors: errorMap,
       initialDirtyFields: dirtyFieldMap,
       initialTouchedFields: touchedFieldMap,
@@ -312,27 +344,17 @@ function FormEngineInner({
       initialIsSubmitting: form.formState.isSubmitting,
       initialIsValid: form.formState.isValid,
       initialSubmitCount: form.formState.submitCount,
-      adapters: {
-        setValue: (path, value, options) => {
-          const setValueFn = form.setValue as unknown as (
-            name: string,
-            value: unknown,
-            config?: { shouldDirty?: boolean; shouldTouch?: boolean; shouldValidate?: boolean }
-          ) => void
-          setValueFn(path, value, options)
-        },
-        reset: (values) => {
-          form.reset(values as z.infer<typeof formSchema> | undefined)
-        },
-        validate: async (paths) => {
-          if (!paths) return form.trigger()
-          const names = Array.isArray(paths) ? paths : [paths]
-          return form.trigger(names as Parameters<typeof form.trigger>[0])
-        },
-        submit: () => submitCurrentDraftRef.current(),
-      },
     })
   )
+
+  useEffect(() => {
+    formController.setAdapters({
+      setValue: setFormValue,
+      reset: resetFormValues,
+      validate: validateFormPaths,
+      submit: submitCurrentDraft,
+    })
+  }, [formController, resetFormValues, setFormValue, submitCurrentDraft, validateFormPaths])
 
 
   useEffect(() => {
@@ -372,12 +394,12 @@ function FormEngineInner({
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault()
-        form.handleSubmit(handleFormSubmit)()
+        handleSubmitEvent()
       }
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [form, onSubmit, readOnly, isLoading, collection, defaultValues, handleFormSubmit])
+  }, [handleSubmitEvent, readOnly, isLoading])
 
   const hasCheckedRef = React.useRef<string | null>(null)
 
@@ -851,7 +873,7 @@ function FormEngineInner({
         <Form {...form}>
           <form
             id="dyrected-edit-form"
-            onSubmit={form.handleSubmit(handleFormSubmit)}
+            onSubmit={handleSubmitEvent}
             className="dy-space-y-8"
           >
           {/* Hidden fields */}
