@@ -2,6 +2,7 @@
   "title": "Access Control",
   "pages": [
     "overview",
+    "cloud",
     "collections",
     "globals",
     "fields"

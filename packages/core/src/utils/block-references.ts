@@ -147,6 +147,14 @@ export function mergeDynamicConfig(
   return {
     ...baseConfig,
     ...(normalizedDynamic.blocks ? { blocks: normalizedDynamic.blocks } : {}),
+    ...(dynamic.accessPolicies
+      ? {
+          accessPolicies: {
+            ...(baseConfig.accessPolicies ?? {}),
+            ...dynamic.accessPolicies,
+          },
+        }
+      : {}),
     ...(dynamic.admin
       ? { admin: { ...baseConfig.admin, ...dynamic.admin } }
       : {}),

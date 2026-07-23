@@ -1,0 +1,456 @@
+---
+title: Dyrected Cloud
+description: Use access control safely in Dyrected Cloud, choose between Jexl and built-in named policies, and know when to use `createdByCurrentUser`, `isOwner`, or `isSelf`.
+---
+
+Use Dyrected Cloud access control when you want rules that survive `sync:schema` and run on the hosted backend. The important choice is not only *what rule you want*, but *what kind of rule Cloud can actually enforce*.
+
+If you only remember three things from this page, remember these:
+
+- **Jexl strings** are the safest default for Cloud.
+- **Function rules** do not sync to Cloud.
+- **Named policy references** work in Cloud when the referenced policy resolves on the Cloud backend.
+
+If you are new to access control itself, start with the [Access Control overview](/docs/basics/access-control/overview). This page is the Cloud-specific guide.
+
+## The recommended path
+
+For most Cloud projects, the recommended path is:
+
+1. use **Jexl strings** for rules you want to be fully portable
+2. use a **named policy** when you want a reusable server-side filter or check and the policy value is serializable
+3. avoid **function rules** in any schema you plan to sync to Cloud
+
+That avoids the two most common Cloud mistakes:
+
+- a function rule is stripped during `sync:schema`
+- a policy reference points to a function policy that was stripped during sync
+
+## What works in Cloud
+
+Dyrected Cloud can enforce these access rule shapes:
+
+| Rule shape | Cloud support | Good default? | Notes |
+|---|---|---|---|
+| `true` / `false` | Yes | Sometimes | Best for always-open or always-closed rules. |
+| Jexl string | Yes | Yes | Best general-purpose Cloud rule. |
+| Named policy reference | Yes, for serializable policies | Sometimes | Good for reusable Jexl or boolean policies, plus Cloud's built-in policy registry. |
+| Function rule | No | No | Stripped during `sync:schema`. |
+
+Here is a quick example of a Cloud-safe rule:
+
+```ts
+access: {
+  read: "user != null ? true : { status: { equals: 'published' } }",
+}
+```
+
+This works in Cloud because it is a Jexl string, not a function.
+
+## What `sync:schema` sends to Cloud
+
+When you run `npx dyrected sync:schema`, Dyrected sends your schema shape to the Cloud backend. Collection rules, global rules, and field rules all sync, but function-based access rules do not.
+
+That means this self-hosted rule does **not** survive Cloud sync:
+
+```ts
+access: {
+  update: ({ user, doc }) => user?.sub === doc?.authorId,
+}
+```
+
+For Cloud, rewrite it as a Jexl string or a built-in Cloud policy:
+
+```ts
+access: {
+  update: "{ authorId: { equals: user.sub } }",
+}
+```
+
+## Custom local policies vs Cloud policies
+
+This is the other Cloud behavior that trips people up.
+
+In a self-hosted app, you can define a local `accessPolicies` registry in your config and reference it anywhere in that app. Dyrected Cloud now supports the same idea for **serializable** policy values: if a policy is a **Jexl string** or a **boolean**, `sync:schema` sends it to Cloud as part of the site schema and Cloud resolves that policy name at runtime.
+
+This means a local config like this **does** work in Cloud:
+
+```ts
+export default defineConfig({
+  accessPolicies: {
+    canManageOrders: "'admin' in user.roles || 'editor' in user.roles",
+  },
+  collections: [
+    defineCollection({
+      slug: 'orders',
+      access: {
+        update: { policy: 'canManageOrders' },
+      },
+      fields: [],
+    }),
+  ],
+  globals: [],
+})
+```
+
+After sync, Cloud can resolve `update: { policy: 'canManageOrders' }` because the policy itself is serializable data.
+
+The important limitation is that **function policies still do not sync**. A config like this remains self-hosted-only:
+
+```ts
+export default defineConfig({
+  accessPolicies: {
+    canManageOrders: ({ user }) => user?.roles?.includes('admin') ?? false,
+  },
+  collections: [
+    defineCollection({
+      slug: 'orders',
+      access: {
+        update: { policy: 'canManageOrders' },
+      },
+      fields: [],
+    }),
+  ],
+  globals: [],
+})
+```
+
+When the policy value is a function, the sync strips it. The policy reference may still be present in the synced schema, but Cloud will not have that function resolver to execute. In practice, that means function policies are not portable to Cloud.
+
+Cloud sync keeps serializable policy data and strips executable policy code:
+
+| Policy form | Cloud sync result |
+|---|---|
+| `accessPolicies: { canRead: true }` | Kept |
+| `accessPolicies: { canRead: "user != null" }` | Kept |
+| `accessPolicies: { canRead: ({ user }) => !!user }` | Stripped |
+
+So the accurate Cloud rule is:
+
+- **string and boolean policies** can be user-defined and synced
+- **function policies** cannot
+- **built-in Cloud policies** are still available alongside synced site-defined policies
+
+## Built-in named policies in Dyrected Cloud
+
+Dyrected Cloud currently ships with these built-in named policies in its backend registry:
+
+| Policy | Use it when | Common params |
+|---|---|---|
+| `isAuthenticated` | The caller must be signed in. | — |
+| `hasRole` | Access depends on one or more role strings. | `role`, `roles` |
+| `isSelf` | The record should match the current user's own ID. | `field` |
+| `isOwner` | The record should match a custom ownership field such as `owner`, `ownerId`, or `customerId`. | `field` |
+| `isTenantMember` | Content should stay inside the current workspace, site, or tenant boundary. | `field`, `tenantId` |
+| `hasCapability` | Access depends on one or more capability strings. | `capability`, `capabilities` |
+| `isPublished` | Public reads should only see published entries. | `field`, `value` |
+| `canReadDrafts` | Certain roles or capabilities may read drafts. | `roles`, `capabilities` |
+| `fieldEquals` | You want a reusable equals filter. | `field`, `value` |
+| `fieldIn` | You want a reusable `in` filter. | `field`, `values` |
+| `createdByCurrentUser` | The record should match the user who originally created it. | `field` |
+| `notSelf` | The record should match everyone except the current user. | `field` |
+
+These built-ins sit alongside any site-defined **string** or **boolean** policies that reached Cloud through `sync:schema`.
+
+The rest of this page focuses on when to use them, not only what they are called.
+
+## Choose the right rule first
+
+When you are writing a Cloud rule, use this quick decision guide:
+
+| You want to say | Best fit |
+|---|---|
+| "Anyone can read this." | `read: true` |
+| "Only signed-in users can do this." | Jexl: `"user != null"` or policy: `{ policy: 'isAuthenticated' }` |
+| "Only admins or editors can do this." | Jexl role check, `{ policy: 'hasRole', params: { roles: [...] } }`, or a synced string policy such as `{ policy: 'canManageOrders' }` |
+| "Users can only see their own rows." | `{ policy: 'isSelf' }`, `{ policy: 'isOwner' }`, or `{ policy: 'createdByCurrentUser' }` depending on the field |
+| "Users can only see rows for this workspace or tenant." | `{ policy: 'isTenantMember' }` |
+| "Anonymous readers only see published content." | Jexl ternary or `{ policy: 'isPublished' }` on public reads |
+
+If the rule needs to react live in the admin form for **field-level** access, prefer **Jexl** over a function-style policy resolver.
+
+## `createdByCurrentUser` vs `isOwner`
+
+This is the most important distinction on the page.
+
+Both policies return the same *kind* of result: a filter that compares a field on the document to the current user's ID. The difference is not a hidden engine behavior. The difference is the **field they target by default** and the **meaning you are expressing**.
+
+### `createdByCurrentUser`
+
+Use `createdByCurrentUser` when the rule means:
+
+> "The current user may act on records they originally created."
+
+By default, this policy checks the built-in `createdBy` field:
+
+```ts
+access: {
+  read: { policy: 'createdByCurrentUser' },
+}
+```
+
+That expands to the same idea as:
+
+```ts
+access: {
+  read: "{ createdBy: { equals: user.sub } }",
+}
+```
+
+This is a good fit for:
+
+- contact submissions a user opened themselves
+- support tickets the user submitted
+- personal notes or drafts where "creator" is the rule you care about
+
+Dyrected adds `createdBy` automatically through its built-in system fields when `timestamps` are enabled, and `timestamps` default to `true`. So this policy is especially convenient when you want to lean on that built-in field instead of creating your own.
+
+### `isOwner`
+
+Use `isOwner` when the rule means:
+
+> "The current user may act on records owned by them according to this schema."
+
+By default, `isOwner` checks a field named `owner`:
+
+```ts
+access: {
+  read: { policy: 'isOwner' },
+}
+```
+
+That expands to the same idea as:
+
+```ts
+access: {
+  read: "{ owner: { equals: user.sub } }",
+}
+```
+
+In real projects, you will often pass a custom field because many schemas use names like `ownerId`, `customerId`, or `accountId`:
+
+```ts
+access: {
+  read: { policy: 'isOwner', params: { field: 'ownerId' } },
+}
+```
+
+This is a good fit for:
+
+- a project owned by one account
+- an order owned by a customer
+- a workspace record assigned to an owner
+- any document where ownership is a first-class business concept
+
+### The practical difference
+
+Use this rule of thumb:
+
+| If your question is... | Use |
+|---|---|
+| "Who created this record?" | `createdByCurrentUser` |
+| "Who owns this record right now?" | `isOwner` |
+
+That distinction matters because creator and owner are often **not** the same concept in a real app.
+
+If you point both policies at the same field, they behave the same way. For example, `createdByCurrentUser` and `isOwner` with `params: { field: 'createdBy' }` both return the same kind of equality filter. The dedicated policy name exists to make the rule's intent obvious to the next person reading the schema.
+
+For example:
+
+- an admin could create an order on behalf of a customer
+- a team member could create a project that belongs to a workspace owner
+- a record could be reassigned later, while `createdBy` still points to the original creator
+
+Cloud does not infer those semantics for you. It only compares the current user ID to the field you chose. Your job is to pick the field that matches your business meaning.
+
+### Side-by-side example
+
+Here is the same collection written both ways so the difference is obvious:
+
+```ts
+export const Orders = defineCollection({
+  slug: 'orders',
+  access: {
+    // "Users can read orders they created"
+    read: { policy: 'createdByCurrentUser' },
+
+    // "Users can update orders they own"
+    update: { policy: 'isOwner', params: { field: 'customerId' } },
+  },
+  fields: [
+    { name: 'customerId', label: 'Customer', type: 'text', required: true },
+    { name: 'status', label: 'Status', type: 'text' },
+  ],
+})
+```
+
+In that example:
+
+- `read` follows the built-in `createdBy`
+- `update` follows the custom business field `customerId`
+
+That is a valid setup when "who created it" and "who should control it" are different rules.
+
+### When to use `isSelf` instead
+
+Use `isSelf` when the record itself *is* the user's own record.
+
+For example, a profile collection usually wants:
+
+```ts
+access: {
+  read: { policy: 'isSelf' },
+  update: { policy: 'isSelf' },
+}
+```
+
+That is clearer than `isOwner` when the target document is the user's own account, profile, or member record.
+
+Use this rule of thumb:
+
+- `isSelf`: "this row is me"
+- `isOwner`: "this row belongs to me"
+- `createdByCurrentUser`: "I created this row"
+
+## Practical Cloud examples
+
+### Public published content, private drafts
+
+Use a Jexl ternary when public readers should only see published entries but signed-in staff should see everything:
+
+```ts
+access: {
+  read: "user != null ? true : { status: { equals: 'published' } }",
+}
+```
+
+This is often the cleanest Cloud-safe pattern because one rule covers both audiences.
+
+### Role-based writing access
+
+Use `hasRole` when your collections follow a simple admin/editor model:
+
+```ts
+access: {
+  create: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  update: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  delete: { policy: 'hasRole', params: { role: 'admin' } },
+}
+```
+
+If the same logic must also drive field-level admin behavior, the equivalent Jexl rule is often easier:
+
+```ts
+access: {
+  update: "'admin' in user.roles || 'editor' in user.roles",
+}
+```
+
+If you prefer a project-local policy name, a synced string policy now works too:
+
+```ts
+export default defineConfig({
+  accessPolicies: {
+    canManageOrders: "'admin' in user.roles || 'editor' in user.roles",
+  },
+  collections: [
+    defineCollection({
+      slug: 'orders',
+      access: {
+        create: { policy: 'canManageOrders' },
+        update: { policy: 'canManageOrders' },
+      },
+      fields: [
+        { name: 'status', label: 'Status', type: 'text' },
+      ],
+    }),
+  ],
+  globals: [],
+})
+```
+
+### Tenant-scoped data
+
+Use `isTenantMember` when documents should stay inside the current site or workspace boundary:
+
+```ts
+access: {
+  read: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+  update: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+}
+```
+
+This is a good fit for multi-tenant project, invoice, or asset collections.
+
+### Reusable equals and `in` filters
+
+Use `fieldEquals` and `fieldIn` when you want small reusable filters without inventing new custom policy names:
+
+```ts
+access: {
+  read: { policy: 'fieldEquals', params: { field: 'status', value: 'published' } },
+}
+```
+
+```ts
+access: {
+  read: { policy: 'fieldIn', params: { field: 'status', values: ['review', 'published'] } },
+}
+```
+
+These are especially useful when you want a named-policy shape but the logic is still simple.
+
+## Jexl vs built-in policy in Cloud
+
+In Cloud, use this rule of thumb:
+
+| Reach for | When |
+|---|---|
+| **Jexl string** | You want the most portable Cloud-safe rule, especially for field access and admin reactivity. |
+| **Named policy** | You want a reusable Cloud-backed rule and the policy value is serializable or built in. |
+| **Function rule** | Only in self-hosted projects. |
+
+If you are unsure, start with Jexl. Move to a named policy when the rule becomes repetitive or the policy name makes the intent clearer.
+
+## Troubleshooting
+
+### "It worked locally, but Cloud denied it"
+
+Check these first:
+
+- Did `sync:schema` strip a function rule?
+- Are you referencing a function policy that never reached Cloud?
+- Should this rule be an inline Jexl string instead?
+
+### "I am not sure whether to use `createdByCurrentUser` or `isOwner`"
+
+Ask this question:
+
+> Do I care about the document's original creator, or the document's business owner?
+
+Then map the answer like this:
+
+- original creator: `createdByCurrentUser`
+- business owner field such as `ownerId` or `customerId`: `isOwner`
+- the document is the user's own record: `isSelf`
+
+### "The admin form is not hiding or locking fields the way I expected"
+
+For field access, prefer inline Jexl when the admin form should react live in the same way as the API.
+
+### "I changed access rules, but Cloud still behaves the old way"
+
+Run:
+
+```bash
+npx dyrected sync:schema
+```
+
+If the updated schema did not reach Cloud, the old rules are still active there.
+
+## Related pages
+
+- [Access Control overview](/docs/basics/access-control/overview)
+- [Collection access control](/docs/basics/access-control/collections)
+- [Field access control](/docs/basics/access-control/fields)
+- [CLI overview](/docs/basics/cli/overview)

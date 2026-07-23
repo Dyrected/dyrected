@@ -105,6 +105,7 @@ export function sanitizeSchemaForCloudSync(config: {
   blocks?: Record<string, any>[];
   collections: Record<string, any>[];
   globals?: Record<string, any>[];
+  accessPolicies?: Record<string, unknown>;
   admin?: Record<string, any>;
 }) {
   const warnings: string[] = [];
@@ -216,11 +217,26 @@ export function sanitizeSchemaForCloudSync(config: {
       : global.fields,
   }));
 
+  const accessPolicies = Object.fromEntries(
+    Object.entries(config.accessPolicies || {}).flatMap(([name, value]) => {
+      if (typeof value === "boolean" || typeof value === "string") {
+        return [[name, value]];
+      }
+
+      if (typeof value === "function") {
+        warnings.push(`accessPolicies.${name}`);
+      }
+
+      return [];
+    }),
+  );
+
   return {
     payload: {
       blocks,
       collections,
       globals,
+      accessPolicies,
       admin: config.admin || {},
     },
     warnings,
@@ -313,6 +329,7 @@ Examples:
           blocks: config.blocks || [],
           collections: config.collections,
           globals: config.globals || [],
+          accessPolicies: config.accessPolicies || {},
           admin: config.admin || {},
         });
 

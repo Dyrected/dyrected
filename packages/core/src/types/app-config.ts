@@ -293,6 +293,10 @@ export interface DyrectedConfig<
     blocks?: Block[];
     collections?: CollectionConfig<any>[];
     globals?: GlobalConfig<any>[];
+    accessPolicies?: Record<
+      string,
+      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean
+    >;
     admin?: AdminConfig;
     adminAuth?: AdminAuthConfig;
   }>;

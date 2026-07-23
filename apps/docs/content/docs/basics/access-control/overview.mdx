@@ -5,7 +5,7 @@ description: How Dyrected decides who can read and write your data — the rules
 
 Access control is how you decide who can do what with your data. In Dyrected you write that as small rules attached directly to a collection, a global, or a field. There is no separate permissions table and no global role registry to keep in sync — the rule lives next to the thing it protects, and Dyrected runs it on the server for every request.
 
-This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/docs/basics/access-control/collections), [globals](/docs/basics/access-control/globals), and [fields](/docs/basics/access-control/fields).
+This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/docs/basics/access-control/collections), [globals](/docs/basics/access-control/globals), and [fields](/docs/basics/access-control/fields). If you are deploying to Dyrected Cloud, also read [Dyrected Cloud access control](/docs/basics/access-control/cloud) for the Cloud-specific policy limits and built-in policy names.
 
 ## The mental model
 
@@ -103,12 +103,12 @@ Functions run only in your self-hosted server — they are **not** synced to Dyr
 
 ### Named policies
 
-When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. Because the reference is just data, it syncs to Cloud while the logic stays on your server:
+When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. In self-hosted Dyrected, that policy lives on your server config. In Dyrected Cloud, **string** and **boolean** policies sync as part of the site schema, while **function** policies do not:
 
 ```ts
 export default defineConfig({
   accessPolicies: {
-    isAdmin: ({ user }) => user?.roles?.includes('admin') ?? false,
+    isAdmin: "'admin' in user.roles",
   },
   collections: [
     defineCollection({
@@ -124,9 +124,46 @@ export default defineConfig({
 })
 ```
 
-A policy can be a **function** (as above) or a **Jexl string** — `accessPolicies: { isAdmin: "'admin' in user.roles" }`. String policies are inlined when the schema is sent to the admin panel, so a field or collection rule that references one stays reactive in the edit form, exactly like an inline Jexl rule. Function policies run on the server only.
+A policy can be a **function** or a **Jexl string** — `accessPolicies: { isAdmin: "'admin' in user.roles" }`. String policies are inlined when the schema is sent to the admin panel, so a field or collection rule that references one stays reactive in the edit form, exactly like an inline Jexl rule. Function policies run on the server only and are not Cloud-portable.
 
 You can pass `params` for a parameterized policy — `{ policy: 'hasRole', params: { role: 'editor' } }` — and read them inside the resolver as `params`. If a rule references a policy that is not registered, Dyrected fails closed and denies the request.
+
+### What a policy receives
+
+A function-based policy resolver receives the same access context as a normal access function, plus `params` from the policy reference.
+
+| Value | What it is |
+|---|---|
+| `user` | The authenticated caller, or `undefined` for an anonymous request |
+| `req` | The request context |
+| `doc` | The existing document, when Dyrected is checking one |
+| `data` | The incoming payload, on create and update |
+| `params` | Extra values passed by `{ policy: 'name', params: { ... } }` |
+
+That means a parameterized policy can stay reusable while still reacting to the current request:
+
+```ts
+export default defineConfig({
+  accessPolicies: {
+    hasRole: ({ user, params }) => {
+      const role = typeof params?.role === 'string' ? params.role : null
+      return role ? user?.roles?.includes(role) ?? false : false
+    },
+  },
+  collections: [
+    defineCollection({
+      slug: 'posts',
+      access: {
+        update: { policy: 'hasRole', params: { role: 'editor' } },
+      },
+      fields: [{ name: 'title', label: 'Title', type: 'text' }],
+    }),
+  ],
+  globals: [],
+})
+```
+
+If the policy value is a **Jexl string** or a **boolean**, there is no function parameter list, but the Jexl expression still reads the normal access context such as `user`, `doc`, and `data`.
 
 ### The same rule, three ways
 
@@ -146,7 +183,7 @@ access: {
 </Tab>
 <Tab value="Named policy">
 
-Defined once, referenced everywhere. A string policy is inlined for the admin panel; a function policy stays on the server.
+Defined once, referenced everywhere. A string policy is inlined for the admin panel and can sync to Cloud; a function policy stays on the server.
 
 ```ts
 // defineConfig({ accessPolicies: { ownDocs: "{ owner: { equals: user.sub } }" } })
@@ -171,7 +208,7 @@ access: {
 </Tabs>
 
 <Note>
-Function rules run only in a **self-hosted** app, where your own server executes your config. They are never sent to Dyrected Cloud — `sync-schema` strips them and warns you. For a Cloud-hosted backend, use a Jexl string or a named policy instead.
+Function rules run only in a **self-hosted** app, where your own server executes your config. They are never sent to Dyrected Cloud — `sync-schema` strips them and warns you. For a Cloud-hosted backend, use a Jexl string or a **string/boolean named policy** instead.
 </Note>
 
 ## What a rule can see
@@ -214,6 +251,8 @@ Access rules attach at three levels, each with its own operations. All three are
 | [Collections](/docs/basics/access-control/collections) | `read`, `create`, `update`, `delete`, `readAudit` | Whole documents in a collection, plus the audit log |
 | [Globals](/docs/basics/access-control/globals) | `read`, `update` | A single global document |
 | [Fields](/docs/basics/access-control/fields) | `read`, `create`, `update` | Individual fields — stripped from responses or dropped on writes |
+
+Named policies do not attach to content on their own. You define them once under `accessPolicies`, then reference them from collection, global, or field rules.
 
 Field rules also drive the admin panel, hiding or locking fields in the edit form, but the enforcement is real: a field a reader cannot see is removed from the API response, and a field a writer cannot set is dropped before the document is saved.
 

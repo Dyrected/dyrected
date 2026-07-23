@@ -92,7 +92,7 @@ npx dyrected sync:schema
 | `--skip-on-error` | Don't fail the process if the sync fails. Useful in CI build steps. |
 | `--skip-types` | Don't regenerate types after a successful sync. |
 
-If your API key or Site ID is missing, `sync:schema` skips quietly rather than failing — so it's safe to leave in a self-hosted build. One caveat worth knowing: Cloud can't run **function-based** access rules, so the sync strips them and warns you which paths were dropped. Replace any function access rule you rely on with a Jexl string or a named policy before trusting Cloud to enforce it.
+If your API key or Site ID is missing, `sync:schema` skips quietly rather than failing — so it's safe to leave in a self-hosted build. One caveat worth knowing: Cloud can't run **function-based** access rules or **function-based access policies**, so the sync strips them and warns you which paths were dropped. String and boolean `accessPolicies` now sync to Cloud as part of the site schema. Replace any function access rule or function policy you rely on with a Jexl string, a boolean policy, or another serializable form before trusting Cloud to enforce it.
 
 When you run `init` for a Cloud project, this command is wired into `package.json` as `dyrected:sync-schema` and added to your `postbuild` step, so your schema syncs automatically on deploy.
 

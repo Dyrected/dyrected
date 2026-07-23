@@ -11,6 +11,7 @@ import {
   type AdminIconName,
 } from "../index.js";
 import { MockDatabaseAdapter } from "./mocks.js";
+import { mergeDynamicConfig } from "../utils/block-references.js";
 
 describe("Configuration Helpers", () => {
   it("only accepts valid Lucide names for admin navigation icons", () => {
@@ -230,6 +231,31 @@ describe("Configuration Helpers", () => {
     expect(valid.fields[0].admin?.useAsTitle).toBe("label");
     expect(valid.fields[1].admin?.useAsTitle).toBe("title");
     expect((invalid.fields[0].admin as { useAsTitle?: string } | undefined)?.useAsTitle).toBe("headline");
+  });
+
+  it("merges dynamic accessPolicies on top of the base config", () => {
+    const base = defineConfig({
+      collections: [],
+      globals: [],
+      accessPolicies: {
+        builtIn: true,
+      },
+      db: new MockDatabaseAdapter(),
+    });
+
+    const merged = mergeDynamicConfig(base, {
+      collections: [],
+      globals: [],
+      accessPolicies: {
+        builtIn: "user != null",
+        ownDocs: "{ owner: { equals: user.sub } }",
+      },
+    });
+
+    expect(merged.accessPolicies).toEqual({
+      builtIn: "user != null",
+      ownDocs: "{ owner: { equals: user.sub } }",
+    });
   });
 
   it("normalizes drafts: true to simplePublishingWorkflow", () => {

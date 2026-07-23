@@ -118,6 +118,21 @@ That is enough for both broad role checks and document-aware rules.
 
 For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean. Any of the rule shapes can do this: a function, a named policy, or a Jexl string that evaluates to an object.
 
+<Tabs items={['Jexl string', 'Function']}>
+<Tab value="Jexl string">
+
+```ts
+access: {
+  // A user can only read and modify documents they own
+  read: "{ author: { equals: user.sub } }",
+  update: "{ author: { equals: user.sub } }",
+  delete: "{ author: { equals: user.sub } }",
+}
+```
+
+</Tab>
+<Tab value="Function">
+
 ```ts
 access: {
   // A user can only read and modify documents they own
@@ -127,6 +142,9 @@ access: {
 }
 ```
 
+</Tab>
+</Tabs>
+
 Dyrected applies the returned filter differently per operation:
 
 - **List** — merges the filter into the query, so the response only contains matching documents.
@@ -134,12 +152,27 @@ Dyrected applies the returned filter differently per operation:
 
 Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean:
 
+<Tabs items={['Jexl string', 'Function']}>
+<Tab value="Jexl string">
+
+```ts
+access: {
+  create: "'editor' in user.roles && data.status != 'published'",
+}
+```
+
+</Tab>
+<Tab value="Function">
+
 ```ts
 access: {
   create: ({ user, data }) =>
     (user?.roles?.includes('editor') ?? false) && data?.status !== 'published',
 }
 ```
+
+</Tab>
+</Tabs>
 
 ## Audit log access
 
