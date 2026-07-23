@@ -1,11 +1,68 @@
 ---
 title: Tabs
-description: Organize a long edit form into tabs by grouping fields under a tab label.
+description: Use tabs only for clearly separate editor tasks, usually 2 to 3 sections at most.
 ---
 
-Tabs are a layout tool, not a field type. When fields carry a tab name, Dyrected renders the edit form as a tab bar instead of one long column — a good way to keep a busy collection (content, SEO, settings) organized without changing anything about what you store.
+Tabs are a layout tool, not a field type. They help when an editor needs to switch between a few clearly different sections of the same document, such as Content, SEO, and Linked Data. They do not change your schema shape or how data is stored.
 
-Every field accepts an `admin.tab` name, and the admin panel groups fields that share a tab name onto the same tab. `defineTab` is the ergonomic way to do that across a set of fields at once: give it a label and a list of fields, and it stamps that tab name on each one.
+The important decision is not "is this form long?" It is "does this form contain a few separate groups that editors move between?" If the answer is no, a single flowing form is usually better.
+
+## When to use tabs
+
+Use tabs when all of these are true:
+
+- the sections are peer groups, not steps in a sequence
+- editors do not need to see every section at once
+- editors need to jump quickly between sections
+- each tab can be labeled clearly in one or two words
+
+Good fits include:
+
+- primary content on one tab and secondary metadata on another
+- settings that are useful, but not part of the main writing flow
+- read-only joins, linked records, audit details, or derived data on a separate reference tab
+
+## When not to use tabs
+
+Do not use tabs just because a form feels crowded.
+
+Avoid tabs when:
+
+- users need to fill most fields in one pass during creation
+- the form is a step-by-step workflow that should be completed in order
+- users need to compare values across sections often
+- the tab labels are hard to name clearly
+- you are using tabs to hide weak information architecture instead of improving the form
+
+If a creator needs to work through nearly all the fields to publish the first draft, adding tabs often increases friction instead of reducing it.
+
+## Practical rules
+
+These rules are a good default for Dyrected admin forms:
+
+- prefer `2` tabs when possible
+- `3` tabs is a strong practical maximum for most edit forms
+- only go beyond `3` when the workflow clearly supports it
+- put the most-used tab first
+- keep labels short and obvious
+- do not let tab labels wrap onto multiple lines
+- do not nest tabs inside tabs
+
+## A strong pattern: editable vs reference data
+
+One of the best uses of tabs in Dyrected is separating editable fields from reference-only information.
+
+For example:
+
+- `Content` for title, body, slug, status, and other fields the editor changes
+- `SEO` for secondary metadata
+- `Linked Data` or `References` for join fields, derived relationships, history, or other read-only context
+
+This makes the form easier to understand because editors can immediately tell which tab is for changing data and which tab is for inspecting related data.
+
+## How tabs work
+
+Every field accepts an `admin.tab` name, and the admin panel groups fields that share that name onto the same tab. `defineTab` is the ergonomic way to do that across a set of fields at once: give it a label and a list of fields, and it stamps that tab name on each one.
 
 ```ts
 import {
@@ -39,11 +96,11 @@ export const Pages = defineCollection({
 
 `defineTab` returns the same fields with each one's `admin.tab` set to the label, so you spread the result into the `fields` array. Add one `defineTab` call per tab, and the tabs appear in that order.
 
-Because tabs are purely presentational, they change nothing about how your data is stored or returned — `title`, `body`, `metaTitle`, and `metaDescription` all save at the top level of the document, exactly as they would without tabs.
+Because tabs are purely presentational, they change nothing about how your data is stored or returned. `title`, `body`, `metaTitle`, and `metaDescription` still save at the top level of the document, exactly as they would without tabs.
 
 ## Fields outside a tab
 
-You don't have to tab every field. Any field without an `admin.tab` is collected into a leading tab named after the collection, so a few shared fields can sit up front while the rest are organized into their own tabs. If no field has a tab name, the form renders as a normal single column.
+You do not have to put every field into a named tab. Any field without an `admin.tab` is collected into a leading tab named after the collection, so a few shared fields can stay up front while the rest are organized into their own sections. If no field has a tab name, the form renders as a normal single-column form.
 
 ## Setting the tab directly
 
