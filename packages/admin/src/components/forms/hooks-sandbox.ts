@@ -1,5 +1,8 @@
+import jexl from "jexl"
+
 let sandboxIframe: HTMLIFrameElement | null = null
 const messageHandlers = new Map<string, (result: any) => void>()
+const SERIALIZED_ADMIN_HOOK_PREFIX = "__dyrected_fn__:"
 
 function initSandbox() {
   if (typeof window === "undefined" || sandboxIframe) return
@@ -63,4 +66,23 @@ export function runHookSandboxed(
       "*"
     )
   })
+}
+
+export function runDeclarativeHookExpression(
+  hookCode: string,
+  value: any,
+  siblingData: any,
+  data: any
+) {
+  return jexl.evalSync(hookCode, { value, siblingData, data })
+}
+
+export function isSerializedFunctionHook(hookCode: string) {
+  return hookCode.startsWith(SERIALIZED_ADMIN_HOOK_PREFIX)
+}
+
+export function stripSerializedFunctionHookPrefix(hookCode: string) {
+  return hookCode.startsWith(SERIALIZED_ADMIN_HOOK_PREFIX)
+    ? hookCode.slice(SERIALIZED_ADMIN_HOOK_PREFIX.length)
+    : hookCode
 }

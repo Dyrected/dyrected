@@ -19,6 +19,8 @@ import {
 } from "./utils/access-control.js";
 import { getConfigLogger, getRequestLogger } from "./observability.js";
 
+const SERIALIZED_ADMIN_HOOK_PREFIX = "__dyrected_fn__:";
+
 /**
  * Access gate middleware for granular permissions using Jexl.
  */
@@ -59,7 +61,7 @@ function serializeFieldForApi(f: any): any {
   if (serialized.admin?.hooks) {
     const hooks: Record<string, unknown> = { ...serialized.admin.hooks };
     if (typeof hooks.onChange === "function") {
-      hooks.onChange = hooks.onChange.toString();
+      hooks.onChange = `${SERIALIZED_ADMIN_HOOK_PREFIX}${hooks.onChange.toString()}`;
     }
     if (typeof hooks.options === "function") {
       hooks.options = hooks.options.toString();

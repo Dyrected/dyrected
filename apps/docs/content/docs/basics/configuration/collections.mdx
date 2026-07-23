@@ -304,19 +304,19 @@ export interface CollectionConfig<
      * Runs before the database is queried. Return a modified `where` object
      * to override the query filter.
      */
-    beforeRead?: CollectionBeforeReadHook[];
+    beforeRead?: CollectionBeforeReadHookEntry[];
 
     /**
      * Runs after documents are fetched. Return a modified doc to change what
      * the client receives. Runs on every document in a list response.
      */
-    afterRead?: CollectionAfterReadHook<TDoc>[];
+    afterRead?: CollectionAfterReadHookEntry<TDoc>[];
 
     /**
      * Runs before create or update. Return modified data to change what is
      * written to the database. Throw to abort the write entirely.
      */
-    beforeChange?: CollectionBeforeChangeHook<TDoc>[];
+    beforeChange?: CollectionBeforeChangeHookEntry<TDoc>[];
 
     /**
      * Runs after create or update is committed. For side-effects only:

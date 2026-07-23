@@ -17,6 +17,17 @@ Dyrected has three hook surfaces:
 
 There is also a small set of **admin field hooks** that run in the browser to make forms reactive. Those are useful for editor experience, but they are not a security boundary. If a rule must hold on every write path, put it in a server hook.
 
+## Cloud-safe declarative hooks
+
+If you are deploying to Dyrected Cloud, there is a smaller Cloud-safe subset of hooks that can be serialized into schema and evaluated without arbitrary server code.
+
+The short version:
+
+- use **declarative string hooks** for simple read shaping and value transforms that should survive `sync:schema`
+- use **function hooks** for self-hosted async work, side effects, and anything that needs arbitrary server code
+
+For the full compatibility table, exact expression contexts, and what `sync:schema` preserves or strips, read [Cloud-safe hooks](/docs/basics/hooks/cloud).
+
 ## Where each hook family fits
 
 ### Collections
@@ -60,6 +71,8 @@ Admin field hooks run in the form UI:
 - `admin.hooks.options`
 
 Use them to derive a slug, recalculate a total, or update select options as editors change related fields.
+
+`admin.hooks.onChange` also has a declarative string form, which makes it the recommended option when you want the same form behavior to survive Cloud schema sync.
 
 ## The recommended decision tree
 
@@ -119,6 +132,8 @@ What this gives you:
 
 - Hooks in an array run in order.
 - When a `before*` hook returns a value, that value becomes the input to the next hook in the chain.
+- Declarative string hooks run synchronously.
+- Mixed arrays of functions and strings still chain in order.
 - Throwing inside `beforeRead`, `beforeChange`, or `beforeDelete` stops the operation.
 - `afterChange` and `afterDelete` are for side effects after persistence. Their return values are ignored, and their errors are isolated so a successful write is not turned into a `500`.
 - Server hooks receive a database adapter, but only `afterChange` and `afterDelete` get a writable one.
@@ -126,6 +141,7 @@ What this gives you:
 ## What to read next
 
 - [Collection hooks](/docs/basics/hooks/collections) for the full document lifecycle on collections.
+- [Cloud-safe hooks](/docs/basics/hooks/cloud) for the Cloud-specific compatibility rules.
 - [Global hooks](/docs/basics/hooks/globals) for singleton settings and site-wide config.
 - [Field hooks](/docs/basics/hooks/fields) for value-level transforms and admin form reactivity.
 - [Hook context](/docs/basics/hooks/context) for the `req`, `user`, and `db` values hooks receive.
@@ -212,6 +228,17 @@ export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown
 ```
 
 
+## CollectionAfterReadHookEntry
+
+Exported type from @dyrected/core.
+
+```ts
+export type CollectionAfterReadHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = CollectionAfterReadHook<TDoc> | DeclarativeHookExpression;
+```
+
+
 ## CollectionBeforeChangeHook
 
 Runs **before** a document is created or updated in the database.
@@ -225,6 +252,17 @@ export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unkn
   operation: "create" | "update";
   db: ReadonlyDatabaseAdapter;
 }) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
+```
+
+
+## CollectionBeforeChangeHookEntry
+
+Exported type from @dyrected/core.
+
+```ts
+export type CollectionBeforeChangeHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = CollectionBeforeChangeHook<TDoc> | DeclarativeHookExpression;
 ```
 
 
@@ -260,6 +298,26 @@ export type CollectionBeforeReadHook = (args: {
 ```
 
 
+## CollectionBeforeReadHookEntry
+
+Exported type from @dyrected/core.
+
+```ts
+export type CollectionBeforeReadHookEntry =
+  | CollectionBeforeReadHook
+  | DeclarativeHookExpression;
+```
+
+
+## DeclarativeHookExpression
+
+Exported type from @dyrected/core.
+
+```ts
+export type DeclarativeHookExpression = string;
+```
+
+
 ## FieldAdminHooks
 
 Exported type from @dyrected/core.
@@ -268,7 +326,7 @@ Exported type from @dyrected/core.
 export type FieldAdminHooks<TValue> = {
   admin?: {
     hooks?: {
-      onChange?: FieldAdminOnChangeHook<TValue>;
+      onChange?: FieldAdminOnChangeHook<TValue> | DeclarativeHookExpression;
     };
   };
 };
@@ -454,7 +512,7 @@ Exported type from @dyrected/core.
 ```ts
 export type FieldHooks<TValue> = {
   hooks?: {
-    beforeChange?: Array<FieldBeforeChangeHook<TValue>>;
+    beforeChange?: Array<FieldBeforeChangeHook<TValue> | DeclarativeHookExpression>;
     afterRead?: Array<FieldAfterReadHook<TValue>>;
   };
 };
@@ -491,6 +549,17 @@ export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> =
 ```
 
 
+## GlobalAfterReadHookEntry
+
+Exported type from @dyrected/core.
+
+```ts
+export type GlobalAfterReadHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = GlobalAfterReadHook<TDoc> | DeclarativeHookExpression;
+```
+
+
 ## GlobalBeforeChangeHook
 
 Runs before the global document is updated.
@@ -508,12 +577,32 @@ export type GlobalBeforeChangeHook<TDoc extends object = Record<string, unknown>
 ```
 
 
+## GlobalBeforeChangeHookEntry
+
+Exported type from @dyrected/core.
+
+```ts
+export type GlobalBeforeChangeHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = GlobalBeforeChangeHook<TDoc> | DeclarativeHookExpression;
+```
+
+
 ## GlobalBeforeReadHook
 
 See: [CollectionBeforeReadHook](CollectionBeforeReadHook)
 
 ```ts
 export type GlobalBeforeReadHook = CollectionBeforeReadHook;
+```
+
+
+## GlobalBeforeReadHookEntry
+
+Exported type from @dyrected/core.
+
+```ts
+export type GlobalBeforeReadHookEntry = CollectionBeforeReadHookEntry;
 ```
 
 

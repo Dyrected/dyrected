@@ -30,6 +30,10 @@ export const SiteSettings = defineGlobal({
 
 There are no delete hooks because globals are not deleted through the API.
 
+As with collections, `beforeRead`, `afterRead`, and `beforeChange` can use either function hooks or declarative string hooks. `afterChange` stays function-only.
+
+If you are targeting Cloud, read [Cloud-safe hooks](/docs/basics/hooks/cloud) alongside this page. That page is the canonical guide for what survives `sync:schema` and what gets stripped.
+
 ## The four lifecycle phases
 
 ### `beforeRead`
@@ -37,6 +41,16 @@ There are no delete hooks because globals are not deleted through the API.
 `beforeRead` runs before Dyrected fetches the global. Use it when the read should depend on request metadata or the caller before the stored document is returned.
 
 Its shape matches collection `beforeRead`, so it is most useful when you want to inspect `req`, `user`, or the incoming query parameters consistently across reads.
+
+For Cloud-safe cases, the declarative string form is usually the better default:
+
+```ts
+hooks: {
+  beforeRead: [
+    "user != null ? query : { status: { equals: 'published' } }",
+  ],
+}
+```
 
 ### `afterRead`
 
@@ -56,6 +70,18 @@ hooks: {
 ```
 
 As with collection hooks, this phase gets a read-only database adapter.
+
+You can also express simple response shaping declaratively:
+
+```ts
+hooks: {
+  afterRead: [
+    "user != null ? doc : { internalBannerText: null }",
+  ],
+}
+```
+
+For Cloud-safe `afterRead` details, including the exact expression context, see [Cloud-safe hooks](/docs/basics/hooks/cloud).
 
 ### `beforeChange`
 
@@ -78,6 +104,18 @@ hooks: {
 ```
 
 Throwing here cancels the update.
+
+For Cloud-safe value patching, use a declarative string hook:
+
+```ts
+hooks: {
+  beforeChange: [
+    "{ siteName: data.siteName }",
+  ],
+}
+```
+
+For Cloud-safe `beforeChange` details, including the exact expression context, see [Cloud-safe hooks](/docs/basics/hooks/cloud).
 
 ### `afterChange`
 
@@ -112,6 +150,8 @@ export const SiteSettings = defineGlobal({
 
 This phase receives the updated `doc`, the `previousDoc`, and a writable database adapter. Like collection `afterChange`, its errors are isolated from the already-successful write.
 
+`afterChange` is still self-hosted function-hook territory. Use it for side effects, not for Cloud-safe declarative transforms.
+
 ## What globals are especially good at
 
 Global hooks are most useful when one change has broad frontend impact:
@@ -125,12 +165,14 @@ Global hooks are most useful when one change has broad frontend impact:
 
 - No `beforeDelete` or `afterDelete`
 - `operation` is always `'update'`
+- Only `beforeRead`, `afterRead`, and `beforeChange` have a Cloud-safe declarative string form
 
 If you need per-document logic on many records, that belongs on a [collection hook](/docs/basics/hooks/collections), not a global.
 
 ## Related pages
 
 - [Hooks overview](/docs/basics/hooks/overview) for the shared mental model.
+- [Cloud-safe hooks](/docs/basics/hooks/cloud) for the Cloud-specific subset and sync behavior.
 - [Collection hooks](/docs/basics/hooks/collections) for repeatable content.
 - [Global configuration](/docs/basics/configuration/globals) for the rest of the global config surface.
 - [Hook context](/docs/basics/hooks/context) for the request and user data hook functions receive.

@@ -174,9 +174,9 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
    * There are no delete hooks since globals cannot be deleted.
    */
   hooks?: {
-    beforeRead?: GlobalBeforeReadHook[];
-    afterRead?: GlobalAfterReadHook<TDoc>[];
-    beforeChange?: GlobalBeforeChangeHook<TDoc>[];
+    beforeRead?: GlobalBeforeReadHookEntry[];
+    afterRead?: GlobalAfterReadHookEntry<TDoc>[];
+    beforeChange?: GlobalBeforeChangeHookEntry<TDoc>[];
     afterChange?: GlobalAfterChangeHook<TDoc>[];
   };
 

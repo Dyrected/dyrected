@@ -2,6 +2,7 @@ import type { AuthenticatedUser, HookRequestContext } from "./request.js";
 import type { AccessRule } from "./access.js";
 import type { DatabaseAdapter, ReadonlyDatabaseAdapter } from "./adapters.js";
 import type { AdminIconName } from "./admin.js";
+import type { DeclarativeHookExpression } from "./hooks.js";
 
 export type FieldType =
   | "text"
@@ -220,7 +221,7 @@ export type FieldAfterReadHook<
 
 export type FieldHooks<TValue> = {
   hooks?: {
-    beforeChange?: Array<FieldBeforeChangeHook<TValue>>;
+    beforeChange?: Array<FieldBeforeChangeHook<TValue> | DeclarativeHookExpression>;
     afterRead?: Array<FieldAfterReadHook<TValue>>;
   };
 };
@@ -243,7 +244,7 @@ export type FieldAdminOnChangeHook<TValue = unknown> = (
 export type FieldAdminHooks<TValue> = {
   admin?: {
     hooks?: {
-      onChange?: FieldAdminOnChangeHook<TValue>;
+      onChange?: FieldAdminOnChangeHook<TValue> | DeclarativeHookExpression;
     };
   };
 };

@@ -3,14 +3,14 @@ import type { AccessRule } from "./access.js";
 import type {
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
-  CollectionAfterReadHook,
-  CollectionBeforeChangeHook,
+  CollectionAfterReadHookEntry,
+  CollectionBeforeChangeHookEntry,
   CollectionBeforeDeleteHook,
-  CollectionBeforeReadHook,
+  CollectionBeforeReadHookEntry,
   GlobalAfterChangeHook,
-  GlobalAfterReadHook,
-  GlobalBeforeChangeHook,
-  GlobalBeforeReadHook,
+  GlobalAfterReadHookEntry,
+  GlobalBeforeReadHookEntry,
+  GlobalBeforeChangeHookEntry,
 } from "./hooks.js";
 import type { Field, UploadConfig } from "./schema-core.js";
 import type { WorkflowConfig } from "./workflows.js";
@@ -81,9 +81,7 @@ export interface AuthConfig {
  * @template TDoc The TypeScript shape of a document in this collection.
  * Defaults to `Record<string, unknown>` for untyped usage.
  */
-export interface CollectionConfig<
-  TDoc extends object = Record<string, unknown>,
-> {
+export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
   /**
    * Unique identifier for this collection.
    *
@@ -267,19 +265,19 @@ export interface CollectionConfig<
      * Runs before the database is queried. Return a modified `where` object
      * to override the query filter.
      */
-    beforeRead?: CollectionBeforeReadHook[];
+    beforeRead?: CollectionBeforeReadHookEntry[];
 
     /**
      * Runs after documents are fetched. Return a modified doc to change what
      * the client receives. Runs on every document in a list response.
      */
-    afterRead?: CollectionAfterReadHook<TDoc>[];
+    afterRead?: CollectionAfterReadHookEntry<TDoc>[];
 
     /**
      * Runs before create or update. Return modified data to change what is
      * written to the database. Throw to abort the write entirely.
      */
-    beforeChange?: CollectionBeforeChangeHook<TDoc>[];
+    beforeChange?: CollectionBeforeChangeHookEntry<TDoc>[];
 
     /**
      * Runs after create or update is committed. For side-effects only:
@@ -381,8 +379,7 @@ export interface CollectionConfig<
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?:
-      string | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.
@@ -471,9 +468,9 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
    * There are no delete hooks since globals cannot be deleted.
    */
   hooks?: {
-    beforeRead?: GlobalBeforeReadHook[];
-    afterRead?: GlobalAfterReadHook<TDoc>[];
-    beforeChange?: GlobalBeforeChangeHook<TDoc>[];
+    beforeRead?: GlobalBeforeReadHookEntry[];
+    afterRead?: GlobalAfterReadHookEntry<TDoc>[];
+    beforeChange?: GlobalBeforeChangeHookEntry<TDoc>[];
     afterChange?: GlobalAfterChangeHook<TDoc>[];
   };
 

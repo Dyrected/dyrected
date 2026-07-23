@@ -2,6 +2,8 @@ import type { DatabaseAdapter, ReadonlyDatabaseAdapter } from "./adapters.js";
 import type { AuthenticatedUser, HookRequestContext } from "./request.js";
 import type { FieldBeforeChangeHook } from "./schema-core.js";
 
+export type DeclarativeHookExpression = string;
+
 /**
  * @deprecated Use {@link FieldBeforeChangeHook} or `FieldAfterReadHook` instead.
  * This alias remains for backwards compatibility.
@@ -24,6 +26,10 @@ export type CollectionBeforeReadHook = (args: {
   db: ReadonlyDatabaseAdapter;
 }) => Record<string, unknown> | void | Promise<Record<string, unknown> | void>;
 
+export type CollectionBeforeReadHookEntry =
+  | CollectionBeforeReadHook
+  | DeclarativeHookExpression;
+
 /**
  * Runs after a document (or list of documents) is fetched from the database,
  * before the response is sent to the client.
@@ -34,6 +40,10 @@ export type CollectionAfterReadHook<TDoc extends object = Record<string, unknown
   user?: AuthenticatedUser;
   db: ReadonlyDatabaseAdapter;
 }) => TDoc | Promise<TDoc>;
+
+export type CollectionAfterReadHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = CollectionAfterReadHook<TDoc> | DeclarativeHookExpression;
 
 /**
  * Runs **before** a document is created or updated in the database.
@@ -46,6 +56,10 @@ export type CollectionBeforeChangeHook<TDoc extends object = Record<string, unkn
   operation: "create" | "update";
   db: ReadonlyDatabaseAdapter;
 }) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
+
+export type CollectionBeforeChangeHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = CollectionBeforeChangeHook<TDoc> | DeclarativeHookExpression;
 
 /**
  * Runs **after** a document is created or updated in the database.
@@ -83,6 +97,7 @@ export type CollectionAfterDeleteHook<TDoc extends object = Record<string, unkno
 
 /** @see {@link CollectionBeforeReadHook} */
 export type GlobalBeforeReadHook = CollectionBeforeReadHook;
+export type GlobalBeforeReadHookEntry = CollectionBeforeReadHookEntry;
 
 /**
  * Runs after the global document is fetched, before the response is sent.
@@ -93,6 +108,10 @@ export type GlobalAfterReadHook<TDoc extends object = Record<string, unknown>> =
   user?: AuthenticatedUser;
   db: ReadonlyDatabaseAdapter;
 }) => TDoc | Promise<TDoc>;
+
+export type GlobalAfterReadHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = GlobalAfterReadHook<TDoc> | DeclarativeHookExpression;
 
 /**
  * Runs before the global document is updated.
@@ -106,6 +125,10 @@ export type GlobalBeforeChangeHook<TDoc extends object = Record<string, unknown>
   operation: "update";
   db: ReadonlyDatabaseAdapter;
 }) => Partial<TDoc> | void | Promise<Partial<TDoc> | void>;
+
+export type GlobalBeforeChangeHookEntry<
+  TDoc extends object = Record<string, unknown>,
+> = GlobalBeforeChangeHook<TDoc> | DeclarativeHookExpression;
 
 /**
  * Runs after the global document is updated. Side-effects only.

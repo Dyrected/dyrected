@@ -8,7 +8,12 @@ import { Input } from "../ui/input"
 import { Tabs, TabsContent } from "../ui/tabs"
 import type { Field as FieldSchema, Block as BlockSchema } from "@dyrected/sdk"
 import { buildSchemaShape, buildDefaultValues, getFlatErrors, formatPath, resolveContainerPath } from "./utils"
-import { runHookSandboxed } from "./hooks-sandbox"
+import {
+  isSerializedFunctionHook,
+  runDeclarativeHookExpression,
+  runHookSandboxed,
+  stripSerializedFunctionHookPrefix,
+} from "./hooks-sandbox"
 import { FormFieldRenderer } from "./form-field-renderer"
 import { AlertCircle, ChevronRight, Lock, Home } from "lucide-react"
 import { toast } from "sonner"
@@ -517,7 +522,14 @@ function FormEngineInner({
             console.error(`[dyrected/admin] Error running onChange hook for field "${field.name}":`, err)
           }
         } else if (typeof hook === "string") {
-          calculatedValue = await runHookSandboxed(hook, currentValue, watchedValues, watchedValues)
+          calculatedValue = isSerializedFunctionHook(hook)
+            ? await runHookSandboxed(
+                stripSerializedFunctionHookPrefix(hook),
+                currentValue,
+                watchedValues,
+                watchedValues,
+              )
+            : runDeclarativeHookExpression(hook, currentValue, watchedValues, watchedValues)
         }
 
         if (active && calculatedValue !== undefined && calculatedValue !== currentValue) {

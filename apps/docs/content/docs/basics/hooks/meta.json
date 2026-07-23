@@ -2,6 +2,7 @@
   "title": "Hooks",
   "pages": [
     "overview",
+    "cloud",
     "collections",
     "globals",
     "fields",

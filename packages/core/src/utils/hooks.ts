@@ -1,5 +1,6 @@
 import type {
   AuthenticatedUser,
+  DeclarativeHookExpression,
   Field,
   FieldAfterReadHook,
   FieldAfterReadHookArgs,
@@ -8,12 +9,14 @@ import type {
   ReadonlyDatabaseAdapter,
 } from "../types/index.js";
 import { getConfigLogger } from "../observability.js";
+import jexl from "jexl";
 
 // Internal loose type used by the hook runner.
 // Using `any` for the parameter type is intentional — TypeScript's function
 // parameter contravariance would otherwise prevent specific hook types
 // (CollectionBeforeChangeHook, etc.) from being assigned here.
 type AnyHookFn = (args: any) => any;
+type AnyHook = AnyHookFn | DeclarativeHookExpression;
 
 type AnyFieldBeforeChangeHook = FieldBeforeChangeHook<
   unknown,
@@ -37,10 +40,11 @@ type AnyFieldAfterReadHook = FieldAfterReadHook<
  * surfaces as an HTTP 500 to the caller — the write already succeeded.
  */
 export async function runCollectionHooks(
-  hooks: AnyHookFn[] | undefined,
+  hooks: AnyHook[] | undefined,
   args: {
     data?: unknown;
     doc?: unknown;
+    query?: unknown;
     user?: unknown;
     req?: unknown;
     db?: unknown;
@@ -50,21 +54,45 @@ export async function runCollectionHooks(
   options: { isolated?: boolean } = {},
 ): Promise<any> {
   if (!hooks || hooks.length === 0) {
-    return args.data ?? args.doc ?? undefined;
+    return args.data ?? args.doc ?? args.query ?? undefined;
   }
 
-  let currentPayload = args.data ?? args.doc ?? undefined;
+  const payloadKey =
+    args.data !== undefined
+      ? "data"
+      : args.doc !== undefined
+        ? "doc"
+        : "query" in args
+          ? "query"
+          : undefined;
+  let currentPayload =
+    payloadKey === undefined ? undefined : (args[payloadKey] as unknown);
 
   for (const hook of hooks) {
     try {
-      const result = await hook({
+      const hookArgs = {
         ...args,
-        data: args.data !== undefined ? currentPayload : undefined,
-        doc: args.doc !== undefined ? currentPayload : undefined,
-      });
+        ...(payloadKey !== undefined ? { [payloadKey]: currentPayload } : {}),
+      };
+      const result =
+        typeof hook === "string"
+          ? await jexl.eval(hook, hookArgs)
+          : await hook(hookArgs);
 
       if (result !== undefined) {
-        currentPayload = result;
+        currentPayload =
+          typeof hook === "string" &&
+          currentPayload &&
+          typeof currentPayload === "object" &&
+          !Array.isArray(currentPayload) &&
+          result &&
+          typeof result === "object" &&
+          !Array.isArray(result)
+            ? {
+                ...(currentPayload as Record<string, unknown>),
+                ...(result as Record<string, unknown>),
+              }
+            : result;
       }
     } catch (err) {
       if (options.isolated) {
@@ -107,7 +135,6 @@ export async function executeFieldBeforeChange(
     let updatedValue = value;
     if (field.hooks?.beforeChange) {
       for (const hook of field.hooks.beforeChange) {
-        const typedHook = hook as unknown as AnyFieldBeforeChangeHook;
         const hookArgs: FieldBeforeChangeHookArgs<
           unknown,
           Record<string, unknown>
@@ -118,7 +145,10 @@ export async function executeFieldBeforeChange(
           user: user as AuthenticatedUser | undefined,
           db: db as ReadonlyDatabaseAdapter,
         };
-        updatedValue = await typedHook(hookArgs);
+        updatedValue =
+          typeof hook === "string"
+            ? await jexl.eval(hook, hookArgs)
+            : await (hook as unknown as AnyFieldBeforeChangeHook)(hookArgs);
       }
       result[field.name] = updatedValue;
     }

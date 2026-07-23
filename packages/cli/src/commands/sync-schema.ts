@@ -35,12 +35,107 @@ function sanitizeAccessValue(
   return value;
 }
 
+function sanitizeHookArray(
+  hooks: unknown,
+  location: string,
+  warnings: string[],
+  options: { allowStrings: boolean },
+): string[] | undefined {
+  if (!Array.isArray(hooks)) return undefined;
+
+  const sanitized = hooks.flatMap((hook, index) => {
+    if (typeof hook === "string" && options.allowStrings) {
+      return [hook];
+    }
+
+    if (typeof hook === "function" || typeof hook === "string") {
+      warnings.push(`${location}[${index}]`);
+    }
+
+    return [];
+  });
+
+  return sanitized.length > 0 ? sanitized : undefined;
+}
+
+function sanitizeHookMap(
+  hooks: Record<string, unknown> | undefined,
+  location: string,
+  warnings: string[],
+  allowStringsByKey: Record<string, boolean>,
+) {
+  if (!hooks) return undefined;
+
+  const sanitized = Object.fromEntries(
+    Object.entries(allowStringsByKey).flatMap(([key, allowStrings]) => {
+      const value = sanitizeHookArray(
+        hooks[key],
+        `${location}.${key}`,
+        warnings,
+        { allowStrings },
+      );
+      return value ? [[key, value]] : [];
+    }),
+  );
+
+  return Object.keys(sanitized).length > 0 ? sanitized : undefined;
+}
+
 function sanitizeField(
   field: Record<string, any>,
   location: string,
   warnings: string[],
 ) {
   const sanitized = { ...field };
+
+  if (sanitized.hooks) {
+    const beforeChange = sanitizeHookArray(
+      sanitized.hooks.beforeChange,
+      `${location}.hooks.beforeChange`,
+      warnings,
+      { allowStrings: true },
+    );
+    const afterRead = sanitizeHookArray(
+      sanitized.hooks.afterRead,
+      `${location}.hooks.afterRead`,
+      warnings,
+      { allowStrings: false },
+    );
+
+    sanitized.hooks = {
+      ...(beforeChange ? { beforeChange } : {}),
+      ...(afterRead ? { afterRead } : {}),
+    };
+
+    if (Object.keys(sanitized.hooks).length === 0) {
+      delete sanitized.hooks;
+    }
+  }
+
+  if (sanitized.admin?.hooks) {
+    const hooks = { ...sanitized.admin.hooks };
+    const onChange =
+      typeof hooks.onChange === "string"
+        ? hooks.onChange
+        : typeof hooks.onChange === "function"
+          ? (warnings.push(`${location}.admin.hooks.onChange`), undefined)
+          : undefined;
+
+    if (typeof hooks.options === "function" || typeof hooks.options === "string") {
+      warnings.push(`${location}.admin.hooks.options`);
+    }
+
+    sanitized.admin = {
+      ...sanitized.admin,
+      hooks: {
+        ...(onChange ? { onChange } : {}),
+      },
+    };
+
+    if (Object.keys(sanitized.admin.hooks).length === 0) {
+      delete sanitized.admin.hooks;
+    }
+  }
 
   if (sanitized.access) {
     sanitized.access = {
@@ -123,99 +218,131 @@ export function sanitizeSchemaForCloudSync(config: {
       : block.fields,
   }));
 
-  const collections = config.collections.map((collection, index) => ({
-    ...collection,
-    access: {
-      ...(collection.access?.read !== undefined
-        ? {
-            read: sanitizeAccessValue(
-              collection.access.read,
-              `collections[${index}].access.read`,
-              warnings,
-            ),
-          }
-        : {}),
-      ...(collection.access?.create !== undefined
-        ? {
-            create: sanitizeAccessValue(
-              collection.access.create,
-              `collections[${index}].access.create`,
-              warnings,
-            ),
-          }
-        : {}),
-      ...(collection.access?.update !== undefined
-        ? {
-            update: sanitizeAccessValue(
-              collection.access.update,
-              `collections[${index}].access.update`,
-              warnings,
-            ),
-          }
-        : {}),
-      ...(collection.access?.delete !== undefined
-        ? {
-            delete: sanitizeAccessValue(
-              collection.access.delete,
-              `collections[${index}].access.delete`,
-              warnings,
-            ),
-          }
-        : {}),
-      ...(collection.access?.readAudit !== undefined
-        ? {
-            readAudit: sanitizeAccessValue(
-              collection.access.readAudit,
-              `collections[${index}].access.readAudit`,
-              warnings,
-            ),
-          }
-        : {}),
-    },
-    fields: Array.isArray(collection.fields)
-      ? collection.fields.map(
-          (field: Record<string, any>, fieldIndex: number) =>
+  const collections = config.collections.map((collection, index) => {
+    const hooks = sanitizeHookMap(
+      collection.hooks,
+      `collections[${index}].hooks`,
+      warnings,
+      {
+        beforeRead: true,
+        afterRead: true,
+        beforeChange: true,
+        afterChange: false,
+        beforeDelete: false,
+        afterDelete: false,
+      },
+    );
+
+    return {
+      ...collection,
+      access: {
+        ...(collection.access?.read !== undefined
+          ? {
+              read: sanitizeAccessValue(
+                collection.access.read,
+                `collections[${index}].access.read`,
+                warnings,
+              ),
+            }
+          : {}),
+        ...(collection.access?.create !== undefined
+          ? {
+              create: sanitizeAccessValue(
+                collection.access.create,
+                `collections[${index}].access.create`,
+                warnings,
+              ),
+            }
+          : {}),
+        ...(collection.access?.update !== undefined
+          ? {
+              update: sanitizeAccessValue(
+                collection.access.update,
+                `collections[${index}].access.update`,
+                warnings,
+              ),
+            }
+          : {}),
+        ...(collection.access?.delete !== undefined
+          ? {
+              delete: sanitizeAccessValue(
+                collection.access.delete,
+                `collections[${index}].access.delete`,
+                warnings,
+              ),
+            }
+          : {}),
+        ...(collection.access?.readAudit !== undefined
+          ? {
+              readAudit: sanitizeAccessValue(
+                collection.access.readAudit,
+                `collections[${index}].access.readAudit`,
+                warnings,
+              ),
+            }
+          : {}),
+      },
+      ...(hooks ? { hooks } : {}),
+      fields: Array.isArray(collection.fields)
+        ? collection.fields.map(
+            (field: Record<string, any>, fieldIndex: number) =>
+              sanitizeField(
+                field,
+                `collections[${index}].fields[${fieldIndex}]`,
+                warnings,
+              ),
+          )
+        : collection.fields,
+    };
+  });
+
+  const globals = (config.globals || []).map((global, index) => {
+    const hooks = sanitizeHookMap(
+      global.hooks,
+      `globals[${index}].hooks`,
+      warnings,
+      {
+        beforeRead: true,
+        afterRead: true,
+        beforeChange: true,
+        afterChange: false,
+      },
+    );
+
+    return {
+      ...global,
+      access: {
+        ...(global.access?.read !== undefined
+          ? {
+              read: sanitizeAccessValue(
+                global.access.read,
+                `globals[${index}].access.read`,
+                warnings,
+              ),
+            }
+          : {}),
+        ...(global.access?.update !== undefined
+          ? {
+              update: sanitizeAccessValue(
+                global.access.update,
+                `globals[${index}].access.update`,
+                warnings,
+              ),
+            }
+          : {}),
+      },
+      ...(hooks ? { hooks } : {}),
+      fields: Array.isArray(global.fields)
+        ? global.fields.map((field: Record<string, any>, fieldIndex: number) =>
             sanitizeField(
               field,
-              `collections[${index}].fields[${fieldIndex}]`,
+              `globals[${index}].fields[${fieldIndex}]`,
               warnings,
             ),
-        )
-      : collection.fields,
-  }));
-
-  const globals = (config.globals || []).map((global, index) => ({
-    ...global,
-    access: {
-      ...(global.access?.read !== undefined
-        ? {
-            read: sanitizeAccessValue(
-              global.access.read,
-              `globals[${index}].access.read`,
-              warnings,
-            ),
-          }
-        : {}),
-      ...(global.access?.update !== undefined
-        ? {
-            update: sanitizeAccessValue(
-              global.access.update,
-              `globals[${index}].access.update`,
-              warnings,
-            ),
-          }
-        : {}),
-    },
-    fields: Array.isArray(global.fields)
-      ? global.fields.map((field: Record<string, any>, fieldIndex: number) =>
-          sanitizeField(
-            field,
-            `globals[${index}].fields[${fieldIndex}]`,
-            warnings,
-          ),
-        )
-      : global.fields,
-  }));
+          )
+        : global.fields,
+    };
+  });
 
   const accessPolicies = Object.fromEntries(
     Object.entries(config.accessPolicies || {}).flatMap(([name, value]) => {

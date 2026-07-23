@@ -264,6 +264,41 @@ describe("Frontend UI Hooks Reactivity", () => {
     })
   });
 
+  it("should evaluate declarative onChange expressions from serialized schema hooks", async () => {
+    const user = userEvent.setup()
+
+    const fields: FieldSchema[] = [
+      { name: "title", type: "text", label: "Title" },
+      {
+        name: "slug",
+        type: "text",
+        label: "Slug",
+        admin: {
+          hooks: {
+            onChange: "siblingData.title != null ? siblingData.title : value",
+          },
+        },
+      },
+    ]
+
+    renderWithQueryClient(
+      <FormEngine
+        collection="posts"
+        fields={fields}
+        onSubmit={() => {}}
+      />
+    )
+
+    const titleInput = document.querySelector('input[name="title"]') as HTMLInputElement
+    const slugInput = document.querySelector('input[name="slug"]') as HTMLInputElement
+
+    await user.type(titleInput, "hello-world")
+
+    await waitFor(() => {
+      expect(slugInput.value).toBe("hello-world")
+    })
+  })
+
   it("should dynamically update dropdown options based on sibling values (Dependent Dropdowns)", async () => {
     const user = userEvent.setup()
     const stateHookSpy = vi.fn(({ siblingData }) => {

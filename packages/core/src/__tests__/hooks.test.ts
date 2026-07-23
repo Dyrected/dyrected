@@ -78,6 +78,100 @@ describe("Backend hooks integration", () => {
     expect(body.value).toBe(30); // (5 + 10) * 2
   });
 
+  it("should evaluate declarative beforeChange hooks sequentially with function hooks", async () => {
+    const hook = vi.fn(({ data }) => ({ ...data, value: data.value * 3 }));
+
+    const numbers = defineCollection({
+      slug: "numbers-declarative",
+      hooks: {
+        beforeChange: ["{ value: data.value + 5 }", hook],
+      },
+      fields: [{ name: "value", type: "number" }],
+    });
+
+    const config = defineConfig({
+      collections: [numbers],
+      globals: [],
+      db,
+    });
+
+    const app = await createDyrectedApp(config);
+
+    const res = await app.request("/api/collections/numbers-declarative", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: 5 }),
+    });
+
+    expect(res.status).toBe(201);
+    expect(hook).toHaveBeenCalled();
+    const body = await res.json();
+    expect(body.value).toBe(30);
+  });
+
+  it("should evaluate declarative beforeRead hooks and scope list results", async () => {
+    await db.create({ collection: "posts-filtered", data: { id: "post-1", title: "Public", status: "published" } });
+    await db.create({ collection: "posts-filtered", data: { id: "post-2", title: "Draft", status: "draft" } });
+
+    const posts = defineCollection({
+      slug: "posts-filtered",
+      hooks: {
+        beforeRead: ["{ status: { equals: 'published' } }"],
+      },
+      fields: [
+        { name: "title", type: "text" },
+        { name: "status", type: "text" },
+      ],
+    });
+
+    const config = defineConfig({
+      collections: [posts],
+      globals: [],
+      db,
+    });
+
+    const app = await createDyrectedApp(config);
+    const res = await app.request("/api/collections/posts-filtered");
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.docs).toHaveLength(1);
+    expect(body.docs[0].status).toBe("published");
+  });
+
+  it("should evaluate declarative afterRead hooks for returned documents", async () => {
+    const posts = defineCollection({
+      slug: "posts-afterread-declarative",
+      hooks: {
+        afterRead: ["{ title: doc.title + '!' }"],
+      },
+      fields: [{ name: "title", type: "text" }],
+    });
+
+    const config = defineConfig({
+      collections: [posts],
+      globals: [],
+      db,
+    });
+
+    const app = await createDyrectedApp(config);
+
+    const resCreate = await app.request("/api/collections/posts-afterread-declarative", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Hello" }),
+    });
+
+    expect(resCreate.status).toBe(201);
+    const created = await resCreate.json();
+    expect(created.title).toBe("Hello!");
+
+    const resGet = await app.request(`/api/collections/posts-afterread-declarative/${created.id}`);
+    expect(resGet.status).toBe(200);
+    const loaded = await resGet.json();
+    expect(loaded.title).toBe("Hello!");
+  });
+
   it("should abort database write and return error if a beforeChange hook throws", async () => {
     const throwingHook = vi.fn(() => {
       throw new Error("Validation failed in hook");
@@ -159,6 +253,66 @@ describe("Backend hooks integration", () => {
     expect(getBody.username).toBe("masked-ALICE");
   });
 
+  it("should run declarative field beforeChange hooks in nested structures", async () => {
+    const profiles = defineCollection({
+      slug: "profiles-declarative",
+      fields: [
+        {
+          name: "profile",
+          type: "object",
+          fields: [
+            {
+              name: "name",
+              type: "text",
+              hooks: {
+                beforeChange: ["value != null ? value + '!' : value"],
+              },
+            },
+          ],
+        },
+        {
+          name: "sections",
+          type: "blocks",
+          blocks: [
+            {
+              slug: "hero",
+              fields: [
+                {
+                  name: "headline",
+                  type: "text",
+                  hooks: {
+                    beforeChange: ["value != null ? value + '!' : value"],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const config = defineConfig({
+      collections: [profiles],
+      globals: [],
+      db,
+    });
+
+    const app = await createDyrectedApp(config);
+    const res = await app.request("/api/collections/profiles-declarative", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profile: { name: "Alice" },
+        sections: [{ blockType: "hero", headline: "Welcome" }],
+      }),
+    });
+
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.profile.name).toBe("Alice!");
+    expect(body.sections[0].headline).toBe("Welcome!");
+  });
+
   it("should execute global hooks for get and update", async () => {
     const beforeChangeSpy = vi.fn(({ data }) => ({ ...data, key: "updated-key" }));
     const afterReadSpy = vi.fn(({ doc }) => ({ ...doc, extra: "added-on-read" }));
@@ -198,6 +352,69 @@ describe("Backend hooks integration", () => {
     const getBody = await resGet.json();
     expect(getBody.key).toBe("updated-key");
     expect(getBody.extra).toBe("added-on-read");
+  });
+
+  it("should execute declarative global hooks from dynamic Cloud-style schema fetch", async () => {
+    const config = defineConfig({
+      collections: [],
+      globals: [],
+      db,
+      onSchemaFetch: async () => ({
+        globals: [
+          defineGlobal({
+            slug: "settings-dynamic",
+            hooks: {
+              beforeChange: ["{ key: 'cloud-key' }"],
+              afterRead: ["{ extra: 'from-cloud' }"],
+            },
+            fields: [{ name: "key", type: "text" }],
+          }),
+        ],
+      }),
+    });
+
+    const app = await createDyrectedApp(config);
+
+    const resUpdate = await app.request("/api/globals/settings-dynamic", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Site-Id": "site-1",
+      },
+      body: JSON.stringify({ key: "initial" }),
+    });
+
+    expect(resUpdate.status).toBe(200);
+    const updated = await resUpdate.json();
+    expect(updated.key).toBe("cloud-key");
+    expect(updated.extra).toBe("from-cloud");
+  });
+
+  it("should fail the request when a declarative hook expression is invalid", async () => {
+    const posts = defineCollection({
+      slug: "posts-invalid-hook",
+      hooks: {
+        beforeChange: ["{"],
+      },
+      fields: [{ name: "title", type: "text" }],
+    });
+
+    const config = defineConfig({
+      collections: [posts],
+      globals: [],
+      db,
+    });
+
+    const app = await createDyrectedApp(config);
+    const res = await app.request("/api/collections/posts-invalid-hook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Broken" }),
+    });
+
+    expect(res.status).toBe(500);
+    const dbDocs = await db.find({ collection: "posts-invalid-hook" });
+    expect(dbDocs.total).toBe(0);
   });
 
   it("should provide readonly db in beforeChange — find/findOne work, create throws", async () => {

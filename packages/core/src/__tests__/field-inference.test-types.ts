@@ -10,6 +10,7 @@ const Posts = defineCollection({
       required: true,
       hooks: {
         beforeChange: [({ value }) => value.toLowerCase()],     // value: string ✓
+        beforeChange: ["value"],
         afterRead: [({ value }) => value.trim()],               // value: string ✓
       },
     },
@@ -34,6 +35,15 @@ const Posts = defineCollection({
         beforeChange: [({ value }) => value.map(t => t.toUpperCase())], // value: string[] ✓
       },
     },
+    {
+      name: 'seoSlug',
+      type: 'text',
+        admin: {
+          hooks: {
+            onChange: "siblingData.title != null ? siblingData.title : value",
+          },
+        },
+      },
   ],
   hooks: {
     beforeChange: [({ data }) => {
@@ -41,7 +51,7 @@ const Posts = defineCollection({
       const _views: number | undefined = data.views
       void _slug; void _views
       return data
-    }],
+    }, "{ ...data, status: 'draft' }"],
     afterChange: [({ doc }) => {
       const _id: string = doc.id           // id added automatically for collections ✓
       const _slug: string = doc.slug
@@ -77,6 +87,24 @@ const Settings = defineGlobal({
       const _maint: boolean | undefined = doc.maintenance  // optional → boolean | undefined ✓
       void _name; void _maint
     }],
+  },
+})
+
+defineCollection({
+  slug: 'invalid-hook-surfaces',
+  fields: [
+    {
+      name: 'secret',
+      type: 'text',
+      hooks: {
+        // @ts-expect-error -- declarative strings are not supported for field afterRead in v1
+        afterRead: ["value"],
+      },
+    },
+  ],
+  hooks: {
+    // @ts-expect-error -- declarative strings are not supported for afterChange in v1
+    afterChange: ["doc"],
   },
 })
 

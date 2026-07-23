@@ -591,8 +591,20 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:CollectionAfterReadHookEntry",
+      "name": "CollectionAfterReadHookEntry",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:CollectionBeforeChangeHook",
       "name": "CollectionBeforeChangeHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeChangeHookEntry",
+      "name": "CollectionBeforeChangeHookEntry",
       "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
@@ -605,6 +617,12 @@
     {
       "id": "@dyrected/core:CollectionBeforeReadHook",
       "name": "CollectionBeforeReadHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:CollectionBeforeReadHookEntry",
+      "name": "CollectionBeforeReadHookEntry",
       "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
@@ -654,6 +672,12 @@
       "id": "@dyrected/core:DateTimeField",
       "name": "DateTimeField",
       "category": "fields",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:DeclarativeHookExpression",
+      "name": "DeclarativeHookExpression",
+      "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
     {
@@ -831,14 +855,32 @@
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:GlobalAfterReadHookEntry",
+      "name": "GlobalAfterReadHookEntry",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:GlobalBeforeChangeHook",
       "name": "GlobalBeforeChangeHook",
       "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },
     {
+      "id": "@dyrected/core:GlobalBeforeChangeHookEntry",
+      "name": "GlobalBeforeChangeHookEntry",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
       "id": "@dyrected/core:GlobalBeforeReadHook",
       "name": "GlobalBeforeReadHook",
+      "category": "hooks",
+      "sourcePackage": "@dyrected/core"
+    },
+    {
+      "id": "@dyrected/core:GlobalBeforeReadHookEntry",
+      "name": "GlobalBeforeReadHookEntry",
       "category": "hooks",
       "sourcePackage": "@dyrected/core"
     },

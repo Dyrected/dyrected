@@ -90,6 +90,73 @@ describe("Backend Dynamic Option Queries", () => {
     expect(stateField.admin.hooks.options).toContain("California");
   });
 
+  it("should preserve declarative admin onChange hooks in serialized schemas", async () => {
+    const posts = defineCollection({
+      slug: "posts",
+      fields: [
+        {
+          name: "slug",
+          type: "text",
+          admin: {
+            hooks: {
+              onChange: "siblingData.title != null ? siblingData.title : value",
+            },
+          },
+        },
+      ],
+    });
+
+    const config = defineConfig({
+      collections: [posts],
+      globals: [],
+      db,
+    });
+
+    const app = await createDyrectedApp(config);
+    const res = await app.request("/api/schemas");
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    const slugField = body.collections[0].fields.find((f: any) => f.name === "slug");
+
+    expect(slugField.admin.hooks.onChange).toBe(
+      "siblingData.title != null ? siblingData.title : value",
+    );
+  });
+
+  it("should tag functional admin onChange hooks so the admin can sandbox them", async () => {
+    const posts = defineCollection({
+      slug: "posts",
+      fields: [
+        {
+          name: "slug",
+          type: "text",
+          admin: {
+            hooks: {
+              onChange: ({ siblingData }: { siblingData: Record<string, unknown> }) => siblingData.title,
+            },
+          },
+        },
+      ],
+    });
+
+    const config = defineConfig({
+      collections: [posts],
+      globals: [],
+      db,
+    });
+
+    const app = await createDyrectedApp(config);
+    const res = await app.request("/api/schemas");
+    expect(res.status).toBe(200);
+
+    const body = await res.json();
+    const slugField = body.collections[0].fields.find((f: any) => f.name === "slug");
+
+    expect(typeof slugField.admin.hooks.onChange).toBe("string");
+    expect(slugField.admin.hooks.onChange.startsWith("__dyrected_fn__:")).toBe(true);
+  });
+
   it("should resolve option values from options function or options config object via GET options route", async () => {
     const posts = defineCollection({
       slug: "posts",

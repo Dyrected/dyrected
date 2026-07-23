@@ -1,5 +1,145 @@
 [
   {
+    "id": "/basics/access-control/cloud#example-1",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-2",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-3",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-4",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-5",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-6",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-7",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-8",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-9",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-10",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-11",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-12",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-13",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-14",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-15",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-16",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-17",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-18",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-19",
+    "page": "/basics/access-control/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/cloud#example-20",
+    "page": "/basics/access-control/cloud",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
     "id": "/basics/access-control/collections#example-1",
     "page": "/basics/access-control/collections",
     "language": "ts",
@@ -80,8 +220,8 @@
     "id": "/basics/access-control/collections#example-12",
     "page": "/basics/access-control/collections",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/basics/access-control/collections#example-13",
@@ -101,11 +241,25 @@
     "id": "/basics/access-control/collections#example-15",
     "page": "/basics/access-control/collections",
     "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/collections#example-16",
+    "page": "/basics/access-control/collections",
+    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/basics/access-control/collections#example-16",
+    "id": "/basics/access-control/collections#example-17",
+    "page": "/basics/access-control/collections",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/collections#example-18",
     "page": "/basics/access-control/collections",
     "language": "ts",
     "classification": "syntax-checked",
@@ -227,8 +381,8 @@
     "id": "/basics/access-control/overview#example-7",
     "page": "/basics/access-control/overview",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/basics/access-control/overview#example-8",
@@ -253,6 +407,13 @@
   },
   {
     "id": "/basics/access-control/overview#example-11",
+    "page": "/basics/access-control/overview",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/overview#example-12",
     "page": "/basics/access-control/overview",
     "language": "ts",
     "classification": "illustrative",
@@ -1968,6 +2129,55 @@
   },
   {
     "id": "/basics/hooks/overview#example-26",
+    "page": "/basics/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/hooks/overview#example-27",
+    "page": "/basics/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/hooks/overview#example-28",
+    "page": "/basics/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/hooks/overview#example-29",
+    "page": "/basics/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/hooks/overview#example-30",
+    "page": "/basics/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/hooks/overview#example-31",
+    "page": "/basics/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/hooks/overview#example-32",
+    "page": "/basics/hooks/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/hooks/overview#example-33",
     "page": "/basics/hooks/overview",
     "language": "ts",
     "classification": "syntax-checked",

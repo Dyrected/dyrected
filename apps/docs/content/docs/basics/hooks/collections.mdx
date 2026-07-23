@@ -31,7 +31,9 @@ export const Posts = defineCollection({
 })
 ```
 
-Each key accepts an array of sync or async functions. Hooks run in array order.
+Each key accepts an array of hooks that run in order. In self-hosted projects, every collection hook can use the function form. For `beforeRead`, `afterRead`, and `beforeChange`, you can also use a declarative string form when you want the hook to sync cleanly to Dyrected Cloud.
+
+If you are targeting Cloud, read [Cloud-safe hooks](/docs/basics/hooks/cloud) alongside this page. That page is the canonical guide for what survives `sync:schema` and what gets stripped.
 
 ## The six lifecycle phases
 
@@ -39,7 +41,7 @@ Each key accepts an array of sync or async functions. Hooks run in array order.
 
 `beforeRead` runs before Dyrected queries the database for a list or a single document. It receives the current query object and can return a replacement filter.
 
-Use it when you want to narrow or rewrite reads at the hook layer:
+Use it when you want to narrow or rewrite reads at the hook layer. The function form is the most flexible:
 
 ```ts
 hooks: {
@@ -59,6 +61,18 @@ hooks: {
 
 This is the right place to adjust what is fetched. It is not the right place for side effects.
 
+If you want the same behavior to work in Cloud, use a declarative string hook instead:
+
+```ts
+hooks: {
+  beforeRead: [
+    "user != null ? query : { status: { equals: 'published' } }",
+  ],
+}
+```
+
+For Cloud-safe `beforeRead` details, including the exact expression context, see [Cloud-safe hooks](/docs/basics/hooks/cloud).
+
 <Note>
 Reach for [access control](/docs/basics/access-control/collections) first when the question is who is allowed to see a document at all. Reach for `beforeRead` when the question is how an already-allowed read should be shaped or narrowed at the hook layer.
 </Note>
@@ -67,7 +81,7 @@ Reach for [access control](/docs/basics/access-control/collections) first when t
 
 `afterRead` runs after a document is fetched and before it is returned from the API. On list endpoints, it runs once per document.
 
-Use it when the stored data is correct as-is, but the response should be shaped differently:
+Use it when the stored data is correct as-is, but the response should be shaped differently. The function form looks like this:
 
 ```ts
 hooks: {
@@ -81,6 +95,18 @@ hooks: {
 ```
 
 `afterRead` receives a read-only database adapter. It can look things up, but it cannot write.
+
+For Cloud-safe shaping, use a declarative string hook:
+
+```ts
+hooks: {
+  afterRead: [
+    "user != null ? doc : { internalNotes: null }",
+  ],
+}
+```
+
+For Cloud-safe `afterRead` details, including merge behavior for object returns, see [Cloud-safe hooks](/docs/basics/hooks/cloud).
 
 ### `beforeChange`
 
@@ -115,6 +141,18 @@ hooks: {
 
 Throw from `beforeChange` to stop the write entirely.
 
+If you want the same transform to survive Cloud sync, use the declarative string form:
+
+```ts
+hooks: {
+  beforeChange: [
+    "{ slug: data.title }",
+  ],
+}
+```
+
+For Cloud-safe `beforeChange` details, including the exact expression context and merge behavior, see [Cloud-safe hooks](/docs/basics/hooks/cloud).
+
 ### `afterChange`
 
 `afterChange` runs after a create or update is committed. It receives the saved `doc`, the `previousDoc` on updates, the operation, and a writable database adapter.
@@ -137,6 +175,8 @@ hooks: {
 ```
 
 If an `afterChange` hook fails, Dyrected logs the error and keeps the write. That makes it the safe place for webhooks, cache busting, emails, and follow-up writes.
+
+`afterChange` is still function-only. It is not part of the Cloud-safe declarative subset because it exists for side effects after persistence.
 
 ### `beforeDelete`
 
@@ -162,6 +202,8 @@ hooks: {
 
 Like `beforeChange`, this phase gets a read-only database adapter and can abort the operation by throwing.
 
+`beforeDelete` is still function-only.
+
 ### `afterDelete`
 
 `afterDelete` runs after the deletion has already happened. Use it for cleanup work that should not block the delete itself.
@@ -184,6 +226,8 @@ hooks: {
 
 This phase gets a writable database adapter, and its errors are isolated the same way as `afterChange`.
 
+`afterDelete` is still function-only.
+
 ## What the phases can safely do
 
 | Hook | Reads from DB | Writes to DB | Return value used | Best use |
@@ -199,12 +243,14 @@ This phase gets a writable database adapter, and its errors are isolated the sam
 
 - Prefer `beforeChange` for anything that must affect the stored data.
 - Prefer `afterChange` for anything that talks to another system.
+- Prefer declarative string hooks on `beforeRead`, `afterRead`, and `beforeChange` when you want the same behavior in Cloud.
 - Use `previousDoc` in `afterChange` when the side effect depends on what changed.
 - Keep access decisions in [access control](/docs/basics/access-control/collections) when the question is allow or deny. Use hooks when the question is transform, validate, react, or reshape an already-authorized operation.
 
 ## Related pages
 
 - [Hooks overview](/docs/basics/hooks/overview) for the full map of hook families.
+- [Cloud-safe hooks](/docs/basics/hooks/cloud) for the Cloud-specific subset and sync behavior.
 - [Global hooks](/docs/basics/hooks/globals) for the singleton lifecycle.
 - [Field hooks](/docs/basics/hooks/fields) for value-level transforms.
 - [Hook context](/docs/basics/hooks/context) for the `req`, `user`, and `db` arguments these hooks receive.

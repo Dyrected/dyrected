@@ -92,7 +92,20 @@ npx dyrected sync:schema
 | `--skip-on-error` | Don't fail the process if the sync fails. Useful in CI build steps. |
 | `--skip-types` | Don't regenerate types after a successful sync. |
 
-If your API key or Site ID is missing, `sync:schema` skips quietly rather than failing — so it's safe to leave in a self-hosted build. One caveat worth knowing: Cloud can't run **function-based** access rules or **function-based access policies**, so the sync strips them and warns you which paths were dropped. String and boolean `accessPolicies` now sync to Cloud as part of the site schema. Replace any function access rule or function policy you rely on with a Jexl string, a boolean policy, or another serializable form before trusting Cloud to enforce it.
+If your API key or Site ID is missing, `sync:schema` skips quietly rather than failing — so it's safe to leave in a self-hosted build. One caveat worth knowing: Cloud only keeps the parts of your schema it can serialize safely.
+
+That means `sync:schema` now does three different things:
+
+- It keeps string and boolean `accessPolicies`.
+- It keeps supported declarative string hooks on:
+  - collection/global `beforeRead`
+  - collection/global `afterRead`
+  - collection/global `beforeChange`
+  - field `beforeChange`
+  - field `admin.hooks.onChange`
+- It strips function-based access rules, function-based access policies, and unsupported function-only hook families such as `afterChange`, delete hooks, field `afterRead`, and `admin.hooks.options`.
+
+When something is stripped, the CLI warns with the exact schema path that was removed. Replace any function rule, function policy, or function hook you expect Cloud to enforce with a serializable form before relying on it in production.
 
 When you run `init` for a Cloud project, this command is wired into `package.json` as `dyrected:sync-schema` and added to your `postbuild` step, so your schema syncs automatically on deploy.
 
