@@ -555,6 +555,9 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
     if (inviteRoleOptions.length === 0) return ""
     return inviteRoleOptions.find((option) => option.value === "admin")?.value ?? inviteRoleOptions[0]!.value
   }, [inviteRoleOptions])
+  const resolvedInviteRole = inviteRole && inviteRoleOptions.some((option) => option.value === inviteRole)
+    ? inviteRole
+    : defaultInviteRole
 
   interface ColumnPreference {
     name: string
@@ -870,17 +873,8 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
     event.preventDefault()
     const email = inviteEmail.trim()
     if (!email) return
-    await inviteMutation.mutateAsync({ email, role: inviteRole })
-  }, [inviteEmail, inviteMutation, inviteRole, inviteRoleField])
-
-  React.useEffect(() => {
-    setInviteRole((currentRole) => {
-      if (!defaultInviteRole) return ""
-      return currentRole && inviteRoleOptions.some((option) => option.value === currentRole)
-        ? currentRole
-        : defaultInviteRole
-    })
-  }, [defaultInviteRole, inviteRoleOptions])
+    await inviteMutation.mutateAsync({ email, role: resolvedInviteRole })
+  }, [inviteEmail, inviteMutation, resolvedInviteRole])
 
   const [exporting, setExporting] = React.useState(false)
 
@@ -1602,7 +1596,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
                   onOpenChange={handleInviteOpenChange}
                   email={inviteEmail}
                   onEmailChange={setInviteEmail}
-                  role={inviteRole}
+                  role={resolvedInviteRole}
                   roleOptions={inviteRoleOptions}
                   onRoleChange={setInviteRole}
                   isPending={inviteMutation.isPending}
