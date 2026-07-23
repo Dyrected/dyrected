@@ -17,6 +17,12 @@ export interface AdminSchemas {
   admin?: AdminConfig;
   adminAuth?: PublicAdminAuthConfig;
   hasStorage?: boolean;
+  adminHealth?: {
+    emailConfigured?: boolean;
+    secureAuthSecretConfigured?: boolean;
+    authCollectionConfigured?: boolean;
+    uploadCollectionConfigured?: boolean;
+  };
 }
 
 

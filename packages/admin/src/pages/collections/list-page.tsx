@@ -152,6 +152,22 @@ interface InviteRoleOption {
   value: string
 }
 
+interface InviteRoleFieldConfig {
+  fieldName: string
+  hasMany: boolean
+  options: InviteRoleOption[]
+}
+
+interface DeleteDialogState {
+  open: boolean
+  ids: string[]
+  title: string
+  description: string
+  requiresTypedConfirmation: boolean
+  expectedValue: string
+  mode: "single" | "bulk"
+}
+
 function InviteUserDialog({
   open,
   onOpenChange,
@@ -277,6 +293,67 @@ function InviteUserDialog({
   )
 }
 
+function DeleteEntriesDialog({
+  state,
+  confirmationValue,
+  onConfirmationValueChange,
+  isPending,
+  onCancel,
+  onConfirm,
+}: {
+  state: DeleteDialogState
+  confirmationValue: string
+  onConfirmationValueChange: (value: string) => void
+  isPending: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const confirmationMatches = !state.requiresTypedConfirmation || confirmationValue.trim() === state.expectedValue
+
+  return (
+    <Dialog open={state.open} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="sm:dy-max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{state.title}</DialogTitle>
+          <DialogDescription>{state.description}</DialogDescription>
+        </DialogHeader>
+
+        {state.requiresTypedConfirmation ? (
+          <div className="dy-space-y-2">
+            <Label htmlFor="delete-confirmation-input">
+              Type <span className="dy-font-mono dy-text-foreground">{state.expectedValue}</span> to confirm
+            </Label>
+            <Input
+              id="delete-confirmation-input"
+              value={confirmationValue}
+              onChange={(event) => onConfirmationValueChange(event.target.value)}
+              autoFocus
+            />
+          </div>
+        ) : null}
+
+        <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={onConfirm}
+            disabled={isPending || !confirmationMatches}
+          >
+            {isPending
+              ? "Deleting..."
+              : state.mode === "single"
+                ? "Delete entry"
+                : `Delete ${state.ids.length} entr${state.ids.length === 1 ? "y" : "ies"}`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 interface CollectionListPageProps {
   slug: string
 }
@@ -387,6 +464,16 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
   const [inviteEmail, setInviteEmail] = React.useState("")
   const [inviteRole, setInviteRole] = React.useState("")
   const [inviteResult, setInviteResult] = React.useState<InviteResult | null>(null)
+  const [deleteDialogState, setDeleteDialogState] = React.useState<DeleteDialogState>({
+    open: false,
+    ids: [],
+    title: "",
+    description: "",
+    requiresTypedConfirmation: false,
+    expectedValue: "",
+    mode: "single",
+  })
+  const [deleteConfirmationValue, setDeleteConfirmationValue] = React.useState("")
   const [searchParams, setSearchParams] = useSearchParams()
   const whereParam = searchParams.get('where')
   const searchParam = searchParams.get("search") || ""
@@ -423,13 +510,17 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
 
   const schema = schemas?.collections.find((c: CollectionConfig) => c.slug === slug)
   const inviteLabel = schema?.labels?.singular || "user"
-  const inviteRoleOptions = React.useMemo((): InviteRoleOption[] => {
-    const rolesField = schema?.fields.find((field: Field) => field.name === "roles" && field.type === "select")
-    const rawOptions = Array.isArray((rolesField as { options?: unknown[] } | undefined)?.options)
-      ? (rolesField as { options?: unknown[] }).options!
+  const inviteRoleField = React.useMemo((): InviteRoleFieldConfig | null => {
+    const rolesField = schema?.fields.find((field: Field) => {
+      if (field.name !== "roles" && field.name !== "role") return false
+      return field.type === "select" || field.type === "multiSelect" || field.type === "radio"
+    }) as (Field & { options?: unknown[]; hasMany?: boolean }) | undefined
+
+    const rawOptions = Array.isArray(rolesField?.options)
+      ? rolesField.options
       : []
 
-    return rawOptions.flatMap((option): InviteRoleOption[] => {
+    const options = rawOptions.flatMap((option): InviteRoleOption[] => {
       if (typeof option === "string") {
         return [{ label: option, value: option }]
       }
@@ -449,7 +540,16 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
 
       return []
     })
+    if (!rolesField || options.length === 0) return null
+
+    return {
+      fieldName: rolesField.name!,
+      hasMany: !!rolesField.hasMany || rolesField.type === "multiSelect" || rolesField.name === "roles",
+      options,
+    }
   }, [schema])
+
+  const inviteRoleOptions = inviteRoleField?.options ?? []
 
   const defaultInviteRole = React.useMemo(() => {
     if (inviteRoleOptions.length === 0) return ""
@@ -728,7 +828,11 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
       }
       const response = await authCollectionClient.invite(email, {
         inviteUrl: buildAdminActionUrl(),
-        data: role ? { roles: [role] } : undefined,
+        data: role && inviteRoleField
+          ? {
+              [inviteRoleField.fieldName]: inviteRoleField.hasMany ? [role] : role,
+            }
+          : undefined,
       })
       const inviteUrl = response.inviteUrl ?? (response.token ? buildInviteLink(response.token) : undefined)
       if (!inviteUrl) {
@@ -767,7 +871,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
     const email = inviteEmail.trim()
     if (!email) return
     await inviteMutation.mutateAsync({ email, role: inviteRole })
-  }, [inviteEmail, inviteMutation, inviteRole])
+  }, [inviteEmail, inviteMutation, inviteRole, inviteRoleField])
 
   React.useEffect(() => {
     setInviteRole((currentRole) => {
@@ -779,6 +883,16 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
   }, [defaultInviteRole, inviteRoleOptions])
 
   const [exporting, setExporting] = React.useState(false)
+
+  const closeDeleteDialog = React.useCallback(() => {
+    setDeleteDialogState((prev) => ({ ...prev, open: false }))
+    setDeleteConfirmationValue("")
+  }, [])
+
+  const openDeleteDialog = React.useCallback((nextState: Omit<DeleteDialogState, "open">) => {
+    setDeleteDialogState({ ...nextState, open: true })
+    setDeleteConfirmationValue("")
+  }, [])
 
   // Build a CSV from a set of docs and trigger a download. Shared by the
   // full-collection export and the "export selected rows" bulk action so both
@@ -882,10 +996,26 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
       })
       return
     }
-    if (window.confirm("Delete this entry? This cannot be undone.")) {
-      deleteMutation.mutate(id)
-    }
-  }, [schema, user, deleteMutation])
+    const item = response?.docs?.find((doc: Record<string, unknown>) => String(doc.id) === id)
+    const expectedValue = schema?.auth && item
+      ? resolveDocumentTitle({
+          entry: item,
+          collection: schema,
+          collections: schemas?.collections,
+        })
+      : ""
+
+    openDeleteDialog({
+      ids: [id],
+      title: "Delete this entry?",
+      description: schema?.auth && expectedValue
+        ? "This user will be permanently removed. To prevent accidental deletion, confirm by typing the exact name below."
+        : "This entry will be permanently deleted. This action cannot be undone.",
+      requiresTypedConfirmation: !!(schema?.auth && expectedValue),
+      expectedValue,
+      mode: "single",
+    })
+  }, [schema, user, deleteMutation, response?.docs, schemas?.collections, openDeleteDialog])
 
   function handleBulkDelete(ids: string[]) {
     const cleanIds = schema?.auth ? ids.filter(id => id !== user?.id) : ids
@@ -895,10 +1025,34 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
       })
       return
     }
-    if (window.confirm(`Delete ${cleanIds.length} entries? This cannot be undone.`)) {
-      bulkDeleteMutation.mutate(cleanIds)
-    }
+    openDeleteDialog({
+      ids: cleanIds,
+      title: `Delete ${cleanIds.length} entr${cleanIds.length === 1 ? "y" : "ies"}?`,
+      description: "These entries will be permanently deleted. This action cannot be undone.",
+      requiresTypedConfirmation: false,
+      expectedValue: "",
+      mode: "bulk",
+    })
   }
+
+  const confirmDelete = React.useCallback(() => {
+    if (deleteDialogState.ids.length === 0) return
+
+    if (deleteDialogState.mode === "single") {
+      deleteMutation.mutate(deleteDialogState.ids[0]!, {
+        onSuccess: () => {
+          closeDeleteDialog()
+        },
+      })
+      return
+    }
+
+    bulkDeleteMutation.mutate(deleteDialogState.ids, {
+      onSuccess: () => {
+        closeDeleteDialog()
+      },
+    })
+  }, [bulkDeleteMutation, closeDeleteDialog, deleteDialogState.ids, deleteDialogState.mode, deleteMutation])
 
   const workflowConfig = (schema?.workflow as WorkflowConfig | undefined) ?? null
   const selectedWorkflowDocs = React.useMemo(() => (
@@ -1296,6 +1450,14 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
 
   return (
     <div className="dy-space-y-6 dy-animate-in lg:dy-space-y-8">
+      <DeleteEntriesDialog
+        state={deleteDialogState}
+        confirmationValue={deleteConfirmationValue}
+        onConfirmationValueChange={setDeleteConfirmationValue}
+        isPending={deleteMutation.isPending || bulkDeleteMutation.isPending}
+        onCancel={closeDeleteDialog}
+        onConfirm={confirmDelete}
+      />
       <AdminComponentSlot
         slot="beforeList"
         componentKeys={collectionSlots?.beforeList}

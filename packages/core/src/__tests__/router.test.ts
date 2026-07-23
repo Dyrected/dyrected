@@ -56,6 +56,11 @@ describe("Dynamic Router", async () => {
     expect(data.globals[0].admin.icon).toBe("Settings2");
     expect(data.blocks).toHaveLength(1);
     expect(data.blocks[0].slug).toBe("hero");
+    expect(data.adminHealth).toMatchObject({
+      emailConfigured: false,
+      authCollectionConfigured: false,
+      uploadCollectionConfigured: false,
+    });
     const layoutField = data.collections[0].fields.find(
       (field: any) => field.name === "layout",
     );

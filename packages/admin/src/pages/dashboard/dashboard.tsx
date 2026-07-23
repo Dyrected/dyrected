@@ -23,6 +23,7 @@ type SchemaCollection = {
   labels?: { singular?: string; plural?: string }
   upload?: boolean
   auth?: boolean
+  workflow?: unknown
   admin?: {
     hidden?: boolean
     useAsTitle?: string
@@ -32,6 +33,7 @@ type SchemaCollection = {
     label?: string
     type?: string
     required?: boolean
+    options?: Array<string | { label?: string; value: string }>
     admin?: { hidden?: boolean }
   }>
 }
@@ -49,6 +51,13 @@ type RecentEdit = {
   collectionLabel: string
   updatedAt?: string
   status?: string
+}
+
+type AttentionItem = {
+  key: string
+  title: string
+  description: string
+  to: string
 }
 
 function isVisibleCollection(collection: SchemaCollection) {
@@ -100,6 +109,26 @@ function getStatusLabel(doc: Record<string, unknown>) {
   return typeof status === "string" && status.trim() ? status : "Updated"
 }
 
+function findField(collection: SchemaCollection, fieldName: string) {
+  return collection.fields?.find((field) => field.name === fieldName)
+}
+
+function hasField(collection: SchemaCollection, fieldName: string) {
+  return !!findField(collection, fieldName)
+}
+
+function getFieldOptionValues(collection: SchemaCollection, fieldName: string) {
+  const field = findField(collection, fieldName)
+  const rawOptions = Array.isArray(field?.options) ? field.options : []
+  return rawOptions.flatMap((option) => {
+    if (typeof option === "string") return [option]
+    if (option && typeof option === "object" && typeof option.value === "string") {
+      return [option.value]
+    }
+    return []
+  })
+}
+
 export function Dashboard() {
   const { client, components, user } = useDyrected()
 
@@ -145,17 +174,59 @@ export function Dashboard() {
 
   const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
     queryKey: ["schemas"],
-    queryFn: () => client!.getSchemas(),
+    queryFn: async () => (await client!.getSchemas()) as AdminSchemas,
     enabled: !!client,
   })
 
-  const collections = ((schemas?.collections || []) as SchemaCollection[]).filter(isVisibleCollection)
+  const allCollections = (schemas?.collections || []) as SchemaCollection[]
+  const collections = allCollections.filter(isVisibleCollection)
   const globals = ((schemas?.globals || []) as SchemaGlobal[]).filter(isVisibleGlobal)
+  const authCollections = allCollections.filter((collection) => collection.auth)
+  const uploadCollections = allCollections.filter((collection) => collection.upload)
   const editableCollections = collections.filter((collection) => !collection.auth)
   const uploadCollection = collections.find((collection) => collection.upload)
   const creatableCollections = editableCollections.filter((collection) => !collection.upload)
   const primaryGlobal = globals[0]
   const recentCollections = creatableCollections.slice(0, 6)
+  const authCollectionsMissingRoles = authCollections.filter((collection) => {
+    const rolesField = findField(collection, "roles")
+    const roleField = findField(collection, "role")
+
+    // Core auth collections inject a usable default `roles` field. Do not warn
+    // unless the schema exposes an explicit role field that is modeled badly.
+    if (!rolesField && !roleField) return false
+
+    if (rolesField) {
+      const hasRoleOptions = getFieldOptionValues(collection, "roles").length > 0
+      const isSupportedType =
+        rolesField.type === "select" ||
+        rolesField.type === "multiSelect" ||
+        rolesField.type === "radio"
+
+      return !isSupportedType || !hasRoleOptions
+    }
+
+    if (roleField) {
+      const hasRoleOptions = getFieldOptionValues(collection, "role").length > 0
+      const isSupportedType =
+        roleField.type === "select" ||
+        roleField.type === "multiSelect" ||
+        roleField.type === "radio"
+
+      return !isSupportedType || !hasRoleOptions
+    }
+
+    return false
+  })
+  const uploadCollectionsMissingAltField = uploadCollections.filter(
+    (collection) => !hasField(collection, "alt"),
+  )
+  const workflowAttentionCollections = collections.filter((collection) => {
+    const reviewStatuses = getFieldOptionValues(collection, "status").filter((value) =>
+      ["in_review", "review", "pending_review", "submitted", "needs_review"].includes(value),
+    )
+    return reviewStatuses.length > 0 || !!collection.workflow
+  })
 
   const recentQueries = useQueries({
     queries: recentCollections.map((collection) => ({
@@ -192,9 +263,107 @@ export function Dashboard() {
     retry: false,
   })
 
-  const isStorageNotConfigured = schemas?.hasStorage === false || isStorageNotConfiguredError(storageQueryError)
+  const pendingInviteQueries = useQueries({
+    queries: authCollections
+      .filter((collection) => hasField(collection, "status"))
+      .map((collection) => ({
+        queryKey: ["dashboard-pending-invites", collection.slug],
+        queryFn: () =>
+          client!.find(collection.slug, {
+            limit: 1,
+            depth: 0,
+            where: { status: { equals: "pending" } },
+          }),
+        enabled: !!client,
+        retry: false,
+      })),
+  })
 
-  const attentionItems = [
+  const missingAltQueries = useQueries({
+    queries: uploadCollections
+      .filter((collection) => hasField(collection, "alt"))
+      .map((collection) => ({
+        queryKey: ["dashboard-missing-alt", collection.slug],
+        queryFn: () =>
+          client!.find(collection.slug, {
+            limit: 1,
+            depth: 0,
+            where: { alt: { exists: false } },
+          }),
+        enabled: !!client,
+        retry: false,
+      })),
+  })
+
+  const workflowAttentionQueries = useQueries({
+    queries: workflowAttentionCollections
+      .map((collection) => {
+        const reviewStatuses = getFieldOptionValues(collection, "status").filter((value) =>
+          ["in_review", "review", "pending_review", "submitted", "needs_review"].includes(value),
+        )
+        if (reviewStatuses.length === 0) return null
+        return {
+          queryKey: ["dashboard-review-backlog", collection.slug, reviewStatuses.join(",")],
+          queryFn: () =>
+            client!.find(collection.slug, {
+              limit: 1,
+              depth: 0,
+              where: { status: { in: reviewStatuses } },
+            }),
+          enabled: !!client,
+          retry: false,
+        }
+      })
+      .filter((query): query is NonNullable<typeof query> => query !== null),
+  })
+
+  const isStorageNotConfigured = schemas?.hasStorage === false || isStorageNotConfiguredError(storageQueryError)
+  const pendingInvitesTotal = pendingInviteQueries.reduce(
+    (sum, query) => sum + (typeof query.data?.total === "number" ? query.data.total : 0),
+    0,
+  )
+  const missingAltTotal = missingAltQueries.reduce(
+    (sum, query) => sum + (typeof query.data?.total === "number" ? query.data.total : 0),
+    0,
+  )
+  const workflowAttentionTotal = workflowAttentionQueries.reduce(
+    (sum, query) => sum + (typeof query.data?.total === "number" ? query.data.total : 0),
+    0,
+  )
+
+  const attentionItems: AttentionItem[] = [
+    ...(schemas?.adminHealth?.emailConfigured === false
+      ? [{
+          key: "email-not-configured",
+          title: "Email delivery is not configured",
+          description: "Invites, password resets, and account security emails will not be delivered reliably until a backend email provider is configured.",
+          to: "/setup",
+        }]
+      : []),
+    ...(schemas?.adminHealth?.secureAuthSecretConfigured === false
+      ? [{
+          key: "auth-secret-not-configured",
+          title: "Authentication secret is using the insecure fallback",
+          description: "Set DYRECTED_JWT_SECRET in the backend environment so auth and preview tokens are signed with a real secret.",
+          to: "/setup",
+        }]
+      : []),
+    ...(schemas?.adminHealth?.authCollectionConfigured === false
+      ? [{
+          key: "auth-collection-missing",
+          title: "No auth collection is configured",
+          description: "User accounts, invites, password resets, and admin-managed onboarding are unavailable until you enable auth on a collection.",
+          to: "/setup",
+        }]
+      : []),
+    ...(schemas?.adminHealth?.uploadCollectionConfigured === false
+      ? [{
+          key: "upload-collection-missing",
+          title: "No upload collection is configured",
+          description: "Editors cannot manage media until you add an upload-enabled collection.",
+          to: "/setup",
+        }]
+      : []),
     ...(isStorageNotConfigured
       ? [{
           key: "storage-not-configured",
@@ -212,18 +381,45 @@ export function Dashboard() {
           to: "/setup",
         }]
       : []),
+    ...(pendingInvitesTotal > 0
+      ? [{
+          key: "pending-invites",
+          title: `${pendingInvitesTotal} invited user${pendingInvitesTotal === 1 ? "" : "s"} still need to accept`,
+          description: "Pending invites are already visible in the admin user list. Review who still needs access and resend or revoke old invitations if needed.",
+          to: authCollections[0] ? `/collections/${authCollections[0].slug}` : "/setup",
+        }]
+      : []),
+    ...(workflowAttentionTotal > 0
+      ? [{
+          key: "workflow-backlog",
+          title: `${workflowAttentionTotal} item${workflowAttentionTotal === 1 ? "" : "s"} are waiting for review`,
+          description: "Some content is sitting in review-related workflow states and may be blocking publishing.",
+          to: workflowAttentionCollections[0] ? `/collections/${workflowAttentionCollections[0].slug}` : "/",
+        }]
+      : []),
+    ...(missingAltTotal > 0
+      ? [{
+          key: "media-missing-alt-content",
+          title: `${missingAltTotal} media item${missingAltTotal === 1 ? "" : "s"} are missing alt text`,
+          description: "Add alt text to uploaded media so images stay accessible and easier to manage later.",
+          to: uploadCollections[0] ? `/collections/${uploadCollections[0].slug}` : "/setup",
+        }]
+      : []),
+    ...authCollectionsMissingRoles.map((collection) => ({
+      key: `roles-${collection.slug}`,
+      title: `${getCollectionLabel(collection)} cannot assign invite roles cleanly`,
+      description: "Add a selectable roles field with defined options so invited users can be assigned the right access level before they accept.",
+      to: `/collections/${collection.slug}`,
+    })),
     ...collections
       .filter((collection) => !collection.upload && !collection.admin?.useAsTitle)
-      // .slice(0, 2)
       .map((collection) => ({
         key: `title-${collection.slug}`,
         title: `${getCollectionLabel(collection)} needs a title field`,
         description: "Set admin.useAsTitle for clearer lists and relationships.",
         to: `/collections/${collection.slug}`,
       })),
-    ...collections
-      .filter((collection) => collection.upload && !collection.fields?.some((field) => field.name === "alt"))
-      .slice(0, 1)
+    ...uploadCollectionsMissingAltField
       .map((collection) => ({
         key: `alt-${collection.slug}`,
         title: `${getCollectionLabel(collection)} has no alt text field`,
@@ -238,7 +434,7 @@ export function Dashboard() {
         to: "/setup",
       }]
       : []),
-  ].slice(0, 4)
+  ]
 
 
   if (isLoadingSchemas) {

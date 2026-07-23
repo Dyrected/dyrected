@@ -248,6 +248,16 @@ export function registerRoutes(
       admin: requestConfig.admin || {},
       adminAuth: getPublicAdminAuthConfig(requestConfig.adminAuth, collections),
       hasStorage: !!requestConfig.storage,
+      adminHealth: {
+        emailConfigured: !!requestConfig.email,
+        secureAuthSecretConfigured: !!process.env.DYRECTED_JWT_SECRET,
+        authCollectionConfigured: requestConfig.collections.some(
+          (collection) => !!collection.auth,
+        ),
+        uploadCollectionConfigured: requestConfig.collections.some(
+          (collection) => !!collection.upload,
+        ),
+      },
     });
 
   });
