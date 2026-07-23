@@ -1,5 +1,11 @@
 # @dyrected/db-mysql
 
+## 2.6.3
+
+### Patch Changes
+
+- @dyrected/core@2.6.3
+
 ## 2.6.2
 
 ### Patch Changes
