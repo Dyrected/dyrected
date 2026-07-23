@@ -29,9 +29,7 @@
 
 ## Uncertainty register
 
-| Section | Claim or gap | Why uncertain | Reviewer needed |
-| --- | --- | --- | --- |
-| Copyable invite URL note | Whether this troubleshooting page should mention the UI fallback, or whether that belongs only in admin docs | It is useful diagnostically, but it is an admin-specific detail | Confirm placement |
+No open factual uncertainties remain after review.
 
 ## Placeholder sweep
 
@@ -39,9 +37,12 @@ No unresolved placeholders remain.
 
 ## Reviewer questions
 
-1. Is the admin “Needs attention” note useful here, or does it make the page feel too dashboard-specific?
-2. Should the auth-email symptom row explicitly call out bounced mail, or keep the wording narrower?
-3. Does the updated section still feel like troubleshooting rather than setup guidance?
+Resolved in review:
+
+1. The admin “Needs attention” note is useful here.
+2. The symptom row should not explicitly mention bounced mail.
+3. The updated section still feels like troubleshooting.
+4. The copyable invite URL note belongs in admin docs, not here.
 
 ## Example consistency
 

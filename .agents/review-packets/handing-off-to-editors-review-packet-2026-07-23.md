@@ -35,9 +35,7 @@
 
 ## Uncertainty register
 
-| Section | Claim or gap | Why uncertain | Reviewer needed |
-| --- | --- | --- | --- |
-| Role assignment guidance | How strongly to recommend role assignment during invite versus after acceptance | Depends on how broadly Dyrected wants to promise role-selection availability across self-hosted schemas | Confirm editorial stance |
+No open factual uncertainties remain after review.
 
 ## Placeholder sweep
 
@@ -45,9 +43,11 @@ No unresolved placeholders remain.
 
 ## Reviewer questions
 
-1. Does this still feel like a handoff guide rather than an admin feature release note?
-2. Is the new email-readiness section the right amount of emphasis for this page?
-3. Should this page explicitly mention resending or revoking invites, or would that drift beyond its original goal?
+Resolved in review:
+
+1. The page should stay a handoff guide, not a release note.
+2. The email-readiness section has the right level of emphasis.
+3. The two self-hosted intro sections should be merged into one clearer flow.
 
 ## Example consistency
 

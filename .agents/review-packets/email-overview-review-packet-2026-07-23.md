@@ -45,9 +45,11 @@ No unresolved placeholders remain.
 
 ## Reviewer questions
 
-1. Does this page now strike the right balance between transport setup and auth-email behavior?
-2. Is the recommendation to prefer `inviteUrl` and `resetUrl` aligned with product direction?
-3. Should this page mention email bounce/deliverability guidance, or keep that for a separate page?
+Resolved in review:
+
+1. The balance between transport setup and auth-email behavior is correct.
+2. Recommending `inviteUrl` and `resetUrl` is aligned with product direction.
+3. Bounce and deliverability guidance should stay out of this page.
 
 ## Example consistency
 

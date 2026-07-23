@@ -31,9 +31,7 @@
 
 ## Uncertainty register
 
-| Section | Claim or gap | Why uncertain | Reviewer needed |
-| --- | --- | --- | --- |
-| Invite examples | Whether the docs should show `data: { roles: ["editor"] }` or a simpler non-role extra field example | The role example is useful, but some auth collections may not expose roles that way | Confirm the role example is acceptable on this generic page |
+No open factual uncertainties remain after review.
 
 ## Placeholder sweep
 
@@ -41,9 +39,11 @@ No unresolved placeholders remain.
 
 ## Reviewer questions
 
-1. Should the invite example keep the role assignment example, or should this page stay role-neutral?
-2. Is the “pending user appears in admin list before acceptance” detail important enough for this page, or should it move elsewhere too?
-3. Does the reset section now describe the password-changed notification clearly without turning into an email page?
+Resolved in review:
+
+1. The invite example should keep the role assignment example.
+2. The pending-user detail should stay because invited users do appear before acceptance.
+3. The reset section is clear without turning into an email page.
 
 ## Example consistency
 

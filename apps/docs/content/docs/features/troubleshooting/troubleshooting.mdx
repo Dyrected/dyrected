@@ -219,7 +219,6 @@ That means the first checks are:
 Two behavior details matter here:
 
 - the auth endpoint can still return success even if the send fails, because these built-in auth emails are best-effort
-- the self-hosted admin invite flow still produces a copyable invite URL, so you can confirm link generation separately from provider delivery
 
 Also keep the flow semantics straight: a password reset sends two different auth emails over the whole flow. `forgot-password` sends the reset message, and a successful `reset-password` sends the password-changed notification.
 

@@ -21,9 +21,7 @@
 
 ## Uncertainty register
 
-| Section | Claim or gap | Why uncertain | Reviewer needed |
-| --- | --- | --- | --- |
-| Production-handoff phrasing | Whether “treat it as required” is too strong for a config overview summary | It is guidance, not a hard runtime invariant | Confirm tone |
+No open factual uncertainties remain after review.
 
 ## Placeholder sweep
 
@@ -31,8 +29,10 @@ No unresolved placeholders remain.
 
 ## Reviewer questions
 
-1. Is the stronger production-handoff phrasing helpful here, or should it stay softer in a config overview page?
-2. Does this remain appropriately brief for a top-level key summary?
+Resolved in review:
+
+1. The stronger production-handoff phrasing is acceptable.
+2. The amount of prose is still appropriate for this page.
 
 ## Example consistency
 
