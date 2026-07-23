@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { randomBytes } from "node:crypto";
 import type { DyrectedContext } from "../app.js";
 import type { CollectionConfig } from "../types/index.js";
 import { getLockedUntilMs, resolveAuthLockoutConfig } from "../auth/lockout.js";
@@ -46,6 +47,49 @@ export class AuthController {
       ...safeUser
     } = user;
     return safeUser;
+  }
+
+  private hasField(name: string) {
+    return (this.collection.fields || []).some((field) => field.name === name);
+  }
+
+  private async buildPendingInviteData(
+    email: string,
+    extraFields: Record<string, unknown> = {},
+  ) {
+    const {
+      id: _id,
+      password: _password,
+      email: _email,
+      ...safeExtraFields
+    } = extraFields;
+    const data: Record<string, unknown> = {
+      ...safeExtraFields,
+      email,
+      password: await hashPassword(randomBytes(32).toString("hex")),
+    };
+
+    if (this.hasField("status")) {
+      data.status = "pending";
+    }
+
+    return data;
+  }
+
+  private buildAcceptedInviteData(
+    hashedPassword: string,
+    extraFields: Record<string, unknown>,
+  ) {
+    const data: Record<string, unknown> = {
+      ...extraFields,
+      password: hashedPassword,
+    };
+
+    if (this.hasField("status")) {
+      data.status = "active";
+    }
+
+    return data;
   }
 
   private clearLockoutState(c: Context<DyrectedContext>, userId: string) {
@@ -217,6 +261,13 @@ export class AuthController {
       return c.json(
         { error: true, message: "Invalid email or password." },
         401,
+      );
+    }
+
+    if (user.status === "pending") {
+      return c.json(
+        { error: true, message: "This invitation has not been accepted yet." },
+        403,
       );
     }
 
@@ -534,6 +585,7 @@ export class AuthController {
   // ---------------------------------------------------------------------------
   // POST /invite
   // Requires auth. Issues a signed invite token and emails it to the invitee.
+  // If inviteUrl is provided, the email uses a clickable acceptance URL.
   // ---------------------------------------------------------------------------
   async invite(c: Context<DyrectedContext>) {
     const config = c.get("config");
@@ -550,17 +602,38 @@ export class AuthController {
       return c.json({ error: true, message: "email is required." }, 400);
     }
 
-    // Prevent inviting an email that already has an account
+    const inviteData =
+      body?.data && typeof body.data === "object" && !Array.isArray(body.data)
+        ? (body.data as Record<string, unknown>)
+        : {};
+
+    // Prevent inviting an email that already has an active account.
     const existing = await db.find({
       collection: this.collection.slug,
       where: { email: body.email },
       limit: 1,
     });
-    if (existing.total > 0) {
+    const existingUser = existing.docs[0] as Record<string, unknown> | undefined;
+    const existingIsPending = existingUser?.status === "pending";
+
+    if (existingUser && !existingIsPending) {
       return c.json(
         { error: true, message: "An account with that email already exists." },
         409,
       );
+    }
+
+    if (!existingUser) {
+      await db.create({
+        collection: this.collection.slug,
+        data: await this.buildPendingInviteData(body.email, inviteData),
+      });
+    } else if (Object.keys(inviteData).length > 0) {
+      await db.update({
+        collection: this.collection.slug,
+        id: String(existingUser.id),
+        data: await this.buildPendingInviteData(body.email, inviteData),
+      });
     }
 
     // sub = invitee email (no user doc yet); purpose = 'invite'
@@ -574,10 +647,16 @@ export class AuthController {
       "7d",
     );
 
+    const inviteUrl = body?.inviteUrl;
+    const url = inviteUrl
+      ? `${inviteUrl}${inviteUrl.includes("?") ? "&" : "?"}inviteToken=${encodeURIComponent(inviteToken)}`
+      : undefined;
+
     try {
       const { subject, html } = buildInviteEmail(config, {
         token: inviteToken,
         invitedByEmail: requestUser.email,
+        url,
       });
       await sendEmail(config, { to: body.email, subject, html });
     } catch (err) {
@@ -588,7 +667,12 @@ export class AuthController {
       });
     }
 
-    return c.json({ success: true, message: `Invite sent to ${body.email}.` });
+    return c.json({
+      success: true,
+      message: `Invite sent to ${body.email}.`,
+      token: inviteToken,
+      inviteUrl: url,
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -631,13 +715,16 @@ export class AuthController {
 
     const inviteeEmail = payload.sub;
 
-    // Guard against double-accept
+    // Guard against double-accept while still supporting pending pre-provisioned users.
     const existing = await db.find({
       collection: this.collection.slug,
       where: { email: inviteeEmail },
       limit: 1,
     });
-    if (existing.total > 0) {
+    const existingUser = existing.docs[0] as Record<string, unknown> | undefined;
+    const existingIsPending = existingUser?.status === "pending";
+
+    if (existingUser && !existingIsPending) {
       return c.json(
         { error: true, message: "An account with that email already exists." },
         409,
@@ -646,10 +733,20 @@ export class AuthController {
 
     const { token: _t, password: _p, ...extraFields } = body;
     const hashedPassword = await hashPassword(body.password);
-    const user = await db.create({
-      collection: this.collection.slug,
-      data: { ...extraFields, email: inviteeEmail, password: hashedPassword },
-    });
+    const user = existingUser
+      ? await db.update({
+        collection: this.collection.slug,
+        id: String(existingUser.id),
+        data: this.buildAcceptedInviteData(hashedPassword, extraFields),
+      })
+      : await db.create({
+        collection: this.collection.slug,
+        data: {
+          ...extraFields,
+          email: inviteeEmail,
+          ...this.buildAcceptedInviteData(hashedPassword, {}),
+        },
+      });
 
     // Log them in immediately
     const sessionToken = await issueAuthSessionToken({

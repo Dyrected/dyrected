@@ -1,14 +1,6 @@
-import type {
-  CollectionConfig,
-  DyrectedConfig,
-  Field,
-} from "../types/index.js";
+import type { CollectionConfig, DyrectedConfig, Field } from "../types/index.js";
 import { AUTH_SESSIONS_COLLECTION } from "../auth/sessions.js";
-import {
-  LIFECYCLE_EVENTS_COLLECTION,
-  WORKFLOW_HISTORY_COLLECTION,
-  simplePublishingWorkflow,
-} from "../workflows.js";
+import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
 import { getAdminAuthCollection } from "./admin-auth.js";
 import { normalizeSchemaFragment } from "./block-references.js";
 
@@ -215,6 +207,27 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
           },
         ];
       }
+      if (!existingFieldNames.has("status")) {
+        fields = [
+          ...fields,
+          {
+            name: "status",
+            type: "select",
+            label: "Status",
+            defaultValue: "active",
+            options: [
+              { value: "active", label: "Active" },
+              { value: "pending", label: "Pending" },
+            ],
+            access: {
+              update: "user.roles && 'admin' in user.roles && user.id != id",
+            },
+            admin: {
+              condition: `!(data.roles && "admin" in data.roles)`,
+            },
+          },
+        ];
+      }
 
       // Enforce access control rules for email, password, and roles fields even if explicitly defined
       fields = fields.map((field) => {
@@ -252,6 +265,15 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
             access: {
               ...(field.access || {}),
               // Must be an admin; cannot edit own roles (no self-elevation).
+              update: "user.roles && 'admin' in user.roles && user.id != id",
+            },
+          };
+        }
+        if (field.name === "status") {
+          return {
+            ...field,
+            access: {
+              ...(field.access || {}),
               update: "user.roles && 'admin' in user.roles && user.id != id",
             },
           };
@@ -300,11 +322,8 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
     }
 
     const updatedFieldNames = new Set(fields.map((f) => f.name));
-    const fieldsToInject = SYSTEM_FIELDS.filter(
-      (f) => !updatedFieldNames.has(f.name),
-    );
-    const workflow =
-      col.workflow || (col.drafts ? simplePublishingWorkflow() : undefined);
+    const fieldsToInject = SYSTEM_FIELDS.filter((f) => !updatedFieldNames.has(f.name));
+    const workflow = col.workflow || (col.drafts ? simplePublishingWorkflow() : undefined);
     return {
       ...col,
       workflow,
@@ -312,32 +331,16 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
     };
   });
 
-  const hasAuditCollection = normalizedCollections.some(
-    (col) => col.slug === AUDIT_COLLECTION_SLUG,
-  );
+  const hasAuditCollection = normalizedCollections.some((col) => col.slug === AUDIT_COLLECTION_SLUG);
   const systemCollections: CollectionConfig[] = [];
-  if (needsAudit && !hasAuditCollection)
-    systemCollections.push(AUDIT_COLLECTION);
-  if (
-    needsWorkflow &&
-    !normalizedCollections.some(
-      (col) => col.slug === WORKFLOW_HISTORY_COLLECTION,
-    )
-  ) {
+  if (needsAudit && !hasAuditCollection) systemCollections.push(AUDIT_COLLECTION);
+  if (needsWorkflow && !normalizedCollections.some((col) => col.slug === WORKFLOW_HISTORY_COLLECTION)) {
     systemCollections.push(WORKFLOW_HISTORY_COLLECTION_CONFIG);
   }
-  if (
-    needsWorkflow &&
-    !normalizedCollections.some(
-      (col) => col.slug === LIFECYCLE_EVENTS_COLLECTION,
-    )
-  ) {
+  if (needsWorkflow && !normalizedCollections.some((col) => col.slug === LIFECYCLE_EVENTS_COLLECTION)) {
     systemCollections.push(LIFECYCLE_EVENTS_COLLECTION_CONFIG);
   }
-  if (
-    needsAuthSessions &&
-    !normalizedCollections.some((col) => col.slug === AUTH_SESSIONS_COLLECTION)
-  ) {
+  if (needsAuthSessions && !normalizedCollections.some((col) => col.slug === AUTH_SESSIONS_COLLECTION)) {
     systemCollections.push(AUTH_SESSIONS_COLLECTION_CONFIG);
   }
 

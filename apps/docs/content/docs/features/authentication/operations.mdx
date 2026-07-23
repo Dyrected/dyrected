@@ -169,10 +169,17 @@ A successful password change revokes that user's active sessions too, so any old
 Invitations let an existing, signed-in user bring someone new in without handing out a shared password. `invite` sends an invitation email to an address that does not yet have an account — it requires a Bearer token, and returns `409` if the email is already registered:
 
 ```ts
-await client.collection("users").invite("newteammate@example.com");
+const inviteEntryUrl = "https://cms.example.com/admin";
+
+await client.collection("users").invite(
+  "newteammate@example.com",
+  inviteEntryUrl,
+);
 // POST /api/collections/users/invite
-// → { "success": true, "message": "Invite sent to newteammate@example.com." }
+// → { success: true, message, token, inviteUrl }
 ```
+
+When you pass `inviteUrl`, Dyrected emails a clickable acceptance link in the same style as password reset emails. Without it, the default template falls back to the raw invite token.
 
 The invited person completes signup with `accept-invite`, which is public — the invite token is what authorizes it. Their email comes from the token, so they only choose a password (plus any extra fields you collect). On success they are created and signed in, and the response is `201`:
 

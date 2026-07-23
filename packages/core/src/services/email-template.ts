@@ -8,6 +8,7 @@ export const emailTokens = {
     border: '#dde0d7',
     accent: '#b6ff2e',
     code: '#f1f3ec',
+    codeBorder: '#e2e5dc',
     dangerSurface: '#fff2f0',
     dangerBorder: '#ffc9c2',
     dangerText: '#9f251b',
@@ -67,7 +68,13 @@ export function table(content: string, style = 'width:100%'): string {
 
 export function detailBox(content: string, monospace = false): string {
   const font = monospace ? emailTokens.mono : emailTokens.font;
-  return table(row(escapeHtml(content), `padding:14px 16px;font-family:${font};font-size:13px;line-height:1.5;font-weight:${monospace ? '400' : '700'};color:${emailTokens.colors.text};word-break:break-all`), `width:100%;background:${emailTokens.colors.code};border-radius:${emailTokens.radius.control}`);
+  return table(
+    row(
+      escapeHtml(content),
+      `padding:14px 16px;font-family:${font};font-size:13px;line-height:1.5;font-weight:${monospace ? '400' : '700'};color:${emailTokens.colors.text};word-break:break-all`,
+    ),
+    `width:100%;background:${emailTokens.colors.code};border:1px solid ${emailTokens.colors.codeBorder};border-radius:${emailTokens.radius.control}`,
+  );
 }
 
 export function eventList(events: ReadonlyArray<{ label: string; value: string }>): string {
@@ -86,6 +93,12 @@ export function ctaButton(label: string, href: string): string {
   ), 'width:auto');
 }
 
+export function safeLinkDetailBox(href: string): string {
+  const safeHref = safeHttpUrl(href);
+  if (!safeHref) return '';
+  return detailBox(safeHref, true);
+}
+
 export function alertBox(content: string): string {
   return table(row(escapeHtml(content), `padding:13px 16px;font-family:${emailTokens.font};font-size:13px;line-height:1.5;color:${emailTokens.colors.dangerText}`), `width:100%;background:${emailTokens.colors.dangerSurface};border:1px solid ${emailTokens.colors.dangerBorder};border-radius:${emailTokens.radius.control}`);
 }
@@ -99,20 +112,39 @@ interface LayoutOptions {
 
 export function layout({ preheader, title, content, footer }: LayoutOptions): string {
   return `<!doctype html>
-<html lang="en">
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-  <body style="margin:0;padding:0;background:${emailTokens.colors.canvas}">
-    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escapeHtml(preheader)}</div>
-    ${table(row(
-      table(
-        row('&nbsp;', `height:5px;background:${emailTokens.colors.accent};font-size:0;line-height:0`) +
-        row(`${sectionLabel('Dyrected')}${heading(title)}`, 'padding:30px 32px 24px') +
-        row(content, 'padding:0 32px 32px') +
-        row(`${divider()}${paragraph(footer, '20px 0 6px')}${paragraph('Privacy: this message contains account-related information; please avoid forwarding it.', '0')}`, 'padding:0 32px 28px'),
-        `width:100%;max-width:${emailTokens.width};background:${emailTokens.colors.surface};border:1px solid ${emailTokens.colors.border};border-radius:${emailTokens.radius.card};overflow:hidden`,
-      ),
-      'padding:32px 12px',
-    ), `width:100%;background:${emailTokens.colors.canvas}`)}
+<html lang="en" dir="ltr" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="x-apple-disable-message-reformatting">
+    <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>${escapeHtml(title)}</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:${emailTokens.colors.canvas};word-spacing:normal;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+    <div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;color:transparent;font-size:1px;line-height:1px">
+      ${escapeHtml(preheader)}&#8203;&#847;&zwnj;&nbsp;&#8199;&#8199;&#847;&zwnj;&nbsp;
+    </div>
+    <center lang="en" style="width:100%;background-color:${emailTokens.colors.canvas}">
+      ${table(
+        row(
+          table(
+            row('&nbsp;', `height:5px;background:${emailTokens.colors.accent};font-size:0;line-height:0`) +
+            row(`${sectionLabel('Dyrected')}${heading(title)}`, 'padding:30px 32px 24px') +
+            row(content, 'padding:0 32px 32px') +
+            row(
+              `${divider()}${paragraph(footer, '20px 0 6px')}${paragraph('Privacy: this message contains account-related information; please avoid forwarding it.', '0')}`,
+              'padding:0 32px 28px',
+            ),
+            `width:100%;max-width:${emailTokens.width};background:${emailTokens.colors.surface};border:1px solid ${emailTokens.colors.border};border-radius:${emailTokens.radius.card};overflow:hidden`,
+          ),
+          'padding:32px 12px',
+        ),
+        `width:100%;background:${emailTokens.colors.canvas}`,
+      )}
+    </center>
   </body>
 </html>`;
 }

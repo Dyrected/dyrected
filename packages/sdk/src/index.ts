@@ -512,12 +512,21 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
           method: "POST",
           body: JSON.stringify(data),
         }),
-      /** Send an invitation email to a new user. Requires authentication. */
-      invite: (email: string): Promise<{ success: boolean; message: string }> =>
-        this.request(`/api/collections/${slug}/invite`, {
+      /** Send an invitation email to a new user. Requires authentication. Pass inviteUrl to send a clickable acceptance link. */
+      invite: (
+        email: string,
+        inviteUrlOrOptions?: string | { inviteUrl?: string; data?: UnknownRecord },
+      ): Promise<{ success: boolean; message: string; token: string; inviteUrl?: string }> => {
+        const options =
+          typeof inviteUrlOrOptions === "string"
+            ? { inviteUrl: inviteUrlOrOptions, data: undefined }
+            : inviteUrlOrOptions ?? {};
+
+        return this.request(`/api/collections/${slug}/invite`, {
           method: "POST",
-          body: JSON.stringify({ email }),
-        }),
+          body: JSON.stringify({ email, inviteUrl: options.inviteUrl, data: options.data }),
+        });
+      },
       /** Accept an invitation and create an account. Returns token + user. */
       acceptInvite: (
         token: string,

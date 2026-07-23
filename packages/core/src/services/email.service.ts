@@ -1,5 +1,5 @@
 import type { DyrectedConfig } from '../types/index.js';
-import { alertBox, ctaButton, detailBox, layout, paragraph, sectionLabel, spacer } from './email-template.js';
+import { alertBox, ctaButton, detailBox, layout, paragraph, safeLinkDetailBox, sectionLabel, spacer } from './email-template.js';
 import { getConfigLogger, getObservabilityRuntime } from '../observability.js';
 
 type SendFn = (args: { to: string; subject: string; html: string }) => Promise<void>;
@@ -103,15 +103,19 @@ export function buildWelcomeEmail(
 
 export function buildInviteEmail(
   config: DyrectedConfig,
-  args: { token: string; invitedByEmail?: string },
+  args: { token: string; invitedByEmail?: string; url?: string },
 ): { subject: string; html: string } {
   const custom = config.email?.templates?.invite?.(args);
+  const inviteLink = args.url;
+  const inviteLinkBlock = inviteLink ? safeLinkDetailBox(inviteLink) : '';
   return {
     subject: custom?.subject ?? "You've been invited",
     html: custom?.html ?? layout({
       preheader: "You've been invited to join a Dyrected account.",
       title: "You've been invited",
-      content: `${args.invitedByEmail ? paragraph(`You were invited by ${args.invitedByEmail}.`) : ''}${paragraph('Use the token below to accept your invitation. It expires in 7 days.')}${sectionLabel('Invitation token')}${detailBox(args.token, true)}`,
+      content: inviteLink
+        ? `${args.invitedByEmail ? paragraph(`You were invited by ${args.invitedByEmail}.`) : ''}${paragraph('Use the invitation link below to create your account. The link expires in 7 days.')}${ctaButton('Accept invitation', inviteLink)}${sectionLabel('Invitation link')}${inviteLinkBlock}${paragraph('If the button does not work, copy and paste the link above into your browser.', '12px 0 0')}`
+        : `${args.invitedByEmail ? paragraph(`You were invited by ${args.invitedByEmail}.`) : ''}${paragraph('Use the invitation token below to accept your invitation. It expires in 7 days.')}${sectionLabel('Invitation token')}${detailBox(args.token, true)}`,
       footer: "If you weren't expecting this invitation, you can safely ignore this email.",
     }),
   };
@@ -123,12 +127,15 @@ export function buildResetPasswordEmail(
 ): { subject: string; html: string } {
   const custom = config.email?.templates?.resetPassword?.(args);
   const resetLink = args.url;
+  const resetLinkBlock = resetLink ? safeLinkDetailBox(resetLink) : '';
   return {
     subject: custom?.subject ?? 'Reset your password',
     html: custom?.html ?? layout({
       preheader: 'Reset your Dyrected password.',
       title: 'Reset your password',
-      content: `${paragraph('We received a request to reset your password. The reset link and token expire in 1 hour.')}${resetLink ? ctaButton('Reset password', resetLink) : ''}${sectionLabel(resetLink ? 'Or use this token' : 'Reset token')}${detailBox(args.token, true)}`,
+      content: resetLink
+        ? `${paragraph('We received a request to reset your password. The reset link expires in 1 hour.')}${ctaButton('Reset password', resetLink)}${sectionLabel('Reset link')}${resetLinkBlock}${paragraph('If the button does not work, copy and paste the link above into your browser.', '12px 0 0')}`
+        : `${paragraph('We received a request to reset your password. The reset token expires in 1 hour.')}${sectionLabel('Reset token')}${detailBox(args.token, true)}`,
       footer: "If you didn't request a password reset, you can safely ignore this email.",
     }),
   };

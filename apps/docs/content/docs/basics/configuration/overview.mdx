@@ -295,7 +295,7 @@ export interface DyrectedConfig<
     /** Override the default email templates. */
     templates?: {
       welcome?: (args: { email: string }) => { subject?: string; html: string };
-      invite?: (args: { token: string; invitedByEmail?: string }) => {
+      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {
         subject?: string;
         html: string;
       };

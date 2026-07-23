@@ -12,6 +12,8 @@ import { type ColumnDef } from "@tanstack/react-table"
 import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { Checkbox } from "../../components/ui/checkbox"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
 import { getWorkflowBadgePresentation, WORKFLOW_BADGE_COLORS } from "../../lib/workflow-badge"
 import {
   Plus,
@@ -26,6 +28,9 @@ import {
   FileUp,
   ArrowLeft,
   Users,
+  MailPlus,
+  Copy,
+  CheckCircle2,
 } from "lucide-react"
 import { resolveAdminIcon } from "../../lib/admin-icons"
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
@@ -33,6 +38,22 @@ import type { DragEndEvent } from "@dnd-kit/core"
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog"
 import { CsvImporter } from "../../components/ui/csv-importer"
 import { RenderCell } from "../../components/ui/render-cell"
 import { PageHeader } from "../../components/ui/page-header"
@@ -107,6 +128,152 @@ function SortableColumnItem({
         {label}
       </div>
     </div>
+  )
+}
+
+function buildAdminActionUrl() {
+  if (typeof window === "undefined") return undefined
+  return `${window.location.origin}${window.location.pathname}`
+}
+
+function buildInviteLink(inviteToken: string) {
+  const baseUrl = buildAdminActionUrl()
+  if (!baseUrl) return undefined
+  return `${baseUrl}?inviteToken=${encodeURIComponent(inviteToken)}`
+}
+
+interface InviteResult {
+  email: string
+  inviteUrl: string
+}
+
+interface InviteRoleOption {
+  label: string
+  value: string
+}
+
+function InviteUserDialog({
+  open,
+  onOpenChange,
+  email,
+  onEmailChange,
+  role,
+  roleOptions,
+  onRoleChange,
+  isPending,
+  result,
+  collectionLabel,
+  onSubmit,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  email: string
+  onEmailChange: (value: string) => void
+  role: string
+  roleOptions: InviteRoleOption[]
+  onRoleChange: (value: string) => void
+  isPending: boolean
+  result: InviteResult | null
+  collectionLabel: string
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
+}) {
+  const handleCopyInviteLink = async () => {
+    if (!result) return
+    await navigator.clipboard.writeText(result.inviteUrl)
+    toast.success("Invite link copied")
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
+          <MailPlus className="dy-mr-1.5 dy-h-3.5 dy-w-3.5" />
+          <span>Invite {collectionLabel}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:dy-max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Invite {collectionLabel}</DialogTitle>
+          <DialogDescription>
+            Send an invite email and keep a shareable link handy for direct onboarding.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={onSubmit} className="dy-space-y-4">
+          <div className="dy-space-y-2">
+            <Label htmlFor="invite-email">Email address</Label>
+            <Input
+              id="invite-email"
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(event) => onEmailChange(event.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+
+          {roleOptions.length > 0 ? (
+            <div className="dy-space-y-2">
+              <Label htmlFor="invite-role">Role</Label>
+              <Select value={role} onValueChange={onRoleChange}>
+                <SelectTrigger id="invite-role">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
+          {result ? (
+            <div className="dy-space-y-3 dy-rounded-2xl dy-border dy-border-emerald-500/20 dy-bg-emerald-500/5 dy-p-4">
+              <div className="dy-flex dy-items-start dy-gap-3">
+                <div className="dy-flex dy-h-9 dy-w-9 dy-items-center dy-justify-center dy-rounded-full dy-bg-emerald-500/10 dy-text-emerald-600">
+                  <CheckCircle2 className="dy-h-4.5 dy-w-4.5" />
+                </div>
+                <div className="dy-min-w-0 dy-flex-1">
+                  <p className="dy-text-sm dy-font-semibold dy-text-foreground">Invite ready for {result.email}</p>
+                  <p className="dy-text-xs dy-text-muted-foreground">
+                    The email has been sent. You can also copy the invite link below and share it manually.
+                  </p>
+                </div>
+              </div>
+
+              <div className="dy-space-y-2">
+                <Label htmlFor="invite-link">Invite link</Label>
+                <div className="dy-flex dy-gap-2">
+                  <Input
+                    id="invite-link"
+                    value={result.inviteUrl}
+                    readOnly
+                    className="dy-font-mono dy-text-xs"
+                  />
+                  <Button type="button" variant="outline" onClick={() => void handleCopyInviteLink()}>
+                    <Copy className="dy-mr-2 dy-h-3.5 dy-w-3.5" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="dy-flex dy-justify-end dy-gap-2">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Sending..." : "Send invite"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -216,6 +383,10 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
   const [page, setPage] = React.useState(1)
   const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({})
   const [isImportOpen, setIsImportOpen] = React.useState(false)
+  const [isInviteOpen, setIsInviteOpen] = React.useState(false)
+  const [inviteEmail, setInviteEmail] = React.useState("")
+  const [inviteRole, setInviteRole] = React.useState("")
+  const [inviteResult, setInviteResult] = React.useState<InviteResult | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const whereParam = searchParams.get('where')
   const searchParam = searchParams.get("search") || ""
@@ -251,6 +422,39 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
   })
 
   const schema = schemas?.collections.find((c: CollectionConfig) => c.slug === slug)
+  const inviteLabel = schema?.labels?.singular || "user"
+  const inviteRoleOptions = React.useMemo((): InviteRoleOption[] => {
+    const rolesField = schema?.fields.find((field: Field) => field.name === "roles" && field.type === "select")
+    const rawOptions = Array.isArray((rolesField as { options?: unknown[] } | undefined)?.options)
+      ? (rolesField as { options?: unknown[] }).options!
+      : []
+
+    return rawOptions.flatMap((option): InviteRoleOption[] => {
+      if (typeof option === "string") {
+        return [{ label: option, value: option }]
+      }
+
+      if (
+        option &&
+        typeof option === "object" &&
+        "value" in option &&
+        typeof (option as { value?: unknown }).value === "string"
+      ) {
+        const value = (option as { value: string }).value
+        const label = typeof (option as { label?: unknown }).label === "string"
+          ? String((option as { label?: unknown }).label)
+          : value
+        return [{ label, value }]
+      }
+
+      return []
+    })
+  }, [schema])
+
+  const defaultInviteRole = React.useMemo(() => {
+    if (inviteRoleOptions.length === 0) return ""
+    return inviteRoleOptions.find((option) => option.value === "admin")?.value ?? inviteRoleOptions[0]!.value
+  }, [inviteRoleOptions])
 
   interface ColumnPreference {
     name: string
@@ -513,6 +717,66 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
       })
     }
   })
+
+  const inviteMutation = useMutation({
+    mutationFn: async ({ email, role }: { email: string; role: string }) => {
+      const authCollectionClient = client!.collection(slug) as {
+        invite: (
+          email: string,
+          inviteUrlOrOptions?: string | { inviteUrl?: string; data?: Record<string, unknown> },
+        ) => Promise<{ inviteUrl?: string; token?: string }>
+      }
+      const response = await authCollectionClient.invite(email, {
+        inviteUrl: buildAdminActionUrl(),
+        data: role ? { roles: [role] } : undefined,
+      })
+      const inviteUrl = response.inviteUrl ?? (response.token ? buildInviteLink(response.token) : undefined)
+      if (!inviteUrl) {
+        throw new Error("Invite link could not be generated.")
+      }
+      return {
+        email,
+        inviteUrl,
+      }
+    },
+    onSuccess: (result) => {
+      setInviteResult(result)
+      toast.success("Invite sent", {
+        description: `An invitation is ready for ${result.email}.`,
+      })
+    },
+    onError: (error: Error) => {
+      toast.error("Failed to send invite", {
+        description: error.message,
+      })
+    },
+  })
+
+  const handleInviteOpenChange = React.useCallback((open: boolean) => {
+    setIsInviteOpen(open)
+    if (!open) {
+      setInviteEmail("")
+      setInviteRole(defaultInviteRole)
+      setInviteResult(null)
+      inviteMutation.reset()
+    }
+  }, [defaultInviteRole, inviteMutation])
+
+  const handleInviteSubmit = React.useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const email = inviteEmail.trim()
+    if (!email) return
+    await inviteMutation.mutateAsync({ email, role: inviteRole })
+  }, [inviteEmail, inviteMutation, inviteRole])
+
+  React.useEffect(() => {
+    setInviteRole((currentRole) => {
+      if (!defaultInviteRole) return ""
+      return currentRole && inviteRoleOptions.some((option) => option.value === currentRole)
+        ? currentRole
+        : defaultInviteRole
+    })
+  }, [defaultInviteRole, inviteRoleOptions])
 
   const [exporting, setExporting] = React.useState(false)
 
@@ -1170,11 +1434,35 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
                 <FileUp className="dy-h-3.5 dy-w-3.5" />
                 <span>Import CSV</span>
               </Button>
+              {schema.auth && (
+                <InviteUserDialog
+                  open={isInviteOpen}
+                  onOpenChange={handleInviteOpenChange}
+                  email={inviteEmail}
+                  onEmailChange={setInviteEmail}
+                  role={inviteRole}
+                  roleOptions={inviteRoleOptions}
+                  onRoleChange={setInviteRole}
+                  isPending={inviteMutation.isPending}
+                  result={inviteResult}
+                  collectionLabel={inviteLabel}
+                  onSubmit={handleInviteSubmit}
+                />
+              )}
               <Link to={`/collections/${slug}/new`} className="dy-w-full sm:dy-w-auto">
-                <Button className="dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-bg-primary dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all hover:dy-bg-primary/90 active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto">
+                <Button
+                  className={cn(
+                    "dy-h-9 dy-w-full dy-justify-center dy-rounded-md dy-px-4 dy-text-[11px] dy-shadow-sm dy-transition-all active:dy-scale-95 sm:dy-h-8 sm:dy-w-auto",
+                    schema.auth
+                      ? "dy-bg-secondary dy-text-secondary-foreground hover:dy-bg-secondary/90"
+                      : "dy-bg-primary hover:dy-bg-primary/90",
+                  )}
+                >
                   <Plus className="dy-mr-1.5 dy-h-3 dy-w-3" />
                   <span className="sm:dy-hidden">Add</span>
-                  <span className="dy-hidden sm:dy-inline">Add {schema.labels?.singular || schema.slug}</span>
+                  <span className="dy-hidden sm:dy-inline">
+                    {schema.auth ? `Add manually` : `Add ${schema.labels?.singular || schema.slug}`}
+                  </span>
                 </Button>
               </Link>
             </>

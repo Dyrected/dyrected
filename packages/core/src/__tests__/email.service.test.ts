@@ -20,6 +20,9 @@ describe('default email templates', () => {
 
     for (const { html } of messages) {
       expect(html).toContain('<!doctype html>');
+      expect(html).toContain('<meta http-equiv="Content-Type" content="text/html; charset=utf-8">');
+      expect(html).toContain('<meta name="x-apple-disable-message-reformatting">');
+      expect(html).toContain('<title>');
       expect(html).toContain('role="presentation"');
       expect(html).toContain('max-width:600px');
       expect(html).toContain('Dyrected');
@@ -37,8 +40,25 @@ describe('default email templates', () => {
   });
 
   it('only renders CTA links with an HTTP(S) URL', () => {
-    expect(buildResetPasswordEmail(config, { token: 'safe', url: 'https://example.com/reset?a=1&b=2' }).html)
-      .toContain('href="https://example.com/reset?a=1&amp;b=2"');
+    const inviteWithUrl = buildInviteEmail(config, { token: 'invite-token-secret', url: 'https://example.com/invite?a=1&b=2' }).html;
+    expect(inviteWithUrl).toContain('href="https://example.com/invite?a=1&amp;b=2"');
+    expect(inviteWithUrl).toContain('Invitation link');
+    expect(inviteWithUrl).toContain('https://example.com/invite?a=1&amp;b=2');
+    expect(inviteWithUrl).not.toContain('Invitation token');
+    expect(inviteWithUrl).not.toContain('invite-token-secret');
+
+    expect(buildInviteEmail(config, { token: 'safe', url: 'javascript:alert(1)' }).html)
+      .not.toContain('href=');
+    const resetWithUrl = buildResetPasswordEmail(config, { token: 'reset-token-secret', url: 'https://example.com/reset?a=1&b=2' }).html;
+    expect(resetWithUrl).toContain('href="https://example.com/reset?a=1&amp;b=2"');
+    expect(resetWithUrl).toContain('Reset link');
+    expect(resetWithUrl).toContain('https://example.com/reset?a=1&amp;b=2');
+    expect(resetWithUrl).not.toContain('Reset token');
+    expect(resetWithUrl).not.toContain('Or use this token');
+    expect(resetWithUrl).not.toContain('reset-token-secret');
+    const resetWithoutUrl = buildResetPasswordEmail(config, { token: 'reset-token-secret' }).html;
+    expect(resetWithoutUrl).toContain('Reset token');
+    expect(resetWithoutUrl).toContain('reset-token-secret');
     expect(buildResetPasswordEmail(config, { token: 'safe', url: 'javascript:alert(1)' }).html)
       .not.toContain('href=');
   });

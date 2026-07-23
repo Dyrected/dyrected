@@ -4,9 +4,9 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, KeyRound, Mail, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, KeyRound, Mail, CheckCircle2, UserPlus } from "lucide-react";
 
-type ViewMode = "signIn" | "forgotPassword" | "resetPassword";
+type ViewMode = "signIn" | "forgotPassword" | "resetPassword" | "acceptInvite";
 
 export function LoginPage({ 
   collectionSlug, 
@@ -22,6 +22,7 @@ export function LoginPage({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+  const [inviteToken, setInviteToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
@@ -30,33 +31,45 @@ export function LoginPage({
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [tokenFromUrl, setTokenFromUrl] = useState(false);
+  const [inviteTokenFromUrl, setInviteTokenFromUrl] = useState(false);
 
-  // Check URL parameters for a reset token on load
+  // Check URL parameters for invite or reset tokens on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    let urlInviteToken = params.get("inviteToken");
     let urlToken = params.get("token");
 
     // Fallback: Check hash params if HashRouter is used
-    if (!urlToken && window.location.hash.includes("?")) {
+    if ((!urlInviteToken || !urlToken) && window.location.hash.includes("?")) {
       const hashQuery = window.location.hash.split("?")[1];
       const hashParams = new URLSearchParams(hashQuery);
-      urlToken = hashParams.get("token");
+      urlInviteToken ||= hashParams.get("inviteToken");
+      urlToken ||= hashParams.get("token");
     }
 
-    if (urlToken) {
+    if (urlInviteToken) {
+      const detectedInviteToken = urlInviteToken;
+      setTimeout(() => {
+        setInviteToken(detectedInviteToken);
+        setInviteTokenFromUrl(true);
+        setViewMode("acceptInvite");
+        toast.info("Invitation detected. Create your password to finish setting up your account.");
+      }, 0);
+    } else if (urlToken) {
       const detectedToken = urlToken;
-      // Defer state update to next tick to avoid cascading render lint warning
       setTimeout(() => {
         setToken(detectedToken);
         setTokenFromUrl(true);
         setViewMode("resetPassword");
         toast.info("Reset token detected. Please choose a new password.");
       }, 0);
-
-      // Clean the token query parameter from the URL bar to prevent leakage/reload reuse
-      const cleanUrl = window.location.origin + window.location.pathname + window.location.hash.split("?")[0];
-      window.history.replaceState({}, document.title, cleanUrl);
     }
+
+    if (!urlInviteToken && !urlToken) return;
+
+    // Clean the token query parameter from the URL bar to prevent leakage/reload reuse
+    const cleanUrl = window.location.origin + window.location.pathname + window.location.hash.split("?")[0];
+    window.history.replaceState({}, document.title, cleanUrl);
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -131,6 +144,36 @@ export function LoginPage({
     }
   };
 
+  const handleAcceptInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (newPassword !== confirmPassword) {
+      const msg = "Passwords do not match.";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const data = await client!.collection(collectionSlug).acceptInvite(inviteToken, newPassword);
+      toast.success("Account created. You're now signed in.");
+      setInviteToken("");
+      setInviteTokenFromUrl(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      onLogin(data);
+    } catch (err: unknown) {
+      const message = (err as Error).message || "Failed to accept invitation. Check your link and try again.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="dy-flex dy-min-h-screen dy-items-center dy-justify-center dy-bg-background dy-px-4">
       <div className="dy-w-full dy-max-w-sm dy-space-y-8">
@@ -154,6 +197,13 @@ export function LoginPage({
           <div className="dy-space-y-2 dy-text-center">
             <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">Create New Password</h1>
             <p className="dy-text-sm dy-text-muted-foreground">Enter your new credentials to reset your password</p>
+          </div>
+        )}
+
+        {viewMode === "acceptInvite" && (
+          <div className="dy-space-y-2 dy-text-center">
+            <h1 className="dy-text-2xl dy-font-semibold dy-tracking-tight">Accept Invitation</h1>
+            <p className="dy-text-sm dy-text-muted-foreground">Create your password to activate your Dyrected account</p>
           </div>
         )}
 
@@ -349,6 +399,75 @@ export function LoginPage({
             >
               <ArrowLeft className="dy-mr-2 dy-h-4 dy-w-4" />
               Request New Link
+            </Button>
+          </form>
+        )}
+
+        {viewMode === "acceptInvite" && (
+          <form onSubmit={handleAcceptInvite} className="dy-space-y-4">
+            {!inviteTokenFromUrl && (
+              <div className="dy-space-y-2">
+                <Label htmlFor="invite-token">Invitation Token</Label>
+                <Input
+                  id="invite-token"
+                  type="text"
+                  placeholder="Paste invitation token"
+                  value={inviteToken}
+                  onChange={(e) => setInviteToken(e.target.value)}
+                  required
+                  className="dy-bg-transparent"
+                />
+              </div>
+            )}
+            <div className="dy-space-y-2">
+              <Label htmlFor="invite-password">Create Password</Label>
+              <Input
+                id="invite-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                className="dy-bg-transparent"
+              />
+            </div>
+            <div className="dy-space-y-2">
+              <Label htmlFor="invite-confirm-password">Confirm Password</Label>
+              <Input
+                id="invite-confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="dy-bg-transparent"
+              />
+            </div>
+
+            {error && (
+              <div className="dy-text-xs dy-text-destructive dy-font-medium dy-bg-destructive/10 dy-p-3 dy-rounded-md">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" className="dy-w-full" disabled={loading}>
+              <UserPlus className="dy-mr-2 dy-h-4 dy-w-4" />
+              {loading ? "Creating account..." : "Accept Invitation"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setError("");
+                setInviteToken("");
+                setInviteTokenFromUrl(false);
+                setNewPassword("");
+                setConfirmPassword("");
+                setViewMode("signIn");
+              }}
+              className="dy-w-full"
+            >
+              <ArrowLeft className="dy-mr-2 dy-h-4 dy-w-4" />
+              Back to Sign In
             </Button>
           </form>
         )}
