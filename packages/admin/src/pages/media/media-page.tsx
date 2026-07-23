@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-context"
 import { Button } from "../../components/ui/button"
@@ -68,6 +68,7 @@ import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { CollectionListSlotProps } from "../../types/admin-components"
 import jexl from "jexl"
 import { AdminMediaSkeleton } from "../../components/layout/admin-loading"
+import { useDebouncedValue } from "../../hooks/use-debounced-value"
 
 type ViewMode = "grid" | "list"
 
@@ -93,21 +94,23 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
   const [selectedItem, setSelectedItem] = React.useState<Media | null>(null)
   const [sortValue, setSortValue] = React.useState<SortValue>("-createdAt")
   const [viewMode, setViewMode] = React.useState<ViewMode>("grid")
+  const debouncedSearch = useDebouncedValue(search.trim(), 300)
 
   const {
     data,
     fetchNextPage,
     hasNextPage,
+    isFetching,
     isFetchingNextPage,
     isLoading,
     error: queryError
   } = useInfiniteQuery({
 
-    queryKey: ["media", collectionSlug, search, sortValue],
+    queryKey: ["media", collectionSlug, debouncedSearch, sortValue],
     queryFn: ({ pageParam = 1 }) =>
       client!.listMedia(
         {
-          where: search ? { filename: { contains: search } } : undefined,
+          where: debouncedSearch ? { filename: { contains: debouncedSearch } } : undefined,
           sort: sortValue,
           limit: 12,
           page: pageParam
@@ -119,6 +122,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
       return lastPage.hasNextPage ? lastPage.page + 1 : undefined
     },
     enabled: !!client,
+    placeholderData: keepPreviousData,
   })
 
   const mediaResponse = React.useMemo(() => {
@@ -270,6 +274,8 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
   }
 
   const hasStorageError = schemas?.hasStorage === false || isStorageNotConfiguredError(queryError)
+  const showInitialLoading = isLoading && mediaResponse.length === 0
+  const showSearchRefreshing = isFetching && !showInitialLoading
 
 
   return (
@@ -392,7 +398,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
       />
 
       <div className="dy-min-w-0">
-        {isLoading ? (
+        {showInitialLoading ? (
           <AdminMediaSkeleton />
         ) : mediaResponse?.length === 0 ? (
           <div className="dy-flex dy-min-h-56 dy-flex-col dy-items-center dy-justify-center dy-rounded-2xl dy-border-2 dy-border-dashed dy-border-border/60 dy-bg-muted/5 dy-p-6 dy-text-center dy-animate-in sm:dy-h-80">
@@ -405,22 +411,35 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             </p>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-8 sm:dy-grid-cols-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 lg:dy-gap-5 xl:dy-grid-cols-5 2xl:dy-grid-cols-6">
-            {mediaResponse?.map((item) => (
-              <MediaCard
-                key={item.id as string}
-                item={item}
-                baseUrl={client!.getBaseUrl()}
-                onDelete={() => deleteMutation.mutate(item.id as string)}
-                onClick={() => setSelectedItem(item)}
-                isSelected={selectedItem?.id === item.id}
-              />
-            ))}
-            {/* Sentinel for infinite scroll */}
-            <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
-              {isFetchingNextPage && (
-                <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-6 dy-w-6"></div>
-              )}
+          <div className="dy-relative">
+            {showSearchRefreshing && (
+              <div className="dy-pointer-events-none dy-absolute dy-right-0 dy-top-0 dy-z-10">
+                <div className="dy-inline-flex dy-items-center dy-gap-2 dy-rounded-full dy-border dy-border-border/60 dy-bg-card/95 dy-px-3 dy-py-1.5 dy-text-xs dy-font-medium dy-text-muted-foreground dy-shadow-sm dy-backdrop-blur">
+                  <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary" />
+                  Updating results...
+                </div>
+              </div>
+            )}
+            <div className={cn(
+              "dy-grid dy-grid-cols-2 dy-gap-3 dy-pb-8 sm:dy-grid-cols-3 md:dy-grid-cols-3 lg:dy-grid-cols-4 lg:dy-gap-5 xl:dy-grid-cols-5 2xl:dy-grid-cols-6",
+              showSearchRefreshing && "dy-opacity-80"
+            )}>
+              {mediaResponse?.map((item) => (
+                <MediaCard
+                  key={item.id as string}
+                  item={item}
+                  baseUrl={client!.getBaseUrl()}
+                  onDelete={() => deleteMutation.mutate(item.id as string)}
+                  onClick={() => setSelectedItem(item)}
+                  isSelected={selectedItem?.id === item.id}
+                />
+              ))}
+              {/* Sentinel for infinite scroll */}
+              <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
+                {isFetchingNextPage && (
+                  <div className="dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary dy-h-6 dy-w-6"></div>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -434,6 +453,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             onDelete={(id) => deleteMutation.mutate(id)}
             sentinelRef={sentinelRef}
             isFetchingNextPage={isFetchingNextPage}
+            isRefreshing={showSearchRefreshing}
           />
         )}
       </div>
@@ -479,7 +499,7 @@ function formatBytes(bytes?: number): string {
   return `${(bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
-function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect, onDelete, sentinelRef, isFetchingNextPage }: {
+function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect, onDelete, sentinelRef, isFetchingNextPage, isRefreshing }: {
   items: Media[]
   baseUrl: string
   selectedId?: string
@@ -489,6 +509,7 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
   onDelete: (id: string) => void
   sentinelRef: (node: HTMLDivElement | null) => void
   isFetchingNextPage: boolean
+  isRefreshing?: boolean
 }) {
   // Clicking a column header toggles between its ascending/descending sort value.
   const toggleSort = (asc: SortValue, desc: SortValue) => onSort(sortValue === desc ? asc : desc)
@@ -496,7 +517,15 @@ function MediaListView({ items, baseUrl, selectedId, sortValue, onSort, onSelect
     sortValue === asc ? "↑" : sortValue === desc ? "↓" : ""
 
   return (
-    <div className="dy-pb-8">
+    <div className="dy-relative dy-pb-8">
+      {isRefreshing && (
+        <div className="dy-pointer-events-none dy-absolute dy-right-0 dy-top-0 dy-z-10">
+          <div className="dy-inline-flex dy-items-center dy-gap-2 dy-rounded-full dy-border dy-border-border/60 dy-bg-card/95 dy-px-3 dy-py-1.5 dy-text-xs dy-font-medium dy-text-muted-foreground dy-shadow-sm dy-backdrop-blur">
+            <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary" />
+            Updating results...
+          </div>
+        </div>
+      )}
       <div className="dy-overflow-hidden dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm">
         {/* Header */}
         <div className="dy-flex dy-items-center dy-gap-4 dy-border-b dy-border-border/50 dy-bg-muted/20 dy-px-4 dy-py-3 dy-text-[11px] dy-font-bold dy-uppercase dy-tracking-wider dy-text-muted-foreground">

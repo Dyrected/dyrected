@@ -15,6 +15,7 @@ vi.mock("../../providers/dyrected-context", () => ({
 }))
 
 vi.mock("@tanstack/react-query", () => ({
+  keepPreviousData: Symbol("keepPreviousData"),
   useQuery: (options: unknown) => useQueryMock(options),
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),

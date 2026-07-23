@@ -234,6 +234,7 @@ interface SpreadsheetEditorProps {
   data: Record<string, unknown>[]
   onSave: (updates: Record<string, Record<string, unknown>>, creates?: Record<string, unknown>[]) => Promise<void>
   isSaving: boolean
+  isRefreshing?: boolean
 }
 
 export function SpreadsheetEditor({
@@ -242,6 +243,7 @@ export function SpreadsheetEditor({
   data,
   onSave,
   isSaving,
+  isRefreshing = false,
 }: SpreadsheetEditorProps) {
   const { client } = useDyrected()
   const [drafts, setDrafts] = React.useState<Record<string, Record<string, unknown>>>({})
@@ -565,6 +567,17 @@ export function SpreadsheetEditor({
 
   return (
     <div className="dy-relative dy-flex dy-flex-col dy-w-full dy-border dy-rounded-lg dy-bg-background">
+      {isRefreshing ? (
+        <div className="dy-pointer-events-none dy-absolute dy-right-3 dy-top-3 dy-z-10">
+          <div
+            aria-live="polite"
+            className="dy-inline-flex dy-items-center dy-gap-2 dy-rounded-full dy-border dy-border-border/60 dy-bg-card/95 dy-px-3 dy-py-1.5 dy-text-xs dy-font-medium dy-text-muted-foreground dy-shadow-sm dy-backdrop-blur"
+          >
+            <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary" />
+            Updating results...
+          </div>
+        </div>
+      ) : null}
       <div className="dy-w-full">
         <DataSheetGrid
           height={gridHeight}

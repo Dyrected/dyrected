@@ -1,6 +1,6 @@
 
 import * as React from "react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Link, useSearchParams } from "react-router-dom"
 import { useDyrected } from "../../providers/dyrected-context"
@@ -219,7 +219,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   const whereParam = searchParams.get('where')
   const searchParam = searchParams.get("search") || ""
-  const debouncedSearch = useDebouncedValue(searchParam.trim(), 250)
+  const debouncedSearch = useDebouncedValue(searchParam.trim(), 500)
 
   const rules = React.useMemo(() => {
     if (!whereParam) return [];
@@ -434,7 +434,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
   }
 
   // Fetch collection data
-  const { data: response, isLoading } = useQuery({
+  const { data: response, isLoading, isFetching } = useQuery({
     queryKey: ["collection", slug, page, whereParam, debouncedSearch],
     queryFn: () => {
       const queryParams: Record<string, unknown> = { page, limit: 20, depth: 1 };
@@ -451,7 +451,11 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
       return client!.collection(slug).find(queryParams).exec()
     },
     enabled: !!client,
+    placeholderData: keepPreviousData,
   })
+
+  const showInitialCollectionLoading = isLoading && !response
+  const showCollectionRefreshing = isFetching && !showInitialCollectionLoading
 
   const totalPages = response?.totalPages ?? 1
   const hasNextPage = page < totalPages
@@ -911,7 +915,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
     collectionSlug: slug,
     response,
     documents: response?.docs || [],
-    isLoading,
+    isLoading: showInitialCollectionLoading,
     pagination: {
       page,
       totalPages,
@@ -961,7 +965,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
           componentProps={collectionComponentProps}
         />
 
-        {isLoading ? (
+        {showInitialCollectionLoading ? (
           <AdminMediaSkeleton />
         ) : (
           <MediaGrid
@@ -1185,7 +1189,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
         componentProps={collectionComponentProps}
       />
       <div className="dy-min-w-0">
-        {isLoading ? (
+        {showInitialCollectionLoading ? (
           <AdminPageSkeleton />
         ) : localPreference.viewMode === "spreadsheet" ? (
           <React.Suspense
@@ -1199,6 +1203,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
                 await bulkSaveMutation.mutateAsync({ updates, creates: creates || [] })
               }}
               isSaving={bulkSaveMutation.isPending}
+              isRefreshing={showCollectionRefreshing}
             />
           </React.Suspense>
         ) : (
@@ -1222,6 +1227,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
             onRowSelectionChange={setRowSelection}
             rowSelection={rowSelection}
             hideViewButton={true}
+            isRefreshing={showCollectionRefreshing}
             toolbarActions={(
               <>
                 <FilterBuilder schema={schema} rules={rules} onChange={handleRulesChange} />

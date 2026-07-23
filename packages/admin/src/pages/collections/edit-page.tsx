@@ -1174,7 +1174,7 @@ export function EditEntryPage() {
           )}
         >
           {/* Left Column: Preview (if active) */}
-          {previewUrl && (
+          {previewUrl && showLivePreview && (
             <div
               className={cn(
                 "dy-border-r dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden lg:dy-block",

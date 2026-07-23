@@ -38,6 +38,7 @@ function safeStringify(value: unknown): string {
 
 export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collectionSlug, documentId, onFieldFocus }: LivePreviewPaneProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const latestDataRef = useRef(data);
   const { client } = useDyrected();
   const [isReady, setIsReady] = useState(false);
   const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop');
@@ -61,6 +62,10 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collec
   // means "the draft changed again", which is exactly when we want to discard a
   // stale mint.
   const dataKey = safeStringify(data);
+
+  useEffect(() => {
+    latestDataRef.current = data;
+  }, [data]);
 
   useEffect(() => {
     if (mode !== 'token' || !client || !collectionSlug) return;
@@ -101,7 +106,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collec
       if (event.data?.type === 'dyrected-live-preview-ready') {
         setIsReady(true);
         iframeRef.current?.contentWindow?.postMessage(
-          { type: 'dyrected-live-preview', data },
+          { type: 'dyrected-live-preview', data: latestDataRef.current },
           '*'
         );
       }
@@ -113,7 +118,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collec
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [mode, data, onFieldFocus]);
+  }, [mode, onFieldFocus]);
 
   // Sync data whenever it changes
   useEffect(() => {
@@ -136,6 +141,7 @@ export function LivePreviewPane({ previewUrl, data, mode = 'postMessage', collec
 
   const reload = () => {
     if (iframeRef.current) {
+      iframeRef.current.src = 'about:blank';
       iframeRef.current.src = iframeSrc;
       setIsReady(false);
       // Keep edit mode on across reloads — it re-arms once the iframe is ready.

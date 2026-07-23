@@ -39,6 +39,7 @@ interface DataTableProps<TData, TValue> {
   searchPlaceholder?: string
   searchValue?: string
   onSearchChange?: (value: string) => void
+  isRefreshing?: boolean
   rowSelection?: any
   onRowSelectionChange?: any
   bulkActions?: (selectedIds: string[]) => React.ReactNode
@@ -54,6 +55,7 @@ export function DataTable<TData, TValue>({
   searchPlaceholder,
   searchValue,
   onSearchChange,
+  isRefreshing = false,
   rowSelection: externalRowSelection,
   onRowSelectionChange,
   bulkActions,
@@ -139,7 +141,18 @@ export function DataTable<TData, TValue>({
           </div>
         )}
       </div>
-      <div className="dy-overflow-x-auto dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm">
+      <div className="dy-relative dy-overflow-x-auto dy-rounded-2xl dy-border dy-border-border/50 dy-bg-card dy-shadow-sm">
+        {isRefreshing ? (
+          <div className="dy-pointer-events-none dy-absolute dy-right-3 dy-top-3 dy-z-10">
+            <div
+              aria-live="polite"
+              className="dy-inline-flex dy-items-center dy-gap-2 dy-rounded-full dy-border dy-border-border/60 dy-bg-card/95 dy-px-3 dy-py-1.5 dy-text-xs dy-font-medium dy-text-muted-foreground dy-shadow-sm dy-backdrop-blur"
+            >
+              <div className="dy-h-3.5 dy-w-3.5 dy-animate-spin dy-rounded-full dy-border-2 dy-border-primary/20 dy-border-t-primary" />
+              Updating results...
+            </div>
+          </div>
+        ) : null}
         <Table className="dy-min-w-[720px]">
           <TableHeader className="dy-bg-muted/20">
             {table.getHeaderGroups().map((headerGroup) => (
