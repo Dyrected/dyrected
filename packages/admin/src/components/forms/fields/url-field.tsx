@@ -234,8 +234,12 @@ export function UrlField({ schema, field, disabled }: UrlFieldProps) {
   const linkSpec = getLinkSpec(urlValue, (schema as UrlFieldSchema).admin?.format, "url")
 
   return (
-    <div className="dy-space-y-3">
-      <div>
+    <div className="dy-gap-3 dy-w-full dy-flex dy-flex-col md:dy-flex-row md:dy-justify-between">
+      <div className="md:dy-w-2/3">
+
+        <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
+          Link
+        </label>
         <div className="dy-flex dy-items-stretch dy-gap-2">
           <Popover open={openPopover && !disabled} onOpenChange={setOpenPopover}>
             <PopoverTrigger asChild>
@@ -335,9 +339,9 @@ export function UrlField({ schema, field, disabled }: UrlFieldProps) {
         )}
       </div>
 
-      <div>
+      <div className="md:dy-w-1/3">
         <label className="dy-text-xs dy-font-semibold dy-text-muted-foreground dy-uppercase dy-tracking-wider dy-block dy-mb-2">
-          Link Label (Optional)
+          Label (Optional)
         </label>
         <Input
           type="text"

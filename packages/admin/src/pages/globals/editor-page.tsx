@@ -1,11 +1,19 @@
+import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-context"
-import { FormEngine } from "../../components/forms/form-engine"
 import { useParams } from "react-router-dom"
 import { Globe, Save } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "../../components/ui/button"
+import { AdminEditorSkeleton } from "../../components/layout/admin-loading"
+import { resolveAdminIcon } from "../../lib/admin-icons"
+import { AdminNotFound } from "../../components/layout/admin-not-found"
+
+const FormEngine = React.lazy(async () => {
+  const module = await import("../../components/forms/form-engine")
+  return { default: module.FormEngine }
+})
 
 export function GlobalEditorPage() {
   const { slug } = useParams()
@@ -25,13 +33,14 @@ export function GlobalEditorPage() {
   }, [isDirty])
 
   // Fetch schema
-  const { data: schemas } = useQuery({
+  const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
     queryKey: ["schemas"],
     queryFn: () => client!.getSchemas(),
     enabled: !!client,
   })
 
   const schema = schemas?.globals.find((g: any) => g.slug === slug)
+  const GlobalIcon = resolveAdminIcon(schema?.admin?.icon, Globe)
 
   // Fetch global data
   const { data: globalData, isLoading: isGlobalLoading } = useQuery({
@@ -68,15 +77,24 @@ export function GlobalEditorPage() {
     }
   })
 
-  if (!schema) return <div>Global schema not found for: {slug}</div>
-  if (isGlobalLoading) return <div>Loading global settings...</div>
+  if (isLoadingSchemas || !schemas) return <AdminEditorSkeleton className="dy-max-w-5xl dy-mx-auto" />
+  if (!schema) {
+    return (
+      <AdminNotFound
+        title="Global configuration not found"
+        description={`We could not find a visible global called "${slug}". It may have been renamed, hidden, or removed from this admin.`}
+        backTo="/"
+      />
+    )
+  }
+  if (isGlobalLoading) return <AdminEditorSkeleton className="dy-max-w-5xl dy-mx-auto" />
 
   return (
     <div className="dy-space-y-8 dy-max-w-5xl dy-mx-auto">
       <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border/50 dy-pb-6">
         <div className="dy-flex dy-items-center dy-gap-4">
           <div className="dy-p-2 dy-bg-primary/10 dy-text-primary dy-rounded-lg dy-shrink-0">
-            <Globe className="dy-h-5 dy-w-5" />
+            <GlobalIcon className="dy-h-5 dy-w-5" />
           </div>
           <div>
             <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
@@ -106,15 +124,17 @@ export function GlobalEditorPage() {
       </div>
 
       <div className="dy-animate-in dy-space-y-8 dy-pb-32">
-        <FormEngine
-          collection={slug!}
-          fields={schema.fields}
-          defaultValues={globalData || {}}
-          onSubmit={(data) => saveMutation.mutate(data)}
-          isLoading={saveMutation.isPending}
-          onChange={(dirty) => setIsDirty(dirty)}
-          submitLabel="Save Changes"
-        />
+        <React.Suspense fallback={<AdminEditorSkeleton />}>
+          <FormEngine
+            collection={slug!}
+            fields={schema.fields}
+            defaultValues={globalData || {}}
+            onSubmit={(data) => saveMutation.mutate(data)}
+            isLoading={saveMutation.isPending}
+            onChange={(dirty) => setIsDirty(dirty)}
+            submitLabel="Save Changes"
+          />
+        </React.Suspense>
         <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
 
         {/* Sticky Save Bar */}

@@ -11,7 +11,7 @@ import type {
   RelationshipField as RelationFieldSchema,
   RichTextField as RichTextFieldSchema,
 } from "@dyrected/core"
-
+import * as React from "react"
 import { TextField } from "./fields/text-field"
 import { TextAreaField } from "./fields/text-area-field"
 import { SwitchField } from "./fields/switch-field"
@@ -19,8 +19,6 @@ import { CheckboxField } from "./fields/checkbox-field"
 import { SelectField } from "./fields/select-field"
 import { RadioField } from "./fields/radio-field"
 import { MultiSelect } from "./fields/multi-select"
-import { MediaPicker } from "./fields/media-picker"
-import { RichTextEditor } from "./fields/rich-text-editor"
 import { JsonEditor } from "./fields/json-editor"
 import { DatePicker, DateRangePicker } from "./fields/date-picker"
 import { TimePicker } from "./fields/time-picker"
@@ -32,6 +30,16 @@ import { useDyrected } from "../../providers/dyrected-context"
 import { ErrorBoundary } from "../error-boundary"
 import { DyrectedFieldPathProvider } from "../../providers/dyrected-form-context"
 import type { AdminFieldComponentContext, AdminFieldComponentProps } from "../../types/admin-components"
+
+const RichTextEditor = React.lazy(async () => {
+  const module = await import("./fields/rich-text-editor")
+  return { default: module.RichTextEditor }
+})
+
+const MediaPicker = React.lazy(async () => {
+  const module = await import("./fields/media-picker")
+  return { default: module.MediaPicker }
+})
 
 type DefaultTextInputSchema = TextFieldSchema | EmailField | NumberField
 type TextAreaSchema = TextareaFieldSchema
@@ -130,13 +138,15 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
     case "image": {
       const imageMediaColl = relSchema.relationTo || (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
       return (
-        <MediaPicker
-          collection={imageMediaColl}
-          value={field.value}
-          onChange={field.onChange}
-          disabled={disabled}
-          multiple={relSchema.hasMany}
-        />
+        <React.Suspense fallback={<div className="dy-h-24 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+          <MediaPicker
+            collection={imageMediaColl}
+            value={field.value}
+            onChange={field.onChange}
+            disabled={disabled}
+            multiple={relSchema.hasMany}
+          />
+        </React.Suspense>
       )
     }
     case "richText": {
@@ -144,14 +154,16 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
       const richTextMediaColl =
         rtSchema.uploadCollection || (context?.schemas?.collections?.find((c) => c.upload)?.slug) || "media"
       return (
-        <RichTextEditor
-          collection={richTextMediaColl}
-          value={field.value}
-          onChange={field.onChange}
-          disabled={disabled}
-          features={rtSchema.features}
-          headingLevels={rtSchema.headingLevels}
-        />
+        <React.Suspense fallback={<div className="dy-h-40 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+          <RichTextEditor
+            collection={richTextMediaColl}
+            value={field.value}
+            onChange={field.onChange}
+            disabled={disabled}
+            features={rtSchema.features}
+            headingLevels={rtSchema.headingLevels}
+          />
+        </React.Suspense>
       )
     }
     case "json":
@@ -175,13 +187,15 @@ export function FieldRenderer({ schema, field, collection, context }: FieldRende
 
       if (isMediaRel) {
         return (
-          <MediaPicker
-            collection={relSchema.relationTo || defaultMediaColl}
-            value={field.value}
-            onChange={field.onChange}
-            multiple={relSchema.hasMany}
-            disabled={disabled}
-          />
+          <React.Suspense fallback={<div className="dy-h-24 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+            <MediaPicker
+              collection={relSchema.relationTo || defaultMediaColl}
+              value={field.value}
+              onChange={field.onChange}
+              multiple={relSchema.hasMany}
+              disabled={disabled}
+            />
+          </React.Suspense>
         )
       }
 

@@ -17,7 +17,7 @@ import type { CollectionConfig } from "@dyrected/core";
  * 5. If logged in (or no auth required), renders the children.
  */
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { client, user, setToken, schemas, initialToken, config } = useDyrected();
+  const { client, user, setToken, schemas, initialToken, config, isResolvingStoredSession } = useDyrected();
   const queryClient = useQueryClient();
   const handledExternalTokenRef = useRef<string | null>(null);
   const [externalExchangeError, setExternalExchangeError] = useState<string | null>(null);
@@ -109,7 +109,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     enabled: !!client && !!authCollection && !isExternalAdminAuth,
   });
 
-  const isLoading = !schemas || (!isExternalAdminAuth && authCollection && isLoadingInit);
+  const isLoading = !schemas || isResolvingStoredSession || pendingExternalToken || (!isExternalAdminAuth && authCollection && isLoadingInit);
 
   // Cloud-managed: host application has already authenticated the user.
   // Skip setup and login flow — render the admin shell directly.

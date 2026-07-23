@@ -4,10 +4,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick, watch, computed, getCurrentInstance } from "vue";
-import "@dyrected/admin/styles";
 import { wrapComponents } from "../bridge/react-in-vue";
-import type { AdminThemeController, AdminThemePreference, ResolvedAdminTheme } from "@dyrected/admin";
-import { createAdminThemeController } from "@dyrected/admin";
+import type { AdminThemeController, AdminThemePreference, ResolvedAdminTheme } from "@dyrected/admin/public";
+import { createAdminThemeController } from "@dyrected/admin/public";
 
 const props = defineProps<{
   /**
@@ -75,7 +74,6 @@ const mountAdmin = async () => {
 
   if (container.value) {
     try {
-      // 1. Dynamically import to ensure isolation
       const { renderAdminUI } = await import("@dyrected/admin");
 
       unmount = renderAdminUI(container.value, {

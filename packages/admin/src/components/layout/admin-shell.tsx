@@ -354,7 +354,7 @@ function SidebarInner({
   const meta = schemas?.admin?.meta;
 
   return (
-    <div className="dy-flex dy-flex-col dy-min-h-screen">
+    <div className="dy-flex dy-h-full dy-min-h-0 dy-flex-col">
       {/* Logo */}
       {!isEmbedded && (
 
@@ -726,11 +726,16 @@ export function AdminShell({
   return (
     <BrandingProvider>
       <SidebarControlProvider value={sidebarControl}>
-        <div className={cn("dy-flex dy-w-full dy-relative", isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-min-h-screen")}>
+        <div
+          className={cn(
+            "dy-relative dy-flex dy-w-full dy-min-h-0 dy-overflow-hidden",
+            isEmbedded ? "dy-h-full dy-min-h-[600px]" : "dy-h-[100dvh]"
+          )}
+        >
           {/* ... existing sidebar and main content ... */}
           <aside
             className={cn(
-              "dy-hidden md:dy-flex dy-flex-col dy-shrink-0 dy-h-full dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
+              "dy-hidden md:dy-flex dy-h-full dy-min-h-0 dy-flex-col dy-shrink-0 dy-self-stretch dy-border-r dy-border-border dy-bg-card dy-transition-all dy-duration-300 dy-overflow-hidden",
               collapsed ? "dy-w-[56px]" : "dy-w-[220px]"
             )}
           >
@@ -775,7 +780,7 @@ export function AdminShell({
             </SheetContent>
           </Sheet>
 
-          <main className="dy-flex-1 dy-min-w-0 dy-overflow-auto dy-flex dy-flex-col dy-relative dy-bg-background/95">
+          <main className="dy-relative dy-flex dy-min-h-0 dy-min-w-0 dy-flex-1 dy-flex-col dy-overflow-auto dy-bg-background/95">
             {/* Mobile top header — hidden on desktop, and hidden entirely when
                 embedded (the host dashboard renders the single mobile bar). */}
             {!isEmbedded && (

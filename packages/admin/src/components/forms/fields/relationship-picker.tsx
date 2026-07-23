@@ -24,8 +24,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../ui/dialog"
-import { FormEngine } from "../form-engine"
 import type { FieldSchema } from "../form-engine"
+
+const FormEngine = React.lazy(async () => {
+  const module = await import("../form-engine")
+  return { default: module.FormEngine }
+})
 
 const PAGE_SIZE = 50
 
@@ -232,13 +236,15 @@ export function RelationshipPicker({ value, onChange, label, relationTo, multipl
               <DialogTitle>Create New {relatedCollection.labels?.singular || relatedCollection.label || relationTo}</DialogTitle>
             </DialogHeader>
             <div className="dy-pt-4">
-              <FormEngine
-                collection={relationTo}
-                fields={relatedCollection.fields}
-                defaultValues={defaultValues}
-                onSubmit={handleCreateSubmit}
-                submitLabel="Create"
-              />
+              <React.Suspense fallback={<div className="dy-h-40 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+                <FormEngine
+                  collection={relationTo}
+                  fields={relatedCollection.fields}
+                  defaultValues={defaultValues}
+                  onSubmit={handleCreateSubmit}
+                  submitLabel="Create"
+                />
+              </React.Suspense>
             </div>
           </DialogContent>
         </Dialog>

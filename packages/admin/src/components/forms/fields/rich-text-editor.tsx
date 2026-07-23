@@ -7,7 +7,6 @@ import { TableKit } from "@tiptap/extension-table"
 import type { HeadingLevel, RichTextFeature } from "@dyrected/core"
 import { Toggle } from "../../ui/toggle"
 import { cn } from "../../../lib/utils"
-import { MediaPicker } from "./media-picker"
 import { Input } from "../../ui/input"
 import { Button } from "../../ui/button"
 import { Switch } from "../../ui/switch"
@@ -54,6 +53,11 @@ import {
 } from "lucide-react"
 
 const DEFAULT_HEADING_LEVELS: HeadingLevel[] = [1, 2, 3]
+
+const MediaPicker = React.lazy(async () => {
+  const module = await import("./media-picker")
+  return { default: module.MediaPicker }
+})
 
 const HEADING_ICONS: Record<HeadingLevel, React.ComponentType<{ className?: string }>> = {
   1: Heading1,
@@ -345,18 +349,20 @@ const MenuBar = ({ editor, collection = "media", features, headingLevels }: Menu
 
       {has("image") && (
         <div className="dy-ml-auto">
-          <MediaPicker
-            collection={collection}
-            variant="icon"
-            valueType="url"
-            onChange={(val) => {
-              const url = Array.isArray(val) ? val[0] : val
-              if (url) {
-                const filename = typeof url === 'string' ? url.split('/').pop() || 'image' : 'image'
-                editor.chain().focus().setImage({ src: url, alt: filename }).run()
-              }
-            }}
-          />
+          <React.Suspense fallback={<div className="dy-h-8 dy-w-8 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+            <MediaPicker
+              collection={collection}
+              variant="icon"
+              valueType="url"
+              onChange={(val) => {
+                const url = Array.isArray(val) ? val[0] : val
+                if (url) {
+                  const filename = typeof url === 'string' ? url.split('/').pop() || 'image' : 'image'
+                  editor.chain().focus().setImage({ src: url, alt: filename }).run()
+                }
+              }}
+            />
+          </React.Suspense>
         </div>
       )}
     </div>
@@ -390,21 +396,21 @@ export function RichTextEditor({ value, onChange, label, disabled, collection = 
         : []),
       ...(has("image")
         ? [
-            Image.configure({
-              HTMLAttributes: {
-                class: "rounded-md max-w-full h-auto my-4 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all",
-              },
-            }),
-          ]
+          Image.configure({
+            HTMLAttributes: {
+              class: "rounded-md max-w-full h-auto my-4 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all",
+            },
+          }),
+        ]
         : []),
       ...(has("table")
         ? [
-            TableKit.configure({
-              table: { HTMLAttributes: { class: "dy-border-collapse dy-w-full dy-my-4" } },
-              tableCell: { HTMLAttributes: { class: "dy-border dy-border-border dy-p-2 dy-align-top dy-min-w-[100px]" } },
-              tableHeader: { HTMLAttributes: { class: "dy-border dy-border-border dy-p-2 dy-bg-muted dy-font-semibold dy-text-left" } },
-            }),
-          ]
+          TableKit.configure({
+            table: { HTMLAttributes: { class: "dy-border-collapse dy-w-full dy-my-4" } },
+            tableCell: { HTMLAttributes: { class: "dy-border dy-border-border dy-p-2 dy-align-top dy-min-w-[100px]" } },
+            tableHeader: { HTMLAttributes: { class: "dy-border dy-border-border dy-p-2 dy-bg-muted dy-font-semibold dy-text-left" } },
+          }),
+        ]
         : []),
     ],
     content: value,

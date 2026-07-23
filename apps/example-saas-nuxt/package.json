@@ -3,10 +3,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 nuxt build",
     "dyrected:sync-schema": "node ./scripts/run-dyrected-sync.mjs",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "generate": "NODE_OPTIONS=--max-old-space-size=4096 nuxt generate",
     "postbuild": "node ./scripts/run-dyrected-sync.mjs --skip-on-error --skip-types",
     "preview": "nuxt preview",
     "postinstall": "node -e \"if (!process.env.CI) { require('child_process').spawnSync('nuxt', ['prepare'], { stdio: 'inherit', shell: true }); }\""

@@ -14,6 +14,7 @@ export interface DyrectedContextType {
   setAuth: (baseUrl: string, apiKey: string, siteId?: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isResolvingStoredSession: boolean;
   schemas: AdminSchemas | null;
   user: AdminUser | null;
   setToken: (token: string, collectionSlug?: string | null) => void;

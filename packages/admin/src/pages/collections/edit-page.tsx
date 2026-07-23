@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react"
+import { Suspense, lazy, useState, useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useDyrected } from "../../providers/dyrected-context"
-import { FormEngine, type FormEngineHandle } from "../../components/forms/form-engine"
+import type { FormEngineHandle } from "../../components/forms/form-engine"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ChevronLeft, Plus, ChevronDown } from "lucide-react"
 import { Button } from "../../components/ui/button"
@@ -43,6 +43,17 @@ import { useCallback, useMemo } from "react"
 import { resolvePublishingStatus, resolveWorkflowState } from "../../lib/workflow-ui"
 import { buildDraftLiveComparison } from "../../lib/draft-live-compare"
 import type { WorkflowTransition } from "@dyrected/core"
+import {
+  AdminCommandListSkeleton,
+  AdminEditorSkeleton,
+  AdminSectionSkeleton,
+} from "../../components/layout/admin-loading"
+import { AdminNotFound } from "../../components/layout/admin-not-found"
+
+const FormEngine = lazy(async () => {
+  const module = await import("../../components/forms/form-engine")
+  return { default: module.FormEngine }
+})
 
 function SortableFieldItem({
   id,
@@ -323,14 +334,17 @@ export function EditEntryPage() {
   const [workflowAutosaveState, setWorkflowAutosaveState] = useState<WorkflowAutosaveState>("idle")
   const [workflowTransitionPending, setWorkflowTransitionPending] = useState(false)
   const [compareSheetOpen, setCompareSheetOpen] = useState(false)
+  const [previewPaneWidth, setPreviewPaneWidth] = useState(62)
+  const [isResizingPreview, setIsResizingPreview] = useState(false)
   const formEngineRef = useRef<FormEngineHandle | null>(null)
   const draftSavePromiseRef = useRef<Promise<{ doc?: unknown; passwordChanged?: boolean }> | null>(null)
+  const splitPaneRef = useRef<HTMLDivElement | null>(null)
   const isEdit = !!id
 
   const [isConfiguringView, setIsConfiguringView] = useState(false)
 
   // Fetch schema
-  const { data: schemas } = useQuery({
+  const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
     queryKey: ["schemas"],
     queryFn: () => client!.getSchemas(),
     enabled: !!client,
@@ -721,6 +735,55 @@ export function EditEntryPage() {
   const showManualSaveChrome = !workflowAutosaveEnabled
   const showLivePreview = activeTab === 'edit' && showPreview && !!previewUrl
   const showWorkflowSidebar = false
+  const formPaneWidth = 100 - previewPaneWidth
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const stored = window.localStorage.getItem("dyrected:edit-preview-width")
+    if (!stored) return
+    const parsed = Number(stored)
+    if (Number.isFinite(parsed)) {
+      setPreviewPaneWidth(Math.min(75, Math.max(35, parsed)))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    window.localStorage.setItem("dyrected:edit-preview-width", String(previewPaneWidth))
+  }, [previewPaneWidth])
+
+  useEffect(() => {
+    if (!isResizingPreview) return
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const container = splitPaneRef.current
+      if (!container) return
+      const rect = container.getBoundingClientRect()
+      if (!rect.width) return
+      const nextWidth = ((event.clientX - rect.left) / rect.width) * 100
+      setPreviewPaneWidth(Math.min(75, Math.max(35, nextWidth)))
+    }
+
+    const stopResize = () => {
+      setIsResizingPreview(false)
+      document.body.style.cursor = ""
+      document.body.style.userSelect = ""
+    }
+
+    document.body.style.cursor = "col-resize"
+    document.body.style.userSelect = "none"
+    window.addEventListener("pointermove", handlePointerMove)
+    window.addEventListener("pointerup", stopResize)
+    window.addEventListener("pointercancel", stopResize)
+
+    return () => {
+      document.body.style.cursor = ""
+      document.body.style.userSelect = ""
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("pointerup", stopResize)
+      window.removeEventListener("pointercancel", stopResize)
+    }
+  }, [isResizingPreview])
 
   const resolveTransitionContextFromDoc = useCallback((doc?: Record<string, unknown> | null) => {
     const resolvedDocumentId = String(doc?.id ?? id ?? "")
@@ -802,8 +865,27 @@ export function EditEntryPage() {
     }
   }
 
-  if (!schema) return <div>Collection not found</div>
-  if (isEdit && isEntryLoading) return <div>Loading entry...</div>
+  if (isLoadingSchemas || !schemas) return <AdminEditorSkeleton />
+  if (!schema) {
+    return (
+      <AdminNotFound
+        title="Collection not found"
+        description={`We could not find a visible collection called "${slug}". It may have been renamed, hidden, or removed from this admin.`}
+        backTo="/"
+      />
+    )
+  }
+  if (isEdit && isEntryLoading) return <AdminEditorSkeleton />
+  if (isEdit && !entry) {
+    return (
+      <AdminNotFound
+        title="Entry not found"
+        description={`We could not find this ${schema.labels?.singular || schema.slug} entry. It may have been deleted or the link may be out of date.`}
+        backTo={`/collections/${slug}`}
+        backLabel={`Back to ${schema.labels?.plural || schema.slug}`}
+      />
+    )
+  }
   if (!canRead) {
     return (
       <div className="dy-flex dy-items-center dy-justify-center dy-h-[calc(100vh-200px)]">
@@ -864,9 +946,7 @@ export function EditEntryPage() {
                       />
                       <CommandList>
                         {isSiblingsLoading ? (
-                          <div className="dy-py-6 dy-text-center dy-text-sm dy-text-muted-foreground">
-                            Loading...
-                          </div>
+                          <AdminCommandListSkeleton />
                         ) : docsToDisplay.length === 0 ? (
                           <CommandEmpty>No entries found.</CommandEmpty>
                         ) : (
@@ -1086,17 +1166,26 @@ export function EditEntryPage() {
         </div>
 
         {/* Content row: preview (left) + form + optional workflow sidebar */}
-        <div className="dy-flex dy-flex-1 dy-min-h-0">
+        <div
+          ref={splitPaneRef}
+          className={cn(
+            "dy-flex dy-flex-1 dy-min-h-0",
+            isResizingPreview && "dy-cursor-col-resize"
+          )}
+        >
           {/* Left Column: Preview (if active) */}
           {previewUrl && (
-            <div className={cn(
-              "dy-border-r dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden lg:dy-block",
+            <div
+              className={cn(
+                "dy-border-r dy-border-border/50 dy-bg-muted/5 dy-transition-all dy-duration-500 dy-overflow-hidden lg:dy-block",
               // Desktop: side-by-side, width driven by the preview toggle.
-              showLivePreview ? "lg:dy-flex-1 lg:dy-opacity-100" : "lg:dy-w-0 lg:dy-opacity-0 lg:dy-border-r-0",
+                showLivePreview ? "lg:dy-flex-none lg:dy-opacity-100" : "lg:dy-w-0 lg:dy-opacity-0 lg:dy-border-r-0",
               // Mobile: single-pane. Full width only when the mobile Preview tab
               // is selected; otherwise fully hidden so the form gets the screen.
-              mobilePreview && showLivePreview ? "dy-flex-1 dy-opacity-100" : "dy-hidden"
-            )}>
+                mobilePreview && showLivePreview ? "dy-flex-1 dy-opacity-100" : "dy-hidden"
+              )}
+              style={showLivePreview ? { width: `${previewPaneWidth}%` } : undefined}
+            >
               <div className="dy-h-full">
                 <PreviewPaneWithNav
                   previewUrl={previewUrl}
@@ -1112,13 +1201,38 @@ export function EditEntryPage() {
             </div>
           )}
 
+          {showLivePreview && (
+            <div
+              className="dy-relative dy-hidden lg:dy-flex dy-w-3 dy-flex-none dy-items-center dy-justify-center dy-bg-background/70"
+              aria-hidden="true"
+            >
+              <button
+                type="button"
+                className={cn(
+                  "dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-cursor-col-resize dy-transition-colors hover:dy-bg-muted/50 focus-visible:dy-outline-none focus-visible:dy-ring-2 focus-visible:dy-ring-ring",
+                  isResizingPreview && "dy-bg-muted/60"
+                )}
+                onPointerDown={(event) => {
+                  event.preventDefault()
+                  setIsResizingPreview(true)
+                }}
+                title="Resize preview"
+                aria-label="Resize live preview"
+              >
+                <span className="dy-h-16 dy-w-1 dy-rounded-full dy-bg-border/80" />
+              </button>
+            </div>
+          )}
+
           {/* Right Column: Header + Form */}
           <div className={cn(
             "dy-px-4 dy-py-6 md:dy-px-4 lg:dy-px-4 lg:dy-py-6 dy-transition-all dy-duration-500",
-            showLivePreview ? "dy-flex-none dy-w-full lg:dy-w-2/6 xl:dy-w-2/7 dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full dy-overflow-y-auto",
+            showLivePreview ? "dy-flex-none dy-w-full dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full",
             // Mobile single-pane: yield the screen to the preview when selected.
             mobilePreview && showLivePreview ? "dy-hidden lg:dy-block" : ""
-          )}>
+          )}
+          style={showLivePreview ? { width: `calc(${formPaneWidth}% - 0.75rem)` } : undefined}
+          >
             <div className="dy-space-y-4">
               {activeTab === "workflow" && workflowAvailable && (
                 <div className="dy-animate-in dy-fade-in dy-duration-200 dy-max-w-3xl dy-mx-auto dy-py-6">
@@ -1306,23 +1420,25 @@ export function EditEntryPage() {
                     }
 
                     return (
-                      <FormEngine
-                        ref={formEngineRef}
-                        collection={slug!}
-                        fields={orderedFields}
-                        defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
-                        onSubmit={handleManualSave}
-                        autosave={autosaveConfig}
-                        onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
-                        onChange={(dirty) => setIsDirty(dirty)}
-                        isLoading={saveMutation.isPending || workflowTransitionPending || isPreferenceLoading}
-                        submitLabel={isEdit ? "Save Changes" : "Create Entry"}
-                        hideSubmit
-                        readOnly={isEdit ? !canUpdate : !canCreate}
-                        passwordChangeMode={isEdit ? passwordChangeMode : null}
-                        documentId={id}
-                        defaultTabLabel={schema?.labels?.singular || 'General'}
-                      />
+                      <Suspense fallback={<div className="dy-h-64 dy-rounded-xl dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+                        <FormEngine
+                          ref={formEngineRef}
+                          collection={slug!}
+                          fields={orderedFields}
+                          defaultValues={isEdit ? entry : { ...queryParamsDefaults, ...entry }}
+                          onSubmit={handleManualSave}
+                          autosave={autosaveConfig}
+                          onDataChange={(newData) => setPreviewData({ ...entry, ...newData })}
+                          onChange={(dirty) => setIsDirty(dirty)}
+                          isLoading={saveMutation.isPending || workflowTransitionPending || isPreferenceLoading}
+                          submitLabel={isEdit ? "Save Changes" : "Create Entry"}
+                          hideSubmit
+                          readOnly={isEdit ? !canUpdate : !canCreate}
+                          passwordChangeMode={isEdit ? passwordChangeMode : null}
+                          documentId={id}
+                          defaultTabLabel={schema?.labels?.singular || 'General'}
+                        />
+                      </Suspense>
                     );
                   })()}
                   <button id="dyrected-form-submit" type="submit" form="dyrected-edit-form" className="dy-hidden" />
@@ -1425,9 +1541,7 @@ function AuditPanel({ collection, documentId }: { collection: string; documentId
 
   if (isLoading) {
     return (
-      <div className="dy-flex dy-items-center dy-justify-center dy-py-12">
-        <Loader2 className="dy-h-6 dy-w-6 dy-animate-spin dy-text-muted-foreground" />
-      </div>
+      <AdminSectionSkeleton className="dy-py-2" rows={3} />
     )
   }
 

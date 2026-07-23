@@ -25,6 +25,7 @@ import { ErrorBoundary } from "./components/error-boundary";
 import { DocumentMeta } from "./components/document-meta";
 import { AuthGate } from "./components/auth/auth-gate";
 import { AdminSplash } from "./components/layout/admin-splash";
+import { AdminNotFound, AdminNotFoundSkeleton } from "./components/layout/admin-not-found";
 import { Toaster } from "./components/ui/sonner";
 import { AdminThemeProvider, AdminThemedRoot } from "./hooks/admin-theme-provider";
 import { cn } from "./lib/utils";
@@ -134,16 +135,25 @@ function CollectionRoute() {
   const { slug } = useParams();
   const { client } = useDyrected();
 
-  const { data: schemas } = useQuery({
+  const { data: schemas, isLoading } = useQuery({
     queryKey: ["schemas"],
     queryFn: () => client?.getSchemas() || Promise.resolve({ collections: [], globals: [] }),
     enabled: !!client,
   });
 
+  if (isLoading || !schemas) {
+    return <AdminNotFoundSkeleton />;
+  }
+
   const schema = schemas?.collections.find((c: any) => c.slug === slug);
 
-  if (schema?.admin?.hidden) {
-    return <div>404: Not Found</div>;
+  if (!schema || schema?.admin?.hidden) {
+    return (
+      <AdminNotFound
+        title="Collection not found"
+        description={`We could not find a visible collection called "${slug}". It may have been renamed, hidden, or removed from this admin.`}
+      />
+    );
   }
 
   if (schema?.upload) {
@@ -192,6 +202,7 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
             <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
             <Route path="/globals/:slug" element={<GlobalEditorPage />} />
             <Route path="/setup" element={<SetupPage />} />
+            <Route path="*" element={<AdminNotFound />} />
           </Routes>
         </ErrorBoundary>
       </AdminShell>

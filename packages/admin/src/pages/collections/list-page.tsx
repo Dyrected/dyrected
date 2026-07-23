@@ -43,7 +43,6 @@ import { MediaGrid } from "../../components/media/media-grid"
 import { resolvePreviewUrl } from "../../lib/preview-url"
 import { getMediaUrl, cn, getSiteUrl } from "../../lib/utils"
 import jexl from 'jexl'
-import { SpreadsheetEditor } from "../../components/ui/spreadsheet-editor"
 import { useDebouncedValue } from "../../hooks/use-debounced-value"
 import { WorkflowTransitionMenu } from "../../components/workflow/workflow-transition-controls"
 import {
@@ -53,6 +52,13 @@ import {
   resolveWorkflowStateFromDocument,
 } from "../../lib/workflow-ui"
 import { resolveDocumentTitle } from "../../lib/document-title"
+import { AdminMediaSkeleton, AdminPageSkeleton } from "../../components/layout/admin-loading"
+import { AdminNotFound } from "../../components/layout/admin-not-found"
+
+const SpreadsheetEditor = React.lazy(async () => {
+  const module = await import("../../components/ui/spreadsheet-editor")
+  return { default: module.SpreadsheetEditor }
+})
 
 
 function SortableColumnItem({
@@ -238,7 +244,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
   }, [setSearchParams]);
 
   // Fetch schema to know fields
-  const { data: schemas } = useQuery({
+  const { data: schemas, isLoading: isLoadingSchemas } = useQuery({
     queryKey: ["schemas"],
     queryFn: () => client!.getSchemas(),
     enabled: !!client,
@@ -845,8 +851,17 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
 
 
 
+  if (isLoadingSchemas || !schemas) {
+    return <AdminPageSkeleton />
+  }
+
   if (!schema) {
-    return <div>Collection not found: {slug}</div>
+    return (
+      <AdminNotFound
+        title="Collection not found"
+        description={`We could not find a visible collection called "${slug}". It may have been renamed, hidden, or removed from this admin.`}
+      />
+    )
   }
 
   // Evaluate collection-level read access
@@ -947,9 +962,7 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
         />
 
         {isLoading ? (
-          <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
-            <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent" />
-          </div>
+          <AdminMediaSkeleton />
         ) : (
           <MediaGrid
             items={response?.docs || []}
@@ -1173,19 +1186,21 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
       />
       <div className="dy-min-w-0">
         {isLoading ? (
-          <div className="dy-flex dy-h-[400px] dy-items-center dy-justify-center">
-            <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary dy-border-t-transparent" />
-          </div>
+          <AdminPageSkeleton />
         ) : localPreference.viewMode === "spreadsheet" ? (
-          <SpreadsheetEditor
-            slug={slug}
-            schema={schema}
-            data={response?.docs || []}
-            onSave={async (updates, creates) => {
-              await bulkSaveMutation.mutateAsync({ updates, creates: creates || [] })
-            }}
-            isSaving={bulkSaveMutation.isPending}
-          />
+          <React.Suspense
+            fallback={<AdminPageSkeleton />}
+          >
+            <SpreadsheetEditor
+              slug={slug}
+              schema={schema}
+              data={response?.docs || []}
+              onSave={async (updates, creates) => {
+                await bulkSaveMutation.mutateAsync({ updates, creates: creates || [] })
+              }}
+              isSaving={bulkSaveMutation.isPending}
+            />
+          </React.Suspense>
         ) : (
           <DataTable
             key={slug}

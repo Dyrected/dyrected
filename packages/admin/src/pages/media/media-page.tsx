@@ -17,7 +17,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../../components/ui/dialog"
-import { ScrollArea } from "../../components/ui/scroll-area"
 import { AspectRatio } from "../../components/ui/aspect-ratio"
 import {
   Select,
@@ -68,6 +67,7 @@ import { ImageCropDialog } from "../../components/forms/fields/image-crop-dialog
 import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { CollectionListSlotProps } from "../../types/admin-components"
 import jexl from "jexl"
+import { AdminMediaSkeleton } from "../../components/layout/admin-loading"
 
 type ViewMode = "grid" | "list"
 
@@ -391,11 +391,9 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
         componentProps={collectionComponentProps}
       />
 
-      <ScrollArea className="dy-h-auto dy-pr-0 md:dy-h-[calc(100vh-320px)] md:dy-pr-4">
+      <div className="dy-min-w-0">
         {isLoading ? (
-          <div className="dy-flex dy-h-44 dy-items-center dy-justify-center sm:dy-h-60">
-            <div className="dy-animate-spin dy-rounded-full dy-border-4 dy-border-primary/20 dy-border-t-primary dy-h-10 dy-w-10"></div>
-          </div>
+          <AdminMediaSkeleton />
         ) : mediaResponse?.length === 0 ? (
           <div className="dy-flex dy-min-h-56 dy-flex-col dy-items-center dy-justify-center dy-rounded-2xl dy-border-2 dy-border-dashed dy-border-border/60 dy-bg-muted/5 dy-p-6 dy-text-center dy-animate-in sm:dy-h-80">
             <div className="dy-h-16 dy-w-16 dy-rounded-2xl dy-bg-muted/40 dy-flex dy-items-center dy-justify-center dy-mb-4">
@@ -438,7 +436,7 @@ export function MediaPage({ collectionSlug, schema }: { collectionSlug: string, 
             isFetchingNextPage={isFetchingNextPage}
           />
         )}
-      </ScrollArea>
+      </div>
 
       <AdminComponentSlot
         slot="afterListTable"

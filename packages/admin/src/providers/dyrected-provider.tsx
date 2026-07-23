@@ -99,6 +99,7 @@ export function DyrectedProvider({
       undefined,
   );
   const [schemas, setSchemas] = useState<AdminSchemas | null>(null);
+  const [isResolvingStoredSession, setIsResolvingStoredSession] = useState(false);
   const initialTokenUser = useMemo(
     () => (initialToken ? decodeTokenPayload(initialToken) : null),
     [initialToken],
@@ -230,27 +231,47 @@ export function DyrectedProvider({
   );
 
   useEffect(() => {
-    if (initialToken || !client || !schemas || activeUser) return;
+    if (initialToken || !client || !schemas || activeUser) {
+      setIsResolvingStoredSession(false);
+      return;
+    }
     const token = localStorage.getItem("dyrected_token");
     const resolvedCollectionSlug =
       authCollectionSlug || getAdminCollectionSlug(schemas);
 
-    if (!token || !resolvedCollectionSlug) return;
+    if (!token || !resolvedCollectionSlug) {
+      setIsResolvingStoredSession(false);
+      return;
+    }
 
+    let cancelled = false;
+    setIsResolvingStoredSession(true);
     client.setToken(token);
     client
       .collection(resolvedCollectionSlug)
       .me()
       .then(
-        (nextUser) => setUser(nextUser as AdminUser),
+        (nextUser) => {
+          if (cancelled) return;
+          setUser(nextUser as AdminUser);
+        },
         (error) => {
+          if (cancelled) return;
           if (shouldClearStoredAuth(error)) {
             clearPersistedAuthState(client);
             return;
           }
           setUser(null);
         },
-      );
+      )
+      .finally(() => {
+        if (cancelled) return;
+        setIsResolvingStoredSession(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     activeUser,
     authCollectionSlug,
@@ -287,6 +308,7 @@ export function DyrectedProvider({
         setToken,
         logout,
         isAuthenticated: !!baseUrl && !!apiKey,
+        isResolvingStoredSession,
         schemas,
         user: activeUser,
         initialToken,

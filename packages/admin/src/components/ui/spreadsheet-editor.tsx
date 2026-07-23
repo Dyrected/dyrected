@@ -15,14 +15,22 @@ import type { Field as FieldSchema } from "@dyrected/sdk"
 import { Button } from "./button"
 import { Popover, PopoverContent, PopoverAnchor } from "./popover"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./sheet"
-import { RichTextEditor } from "../forms/fields/rich-text-editor"
 import { JsonEditor } from "../forms/fields/json-editor"
 import { RelationshipPicker } from "../forms/fields/relationship-picker"
-import { MediaPicker } from "../forms/fields/media-picker"
 import { IconPicker } from "../forms/fields/icon-picker"
 import { getMediaUrl, cn, getDisplayFilename } from "../../lib/utils"
 import { Undo2, Save } from "lucide-react"
 import { FieldRenderer } from "../forms/field-renderer"
+
+const RichTextEditor = React.lazy(async () => {
+  const module = await import("../forms/fields/rich-text-editor")
+  return { default: module.RichTextEditor }
+})
+
+const MediaPicker = React.lazy(async () => {
+  const module = await import("../forms/fields/media-picker")
+  return { default: module.MediaPicker }
+})
 
 function useFieldOptions(field: Field, collection: string, siblingValues: Record<string, unknown>) {
   const { client } = useDyrected()
@@ -631,11 +639,13 @@ export function SpreadsheetEditor({
           </SheetHeader>
           <div className="dy-flex-1 dy-py-4 dy-overflow-y-auto">
             {activePopover && activePopover.field.type === "richText" && (
-              <RichTextEditor
-                value={typeof localDraft === "string" ? localDraft : ""}
-                onChange={(val) => setLocalDraft(val)}
-                collection={slug}
-              />
+              <React.Suspense fallback={<div className="dy-h-40 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+                <RichTextEditor
+                  value={typeof localDraft === "string" ? localDraft : ""}
+                  onChange={(val) => setLocalDraft(val)}
+                  collection={slug}
+                />
+              </React.Suspense>
             )}
           </div>
         </SheetContent>
@@ -719,12 +729,14 @@ export function SpreadsheetEditor({
 
                 if (isMediaRel) {
                   return (
-                    <MediaPicker
-                      value={localDraft}
-                      onChange={handleRelationChange}
-                      collection={activePopover.field.relationTo || "media"}
-                      multiple={activePopover.field.hasMany}
-                    />
+                    <React.Suspense fallback={<div className="dy-h-24 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+                      <MediaPicker
+                        value={localDraft}
+                        onChange={handleRelationChange}
+                        collection={activePopover.field.relationTo || "media"}
+                        multiple={activePopover.field.hasMany}
+                      />
+                    </React.Suspense>
                   )
                 }
 
@@ -739,15 +751,17 @@ export function SpreadsheetEditor({
               })()}
 
               {activePopover.field.type === "image" && (
-                <MediaPicker
-                  value={localDraft}
-                  onChange={(val) => {
-                    setLocalDraft(val)
-                    commitValue(val)
-                  }}
-                  collection={activePopover.field.relationTo || "media"}
-                  multiple={activePopover.field.hasMany}
-                />
+                <React.Suspense fallback={<div className="dy-h-24 dy-rounded-md dy-border dy-border-dashed dy-border-border/70 dy-bg-muted/20" />}>
+                  <MediaPicker
+                    value={localDraft}
+                    onChange={(val) => {
+                      setLocalDraft(val)
+                      commitValue(val)
+                    }}
+                    collection={activePopover.field.relationTo || "media"}
+                    multiple={activePopover.field.hasMany}
+                  />
+                </React.Suspense>
               )}
 
               {activePopover.field.type === "icon" && (

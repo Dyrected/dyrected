@@ -9,6 +9,7 @@ import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { AdminComponentSlot } from "../../components/admin-component-slot"
 import type { AdminSchemas, DashboardSlotProps } from "../../types/admin-components"
+import { AdminPageSkeleton } from "../../components/layout/admin-loading"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -241,11 +242,7 @@ export function Dashboard() {
 
 
   if (isLoadingSchemas) {
-    return (
-      <div className="dy-flex dy-h-64 dy-items-center dy-justify-center">
-        <div className="dy-h-8 dy-w-8 dy-animate-spin dy-rounded-full dy-border-b-2 dy-border-primary" />
-      </div>
-    )
+    return <AdminPageSkeleton showSidebar={true} />
   }
 
   const resolvedSchemas = schemas as AdminSchemas
