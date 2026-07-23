@@ -81,7 +81,7 @@ Use `adminAuth` when you need to control how people log in to the dashboard itse
 
 ### `email`
 
-The `email` config wires transactional messages such as invites and password resets to your provider.
+The `email` config wires transactional messages such as invites, password resets, and password-changed security notifications to your provider. In practice, treat it as required before any production handoff that depends on auth email.
 
 ### `logger`
 

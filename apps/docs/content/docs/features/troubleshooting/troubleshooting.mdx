@@ -17,7 +17,7 @@ Most Dyrected problems fall into one of these buckets:
 | Sign-in, first-user setup, or session checks fail | The auth collection or JWT setup is incomplete                      | [Auth is not working](#auth-is-not-working)                             |
 | The preview link or live pane does not work       | `previewUrl` is wrong, or the frontend preview wiring is incomplete | [Preview is not working](#preview-is-not-working)                       |
 | Uploads fail or files do not render               | Storage or upload-collection setup is incomplete                    | [Uploads or media are not working](#uploads-or-media-are-not-working)   |
-| Reset, invite, or welcome emails never arrive     | Email transport is unset or only development fallback is active     | [Auth emails are not sending](#auth-emails-are-not-sending)             |
+| Reset, invite, welcome, or password-changed emails never arrive     | Email transport is unset or only development fallback is active     | [Auth emails are not sending](#auth-emails-are-not-sending)             |
 | Request logs appear, but request bodies do not    | Body capture is disabled, unsampled, non-JSON, or intentionally skipped | [Request bodies are missing from logs](#request-bodies-are-missing-from-logs) |
 
 ## Recommended troubleshooting order
@@ -201,7 +201,7 @@ Use these pages for the deeper path:
 
 ## Auth emails are not sending
 
-If password reset, invite, or welcome flows complete but no email arrives, check whether you are relying on development fallback or expecting production delivery.
+If password reset, invite, welcome, or password-changed flows complete but no email arrives, check whether you are relying on development fallback or expecting production delivery.
 
 The important split is:
 
@@ -214,8 +214,14 @@ That means the first checks are:
 - confirm the provider credentials you added are valid
 - if you are in development with no provider, check the server logs for the Ethereal preview URL
 - if `nodemailer` is not installed in that development setup, Dyrected logs a warning and skips sending
+- if you are testing the self-hosted admin, check the dashboard's **Needs attention** panel for the "Email delivery is not configured" warning
 
-Also keep the flow semantics straight: the auth endpoint may still succeed even if sending fails, because these built-in auth emails are best-effort.
+Two behavior details matter here:
+
+- the auth endpoint can still return success even if the send fails, because these built-in auth emails are best-effort
+- the self-hosted admin invite flow still produces a copyable invite URL, so you can confirm link generation separately from provider delivery
+
+Also keep the flow semantics straight: a password reset sends two different auth emails over the whole flow. `forgot-password` sends the reset message, and a successful `reset-password` sends the password-changed notification.
 
 Use [Email Overview](/docs/features/email/overview) for the transport setup and built-in email behavior.
 

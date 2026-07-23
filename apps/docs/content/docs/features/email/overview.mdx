@@ -99,16 +99,18 @@ Dyrected currently sends four auth-related emails for you:
 | Email | Trigger | What the template receives |
 | --- | --- | --- |
 | Welcome | first user registration or invite acceptance | `{ email }` |
-| Invite | authenticated `invite` call | `{ token, invitedByEmail? }` |
+| Invite | authenticated `invite` call | `{ token, invitedByEmail?, url? }` |
 | Reset password | `forgot-password` | `{ token, url? }` |
 | Password changed | successful `reset-password` | `{ email }` |
 
 All four are best-effort. The API flow still completes if sending fails, and the failure is logged on the server.
 
-Two details matter here:
+Four details matter here:
 
-- `forgot-password` can receive a `resetUrl`; if it does, the reset email gets both the raw token and the full link
+- `forgot-password` can receive a `resetUrl`; if it does, the reset email gets both the raw token and the full link, and the default template prefers the link
+- `invite` can receive an `inviteUrl`; if it does, the invite email gets both the raw token and the full acceptance link, and the default template prefers the link
 - invite tokens currently expire in 7 days, and reset tokens expire in 1 hour
+- a successful password reset also sends the password-changed notification as a security alert
 
 For the endpoint-by-endpoint behavior, use [Authentication Operations](/docs/features/authentication/operations).
 
@@ -145,13 +147,20 @@ export default defineConfig({
         subject: 'Welcome to Acme',
         html: `<p>Your account is ready for ${email}.</p>`,
       }),
-      invite: ({ token, invitedByEmail }) => ({
+      invite: ({ token, invitedByEmail, url }) => ({
         subject: "You've been invited",
-        html: `
-          <p>${invitedByEmail ?? 'Someone'} invited you to join.</p>
-          <p>Your invite token is:</p>
-          <pre>${token}</pre>
-        `,
+        html: url
+          ? `
+            <p>${invitedByEmail ?? 'Someone'} invited you to join.</p>
+            <p><a href="${url}">Accept your invitation</a></p>
+            <p>If the button does not work, copy this link:</p>
+            <pre>${url}</pre>
+          `
+          : `
+            <p>${invitedByEmail ?? 'Someone'} invited you to join.</p>
+            <p>Your invite token is:</p>
+            <pre>${token}</pre>
+          `,
       }),
       resetPassword: ({ token, url }) => ({
         subject: 'Reset your password',
@@ -171,6 +180,8 @@ export default defineConfig({
 ```
 
 The built-in default templates escape user-supplied values before rendering. If you replace them with custom HTML, you own the safety of that markup.
+
+For most projects, the recommended path is to pass `inviteUrl` and `resetUrl` from the product surface that should finish the flow. That keeps both emails link-first, matches the admin experience, and avoids teaching end users how to handle raw tokens unless you intentionally want a token-based flow.
 
 Keep the auth endpoint semantics on [Authentication Operations](/docs/features/authentication/operations). This page is for the transport setup, the built-in email triggers, and template customization.
 

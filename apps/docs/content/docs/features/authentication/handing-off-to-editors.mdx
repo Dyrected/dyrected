@@ -26,7 +26,7 @@ That collection is where dashboard users live by default for self-hosted setups.
 The first editor handoff is different depending on where the admin is running:
 
 - **Dyrected Cloud:** add team members by invitation
-- **Self-hosted admin:** create the user directly in your own admin
+- **Self-hosted admin:** invite them from your own admin and let them set their password
 
 Treat those as two different operational paths. The right first step is not the same.
 
@@ -51,10 +51,18 @@ The practical first handoff is:
 
 1. Create the first admin account yourself.
 2. Confirm the admin route, content route, and preview route all work.
-3. Add one additional user in the `__admins` collection and give them the least powerful role your schema actually exposes.
-4. Watch them complete one real edit before you widen access.
+3. Invite the next editor from the auth-backed admin collection, instead of typing their password in manually.
+4. Give them the least powerful role your schema actually exposes, if your auth collection has a selectable role field.
+5. Watch them complete one real edit before you widen access.
 
 This is slower than bulk onboarding, but it catches schema and permission mistakes while the system is still easy to correct.
+
+The current self-hosted admin flow supports a cleaner client handoff:
+
+- the admin can send the invite email from the list view
+- the admin can copy the invite URL and share it manually if needed
+- invited users appear in the admin list immediately as pending users
+- the invited person sets their own password when they accept
 
 ## What the self-hosted starter gives you today
 
@@ -65,7 +73,22 @@ In the current `dyrected init` starter, the generated `__admins` collection incl
 
 Use that starter shape as the source of truth for the first self-hosted handoff. If you need more roles later, add them deliberately in your own schema instead of assuming the scaffold already created them.
 
+If your auth collection defines a selectable role field with fixed options, the invite dialog can assign that role before acceptance. If your schema does not expose a clean selectable role field, keep the handoff simple and adjust roles after acceptance.
+
 For Cloud, keep the focus on invitations rather than on editing roles in the hosted product for now.
+
+## Email is part of the handoff, not an optional polish step
+
+For a real client or editor handoff, treat backend email delivery as part of setup. Invites, password resets, and password-changed security notifications all depend on it.
+
+During development, Dyrected can fall back to an Ethereal preview inbox. That is useful for testing, but it is not a client-ready delivery path. Before handoff:
+
+1. Connect a real email provider.
+2. Send one invite to a real inbox.
+3. Confirm the recipient sees a clickable link, not a raw token-based workflow unless you intentionally designed it that way.
+4. Confirm the recipient can accept the invite and reach the admin.
+
+If email is not configured, the self-hosted admin dashboard now flags that in the **Needs attention** panel so the gap is visible before you hand the system over.
 
 ## Permission boundaries to think about early
 
@@ -83,9 +106,10 @@ For most first handoffs:
 
 - keep admin access limited
 - use invitations for Cloud
-- create the first additional account directly in self-hosted admin
+- use invitations for the first additional self-hosted admin account too
 - only mention roles where your self-hosted schema actually exposes them
 - test pages, globals, and preview before widening access
+- verify email delivery before the handoff meeting
 
 The goal is confidence, not speed.
 
