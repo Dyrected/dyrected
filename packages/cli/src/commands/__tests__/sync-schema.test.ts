@@ -75,4 +75,21 @@ describe("sanitizeSchemaForCloudSync", () => {
       "globals[0].hooks.afterChange[0]",
     ]);
   });
+
+  it("fails sync validation when a declarative hook uses unsupported context", () => {
+    expect(() =>
+      sanitizeSchemaForCloudSync({
+        collections: [
+          {
+            slug: "posts",
+            hooks: {
+              beforeRead: ["doc.title"],
+            },
+            fields: [],
+          },
+        ],
+        globals: [],
+      }),
+    ).toThrow(/collections\[0\]\.hooks\.beforeRead\[0\]/);
+  });
 });

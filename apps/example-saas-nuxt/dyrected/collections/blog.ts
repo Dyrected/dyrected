@@ -1,16 +1,16 @@
 import { defineCollection } from "@dyrected/core";
-import { Media } from "./media.ts";
-import { Authors } from "./authors.ts";
-import { blogSeed } from "../seed.ts";
+import { Media } from "./media.js";
+import { Authors } from "./authors.js";
+import { blogSeed } from "../seed.js";
 
 export const Blog = defineCollection({
   slug: "blog",
   labels: { plural: "Articles", singular: "Article" },
   access: {
     read: true,
-    create: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
-    update: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
-    delete: { policy: "hasRole", params: { role: "admin" } },
+    create: { policy: "canManageContent" },
+    update: { policy: "canManageContent" },
+    delete: { policy: "isAdmin" },
   },
   admin: {
     useAsTitle: "title",
@@ -22,7 +22,17 @@ export const Blog = defineCollection({
   },
   fields: [
     { name: "title", type: "text", required: true },
-    { name: "slug", type: "text", required: true, unique: true },
+    {
+      name: "slug",
+      type: "text",
+      required: true,
+      unique: true,
+      admin: {
+        hooks: {
+          onChange: "siblingData.title != null ? siblingData.title : value",
+        },
+      },
+    },
     {
       name: "status",
       label: "Status",

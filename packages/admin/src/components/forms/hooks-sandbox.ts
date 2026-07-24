@@ -3,6 +3,55 @@ import jexl from "jexl"
 let sandboxIframe: HTMLIFrameElement | null = null
 const messageHandlers = new Map<string, (result: any) => void>()
 const SERIALIZED_ADMIN_HOOK_PREFIX = "__dyrected_fn__:"
+const ALLOWED_DECLARATIVE_ROOTS = new Set(["value", "siblingData", "data"])
+
+function collectRootIdentifiers(node: any, roots: Set<string>, seen = new Set<any>()) {
+  if (!node || typeof node !== "object" || seen.has(node)) return
+  seen.add(node)
+
+  if (node.type === "Identifier") {
+    if (node.from) {
+      collectRootIdentifiers(node.from, roots, seen)
+      return
+    }
+
+    if (typeof node.value === "string" && node.value !== "null") {
+      roots.add(node.value)
+    }
+    return
+  }
+
+  if (Array.isArray(node)) {
+    node.forEach((entry) => collectRootIdentifiers(entry, roots, seen))
+    return
+  }
+
+  Object.values(node).forEach((value) => {
+    if (Array.isArray(value)) {
+      value.forEach((entry) => collectRootIdentifiers(entry, roots, seen))
+      return
+    }
+
+    if (value && typeof value === "object") {
+      collectRootIdentifiers(value, roots, seen)
+    }
+  })
+}
+
+function validateDeclarativeHookExpression(hookCode: string) {
+  const compiled = jexl.compile(hookCode) as { _ast?: unknown }
+  const roots = new Set<string>()
+  collectRootIdentifiers(compiled._ast, roots)
+  const invalidRoots = [...roots].filter((root) => !ALLOWED_DECLARATIVE_ROOTS.has(root))
+
+  if (invalidRoots.length > 0) {
+    throw new Error(
+      `admin.hooks.onChange uses unsupported context ${invalidRoots
+        .map((root) => `"${root}"`)
+        .join(", ")}. Allowed context: "value", "siblingData", "data"`,
+    )
+  }
+}
 
 function initSandbox() {
   if (typeof window === "undefined" || sandboxIframe) return
@@ -74,6 +123,7 @@ export function runDeclarativeHookExpression(
   siblingData: any,
   data: any
 ) {
+  validateDeclarativeHookExpression(hookCode)
   return jexl.evalSync(hookCode, { value, siblingData, data })
 }
 

@@ -390,7 +390,7 @@ describe("Backend hooks integration", () => {
     expect(updated.extra).toBe("from-cloud");
   });
 
-  it("should fail the request when a declarative hook expression is invalid", async () => {
+  it("should fail app startup when a declarative hook expression has invalid syntax", async () => {
     const posts = defineCollection({
       slug: "posts-invalid-hook",
       hooks: {
@@ -405,15 +405,33 @@ describe("Backend hooks integration", () => {
       db,
     });
 
+    await expect(createDyrectedApp(config)).rejects.toThrow(/invalid syntax/i);
+  });
+
+  it("should fail the request when a declarative hook returns the wrong shape", async () => {
+    const posts = defineCollection({
+      slug: "posts-invalid-return",
+      hooks: {
+        beforeChange: ["'broken'"],
+      },
+      fields: [{ name: "title", type: "text" }],
+    });
+
+    const config = defineConfig({
+      collections: [posts],
+      globals: [],
+      db,
+    });
+
     const app = await createDyrectedApp(config);
-    const res = await app.request("/api/collections/posts-invalid-hook", {
+    const res = await app.request("/api/collections/posts-invalid-return", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Broken" }),
     });
 
     expect(res.status).toBe(500);
-    const dbDocs = await db.find({ collection: "posts-invalid-hook" });
+    const dbDocs = await db.find({ collection: "posts-invalid-return" });
     expect(dbDocs.total).toBe(0);
   });
 

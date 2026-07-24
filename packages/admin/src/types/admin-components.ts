@@ -3,6 +3,7 @@ import type {
   AdminConfig,
   Block,
   CollectionConfig,
+  ConfigDiagnostic,
   Field as FieldSchema,
   GlobalConfig,
   PublicAdminAuthConfig,
@@ -17,6 +18,7 @@ export interface AdminSchemas {
   admin?: AdminConfig;
   adminAuth?: PublicAdminAuthConfig;
   hasStorage?: boolean;
+  configDiagnostics?: ConfigDiagnostic[];
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;

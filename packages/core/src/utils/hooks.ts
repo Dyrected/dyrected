@@ -10,6 +10,10 @@ import type {
 } from "../types/index.js";
 import { getConfigLogger } from "../observability.js";
 import jexl from "jexl";
+import {
+  assertValidDeclarativeHookExpression,
+  assertValidDeclarativeHookResult,
+} from "./declarative-hooks.js";
 
 // Internal loose type used by the hook runner.
 // Using `any` for the parameter type is intentional — TypeScript's function
@@ -51,7 +55,17 @@ export async function runCollectionHooks(
     operation?: "create" | "update" | "delete";
     [key: string]: unknown;
   },
-  options: { isolated?: boolean } = {},
+  options: {
+    isolated?: boolean;
+    surface?:
+      | "collection.beforeRead"
+      | "collection.afterRead"
+      | "collection.beforeChange"
+      | "global.beforeRead"
+      | "global.afterRead"
+      | "global.beforeChange";
+    path?: string;
+  } = {},
 ): Promise<any> {
   if (!hooks || hooks.length === 0) {
     return args.data ?? args.doc ?? args.query ?? undefined;
@@ -76,10 +90,26 @@ export async function runCollectionHooks(
       };
       const result =
         typeof hook === "string"
-          ? await jexl.eval(hook, hookArgs)
+          ? await (() => {
+              if (options.surface) {
+                assertValidDeclarativeHookExpression(
+                  hook,
+                  options.surface,
+                  options.path ?? options.surface,
+                );
+              }
+              return jexl.eval(hook, hookArgs);
+            })()
           : await hook(hookArgs);
 
       if (result !== undefined) {
+        if (typeof hook === "string" && options.surface) {
+          assertValidDeclarativeHookResult(
+            result,
+            options.surface,
+            options.path ?? options.surface,
+          );
+        }
         currentPayload =
           typeof hook === "string" &&
           currentPayload &&
@@ -121,6 +151,7 @@ export async function executeFieldBeforeChange(
   originalDoc: Record<string, unknown> | null,
   user: unknown,
   db?: unknown,
+  pathPrefix = "",
 ): Promise<Record<string, unknown>> {
   if (!data || typeof data !== "object") return data;
 
@@ -128,6 +159,7 @@ export async function executeFieldBeforeChange(
 
   for (const field of fields) {
     if (!field.name) continue;
+    const fieldPath = pathPrefix ? `${pathPrefix}.${field.name}` : field.name;
 
     const value = result[field.name];
     const origValue = originalDoc?.[field.name];
@@ -147,7 +179,14 @@ export async function executeFieldBeforeChange(
         };
         updatedValue =
           typeof hook === "string"
-            ? await jexl.eval(hook, hookArgs)
+            ? await (() => {
+                assertValidDeclarativeHookExpression(
+                  hook,
+                  "field.beforeChange",
+                  fieldPath,
+                );
+                return jexl.eval(hook, hookArgs);
+              })()
             : await (hook as unknown as AnyFieldBeforeChangeHook)(hookArgs);
       }
       result[field.name] = updatedValue;
@@ -162,6 +201,7 @@ export async function executeFieldBeforeChange(
           origValue as Record<string, unknown> | null,
           user,
           db,
+          fieldPath,
         );
       } else if (
         field.type === "array" &&
@@ -181,6 +221,7 @@ export async function executeFieldBeforeChange(
               origItem,
               user,
               db,
+              fieldPath,
             ),
           );
         }
@@ -207,6 +248,7 @@ export async function executeFieldBeforeChange(
                 origBlock,
                 user,
                 db,
+                fieldPath,
               ),
             );
           } else {

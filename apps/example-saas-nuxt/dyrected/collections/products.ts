@@ -1,6 +1,6 @@
 import { defineCollection } from "@dyrected/core";
-import { Media } from "./media.ts";
-import { productsSeed } from "../seed.ts";
+import { Media } from "./media.js";
+import { productsSeed } from "../seed.js";
 
 export const Products = defineCollection({
   slug: "products",

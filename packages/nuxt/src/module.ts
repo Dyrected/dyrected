@@ -12,7 +12,12 @@ import {
 import { join } from "path";
 import { existsSync } from "fs";
 import { createRequire } from "module";
-import type { DyrectedConfig } from "@dyrected/core";
+import {
+  assertValidDeclarativeAccessInConfig,
+  assertValidDeclarativeHooksInConfig,
+  isConfigValidationError,
+  type DyrectedConfig,
+} from "@dyrected/core";
 
 export interface ModuleOptions extends DyrectedConfig {
   /**
@@ -48,6 +53,13 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
   } as any,
   async setup(options, nuxt) {
     const resolver = createResolver(import.meta.url);
+    const validateDeclarativeConfig = (
+      configObj: Pick<DyrectedConfig, "blocks" | "collections" | "globals" | "accessPolicies">,
+      source: string,
+    ) => {
+      assertValidDeclarativeHooksInConfig(configObj, source);
+      assertValidDeclarativeAccessInConfig(configObj, source);
+    };
 
     // Render images through @nuxt/image (<NuxtImg>) so the Dyrected image and
     // media components get optimization, the way the Next integration uses
@@ -179,10 +191,15 @@ const module: NuxtModule<ModuleOptions> = defineNuxtModule<ModuleOptions>({
           const escapedConfigPath = configPath.replace(/\\/g, "/");
           return `// @ts-ignore
 import { useRuntimeConfig } from "#imports";
+import { assertValidDeclarativeAccessInConfig, assertValidDeclarativeHooksInConfig, formatConfigDiagnostics, isConfigValidationError } from "@dyrected/core";
 // @ts-ignore
 import userConfigRaw from "${escapedConfigPath}";
 
 const defineNitroPlugin = (def) => def;
+const validateDeclarativeConfig = (configObj, source) => {
+  assertValidDeclarativeHooksInConfig(configObj, source);
+  assertValidDeclarativeAccessInConfig(configObj, source);
+};
 
 export default defineNitroPlugin(async (nitroApp) => {
   const runtimeConfig = useRuntimeConfig().dyrected;
@@ -190,6 +207,7 @@ export default defineNitroPlugin(async (nitroApp) => {
   try {
     const userConfig = userConfigRaw.default || userConfigRaw;
     const configObj = (userConfig.default && (userConfig.default.collections || userConfig.default.globals || userConfig.default.db)) ? userConfig.default : userConfig;
+    validateDeclarativeConfig(configObj, runtimeConfig?.configPath || "nuxt.config");
 
     if (configObj) {
       globalThis.__dyrected_config = configObj;
@@ -212,6 +230,7 @@ export default defineNitroPlugin(async (nitroApp) => {
         try {
           const newConfig = await loadDyrectedConfig(runtimeConfig.configPath);
           const newObj = (newConfig.default && (newConfig.default.collections || newConfig.default.globals || newConfig.default.db)) ? newConfig.default : newConfig;
+          validateDeclarativeConfig(newObj, runtimeConfig.configPath);
           globalThis.__dyrected_config = newObj;
           globalThis.__dyrected_config_version = (globalThis.__dyrected_config_version || 0) + 1;
           if (newObj.db) {
@@ -223,7 +242,11 @@ export default defineNitroPlugin(async (nitroApp) => {
             console.log('[dyrected/nuxt] Storage hot-reloaded');
           }
         } catch (e) {
-          console.error('[dyrected/nuxt] Hot-reload failed:', e);
+          if (isConfigValidationError(e)) {
+            console.error(formatConfigDiagnostics(e.source, e.diagnostics, { color: true }));
+          } else {
+            console.error('[dyrected/nuxt] Hot-reload failed:', e);
+          }
         }
       };
       watch(runtimeConfig.configPath, (eventType) => {
@@ -234,13 +257,38 @@ export default defineNitroPlugin(async (nitroApp) => {
       });
     }
   } catch (err) {
-    console.error("[dyrected/nuxt] Failed to re-attach database:", err);
+    if (isConfigValidationError(err)) {
+      console.error(formatConfigDiagnostics(err.source, err.diagnostics, { color: true }));
+    } else {
+      console.error("[dyrected/nuxt] Failed to re-attach config adapters:", err);
+    }
   }
 });
 `;
         }
       });
       addServerPlugin(dbPluginTemplate.dst);
+
+      try {
+        const configModule = await import(configPath);
+        const userConfig = (configModule as { default?: unknown }).default ?? configModule;
+        const configObj =
+          userConfig &&
+          typeof userConfig === "object" &&
+          "default" in (userConfig as Record<string, unknown>) &&
+          ((((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.collections) ||
+            (((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.globals) ||
+            (((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.db))
+            ? ((userConfig as Record<string, unknown>).default as Pick<
+                DyrectedConfig,
+                "blocks" | "collections" | "globals" | "accessPolicies"
+              >)
+            : (userConfig as Pick<DyrectedConfig, "blocks" | "collections" | "globals" | "accessPolicies">);
+
+        validateDeclarativeConfig(configObj, configPath);
+      } catch (error) {
+        console.error("[dyrected/nuxt] Config validation failed:", error);
+      }
     } else {
       console.warn("[dyrected/nuxt] Could not find dyrected.config.ts. Self-hosted database re-hydration might fail.");
     }

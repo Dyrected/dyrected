@@ -1,6 +1,6 @@
 import { defineCollection } from "@dyrected/core";
-import { Media } from "./media.ts";
-import { authorsSeed } from "../seed.ts";
+import { Media } from "./media.js";
+import { authorsSeed } from "../seed.js";
 
 export const Authors = defineCollection({
   slug: "authors",

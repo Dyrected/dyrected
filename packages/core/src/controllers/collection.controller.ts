@@ -199,6 +199,10 @@ export class CollectionController {
         user,
         db: readonlyDb,
       },
+      {
+        surface: "collection.beforeRead",
+        path: `collection:${this.collection.slug}.hooks.beforeRead`,
+      },
     );
     if (beforeReadResult !== undefined) {
       where = beforeReadResult;
@@ -535,6 +539,9 @@ export class CollectionController {
       user,
       operation: "create",
       db: readonlyDb,
+    }, {
+      surface: "collection.beforeChange",
+      path: `collection:${this.collection.slug}.hooks.beforeChange`,
     });
 
     const doc = this.collection.workflow
@@ -583,6 +590,9 @@ export class CollectionController {
       req: c.req,
       user,
       db: readonlyDb,
+    }, {
+      surface: "collection.afterRead",
+      path: `collection:${this.collection.slug}.hooks.afterRead`,
     });
     const finalDoc = await executeFieldAfterRead(
       this.collection.fields,
@@ -699,6 +709,9 @@ export class CollectionController {
       user,
       operation: "create",
       db: readonlyDb,
+    }, {
+      surface: "collection.beforeChange",
+      path: `collection:${this.collection.slug}.hooks.beforeChange`,
     });
 
     const doc = await db.create({
@@ -728,6 +741,9 @@ export class CollectionController {
       req: c.req,
       user,
       db: readonlyDb,
+    }, {
+      surface: "collection.afterRead",
+      path: `collection:${this.collection.slug}.hooks.afterRead`,
     });
     const finalDoc = await executeFieldAfterRead(
       this.collection.fields,
@@ -852,6 +868,9 @@ export class CollectionController {
       user,
       operation: "update",
       db: readonlyDb,
+    }, {
+      surface: "collection.beforeChange",
+      path: `collection:${this.collection.slug}.hooks.beforeChange`,
     });
 
     const doc = this.collection.workflow
@@ -904,6 +923,9 @@ export class CollectionController {
       req: c.req,
       user,
       db: readonlyDb,
+    }, {
+      surface: "collection.afterRead",
+      path: `collection:${this.collection.slug}.hooks.afterRead`,
     });
     const finalDoc = await executeFieldAfterRead(
       this.collection.fields,

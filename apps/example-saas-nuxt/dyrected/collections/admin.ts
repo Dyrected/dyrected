@@ -22,8 +22,8 @@ export const Admin = defineCollection({
       label: "Roles",
       defaultValue: ["viewer"],
       access: {
-        read: { policy: "hasRole", params: { role: "admin" } },
-        update: { policy: "hasRole", params: { role: "admin" } },
+        read: { policy: "isAdmin" },
+        update: { policy: "isAdmin" },
       },
       options: [
         { label: "Admin", value: "admin" },

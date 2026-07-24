@@ -1,15 +1,15 @@
 import { defineCollection } from "@dyrected/core";
-import { Media } from "./media.ts";
-import { pagesSeed } from "../seed.ts";
+import { Media } from "./media.js";
+import { pagesSeed } from "../seed.js";
 
 export const Pages = defineCollection({
   slug: "pages",
   labels: { plural: "Pages", singular: "Page" },
   access: {
     read: true,
-    create: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
-    update: { policy: "hasRole", params: { roles: ["admin", "editor"] } },
-    delete: { policy: "hasRole", params: { role: "admin" } },
+    create: { policy: "canManageContent" },
+    update: { policy: "canManageContent" },
+    delete: { policy: "isAdmin" },
   },
   admin: {
     useAsTitle: "title",
@@ -61,7 +61,17 @@ export const Pages = defineCollection({
   audit: true,
   fields: [
     { name: "title", type: "text", required: true },
-    { name: "slug", type: "text", required: true, unique: true },
+    {
+      name: "slug",
+      type: "text",
+      required: true,
+      unique: true,
+      admin: {
+        hooks: {
+          onChange: "siblingData.title != null ? siblingData.title : value",
+        },
+      },
+    },
     {
       admin: {
         tab: "Layout",

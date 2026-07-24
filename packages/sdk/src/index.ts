@@ -4,6 +4,7 @@ import type {
   PublicAdminAuthConfig,
   PaginatedResult,
   FileData as Media,
+  ConfigDiagnostic,
   Field,
   Block,
   TextField,
@@ -29,6 +30,7 @@ type SchemaResponse = {
   admin?: AdminConfig;
   adminAuth?: PublicAdminAuthConfig;
   hasStorage?: boolean;
+  configDiagnostics?: ConfigDiagnostic[];
   adminHealth?: {
     emailConfigured?: boolean;
     secureAuthSecretConfigured?: boolean;

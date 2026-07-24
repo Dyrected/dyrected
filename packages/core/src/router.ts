@@ -17,6 +17,11 @@ import {
   resolveBooleanAccess,
   toHookRequestContext,
 } from "./utils/access-control.js";
+import {
+  assertValidDeclarativeAccessInConfig,
+  assertValidDeclarativeHooksInConfig,
+  collectConfigDiagnostics,
+} from "./utils/declarative-hooks.js";
 import { getConfigLogger, getRequestLogger } from "./observability.js";
 
 const SERIALIZED_ADMIN_HOOK_PREFIX = "__dyrected_fn__:";
@@ -116,6 +121,8 @@ export function registerRoutes(
       siteId && config.onSchemaFetch
         ? mergeDynamicConfig(config, await config.onSchemaFetch(siteId))
         : config;
+    assertValidDeclarativeHooksInConfig(requestConfig, "/api/schemas");
+    assertValidDeclarativeAccessInConfig(requestConfig, "/api/schemas");
     const collections = [...requestConfig.collections];
     const globals = [...requestConfig.globals];
 
@@ -250,6 +257,7 @@ export function registerRoutes(
       admin: requestConfig.admin || {},
       adminAuth: getPublicAdminAuthConfig(requestConfig.adminAuth, collections),
       hasStorage: !!requestConfig.storage,
+      configDiagnostics: collectConfigDiagnostics(requestConfig),
       adminHealth: {
         emailConfigured: !!requestConfig.email,
         secureAuthSecretConfigured: !!process.env.DYRECTED_JWT_SECRET,

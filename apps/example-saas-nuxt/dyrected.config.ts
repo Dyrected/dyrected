@@ -1,19 +1,19 @@
 import { defineConfig } from "@dyrected/core";
-import { exampleSaasAccessPolicies } from "./dyrected/access-policies.ts";
+import { exampleSaasAccessPolicies } from "./dyrected/access-policies.js";
 import { postgresAdapter } from "@dyrected/db-postgres";
 // Collections
-import { Media } from "./dyrected/collections/media.ts";
-import { Admin } from "./dyrected/collections/admin.ts";
-import { Pages } from "./dyrected/collections/pages.ts";
-import { Blog } from "./dyrected/collections/blog.ts";
-import { Products } from "./dyrected/collections/products.ts";
-import { Authors } from "./dyrected/collections/authors.ts";
-import { exampleSaasTheme } from "./theme/site-theme.ts";
+import { Media } from "./dyrected/collections/media.js";
+import { Admin } from "./dyrected/collections/admin.js";
+import { Pages } from "./dyrected/collections/pages.js";
+import { Blog } from "./dyrected/collections/blog.js";
+import { Products } from "./dyrected/collections/products.js";
+import { Authors } from "./dyrected/collections/authors.js";
+import { exampleSaasTheme } from "./theme/site-theme.js";
 
 // Globals
-import { Settings } from "./dyrected/globals/settings.ts";
-import { Navigation } from "./dyrected/globals/navigation.ts";
-import { Footer } from "./dyrected/globals/footer.ts";
+import { Settings } from "./dyrected/globals/settings.js";
+import { Navigation } from "./dyrected/globals/navigation.js";
+import { Footer } from "./dyrected/globals/footer.js";
 
 const db = postgresAdapter({
   url: process.env.DATABASE_URL as string,

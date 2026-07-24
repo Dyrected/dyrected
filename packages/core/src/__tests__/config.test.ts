@@ -258,6 +258,69 @@ describe("Configuration Helpers", () => {
     });
   });
 
+  it("rejects declarative hooks that use unsupported context for their surface", () => {
+    expect(() =>
+      normalizeConfig(
+        defineConfig({
+          collections: [
+            defineCollection({
+              slug: "posts",
+              hooks: {
+                beforeRead: ["doc.title"],
+              },
+              fields: [],
+            }),
+          ],
+          globals: [],
+          db: new MockDatabaseAdapter(),
+        }),
+      ),
+    ).toThrow(/uses unsupported context "doc"/);
+  });
+
+  it("rejects declarative access policies that use unsupported context", () => {
+    expect(() =>
+      normalizeConfig(
+        defineConfig({
+          collections: [
+            defineCollection({
+              slug: "posts",
+              access: {
+                read: { policy: "isAuthenticated" },
+              },
+              fields: [],
+            }),
+          ],
+          globals: [],
+          accessPolicies: {
+            isAuthenticated: "users != null",
+          },
+          db: new MockDatabaseAdapter(),
+        }),
+      ),
+    ).toThrow(/1\. accessPolicies\.isAuthenticated[\s\S]*uses unsupported context "users"/);
+  });
+
+  it("rejects inline declarative access strings that use unsupported context", () => {
+    expect(() =>
+      normalizeConfig(
+        defineConfig({
+          collections: [
+            defineCollection({
+              slug: "posts",
+              access: {
+                read: "query.owner == user.sub",
+              },
+              fields: [],
+            }),
+          ],
+          globals: [],
+          db: new MockDatabaseAdapter(),
+        }),
+      ),
+    ).toThrow(/1\. collections\["posts"\]\.access\.read[\s\S]*uses unsupported context "query"/);
+  });
+
   it("normalizes drafts: true to simplePublishingWorkflow", () => {
     const normalized = normalizeConfig(
       defineConfig({

@@ -1,5 +1,6 @@
 // @ts-ignore
 import { useRuntimeConfig } from "#imports";
+import { formatConfigDiagnostics, isConfigValidationError } from "@dyrected/core";
 
 const defineNitroPlugin = (def: any) => def;
 
@@ -54,7 +55,11 @@ export default defineNitroPlugin(async (nitroApp: any) => {
               }
               console.log('[dyrected/nuxt] Configuration hot-reloaded (version ' + (globalThis as any).__dyrected_config_version + ')');
             } catch (e) {
-              console.error('[dyrected/nuxt] Hot‑reload failed:', e);
+              if (isConfigValidationError(e)) {
+                console.error(formatConfigDiagnostics(e.source, e.diagnostics, { color: true }));
+              } else {
+                console.error('[dyrected/nuxt] Hot‑reload failed:', e);
+              }
             }
           };
           watch(configPath, (eventType: string) => {
@@ -75,7 +80,11 @@ export default defineNitroPlugin(async (nitroApp: any) => {
         }
       }
     } catch (err) {
-      console.error("[dyrected/nuxt] Failed to re-attach database:", err);
+      if (isConfigValidationError(err)) {
+        console.error(formatConfigDiagnostics(err.source, err.diagnostics, { color: true }));
+      } else {
+        console.error("[dyrected/nuxt] Failed to re-attach config adapters:", err);
+      }
     }
   }
 });

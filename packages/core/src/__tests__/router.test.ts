@@ -61,6 +61,7 @@ describe("Dynamic Router", async () => {
       authCollectionConfigured: false,
       uploadCollectionConfigured: false,
     });
+    expect(data.configDiagnostics).toEqual([]);
     const layoutField = data.collections[0].fields.find(
       (field: any) => field.name === "layout",
     );

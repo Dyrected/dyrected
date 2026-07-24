@@ -41,6 +41,9 @@ export class GlobalController {
       query: undefined,
       user,
       db: readonlyDb,
+    }, {
+      surface: "global.beforeRead",
+      path: `global:${this.global.slug}.hooks.beforeRead`,
     });
 
     let data = await db.getGlobal({ slug: this.global.slug });
@@ -84,6 +87,10 @@ export class GlobalController {
         req: c.req,
         user,
         db: readonlyDb,
+      },
+      {
+        surface: "global.afterRead",
+        path: `global:${this.global.slug}.hooks.afterRead`,
       },
     );
     const docWithFieldHooks = await executeFieldAfterRead(
@@ -175,6 +182,9 @@ export class GlobalController {
       user,
       operation: "update",
       db: readonlyDb,
+    }, {
+      surface: "global.beforeChange",
+      path: `global:${this.global.slug}.hooks.beforeChange`,
     });
 
     const updated = await db.updateGlobal({ slug: this.global.slug, data });
@@ -199,6 +209,9 @@ export class GlobalController {
       req: c.req,
       user,
       db: readonlyDb,
+    }, {
+      surface: "global.afterRead",
+      path: `global:${this.global.slug}.hooks.afterRead`,
     });
     const finalDoc = await executeFieldAfterRead(
       this.global.fields,

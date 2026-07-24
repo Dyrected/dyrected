@@ -1834,6 +1834,41 @@
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
+    "id": "/basics/hooks/cloud#example-1",
+    "page": "/basics/hooks/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/cloud#example-2",
+    "page": "/basics/hooks/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/cloud#example-3",
+    "page": "/basics/hooks/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/cloud#example-4",
+    "page": "/basics/hooks/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/cloud#example-5",
+    "page": "/basics/hooks/cloud",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/basics/hooks/collections#example-1",
     "page": "/basics/hooks/collections",
     "language": "ts",
@@ -1883,6 +1918,27 @@
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
+    "id": "/basics/hooks/collections#example-8",
+    "page": "/basics/hooks/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/collections#example-9",
+    "page": "/basics/hooks/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/collections#example-10",
+    "page": "/basics/hooks/collections",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/basics/hooks/context#example-1",
     "page": "/basics/hooks/context",
     "language": "ts",
@@ -1925,6 +1981,20 @@
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
+    "id": "/basics/hooks/fields#example-6",
+    "page": "/basics/hooks/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/fields#example-7",
+    "page": "/basics/hooks/fields",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/basics/hooks/globals#example-1",
     "page": "/basics/hooks/globals",
     "language": "ts",
@@ -1947,6 +2017,27 @@
   },
   {
     "id": "/basics/hooks/globals#example-4",
+    "page": "/basics/hooks/globals",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/globals#example-5",
+    "page": "/basics/hooks/globals",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/globals#example-6",
+    "page": "/basics/hooks/globals",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/hooks/globals#example-7",
     "page": "/basics/hooks/globals",
     "language": "ts",
     "classification": "syntax-checked",

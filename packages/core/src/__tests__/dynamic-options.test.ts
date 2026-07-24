@@ -157,6 +157,39 @@ describe("Backend Dynamic Option Queries", () => {
     expect(slugField.admin.hooks.onChange.startsWith("__dyrected_fn__:")).toBe(true);
   });
 
+  it("should fail schema serialization when dynamic config includes invalid declarative hook context", async () => {
+    const config = defineConfig({
+      collections: [],
+      globals: [],
+      db,
+      onSchemaFetch: async () => ({
+        collections: [
+          defineCollection({
+            slug: "posts",
+            fields: [
+              {
+                name: "slug",
+                type: "text",
+                admin: {
+                  hooks: {
+                    onChange: "doc.title",
+                  },
+                },
+              },
+            ],
+          }),
+        ],
+      }),
+    });
+
+    const app = await createDyrectedApp(config);
+    const res = await app.request("/api/schemas", {
+      headers: { "X-Site-Id": "site-1" },
+    });
+
+    expect(res.status).toBe(500);
+  });
+
   it("should resolve option values from options function or options config object via GET options route", async () => {
     const posts = defineCollection({
       slug: "posts",

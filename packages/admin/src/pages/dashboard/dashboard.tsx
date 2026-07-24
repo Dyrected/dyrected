@@ -332,6 +332,12 @@ export function Dashboard() {
   )
 
   const attentionItems: AttentionItem[] = [
+    ...((schemas?.configDiagnostics || []).map((issue) => ({
+      key: `config-${issue.source}-${issue.path}`,
+      title: `Configuration error in ${issue.path}`,
+      description: issue.message,
+      to: "/setup",
+    }))),
     ...(schemas?.adminHealth?.emailConfigured === false
       ? [{
           key: "email-not-configured",

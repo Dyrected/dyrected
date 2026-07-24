@@ -118,9 +118,7 @@ Pass your document's TypeScript type as the generic parameter `TDoc` to get
 fully typed hooks and access functions.
 
 ```ts
-export interface CollectionConfig<
-  TDoc extends object = Record<string, unknown>,
-> {
+export interface CollectionConfig<TDoc extends object = Record<string, unknown>> {
   /**
    * Unique identifier for this collection.
    *
@@ -418,8 +416,7 @@ export interface CollectionConfig<
      * @example
      * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
      */
-    previewUrl?:
-      string | ((doc: TDoc, opts: { locale?: string }) => string | null);
+    previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 
     /**
      * How the Live Preview pane communicates with the frontend.

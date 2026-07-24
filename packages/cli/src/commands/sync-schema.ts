@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import type { DyrectedConfig } from "@dyrected/core";
 import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
@@ -6,10 +7,14 @@ import { createJiti } from "jiti";
 import { runGenerateTypes } from "../utils/type-generator.js";
 import { loadCommandEnv } from "../utils/env.js";
 import { resolveAppSrcDir } from "../utils/detect.js";
+import { assertValidDeclarativeAccessInConfig, assertValidDeclarativeHooksInConfig } from "@dyrected/core";
 
-function isNamedPolicy(
-  value: unknown,
-): value is { policy: string; params?: Record<string, unknown> } {
+type CloudSyncConfig = Pick<
+  DyrectedConfig,
+  "blocks" | "collections" | "globals" | "accessPolicies" | "admin"
+>;
+
+function isNamedPolicy(value: unknown): value is { policy: string; params?: Record<string, unknown> } {
   return (
     !!value &&
     typeof value === "object" &&
@@ -18,11 +23,7 @@ function isNamedPolicy(
   );
 }
 
-function sanitizeAccessValue(
-  value: unknown,
-  location: string,
-  warnings: string[],
-): unknown {
+function sanitizeAccessValue(value: unknown, location: string, warnings: string[]): unknown {
   if (value === undefined || value === null) return value;
   if (typeof value === "boolean" || typeof value === "string") return value;
   if (isNamedPolicy(value)) return value;
@@ -68,12 +69,7 @@ function sanitizeHookMap(
 
   const sanitized = Object.fromEntries(
     Object.entries(allowStringsByKey).flatMap(([key, allowStrings]) => {
-      const value = sanitizeHookArray(
-        hooks[key],
-        `${location}.${key}`,
-        warnings,
-        { allowStrings },
-      );
+      const value = sanitizeHookArray(hooks[key], `${location}.${key}`, warnings, { allowStrings });
       return value ? [[key, value]] : [];
     }),
   );
@@ -81,26 +77,16 @@ function sanitizeHookMap(
   return Object.keys(sanitized).length > 0 ? sanitized : undefined;
 }
 
-function sanitizeField(
-  field: Record<string, any>,
-  location: string,
-  warnings: string[],
-) {
+function sanitizeField(field: Record<string, any>, location: string, warnings: string[]) {
   const sanitized = { ...field };
 
   if (sanitized.hooks) {
-    const beforeChange = sanitizeHookArray(
-      sanitized.hooks.beforeChange,
-      `${location}.hooks.beforeChange`,
-      warnings,
-      { allowStrings: true },
-    );
-    const afterRead = sanitizeHookArray(
-      sanitized.hooks.afterRead,
-      `${location}.hooks.afterRead`,
-      warnings,
-      { allowStrings: false },
-    );
+    const beforeChange = sanitizeHookArray(sanitized.hooks.beforeChange, `${location}.hooks.beforeChange`, warnings, {
+      allowStrings: true,
+    });
+    const afterRead = sanitizeHookArray(sanitized.hooks.afterRead, `${location}.hooks.afterRead`, warnings, {
+      allowStrings: false,
+    });
 
     sanitized.hooks = {
       ...(beforeChange ? { beforeChange } : {}),
@@ -141,135 +127,87 @@ function sanitizeField(
     sanitized.access = {
       ...(sanitized.access.read !== undefined
         ? {
-            read: sanitizeAccessValue(
-              sanitized.access.read,
-              `${location}.access.read`,
-              warnings,
-            ),
+            read: sanitizeAccessValue(sanitized.access.read, `${location}.access.read`, warnings),
           }
         : {}),
       ...(sanitized.access.create !== undefined
         ? {
-            create: sanitizeAccessValue(
-              sanitized.access.create,
-              `${location}.access.create`,
-              warnings,
-            ),
+            create: sanitizeAccessValue(sanitized.access.create, `${location}.access.create`, warnings),
           }
         : {}),
       ...(sanitized.access.update !== undefined
         ? {
-            update: sanitizeAccessValue(
-              sanitized.access.update,
-              `${location}.access.update`,
-              warnings,
-            ),
+            update: sanitizeAccessValue(sanitized.access.update, `${location}.access.update`, warnings),
           }
         : {}),
     };
   }
 
   if (Array.isArray(sanitized.fields)) {
-    sanitized.fields = sanitized.fields.map(
-      (child: Record<string, any>, index: number) =>
-        sanitizeField(child, `${location}.fields[${index}]`, warnings),
+    sanitized.fields = sanitized.fields.map((child: Record<string, any>, index: number) =>
+      sanitizeField(child, `${location}.fields[${index}]`, warnings),
     );
   }
 
   if (Array.isArray(sanitized.blocks)) {
-    sanitized.blocks = sanitized.blocks.map(
-      (block: Record<string, any>, blockIndex: number) => ({
-        ...block,
-        fields: Array.isArray(block.fields)
-          ? block.fields.map((child: Record<string, any>, fieldIndex: number) =>
-              sanitizeField(
-                child,
-                `${location}.blocks[${blockIndex}].fields[${fieldIndex}]`,
-                warnings,
-              ),
-            )
-          : block.fields,
-      }),
-    );
+    sanitized.blocks = sanitized.blocks.map((block: Record<string, any>, blockIndex: number) => ({
+      ...block,
+      fields: Array.isArray(block.fields)
+        ? block.fields.map((child: Record<string, any>, fieldIndex: number) =>
+            sanitizeField(child, `${location}.blocks[${blockIndex}].fields[${fieldIndex}]`, warnings),
+          )
+        : block.fields,
+    }));
   }
 
   return sanitized;
 }
 
-export function sanitizeSchemaForCloudSync(config: {
-  blocks?: Record<string, any>[];
-  collections: Record<string, any>[];
-  globals?: Record<string, any>[];
-  accessPolicies?: Record<string, unknown>;
-  admin?: Record<string, any>;
-}) {
+export function sanitizeSchemaForCloudSync(config: CloudSyncConfig) {
+  assertValidDeclarativeHooksInConfig(config, "sync:schema");
+  assertValidDeclarativeAccessInConfig(config, "sync:schema");
   const warnings: string[] = [];
 
   const blocks = (config.blocks || []).map((block, index) => ({
     ...block,
     fields: Array.isArray(block.fields)
       ? block.fields.map((field: Record<string, any>, fieldIndex: number) =>
-          sanitizeField(
-            field,
-            `blocks[${index}].fields[${fieldIndex}]`,
-            warnings,
-          ),
+          sanitizeField(field, `blocks[${index}].fields[${fieldIndex}]`, warnings),
         )
       : block.fields,
   }));
 
   const collections = config.collections.map((collection, index) => {
-    const hooks = sanitizeHookMap(
-      collection.hooks,
-      `collections[${index}].hooks`,
-      warnings,
-      {
-        beforeRead: true,
-        afterRead: true,
-        beforeChange: true,
-        afterChange: false,
-        beforeDelete: false,
-        afterDelete: false,
-      },
-    );
+    const hooks = sanitizeHookMap(collection.hooks, `collections[${index}].hooks`, warnings, {
+      beforeRead: true,
+      afterRead: true,
+      beforeChange: true,
+      afterChange: false,
+      beforeDelete: false,
+      afterDelete: false,
+    });
 
     return {
       ...collection,
       access: {
         ...(collection.access?.read !== undefined
           ? {
-              read: sanitizeAccessValue(
-                collection.access.read,
-                `collections[${index}].access.read`,
-                warnings,
-              ),
+              read: sanitizeAccessValue(collection.access.read, `collections[${index}].access.read`, warnings),
             }
           : {}),
         ...(collection.access?.create !== undefined
           ? {
-              create: sanitizeAccessValue(
-                collection.access.create,
-                `collections[${index}].access.create`,
-                warnings,
-              ),
+              create: sanitizeAccessValue(collection.access.create, `collections[${index}].access.create`, warnings),
             }
           : {}),
         ...(collection.access?.update !== undefined
           ? {
-              update: sanitizeAccessValue(
-                collection.access.update,
-                `collections[${index}].access.update`,
-                warnings,
-              ),
+              update: sanitizeAccessValue(collection.access.update, `collections[${index}].access.update`, warnings),
             }
           : {}),
         ...(collection.access?.delete !== undefined
           ? {
-              delete: sanitizeAccessValue(
-                collection.access.delete,
-                `collections[${index}].access.delete`,
-                warnings,
-              ),
+              delete: sanitizeAccessValue(collection.access.delete, `collections[${index}].access.delete`, warnings),
             }
           : {}),
         ...(collection.access?.readAudit !== undefined
@@ -284,61 +222,39 @@ export function sanitizeSchemaForCloudSync(config: {
       },
       ...(hooks ? { hooks } : {}),
       fields: Array.isArray(collection.fields)
-        ? collection.fields.map(
-            (field: Record<string, any>, fieldIndex: number) =>
-              sanitizeField(
-                field,
-                `collections[${index}].fields[${fieldIndex}]`,
-                warnings,
-              ),
+        ? collection.fields.map((field: Record<string, any>, fieldIndex: number) =>
+            sanitizeField(field, `collections[${index}].fields[${fieldIndex}]`, warnings),
           )
         : collection.fields,
     };
   });
 
   const globals = (config.globals || []).map((global, index) => {
-    const hooks = sanitizeHookMap(
-      global.hooks,
-      `globals[${index}].hooks`,
-      warnings,
-      {
-        beforeRead: true,
-        afterRead: true,
-        beforeChange: true,
-        afterChange: false,
-      },
-    );
+    const hooks = sanitizeHookMap(global.hooks, `globals[${index}].hooks`, warnings, {
+      beforeRead: true,
+      afterRead: true,
+      beforeChange: true,
+      afterChange: false,
+    });
 
     return {
       ...global,
       access: {
         ...(global.access?.read !== undefined
           ? {
-              read: sanitizeAccessValue(
-                global.access.read,
-                `globals[${index}].access.read`,
-                warnings,
-              ),
+              read: sanitizeAccessValue(global.access.read, `globals[${index}].access.read`, warnings),
             }
           : {}),
         ...(global.access?.update !== undefined
           ? {
-              update: sanitizeAccessValue(
-                global.access.update,
-                `globals[${index}].access.update`,
-                warnings,
-              ),
+              update: sanitizeAccessValue(global.access.update, `globals[${index}].access.update`, warnings),
             }
           : {}),
       },
       ...(hooks ? { hooks } : {}),
       fields: Array.isArray(global.fields)
         ? global.fields.map((field: Record<string, any>, fieldIndex: number) =>
-            sanitizeField(
-              field,
-              `globals[${index}].fields[${fieldIndex}]`,
-              warnings,
-            ),
+            sanitizeField(field, `globals[${index}].fields[${fieldIndex}]`, warnings),
           )
         : global.fields,
     };
@@ -376,24 +292,11 @@ export function registerSyncSchema(program: Command) {
     .description("Sync your local Dyrected schema with the Cloud dashboard")
     .option("-k, --api-key <key>", "Your Dyrected API Key")
     .option("-s, --site-id <id>", "Your Dyrected Site ID")
-    .option(
-      "-u, --url <url>",
-      "Cloud API URL (defaults to $DYRECTED_URL, then Dyrected Cloud)",
-    )
-    .option(
-      "-c, --config <path>",
-      "Path to your dyrected.config.ts",
-      "./dyrected.config.ts",
-    )
+    .option("-u, --url <url>", "Cloud API URL (defaults to $DYRECTED_URL, then Dyrected Cloud)")
+    .option("-c, --config <path>", "Path to your dyrected.config.ts", "./dyrected.config.ts")
     .option("--env-path <path>", "Path to an env file to load before syncing")
-    .option(
-      "--skip-on-error",
-      "Do not exit with error if sync fails (useful for CI builds)",
-    )
-    .option(
-      "--skip-types",
-      "Skip automatic type generation after a successful sync",
-    )
+    .option("--skip-on-error", "Do not exit with error if sync fails (useful for CI builds)")
+    .option("--skip-types", "Skip automatic type generation after a successful sync")
     .addHelpText(
       "after",
       `
@@ -447,8 +350,7 @@ Examples:
         const configModule = (await jiti.import(configPath)) as any;
         const config = configModule.default || configModule;
 
-        if (!config.collections)
-          throw new Error("Invalid config: No collections found.");
+        if (!config.collections) throw new Error("Invalid config: No collections found.");
 
         console.log(chalk.blue(`Syncing schema to ${apiUrl}...`));
 
@@ -462,9 +364,7 @@ Examples:
 
         if (warnings.length > 0) {
           console.warn(
-            chalk.yellow(
-              "\n⚠  Cloud sync stripped unsupported function-based access rules at these paths:",
-            ),
+            chalk.yellow("\n⚠  Cloud sync stripped unsupported function-based access rules at these paths:"),
           );
           for (const warning of warnings) {
             console.warn(chalk.yellow(`   - ${warning}`));
@@ -476,31 +376,22 @@ Examples:
           );
         }
 
-        const response = await fetch(
-          `${apiUrl}/cloud/workspaces/sites/${siteId}/schema/sync`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-              "X-API-Key": apiKey,
-            },
-            body: JSON.stringify(payload),
+        const response = await fetch(`${apiUrl}/cloud/workspaces/sites/${siteId}/schema/sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+            "X-API-Key": apiKey,
           },
-        );
+          body: JSON.stringify(payload),
+        });
 
         if (!response.ok) {
-          const error = await response
-            .json()
-            .catch(() => ({ message: response.statusText }));
-          throw new Error(
-            `Sync failed: ${error.message || response.statusText}`,
-          );
+          const error = await response.json().catch(() => ({ message: response.statusText }));
+          throw new Error(`Sync failed: ${error.message || response.statusText}`);
         }
 
-        console.log(
-          chalk.green(`✔  Schema synced successfully for site ${siteId}`),
-        );
+        console.log(chalk.green(`✔  Schema synced successfully for site ${siteId}`));
 
         if (!options.skipTypes) {
           console.log(chalk.blue("\nGenerating types from synced schema..."));
@@ -514,11 +405,7 @@ Examples:
         }
       } catch (error: any) {
         if (options.skipOnError) {
-          console.warn(
-            chalk.yellow(
-              `\n⚠  Sync failed, but skipping error as requested: ${error.message}`,
-            ),
-          );
+          console.warn(chalk.yellow(`\n⚠  Sync failed, but skipping error as requested: ${error.message}`));
           return;
         }
         console.error(chalk.red(`\nError: ${error.message}`));
