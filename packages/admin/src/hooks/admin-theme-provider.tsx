@@ -33,17 +33,18 @@ export function AdminThemeProvider({
   controller?: AdminThemeController
 }) {
   const [theme, setTheme] = usePreferences<AdminThemePreference>("theme", "system")
-  const controllerRef = React.useRef<AdminThemeController>(
-    controller ??
-      createAdminThemeController({
-        theme,
-        systemTheme: getSystemAdminTheme(),
-        onThemeChange: setTheme,
-      })
+  const [internalController] = React.useState(() =>
+    createAdminThemeController({
+      theme,
+      systemTheme: getSystemAdminTheme(),
+      onThemeChange: setTheme,
+    })
   )
-  const activeController = controllerRef.current
+
+  const activeController = controller ?? internalController
 
   React.useEffect(() => {
+    if (controller) return
     activeController.setState((currentState) => {
       if (currentState.theme === theme) return currentState
       return {
@@ -51,13 +52,14 @@ export function AdminThemeProvider({
         theme,
       }
     })
-  }, [activeController, theme])
+  }, [activeController, controller, theme])
 
   React.useEffect(() => {
+    if (controller) return
     return subscribeToSystemAdminTheme((systemTheme) => {
       activeController.setSystemTheme(systemTheme)
     })
-  }, [activeController])
+  }, [activeController, controller])
 
   return <AdminThemeContext.Provider value={activeController}>{children}</AdminThemeContext.Provider>
 }

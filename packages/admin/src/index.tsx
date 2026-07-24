@@ -28,8 +28,9 @@ import { AdminSplash } from "./components/layout/admin-splash";
 import { AdminNotFound, AdminNotFoundSkeleton } from "./components/layout/admin-not-found";
 import { Toaster } from "./components/ui/sonner";
 import { AdminThemeProvider, AdminThemedRoot } from "./hooks/admin-theme-provider";
+import type { AdminThemePreference, ResolvedAdminTheme } from "./hooks/admin-theme";
 import { cn } from "./lib/utils";
-import type { AdminThemeController } from "./controllers/theme";
+import { createAdminThemeController, type AdminThemeController } from "./controllers/theme";
 
 export type {
   AdminComponents,
@@ -252,6 +253,12 @@ export interface AdminUIProps {
   defaultTechStack?: string;
   /** Optional externally controlled admin theme controller. */
   themeController?: AdminThemeController;
+  /** Optional controlled admin theme preference. */
+  theme?: AdminThemePreference;
+  /** Optional resolved host system theme when `theme="system"`. */
+  systemTheme?: ResolvedAdminTheme;
+  /** Called when the admin theme preference changes. */
+  onThemeChange?: (theme: AdminThemePreference) => void;
 }
 
 // ─── Embedded component (HashRouter — no host-router conflicts) ──────────────
@@ -278,8 +285,22 @@ export function AdminUI({
   initialToken,
   defaultTechStack,
   themeController,
+  theme,
+  systemTheme,
+  onThemeChange,
 }: AdminUIProps) {
   const [mounted, setMounted] = useState(false);
+  const isThemeControlled =
+    theme !== undefined || systemTheme !== undefined || onThemeChange !== undefined;
+  const activeThemeController = React.useMemo(() => {
+    if (themeController || !isThemeControlled) return themeController
+    return createAdminThemeController({
+      theme,
+      systemTheme,
+      onThemeChange,
+    })
+  }, [isThemeControlled, onThemeChange, systemTheme, theme, themeController])
+
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
@@ -301,7 +322,7 @@ export function AdminUI({
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
         <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken} defaultTechStack={defaultTechStack}>
-          <AdminThemeProvider controller={themeController}>
+          <AdminThemeProvider controller={activeThemeController}>
             <AdminThemedRoot>
               <QueryProvider>
                 <HashRouter>
@@ -354,6 +375,12 @@ export interface AdminStandaloneProps {
   siteId?: string;
   /** Optional externally controlled admin theme controller. */
   themeController?: AdminThemeController;
+  /** Optional controlled admin theme preference. */
+  theme?: AdminThemePreference;
+  /** Optional resolved host system theme when `theme="system"`. */
+  systemTheme?: ResolvedAdminTheme;
+  /** Called when the admin theme preference changes. */
+  onThemeChange?: (theme: AdminThemePreference) => void;
 }
 
 /**
@@ -361,8 +388,27 @@ export interface AdminStandaloneProps {
  * Intended for iframe or self-hosted deployments where the admin owns
  * the entire page and does not share URL history with a host app.
  */
-export function AdminStandalone({ apiKey, baseUrl, siteId, themeController }: AdminStandaloneProps) {
+export function AdminStandalone({
+  apiKey,
+  baseUrl,
+  siteId,
+  themeController,
+  theme,
+  systemTheme,
+  onThemeChange,
+}: AdminStandaloneProps) {
   const [mounted, setMounted] = useState(false);
+  const isThemeControlled =
+    theme !== undefined || systemTheme !== undefined || onThemeChange !== undefined;
+  const activeThemeController = React.useMemo(() => {
+    if (themeController || !isThemeControlled) return themeController
+    return createAdminThemeController({
+      theme,
+      systemTheme,
+      onThemeChange,
+    })
+  }, [isThemeControlled, onThemeChange, systemTheme, theme, themeController])
+
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
@@ -379,7 +425,7 @@ export function AdminStandalone({ apiKey, baseUrl, siteId, themeController }: Ad
   return (
     <div className="dy-admin-ui dy-h-full">
       <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
-        <AdminThemeProvider controller={themeController}>
+        <AdminThemeProvider controller={activeThemeController}>
           <AdminThemedRoot>
             <QueryProvider>
               <MemoryRouter>
