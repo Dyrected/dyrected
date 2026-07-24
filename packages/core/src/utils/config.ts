@@ -3,7 +3,12 @@ import { AUTH_SESSIONS_COLLECTION } from "../auth/sessions.js";
 import { LIFECYCLE_EVENTS_COLLECTION, WORKFLOW_HISTORY_COLLECTION, simplePublishingWorkflow } from "../workflows.js";
 import { getAdminAuthCollection } from "./admin-auth.js";
 import { normalizeSchemaFragment } from "./block-references.js";
-import { assertValidDeclarativeAccessInConfig, assertValidDeclarativeHooksInConfig } from "./declarative-hooks.js";
+import {
+  assertValidAdminConditionsInConfig,
+  assertValidDeclarativeAccessInConfig,
+  assertValidDeclarativeHooksInConfig,
+  assertValidPreviewUrlsInConfig,
+} from "./declarative-hooks.js";
 
 const AUDIT_COLLECTION_SLUG = "__audit";
 
@@ -145,6 +150,8 @@ export function normalizeConfig(config: DyrectedConfig): DyrectedConfig {
   const schemaAwareConfig = normalizeSchemaFragment(config);
   assertValidDeclarativeHooksInConfig(schemaAwareConfig, "config");
   assertValidDeclarativeAccessInConfig(schemaAwareConfig, "config");
+  assertValidAdminConditionsInConfig(schemaAwareConfig, "config");
+  assertValidPreviewUrlsInConfig(schemaAwareConfig, "config");
   const collections = schemaAwareConfig?.collections || [];
   const globals = schemaAwareConfig?.globals || [];
   const needsAudit = collections.some((col) => col.audit);

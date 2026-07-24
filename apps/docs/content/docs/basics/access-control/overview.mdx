@@ -101,6 +101,10 @@ access: {
 Functions run only in your self-hosted server — they are **not** synced to Dyrected Cloud. When you run `sync-schema`, the CLI strips function rules from the payload and warns you with their exact paths. For any rule that needs to reach Cloud, use a **Jexl string** or a **named policy** instead.
 </Warning>
 
+<Note>
+Dyrected also validates declarative access expressions early. If a Jexl rule or string-based policy uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
+
 ### Named policies
 
 When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. In self-hosted Dyrected, that policy lives on your server config. In Dyrected Cloud, **string** and **boolean** policies sync as part of the site schema, while **function** policies do not:

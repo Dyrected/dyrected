@@ -31,9 +31,26 @@ export interface DeclarativeAccessValidationIssue {
   message: string;
 }
 
+export type DeclarativeAdminSurface = "field.admin.condition";
+export type DeclarativePreviewSurface = "collection.admin.previewUrl";
+
+export interface DeclarativeAdminValidationIssue {
+  path: string;
+  surface: DeclarativeAdminSurface;
+  expression: string;
+  message: string;
+}
+
+export interface DeclarativePreviewValidationIssue {
+  path: string;
+  surface: DeclarativePreviewSurface;
+  expression: string;
+  message: string;
+}
+
 export interface ConfigDiagnostic {
   severity: "error" | "warning";
-  source: "declarativeHook" | "declarativeAccess";
+  source: "declarativeHook" | "declarativeAccess" | "adminCondition" | "previewUrl";
   path: string;
   surface: string;
   message: string;
@@ -47,7 +64,7 @@ type DiagnosticFormatOptions = {
 type DeclarativeValidationConfig = {
   blocks?: Array<Pick<Block, "fields"> & Partial<Pick<Block, "slug">>>;
   collections: Array<
-    Pick<CollectionConfig, "fields" | "hooks" | "access"> & Partial<Pick<CollectionConfig, "slug">>
+    Pick<CollectionConfig, "fields" | "hooks" | "access" | "admin"> & Partial<Pick<CollectionConfig, "slug">>
   >;
   globals?: Array<
     Pick<GlobalConfig, "fields" | "hooks" | "access"> & Partial<Pick<GlobalConfig, "slug">>
@@ -67,6 +84,8 @@ const SURFACE_ROOTS: Record<DeclarativeHookSurface, readonly string[]> = {
 };
 
 const ACCESS_ROOTS = ["user", "req", "doc", "data", "id", "config"] as const;
+const ADMIN_CONDITION_RESERVED_ROOTS = ["data", "siblingData", "user", "id"] as const;
+const PREVIEW_URL_RESERVED_ROOTS = ["siteUrl", "id"] as const;
 
 const COMPILE_CACHE = new Map<string, { ast: unknown }>();
 
@@ -224,6 +243,70 @@ export function validateDeclarativeAccessExpression(
   }
 }
 
+export function validateAdminConditionExpression(
+  expression: string,
+  path: string,
+  allowedRoots: readonly string[],
+): DeclarativeAdminValidationIssue[] {
+  try {
+    const invalidRoots = getInvalidRoots(expression, allowedRoots);
+
+    if (invalidRoots.length === 0) return [];
+
+    return [
+      {
+        path,
+        surface: "field.admin.condition",
+        expression,
+        message: `uses unsupported context ${invalidRoots
+          .map((root) => `"${root}"`)
+          .join(", ")}. Allowed context: ${allowedRoots.map((root) => `"${root}"`).join(", ")}`,
+      },
+    ];
+  } catch (error) {
+    return [
+      {
+        path,
+        surface: "field.admin.condition",
+        expression,
+        message: `has invalid syntax: ${(error as Error).message}`,
+      },
+    ];
+  }
+}
+
+export function validatePreviewUrlExpression(
+  expression: string,
+  path: string,
+  allowedRoots: readonly string[],
+): DeclarativePreviewValidationIssue[] {
+  try {
+    const invalidRoots = getInvalidRoots(expression, allowedRoots);
+
+    if (invalidRoots.length === 0) return [];
+
+    return [
+      {
+        path,
+        surface: "collection.admin.previewUrl",
+        expression,
+        message: `uses unsupported context ${invalidRoots
+          .map((root) => `"${root}"`)
+          .join(", ")}. Allowed context: ${allowedRoots.map((root) => `"${root}"`).join(", ")}`,
+      },
+    ];
+  } catch (error) {
+    return [
+      {
+        path,
+        surface: "collection.admin.previewUrl",
+        expression,
+        message: `has invalid syntax: ${(error as Error).message}`,
+      },
+    ];
+  }
+}
+
 export function assertValidDeclarativeHookExpression(
   expression: string,
   surface: DeclarativeHookSurface,
@@ -303,6 +386,52 @@ function collectFieldIssues(fields: Record<string, any>[], path: string, issues:
       field.blocks.forEach((block: Record<string, any>, blockIndex: number) => {
         if (!Array.isArray(block.fields)) return;
         collectFieldIssues(block.fields, `${fieldPath}.${blockSegment(block, blockIndex)}`, issues);
+      });
+    }
+  });
+}
+
+function collectFieldNames(fields: Array<Record<string, unknown> | Field>): string[] {
+  return fields.flatMap((field) =>
+    typeof field.name === "string" && field.name.length > 0 ? [field.name] : [],
+  );
+}
+
+function collectAdminConditionIssues(
+  fields: Field[],
+  path: string,
+  rootFieldNames: readonly string[],
+  issues: DeclarativeAdminValidationIssue[],
+) {
+  const scopeFieldNames = collectFieldNames(fields);
+  const allowedRoots = [...new Set([...ADMIN_CONDITION_RESERVED_ROOTS, ...rootFieldNames, ...scopeFieldNames])];
+
+  fields.forEach((field, index) => {
+    const fieldPath = `${path}.${fieldSegment(field as Record<string, unknown>, index)}`;
+
+    if (typeof field.admin?.condition === "string") {
+      issues.push(
+        ...validateAdminConditionExpression(
+          field.admin.condition,
+          `${fieldPath}.admin.condition`,
+          allowedRoots,
+        ),
+      );
+    }
+
+    if (Array.isArray(field.fields)) {
+      collectAdminConditionIssues(field.fields, fieldPath, rootFieldNames, issues);
+    }
+
+    if (Array.isArray(field.blocks)) {
+      field.blocks.forEach((block, blockIndex) => {
+        if (!Array.isArray(block.fields)) return;
+        collectAdminConditionIssues(
+          block.fields,
+          `${fieldPath}.${blockSegment(block as unknown as Record<string, unknown>, blockIndex)}`,
+          rootFieldNames,
+          issues,
+        );
       });
     }
   });
@@ -509,6 +638,85 @@ export function collectDeclarativeAccessValidationIssues(config: DeclarativeVali
   return issues;
 }
 
+export function collectAdminConditionValidationIssues(config: DeclarativeValidationConfig) {
+  const issues: DeclarativeAdminValidationIssue[] = [];
+
+  config.blocks?.forEach((block, blockIndex) => {
+    if (!Array.isArray(block.fields)) return;
+    collectAdminConditionIssues(
+      block.fields,
+      blockSegment(block as unknown as Record<string, unknown>, blockIndex),
+      collectFieldNames(block.fields),
+      issues,
+    );
+  });
+
+  config.collections.forEach((collection, collectionIndex) => {
+    const collectionPath = collectionSegment(collection, collectionIndex);
+    const rootFieldNames = collectFieldNames(collection.fields);
+    collectAdminConditionIssues(collection.fields as Field[], collectionPath, rootFieldNames, issues);
+  });
+
+  config.globals?.forEach((global, globalIndex) => {
+    const globalPath = globalSegment(global, globalIndex);
+    const rootFieldNames = collectFieldNames(global.fields);
+    collectAdminConditionIssues(global.fields as Field[], globalPath, rootFieldNames, issues);
+  });
+
+  return issues;
+}
+
+export function collectPreviewUrlValidationIssues(config: DeclarativeValidationConfig) {
+  const issues: DeclarativePreviewValidationIssue[] = [];
+
+  config.collections.forEach((collection, collectionIndex) => {
+    if (typeof collection.admin?.previewUrl !== "string") return;
+
+    const collectionPath = collectionSegment(collection, collectionIndex);
+    const allowedRoots = [
+      ...new Set([...PREVIEW_URL_RESERVED_ROOTS, ...collectFieldNames(collection.fields)]),
+    ];
+
+    issues.push(
+      ...validatePreviewUrlExpression(
+        collection.admin.previewUrl,
+        `${collectionPath}.admin.previewUrl`,
+        allowedRoots,
+      ),
+    );
+  });
+
+  return issues;
+}
+
+export function assertValidAdminConditionsInConfig(config: DeclarativeValidationConfig, source = "config") {
+  const diagnostics = collectAdminConditionValidationIssues(config).map((issue) => ({
+    severity: "error" as const,
+    source: "adminCondition" as const,
+    path: issue.path,
+    surface: issue.surface,
+    message: issue.message,
+    expression: issue.expression,
+  }));
+  if (diagnostics.length === 0) return;
+
+  throw new ConfigValidationError(source, diagnostics);
+}
+
+export function assertValidPreviewUrlsInConfig(config: DeclarativeValidationConfig, source = "config") {
+  const diagnostics = collectPreviewUrlValidationIssues(config).map((issue) => ({
+    severity: "error" as const,
+    source: "previewUrl" as const,
+    path: issue.path,
+    surface: issue.surface,
+    message: issue.message,
+    expression: issue.expression,
+  }));
+  if (diagnostics.length === 0) return;
+
+  throw new ConfigValidationError(source, diagnostics);
+}
+
 export function collectConfigDiagnostics(config: DeclarativeValidationConfig): ConfigDiagnostic[] {
   const hookIssues = collectDeclarativeHookValidationIssues(config).map((issue) => ({
     severity: "error" as const,
@@ -528,7 +736,25 @@ export function collectConfigDiagnostics(config: DeclarativeValidationConfig): C
     expression: issue.expression,
   }));
 
-  return [...hookIssues, ...accessIssues];
+  const adminConditionIssues = collectAdminConditionValidationIssues(config).map((issue) => ({
+    severity: "error" as const,
+    source: "adminCondition" as const,
+    path: issue.path,
+    surface: issue.surface,
+    message: issue.message,
+    expression: issue.expression,
+  }));
+
+  const previewUrlIssues = collectPreviewUrlValidationIssues(config).map((issue) => ({
+    severity: "error" as const,
+    source: "previewUrl" as const,
+    path: issue.path,
+    surface: issue.surface,
+    message: issue.message,
+    expression: issue.expression,
+  }));
+
+  return [...hookIssues, ...accessIssues, ...adminConditionIssues, ...previewUrlIssues];
 }
 
 export function formatConfigDiagnostics(

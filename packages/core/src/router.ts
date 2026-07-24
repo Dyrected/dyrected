@@ -18,8 +18,10 @@ import {
   toHookRequestContext,
 } from "./utils/access-control.js";
 import {
+  assertValidAdminConditionsInConfig,
   assertValidDeclarativeAccessInConfig,
   assertValidDeclarativeHooksInConfig,
+  assertValidPreviewUrlsInConfig,
   collectConfigDiagnostics,
 } from "./utils/declarative-hooks.js";
 import { getConfigLogger, getRequestLogger } from "./observability.js";
@@ -123,6 +125,8 @@ export function registerRoutes(
         : config;
     assertValidDeclarativeHooksInConfig(requestConfig, "/api/schemas");
     assertValidDeclarativeAccessInConfig(requestConfig, "/api/schemas");
+    assertValidAdminConditionsInConfig(requestConfig, "/api/schemas");
+    assertValidPreviewUrlsInConfig(requestConfig, "/api/schemas");
     const collections = [...requestConfig.collections];
     const globals = [...requestConfig.globals];
 

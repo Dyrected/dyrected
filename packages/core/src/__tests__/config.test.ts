@@ -321,6 +321,50 @@ describe("Configuration Helpers", () => {
     ).toThrow(/1\. collections\["posts"\]\.access\.read[\s\S]*uses unsupported context "query"/);
   });
 
+  it("rejects admin.condition strings that use unsupported context", () => {
+    expect(() =>
+      normalizeConfig(
+        defineConfig({
+          collections: [
+            defineCollection({
+              slug: "posts",
+              fields: [
+                defineTextField({
+                  name: "title",
+                  admin: {
+                    condition: "request.user != null",
+                  },
+                }),
+              ],
+            }),
+          ],
+          globals: [],
+          db: new MockDatabaseAdapter(),
+        }),
+      ),
+    ).toThrow(/fields\["title"\]\.admin\.condition[\s\S]*uses unsupported context "request"/);
+  });
+
+  it("rejects previewUrl strings that use unsupported context", () => {
+    expect(() =>
+      normalizeConfig(
+        defineConfig({
+          collections: [
+            defineCollection({
+              slug: "posts",
+              admin: {
+                previewUrl: "request.baseUrl + '/' + slug",
+              },
+              fields: [defineTextField({ name: "slug" })],
+            }),
+          ],
+          globals: [],
+          db: new MockDatabaseAdapter(),
+        }),
+      ),
+    ).toThrow(/collections\["posts"\]\.admin\.previewUrl[\s\S]*uses unsupported context "request"/);
+  });
+
   it("normalizes drafts: true to simplePublishingWorkflow", () => {
     const normalized = normalizeConfig(
       defineConfig({

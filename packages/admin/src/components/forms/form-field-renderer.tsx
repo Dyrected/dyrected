@@ -131,6 +131,16 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
   const conditionData = basePath
     ? { ...formValues, ...siblingData, ...(documentId ? { id: documentId } : {}) }
     : { ...formValues, ...(documentId ? { id: documentId } : {}) }
+  const conditionContext = React.useMemo(
+    () => ({
+      ...conditionData,
+      data: formValues,
+      siblingData,
+      user,
+      ...(documentId ? { id: documentId } : {}),
+    }),
+    [conditionData, documentId, formValues, siblingData, user],
+  )
 
   const condition = schema.admin?.condition
   const readAccess = (schema.access as Record<string, unknown> | undefined)?.read
@@ -179,7 +189,7 @@ export function FormFieldRenderer({ schema, basePath, control, collection, docum
       jexlError = compiledCondition.error
     } else if (compiledCondition.expr) {
       try {
-        isVisible = compiledCondition.expr.evalSync(conditionData)
+        isVisible = compiledCondition.expr.evalSync(conditionContext)
       } catch (e: unknown) {
         jexlError = `Condition eval error: ${(e as Error).message || String(e)}`
       }

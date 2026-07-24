@@ -183,6 +183,10 @@ If a mixed hook array contains both strings and functions, Cloud keeps the survi
 
 The CLI warns with the exact schema path for every stripped hook entry.
 
+<Note>
+Dyrected also validates declarative hook expressions early. If a string hook uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
+
 ## Why the unsupported hooks are still out of scope
 
 The unsupported hook families are the ones most likely to need capabilities that do not belong in synced schema data:

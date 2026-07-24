@@ -7,7 +7,12 @@ import { createJiti } from "jiti";
 import { runGenerateTypes } from "../utils/type-generator.js";
 import { loadCommandEnv } from "../utils/env.js";
 import { resolveAppSrcDir } from "../utils/detect.js";
-import { assertValidDeclarativeAccessInConfig, assertValidDeclarativeHooksInConfig } from "@dyrected/core";
+import {
+  assertValidAdminConditionsInConfig,
+  assertValidDeclarativeAccessInConfig,
+  assertValidDeclarativeHooksInConfig,
+  assertValidPreviewUrlsInConfig,
+} from "@dyrected/core";
 
 type CloudSyncConfig = Pick<
   DyrectedConfig,
@@ -166,6 +171,8 @@ function sanitizeField(field: Record<string, any>, location: string, warnings: s
 export function sanitizeSchemaForCloudSync(config: CloudSyncConfig) {
   assertValidDeclarativeHooksInConfig(config, "sync:schema");
   assertValidDeclarativeAccessInConfig(config, "sync:schema");
+  assertValidAdminConditionsInConfig(config, "sync:schema");
+  assertValidPreviewUrlsInConfig(config, "sync:schema");
   const warnings: string[] = [];
 
   const blocks = (config.blocks || []).map((block, index) => ({

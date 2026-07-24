@@ -62,6 +62,10 @@ Relative URLs are resolved against your configured site URL, so returning `/post
   break the preview. Keep functions for local-only, self-hosted setups.
 </Callout>
 
+<Note>
+Dyrected also validates declarative `previewUrl` expressions early. If a Jexl `previewUrl` uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
+
 ## Choosing how the pane stays in sync
 
 The live pane needs to show unsaved edits, which means the admin has to hand draft data to your frontend. `admin.previewMode` controls how:

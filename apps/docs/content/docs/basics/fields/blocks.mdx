@@ -185,6 +185,10 @@ defineBlock({
 
 Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
 
+<Note>
+Dyrected also validates declarative `admin.condition` expressions early. If a condition uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
+
 Hiding a field this way only affects the Admin form, not what is stored. If an editor fills in the avatar, switches to the quote variant, and switches back, the avatar is still there — consistent with the rule that changing variant never loses content.
 
 <Note>
