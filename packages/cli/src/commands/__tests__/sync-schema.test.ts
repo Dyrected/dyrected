@@ -6,7 +6,6 @@ describe("sanitizeSchemaForCloudSync", () => {
     const beforeReadHook = () => ({ status: { equals: "published" } });
     const afterChangeHook = () => undefined;
     const fieldBeforeChangeHook = () => "value";
-    const adminOnChangeHook = () => "slug";
     const adminOptionsHook = () => [];
 
     const { payload, warnings } = sanitizeSchemaForCloudSync({
@@ -24,8 +23,9 @@ describe("sanitizeSchemaForCloudSync", () => {
           },
           fields: [
             {
-              name: "title",
-              type: "text",
+              name: "status",
+              type: "select",
+              options: [],
               hooks: {
                 beforeChange: ["value", fieldBeforeChangeHook],
                 afterRead: [() => "masked"],

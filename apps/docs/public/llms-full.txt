@@ -1151,6 +1151,10 @@ access: {
 Functions run only in your self-hosted server — they are **not** synced to Dyrected Cloud. When you run `sync-schema`, the CLI strips function rules from the payload and warns you with their exact paths. For any rule that needs to reach Cloud, use a **Jexl string** or a **named policy** instead.
 </Warning>
 
+<Note>
+Dyrected also validates declarative access expressions early. If a Jexl rule or string-based policy uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
+
 ### Named policies
 
 When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. In self-hosted Dyrected, that policy lives on your server config. In Dyrected Cloud, **string** and **boolean** policies sync as part of the site schema, while **function** policies do not:
@@ -4373,6 +4377,10 @@ defineBlock({
 ```
 
 Now the avatar picker appears only while the card variant is selected. The condition is a Jexl expression evaluated against the block row's own values, so `variant` always reflects the row's current selection — blocks added in the Admin start with the first variant already set. You can pass a function instead of a string if you prefer: `condition: (data, siblingData) => siblingData.variant === 'card'`.
+
+<Note>
+Dyrected also validates declarative `admin.condition` expressions early. If a condition uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
 
 Hiding a field this way only affects the Admin form, not what is stored. If an editor fills in the avatar, switches to the quote variant, and switches back, the avatar is still there — consistent with the rule that changing variant never loses content.
 
@@ -7712,6 +7720,10 @@ It strips:
 If a mixed hook array contains both strings and functions, Cloud keeps the surviving string hooks in the same order and strips the function entries. If nothing survives, the hook key is omitted.
 
 The CLI warns with the exact schema path for every stripped hook entry.
+
+<Note>
+Dyrected also validates declarative hook expressions early. If a string hook uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
 
 ## Why the unsupported hooks are still out of scope
 
@@ -13045,6 +13057,10 @@ Relative URLs are resolved against your configured site URL, so returning `/post
   the cloud, and JSON cannot carry a JavaScript function — a function passed to `previewUrl` is stringified and will
   break the preview. Keep functions for local-only, self-hosted setups.
 </Callout>
+
+<Note>
+Dyrected also validates declarative `previewUrl` expressions early. If a Jexl `previewUrl` uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
 
 ## Choosing how the pane stays in sync
 

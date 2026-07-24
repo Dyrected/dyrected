@@ -1,5 +1,32 @@
 # @dyrected/admin
 
+## 2.6.4
+
+### Patch Changes
+
+- be3da3f: Improve admin safety and auth onboarding across admin, core, and SDK.
+
+  - add a professional invite dialog in admin with copyable invite URLs and role selection for new invites
+  - support invite acceptance directly from admin invite links
+  - pre-create pending invited users in auth collections so they appear in admin lists before acceptance
+  - let invite and reset emails use clickable URLs with stronger email-client-safe HTML and visible link fallbacks
+  - expand dashboard "Needs attention" checks with backend health and invite-related signals
+  - replace browser delete alerts with admin dialogs, including typed confirmation before deleting auth users
+
+- b84943e: Add Cloud-safe declarative hooks, broader declarative-expression validation, and clearer config diagnostics across core, admin, Nuxt, SDK, and CLI.
+
+  - add declarative string hook support for collection/global `beforeRead`, `afterRead`, and `beforeChange`, field `beforeChange`, and field `admin.hooks.onChange`
+  - preserve supported declarative hook strings during `sync:schema`, strip function hooks from Cloud payloads intentionally, and warn with exact schema paths
+  - validate declarative access rules, string access policies, declarative hooks, `admin.condition`, and `admin.previewUrl` early with exact config paths and cleaner diagnostics
+  - expose config diagnostics from `/api/schemas` so admin surfaces can consume them, and improve admin dashboard attention signals around config issues
+  - improve Nuxt startup and reload reporting for invalid declarative config with formatted diagnostics instead of noisy raw errors
+  - document the Cloud-safe access and hooks model more clearly, including synced string policies, `createdByCurrentUser` vs `isOwner`, declarative hook contexts, and short notes about early validation for access, hooks, preview, and `admin.condition`
+
+- Updated dependencies [be3da3f]
+- Updated dependencies [b84943e]
+  - @dyrected/core@2.6.4
+  - @dyrected/sdk@2.6.4
+
 ## 2.6.3
 
 ### Patch Changes
