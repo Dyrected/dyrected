@@ -10,9 +10,10 @@ const customComponents = {
   },
 };
 
-const dyrectedUrl = import.meta.env.VITE_DYRECTED_URL;
-const dyrectedApiKey = import.meta.env.VITE_DYRECTED_API_KEY;
-const dyrectedSiteId = import.meta.env.VITE_DYRECTED_SITE_ID;
+const runtimeConfig = useRuntimeConfig();
+const dyrectedUrl = runtimeConfig.public.dyrected.baseUrl;
+const dyrectedApiKey = runtimeConfig.public.dyrected.apiKey;
+const dyrectedSiteId = runtimeConfig.public.dyrected.siteId;
 </script>
 
 <template>
