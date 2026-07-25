@@ -42,6 +42,7 @@ import { Button } from "../ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
 import { type AdminThemePreference, useAdminTheme } from "../../hooks/use-admin-theme"
 import logo from "@/assets/dyrected.svg"
+import logoDark from "@/assets/dyrected-dark.svg"
 import type { AdminSchemas } from "../../types/admin-components"
 
 function getUserString(user: Record<string, unknown> | null | undefined, key: string): string | null {
@@ -399,7 +400,8 @@ function SidebarInner({
                 </div>
               ) : (
                 <div className="dy-h-7 dy-w-auto dy-flex dy-items-center dy-justify-center dy-shrink-0">
-                  <img src={logo} alt="Dyrected" className="dy-h-8 dy-w-auto" />
+                  <img src={logo} alt="Dyrected" className="dy-h-8 dy-w-auto dark:dy-hidden" />
+                  <img src={logoDark} alt="Dyrected" className="dy-h-8 dy-w-auto dy-hidden dark:dy-block" />
                 </div>
               )}
               {!collapsed && !branding?.logoText && (
