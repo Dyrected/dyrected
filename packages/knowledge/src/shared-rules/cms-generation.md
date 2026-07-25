@@ -66,7 +66,14 @@ Configure preview only for content that already has a public route.
   runtime logic.
 - Configure `previewMode` only after reading the installed package types and
   current preview docs.
-- Do not invent token redemption, postMessage handling, or preview routes.
+- Prefer `previewMode: "postMessage"` for normal iframe live preview. It is
+  still appropriate for server-rendered pages when a hydrated client component
+  receives the server-fetched document and overlays the admin draft with
+  `useLivePreview`.
+- Use `previewMode: "token"` only when the preview cannot run a browser-side
+  `postMessage` listener and must fetch draft data during a server request.
+- Do not invent token redemption, postMessage handling, message payloads,
+  field paths, or preview routes.
 
 For previewable collections that include a blocks/layout field, put the
 layout-building field in its own Admin tab with `defineTab`. Keep primary page

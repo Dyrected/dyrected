@@ -15502,6 +15502,9 @@ export default function PageView({ initialData }: { initialData: any }) {
 }
 ```
 
+Install `@dyrected/react` alongside `@dyrected/next` if your project does not already list it directly.
+Keep `@dyrected/next/server` in server files and `@dyrected/react` in Client Components.
+
 </Tab>
 <Tab value="React">
 
@@ -15744,7 +15747,8 @@ Where you import them from depends on your framework:
 
 | Framework | Import from | Auto-imported? |
 | --- | --- | --- |
-| Next.js | `@dyrected/next` | No |
+| Next.js server files | `@dyrected/next/server` | No |
+| Next.js Client Components | `@dyrected/react` | No |
 | React (Vite/CRA) | `@dyrected/react` | No |
 | Nuxt | — | Yes (`useLivePreview`, `useDyPath`, `<DyrectedBlocks>`) |
 | Vue (Vite) | `@dyrected/vue` | No |
@@ -15757,6 +15761,12 @@ There are two ways the draft can reach your page, and which one you use depends 
 - **Server-side (`token`)** — for pages that render entirely on the server and can't receive a browser message (a statically generated route, or one you fetch server-side). The admin hands your page a signed token on the URL, and your server redeems it for the draft. It's **refresh-based** (a round-trip per change) and has **no click-to-edit**.
 
 Set the mode with `previewMode` on the collection (see [Preview](/docs/features/admin/preview)); it defaults to `postMessage`.
+
+<Callout type="info">
+  In Next.js, keep the imports split by runtime. Server Components and route handlers can use `@dyrected/next/server`.
+  Client Components should import `useLivePreview`, `useDyPath`, and `Blocks` from `@dyrected/react` so the browser
+  bundle does not pull in server-only handler code.
+</Callout>
 
 ## Next
 

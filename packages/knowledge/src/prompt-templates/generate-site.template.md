@@ -101,9 +101,10 @@ After I approve the content, connect the website so visitors see it.
 - Make the frontend read all content from Dyrected as the source of truth. Do not leave hardcoded copy where managed content now exists.
 - Add the routing needed so each page shows at its address, including a dynamic route so new pages I create later also appear, and a safe not-found page.
 - Render each page's sections through the blocks renderer, mapping each section to its component.
+- Use the installed field-path helpers with that blocks renderer so preview clicks can focus the right editable area.
 - Read the logo, menu, and footer from their shared settings, with safe fallbacks so nothing renders empty.
 - Normalize links so internal links stay on-site and external links open correctly.
-- Enable click-to-edit and live preview where supported, without changing how the site looks.
+- Enable click-to-edit and postMessage live preview where supported, without changing how the site looks.
 - Choose a freshness strategy so my edits appear without a code change.
 
 Remember that pages are usually fetched by their address, which does not populate the starting content on its own. Make sure each content type has been listed once so its seeded content is present.

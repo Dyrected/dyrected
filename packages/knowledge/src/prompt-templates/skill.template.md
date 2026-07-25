@@ -63,6 +63,11 @@ Use the dedicated installed `define[FieldName]Field` helper and give every
 named field a `label`. Never substitute an internal monorepo source import when
 an export is missing.
 
+Use package entry points that match the runtime boundary. In Next.js, import
+server helpers from `@dyrected/next/server`; import browser live-preview and
+path helpers for Client Components from the browser-safe React package when the
+installed framework package root also exports server handlers.
+
 ## Rename a field safely
 
 Treat field names as persisted data contracts. Use the rename mechanism

@@ -172,6 +172,13 @@ structured editable content.
   HTML for the initial seed without inventing or flattening its structure.
 - Use the project's existing caching strategy, adjusted only as needed so
   published edits and preview data can appear when expected.
+- For block-based pages, render the ordered blocks field with the installed
+  block renderer when available and use installed field-path helpers for
+  click-to-edit. Do not hand-write block indexes or custom `data-dy-path`
+  formats.
+- In React/Next.js Client Components, import live-preview and path helpers from
+  a browser-safe package entry. Use framework server helpers only in server
+  files.
 
 For routable collections, configure preview only when the installed package
 supports it:
@@ -181,9 +188,14 @@ supports it:
 - Return a relative route such as `"/blog/" + slug`; do not prefix it with
   `siteUrl`. Dyrected resolves relative preview routes against the configured
   site URL.
+- Prefer `postMessage` preview. For SSR apps, server-render the published data
+  first and pass it to a hydrated component that calls `useLivePreview`; choose
+  `token` only for routes that cannot receive browser messages and must redeem
+  draft data on the server.
 - Use a function only when the installed package and self-hosted runtime support
   that non-serializable form.
-- Do not invent preview token handling or expose private credentials in URLs.
+- Do not invent preview token handling, postMessage payloads, click-to-edit
+  paths, or expose private credentials in URLs.
 
 ### Prove the complete editing loop
 
@@ -324,6 +336,12 @@ areas.
 - Seed only approved existing content without overwriting populated data.
 - Make Dyrected the real runtime source for each completed content area.
 - Preserve the existing routes, components, design, and behaviour.
+- For previewable pages, prefer postMessage live preview: server-fetch the
+  published data, pass it into a hydrated component, and use the installed
+  `useLivePreview` helper to overlay draft data.
+- Render ordered page sections with the installed blocks renderer and installed
+  field-path helpers when available; do not hand-build block indexes or preview
+  path strings.
 - Add safe loading, empty, error, and fallback handling.
 - Keep private credentials and non-serializable values out of browser data.
 - Generate types and validate the local schema before schema synchronization.

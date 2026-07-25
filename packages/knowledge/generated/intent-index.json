@@ -91,7 +91,7 @@
   "store uploaded files": "upload-collection",
   "tag content with multiple categories": "category-taxonomy",
   "update select options while editing": "dependent-dropdown",
-  "use token mode preview": "preview-url-token-mode",
+  "use postmessage preview": "preview-url-token-mode",
   "users should only see their own records": "owner-scoped-access",
   "validate fields before saving": "cross-field-validation",
   "validate multiple fields together": "cross-field-validation"

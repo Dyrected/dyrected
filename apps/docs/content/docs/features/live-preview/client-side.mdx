@@ -53,7 +53,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 ```tsx
 // app/[slug]/page-view.tsx — Client Component: overlays draft data
 "use client";
-import { useLivePreview } from "@dyrected/next";
+import { useLivePreview } from "@dyrected/react";
 import PageBlocks from "@/components/page-blocks";
 
 export default function PageView({ initialData }: { initialData: any }) {
@@ -71,6 +71,9 @@ export default function PageView({ initialData }: { initialData: any }) {
   );
 }
 ```
+
+Install `@dyrected/react` alongside `@dyrected/next` if your project does not already list it directly.
+Keep `@dyrected/next/server` in server files and `@dyrected/react` in Client Components.
 
 </Tab>
 <Tab value="React">
@@ -163,7 +166,7 @@ Click-to-edit lets an editor click an element in the preview and have the form f
 
 ```tsx
 // React / Next.js
-import { useDyPath } from "@dyrected/next";
+import { useDyPath } from "@dyrected/react";
 
 function Hero({ heading, subheading }: any) {
   // useDyPath is a hook — call it unconditionally, never inside `subheading && …`.
@@ -205,7 +208,7 @@ For a `blocks` field, `<Blocks>` (React) / `<DyrectedBlocks>` (Nuxt, auto-import
 
 ```tsx
 "use client";
-import { Blocks } from "@dyrected/next";
+import { Blocks } from "@dyrected/react";
 import Hero from "./blocks/hero";
 import Cta from "./blocks/cta";
 

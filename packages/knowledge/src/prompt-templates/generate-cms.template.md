@@ -119,6 +119,12 @@ areas.
 - Seed only approved existing content without overwriting populated data.
 - Make Dyrected the real runtime source for each completed content area.
 - Preserve the existing routes, components, design, and behaviour.
+- For previewable pages, prefer postMessage live preview: server-fetch the
+  published data, pass it into a hydrated component, and use the installed
+  `useLivePreview` helper to overlay draft data.
+- Render ordered page sections with the installed blocks renderer and installed
+  field-path helpers when available; do not hand-build block indexes or preview
+  path strings.
 - Add safe loading, empty, error, and fallback handling.
 - Keep private credentials and non-serializable values out of browser data.
 - Generate types and validate the local schema before schema synchronization.

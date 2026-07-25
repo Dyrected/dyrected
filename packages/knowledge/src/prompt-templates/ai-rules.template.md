@@ -12,6 +12,9 @@ rules, generated package facts, and behavior-tested recipes.
 
 - Import public APIs from `@dyrected/core`, `@dyrected/sdk`, and the documented
   framework package. Never import another workspace package's source files.
+- Keep server and browser package entry points separate. Do not import a
+  framework package entry that exports server handlers inside Client
+  Components; use the browser-safe React/Vue live-preview helpers there.
 - Verify the installed package's public exports before writing configuration.
 - Every named field has an explicit human-readable `label`.
 - Use the dedicated installed `define[FieldName]Field` helper for each field.

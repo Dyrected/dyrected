@@ -5,7 +5,7 @@ export const Docs = defineCollection({
   admin: {
     useAsTitle: "title",
     previewUrl: "slug ? '/docs/' + slug : null",
-    previewMode: "token",
+    previewMode: "postMessage",
     urlPattern: "/docs/{slug}",
   },
   fields: [

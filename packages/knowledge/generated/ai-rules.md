@@ -172,6 +172,13 @@ structured editable content.
   HTML for the initial seed without inventing or flattening its structure.
 - Use the project's existing caching strategy, adjusted only as needed so
   published edits and preview data can appear when expected.
+- For block-based pages, render the ordered blocks field with the installed
+  block renderer when available and use installed field-path helpers for
+  click-to-edit. Do not hand-write block indexes or custom `data-dy-path`
+  formats.
+- In React/Next.js Client Components, import live-preview and path helpers from
+  a browser-safe package entry. Use framework server helpers only in server
+  files.
 
 For routable collections, configure preview only when the installed package
 supports it:
@@ -181,9 +188,14 @@ supports it:
 - Return a relative route such as `"/blog/" + slug`; do not prefix it with
   `siteUrl`. Dyrected resolves relative preview routes against the configured
   site URL.
+- Prefer `postMessage` preview. For SSR apps, server-render the published data
+  first and pass it to a hydrated component that calls `useLivePreview`; choose
+  `token` only for routes that cannot receive browser messages and must redeem
+  draft data on the server.
 - Use a function only when the installed package and self-hosted runtime support
   that non-serializable form.
-- Do not invent preview token handling or expose private credentials in URLs.
+- Do not invent preview token handling, postMessage payloads, click-to-edit
+  paths, or expose private credentials in URLs.
 
 ### Prove the complete editing loop
 
@@ -210,6 +222,9 @@ real frontend.
 
 - Import public APIs from `@dyrected/core`, `@dyrected/sdk`, and the documented
   framework package. Never import another workspace package's source files.
+- Keep server and browser package entry points separate. Do not import a
+  framework package entry that exports server handlers inside Client
+  Components; use the browser-safe React/Vue live-preview helpers there.
 - Verify the installed package's public exports before writing configuration.
 - Every named field has an explicit human-readable `label`.
 - Use the dedicated installed `define[FieldName]Field` helper for each field.
@@ -578,7 +593,14 @@ Configure preview only for content that already has a public route.
   runtime logic.
 - Configure `previewMode` only after reading the installed package types and
   current preview docs.
-- Do not invent token redemption, postMessage handling, or preview routes.
+- Prefer `previewMode: "postMessage"` for normal iframe live preview. It is
+  still appropriate for server-rendered pages when a hydrated client component
+  receives the server-fetched document and overlays the admin draft with
+  `useLivePreview`.
+- Use `previewMode: "token"` only when the preview cannot run a browser-side
+  `postMessage` listener and must fetch draft data during a server request.
+- Do not invent token redemption, postMessage handling, message payloads,
+  field paths, or preview routes.
 
 For previewable collections that include a blocks/layout field, put the
 layout-building field in its own Admin tab with `defineTab`. Keep primary page
@@ -696,6 +718,12 @@ Resolve executable UI values inside the component boundary that owns them.
   behaviour.
 - When the installed package provides a blocks renderer or field-path helpers,
   use those documented helpers instead of hand-building preview identifiers.
+- For React and Next.js Client Components, render blocks through the installed
+  React helper (`Blocks`) and annotate editable elements with `useDyPath` so
+  click-to-edit can focus the matching field. Set the block renderer `path` to
+  the actual blocks field name, such as `layout` or `sections`.
+- Do not add wrapper elements that alter layout just to carry preview paths. If
+  a wrapper is needed only for `data-dy-path`, make it layout-neutral.
 
 ## Routing
 
@@ -724,6 +752,20 @@ Wire live preview only through the installed package's documented mechanism.
 Do not invent token handling, message formats, field paths, or click-to-edit
 identifiers.
 
+Prefer `previewMode: "postMessage"` for previewable content. In SSR frameworks,
+fetch the published document on the server and pass it into a hydrated Client
+Component that calls `useLivePreview`; the browser overlay receives draft data
+by `postMessage` while the public route still renders normally without draft
+data. Use `previewMode: "token"` only when the preview route cannot run a
+browser-side listener, such as a fully server-only or static preview path that
+must redeem draft data during the request.
+
+Keep framework imports on the right side of the server/client boundary. In
+Next.js, use `@dyrected/next/server` for server helpers and use the browser-safe
+React package for Client Component helpers such as `useLivePreview`, `Blocks`,
+and `useDyPath`. Do not import a package entry that also exports server handlers
+inside Client Components.
+
 Choose the smallest freshness change that lets edits appear when expected:
 
 - preserve an existing intentional rebuild workflow
@@ -736,6 +778,8 @@ References:
 
 - https://docs.dyrected.com/docs/features/admin/preview
 - https://docs.dyrected.com/docs/features/live-preview/overview
+- https://docs.dyrected.com/docs/features/live-preview/frontend
+- https://docs.dyrected.com/docs/features/live-preview/client-side
 
 ## Links, Media, and Rich Content
 
@@ -820,7 +864,7 @@ For every connected area, prove:
 - [Let owners edit records while admins manage everything](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Records should belong to one user, but administrators still need a way to review or fix any entry. Summary: Scope writes to the owner by default and return `true` for admin users when they need broader access.
 - [Limit documents to their owner](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Signed-in users should only see or manage the records they own. Summary: Scope reads and writes to the current user in access control, then stamp ownership when records are created.
 - [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: Editors need to build or rearrange page sections without turning every page into one giant content object. Summary: Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.
-- [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows) — Problem: Editors need to preview draft content on the real route before it is published. Summary: Set `previewUrl` and `previewMode: 'token'` so the Admin can open a draft route without publishing the document.
+- [Configure preview URLs with postMessage live preview](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows) — Problem: Editors need to preview draft content on the real route before it is published. Summary: Set a relative `previewUrl`, prefer `previewMode: 'postMessage'`, and reserve token mode for routes that cannot receive browser messages.
 - [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling) — Problem: One record should point to another record, and you also want the reverse view without storing duplicate data. Summary: Store the owning relationship on one side and use a join field for the reverse lookup when you need one-to-many content structures.
 - [Create a responsive image library](https://docs.dyrected.com/docs/ecosystem/common-patterns/integrations) — Problem: Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails. Summary: Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.
 - [Restrict content operations by user role](https://docs.dyrected.com/docs/ecosystem/common-patterns/access-control) — Problem: Different roles should have different permissions for reading, editing, publishing, or deleting content. Summary: Check user roles in collection access control so each operation matches the responsibilities of the current user.
@@ -894,10 +938,10 @@ For every connected area, prove:
 - “let editors arrange page sections” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “create reusable content blocks” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “model flexible landing pages” → [Build flexible pages from reusable blocks](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
-- “preview draft content privately” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
-- “open live preview on the real route” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
-- “use token mode preview” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
-- “configure preview urls for a collection” → [Configure preview URLs with token mode](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “preview draft content privately” → [Configure preview URLs with postMessage live preview](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “open live preview on the real route” → [Configure preview URLs with postMessage live preview](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “use postmessage preview” → [Configure preview URLs with postMessage live preview](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
+- “configure preview urls for a collection” → [Configure preview URLs with postMessage live preview](https://docs.dyrected.com/docs/ecosystem/common-patterns/workflows)
 - “connect posts to authors” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “show every post written by a user” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)
 - “create a reverse relationship” → [Model a relationship and its reverse lookup](https://docs.dyrected.com/docs/ecosystem/common-patterns/content-modeling)

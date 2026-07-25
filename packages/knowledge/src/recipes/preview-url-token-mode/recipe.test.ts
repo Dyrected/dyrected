@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { Docs } from "./recipe.js";
 
-describe("preview url token mode recipe", () => {
-  it("configures a preview url and token mode", () => {
+describe("preview url live preview recipe", () => {
+  it("configures a preview url and postMessage mode", () => {
     expect(Docs.admin).toMatchObject({
       useAsTitle: "title",
       previewUrl: "slug ? '/docs/' + slug : null",
-      previewMode: "token",
+      previewMode: "postMessage",
     });
   });
 

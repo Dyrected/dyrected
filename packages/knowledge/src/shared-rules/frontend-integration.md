@@ -42,6 +42,12 @@ Resolve executable UI values inside the component boundary that owns them.
   behaviour.
 - When the installed package provides a blocks renderer or field-path helpers,
   use those documented helpers instead of hand-building preview identifiers.
+- For React and Next.js Client Components, render blocks through the installed
+  React helper (`Blocks`) and annotate editable elements with `useDyPath` so
+  click-to-edit can focus the matching field. Set the block renderer `path` to
+  the actual blocks field name, such as `layout` or `sections`.
+- Do not add wrapper elements that alter layout just to carry preview paths. If
+  a wrapper is needed only for `data-dy-path`, make it layout-neutral.
 
 ## Routing
 
@@ -70,6 +76,20 @@ Wire live preview only through the installed package's documented mechanism.
 Do not invent token handling, message formats, field paths, or click-to-edit
 identifiers.
 
+Prefer `previewMode: "postMessage"` for previewable content. In SSR frameworks,
+fetch the published document on the server and pass it into a hydrated Client
+Component that calls `useLivePreview`; the browser overlay receives draft data
+by `postMessage` while the public route still renders normally without draft
+data. Use `previewMode: "token"` only when the preview route cannot run a
+browser-side listener, such as a fully server-only or static preview path that
+must redeem draft data during the request.
+
+Keep framework imports on the right side of the server/client boundary. In
+Next.js, use `@dyrected/next/server` for server helpers and use the browser-safe
+React package for Client Component helpers such as `useLivePreview`, `Blocks`,
+and `useDyPath`. Do not import a package entry that also exports server handlers
+inside Client Components.
+
 Choose the smallest freshness change that lets edits appear when expected:
 
 - preserve an existing intentional rebuild workflow
@@ -82,6 +102,8 @@ References:
 
 - https://docs.dyrected.com/docs/features/admin/preview
 - https://docs.dyrected.com/docs/features/live-preview/overview
+- https://docs.dyrected.com/docs/features/live-preview/frontend
+- https://docs.dyrected.com/docs/features/live-preview/client-side
 
 ## Links, Media, and Rich Content
 
