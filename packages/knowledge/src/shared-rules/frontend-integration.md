@@ -1,139 +1,142 @@
 ## Frontend Integration Rules
 
-When connecting Dyrected content to the existing UI:
+Connect Dyrected to the existing component and routing system. Make the content
+model fit the current interface; do not redesign the interface to fit the CMS.
 
-- Preserve the current design exactly
-- Preserve the current component boundaries where practical
-- Preserve the current routes
-- Preserve the current layout
-- Preserve responsive behaviour
-- Preserve animations
-- Preserve existing fallback behaviour where useful
-- Do not introduce layout shifts
-- Do not remove static fallback content until the Dyrected source works
-- Do not fetch private credentials in browser code
-- Do not make unnecessary client-side requests if server-side fetching is more appropriate
-- Do not duplicate content between local files and Dyrected after final verification
+## Source of Truth
 
-For reusable Page Sections:
+- Fetch approved globals, collections, pages, and interactive definitions from
+  Dyrected through supported public APIs.
+- Stop using matching local constants, JSON, Markdown, or static imports as the
+  normal source after verification.
+- Keep a local fallback only for an intentional failure or first-run state.
+  Surface connection failures instead of silently rendering stale content
+  forever.
+- Use the project's server-rendering and data-fetching conventions. Avoid
+  unnecessary browser requests.
+- Keep private credentials, storage secrets, and privileged SDK clients out of
+  browser bundles.
 
-- Only render approved block types
-- Only render approved variants
-- Add safe fallback handling for unknown or missing blocks
-- Do not allow unsupported block types to break the page
-- Keep block rendering mapped to existing components
-- Do not redesign components to fit the CMS
-- Make the CMS fit the existing website
-- Let editors arrange approved sections where supported
-- Keep the frontend safe by ignoring or gracefully handling unsupported sections
+## Data Boundaries
 
-For Hero:
+Dyrected data may not match existing component props exactly. Add a small,
+explicit normalizer instead of changing the UI or weakening the schema.
 
-- Render Hero from the page layout/sections block list
-- Do not render Hero from a separate top-level page field
-- Map Hero variants to existing hero designs
-- Preserve existing hero layout, styling, animation, image behaviour, and responsive behaviour
+Pass only serializable values across server/client boundaries:
 
-For section variants:
+- strings, numbers, booleans, null, arrays, and plain objects
+- stable icon, component, or variant names when the client must resolve them
 
-- Map variant names to existing layouts/components
-- Do not let editors enter arbitrary variant names
-- Do not expose styling implementation details to editors
-- Use friendly variant labels the client can understand
-- Read the selected variant from the block item's reserved `variant` key
-- The `<Blocks>` renderer passes `variant` straight through to the mapped component as a prop; switch layout on it inside the component
-- Fall back to a default layout when `variant` is missing or unrecognised, so older rows and unknown values still render safely
+Do not pass React components, Lucide components, functions, classes, symbols,
+or objects with methods from a server component or loader into client code.
+Resolve executable UI values inside the component boundary that owns them.
+
+## Blocks and Variants
+
+- Map each approved block type to an existing component.
+- Render Hero from the ordered page blocks field, not a separate page property.
+- Map approved variant slugs to existing layouts.
+- Ignore or safely fall back for missing block data, unknown block types, and
+  unknown variants.
+- Preserve markup, styling, layout, motion, image behaviour, and responsive
+  behaviour.
+- When the installed package provides a blocks renderer or field-path helpers,
+  use those documented helpers instead of hand-building preview identifiers.
+
+## Routing
+
+Keep every existing route working.
+
+If editors are approved to create pages:
+
+- add the framework-appropriate dynamic or catch-all route
+- fetch the matching page by its slug or path
+- render its ordered blocks
+- map the home page to `/`
+- preserve nested paths only when the project already supports them
+- return the project's normal not-found response for missing pages
+- test conflicts with existing static routes
+
+Do not promise arbitrary page creation unless this route exists and has been
+tested.
+
+## Preview and Freshness
+
+Use the existing public route for preview. A relative `previewUrl` is resolved
+against the configured site URL; the frontend should not require the schema to
+manually prefix that origin.
+
+Wire live preview only through the installed package's documented mechanism.
+Do not invent token handling, message formats, field paths, or click-to-edit
+identifiers.
+
+Choose the smallest freshness change that lets edits appear when expected:
+
+- preserve an existing intentional rebuild workflow
+- otherwise use the framework's supported dynamic rendering, revalidation,
+  no-store, ISR, or preview mechanism
+
+Do not leave CMS-powered routes permanently stale.
+
+References:
+
+- https://docs.dyrected.com/docs/features/admin/preview
+- https://docs.dyrected.com/docs/features/live-preview/overview
+
+## Links, Media, and Rich Content
+
+Normalize URL-field values before rendering:
+
+- derive the resolved href
+- preserve same-site navigation for internal links
+- set safe target and rel values for external links
+- use the URL field's own label when present
+- do not render an empty or broken destination
 
 For media:
 
-- Use Dyrected media document URLs
-- Do not manually reconstruct storage paths
-- Preserve image styling, dimensions, aspect ratios, cropping behaviour, and responsive behaviour
-- Render missing images safely
-- Use alt text where available
-- Do not expose private storage credentials in browser code
+- consume returned media document URLs
+- preserve dimensions, aspect ratio, cropping, loading, and responsive styles
+- render missing optional media safely
+- keep meaningful alternative text
+- never reconstruct storage paths or expose provider credentials
 
 For rich content:
 
-- Render rich content safely
-- Preserve headings, paragraphs, lists, links, quotes, inline emphasis, and meaningful formatting
-- Do not render raw unsanitized HTML in the browser
-- Do not turn blog body content into arrays of strings
-- Keep existing article layout and styling
+- consume the HTML string returned by a Dyrected rich-text field
+- preserve headings, paragraphs, lists, links, quotes, and inline emphasis
+- render through `DyrectedRichText` or the installed safe rich-content boundary
+- do not inject unsanitized HTML in the browser
+- do not interpret textarea Markdown as rich-text content
+- preserve the existing article typography and layout
 
-For content-driven interactive features:
+## Interactive Features
 
-- Fetch editable definitions from Dyrected
-- Keep runtime behaviour in code
-- Normalize CMS-managed questions, options, ranges, and results into the shape existing logic expects
-- Do not change scoring or flow behaviour unless explicitly approved
-- Do not store submissions or private user results unless explicitly approved
+Fetch approved content definitions from Dyrected and normalize them into the
+shape existing logic expects. Keep state, validation behaviour, navigation,
+scoring, submissions, authentication, history, and analytics in code.
 
-For preview:
+A content edit must not silently change behaviour. Validate or protect fields
+whose values affect a feature's correctness.
 
-- Use the existing frontend routes
-- Support preview URLs generated by Dyrected admin configuration
-- Use the selected previewMode only if it is supported by the installed Dyrected package
-- Do not expose private API keys in preview URLs
-- Do not invent preview token handling
-- Preserve the normal published route behaviour
+## Embedded Admin
 
-For caching:
+Use the Admin route and integration generated or documented for the framework.
+When Admin is embedded inside a public application shell:
 
-- Ensure CMS edits can appear according to the expected publishing workflow
-- Avoid permanently static CMS-powered routes unless the project uses a rebuild workflow intentionally
-- Use dynamic rendering, revalidation, no-store, ISR, preview mode, or the project’s existing cache strategy as appropriate
+- keep public navigation and footer out of the Admin surface
+- do not wrap Admin handlers in unsupported custom authentication
+- keep Admin-only components and configuration out of public content payloads
 
-For page routing:
+## Frontend Completion Check
 
-- If editors can create new pages in Dyrected, the frontend must support rendering CMS-created pages by slug.
-- Creating a page document in Dyrected is not enough.
-- The project must include a dynamic route, fallback route, catch-all route, or router configuration that:
-  - receives the URL slug
-  - fetches the matching page document from the Dyrected Pages collection
-  - renders the page layout/sections blocks
-  - returns a safe 404 when no page exists for that slug
-  - preserves the existing home page route
-  - maps the home page slug, such as "home", to "/"
-  - maps other page slugs, such as "new-page", to "/new-page"
-  - supports nested slugs if the project already uses nested pages
-  - supports preview mode if page previews are enabled
-  - uses the correct cache/revalidation strategy so CMS edits can appear without a code change
-- Use the routing method appropriate to the project’s frontend framework.
-  - Next.js: `app/[slug]/page.tsx`, `pages/[slug].tsx`, or catch-all routes
-  - Nuxt: `pages/[slug].vue`, `pages/[...slug].vue`, or route middleware
-  - Vue Router: dynamic routes such as `/:slug` or `/:pathMatch(.*)` with CMS fetching
-  - React Router: dynamic routes such as `/:slug` or `/*` with CMS fetching
-  - SvelteKit: `src/routes/[slug]/+page.ts` or `[...slug]`
-  - Astro: `src/pages/[slug].astro` or `[...slug].astro`
-  - Remix: `app/routes/$slug.tsx` or splat routes
-  - Plain HTML/SPA: configure the router and host fallback so unknown slugs load the app and fetch the CMS page
-- Do not say editors can create new pages unless the frontend route exists and has been tested.
+For every connected area, prove:
 
-For link and URL fields:
-
-- A url field does not resolve to a bare string at runtime. It resolves to an object describing the link, typically with a type such as internal or custom, the resolved url, an optional label, and, for internal links, the referenced collection and document.
-- Normalize a url field before rendering. Derive the href and whether the link points off-site, and set target and rel accordingly for external links.
-- Treat internal links as same-site navigation and custom or absolute links as external.
-- A url field already carries its own label. Do not model a separate label field next to it, and do not require editors to enter the label twice.
-- Block calls-to-action generally need only the resolved href. Navigation, footer, and menus need the full internal-versus-external resolution.
-- Handle a missing or empty url safely. Do not render a broken or dead link.
-- Reference: https://docs.dyrected.com/docs/basics/fields/overview
-
-For site chrome:
-
-- Treat the logo, site name, navigation, and footer as content managed through singleton globals, not as hardcoded markup.
-- Read chrome globals on the server so the first render is not empty, and provide a safe fallback that matches the intended content until the global loads.
-- Render a managed logo from its media document, and fall back to a text or initials mark when no logo image is set.
-- Keep chrome fallbacks equal to the seeded defaults so a fresh site renders correctly before any edit.
-- Reference: https://docs.dyrected.com/docs/basics/configuration/overview
-
-For live preview and click-to-edit:
-
-- When the installed Dyrected package supports live preview, wire routes that display editable content through the live-preview mechanism so Admin edits reflect immediately.
-- Render page section blocks through the package's blocks renderer, mapping each block type to an existing component, and pass the layout field path so each block is addressable.
-- For editable fields inside a block or document, attach the package's click-to-edit field path so clicking the element in the preview focuses the matching field in the Admin.
-- Scope field paths correctly: block-level paths come from the blocks renderer, and field-level paths are relative to their block or document.
-- Do not hand-build preview identifiers or field paths. Use the helpers the installed package provides.
-- Keep click-to-edit additive. It must not change the rendered markup, layout, styling, or behaviour of the site.
-- Reference: https://docs.dyrected.com/docs/admin/overview
+1. Dyrected is the normal runtime source.
+2. A recognizable edit appears on the correct route.
+3. Loading, empty, missing, and error states are safe.
+4. Existing routes, design, responsive behaviour, and interactions are
+   unchanged.
+5. Preview and caching behave as documented.
+6. No private credential or non-serializable value crosses into browser data.
+7. The production build and relevant route tests pass.

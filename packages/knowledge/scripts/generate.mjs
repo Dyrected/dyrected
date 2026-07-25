@@ -46,8 +46,10 @@ const recipeDocsPathMap = {
   "category-taxonomy": "/docs/ecosystem/common-patterns/content-modeling",
   "conditional-admin-field": "/docs/ecosystem/common-patterns/admin-experience",
   "cross-field-validation": "/docs/ecosystem/common-patterns/data-lifecycle",
-  "custom-page-field-editor": "/docs/ecosystem/common-patterns/custom-app-surfaces",
-  "custom-page-media-picker": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+  "custom-page-field-editor":
+    "/docs/ecosystem/common-patterns/custom-app-surfaces",
+  "custom-page-media-picker":
+    "/docs/ecosystem/common-patterns/custom-app-surfaces",
   "custom-theme-shell": "/docs/ecosystem/common-patterns/custom-app-surfaces",
   "dependent-dropdown": "/docs/ecosystem/common-patterns/admin-experience",
   "document-download-library": "/docs/ecosystem/common-patterns/integrations",
@@ -57,7 +59,8 @@ const recipeDocsPathMap = {
   "owner-scoped-access": "/docs/ecosystem/common-patterns/access-control",
   "page-builder-blocks": "/docs/ecosystem/common-patterns/content-modeling",
   "preview-url-token-mode": "/docs/ecosystem/common-patterns/workflows",
-  "relationship-and-reverse-join": "/docs/ecosystem/common-patterns/content-modeling",
+  "relationship-and-reverse-join":
+    "/docs/ecosystem/common-patterns/content-modeling",
   "responsive-image-library": "/docs/ecosystem/common-patterns/integrations",
   "role-based-access": "/docs/ecosystem/common-patterns/access-control",
   "safe-field-rename": "/docs/ecosystem/common-patterns/data-lifecycle",
@@ -142,7 +145,8 @@ function validateRecipeSource(directory, source) {
   // Matches the field builder helpers: `defineField` and every `define<Type>Field`
   // (e.g. defineTextField, defineRichTextField). Excludes `defineBlock`, which
   // is keyed on `slug` rather than `name`/`label`.
-  const isFieldDefinerName = (name) => /^define(?:[A-Z][A-Za-z]*)?Field$/.test(name);
+  const isFieldDefinerName = (name) =>
+    /^define(?:[A-Z][A-Za-z]*)?Field$/.test(name);
 
   const requireLabel = (node) => {
     const position = file.getLineAndCharacterOfPosition(node.getStart(file));
@@ -175,7 +179,10 @@ function validateRecipeSource(directory, source) {
       const [config] = node.arguments;
       if (config && ts.isObjectLiteralExpression(config)) {
         const properties = new Map(
-          config.properties.map((property) => [propertyName(property), property]),
+          config.properties.map((property) => [
+            propertyName(property),
+            property,
+          ]),
         );
         if (properties.has("name") && !properties.has("label")) {
           requireLabel(node);
@@ -316,9 +323,7 @@ function extractReferences(sourcePath, options) {
         .trim();
     } else if (ts.isClassDeclaration(node)) {
       const firstMember = node.members[0];
-      const headerEnd = firstMember
-        ? firstMember.getFullStart()
-        : node.end - 1;
+      const headerEnd = firstMember ? firstMember.getFullStart() : node.end - 1;
       signature = `${source
         .slice(node.getStart(sourceFile), headerEnd)
         .trim()}\n}`;
@@ -492,11 +497,7 @@ function outputRecipeFenceRegion(target, region, recipeId) {
     throw new Error(`Missing recipe for generated region: ${recipeId}`);
   }
 
-  outputGeneratedRegion(
-    target,
-    region,
-    `\`\`\`tsx\n${recipe.source}\n\`\`\``,
-  );
+  outputGeneratedRegion(target, region, `\`\`\`tsx\n${recipe.source}\n\`\`\``);
 }
 
 const customAppSurfacesPage = path.join(
@@ -830,7 +831,8 @@ function renderReferenceSections(entries, targetFile) {
             .join("\n")}\n`
         : "";
       const entryDescription = stripSelfSeeReference(
-        entry.description || `Exported ${entry.kind} from ${entry.sourcePackage}.`,
+        entry.description ||
+          `Exported ${entry.kind} from ${entry.sourcePackage}.`,
         pageUrl,
       );
       return `## ${entry.name}\n\n${entryDescription}\n\n\`\`\`ts\n${entry.signature}\n\`\`\`\n${members}`;
@@ -850,12 +852,27 @@ const fieldPageContracts = {
   "date.mdx": ["DateField", "DateFieldAdmin", "DateFormat"],
   "datetime.mdx": ["DateTimeField", "DateFieldAdmin", "DateFormat"],
   "time.mdx": ["TimeField", "DateFieldAdmin", "DateFormat"],
-  "select.mdx": ["SelectField", "SelectFieldAdmin", "OptionFormat", "DisplayTone"],
-  "multi-select.mdx": ["MultiSelectField", "MultiSelectFieldAdmin", "OptionFormat", "DisplayTone"],
+  "select.mdx": [
+    "SelectField",
+    "SelectFieldAdmin",
+    "OptionFormat",
+    "DisplayTone",
+  ],
+  "multi-select.mdx": [
+    "MultiSelectField",
+    "MultiSelectFieldAdmin",
+    "OptionFormat",
+    "DisplayTone",
+  ],
   "url.mdx": ["UrlField", "UrlFieldAdmin", "UrlLinkValue", "LinkFormat"],
   "icon.mdx": ["IconField", "IconFieldAdmin"],
   "radio.mdx": ["RadioField", "RadioFieldAdmin", "OptionFormat", "DisplayTone"],
-  "boolean.mdx": ["BooleanField", "BooleanFieldAdmin", "BooleanFormat", "DisplayTone"],
+  "boolean.mdx": [
+    "BooleanField",
+    "BooleanFieldAdmin",
+    "BooleanFormat",
+    "DisplayTone",
+  ],
   "json.mdx": ["JsonField", "JsonFieldAdmin", "JsonFormat"],
   "relationship.mdx": ["RelationshipField"],
   "image.mdx": ["ImageField"],
@@ -919,7 +936,8 @@ const referenceTargets = [
   {
     file: "basics/database/overview.mdx",
     region: "REFERENCE-DATABASE-ADAPTERS",
-    select: (entry) => entry.category === "adapters" && isDatabaseAdapter(entry),
+    select: (entry) =>
+      entry.category === "adapters" && isDatabaseAdapter(entry),
   },
   {
     file: "features/upload/storage-adapters.mdx",
@@ -1083,22 +1101,24 @@ const intentLines = recipes.flatMap((recipe) =>
       `- “${intent}” → [${recipe.title}](https://docs.dyrected.com${recipe.docsPath})`,
   ),
 );
-const modelingRules = fs.readFileSync(
-  path.join(sharedRulesRoot, "content-modeling.md"),
-  "utf8",
-).trim();
+const integrationContract = fs
+  .readFileSync(path.join(sharedRulesRoot, "integration-contract.md"), "utf8")
+  .trim();
 
-const cmsGenerationRules = fs.readFileSync(
-  path.join(sharedRulesRoot, "cms-generation.md"),
-  "utf8",
-).trim();
+const modelingRules = fs
+  .readFileSync(path.join(sharedRulesRoot, "content-modeling.md"), "utf8")
+  .trim();
 
-const frontendRules = fs.readFileSync(
-  path.join(sharedRulesRoot, "frontend-integration.md"),
-  "utf8",
-).trim();
+const cmsGenerationRules = fs
+  .readFileSync(path.join(sharedRulesRoot, "cms-generation.md"), "utf8")
+  .trim();
+
+const frontendRules = fs
+  .readFileSync(path.join(sharedRulesRoot, "frontend-integration.md"), "utf8")
+  .trim();
 
 const generatedSections = {
+  INTEGRATION_CONTRACT: integrationContract,
   MODELING_RULES: modelingRules,
   CMS_GENERATION_RULES: cmsGenerationRules,
   FRONTEND_RULES: frontendRules,
@@ -1111,25 +1131,26 @@ const generatedSections = {
     .join("\n"),
   INTENTS: intentLines.join("\n"),
   REFERENCES: [
+    "- [Installation](https://docs.dyrected.com/docs/basics/getting-started/installation)",
+    "- [CLI and schema synchronization](https://docs.dyrected.com/docs/basics/cli/overview)",
     "- [Configuration](https://docs.dyrected.com/docs/basics/configuration/overview)",
+    "- [Collections](https://docs.dyrected.com/docs/basics/configuration/collections)",
+    "- [Globals](https://docs.dyrected.com/docs/basics/configuration/globals)",
     "- [Fields](https://docs.dyrected.com/docs/basics/fields/overview)",
+    "- [Rich text](https://docs.dyrected.com/docs/basics/fields/rich-text)",
+    "- [Blocks](https://docs.dyrected.com/docs/basics/fields/blocks)",
+    "- [Admin](https://docs.dyrected.com/docs/features/admin/overview)",
+    "- [Preview](https://docs.dyrected.com/docs/features/admin/preview)",
     "- [Hooks](https://docs.dyrected.com/docs/basics/hooks/overview)",
     "- [Database adapters](https://docs.dyrected.com/docs/basics/database/overview)",
     "- [Storage adapters](https://docs.dyrected.com/docs/features/upload/storage-adapters)",
     "- [SDK](https://docs.dyrected.com/docs/managing-data/sdk-api/overview)",
     "- [Workflows](https://docs.dyrected.com/docs/features/workflows/overview)",
     "- [REST and OpenAPI](https://docs.dyrected.com/docs/managing-data/rest-api/overview)",
+    "- [Documentation index for agents](https://docs.dyrected.com/llms.txt)",
+    "- [Existing-site agent workflow](https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt)",
   ].join("\n"),
 };
-outputGeneratedRegion(
-  path.join(
-    newDocsRoot,
-    "quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt.mdx",
-  ),
-  "MODELING_RULES",
-  generatedSections.MODELING_RULES,
-);
-
 function renderHybridTemplate(templatePath) {
   let rendered = fs.readFileSync(templatePath, "utf8").trimEnd();
   for (const [name, content] of Object.entries(generatedSections)) {
@@ -1154,11 +1175,6 @@ const skill = renderHybridTemplate(
 );
 const generateCmsPromptCompiled = renderHybridTemplate(
   path.join(promptTemplatesRoot, "generate-cms.template.md"),
-);
-
-outputFile(
-  path.join(promptSnapshotsRoot, "generate-cms.md"),
-  generateCmsPromptCompiled,
 );
 
 const generateSitePromptCompiled = renderHybridTemplate(
@@ -1220,41 +1236,51 @@ outputFile(
   `/* Generated by scripts/generate.mjs. Do not edit manually. */\nexport const AI_RULES = ${JSON.stringify(aiRules)};\nexport const SKILL = ${JSON.stringify(skill)};\nexport function buildAiRules(): string { return AI_RULES; }\n`,
 );
 
-const generateCmsPrompt = generateCmsPromptCompiled.replace(/\r\n/g, "\n");
-const cloudInstallSection = `## STAGE 4 — INSTALL
-
-After I approve Stage 3:
-
-Ask me for the following in one message:
+const installRequirementsToken = "{{DYRECTED_INSTALL_REQUIREMENTS}}";
+const cloudInstallRequirements = `If credentials are not already configured, ask me for the following in one
+message:
 
 - Site ID
 - Site API key
 - Base URL
 
-Wait for my reply.
+Wait for my reply before using credentials.`;
 
-Then proceed.`;
-
-const selfHostedInstallSection = `## STAGE 4 — INSTALL
-
-After I approve Stage 3:
-
-Ask me for the following in one message:
+const selfHostedInstallRequirements = `If the required connection details are
+not already configured, ask me for the following in one message:
 
 - Database adapter (e.g. SQLite, PostgreSQL) and database URL/credentials
 - Authentication/Security keys (e.g. JWT_SECRET, ENCRYPTION_KEY)
 - Base URL (or backend origin URL)
 
-Wait for my reply.
+Wait for my reply before using credentials.`;
 
-Then proceed.`;
+function compileCmsPrompt(installRequirements) {
+  if (!generateCmsPromptCompiled.includes(installRequirementsToken)) {
+    throw new Error(
+      `generate-cms.template.md is missing ${installRequirementsToken}`,
+    );
+  }
 
-const generateCmsPromptSelfHosted = generateCmsPrompt.replace(cloudInstallSection, selfHostedInstallSection);
+  return generateCmsPromptCompiled
+    .replace(installRequirementsToken, installRequirements)
+    .replace(/\r\n/g, "\n");
+}
+
+const generateCmsPrompt = compileCmsPrompt(cloudInstallRequirements);
+const generateCmsPromptSelfHosted = compileCmsPrompt(
+  selfHostedInstallRequirements,
+);
+outputFile(
+  path.join(promptSnapshotsRoot, "generate-cms.md"),
+  generateCmsPrompt,
+);
+
 const generateSitePrompt = generateSitePromptCompiled.replace(/\r\n/g, "\n");
 
 outputFile(
   generatedPromptsSource,
-  `/* Generated by scripts/generate.mjs. Do not edit manually. */\nexport const GENERATE_CMS_PROMPT = ${JSON.stringify(generateCmsPrompt)};\nexport const GENERATE_CMS_PROMPT_CLOUD = GENERATE_CMS_PROMPT;\nexport const GENERATE_CMS_PROMPT_SELF_HOSTED = ${JSON.stringify(generateCmsPromptSelfHosted)};\nexport const GENERATE_SITE_PROMPT = ${JSON.stringify(generateSitePrompt)};\n`,
+  `/* Generated by scripts/generate.mjs. Do not edit manually. */\nexport const CMS_PROMPT_CLOUD_CREDENTIAL_REQUEST = ${JSON.stringify(cloudInstallRequirements)};\nexport const GENERATE_CMS_PROMPT = ${JSON.stringify(generateCmsPrompt)};\nexport const GENERATE_CMS_PROMPT_CLOUD = GENERATE_CMS_PROMPT;\nexport const GENERATE_CMS_PROMPT_SELF_HOSTED = ${JSON.stringify(generateCmsPromptSelfHosted)};\nexport const GENERATE_SITE_PROMPT = ${JSON.stringify(generateSitePrompt)};\n`,
 );
 
 const docEntries = walkFiles(allDocsRoot, ".mdx").map((filename) => {

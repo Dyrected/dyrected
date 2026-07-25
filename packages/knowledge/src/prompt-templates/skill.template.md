@@ -1,79 +1,73 @@
 ---
 name: dyrected
-description: Install, model, migrate, and wire Dyrected in new or existing projects, especially when converting an existing website into a reusable-block CMS without changing its design or behavior.
+description: Install, model, migrate, and connect Dyrected in new or existing projects using current docs, installed package types, safe schema changes, and verified frontend editing.
 ---
 
 # Dyrected
 
-Dyrected is a declarative, schema-driven headless CMS configured primarily through `dyrected.config.ts`.
+Dyrected is a declarative, schema-driven headless CMS configured primarily
+through `dyrected.config.ts`.
 
-## Step 0 — determine the project state
+## Existing Project Integration Contract
 
-Before changing code, inspect the nearest `package.json` and the workspace root.
+<!-- GENERATED:INTEGRATION_CONTRACT:START -->
+<!-- GENERATED:INTEGRATION_CONTRACT:END -->
 
-### Dyrected is not installed
+## Start from the installed state
 
-Use the CLI:
+Inspect the nearest `package.json`, workspace root, and existing config.
+
+If Dyrected is absent, use the CLI:
 
 ```bash
 npx dyrected init
 ```
 
-Detect the framework, package manager, database requirements, storage requirements and deployment target. Let the CLI scaffold configuration, environment variables, Admin integration and AI rules. Verify lint, types and build before modeling content.
+For automated agent work, pass the non-interactive options instead of skipping
+the CLI because the default command is interactive:
 
-For an existing website, first inventory editable content and distinguish repeatable entries from singleton settings. Preserve the existing interface, content, URLs and behavior. Do not invent a new content model merely because it is convenient.
+```bash
+npx dyrected init -y -f next -b cloud -p admin
+npx dyrected init -y -f next -b self-hosted -d postgres -s s3 -p admin
+```
 
-### Dyrected is installed
+Choose those option values from the existing project and user-provided site
+details. If the needed values are not obvious, run `npx dyrected init --help`
+and use the installed CLI's current option list. Let the CLI detect the
+framework and scaffold configuration, environment variables, Admin integration,
+type generation, and AI rules where possible. If Dyrected is already installed,
+inspect its version, public exports, config, database, storage, authentication,
+workflows, collections, and globals before changing anything.
 
-Read `dyrected.config.ts`, the installed `@dyrected/core` version and its public exports. Inspect the configured database, storage, email, collections, globals, authentication and workflows before proposing changes. Installed types take precedence over remembered APIs or newer documentation.
+## Public API
 
-## Operational rules
-
-1. Use public package imports such as `@dyrected/core` and `@dyrected/sdk`; do not reach into another workspace package's source directory.
-2. Every named field must define an explicit `label`.
-3. Never invent field types, hook names, configuration keys, adapter methods, SDK methods or REST routes.
-4. Use `client.collection('slug')`, never `client.collections`.
-5. Do not wrap Dyrected Admin routes in custom auth/session middleware.
-6. Do not define `email` or `password` fields on `auth: true` collections; Dyrected injects them.
-7. Do not delete or directly rename persisted fields. Use `renameTo`; add a safe `defaultValue` when introducing fields to existing schemas.
-8. Use server hooks for data correctness. Admin hooks improve live editor feedback but API writes bypass them.
-9. Use serializable Jexl conditions for Cloud-compatible schemas.
-10. Enforce permissions in server access configuration, not only by hiding Admin controls.
-
-## Core imports
-
-Import public APIs from package entry points:
+Import only from package entry points:
 
 ```ts
 import {
+  defineBlock,
+  defineBlocksField,
   defineCollection,
   defineConfig,
   defineGlobal,
-  defineTextField,
-  defineSelectField,
-  defineRelationshipField,
   defineJoinField,
+  defineRelationshipField,
+  defineRichTextField,
+  defineSelectField,
+  defineTextField,
 } from "@dyrected/core";
 import { createClient, type InferSchema } from "@dyrected/sdk";
 ```
 
-Never import from a monorepo source path such as `packages/core/src`. Verify the installed package exports when documentation and local types disagree.
+Use the dedicated installed `define[FieldName]Field` helper and give every
+named field a `label`. Never substitute an internal monorepo source import when
+an export is missing.
 
-## Schema and deployment safety
+## Rename a field safely
 
-- Read the existing schema before editing it.
-- Make related changes in small batches and verify each batch.
-- Confirm whether the project is Cloud or self-hosted before giving schema synchronization instructions.
-- MongoDB is schema-less; relational adapters may require synchronization for promoted fields.
-- Use `relationship` for the owning stored reference and `join` for a virtual reverse lookup.
-- Use `depth: 0` for lightweight lists and increase depth only when related documents are required.
-- Use hooks for derived values, validation, side effects and revalidation.
-- Use `workflow: publishingWorkflow()` when the requirement is draft, review and publication rather than inventing status logic.
-- Use `defineGlobal` for singleton settings and `defineCollection` for repeatable entries.
-
-### Rename a field safely
-
-The current `name` is the new key and `renameTo` is the previous stored key:
+Treat field names as persisted data contracts. Use the rename mechanism
+supported by the installed package instead of deleting the old field and
+creating a new one.
 
 ```ts
 defineTextField({
@@ -81,59 +75,40 @@ defineTextField({
   label: "Full name",
   renameTo: "name",
   defaultValue: "",
-})
+});
 ```
 
-Keep the fallback until production documents are migrated and verified. For relational adapters, test promoted or unique changes in staging before synchronization.
-
-### Content Architecture & Modeling Guidelines
-
-<!-- GENERATED:MODELING_RULES:START -->
-<!-- GENERATED:MODELING_RULES:END -->
-
-### CMS Generation & Migration Workflow
-
-<!-- GENERATED:CMS_GENERATION_RULES:START -->
-<!-- GENERATED:CMS_GENERATION_RULES:END -->
-
-### Frontend Integration Guidelines
-
-<!-- GENERATED:FRONTEND_RULES:START -->
-<!-- GENERATED:FRONTEND_RULES:END -->
-
-### Zero-state behavior
-
-Use `initialData` only when deliberate seed/fallback behavior is desired:
-
-```ts
-const { docs } = await client.collection("posts").find({ initialData: [] });
-const settings = await client
-  .global("site-settings")
-  .get({ initialData: { siteName: "My site" } });
-```
-
-Do not convert authentication, validation, or network failures into empty successful states.
+Keep `renameTo` until stored documents have been migrated and verified.
+Generate and validate the schema before synchronization, then verify existing
+records retain their values.
 
 ## Relationships and depth
 
-`relationship` is the stored owning reference. `join` is a virtual reverse lookup.
+`relationship` stores the owning reference. `join` is a virtual reverse lookup.
 
 ```ts
-defineRelationshipField({ name: "author", label: "Author", relationTo: "users" })
+defineRelationshipField({
+  name: "author",
+  label: "Author",
+  relationTo: "users",
+});
+
 defineJoinField({
   name: "posts",
   label: "Posts",
   collection: "posts",
   on: "author",
   limit: 20,
-})
+});
 ```
 
-Use `depth: 0` for lightweight lists and increase depth only when related values are needed. Bound joins and account for their query cost.
+Use `depth: 0` for lists and increase depth only when populated data is needed.
+Bound joins and account for their query cost.
 
 ## Auth and access
 
-`auth: true` injects authentication fields and endpoints. Do not redefine `email` or `password`. Treat roles as trusted only when clients cannot assign them to themselves.
+`auth: true` injects authentication fields and endpoints. Do not redefine
+`email` or `password`.
 
 ```ts
 export const Users = defineCollection({
@@ -150,7 +125,8 @@ export const Users = defineCollection({
 });
 ```
 
-Grant read, create, update, delete, and workflow capabilities independently. UI visibility is not authorization.
+Grant read, create, update, delete, and workflow capabilities independently.
+Enforce ownership, roles, validation, and trusted values on the server.
 
 ## Uploads
 
@@ -162,25 +138,25 @@ export const Media = defineCollection({
     maxFileSize: 5_000_000,
   },
   fields: [
-    defineTextField({ name: "alt", label: "Alternative text", required: true }),
+    defineTextField({
+      name: "alt",
+      label: "Alternative text",
+      required: true,
+    }),
   ],
 });
 ```
 
-Consume the returned URL, keep provider credentials server-side, and validate untrusted file contents in addition to MIME metadata.
+Use returned media URLs, keep provider credentials server-side, and validate
+untrusted file contents in addition to MIME metadata.
 
-## Dynamic and conditional fields
+## Conditions and custom Admin surfaces
 
-- Static `options`: fixed choices.
-- Server `options` resolver: database access, secrets, user filtering, or caching.
-- `admin.hooks.options`: instant browser-only dependent choices.
-- `admin.condition`: presentation only; use Jexl strings for Cloud synchronization.
-
-Server validation is still required when a dependent choice or condition is part of the data contract.
-
-## Custom Admin components
-
-Reference custom inputs and slots with registered string keys in serializable configuration. Register the actual framework component in the Admin integration. Keep validation and access in the server field definition.
+- Use static options for fixed choices.
+- Use server option resolvers for database, secret, user, or cached choices.
+- Use Admin option hooks only for browser-safe dependent choices.
+- Treat `admin.condition` as presentation, not validation or authorization.
+- Use registered string keys for custom components in serializable config.
 
 ## Supported field types
 
@@ -189,7 +165,8 @@ Reference custom inputs and slots with registered string keys in serializable co
 
 ## Compiled recipes
 
-These recipes are compiled and behavior-tested. Select them from the user's desired outcome; do not require the user to know Dyrected terminology.
+Select recipes from the user's desired outcome. Do not require the user to know
+Dyrected terminology.
 
 <!-- GENERATED:RECIPES:START -->
 <!-- GENERATED:RECIPES:END -->
@@ -204,30 +181,26 @@ These recipes are compiled and behavior-tested. Select them from the user's desi
 <!-- GENERATED:REFERENCES:START -->
 <!-- GENERATED:REFERENCES:END -->
 
-## Work sequence
-
-1. Inspect installation, versions, framework and existing configuration.
-2. Translate the plain-language outcome into the matching recipe or documented contract.
-3. Implement no more than three related collections or globals in one batch.
-4. Keep every field labeled and preserve stored data during schema evolution.
-5. Run lint, types, focused tests and build; fix failures before expanding scope.
-6. Explain decisions in the user's language. Do not ask them to choose between technical CMS concepts when the intent determines the correct pattern.
-
 ## Troubleshooting
 
-- Missing export: inspect the installed package version; do not substitute an internal source import.
-- Admin route failure: remove custom auth wrappers and verify the framework integration generated by the CLI.
-- Empty frontend: provide an intentional zero-state or SDK `initialData` fallback.
-- Relationship payload too large: lower query depth.
-- Cloud condition missing: replace callback conditions with Jexl strings.
-- Existing records fail after a schema change: restore the old key through `renameTo` and add a compatible default.
+- Missing export: inspect the installed version; do not use an internal source
+  import.
+- Admin route failure: compare the route with the framework integration
+  generated by the CLI and remove unsupported wrappers.
+- Empty frontend: distinguish intentional zero-state content from an
+  authentication, validation, or network failure.
+- Large relationship payload: lower query depth.
+- Cloud config missing after sync: replace non-serializable functions with a
+  documented declarative form.
+- Existing records fail after a schema change: restore compatibility through
+  the installed rename mechanism and safe defaults.
 
 ## Completion checklist
 
-- Installed package APIs were verified.
+- Current docs and installed exports were checked.
 - Existing configuration and content were inspected.
-- Named fields have labels.
-- Access and auth are server-enforced.
-- Migrations preserve existing data.
-- Generated knowledge is current.
-- Lint, type checking, tests and build pass.
+- Named fields have labels and Admin content types have valid icon names.
+- Schema changes preserve stored data.
+- Dyrected is the verified frontend source of truth.
+- Access and secrets remain server-side.
+- Generated artifacts, lint, types, tests, and build pass.

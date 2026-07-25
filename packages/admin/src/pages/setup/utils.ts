@@ -1,4 +1,8 @@
-import { GENERATE_CMS_PROMPT } from "@dyrected/knowledge";
+import {
+  CMS_PROMPT_CLOUD_CREDENTIAL_REQUEST,
+  GENERATE_CMS_PROMPT,
+  GENERATE_CMS_PROMPT_SELF_HOSTED,
+} from "@dyrected/knowledge";
 import type { SetupPromptConfig } from "./setup-prompt";
 
 const GUIDE_URL = "https://www.dyrected.com/guide";
@@ -23,18 +27,12 @@ export function buildGuideUrl(config: SetupPromptConfig): string {
 }
 
 export function buildPrompt(config: SetupPromptConfig): string {
-  const { siteId, apiKey, baseUrl } = config;
+  const { siteId, apiKey, baseUrl, isSelfHosted } = config;
+  if (isSelfHosted) return GENERATE_CMS_PROMPT_SELF_HOSTED;
+
   const hasCredentials = siteId && apiKey && baseUrl;
 
   if (!hasCredentials) return GENERATE_CMS_PROMPT;
-
-  const placeholder = `Ask me for the following in one message:
-
-- Site ID
-- Site API key
-- Base URL
-
-Wait for my reply.`;
 
   const replacement = `Use the following credentials:
 
@@ -42,5 +40,8 @@ Wait for my reply.`;
 - Site API key: ${apiKey}
 - Base URL: ${baseUrl}`;
 
-  return GENERATE_CMS_PROMPT.replace(placeholder, replacement);
+  return GENERATE_CMS_PROMPT.replace(
+    CMS_PROMPT_CLOUD_CREDENTIAL_REQUEST,
+    replacement,
+  );
 }

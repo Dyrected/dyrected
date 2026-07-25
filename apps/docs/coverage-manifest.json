@@ -6,6 +6,7 @@
       "simplePublishingWorkflow",
       "workflowCapabilities",
       "canViewWorkflowDraft",
+      "publishedStateName",
       "availableWorkflowTransitions",
       "initializeWorkflowDocument",
       "materializeWorkflowDocument",

@@ -403,7 +403,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * URL to open in the Live Preview pane when editing a document.
      *
      * Pass a Jexl string to keep the config serializable, for example
-     * `'slug == "home" ? "/" : "/blog/" + slug'`. This is usually the best
+     * `'slug == "home" ? "/" : "/" + slug'`. This is usually the best
      * default, especially when the schema needs to stay portable across
      * environments such as Dyrected Cloud.
      *
@@ -411,10 +411,10 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      * project.
      *
      * @example
-     * previewUrl: 'slug == "home" ? "/" : "/blog/" + slug'
+     * previewUrl: 'slug == "home" ? "/" : "/" + slug'
      *
      * @example
-     * previewUrl: (doc) => `https://mysite.com/blog/${doc.slug}`
+     * previewUrl: (doc) => `/blog/${doc.slug}`
      */
     previewUrl?: string | ((doc: TDoc, opts: { locale?: string }) => string | null);
 

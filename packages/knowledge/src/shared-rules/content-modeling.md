@@ -1,1310 +1,252 @@
-## Core Philosophy
+## Content Modeling Rules
 
-Dyrected should make websites editable as structured content, not as one large page object.
+Model the meaning of content before its current component shape. A sound model
+should still make sense if the frontend is redesigned, while the integration
+must preserve the frontend that exists today.
 
-The website should be modelled using:
+Use three content categories:
 
-1. Globals
-2. Collections
-3. Reusable Page Sections
+1. **Globals** for one shared site-wide value.
+2. **Collections** for repeatable business content.
+3. **Page sections** for meaningful content areas arranged inside pages.
 
-Globals are for shared site-wide settings.
+Do not create a content type merely because the current code contains an
+object, array, component, tab, or group of strings.
 
-Collections are for repeatable business content.
+## Editing Boundary
 
-Page Sections are reusable building blocks that editors can use to build and update pages.
+Treat a value as editable when an owner could reasonably change what the site
+communicates, asks, shows, recommends, or presents without changing how the
+interface works.
 
-If something is a meaningful page section, it should be treated as a reusable section type by default.
+Common editable content includes:
 
-Do not lock a section to only one page unless it is truly technical interface logic and not website content.
+- page headings, supporting copy, calls to action, and destination links
+- services, products, projects, people, testimonials, FAQs, posts, and events
+- meaningful images and alternative text
+- navigation, footer content, contact details, and shared business information
+- questions, options, ranges, recommendations, and result copy that define an
+  existing interactive experience
+- long-form articles, policies, resources, and case studies
 
-Do not ask whether the page should be fixed or flexible.
+Keep these in application or UI code unless explicitly approved:
 
-If the website contains meaningful visible sections, use reusable Page Sections by default.
+- layout, spacing, typography, visual styling, animation, and responsive logic
+- decorative assets, interface icons, loading text, validation messages, and
+  control labels tied to application behaviour
+- state management, navigation logic, calculations, scoring functions,
+  authentication, submissions, API calls, dashboards, analytics, and user data
+- fragments whose extraction would make the code harder to understand without
+  giving the owner useful control
 
-The editor should be able to choose where approved section types are used.
+Content definitions used by an interactive feature may be editable. The
+feature's runtime behaviour remains code-owned.
 
-The editor should be able to arrange approved Page Sections where Dyrected supports page blocks.
+## Globals
 
-Preserve the existing design by limiting editors to approved section types, approved variants, and safe editable fields.
+Use a Global only when there is exactly one shared current document.
 
-Do not let editors create arbitrary layouts the frontend cannot render.
+Typical examples:
 
-Do not let editors create arbitrary styles, variants, components, or unsupported blocks.
+- site settings
+- navigation
+- footer
+- contact details
+- social links
+- announcement banner
+- default SEO information
 
----
+Do not turn a page, page section, list, or repeatable business concept into a
+Global because only one instance exists today.
 
-## Dyrected Documentation Rule
+## Collections
 
-Before using any Dyrected feature, read the relevant Dyrected documentation.
-
-Full documentation index (fetch this first to navigate all available pages):
-https://docs.dyrected.com/llms.txt
-
-Main documentation:
-https://docs.dyrected.com
-
-Schema and initialData:
-https://docs.dyrected.com/docs/concepts/schema
-
-Fields:
-https://docs.dyrected.com/docs/basics/fields/overview
-
-Configuration, admin options, useAsTitle, previewUrl, previewMode, and urlPattern:
-https://docs.dyrected.com/docs/basics/configuration/overview
-
-Admin and Live Preview:
-https://docs.dyrected.com/docs/admin/overview
-
-Storage and media:
-https://docs.dyrected.com/docs/features/upload/storage-adapters
-
-Use only APIs, configuration options, field types, hooks, preview options, media options, and behaviour supported by the installed Dyrected package and the current documentation.
-
-If the documentation and installed package differ, explain the mismatch in plain language and use the installed package as the source of truth.
-
-Do not invent Dyrected functions, configuration options, hooks, field types, access rules, storage options, preview options, or package APIs.
-
-Do not guess.
-
-If something is not supported, say so plainly and choose the safest supported approach.
-
----
-
-## Content Architecture Rules
-
-Every editable item must belong to exactly one of these content categories:
-
-1. Global
-2. Collection
-3. Page Section
-
-Do not store every page as a global.
-
-Do not treat a whole page as one editable object unless the page truly contains only one meaningful content section.
-
-Do not preserve a page as one large CMS object just because the current code is written as one large component.
-
-The CMS model should follow the visible content structure of the website, not just the current code structure.
-
----
-
-## Global
-
-Use a Global only for content that has exactly one shared version across the website.
-
-Good examples:
-
-- Site name
-- Logo
-- Navigation
-- Footer
-- Company contact details
-- Social links
-- Default SEO content
-- Shared announcement banner
-- Shared business information
-
-Do not use a Global as a dumping ground for an entire page.
-
-Do not put homepage sections, landing page sections, services, testimonials, FAQs, projects, products, team members, blog content, or page sections into globals unless they are truly single shared site-wide settings.
-
-Globals are usually edited in one place and reused across the whole website.
-
----
-
-## Collection
-
-Use a Collection when the website has, or is likely to have, multiple entries of the same business concept.
-
-Strong signals:
-
-- Cards
-- Lists
-- Grids
-- Repeatable items
-- Multiple similar entries
-- Content that can grow over time
-- Content that represents a real-world business entity
-- Content definitions that power interactive experiences
-
-Good examples:
-
-- Services
-- Team members
-- Testimonials
-- FAQs
-- Projects
-- Case studies
-- Products
-- Blog posts
-- Events
-- Pricing plans
-- Partners
-- Portfolio items
-- Resources
-- Locations
-- Questions
-- Options
-- Result categories
-- Recommendations
-- Assessment questions
-- Quiz questions
-- Product finder options
-- Calculator ranges
-- Booking services
-
-Collections should represent business content, not UI layout.
-
-Good names:
-
-- Services
-- Testimonials
-- Team Members
-- Projects
-- FAQs
-- Blog Articles
-- Questions
-- Result Categories
-
-Bad names:
-
-- Blue Cards
-- Section Two Items
-- Homepage Boxes
-- Three Column Grid
-
-Use clear names based on the language already used by the project.
-
-If a section displays a list of real-world items, model the list as a Collection unless the items are clearly decorative or purely layout-specific.
-
----
-
-## Page Section
-
-Use a Page Section when the content exists because of where it appears on a page.
-
-A Page Section is a meaningful block of content inside a page. In Dyrected configuration, page sections are typically implemented as blocks.
-
-Page Sections should be reusable by default.
-
-Good examples:
-
-- Hero
-- Feature Grid
-- Statistics
-- Call to Action
-- Testimonials Section
-- FAQ Section
-- Gallery
-- Logo Cloud
-- Pricing Section
-- Comparison Table
-- Timeline
-- Contact Section
-- Newsletter Section
-- Benefits Section
-- Process Section
-- Assessment CTA
-- Booking CTA
-- Warning CTA
-- Profile Section
-- Blog CTA
-- Featured Posts Section
-- Services Preview Section
-- Interactive Tool Intro Section
-- Result Summary Section
-
-Page Sections belong inside pages, but the section type itself should be reusable.
-
-For example, do not create:
-
-- Home Hero
-- About Hero
-- Blog Hero
-- Services Hero
-
-if they are all versions of the same idea.
-
-Instead create:
-
-- Hero Section
-
-with variants such as:
-
-- Hero with Image
-- Centered Hero
-- Minimal Hero
-- Blog Hero
-- Split Hero
-
-A variant controls the approved visual style of a reusable section.
-
-The editor should be able to use the approved Hero Section where it makes sense, then choose an approved variant.
-
-Do not convert page sections into globals simply because only one currently exists.
-
-Do not create separate section types merely because the wording differs.
-
-If multiple pages contain similar section types, create one reusable section type with variants instead of separate page-specific sections.
-
----
-
-## Hero Section Rule
-
-Hero must be treated as a reusable Page Section when it appears on more than one page.
-
-Do not add Hero as a top-level field on the Pages collection.
-
-Do not create separate hero fields per page.
-
-Do not create:
-
-- homeHero
-- aboutHero
-- blogHero
-- servicesHero
-
-Do create:
-
-- Hero Section block
-
-with approved variants such as:
-
-- Centered Hero
-- Hero with Image
-- Split Hero
-- Minimal Hero
-- Blog Hero
-
-Every page that has a hero should include a Hero block inside the page layout/sections blocks field.
-
-Good page shape:
-
-Page:
-
-- title
-- slug
-- layout:
-  - Hero block
-  - Feature Grid block
-  - CTA block
-
-Bad page shape:
-
-Page:
-
-- title
-- slug
-- hero
-- layout:
-  - Feature Grid block
-  - CTA block
-
-The Hero belongs in the same reusable block system as other Page Sections.
-
----
-
-## Section Reuse Rule
-
-Every meaningful page section should be treated as a reusable section type by default.
-
-If the visible page contains multiple content areas such as:
-
-- Hero
-- Features
-- Services
-- Testimonials
-- FAQ
-- CTA
-- Gallery
-- Stats
-- Process
-- Contact
-- Timeline
-- Profile
-- Pricing
-- Blog CTA
-- Assessment CTA
-- Result Summary
-- Interactive Tool Intro
-
-model them as separate reusable Page Sections.
-
-Do this even if the current code does not have separate section components.
-
-Do this even if the page is currently built as one large component.
-
-Do this even if the current content is stored as one large object.
-
-The current code structure should not force the CMS structure.
-
-The visible website structure should drive the CMS structure.
-
----
-
-## Content-First Modelling
-
-Model the meaning of the content before modelling the UI.
-
-The content model should still make sense if the website is redesigned later.
-
-Good:
-
-- Services
-- Testimonials
-- Case Studies
-- Team Members
-- Hero Section
-- CTA Section
-- FAQ Section
-- Process Section
-- Blog Articles
-- Questions
-- Result Categories
-- Recommendations
-
-Poor:
-
-- Left Cards
-- Green Boxes
-- Homepage Row
-- Section Two
-- Component Content
-
-Do not name content based only on visual layout, color, spacing, or component position.
-
-Use names the website owner will understand.
-
----
-
-## Content-Driven Feature Rule
-
-Some website content powers interactive features.
-
-Do not exclude content merely because it appears inside a quiz, assessment, calculator, booking flow, form wizard, configurator, onboarding flow, recommendation tool, product finder, diagnostic, survey, eligibility checker, pricing estimator, course placement test, application form, or other interactive experience.
-
-Separate the editable content model from the application logic.
-
-CMS-managed content may include:
-
-- Questions
-- Prompts
-- Labels
-- Options
-- Option descriptions
-- Option scores or weights, if they already exist as data
-- Result categories
-- Score ranges
-- Recommendations
-- Descriptions
-- Help text
-- Step content
-- Display rules that already exist as data
-- Messages shown to users
-- CTA copy
-- Images used inside the flow
-- Result page copy
-- Explanation text shown after interaction
-
-Application logic should usually stay in code:
-
-- State management
-- Form navigation
-- Score calculation functions
-- Validation behaviour
-- Conditional rendering logic
-- Authentication behaviour
-- localStorage/session behaviour
-- API calls
-- Submission handling
-- Dashboard history
-- User-specific saved results
-- Analytics
-
-Do not treat content as application logic just because application logic uses it.
-
-If the website owner would reasonably want to edit the questions, options, labels, recommendations, ranges, messages, or user-facing result content, include that content in the CMS plan.
-
-If changing a value could break the feature, protect it with validation, required fields, allowed options, limits, versioning, or admin-only access instead of excluding it automatically.
-
-Do not store user submissions, user answers, private user history, analytics, or personal records in Dyrected unless the approved plan explicitly includes product data management.
-
-Dyrected should manage the content definition.
-
-The app code should manage the behaviour.
-
-Product data should be separate unless explicitly approved.
-
----
-
-## Pattern Detection
-
-Before deciding the structure, compare every page, route, and major component.
-
-Look for repeated visual and content patterns.
-
-If similar sections appear across multiple pages, treat them as the same reusable section type.
-
-Examples of reusable section types:
-
-- Hero
-- Feature Grid
-- FAQ
-- Testimonials
-- CTA
-- Pricing
-- Gallery
-- Stats
-- Process
-- Contact
-- Logo Cloud
-- Timeline
-- Profile
-- Blog CTA
-- Assessment CTA
-- Result Summary
-
-If the sections look different but serve the same purpose, use one section type with variants.
-
-Example:
-
-Hero Section
-
-- Centered Hero
-- Hero with Image
-- Split Hero
-- Minimal Hero
-
-CTA Section
-
-- Simple CTA
-- CTA with Image
-- Warning CTA
-- Final CTA
-
-Feature Section
-
-- Feature Grid
-- Feature List
-- Feature Cards
-
-Do not duplicate similar structures across different globals.
-
-Do not create one-off page-only sections when a reusable section type with variants would work.
-
----
-
-## Page Decomposition
-
-When analysing a page:
-
-1. Identify the page.
-2. Inspect the visible UI.
-3. Split the page into meaningful content sections based on what the visitor sees.
-4. Identify repeatable content inside each section.
-5. Decide whether repeatable content should be a Collection or local section items.
-6. Decide whether similar sections should share one reusable section type with variants.
-7. Prepare the page to be represented as an ordered list of approved reusable sections.
-
-Never treat an entire page as a single editable object unless the page contains only one logical content section.
-
-If a page is currently built as one large component or one large content object, still inspect the visible UI and break it into meaningful sections based on what the user sees.
-
-Do not preserve a page as one CMS object just because the code is not already separated into section components.
-
-If the visible page contains multiple content areas such as hero, features, services, testimonials, FAQ, CTA, gallery, stats, or contact, model them as separate Page Sections even if the current code does not have separate section components.
-
-Good:
-
-Home Page
-
-- Hero Section
-- Services Preview Section
-- Testimonials Section
-- CTA Section
-
-Bad:
-
-Home Page
-
-- One global object containing all homepage content
-
----
-
-## Future Growth Rule
-
-Choose structures that continue working as the business grows.
-
-Assume the website owner may later need to:
-
-- Add another service
-- Add another team member
-- Add another testimonial
-- Add another FAQ
-- Add another project
-- Add another product
-- Add another case study
-- Add another blog article
-- Add another question
-- Add another result category
-- Create another landing page
-- Reuse a section on another page
-- Change the order of sections
-- Use a hero section on a new page
-- Use a CTA section in more than one place
-
-Prefer reusable Page Sections for page content.
-
-Prefer Collections for repeatable business content.
-
-Prefer Globals only for shared site-wide content.
-
-Do not over-engineer.
-
-Do not allow arbitrary design freedom that the existing frontend cannot safely render.
-
----
-
-## Page Builder Rule
-
-Dyrected page content should use approved reusable sections as building blocks.
-
-If the website has meaningful visible page sections, implement page content as reusable section blocks.
-
-Do not ask whether the page should be fixed or flexible.
-
-Use page builder-style structure by default, but keep it controlled.
-
-Editors may arrange approved section types.
-
-Editors may choose approved section variants.
-
-Editors may edit safe content fields.
-
-Editors must not create arbitrary layouts, arbitrary components, arbitrary styles, or unsupported section types.
-
-The page builder should be safe, structured, and limited to the existing design system.
-
----
-
-## Page Collection Rule
-
-The Pages collection should use the page title as the admin display title.
-
-Always set:
-
-admin.useAsTitle = "title"
-
-Do not use slug as the primary title in the editor unless no human-readable title exists.
-
-The page slug is for routing.
-
-The page title is for humans.
-
-The Pages collection should contain page metadata fields such as:
-
-- title
-- slug
-- SEO fields, if present
-- layout / sections blocks
-
-The Pages collection should represent each page as an ordered list of approved reusable Page Section blocks.
-
-Do not place visible page sections such as Hero, CTA, FAQ, Testimonials, Contact, Pricing, Feature Grid, Gallery, Stats, Process, Profile, Services Preview, Result Summary, or Blog CTA as top-level fields on the Pages collection.
-
-All meaningful visible page content should be represented as reusable blocks inside the page layout/sections field.
-
-If Hero appears across multiple pages, Hero must be a reusable block with variants, not a top-level page field.
-
-Use variants for different approved hero styles, such as:
-
-- Centered Hero
-- Hero with Image
-- Split Hero
-- Minimal Hero
-- Blog Hero
-
-Use the title field for admin display.
-
-Use the slug field only for routing and URL generation.
-
----
-
-## Page Preview Rule
-
-When creating a Pages collection, configure Live Preview.
-
-Use Dyrected collection admin preview configuration when supported by the installed package.
-
-Set:
-
-- admin.useAsTitle to "title"
-- admin.previewUrl to derive the frontend URL from the page slug
-- admin.previewMode to the safest supported preview mode
-- admin.urlPattern where useful for internal URL fields
-
-For the home page, map the slug "home" to "/".
-
-For other pages, map the slug to `/{slug}`.
-
-Do not hardcode production-only preview URLs.
-
-Use the project’s existing public site URL environment variable if available.
-
-If no public site URL exists, add a clear public environment variable such as:
-
-- NEXT_PUBLIC_SITE_URL for Next.js
-- NUXT_PUBLIC_SITE_URL for Nuxt
-- VITE_SITE_URL for Vite
-- the framework-appropriate equivalent for the project
-
-If previewMode is "token", ensure the frontend preview route knows how to read the preview token according to the installed Dyrected package documentation.
-
-If previewMode is "postMessage", ensure the frontend can receive the current document data safely according to the installed Dyrected package documentation.
-
-Do not invent preview behaviour.
-
-Read the installed package types and Dyrected documentation before implementing preview.
-
-If preview is not supported by the installed package, explain that plainly and continue with the rest of the setup.
-
----
-
-## Blog and Routable Collection Preview Rule
-
-When creating a Blog Articles collection or any routable article/content collection, configure Live Preview when supported.
-
-Set:
-
-admin.useAsTitle = "title"
-
-Do not use slug as the primary display title for blog articles.
-
-The article title is for humans.
-
-The article slug is for routing.
-
-For blog articles, map the slug to:
-
-`/blog/{slug}`
-
-For other routable collections, derive the preview URL from the existing project route pattern.
-
-Examples:
-
-- `/projects/{slug}`
-- `/case-studies/{slug}`
-- `/resources/{slug}`
-- `/products/{slug}`
-
-Use the project’s existing route structure.
-
-Do not invent a new route structure.
-
-Do not hardcode production-only preview URLs.
-
-Use the project’s existing public site URL environment variable if available.
-
----
-
-## Variant Rule
-
-Use variants when one reusable section type can appear in different approved styles.
-
-Examples:
-
-Hero Section variants:
-
-- Centered Hero
-- Hero with Image
-- Split Hero
-- Minimal Hero
-- Blog Hero
-
-CTA Section variants:
-
-- Simple CTA
-- Final CTA
-- Warning CTA
-- CTA with Image
-
-Feature Section variants:
-
-- Feature Grid
-- Feature List
-- Feature Cards
-
-Contact Section variants:
-
-- Contact Channels
-- Contact Form Intro
-- Contact CTA
-
-Do not create separate block types when one section type with a variant field would be clearer.
-
-Do not allow editors to type arbitrary variant names.
-
-Use select options based on variants that already exist in the project.
-
-### How Variants Are Defined
-
-Variants are declared on the block, not as a normal field. Add a `variants` array to the block definition. Every variant shares the block's `fields`; only the rendered layout differs.
-
-Each entry in `variants` is a `BlockVariant`:
-
-- `slug` — required. Stable identifier stored on the block row. Never rename an existing slug, or already-saved rows lose their variant.
-- `label` — optional. Human-readable text shown in the variant switcher. Defaults to `slug` when omitted.
-- `icon` — optional. Lucide icon name shown beside the label in the switcher.
-- `description` — optional. One-line summary of what the variant looks like; surfaced as the switcher tooltip.
-
-Example:
-
-```ts
-{
-  slug: "hero",
-  labels: { singular: "Hero", plural: "Heroes" },
-  variants: [
-    { slug: "centered", label: "Centered", icon: "AlignCenter", description: "Title and subtitle centered, no image" },
-    { slug: "split", label: "Split", icon: "Columns2", description: "Copy on the left, image on the right" },
-    { slug: "minimal", label: "Minimal" },
-  ],
-  fields: [ /* one shared field set for every variant */ ],
-}
-```
-
-### How Variants Behave
-
-The selected variant slug is stored on the block row under the reserved `variant` key. Do not define a field named `variant` yourself — it is managed for you.
-
-Switching a variant preserves the author's content. Because all variants share one field set, changing the variant only rewrites the `variant` key; every field value is kept.
-
-The first variant is the default. When a block defines `variants`, new rows and any older rows saved before the block gained variants are initialised to `variants[0].slug`, so saving always round-trips a valid variant.
-
-In the Admin editor, a variant appears as a compact pill row at the top of the block's editor (labelled "Variant"), showing each variant's label and optional icon. Selecting a pill updates the live preview immediately.
-
-Only offer variants that already exist as approved designs. Do not invent variant slugs the frontend cannot render.
-
----
-
-## Media and Image Rule
-
-Images that communicate website content must be managed in Dyrected.
-
-Do not leave content images hardcoded unless they are purely decorative or part of the application interface.
-
-Editable images include:
-
-- Hero images
-- Blog cover images
-- Blog inline images
-- Author photos
-- Team member photos
-- Testimonial photos
-- Service images
-- Project images
-- Product images
-- Gallery images
-- CTA images
-- Profile images
-- Logo or brand images managed by the site owner
-- Open Graph images
-- SEO images
-- Images used inside content-driven interactive features
-
-Decorative images, icons, backgrounds, and design-only assets may stay in the UI when changing them would be a design change rather than a content update.
-
-When an editable image is found:
-
-- Add it to the Stage 1 content checklist
-- Include alt text where appropriate
-- Use Dyrected image fields for image references
-- Create or use an upload-enabled Media collection when needed
-- Do not store image URLs as plain text unless the current Dyrected package or project setup does not support image fields
-- Do not manually build image URLs in frontend code
-- Use the media document URL returned by Dyrected
-- Preserve existing image dimensions, cropping behaviour, aspect ratio, styling, and responsive behaviour
-
-If the project uses Dyrected Cloud, do not configure a custom storage adapter unless the documentation or project setup requires it.
-
-If the project is self-hosted and uses upload-enabled collections, configure a supported storage adapter according to the installed Dyrected version and documentation.
-
-Do not fake media documents.
-
-Do not seed image references unless the corresponding media documents exist or can be created safely.
-
----
-
-## Rich Content Rule
-
-Do not break long-form content into arrays of strings unless the existing UI truly needs separate repeatable plain-text items.
-
-For blog posts, articles, policy pages, case studies, long about pages, resource pages, lesson content, and other long-form editorial content, preserve the content as rich structured content.
-
-During local content separation:
-
-- If the existing content is long-form prose, extract it as one semantic HTML string.
-- Preserve paragraphs, headings, lists, links, quotes, inline emphasis, and meaningful formatting.
-- Do not convert blog body content into arrays like ["paragraph one", "paragraph two"] unless the design explicitly treats them as separate items.
-- Do not flatten rich content into plain text if formatting matters.
-- Do not invent formatting that does not already exist.
-
-During Dyrected integration:
-
-- Prefer Dyrected richText for long-form editable content when supported by the installed package.
-- Remember that Dyrected richText stores structured rich text content, not a plain array of paragraph strings.
-- If local content was extracted as HTML, convert or migrate it into the supported richText format using documented or installed tools.
-- If conversion is not supported by the installed package, explain the limitation plainly and use the safest supported field type.
-- Do not render rich HTML unsafely in the browser.
-- If HTML must be rendered, sanitize it or render it only through a trusted server-side boundary.
-- Preserve headings, paragraphs, lists, links, quotes, inline emphasis, and meaningful formatting in the frontend.
-
-Good local separation:
-
-```typescript
-bodyHtml: "<h2>...</h2><p>...</p><ul><li>...</li></ul>"
-```
-
-Bad local separation:
-
-```typescript
-body: [
-"Paragraph one",
-"Paragraph two",
-"Paragraph three"
-]
-```
-
-Only use arrays when the content is truly a repeatable list of items, such as FAQs, services, testimonials, steps, features, links, or cards.
-
----
-
-## Initial Data Rule
-
-When moving existing website content into Dyrected, do not leave the CMS empty.
-
-Use Dyrected initialData to seed approved existing content into the relevant globals and collections.
-
-Use initialData for:
-
-- Existing globals such as site settings, navigation, footer, contact details, social links, default SEO content, and shared business information
-- Existing collections such as services, testimonials, FAQs, blog articles, projects, team members, products, resources, locations, questions, result categories, assessment questions, and assessment result categories
-- Existing page entries
-- Existing reusable page section content inside page entries
-- Existing navigation/footer content
-- Existing booking copy
-- Existing content-driven feature definitions
-- Existing default site settings
-
-Do not use initialData to invent demo content.
-
-Only seed content that already exists in the project.
-
-Remember that initialData runs only when the target global or collection is empty.
-
-If content already exists in Dyrected, do not overwrite it with initialData.
-
-For Pages initialData:
-
-- Seed each existing page as a page document.
-- Use title as the human-readable page title.
-- Use slug only for routing.
-- Seed layout as an ordered list of reusable section blocks.
-- Put Hero inside the layout blocks, not as a top-level page field.
-- Include blockType values or the installed Dyrected equivalent for every reusable section block.
-- Include approved variant values where a section has variants.
-
-For long-form content:
-
-- Seed blog/article bodies using the approved rich content format.
-- Do not seed blog content as arrays of paragraph strings.
-- Prefer richText when supported.
-- If using local HTML as an intermediate format, migrate it into the supported Dyrected richText format or safest supported field.
-
-For images:
-
-- Seed image references only when the corresponding media documents exist or can be created safely.
-- Do not fake image URLs.
-- Do not manually reconstruct storage paths.
-- Use Dyrected media document URLs and image fields.
-- If media seeding is not supported or not safe, seed text content first and clearly explain what image upload step remains.
-
----
-
-## CMS Source of Truth Rule
-
-Creating Dyrected collections, globals, blocks, fields, and initialData is not enough.
-
-After content is added to Dyrected, every frontend route that displays that content must be wired to read from Dyrected as the source of truth.
-
-Do not leave the frontend rendering local JSON, local constants, hardcoded arrays, static imports, markdown files, or old data modules for content that is now managed in Dyrected.
-
-initialData is only a seed.
-
-initialData must not be treated as the runtime content source.
-
-After seeding content into Dyrected:
-
-- fetch globals from Dyrected where globals are displayed
-- fetch collections from Dyrected where collection content is displayed
-- fetch page documents from Dyrected where page content is displayed
-- fetch reusable page sections from the page layout/sections blocks field
-- fetch content-driven feature definitions from Dyrected where interactive features display editable questions, options, result categories, labels, or recommendations
-- keep local JSON only as a temporary fallback during development or failure handling
-- remove or stop using duplicate local content sources after final verification
-
-For each page or route, trace the render path and confirm the visible content comes from Dyrected, not from the original local files.
-
-Do not mark a CMS integration as complete just because content appears in the Admin UI.
-
-The integration is complete only when the frontend displays the Dyrected-managed content.
-
----
-
-## Fresh Content and Cache Rule
-
-CMS edits should appear on the website without requiring a code change or redeploy.
-
-When connecting frontend routes to Dyrected, inspect the framework’s caching behaviour.
-
-For Next.js:
-
-- do not let CMS-powered pages stay permanently static if editors expect updates to appear after publishing
-- use dynamic rendering, revalidation, no-store fetches, preview mode, or the project’s existing cache strategy as appropriate
-- preserve performance, but do not hide CMS edits behind stale static builds
-
-For Nuxt:
-
-- inspect SSR, payload caching, route rules, Nitro caching, and static generation behaviour
-- use the project-appropriate freshness strategy so CMS edits can appear according to the expected publishing workflow
-
-For Vite/static apps:
-
-- explain if runtime CMS updates require client-side fetching, SSR, rebuild hooks, or another supported approach
-
-For other frameworks:
-
-- use the framework-appropriate freshness strategy
-- make sure CMS edits can appear according to the expected publishing workflow
-
-Do not claim the CMS is connected until an edited CMS value can appear on the frontend route.
-
----
-
-## CMS Data Shape Adapter Rule
-
-Dyrected field shapes may not match the old local data shape exactly.
-
-When connecting Dyrected data to existing components:
-
-- add a small adapter or normalizer where needed
-- keep existing component markup and behaviour unchanged
-- normalize CMS arrays, relationships, media fields, rich text, and blocks into the shape the current UI expects
-- do not change the schema just to match old component internals if a small adapter is safer
-- do not change the UI design to match the CMS response shape
-
-Example:
-
-If the old UI expects:
-
-```ts
-sliderLabels: ["Low", "Medium", "High"]
-```
-
-but Dyrected stores:
-
-```ts
-sliderLabels: [{ label: "Low" }, { label: "Medium" }, { label: "High" }]
-```
-
-normalize it before passing data to the component.
-
-Adapters should be small, explicit, and easy to remove or update later.
-
----
-
-## Edit-to-Frontend Verification Rule
-
-For every content area connected to Dyrected, verify the full edit loop:
-
-1. Content exists in Dyrected.
-2. The frontend fetches it from Dyrected.
-3. The route no longer depends on the old local content source.
-4. A changed CMS value appears on the website.
-5. The page still builds successfully.
-6. The page still preserves the existing layout and behaviour.
-7. Fallback content is used only when Dyrected is unavailable, not as the normal source.
-
-Do not mark a content batch complete just because the Admin UI shows editable fields.
-
-A batch is complete only when the frontend displays the Dyrected-managed content.
-
----
-
-## Common Mistakes to Avoid
-
-Do not:
-
-- Make every page a global
-- Make every page one large CMS object
-- Preserve a large page object just because the code is currently written that way
-- Treat “reusable” and “reorderable” as separate from Page Sections
-- Lock Page Sections to one page unnecessarily
-- Ask whether to use fixed pages when the site has meaningful sections
-- Put Hero as a top-level field on the Pages collection
-- Put CTA, FAQ, Testimonials, Contact, Pricing, Feature Grid, Gallery, Stats, Process, Profile, Result Summary, or Services Preview as top-level fields on the Pages collection
-- Use slug as the admin display title when a human-readable title exists
-- Forget admin.useAsTitle = "title" for Pages and routable collections
-- Forget page preview configuration for Pages and Blog Articles when supported
-- Hardcode production-only preview URLs
-- Make every heading a separate field without context
-- Create collections for content that appears only once and is not expected to grow
-- Create globals for reusable page sections
-- Model UI components instead of business content
-- Merge unrelated sections into one large object
-- Duplicate content between globals, collections, and pages
-- Extract technical UI text that belongs to application behaviour
-- Exclude content merely because it appears inside an interactive feature
-- Treat questions, options, recommendations, or result categories as application logic when they are editable content definitions
-- Store user submissions or private user records in Dyrected unless explicitly approved
-- Leave content images hardcoded when they should be editable
-- Store editable images as plain text URLs when image fields/media are supported
-- Manually reconstruct media storage paths
-- Extract blog body content as arrays of paragraph strings
-- Flatten long-form content into plain text when formatting matters
-- Leave Dyrected empty when existing content can be seeded with initialData
-- Stop after schema and initialData without wiring the frontend to Dyrected
-- Leave frontend routes reading old local JSON or constants for CMS-managed content
-- Hide CMS edits behind stale framework caching
-- Destroy the current component structure unnecessarily
-- Make the website harder to maintain just to make content editable
-- Add fields for content that does not already exist
-- Add example content that was not already in the project
-- Add new pages, sections, features, images, blog posts, routes, or product behaviour
-- Allow arbitrary blocks that the frontend cannot render
-- Allow arbitrary variants that do not exist in the design
-- Allow editors to break the layout by entering unsupported values
-
----
-
-## What Counts as Editable Content
-
-Treat something as editable when changing it would update what the website communicates, asks, shows, recommends, or presents without changing how the interface fundamentally works.
+Use a Collection when the project has, or is expected to have, multiple entries
+of the same recognizable concept.
 
 Strong signals include:
 
-- The website owner may need to update it after launch
-- It represents a complete piece of information
-- It appears in a repeatable list
-- It belongs to a business concept
-- It appears in a meaningful content section
-- It can change without requiring a layout or behaviour change
-- It can reasonably be edited by a non-technical website owner
-- It can be reused across pages or entries
-- It is an image that communicates website content
-- It is long-form editorial content that the website owner may update
-- It powers an interactive feature as editable definition/content
+- cards, lists, grids, archives, directories, or repeated routes
+- entries the owner should add, remove, hide, sort, filter, or relate
+- real business concepts such as articles, products, services, people,
+  projects, locations, events, questions, or recommendations
 
-Examples:
+Name collections after the content, not the presentation. Prefer `Projects`,
+`Team Members`, or `FAQs` over `Blue Cards`, `Homepage Boxes`, or `Section
+Two`.
 
-- Hero headline
-- Hero subtitle
-- Hero image
-- CTA text
-- CTA link destination, if already present
-- Service names
-- Service descriptions
-- Service images
-- Testimonials
-- Testimonial photos
-- Team member details
-- Team member photos
-- FAQs
-- Pricing details
-- Project details
-- Product details
-- Blog titles
-- Blog excerpts
-- Blog cover images
-- Blog body content
-- Author details
-- Contact information
-- About content
-- Section headings
-- Section supporting text
-- Images that communicate business content
-- Questions inside quizzes, assessments, surveys, or diagnostic tools
-- Question help text or comments
-- Answer options
-- Option labels
-- Option scores or weights, if they already exist as data
-- Result categories
-- Score ranges
-- Result summaries
-- Recommendations
-- Booking copy, if it communicates service information
-- Step copy inside a form wizard
-- Messages shown to users inside an interactive flow
+A repeated list inside one section may remain local block data when its items
+have no independent identity, route, reuse, workflow, or expected growth.
+Promote it to a Collection when editors need to manage the items independently.
 
----
+## Pages and Page Sections
 
-## What Should Stay in the UI or App Code
+When the project contains public content pages, model each appropriate page as
+an entry in a Pages collection. Do not make each page a separate Global or a
+separate collection.
 
-Keep content inside components or app code when it controls or explains how the interface works.
+A page normally contains:
 
-This includes:
+- a human-readable title
+- a routing slug or path
+- existing SEO fields where the project already uses them
+- one ordered blocks field containing its visible sections
 
-- Technical status messages
-- Error messages
-- Empty state text that belongs to app behaviour
-- Accessibility labels tied to controls
-- Form behaviour text
-- Validation messages
-- Navigation or control labels that are part of application logic
-- Button labels that trigger application behaviour rather than marketing/content meaning
-- Loading states
-- Authentication text
-- Dashboard interface text
-- Text tightly joined to conditional rendering
-- Decorative elements
-- Decorative images
-- Decorative backgrounds
-- Icons used only as design elements
-- Layout text used only for animation or visual effects
-- Layout, styling, animation, and responsive behaviour
-- Event handlers
-- Application state
-- Score calculation functions
-- Form navigation logic
-- localStorage/session behaviour
-- API calls
-- Submission handling
-- Dashboard history
-- User-specific saved results
-- Analytics
-- Fragments whose extraction would make the component harder to understand without making the website easier to manage
+Every meaningful visible content area belongs in that ordered block list,
+including Hero. Do not place Hero, CTA, FAQ, testimonials, pricing, gallery,
+statistics, process, contact, or similar sections in special top-level page
+fields.
 
-Do not extract something merely because it is a string.
+Page sections are reusable by default. Reuse one section type when multiple
+sections have the same purpose, and use approved variants for the visual
+differences already present in the project.
 
-Do not extract an image merely because it is an image.
+For example, prefer one `Hero` block with existing variants such as centered,
+split, image, or minimal over separate `Home Hero`, `About Hero`, and `Blog
+Hero` blocks.
 
-Only extract images that communicate website content or are reasonably managed by the website owner.
+Use either inline blocks or reusable block references for a blocks field. Never
+configure both forms on the same field.
 
----
+Editors may:
 
-## Plain-Language Communication Rule
+- edit safe content fields
+- add or remove approved blocks when the design supports it
+- arrange approved blocks
+- select approved variants
 
-These rules instruct you, the assistant, technically. They do not describe how you speak to the user.
+Editors may not create arbitrary components, styles, layouts, block types, or
+variant names the frontend cannot render.
 
-Never expose Dyrected terminology, schema decisions, field types, database concepts, adapters, seeding mechanics, or code details to the user unless the user is clearly technical and asks for them.
+If editors may create new pages, the project also needs a tested public route
+that resolves a page by slug or path, renders its blocks, preserves the home
+route, and returns a safe not-found response.
 
-- Ask only plain-language questions about their business, content, and goals.
-- Never ask the user to choose between technical CMS concepts. The intent determines the correct pattern; you choose it silently.
-- Describe what you are building in terms of what the site owner will be able to see and change, not in terms of collections, globals, blocks, or fields.
-- Report progress and completion in the user's language.
+## Pattern and Variant Decisions
 
-Apply every technical rule below internally. Translate outward.
+Compare all relevant pages before defining blocks.
 
----
+Use one reusable block when sections share a purpose even if their copy,
+position, or approved visual treatment differs. Split blocks only when their
+meaning, fields, or rendering contract is genuinely different.
 
-## Greenfield Site Generation Rule
+Variants must:
 
-The other rules in this document assume an existing website is being made editable. When there is no existing website and the user is asking you to generate a new site, the stance inverts for content but not for structure.
+- correspond to layouts already supported by the frontend
+- use stable slugs and friendly labels
+- share the block's content fields
+- map to existing components or layout branches
+- fall back safely when missing or unknown
 
-When generating a new site:
+Do not expose colors, CSS classes, spacing values, arbitrary component names,
+or other implementation details as variants.
 
-- Inventing coherent content is the goal, not a violation. Create real headings, body copy, features, pricing, testimonials, FAQs, blog posts, team members, and navigation that fit the user's described business.
-- Still model structure with the same discipline as a migration: Globals for singletons, Collections for repeatable entries, Page Section blocks for arrangeable page content.
-- Still put Hero inside the page layout blocks, never as a top-level page field.
-- Still seed the generated content through initialData so the site is not empty on first load.
-- Generate every page the navigation and footer reference. Do not link to pages that do not exist.
-- Do not generate placeholder or lorem ipsum text. Write content a real owner of that business would be proud to publish.
-- Keep the amount of generated content proportional to the request. A marketing site needs a few coherent pages, not dozens.
+## Media
 
-When an existing website is present, follow the preserve-and-do-not-invent rules instead. Greenfield generation applies only when there is genuinely nothing to preserve.
+Make an image editable when it communicates content and the owner could
+reasonably replace it. Keep decorative backgrounds, effects, interface icons,
+and design-only assets in code.
 
-Reference: https://docs.dyrected.com/docs/concepts/schema
+For editable media:
 
----
+- use supported image or media relationships
+- preserve dimensions, aspect ratio, cropping, loading, and responsive
+  behaviour
+- keep or add meaningful alternative text where appropriate
+- use media document URLs instead of reconstructing storage paths
+- do not seed fake media records or placeholder URLs
 
-## Content Coherence Rule
+Configure storage from the actual deployment target. Local filesystem storage
+requires persistent writable disk; serverless deployments need compatible
+network storage. Dyrected Cloud projects should follow Cloud storage guidance
+instead of adding an unnecessary custom adapter.
 
-Generated content must be internally consistent across the whole site.
+## Rich Content
 
-- Use one brand identity everywhere: the same site name, tagline, and voice across site settings, navigation, footer, page copy, and blog content.
-- Every navigation link, footer link, and call-to-action must resolve to a real destination: a page slug that exists, a routable collection entry that exists, or an intentional external URL.
-- Every page referenced by navigation must be generated as a page document.
-- Relationships must point at documents that exist. A blog post's author must be a seeded author. A product's image must be a seeded or real media document.
-- Give every page a metaTitle and metaDescription that match that page's actual content.
-- Keep tone, audience, and product claims consistent between pages. Do not describe the business differently on the home page than on the about page.
+Preserve semantic structure for articles, policies, resources, case studies,
+and other long-form content.
 
-Trace the generated site as a whole before finishing. A link that points nowhere, an author with no posts, or a second page that contradicts the first is an incomplete result.
+- Use `defineRichTextField` for formatted long-form content. Do not store a blog
+  or article body as Markdown inside a text or textarea field.
+- Dyrected rich text stores an HTML string produced by the editor.
+- If existing source content is Markdown, convert it to equivalent safe HTML
+  for seeding without inventing or flattening its structure.
+- Preserve headings, paragraphs, lists, links, quotes, and inline emphasis.
+- Do not flatten prose into arrays of paragraph strings.
+- Do not invent formatting that is absent from the source.
+- Render rich content through `DyrectedRichText` or the installed documented
+  rich-content boundary.
 
-Reference: https://docs.dyrected.com/docs/basics/fields/overview
+Reference: https://docs.dyrected.com/docs/basics/fields/rich-text
 
----
+Use arrays for real repeatable items such as steps, FAQs, links, features, or
+cards, not as a substitute for rich text.
 
-## Deterministic Seed Relationships Rule
+## Interactive Content
 
-Seeded documents may reference each other. To make those references resolve, assign stable identifiers.
+Separate editable definitions from runtime behaviour.
 
-- When seeding related documents through initialData, give referenced documents a fixed `id` and reference that same `id` from the owning document. Dyrected honors a provided `id` on create, so relationships seed deterministically.
-- Seed the referenced document (for example, an author) and the owning document (for example, a blog post whose `author` is that author's `id`) in the same configuration.
-- Do not rely on randomly generated identifiers when a relationship must point at a specific seeded document.
-- Media references in seed data must use the identifier of a media document that exists. Do not seed a relationship to a media document you have not created. When no media exists yet, omit the reference and let the frontend fall back safely.
+Editable definitions may include existing:
 
-Reference: https://docs.dyrected.com/docs/concepts/schema
+- questions, prompts, labels, options, help text, and step copy
+- scores or weights already represented as data
+- result categories, score ranges, recommendations, and result-page copy
+- messages, calls to action, and images shown inside the flow
 
----
+Keep state, validation behaviour, navigation, scoring functions, submissions,
+authentication, storage, history, and analytics in code. Do not put private
+answers, submissions, or user records in Dyrected unless product-data
+management is explicitly approved.
 
-## Initial Data Seeding Mechanics Rule
+Protect values that can break the feature with required fields, controlled
+options, validation, limits, workflows, or administrator-only access.
 
-initialData does not behave identically for globals and collections. Know the trigger before you rely on it.
+## Initial Content
 
-- A global seeds from initialData on any read while it is empty, and the seeded value is written back and returned.
-- A collection seeds from initialData only on an unfiltered list read: the first page, with no filter applied. A read that filters by slug or any other field does not trigger seeding.
-- This matters because frontends usually fetch a page by its slug. On a fresh database that filtered read finds nothing and does not seed, so the page appears missing until an unfiltered list of that collection has been read at least once.
-- When a generated site must display seeded content immediately, ensure each seeded collection is listed without a filter once after deploy — by opening it in the Admin, by requesting its unfiltered list endpoint, or by an equivalent warm-up step. Do not assume filtered page reads will seed collections.
-- Seeding writes documents directly and does not run field change hooks. Provide already-valid values in seed data: lowercase and unique slugs, correctly shaped link and media values, and any value a hook would normally derive.
-- initialData is a seed, not the runtime source. The frontend still reads live content from Dyrected. Do not overwrite existing content with initialData; it applies only while the target is empty.
+Seed only content that belongs to the approved model.
 
-Reference: https://docs.dyrected.com/docs/concepts/schema and https://docs.dyrected.com/docs/managing-data/rest-api/overview
+For existing projects, seed only content already present in the project. For
+new-site generation, write coherent content based on the approved business
+brief and never use placeholders or lorem ipsum.
 
----
+Initial content must:
 
-## Icon Field Rule
+- use stable identifiers for referenced records
+- preserve content order and relationships
+- include block types and approved variants
+- keep links pointed at real destinations
+- avoid fake media references
+- remain idempotent and avoid overwriting editor-owned content
 
-An `icon` field stores the name of an icon from the icon set the project renders, which is Lucide by default.
+`initialData` is a starting state, not a runtime content source.
 
-- Seed and generate icon values using real icon names from that set, for example `PackageSearch`, `BellRing`, or `ChartNoAxesCombined`.
-- Do not invent icon names. An unknown name renders nothing.
-- Do not store arbitrary text, emoji, or file paths in an icon field.
+## New-Site Coherence
 
-Reference: https://docs.dyrected.com/docs/basics/fields/overview
+When generating a new site rather than migrating one:
 
----
+- create only pages, sections, and collections justified by the approved brief
+- keep one consistent brand name, voice, tagline, contact identity, and visual
+  direction
+- ensure navigation, footer links, calls to action, authors, categories, and
+  relationships resolve to content that actually exists
+- give every page a distinct purpose, title, and description
+- seed enough complete content for every approved route and list to render
+- use real supported icon names and valid link/media shapes
 
-## Config Authoring Rule
+The permission to invent content in a greenfield workflow does not permit
+unrequested product features, disconnected pages, fake integrations, or
+unsupported frontend behaviour.
 
-How the configuration file is written affects whether it type-checks and loads.
+## Modeling Completion Check
 
-- Keep a collection's `blocks` array and a field's `fields` array inline inside the `defineCollection` or `defineGlobal` call. Extracting them into a separate standalone constant widens their literal type values and breaks the config's type inference. If they must be extracted, preserve the literal types with `satisfies` or a typed helper.
-- Every named field must define an explicit `label`. Every collection should define `labels`, `admin.useAsTitle`, an `admin.group` where grouping helps, and an `admin.icon`. Routable collections should define `previewUrl` and `urlPattern`.
-- A large configuration may be split into modules — one file per collection and global, imported into the main config. Keep cross-references (a collection referencing a media collection, a blog referencing an authors collection) as direct imports and avoid import cycles.
-- When splitting into modules, relative imports in the configuration must use the explicit file extension the config loader expects, because the configuration file is not part of the application's TypeScript project.
+Before implementation, confirm:
 
-Reference: https://docs.dyrected.com/docs/basics/configuration/overview
-
----
-
-## Adapter and Deployment Target Rule
-
-Choose database and storage adapters from the deployment target, not habit.
-
-- A file-based SQLite database and a local-filesystem storage adapter require a persistent, writable disk. They are correct for local development and for long-running self-hosted servers with a mounted volume.
-- They are not compatible with ephemeral serverless hosting, which has a read-only or non-persistent filesystem. On such hosts, seed data and editor writes fail or vanish. This includes typical serverless deployments.
-- For serverless targets, use a network database adapter (PostgreSQL, MySQL, or MongoDB) and an object-storage adapter (S3-compatible, Cloudinary, or similar). Read credentials from environment variables and keep them server-side.
-- Confirm the deployment target before finalizing adapters. If the project uses Dyrected Cloud, follow the Cloud guidance rather than configuring custom database or storage adapters.
-- Drive adapter choice from environment configuration so local development and production can differ without code changes.
-
-Reference: https://docs.dyrected.com/docs/basics/database/overview and https://docs.dyrected.com/docs/features/upload/storage-adapters
+- every editable area has exactly one owner in Globals, Collections, or page
+  sections
+- no page is disguised as a Global
+- repeatable business content is not trapped inside page layout fields
+- page sections are reusable without exposing arbitrary design freedom
+- editable images and long-form content retain their meaning and structure
+- interactive definitions are separated from runtime behaviour
+- every proposed content type and variant already exists in the project or was
+  explicitly approved for a greenfield site

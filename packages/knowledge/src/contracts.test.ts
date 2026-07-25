@@ -2,7 +2,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { AI_RULES, SKILL, endpoints, recipes, references } from "./index.js";
+import {
+  AI_RULES,
+  CMS_PROMPT_CLOUD_CREDENTIAL_REQUEST,
+  GENERATE_CMS_PROMPT,
+  GENERATE_CMS_PROMPT_CLOUD,
+  GENERATE_CMS_PROMPT_SELF_HOSTED,
+  GENERATE_SITE_PROMPT,
+  SKILL,
+  endpoints,
+  recipes,
+  references,
+} from "./index.js";
 
 const packageRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -39,12 +50,19 @@ describe("generated knowledge contracts", () => {
   });
 
   it("keeps key configuration member descriptions populated", () => {
-    for (const contractName of ["DyrectedConfig", "CollectionConfig", "GlobalConfig"]) {
-      const contract = references.find((reference) => reference.name === contractName);
+    for (const contractName of [
+      "DyrectedConfig",
+      "CollectionConfig",
+      "GlobalConfig",
+    ]) {
+      const contract = references.find(
+        (reference) => reference.name === contractName,
+      );
       expect(contract, `${contractName} is missing`).toBeDefined();
-      const blankMembers = contract?.members.filter(
-        (member) => member.description.trim() === "",
-      ) ?? [];
+      const blankMembers =
+        contract?.members.filter(
+          (member) => member.description.trim() === "",
+        ) ?? [];
       expect(blankMembers, `${contractName} members need JSDoc`).toEqual([]);
     }
   });
@@ -83,7 +101,7 @@ describe("generated knowledge contracts", () => {
       expect(content).toContain("GENERATED:FIELD_TYPES:START");
       expect(content).toContain("GENERATED:RECIPES:START");
       expect(content).toContain("Rename a field safely");
-      expect(content).toContain("label: \"Full name\"");
+      expect(content).toContain('label: "Full name"');
       expect(content).toContain("server");
     }
     expect(SKILL).toContain("npx dyrected init");
@@ -93,10 +111,76 @@ describe("generated knowledge contracts", () => {
     expect(SKILL).toContain("allowedMimeTypes");
   });
 
-  const newDocsRoot = path.join(
-    repositoryRoot,
-    "apps/docs/content/docs",
-  );
+  it("compiles one integration contract into every existing-project AI surface", () => {
+    const contract = fs
+      .readFileSync(
+        path.join(packageRoot, "src/shared-rules/integration-contract.md"),
+        "utf8",
+      )
+      .trim();
+
+    for (const content of [GENERATE_CMS_PROMPT, AI_RULES, SKILL]) {
+      expect(content).toContain(contract);
+      expect(content).toContain("define[FieldName]Field");
+      expect(content).toContain("admin.icon");
+      expect(content).toContain("valid Lucide icon name");
+      expect(content).toContain("non-interactive");
+      expect(content).toContain("bypassing the CLI");
+      expect(content).toContain("do not prefix it with");
+      expect(content).toContain("Pass only serializable data");
+      expect(content).toContain("defineRichTextField");
+      expect(content).toContain("not a textarea containing");
+      expect(content).toContain("https://docs.dyrected.com/llms.txt");
+      expect(content).toContain(
+        "https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt",
+      );
+    }
+  });
+
+  it("keeps the copied CMS prompt standalone when no local skill is installed", () => {
+    expect(GENERATE_CMS_PROMPT).toContain(
+      "## Existing Project Integration Contract",
+    );
+    expect(GENERATE_CMS_PROMPT).toContain("### Determine the project state");
+    expect(GENERATE_CMS_PROMPT).toContain("### Model only what exists");
+    expect(GENERATE_CMS_PROMPT).toContain("### Make the Admin understandable");
+    expect(GENERATE_CMS_PROMPT).toContain("### Protect stored content");
+    expect(GENERATE_CMS_PROMPT).toContain("### Connect the real frontend");
+    expect(GENERATE_CMS_PROMPT).toContain(
+      "### Prove the complete editing loop",
+    );
+    expect(GENERATE_CMS_PROMPT).not.toMatch(/install (?:the )?Dyrected skill/i);
+  });
+
+  it("keeps prompt snapshots and deployment variants synchronized", () => {
+    const cmsSnapshot = fs.readFileSync(
+      path.join(packageRoot, "src/prompt-snapshots/generate-cms.md"),
+      "utf8",
+    );
+    const siteSnapshot = fs.readFileSync(
+      path.join(packageRoot, "src/prompt-snapshots/generate-site.md"),
+      "utf8",
+    );
+
+    expect(cmsSnapshot).toBe(GENERATE_CMS_PROMPT);
+    expect(siteSnapshot).toBe(GENERATE_SITE_PROMPT);
+    expect(GENERATE_CMS_PROMPT_CLOUD).toBe(GENERATE_CMS_PROMPT);
+    expect(GENERATE_CMS_PROMPT).toContain(CMS_PROMPT_CLOUD_CREDENTIAL_REQUEST);
+    expect(GENERATE_CMS_PROMPT).toContain("- Site ID");
+    expect(GENERATE_CMS_PROMPT).not.toContain("Database adapter (e.g.");
+    expect(GENERATE_CMS_PROMPT_SELF_HOSTED).toContain(
+      "Database adapter (e.g. SQLite, PostgreSQL)",
+    );
+    expect(GENERATE_CMS_PROMPT_SELF_HOSTED).not.toContain("- Site ID");
+    expect(GENERATE_CMS_PROMPT).not.toContain(
+      "{{DYRECTED_INSTALL_REQUIREMENTS}}",
+    );
+    expect(GENERATE_CMS_PROMPT_SELF_HOSTED).not.toContain(
+      "{{DYRECTED_INSTALL_REQUIREMENTS}}",
+    );
+  });
+
+  const newDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
   const fieldPageSlugs = [
     "text",
     "textarea",
@@ -122,7 +206,10 @@ describe("generated knowledge contracts", () => {
     "row",
   ];
   const referenceTargets = [
-    { file: "basics/configuration/overview.mdx", region: "REFERENCE-CONFIGURATION" },
+    {
+      file: "basics/configuration/overview.mdx",
+      region: "REFERENCE-CONFIGURATION",
+    },
     {
       file: "basics/configuration/collections.mdx",
       region: "REFERENCE-CONFIGURATION-COLLECTIONS",
@@ -147,11 +234,13 @@ describe("generated knowledge contracts", () => {
       region: "REFERENCE-STORAGE-ADAPTERS",
     },
     { file: "features/workflows/overview.mdx", region: "REFERENCE-WORKFLOWS" },
-    { file: "managing-data/rest-api/overview.mdx", region: "REFERENCE-REST-API" },
-    { file: "managing-data/rest-api/overview.mdx", region: "REFERENCE-OPENAPI" },
     {
-      file: "quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt.mdx",
-      region: "MODELING_RULES",
+      file: "managing-data/rest-api/overview.mdx",
+      region: "REFERENCE-REST-API",
+    },
+    {
+      file: "managing-data/rest-api/overview.mdx",
+      region: "REFERENCE-OPENAPI",
     },
   ];
 
@@ -197,6 +286,67 @@ describe("generated knowledge contracts", () => {
     }
   });
 
+  it("keeps the setup guide concise and delegates implementation detail", () => {
+    const guide = fs.readFileSync(
+      path.join(
+        newDocsRoot,
+        "quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt.mdx",
+      ),
+      "utf8",
+    );
+
+    expect(guide).toContain("<CopyPromptButton />");
+    expect(guide).toContain('<CopyPromptButton mode="self-hosted" />');
+    expect(guide).toContain("/docs/basics/configuration/collections");
+    expect(guide).toContain("/docs/basics/fields/blocks");
+    expect(guide).toContain("/docs/basics/fields/rich-text");
+    expect(guide).toContain("/docs/features/admin/preview");
+    expect(guide).not.toContain("GENERATED:MODELING_RULES");
+    expect(guide.split("\n").length).toBeLessThan(400);
+  });
+
+  it("exposes the long-form agent guide through both LLM indexes", () => {
+    const guideUrl =
+      "https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt";
+    const llmsIndex = fs.readFileSync(
+      path.join(repositoryRoot, "apps/docs/public/llms.txt"),
+      "utf8",
+    );
+    const llmsFull = fs.readFileSync(
+      path.join(repositoryRoot, "apps/docs/public/llms-full.txt"),
+      "utf8",
+    );
+
+    expect(llmsIndex).toContain(guideUrl);
+    expect(llmsFull).toContain(`Canonical URL: ${guideUrl}`);
+  });
+
+  it("keeps canonical integration documentation links valid", () => {
+    const contract = fs.readFileSync(
+      path.join(packageRoot, "src/shared-rules/integration-contract.md"),
+      "utf8",
+    );
+    const paths = [
+      ...contract.matchAll(
+        /https:\/\/docs\.dyrected\.com(\/docs\/[A-Za-z0-9_./-]+)/g,
+      ),
+    ].map((match) => match[1]);
+
+    expect(paths.length).toBeGreaterThan(8);
+    for (const docsPath of paths) {
+      const relative = docsPath.replace(/^\/docs\//, "");
+      expect(
+        fs.existsSync(path.join(newDocsRoot, `${relative}.mdx`)),
+        `${docsPath} does not resolve to a current docs page`,
+      ).toBe(true);
+    }
+
+    for (const content of [contract, GENERATE_CMS_PROMPT, AI_RULES, SKILL]) {
+      expect(content).not.toContain("/docs/admin/overview");
+      expect(content).not.toContain("/docs/concepts/schema");
+    }
+  });
+
   it("renders generated member docs as option descriptions without a signature column", () => {
     const collectionsPage = fs.readFileSync(
       path.join(newDocsRoot, "basics/configuration/collections.mdx"),
@@ -204,7 +354,9 @@ describe("generated knowledge contracts", () => {
     );
 
     expect(collectionsPage).toContain("| Option | Description |");
-    expect(collectionsPage).not.toContain("| Member | Signature | Description |");
+    expect(collectionsPage).not.toContain(
+      "| Member | Signature | Description |",
+    );
     expect(collectionsPage).toContain("<code>slug</code> (required)");
     expect(collectionsPage).toContain("<code>siteId</code> (optional)");
   });
@@ -236,7 +388,11 @@ describe("generated knowledge contracts", () => {
     expect(restApi).toContain("{/* GENERATED:REFERENCE-REST-API:START */}");
     expect(restApi).toContain("{/* GENERATED:REFERENCE-OPENAPI:START */}");
     // OpenAPI is documented here rather than on a separate reference page.
-    expect(fs.existsSync(path.join(newDocsRoot, "managing-data/rest-api/openapi.mdx"))).toBe(false);
+    expect(
+      fs.existsSync(
+        path.join(newDocsRoot, "managing-data/rest-api/openapi.mdx"),
+      ),
+    ).toBe(false);
   });
 
   it("publishes the raw OpenAPI artifact from the knowledge output", () => {
@@ -264,7 +420,14 @@ describe("generated knowledge contracts", () => {
       (reference) => reference.name === "DyrectedClient",
     );
     const members = client?.members.map((member) => member.name) ?? [];
-    for (const privateName of ["baseUrl", "headers", "fetch", "defaultDepth", "_upload", "request"]) {
+    for (const privateName of [
+      "baseUrl",
+      "headers",
+      "fetch",
+      "defaultDepth",
+      "_upload",
+      "request",
+    ]) {
       expect(members).not.toContain(privateName);
     }
     const createClient = sdkReferences.find(
@@ -280,7 +443,10 @@ describe("generated knowledge contracts", () => {
       "packages/sdk/src/index.ts",
       "packages/core/src/workflows.ts",
     ]) {
-      const source = fs.readFileSync(path.join(repositoryRoot, relative), "utf8");
+      const source = fs.readFileSync(
+        path.join(repositoryRoot, relative),
+        "utf8",
+      );
       const names = [
         ...source.matchAll(
           /^export\s+(?:async\s+)?(?:interface|type|class|function|const)\s+(\w+)/gm,

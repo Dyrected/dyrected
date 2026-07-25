@@ -72,11 +72,12 @@ import { createDyrectedFormController } from "@dyrected/admin/public";
 const controller = createDyrectedFormController({
   collection: "posts",
   fields: [
-    { name: "title", type: "text" },
+    { name: "title", label: "Title", type: "text" },
     {
       name: "hero",
+      label: "Hero",
       type: "object",
-      fields: [{ name: "headline", type: "text" }],
+      fields: [{ name: "headline", label: "Headline", type: "text" }],
     },
   ],
   initialValues: {

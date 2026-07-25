@@ -20,27 +20,43 @@ const DOCS_URL = "https://docs.dyrected.com";
 
 const steps = [
   "Paste the prompt into your AI builder — the same one that owns the website code.",
-  "Review the content list the AI sends back. Correct anything missing or wrong, then say \"approved\".",
-  "Your Dyrected credentials are already in the prompt. Give them to the AI when it asks at Stage 4.",
+  'Review the content list the AI sends back. Correct anything missing or wrong, then say "approved".',
+  "Your Dyrected credentials are already in the prompt. The AI will use them at Stage 4.",
   "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
 ];
 
 const stepsNoCredentials = [
   "Paste the prompt into your AI builder — the same one that owns the website code.",
-  "Review the content list the AI sends back. Correct anything missing or wrong, then say \"approved\".",
+  'Review the content list the AI sends back. Correct anything missing or wrong, then say "approved".',
   "When the AI reaches Stage 4, it will ask for your Site ID, Site API key, and Base URL.",
+  "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
+];
+
+const stepsSelfHosted = [
+  "Paste the prompt into your AI builder — the same one that owns the website code.",
+  'Review the content list the AI sends back. Correct anything missing or wrong, then say "approved".',
+  "When the AI reaches Stage 4, it will ask for the self-hosted connection and security details it still needs.",
   "Test one real edit in Dyrected. If the change appears on the website, invite the client.",
 ];
 
 export function SetupPromptUI({ config }: SetupPromptProps) {
   const [copied, setCopied] = useState(false);
   const guideUrl = buildGuideUrl(config);
-  const hasCredentials = !!(config.siteId && config.apiKey && config.baseUrl);
+  const hasCredentials = !!(
+    !config.isSelfHosted &&
+    config.siteId &&
+    config.apiKey &&
+    config.baseUrl
+  );
   // Interactive Swagger UI served by the Dyrected backend at /api/docs.
   const apiDocsUrl = config.baseUrl
     ? `${config.baseUrl.replace(/\/$/, "")}/api/docs`
     : null;
-  const guideSteps = hasCredentials ? steps : stepsNoCredentials;
+  const guideSteps = config.isSelfHosted
+    ? stepsSelfHosted
+    : hasCredentials
+      ? steps
+      : stepsNoCredentials;
   const promptText = buildPrompt(config);
 
   async function copyPrompt() {
@@ -49,7 +65,9 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
     window.setTimeout(() => setCopied(false), 1800);
   }
 
-  const currentVersion = (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION || "0.0.0";
+  const currentVersion =
+    (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION ||
+    "0.0.0";
   const [latestVersion, setLatestVersion] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("dyrected_latest_release");
@@ -63,24 +81,30 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           if (data?.version) {
             setLatestVersion(data.version);
             localStorage.setItem("dyrected_latest_release", data.version);
-            localStorage.setItem("dyrected_latest_release_timestamp", String(Date.now()));
+            localStorage.setItem(
+              "dyrected_latest_release_timestamp",
+              String(Date.now()),
+            );
           }
         })
         .catch(() => {});
     }
   }, [latestVersion]);
 
-  const hasUpdate = latestVersion && latestVersion !== currentVersion && (() => {
-    const lParts = latestVersion.split(".").map(Number);
-    const cParts = currentVersion.split(".").map(Number);
-    for (let i = 0; i < 3; i++) {
-      const l = lParts[i] || 0;
-      const c = cParts[i] || 0;
-      if (l > c) return true;
-      if (l < c) return false;
-    }
-    return false;
-  })();
+  const hasUpdate =
+    latestVersion &&
+    latestVersion !== currentVersion &&
+    (() => {
+      const lParts = latestVersion.split(".").map(Number);
+      const cParts = currentVersion.split(".").map(Number);
+      for (let i = 0; i < 3; i++) {
+        const l = lParts[i] || 0;
+        const c = cParts[i] || 0;
+        if (l > c) return true;
+        if (l < c) return false;
+      }
+      return false;
+    })();
 
   return (
     <div className="dy-mx-auto dy-max-w-3xl dy-space-y-10 dy-px-4 dy-py-8">
@@ -92,11 +116,17 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
         <div className="dy-flex dy-flex-col sm:dy-flex-row sm:dy-items-center dy-justify-between dy-gap-4 dy-text-xs">
           <div className="dy-space-y-1">
             <p className="dy-text-muted-foreground">
-              Current version: <span className="dy-font-mono dy-font-semibold dy-text-foreground">v{currentVersion}</span>
+              Current version:{" "}
+              <span className="dy-font-mono dy-font-semibold dy-text-foreground">
+                v{currentVersion}
+              </span>
             </p>
             {latestVersion && (
               <p className="dy-text-muted-foreground">
-                Latest release: <span className="dy-font-mono dy-font-semibold dy-text-foreground">v{latestVersion}</span>
+                Latest release:{" "}
+                <span className="dy-font-mono dy-font-semibold dy-text-foreground">
+                  v{latestVersion}
+                </span>
               </p>
             )}
           </div>
@@ -118,7 +148,11 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
                 </a>
               </div>
               <p className="dy-text-muted-foreground">
-                Run <code className="dy-bg-black/5 dark:dy-bg-white/5 dy-px-1 dy-py-0.5 dy-rounded dy-font-mono">npx dyrected upgrade</code> to update.
+                Run{" "}
+                <code className="dy-bg-black/5 dark:dy-bg-white/5 dy-px-1 dy-py-0.5 dy-rounded dy-font-mono">
+                  npx dyrected upgrade
+                </code>{" "}
+                to update.
               </p>
             </div>
           ) : (
@@ -135,7 +169,8 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           Set up Dyrected
         </h1>
         <p className="dy-text-sm dy-leading-6 dy-text-muted-foreground">
-          Copy the prompt below and paste it into your AI builder. It handles the setup in stages.
+          Copy the prompt below and paste it into your AI builder. It handles
+          the setup in stages.
         </p>
       </div>
 
@@ -146,7 +181,9 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
             <span className="dy-flex dy-h-6 dy-w-6 dy-shrink-0 dy-items-center dy-justify-center dy-rounded-full dy-bg-muted dy-text-xs dy-font-semibold dy-tabular-nums dy-text-foreground">
               {index + 1}
             </span>
-            <span className="dy-leading-6 dy-text-muted-foreground">{step}</span>
+            <span className="dy-leading-6 dy-text-muted-foreground">
+              {step}
+            </span>
           </li>
         ))}
       </ol>
@@ -187,8 +224,10 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
         {/* Footer note */}
         <div className="dy-border-t dy-border-border dy-px-4 dy-py-3">
           <p className="dy-text-xs dy-text-muted-foreground">
-            Paste this into the AI builder or code agent that can edit the website code.
-            {!hasCredentials && " The prompt will ask for your Dyrected details at the right stage."}
+            Paste this into the AI builder or code agent that can edit the
+            website code.
+            {!hasCredentials &&
+              " The prompt will ask for your Dyrected details at the right stage."}
           </p>
         </div>
       </div>
@@ -204,7 +243,12 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
           Full guide
           <ArrowUpRight className="dy-h-3.5 dy-w-3.5" />
         </a>
-        <span className="dy-hidden dy-text-muted-foreground sm:dy-inline" aria-hidden="true">·</span>
+        <span
+          className="dy-hidden dy-text-muted-foreground sm:dy-inline"
+          aria-hidden="true"
+        >
+          ·
+        </span>
         <a
           href={DOCS_URL}
           target="_blank"
@@ -216,7 +260,12 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
         </a>
         {apiDocsUrl && (
           <>
-            <span className="dy-hidden dy-text-muted-foreground sm:dy-inline" aria-hidden="true">·</span>
+            <span
+              className="dy-hidden dy-text-muted-foreground sm:dy-inline"
+              aria-hidden="true"
+            >
+              ·
+            </span>
             <a
               href={apiDocsUrl}
               target="_blank"

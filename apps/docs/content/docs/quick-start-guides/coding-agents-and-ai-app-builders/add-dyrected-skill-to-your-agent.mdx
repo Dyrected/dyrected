@@ -99,7 +99,10 @@ The recommended setup for supported local agent workflows is to keep both: commi
 
 For local coding-agent workflows:
 
-1. Run `npx dyrected init` when you are adding Dyrected to the repo.
+1. Run `npx dyrected init` when you are adding Dyrected to the repo. If an
+   agent or script runs setup for you, have it pass the non-interactive options
+   from `npx dyrected init --help` instead of skipping the CLI because the
+   default command can prompt.
 2. Commit `.dyrected/ai-rules.md` and the generated agent pointer files.
 3. Install the Dyrected skill in supported runtimes.
 4. Start Dyrected-heavy tasks with `/dyrected`.

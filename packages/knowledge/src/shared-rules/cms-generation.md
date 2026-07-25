@@ -1,197 +1,130 @@
-## Dyrected Content Modelling Rules
+## CMS Configuration and Migration Rules
 
-Apply the shared content-modeling and frontend-integration rules first.
+Translate the approved editing plan into Dyrected without asking the operator
+to choose technical implementation details.
 
-This file adds the migration-specific execution stance: how to translate an approved editing plan into Dyrected safely, how to control editor freedom, and how to deliver the work in verifiable batches.
+Use the installed public exports from `@dyrected/core`. Prefer:
 
-Translate the approved editing plan into appropriate Dyrected:
+- `defineCollection` for collections
+- `defineGlobal` for globals
+- `defineBlock` for reusable blocks
+- the dedicated `define[FieldName]Field` helper for each field
 
-- Globals
-- Collections
-- Fields
-- Blocks
-- Validation rules
-- Access controls
-- Admin configuration
+Do not use generic field objects when a dedicated installed helper exists. Do
+not use `defineJsonField` as an escape hatch for structured editor content.
+Every named field must have an explicit human-readable `label`.
 
-Do not revisit the approved plan by asking the user to choose between technical CMS concepts.
+## Admin Authoring
 
-Do not ask the user to choose between:
+Configure the Admin around the editor's language:
 
-- Collections
-- Globals
-- Blocks
-- Field types
-- Hooks
-- Access rules
-- Technical options
-- Storage adapters
-- Rich text formats
-- Preview modes
+- Collections use `labels.singular` and `labels.plural`.
+- Globals use their singular `label`.
+- Every collection and global gets a valid `admin.icon` chosen from the
+  installed `AdminIconName` Lucide icon names.
+- `admin.icon` stores the icon name string. It is not a React component.
+- Collections with a recognizable title or name set `admin.useAsTitle` to that
+  field.
+- The same title field comes first in `admin.defaultColumns`.
+- Slugs and internal identifiers remain secondary.
+- Fields receive concise descriptions only when the expected input is unclear.
+- Fixed choices use controlled options with friendly labels and stable values.
 
-If you need clarification, ask a plain-language question about the client experience only.
+Do not claim that globals support collection-only list, title, or preview
+options. Verify the installed `GlobalConfig` and `CollectionConfig` types before
+setting Admin properties.
 
-Good examples:
+## Blocks and Variants
 
-- "Should the client be able to permanently delete these items, or only hide them from the website?"
-- "Should unpublished items disappear from the website?"
-- "Should the client be able to create new pages?"
-- "Should this section allow the client to select from existing services, or show all services automatically?"
-- "Should the client be able to replace this image, or should it remain part of the design?"
-- "Should editors be able to change the score values, or only the question wording and recommendations?"
+Define reusable blocks at the config level when several content types share
+them, then reference those block slugs from blocks fields. Use inline blocks
+when a block is deliberately local to one content type.
 
-Bad examples:
+A blocks field uses one definition mechanism:
 
-- "Should this be a collection or global?"
-- "Should I use a blocks field?"
-- "Should this be a relationship field?"
-- "Should I create a hook?"
-- "Should I use richText or text?"
-- "Should I use an image field?"
-- "Should I use previewMode token or postMessage?"
+- `blocks` for inline block definitions, or
+- `blockReferences` for registered reusable blocks
 
-Use the shared rules as hard requirements for:
+Never set both.
 
-- Page/section/category decisions
-- Hero as a block, not a top-level page field
-- Variants and approved block types
-- Live Preview
-- Rich content
-- Media and uploads
-- `initialData`
-- Frontend source-of-truth integration
-- Caching and edit-to-frontend verification
+Give blocks clear labels, descriptions where useful, and valid Lucide icon
+names when supported. Use the installed block `variants` contract for approved
+visual variants. Fall back to a controlled select field only when the installed
+package does not support block variants.
 
-In this migration workflow:
+## Preview Configuration
 
-- Implement pages as a collection
-- Implement page content as an ordered blocks field on the pages collection
-- Implement approved reusable section types as blocks
-- Use Dyrected block `variants` for approved section variants when supported
-- Fall back to a normal select field for variants only when the installed package does not support block variants
-- Do not create one fixed collection per page when reusable blocks are required
-- Do not store flexible page sections as one global
-- Do not collapse approved page sections back into one global, one collection, or one page object just because that is easier to code
-- Do not allow arbitrary blocks, variants, or layouts that the existing frontend cannot render
+Configure preview only for content that already has a public route.
 
-If the approved plan includes repeatable business content:
+- Derive the path from the project's existing route pattern.
+- Map the home-page slug to `/`.
+- Use `admin.useAsTitle` for display and the slug only for routing.
+- Prefer a serializable Jexl string for Cloud-compatible schemas.
+- Return a relative route. Do not concatenate or prefix `siteUrl`; Dyrected
+  resolves relative preview paths against the configured site URL.
+- Use a JavaScript function only for a supported self-hosted case that requires
+  runtime logic.
+- Configure `previewMode` only after reading the installed package types and
+  current preview docs.
+- Do not invent token redemption, postMessage handling, or preview routes.
 
-- Use collections where the client can add or remove entries
-- Keep display limits where needed to protect the existing design
-- Allow hiding instead of deleting when deletion could break important flows
-- Use ordering when the client reasonably needs control over order
-- Connect collections to page sections when a section displays repeatable business content
+## Access and Validation
 
-If the approved plan includes content-driven interactive features:
+Grant the smallest permissions required by the approved editing plan.
 
-- Model editable definitions in Dyrected
-- Keep runtime behaviour in code
-- Protect risky fields with validation, allowed options, limits, or admin-only access
-- Do not store user submissions or private user history unless explicitly approved
+- Enforce permissions in server access configuration, not only Admin
+  visibility.
+- Reserve destructive, publishing, workflow, scoring, and access-sensitive
+  controls for the roles that need them.
+- Prefer hide/archive over delete when removal could break routes,
+  relationships, or interactive flows.
+- Use a documented workflow when draft, review, and publication are required.
+- Add validation and limits only where they protect rendering, data quality, or
+  existing behaviour.
+- Keep auth-generated fields out of `auth: true` collection definitions.
+- Use server hooks for correctness; Admin hooks are an optional feedback layer.
+- Use serializable declarative conditions, hooks, and access values when the
+  schema must synchronize to Dyrected Cloud.
 
----
+## Schema and Seed Safety
 
-## Admin Authoring Rule
+Before changing a schema:
 
-Configure the Admin so editors see human-readable, safe controls rather than raw technical structures.
+1. Read the existing local config and remote schema.
+2. Identify persisted slugs, fields, blocks, variants, relationships, and URL
+   patterns affected by the change.
+3. Add or evolve one related batch at a time.
+4. Generate types and validate the local schema.
+5. Review changes that could affect stored documents.
+6. Synchronize only after local validation passes.
 
-For every collection with a clear human-readable title or name field:
+Never silently remove or directly rename persisted structures. Use the
+installed rename/migration mechanism and compatible defaults. Test relational
+or promoted-field changes against a safe environment before production.
 
-- Set `admin.useAsTitle` to that human-readable field
-- Do not use `slug` as the primary display title unless no better field exists
+Seed only approved existing content during migration. Keep seed identities and
+relationships deterministic, and do not overwrite populated collections,
+globals, or editor changes. Do not fabricate media records.
 
-For every collection and global, when supported by the installed package:
+## Batch Execution
 
-- Set human-readable `labels.singular` and `labels.plural`
-- Set a valid `admin.icon`
-- Set every field label to human-readable text
+Keep each implementation batch to no more than three related content areas.
 
-For routable collections:
+For the base batch:
 
-- Apply the shared preview rules
-- Use title/name for admin display
-- Use `slug` only for routing and URL generation
-
----
-
-## Access and Validation Rule
-
-Create the smallest set of permissions and constraints needed for the approved editing plan.
-
-Editors may access only the approved content.
-
-Reserve technical controls for administrators.
-
-Do not grant delete access unless the approved plan clearly allows deletion.
-
-Do not grant publish access unless the approved plan clearly allows publishing.
-
-If publishing is needed, prefer a draft/review workflow when supported.
-
-If hiding content is enough, prefer hide/unhide over delete.
-
-Enforce access server-side, not only by hiding controls in the UI.
-
-Add validation and content limits only where they protect the existing design, data quality, or feature behaviour.
-
-Examples:
-
-- Required fields for content that must exist for the layout to work
-- Maximum number of items when the design supports only a limited amount
-- Required alt text where appropriate
-- URL or email validation where the field type alone is not enough
-- Allowed icon or variant values that match existing frontend support
-- Required section variant when a block has multiple approved layouts
-- Allowed section types based on the approved reusable section list
-- Admin-only controls for risky fields that affect behaviour
-
-Do not add unnecessary restrictions.
-
-Do not allow editors to enter arbitrary values that the frontend cannot safely render.
-
-If an icon, style, layout, or variant is needed, store a stable name and map it in code.
-
----
-
-## Work in Batches
-
-Group the approved content into batches of no more than three related content areas.
-
-Complete each batch in order.
-
-Base setup batch:
-
-1. Install Dyrected packages and base configuration.
-2. Add required environment variables.
-3. Add the admin route and authentication.
-4. Set administrator and editor access boundaries.
-5. Set up Media/upload support if approved editable images exist.
-6. Set up public site URL environment variable for preview if needed.
-7. Set up frontend Dyrected fetching utilities or clients using supported APIs.
-8. Run lint, type-check, test, and build.
-9. Fix errors before continuing.
+1. Complete CLI-generated setup and environment configuration.
+2. Verify database, storage, Admin, and deployment assumptions.
+3. Add server-side clients or fetch utilities through supported public APIs.
+4. Run generation, lint, type checking, focused tests, and build.
 
 For each content batch:
 
-1. Create no more than three related collections, globals, or block groups.
-2. Add clear labels the client will understand.
-3. Add helpful descriptions the client will understand.
-4. Add `admin.useAsTitle` for collections with human-readable title/name fields.
-5. Add preview configuration for routable collections when supported.
-6. Add validation and limits only where they protect the existing design, data quality, or feature behaviour.
-7. Add documented hooks only when needed for approved client-visible behaviour.
-8. Add `initialData` for existing approved content.
-9. Connect those content areas to the existing UI without redesigning it.
-10. Replace matching local runtime data sources while preserving sensible fallback content during testing.
-11. Add adapters or normalizers where CMS shapes differ from existing UI expectations.
-12. Add loading, empty, and error handling where needed.
-13. Confirm private credentials are not exposed to browser code.
-14. Run lint, type-check, test, and build.
-15. Verify one CMS edit appears on the frontend for that batch.
-16. Fix the batch before moving to the next one.
+1. Add related globals, collections, blocks, fields, labels, and Admin icons.
+2. Add validation, access, preview, and hooks only where approved.
+3. Seed existing content without duplication.
+4. Connect the real frontend and normalize data shapes where needed.
+5. Verify one recognizable edit on the real route.
+6. Run the project's available validation commands.
 
-If a batch fails verification, stop adding new content types.
-
-Diagnose and fix that batch first.
-
-Do not continue stacking changes on top of a broken batch.
+If a batch fails, fix it before adding another content type. Do not stack new
+schema or frontend work on an unverified batch.

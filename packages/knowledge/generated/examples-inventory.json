@@ -4151,41 +4151,6 @@
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt#example-1",
-    "page": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt",
-    "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt#example-2",
-    "page": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt",
-    "language": "typescript",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt#example-3",
-    "page": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt",
-    "language": "typescript",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt#example-4",
-    "page": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
-    "id": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt#example-5",
-    "page": "/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt",
-    "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
-  },
-  {
     "id": "/quick-start-guides/nextjs-quick-start/adding-a-visual-editor-in-nextjs#example-1",
     "page": "/quick-start-guides/nextjs-quick-start/adding-a-visual-editor-in-nextjs",
     "language": "ts",

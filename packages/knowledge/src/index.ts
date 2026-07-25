@@ -5,7 +5,13 @@ import { findRecipesByIntent as searchRecipes } from "./search.js";
 export { recipes } from "./generated/recipes.js";
 export { endpoints, references } from "./generated/references.js";
 export { AI_RULES, SKILL, buildAiRules } from "./generated/ai.js";
-export { GENERATE_CMS_PROMPT, GENERATE_CMS_PROMPT_CLOUD, GENERATE_CMS_PROMPT_SELF_HOSTED, GENERATE_SITE_PROMPT } from "./generated/prompts.js";
+export {
+  CMS_PROMPT_CLOUD_CREDENTIAL_REQUEST,
+  GENERATE_CMS_PROMPT,
+  GENERATE_CMS_PROMPT_CLOUD,
+  GENERATE_CMS_PROMPT_SELF_HOSTED,
+  GENERATE_SITE_PROMPT,
+} from "./generated/prompts.js";
 export type {
   EndpointReference,
   ExampleInventoryEntry,
