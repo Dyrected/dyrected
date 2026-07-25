@@ -15,9 +15,9 @@ import { Settings } from "./dyrected/globals/settings.js";
 import { Navigation } from "./dyrected/globals/navigation.js";
 import { Footer } from "./dyrected/globals/footer.js";
 
-const db = postgresAdapter({
-  url: process.env.DATABASE_URL as string,
-});
+// const db = postgresAdapter({
+//   url: process.env.DATABASE_URL as string,
+// });
 export default defineConfig({
   accessPolicies: exampleSaasAccessPolicies,
   collections: [Admin, Media, Pages, Blog, Products, Authors],
@@ -25,5 +25,5 @@ export default defineConfig({
   admin: {
     branding: exampleSaasTheme.adminBranding,
   },
-  db,
+  // db,
 });

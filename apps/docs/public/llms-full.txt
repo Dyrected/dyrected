@@ -19740,6 +19740,12 @@ to render.
 A blocks field uses inline blocks or registered block references, never both.
 Read [Blocks](/docs/basics/fields/blocks) for both supported approaches.
 
+When a collection supports preview and has a page layout or blocks field, put
+that layout field in its own Admin tab. Keep page details and SEO metadata in
+separate tabs when that makes the editor easier to use. Use
+[`defineTab`](/docs/basics/fields/tabs) for this; tabs change the Admin editing
+experience, not the stored content shape.
+
 If editors can create pages, the frontend also needs a tested dynamic route.
 Creating a document in Admin does not create a public route by itself.
 
@@ -19753,6 +19759,10 @@ Dyrected rich text stores an HTML string. If the project currently stores
 long-form content as Markdown, the migration should convert it to equivalent
 safe HTML for the initial seed and preserve headings, lists, links, quotes, and
 inline formatting.
+
+Do not model prose as an array of paragraph rows. If editors are managing
+formatted paragraphs, use rich text. Arrays are for true repeatable items such
+as steps, FAQs, links, cards, and feature rows.
 
 Read [Rich text](/docs/basics/fields/rich-text) for the field contract and
 supported editor controls.

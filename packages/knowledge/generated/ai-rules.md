@@ -425,7 +425,9 @@ and other long-form content.
 - If existing source content is Markdown, convert it to equivalent safe HTML
   for seeding without inventing or flattening its structure.
 - Preserve headings, paragraphs, lists, links, quotes, and inline emphasis.
-- Do not flatten prose into arrays of paragraph strings.
+- Do not flatten prose into arrays of paragraph strings. If the editor is
+  managing prose paragraphs rather than repeatable cards, steps, FAQs, or
+  links, use rich text.
 - Do not invent formatting that is absent from the source.
 - Render rich content through `DyrectedRichText` or the installed documented
   rich-content boundary.
@@ -577,6 +579,13 @@ Configure preview only for content that already has a public route.
 - Configure `previewMode` only after reading the installed package types and
   current preview docs.
 - Do not invent token redemption, postMessage handling, or preview routes.
+
+For previewable collections that include a blocks/layout field, put the
+layout-building field in its own Admin tab with `defineTab`. Keep primary page
+details and SEO metadata in separate tabs when that improves editor focus.
+Tabs are editor presentation only; they must not change stored data shape.
+
+Reference: https://docs.dyrected.com/docs/basics/fields/tabs
 
 ## Access and Validation
 

@@ -68,6 +68,13 @@ Configure preview only for content that already has a public route.
   current preview docs.
 - Do not invent token redemption, postMessage handling, or preview routes.
 
+For previewable collections that include a blocks/layout field, put the
+layout-building field in its own Admin tab with `defineTab`. Keep primary page
+details and SEO metadata in separate tabs when that improves editor focus.
+Tabs are editor presentation only; they must not change stored data shape.
+
+Reference: https://docs.dyrected.com/docs/basics/fields/tabs
+
 ## Access and Validation
 
 Grant the smallest permissions required by the approved editing plan.
