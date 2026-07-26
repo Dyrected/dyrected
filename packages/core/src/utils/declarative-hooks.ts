@@ -764,13 +764,14 @@ export function formatConfigDiagnostics(
 ) {
   const color = options.color ?? false;
   const header = `${colorize("Config validation failed", 31, color)} in ${colorize(source, 36, color)}`;
+  const docLink = `${colorize("   Learn how to write declarative rules:", 90, color)} ${colorize("https://docs.dyrected.com/docs/features/admin/form-and-field-hooks", 34, color)}`;
   const lines = diagnostics.flatMap((issue, index) => [
     `${colorize(`${index + 1}.`, 31, color)} ${colorize(issue.path, 1, color)}`,
     `   ${issue.message}`,
     `   ${colorize("surface:", 90, color)} ${issue.surface}`,
   ]);
 
-  return `${header}\n${lines.join("\n")}`;
+  return `${header}\n${lines.join("\n")}\n\n${docLink}`;
 }
 
 export class ConfigValidationError extends Error {

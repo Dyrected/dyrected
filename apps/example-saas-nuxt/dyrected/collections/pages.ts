@@ -58,7 +58,6 @@ export const Pages = defineCollection({
     initialState: "draft",
     draftState: "draft",
   },*/
-  audit: true,
   fields: [
     { name: "title", type: "text", required: true },
     {

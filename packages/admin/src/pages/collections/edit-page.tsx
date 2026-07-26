@@ -49,6 +49,7 @@ import {
   AdminSectionSkeleton,
 } from "../../components/layout/admin-loading"
 import { AdminNotFound } from "../../components/layout/admin-not-found"
+import { useIsMobile } from "../../hooks/use-mobile"
 
 const FormEngine = lazy(async () => {
   const module = await import("../../components/forms/form-engine")
@@ -319,6 +320,7 @@ function PreviewPaneWithNav({
 }
 
 export function EditEntryPage() {
+  const isMobile = useIsMobile()
   const { slug, id } = useParams()
   const [searchParams] = useSearchParams()
   const { client, user } = useDyrected()
@@ -1182,9 +1184,9 @@ export function EditEntryPage() {
                 showLivePreview ? "lg:dy-flex-none lg:dy-opacity-100" : "lg:dy-w-0 lg:dy-opacity-0 lg:dy-border-r-0",
               // Mobile: single-pane. Full width only when the mobile Preview tab
               // is selected; otherwise fully hidden so the form gets the screen.
-                mobilePreview && showLivePreview ? "dy-flex-1 dy-opacity-100" : "dy-hidden"
+                mobilePreview && showLivePreview ? "dy-flex-1 dy-w-full dy-opacity-100" : "dy-hidden"
               )}
-              style={showLivePreview ? { width: `${previewPaneWidth}%` } : undefined}
+              style={showLivePreview && !isMobile ? { width: `${previewPaneWidth}%` } : undefined}
             >
               <div className="dy-h-full">
                 <PreviewPaneWithNav
@@ -1227,11 +1229,11 @@ export function EditEntryPage() {
           {/* Right Column: Header + Form */}
           <div className={cn(
             "dy-px-4 dy-py-6 md:dy-px-4 lg:dy-px-4 lg:dy-py-6 dy-transition-all dy-duration-500",
-            showLivePreview ? "dy-flex-none dy-w-full dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full",
+            showLivePreview ? "dy-flex-none dy-w-full lg:dy-w-auto dy-min-w-0 dy-overflow-y-auto" : showWorkflowSidebar ? "dy-flex-1 dy-max-w-3xl xl:dy-max-w-4xl dy-mx-auto dy-w-full dy-overflow-y-auto" : "dy-flex-1 dy-max-w-4xl xl:dy-max-w-5xl dy-mx-auto dy-w-full",
             // Mobile single-pane: yield the screen to the preview when selected.
             mobilePreview && showLivePreview ? "dy-hidden lg:dy-block" : ""
           )}
-          style={showLivePreview ? { width: `calc(${formPaneWidth}% - 0.75rem)` } : undefined}
+          style={showLivePreview && !isMobile ? { width: `calc(${formPaneWidth}% - 0.75rem)` } : undefined}
           >
             <div className="dy-space-y-4">
               {activeTab === "workflow" && workflowAvailable && (

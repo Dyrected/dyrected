@@ -382,7 +382,12 @@ Examples:
           }
           console.warn(
             chalk.yellow(
-              "   Cloud will not enforce stripped rules. Replace them with a Jexl string or a named policy before relying on Cloud access control.\n",
+              "   Cloud will not enforce stripped rules. Replace them with a Jexl string or a named policy before relying on Cloud access control.",
+            ),
+          );
+          console.warn(
+            chalk.yellow(
+              "   Learn more: https://docs.dyrected.com/docs/features/admin/form-and-field-hooks\n",
             ),
           );
         }
