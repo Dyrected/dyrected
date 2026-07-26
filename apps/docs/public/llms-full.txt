@@ -2286,6 +2286,288 @@ Treat those changes as URL migrations, not just content edits.
 
 ---
 
+## Declarative Expressions & Helpers
+
+Canonical URL: https://docs.dyrected.com/docs/basics/configuration/declarative-expressions
+
+When configuring field state, reactive form logic, or access control policies in Dyrected, you can write **declarative string expressions**.
+
+Declarative string expressions are powered by Jexl. Because they are plain strings stored inside your schema files, they are 100% serializable. They survive `npx dyrected sync:schema` and run safely across both self-hosted servers and Dyrected Cloud.
+
+By the end of this guide, you will understand when to reach for declarative expressions, what context variables are in scope, and how to use Dyrected's built-in helper utilities.
+
+## Choose the right hook shape for your goal
+
+In Dyrected, you can write hook and policy logic in two ways:
+
+1. **Declarative string expressions** (`"slugify(siblingData.title)"`): Recommended for value derivations, format conversions, and access checks. They are stored directly in your schema, survive Cloud schema sync, and run anywhere.
+2. **Function hooks** (`({ siblingData }) => siblingData.title`): Best for self-hosted Node.js servers performing custom asynchronous side effects or calling external microservices. Function hooks cannot be serialized to Dyrected Cloud and are stripped during schema sync.
+
+When a field calculation, access check, or UI condition can be expressed as a string, use the declarative string form.
+
+## Basic Expression Syntax
+
+Declarative expressions support property lookups, ternary conditionals, mathematical operators, and built-in helper functions:
+
+```typescript
+// Auto-derive a slug when empty, but preserve custom edits
+"value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value"
+
+// Role and document ownership check
+"user.role == 'admin' || user.id == doc.authorId"
+
+// Relative date check for scheduled content
+"isPast(doc.publishAt)"
+```
+
+## Context Variables by Surface
+
+Dyrected provides an explicit context object to each declarative expression based on where it is executed:
+
+| Surface | Available Context Variables | Common Use Case |
+| --- | --- | --- |
+| **Form Reactive Hooks** | `value`, `siblingData`, `data` | `admin.hooks.onChange` live form reactivity |
+| **Field & Collection Hooks** | `req`, `user`, `data`, `doc`, `operation`, `value` | `beforeChange`, `beforeRead` server-side evaluation |
+| **Access Control Policies** | `user`, `req`, `doc`, `data`, `id` | `access.read`, `access.update` permissions |
+| **Admin UI Field Conditions** | `data`, `siblingData`, `user`, `id` | `admin.condition` dynamic field visibility |
+
+## Built-in Helper Function Reference
+
+Dyrected includes 30+ zero-dependency helper functions that are registered globally in all Jexl evaluation contexts.
+
+### String Helpers
+
+Use string helpers to clean, reformat, or inspect text fields:
+
+| Function | What it accomplishes | Working Example | Output |
+| --- | --- | --- | --- |
+| `slugify(str)` | Transforms text into a URL-safe slug | `slugify("Hello World!")` | `"hello-world"` |
+| `lower(str)` | Converts text to lowercase | `lower("Dyrected")` | `"dyrected"` |
+| `upper(str)` | Converts text to uppercase | `upper("dyrected")` | `"DYRECTED"` |
+| `trim(str)` | Strips leading and trailing whitespace | `trim("  hello  ")` | `"hello"` |
+| `capitalize(str)` | Capitalizes the first letter of text | `capitalize("hELLO")` | `"Hello"` |
+| `truncate(str, len, ellipsis?)` | Truncates text with a custom suffix | `truncate(doc.body, 20)` | `"Long article body..."` |
+| `readingTime(str)` | Calculates reading time in minutes | `readingTime(doc.content)` | `3` |
+| `wordCount(str)` | Counts total words in a text string | `wordCount(doc.content)` | `450` |
+| `replace(str, search, replace)` | Replaces occurrences of a pattern | `replace(doc.title, "Draft", "Final")` | `"Final Title"` |
+| `startsWith(str, prefix)` | Checks if text starts with a prefix | `startsWith(doc.url, "https")` | `true` |
+| `endsWith(str, suffix)` | Checks if text ends with a suffix | `endsWith(doc.file, ".pdf")` | `true` |
+
+### Date & Time Helpers
+
+Use date helpers for scheduled publishing windows, expiration checks, and relative time calculations:
+
+| Function | What it accomplishes | Working Example | Output |
+| --- | --- | --- | --- |
+| `now()` | Returns current ISO 8601 timestamp | `now()` | `"2026-07-27T00:00:00.000Z"` |
+| `today()` | Returns current date (YYYY-MM-DD) | `today()` | `"2026-07-27"` |
+| `formatDate(date, style?)` | Formats dates (`'short'`, `'iso'`, `'date'`, `'datetime'`, `'full'`) | `formatDate(doc.publishedAt, "short")` | `"Jul 27, 2026"` |
+| `addDays(date, days)` | Adds or subtracts days from a timestamp | `addDays(now(), 7)` | `"2026-08-03T00:00:00.000Z"` |
+| `diffDays(dateA, dateB)` | Calculates integer day difference between two dates | `diffDays(now(), doc.createdAt)` | `14` |
+| `isPast(date)` | Returns `true` if timestamp is in the past | `isPast(doc.publishAt)` | `true` |
+| `isFuture(date)` | Returns `true` if timestamp is in the future | `isFuture(doc.expireAt)` | `false` |
+
+### Array & Collection Helpers
+
+Use array helpers to inspect tags, user roles, or multi-select field lists:
+
+| Function | What it accomplishes | Working Example | Output |
+| --- | --- | --- | --- |
+| `includes(arrOrStr, item)` | Checks array or substring membership | `includes(user.roles, "admin")` | `true` |
+| `join(arr, separator?)` | Joins array elements into a string | `join(siblingData.tags, ", ")` | `"news, tech"` |
+| `first(arr)` | Safely returns the first array element | `first(siblingData.images)` | `"{ id: 1, ... }"` |
+| `last(arr)` | Safely returns the last array element | `last(siblingData.history)` | `"{ step: 3, ... }"` |
+| `compact(arr)` | Removes empty, `null`, and `undefined` items | `compact(["a", null, "b"])` | `["a", "b"]` |
+| `unique(arr)` | Deduplicates array elements | `unique(["tag1", "tag1", "tag2"])` | `["tag1", "tag2"]` |
+| `length(val)` | Returns array length, string length, or key count | `length(siblingData.blocks)` | `4` |
+
+### Math & Logical Helpers
+
+Use math and logical helpers for numeric constraints, fallbacks, and safe nested property retrieval:
+
+| Function | What it accomplishes | Working Example | Output |
+| --- | --- | --- | --- |
+| `round(num, decimals?)` | Rounds a number to specified decimal places | `round(siblingData.price * 1.15, 2)` | `29.99` |
+| `clamp(num, min, max)` | Constrains a number between upper and lower bounds | `clamp(siblingData.rating, 1, 5)` | `5` |
+| `default(val, fallback)` | Provides a fallback for `null`, `undefined`, or `""` | `default(siblingData.title, "Untitled")` | `"Untitled"` |
+| `coalesce(...args)` | Returns the first non-empty value | `coalesce(doc.shortTitle, doc.title, "Draft")` | `"Draft"` |
+| `isEmpty(val)` | Returns `true` for empty arrays, objects, strings, or `null` | `isEmpty(siblingData.items)` | `true` |
+| `get(obj, path, fallback?)` | Safely retrieves nested object properties | `get(siblingData, "author.name", "Guest")` | `"Guest"` |
+
+## Practical Working Examples
+
+### 1. Auto-generating a URL Slug from a Title
+The following collection configuration auto-generates a clean slug when `slug` is empty, but preserves manual edits once the user types into the field:
+
+```typescript
+
+
+export const Pages = defineCollection({
+  slug: "pages",
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      required: true,
+      unique: true,
+      admin: {
+        hooks: {
+          onChange:
+            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
+        },
+      },
+    }),
+  ],
+});
+```
+
+### 2. Scheduled Publishing Access Rule
+Restrict public document access so non-admin users cannot read articles until `publishAt` is in the past:
+
+```typescript
+
+
+export const Articles = defineCollection({
+  slug: "articles",
+  access: {
+    read: "includes(user.roles, 'admin') || (doc.status == 'published' && isPast(doc.publishAt))",
+  },
+  fields: [
+    /* ... fields */
+  ],
+});
+```
+
+### 3. Dynamic Field Visibility
+Only display a discount percentage input when the selected customer tier is either `'vip'` or `'partner'`:
+
+```typescript
+
+
+export const discountField = defineNumberField({
+  name: "discountPercentage",
+  label: "Discount %",
+  admin: {
+    condition: "includes(['vip', 'partner'], siblingData.customerTier)",
+  },
+});
+```
+
+### 4. Auto-calculating Reading Time & Excerpt
+Automatically compute estimated article reading time and generate a truncated SEO summary whenever the document content changes:
+
+```typescript
+
+
+export const BlogPosts = defineCollection({
+  slug: "blog-posts",
+  fields: [
+    defineRichTextField({ name: "content", label: "Article Content" }),
+    defineNumberField({
+      name: "readingTimeMinutes",
+      label: "Reading Time (mins)",
+      admin: {
+        readOnly: true,
+        hooks: {
+          onChange: "readingTime(siblingData.content)",
+        },
+      },
+    }),
+    defineTextField({
+      name: "seoExcerpt",
+      label: "SEO Excerpt",
+      admin: {
+        hooks: {
+          onChange: "isEmpty(value) ? truncate(siblingData.content, 150) : value",
+        },
+      },
+    }),
+  ],
+});
+```
+
+### 5. Formatting Author Full Names & User Handles
+Combine first and last name fields into a display name and auto-lowercase social handles:
+
+```typescript
+
+
+export const Authors = defineCollection({
+  slug: "authors",
+  fields: [
+    defineTextField({ name: "firstName", label: "First Name" }),
+    defineTextField({ name: "lastName", label: "Last Name" }),
+    defineTextField({
+      name: "displayName",
+      label: "Display Name",
+      admin: {
+        hooks: {
+          onChange: "trim(coalesce(join(compact([siblingData.firstName, siblingData.lastName]), ' '), value))",
+        },
+      },
+    }),
+    defineTextField({
+      name: "twitterHandle",
+      label: "Twitter Handle",
+      admin: {
+        hooks: {
+          onChange: "lower(trim(value))",
+        },
+      },
+    }),
+  ],
+});
+```
+
+### 6. Default Expiration Date Window
+Set an automatic 30-day expiration window when creating new promotion codes if no custom expiration date is provided:
+
+```typescript
+
+
+export const Promotions = defineCollection({
+  slug: "promotions",
+  fields: [
+    defineTextField({ name: "code", label: "Promo Code", required: true }),
+    defineDateTimeField({
+      name: "expiresAt",
+      label: "Expiration Date",
+      admin: {
+        hooks: {
+          onChange: "isEmpty(value) ? addDays(now(), 30) : value",
+        },
+      },
+    }),
+  ],
+});
+```
+
+### 7. Safe Deep Property Retrieval & Owner Access Policies
+Allow users to update documents if they are either an admin or the owner specified in a deeply nested metadata field:
+
+```typescript
+
+
+export const Projects = defineCollection({
+  slug: "projects",
+  access: {
+    update: "includes(user.roles, 'admin') || user.id == get(doc, 'metadata.ownerId')",
+  },
+  fields: [
+    /* ... fields */
+  ],
+});
+```
+
+## Recommended Next Steps
+
+- Learn how declarative string hooks sync to Dyrected Cloud in [Cloud-safe hooks](/docs/basics/hooks/cloud).
+- Explore role and ownership access control patterns in [Collections Access Control](/docs/basics/access-control/collections).
+- See how custom form components consume field state in [Form & Field Hooks](/docs/features/admin/form-and-field-hooks).
+
+---
+
 ## Environment Variables
 
 Canonical URL: https://docs.dyrected.com/docs/basics/configuration/environment-variables

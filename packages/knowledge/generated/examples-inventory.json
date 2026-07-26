@@ -539,6 +539,62 @@
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
+    "id": "/basics/configuration/declarative-expressions#example-1",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/declarative-expressions#example-2",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/declarative-expressions#example-3",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/configuration/declarative-expressions#example-4",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/declarative-expressions#example-5",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/declarative-expressions#example-6",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/declarative-expressions#example-7",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/configuration/declarative-expressions#example-8",
+    "page": "/basics/configuration/declarative-expressions",
+    "language": "typescript",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/basics/configuration/environment-variables#example-1",
     "page": "/basics/configuration/environment-variables",
     "language": "bash",
