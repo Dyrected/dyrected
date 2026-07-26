@@ -10212,6 +10212,9 @@ This pattern generates the slug on the server and can also mirror it live in the
 
 <RecipeExample id="auto-slug" />
 
+> [!TIP]
+> You can use Dyrected's built-in Jexl helper functions—such as `slugify(siblingData.title)` or `lower(siblingData.name)`—directly in declarative string hooks for 100% Cloud-safe live field derivation.
+
 Read the full docs:
 
 - [Collections](/docs/basics/configuration/collections)
@@ -12434,6 +12437,39 @@ This is the right API for:
 - `setChildValue`
 
 Those helpers are what save you from hand-building nested dotted paths everywhere.
+
+## Built-in Declarative Jexl Helpers
+
+Dyrected provides a zero-dependency helper utility suite for declarative `admin.hooks.onChange`, field conditions, and access control rules:
+
+### String Helpers
+- `slugify(str)`: Transforms text into a clean URL-safe slug (`slugify(siblingData.title)` $\to$ `"hello-world"`).
+- `lower(str)` / `upper(str)`: Converts string casing.
+- `trim(str)` / `capitalize(str)`: Removes surrounding whitespace or capitalizes the first word.
+- `truncate(str, length, ellipsis?)`: Truncates text cleanly for previews or SEO meta descriptions.
+- `wordCount(str)` / `readingTime(str)`: Calculates word count and estimated reading time.
+- `replace(str, search, replacement)` / `startsWith(str, prefix)` / `endsWith(str, suffix)`: Pattern matching and replacement.
+
+### Date & Time Helpers
+- `now()`: Returns current ISO timestamp (`"2026-07-27T00:00:00.000Z"`).
+- `today()`: Returns current date (`"2026-07-27"`).
+- `formatDate(date, style?)`: Formats timestamps into `'short'`, `'iso'`, `'date'`, `'datetime'`, or `'full'`.
+- `addDays(date, days)`: Adds or subtracts days from a date.
+- `diffDays(dateA, dateB)`: Returns the integer difference in days between two dates.
+- `isPast(date)` / `isFuture(date)`: Returns `true` if a date is in the past or future.
+
+### Array & Collection Helpers
+- `includes(arrOrStr, item)`: Checks array membership or substring inclusion.
+- `join(arr, separator?)`: Joins array elements with a delimiter.
+- `first(arr)` / `last(arr)`: Pick first or last element of an array safely.
+- `compact(arr)` / `unique(arr)`: Removes empty items or deduplicates arrays.
+- `length(val)`: Returns array length, string length, or object key count.
+
+### Logical & Object Helpers
+- `default(val, fallback)`: Provides fallback for empty, `null`, or `undefined` values.
+- `coalesce(...args)`: Returns first non-empty value.
+- `isEmpty(val)`: Returns `true` for empty arrays, objects, strings, or `null`.
+- `get(obj, path, fallback?)`: Safely retrieves nested properties (`get(siblingData, "author.name", "Guest")`).
 
 ## Recommended path
 

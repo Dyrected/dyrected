@@ -29,7 +29,8 @@ export const Posts = defineCollection({
       promoted: true,
       admin: {
         hooks: {
-          onChange: ({ siblingData }) => toSlug(siblingData.title),
+          onChange:
+            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
         },
       },
     }),
