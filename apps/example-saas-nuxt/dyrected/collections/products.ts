@@ -27,15 +27,12 @@ export const Products = defineCollection({
       required: true,
       unique: true,
       hooks: {
-        beforeChange: [({ value }) => value?.toLowerCase()],
+        beforeChange: ["lower(value)"],
       },
       admin: {
         hooks: {
-          onChange: ({ value, siblingData }) => {
-            const titleSlug = ((siblingData?.title as string) || "").toLowerCase().replace(/\s/g, "-");
-            if (titleSlug.includes(value)) return titleSlug;
-            return value;
-          },
+          onChange:
+            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
         },
       },
     },
