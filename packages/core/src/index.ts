@@ -845,6 +845,7 @@ export * from "./utils/admin-auth.js";
 export * from "./utils/parse-where.js";
 export * from "./utils/parse-sort.js";
 export * from "./utils/declarative-hooks.js";
+export * from "./utils/jexl-helpers.js";
 export * from "./utils/hooks.js";
 export * from "./utils/openapi.js";
 export * from "./workflows.js";

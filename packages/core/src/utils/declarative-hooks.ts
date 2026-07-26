@@ -72,20 +72,24 @@ type DeclarativeValidationConfig = {
   accessPolicies?: Record<string, unknown>;
 };
 
+import { registerJexlHelpers, BUILTIN_JEXL_HELPERS } from "./jexl-helpers.js";
+
+registerJexlHelpers(jexl);
+
 const SURFACE_ROOTS: Record<DeclarativeHookSurface, readonly string[]> = {
-  "collection.beforeRead": ["req", "user", "query"],
-  "collection.afterRead": ["req", "user", "doc"],
-  "collection.beforeChange": ["req", "user", "data", "doc", "operation"],
-  "global.beforeRead": ["req", "user", "query"],
-  "global.afterRead": ["req", "user", "doc"],
-  "global.beforeChange": ["req", "user", "data", "doc", "operation"],
-  "field.beforeChange": ["value", "data", "originalDoc", "user"],
-  "field.admin.onChange": ["value", "siblingData", "data"],
+  "collection.beforeRead": ["req", "user", "query", ...BUILTIN_JEXL_HELPERS],
+  "collection.afterRead": ["req", "user", "doc", ...BUILTIN_JEXL_HELPERS],
+  "collection.beforeChange": ["req", "user", "data", "doc", "operation", ...BUILTIN_JEXL_HELPERS],
+  "global.beforeRead": ["req", "user", "query", ...BUILTIN_JEXL_HELPERS],
+  "global.afterRead": ["req", "user", "doc", ...BUILTIN_JEXL_HELPERS],
+  "global.beforeChange": ["req", "user", "data", "doc", "operation", ...BUILTIN_JEXL_HELPERS],
+  "field.beforeChange": ["value", "data", "originalDoc", "user", ...BUILTIN_JEXL_HELPERS],
+  "field.admin.onChange": ["value", "siblingData", "data", ...BUILTIN_JEXL_HELPERS],
 };
 
-const ACCESS_ROOTS = ["user", "req", "doc", "data", "id", "config"] as const;
-const ADMIN_CONDITION_RESERVED_ROOTS = ["data", "siblingData", "user", "id"] as const;
-const PREVIEW_URL_RESERVED_ROOTS = ["siteUrl", "id"] as const;
+const ACCESS_ROOTS = ["user", "req", "doc", "data", "id", "config", ...BUILTIN_JEXL_HELPERS] as const;
+const ADMIN_CONDITION_RESERVED_ROOTS = ["data", "siblingData", "user", "id", ...BUILTIN_JEXL_HELPERS] as const;
+const PREVIEW_URL_RESERVED_ROOTS = ["siteUrl", "id", ...BUILTIN_JEXL_HELPERS] as const;
 
 const COMPILE_CACHE = new Map<string, { ast: unknown }>();
 

@@ -67,7 +67,8 @@ export const Pages = defineCollection({
       unique: true,
       admin: {
         hooks: {
-          onChange: "siblingData.title != null ? siblingData.title : value",
+          onChange:
+            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
         },
       },
     },

@@ -1,9 +1,12 @@
 import jexl from "jexl"
+import { registerJexlHelpers, BUILTIN_JEXL_HELPERS } from "@dyrected/core"
+
+registerJexlHelpers(jexl)
 
 let sandboxIframe: HTMLIFrameElement | null = null
 const messageHandlers = new Map<string, (result: any) => void>()
 const SERIALIZED_ADMIN_HOOK_PREFIX = "__dyrected_fn__:"
-const ALLOWED_DECLARATIVE_ROOTS = new Set(["value", "siblingData", "data"])
+const ALLOWED_DECLARATIVE_ROOTS = new Set(["value", "siblingData", "data", ...BUILTIN_JEXL_HELPERS])
 
 function collectRootIdentifiers(node: any, roots: Set<string>, seen = new Set<any>()) {
   if (!node || typeof node !== "object" || seen.has(node)) return
