@@ -24,6 +24,7 @@ export default defineConfig({
   globals: [Settings, Navigation, Footer],
   admin: {
     branding: exampleSaasTheme.adminBranding,
+    meta: { titleSuffix: "| SnackTrack CMS" },
   },
   // db,
 });

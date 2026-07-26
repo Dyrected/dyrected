@@ -50,7 +50,7 @@ function CloudRailCard() {
           Get your backend ready in minutes
         </h3>
         <p className="text-sm leading-5 text-fd-muted-foreground">
-          Use a managed database, storage, APIs, and admin dashboard without setting up the infrastructure yourself. Keep hosting your app wherever you choose.
+          Use a managed database, storage, APIs, and admin dashboard without setting up the infrastructure yourself.
         </p>
       </div>
       <Link

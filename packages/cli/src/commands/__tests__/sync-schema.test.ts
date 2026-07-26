@@ -67,12 +67,12 @@ describe("sanitizeSchemaForCloudSync", () => {
       beforeChange: ["{ siteName: 'Cloud' }"],
     });
     expect(warnings).toEqual([
-      "collections[0].hooks.beforeRead[1]",
-      "collections[0].hooks.afterChange[0]",
-      "collections[0].fields[0].hooks.beforeChange[1]",
-      "collections[0].fields[0].hooks.afterRead[0]",
-      "collections[0].fields[0].admin.hooks.options",
-      "globals[0].hooks.afterChange[0]",
+      "collection('posts').hooks.beforeRead[1]",
+      "collection('posts').hooks.afterChange[0]",
+      "collection('posts').field('status').hooks.beforeChange[1]",
+      "collection('posts').field('status').hooks.afterRead[0]",
+      "collection('posts').field('status').admin.hooks.options",
+      "global('settings').hooks.afterChange[0]",
     ]);
   });
 

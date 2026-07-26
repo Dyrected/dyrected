@@ -185,7 +185,8 @@ export function sanitizeSchemaForCloudSync(config: CloudSyncConfig) {
   }));
 
   const collections = config.collections.map((collection, index) => {
-    const hooks = sanitizeHookMap(collection.hooks, `collections[${index}].hooks`, warnings, {
+    const collName = collection.slug ? `collection('${collection.slug}')` : `collections[${index}]`;
+    const hooks = sanitizeHookMap(collection.hooks, `${collName}.hooks`, warnings, {
       beforeRead: true,
       afterRead: true,
       beforeChange: true,
@@ -199,29 +200,29 @@ export function sanitizeSchemaForCloudSync(config: CloudSyncConfig) {
       access: {
         ...(collection.access?.read !== undefined
           ? {
-              read: sanitizeAccessValue(collection.access.read, `collections[${index}].access.read`, warnings),
+              read: sanitizeAccessValue(collection.access.read, `${collName}.access.read`, warnings),
             }
           : {}),
         ...(collection.access?.create !== undefined
           ? {
-              create: sanitizeAccessValue(collection.access.create, `collections[${index}].access.create`, warnings),
+              create: sanitizeAccessValue(collection.access.create, `${collName}.access.create`, warnings),
             }
           : {}),
         ...(collection.access?.update !== undefined
           ? {
-              update: sanitizeAccessValue(collection.access.update, `collections[${index}].access.update`, warnings),
+              update: sanitizeAccessValue(collection.access.update, `${collName}.access.update`, warnings),
             }
           : {}),
         ...(collection.access?.delete !== undefined
           ? {
-              delete: sanitizeAccessValue(collection.access.delete, `collections[${index}].access.delete`, warnings),
+              delete: sanitizeAccessValue(collection.access.delete, `${collName}.access.delete`, warnings),
             }
           : {}),
         ...(collection.access?.readAudit !== undefined
           ? {
               readAudit: sanitizeAccessValue(
                 collection.access.readAudit,
-                `collections[${index}].access.readAudit`,
+                `${collName}.access.readAudit`,
                 warnings,
               ),
             }
@@ -229,15 +230,17 @@ export function sanitizeSchemaForCloudSync(config: CloudSyncConfig) {
       },
       ...(hooks ? { hooks } : {}),
       fields: Array.isArray(collection.fields)
-        ? collection.fields.map((field: Record<string, any>, fieldIndex: number) =>
-            sanitizeField(field, `collections[${index}].fields[${fieldIndex}]`, warnings),
-          )
+        ? collection.fields.map((field: Record<string, any>, fieldIndex: number) => {
+            const fieldId = field.name ? `field('${field.name}')` : field.label ? `field('${field.label}')` : `fields[${fieldIndex}]`;
+            return sanitizeField(field, `${collName}.${fieldId}`, warnings);
+          })
         : collection.fields,
     };
   });
 
   const globals = (config.globals || []).map((global, index) => {
-    const hooks = sanitizeHookMap(global.hooks, `globals[${index}].hooks`, warnings, {
+    const globName = global.slug ? `global('${global.slug}')` : `globals[${index}]`;
+    const hooks = sanitizeHookMap(global.hooks, `${globName}.hooks`, warnings, {
       beforeRead: true,
       afterRead: true,
       beforeChange: true,
@@ -249,20 +252,21 @@ export function sanitizeSchemaForCloudSync(config: CloudSyncConfig) {
       access: {
         ...(global.access?.read !== undefined
           ? {
-              read: sanitizeAccessValue(global.access.read, `globals[${index}].access.read`, warnings),
+              read: sanitizeAccessValue(global.access.read, `${globName}.access.read`, warnings),
             }
           : {}),
         ...(global.access?.update !== undefined
           ? {
-              update: sanitizeAccessValue(global.access.update, `globals[${index}].access.update`, warnings),
+              update: sanitizeAccessValue(global.access.update, `${globName}.access.update`, warnings),
             }
           : {}),
       },
       ...(hooks ? { hooks } : {}),
       fields: Array.isArray(global.fields)
-        ? global.fields.map((field: Record<string, any>, fieldIndex: number) =>
-            sanitizeField(field, `globals[${index}].fields[${fieldIndex}]`, warnings),
-          )
+        ? global.fields.map((field: Record<string, any>, fieldIndex: number) => {
+            const fieldId = field.name ? `field('${field.name}')` : field.label ? `field('${field.label}')` : `fields[${fieldIndex}]`;
+            return sanitizeField(field, `${globName}.${fieldId}`, warnings);
+          })
         : global.fields,
     };
   });
