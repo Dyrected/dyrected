@@ -1,5 +1,23 @@
 # @dyrected/admin
 
+## 2.7.0
+
+### Minor Changes
+
+- 350345b: Add controlled admin theme support so host apps can drive the admin theme and receive theme changes back through the public admin API. This also fixes the admin theme provider initialization so it does not access refs during render.
+
+### Patch Changes
+
+- cc1a8d3: - Added dark mode SVG logo asset and theme-aware fallback rendering in `admin-shell`
+  - Migrated Nuxt example component config access to `useRuntimeConfig`
+  - Transitioned default live preview mode to `postMessage` across prompt templates, skills, documentation, and recipes
+  - Updated Dyrected configuration, environment integration, and content modeling rules for rich text and tabbed admin layouts
+  - Modularized and consolidated prompt generation logic, AI rules, and shared rule templates
+- Updated dependencies [cc1a8d3]
+  - @dyrected/knowledge@0.2.16
+  - @dyrected/core@2.7.0
+  - @dyrected/sdk@2.7.0
+
 ## 2.6.4
 
 ### Patch Changes

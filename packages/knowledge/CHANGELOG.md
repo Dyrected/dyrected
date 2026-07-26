@@ -1,5 +1,16 @@
 # @dyrected/knowledge
 
+## 0.2.16
+
+### Patch Changes
+
+- cc1a8d3: - Added dark mode SVG logo asset and theme-aware fallback rendering in `admin-shell`
+  - Migrated Nuxt example component config access to `useRuntimeConfig`
+  - Transitioned default live preview mode to `postMessage` across prompt templates, skills, documentation, and recipes
+  - Updated Dyrected configuration, environment integration, and content modeling rules for rich text and tabbed admin layouts
+  - Modularized and consolidated prompt generation logic, AI rules, and shared rule templates
+  - @dyrected/core@2.7.0
+
 ## 0.2.15
 
 ### Patch Changes
