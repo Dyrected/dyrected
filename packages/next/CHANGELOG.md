@@ -1,5 +1,17 @@
 # @dyrected/next
 
+## 2.7.1
+
+### Patch Changes
+
+- - Isolated server observability and logger runtime dependencies under `@dyrected/core/server` to prevent Node core modules (`fs`, `worker_threads`, `stream`) and Pino from leaking into frontend client bundles.
+  - Added browser fallback module configurations for Next.js (`withDyrected`) and Nuxt module Vite build hooks to ensure clean client component compilation across Turbopack and Vite.
+- Updated dependencies [93b38db]
+- Updated dependencies
+  - @dyrected/core@2.7.1
+  - @dyrected/react@2.7.1
+  - @dyrected/sdk@2.7.1
+
 ## 2.7.0
 
 ### Patch Changes
