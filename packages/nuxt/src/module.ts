@@ -265,7 +265,7 @@ export default defineNitroPlugin(async (nitroApp) => {
   }
 });
 `;
-        }
+        },
       });
       addServerPlugin(dbPluginTemplate.dst);
 
@@ -276,9 +276,9 @@ export default defineNitroPlugin(async (nitroApp) => {
           userConfig &&
           typeof userConfig === "object" &&
           "default" in (userConfig as Record<string, unknown>) &&
-          ((((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.collections) ||
-            (((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.globals) ||
-            (((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.db))
+          (((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.collections ||
+            ((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.globals ||
+            ((userConfig as Record<string, unknown>).default as Record<string, unknown> | undefined)?.db)
             ? ((userConfig as Record<string, unknown>).default as Pick<
                 DyrectedConfig,
                 "blocks" | "collections" | "globals" | "accessPolicies"
@@ -318,8 +318,7 @@ export default defineNitroPlugin(async (nitroApp) => {
 
     // Combine baseUrl and apiBase if necessary
     const apiBase = options.apiBase || "/dyrected";
-    let baseUrl =
-      process.env.NUXT_PUBLIC_DYRECTED_URL || process.env.DYRECTED_URL || options.baseUrl || apiBase;
+    let baseUrl = process.env.NUXT_PUBLIC_DYRECTED_URL || process.env.DYRECTED_URL || options.baseUrl || apiBase;
 
     // If baseUrl is an absolute URL and doesn't already include apiBase, append it
     if (baseUrl.startsWith("http") && apiBase.startsWith("/") && !baseUrl.endsWith(apiBase)) {
@@ -419,7 +418,25 @@ export default defineNitroPlugin(async (nitroApp) => {
     // "Identifier has already been declared" parse error. We intercept the plugin
     // *after* Nuxt has registered it and wrap its transform to bail out early for
     // any file that comes from the admin package.
-    nuxt.hook("vite:extendConfig", (config) => {
+    nuxt.hook("vite:extendConfig", (config, { isClient }) => {
+      if (isClient) {
+        const buildAny = (config as any).build || ((config as any).build = {});
+        buildAny.rollupOptions = buildAny.rollupOptions || {};
+        const external = buildAny.rollupOptions.external;
+        const externalFn = (id: string, importer?: string, isResolved?: boolean) => {
+          if (id.includes("observability") || id.includes("chunk-FRSJJO27")) return true;
+          if (typeof external === "function") return external(id, importer, !!isResolved);
+          if (Array.isArray(external)) return external.includes(id);
+          return false;
+        };
+        buildAny.rollupOptions.external = externalFn;
+      }
+
+      // Ignore/stub Node observability modules in Vite client builds
+      const optDeps = ((config as any).optimizeDeps = (config as any).optimizeDeps || {});
+      optDeps.exclude = optDeps.exclude || [];
+      optDeps.exclude.push("pino", "pino-pretty", "worker_threads");
+
       const plugins = (config.plugins ?? []) as any[];
       const unctxPlugin = plugins.find((p: any) => p && typeof p === "object" && p.name === "unctx:transform") as any;
       if (!unctxPlugin) return;

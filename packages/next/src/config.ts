@@ -27,6 +27,15 @@ export function withDyrected(nextConfig: NextConfig = {}): NextConfig {
         react: reactAbsolute,
         'react-dom': reactDomAbsolute,
       };
+      if (!options.isServer) {
+        config.resolve.fallback = {
+          ...config.resolve.fallback,
+          fs: false,
+          worker_threads: false,
+          pino: false,
+          'pino-pretty': false,
+        };
+      }
       if (typeof nextConfig.webpack === 'function') {
         return nextConfig.webpack(config, options);
       }
@@ -38,6 +47,8 @@ export function withDyrected(nextConfig: NextConfig = {}): NextConfig {
         ...nextConfig.turbopack?.resolveAlias,
         react: './node_modules/react',
         'react-dom': './node_modules/react-dom',
+        fs: { browser: './node_modules/@dyrected/next/dist/empty.js' },
+        worker_threads: { browser: './node_modules/@dyrected/next/dist/empty.js' },
       },
     },
   };

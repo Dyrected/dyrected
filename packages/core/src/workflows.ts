@@ -11,7 +11,6 @@ import type {
   WorkflowMetadata,
   WorkflowTransition,
 } from "./types/index.js";
-import { getConfigLogger, getObservabilityRuntime } from "./observability.js";
 
 export const WORKFLOW_HISTORY_COLLECTION = "__workflow_history";
 export const LIFECYCLE_EVENTS_COLLECTION = "__lifecycle_events";
@@ -56,10 +55,36 @@ export function definePublishingWorkflow(options: PublishingWorkflowOptions = {}
       { name: "published", label: "Published", color: "success", published: true },
     ],
     transitions: [
-      { name: "submit", label: "Submit for review", from: "draft", to: "in_review", requiredCapabilities: ["entry.submit"] },
-      { name: "publish", label: "Publish", from: "in_review", to: "published", requiredCapabilities: ["entry.publish"] },
-      { name: "reject", label: "Request changes", from: "in_review", to: "draft", requiredCapabilities: ["entry.publish"], requireComment: true },
-      { name: "unpublish", label: "Unpublish", from: "published", to: "draft", requiredCapabilities: ["entry.unpublish"], unpublish: true },
+      {
+        name: "submit",
+        label: "Submit for review",
+        from: "draft",
+        to: "in_review",
+        requiredCapabilities: ["entry.submit"],
+      },
+      {
+        name: "publish",
+        label: "Publish",
+        from: "in_review",
+        to: "published",
+        requiredCapabilities: ["entry.publish"],
+      },
+      {
+        name: "reject",
+        label: "Request changes",
+        from: "in_review",
+        to: "draft",
+        requiredCapabilities: ["entry.publish"],
+        requireComment: true,
+      },
+      {
+        name: "unpublish",
+        label: "Unpublish",
+        from: "published",
+        to: "draft",
+        requiredCapabilities: ["entry.unpublish"],
+        unpublish: true,
+      },
     ],
     roles: [
       ...editors.map((role) => ({ role, capabilities: [...EDITOR_CAPABILITIES] })),
@@ -87,7 +112,7 @@ export function simplePublishingWorkflow(): WorkflowConfig {
       { name: "published", label: "Published", color: "success", published: true },
     ],
     transitions: [
-      { name: "publish", label: "Publish", from: "draft", to: "published" },
+      { name: "publish", label: "Publish", from: ["draft", "published"], to: "published" },
       { name: "unpublish", label: "Unpublish", from: "published", to: "draft", unpublish: true },
     ],
     // Intentionally no `roles`: this lightweight workflow (synthesized from
@@ -96,14 +121,13 @@ export function simplePublishingWorkflow(): WorkflowConfig {
   };
 }
 
-
 function publicMetadata(meta: WorkflowMetadata): WorkflowMetadata {
   const { availableTransitions: _availableTransitions, ...safe } = meta;
   return safe;
 }
 
 export function workflowCapabilities(workflow: WorkflowConfig, user?: AuthenticatedUser): Set<string> {
-  const capabilities = new Set<string>(Array.isArray(user?.capabilities) ? user.capabilities as string[] : []);
+  const capabilities = new Set<string>(Array.isArray(user?.capabilities) ? (user.capabilities as string[]) : []);
   const roles = Array.isArray(user?.roles) ? user.roles : [];
   for (const mapping of workflow.roles ?? []) {
     if (roles.includes(mapping.role)) mapping.capabilities.forEach((capability) => capabilities.add(capability));
@@ -242,7 +266,11 @@ export async function dispatchLifecycleEvent(config: DyrectedConfig, event: Life
   const attempts = event.attempts + 1;
 
   try {
-    await db.update({ collection: LIFECYCLE_EVENTS_COLLECTION, id: event.id, data: { status: "processing", attempts } });
+    await db.update({
+      collection: LIFECYCLE_EVENTS_COLLECTION,
+      id: event.id,
+      data: { status: "processing", attempts },
+    });
     for (const handler of config.events.handlers) await handler({ ...event, status: "processing", attempts });
     await db.update({
       collection: LIFECYCLE_EVENTS_COLLECTION,
@@ -289,9 +317,9 @@ export async function dispatchPendingLifecycleEvents(config: DyrectedConfig, lim
     limit,
   });
   const now = Date.now();
-  const due = result.docs.filter((doc) =>
-    Number(doc.attempts ?? 0) < maxAttempts &&
-    (!doc.nextAttemptAt || new Date(doc.nextAttemptAt).getTime() <= now),
+  const due = result.docs.filter(
+    (doc) =>
+      Number(doc.attempts ?? 0) < maxAttempts && (!doc.nextAttemptAt || new Date(doc.nextAttemptAt).getTime() <= now),
   );
   for (const event of due) await dispatchLifecycleEvent(config, event as LifecycleEvent);
   return due.length;
@@ -319,7 +347,7 @@ export async function saveWorkflowDraft(args: {
     actorId: user?.sub,
     payload: {
       revision: baselineRevision + 1,
-      previousRevision: isLegacyPublishedDoc ? baselineRevision : previous?.revision ?? null,
+      previousRevision: isLegacyPublishedDoc ? baselineRevision : (previous?.revision ?? null),
     },
   });
 
@@ -327,9 +355,9 @@ export async function saveWorkflowDraft(args: {
     const nextMeta: WorkflowMetadata = {
       ...(previous ?? {}),
       state: isLegacyPublishedDoc
-        ? workflow.draftState ?? workflow.initialState
+        ? (workflow.draftState ?? workflow.initialState)
         : originalDoc.__published
-          ? workflow.draftState ?? workflow.initialState
+          ? (workflow.draftState ?? workflow.initialState)
           : previous.state,
       revision: baselineRevision + 1,
       ...(isLegacyPublishedDoc ? { publishedRevision: baselineRevision } : {}),
@@ -398,12 +426,16 @@ export async function transitionWorkflow(args: {
   const meta = original.__workflow as WorkflowMetadata;
   if (!meta) throw Object.assign(new Error("Entry has no workflow metadata"), { statusCode: 409 });
   if (expectedRevision !== undefined && expectedRevision !== meta.revision) {
-    throw Object.assign(new Error("This entry changed since it was loaded. Refresh before transitioning it."), { statusCode: 409 });
+    throw Object.assign(new Error("This entry changed since it was loaded. Refresh before transitioning it."), {
+      statusCode: 409,
+    });
   }
   const transition = workflow.transitions.find((item) => item.name === transitionName);
   const fromStates = transition ? (Array.isArray(transition.from) ? transition.from : [transition.from]) : [];
   if (!transition || !fromStates.includes(meta.state)) {
-    throw Object.assign(new Error(`Transition "${transitionName}" is not valid from "${meta.state}".`), { statusCode: 409 });
+    throw Object.assign(new Error(`Transition "${transitionName}" is not valid from "${meta.state}".`), {
+      statusCode: 409,
+    });
   }
   if (!availableWorkflowTransitions(workflow, meta.state, user).some((item) => item.name === transition.name)) {
     throw Object.assign(new Error(`You do not have permission to perform "${transition.label}".`), { statusCode: 403 });
@@ -415,18 +447,36 @@ export async function transitionWorkflow(args: {
   const hookContext = { transition, from: meta.state, to: transition.to, doc: original, user, comment, req, db };
   for (const hook of workflow.hooks?.beforeTransition ?? []) await hook(hookContext);
 
-  const events: LifecycleEvent[] = [createLifecycleEvent({
-    name: "workflow.transitioned",
-    collection: collection.slug,
-    documentId: id,
-    actorId: user?.sub,
-    payload: { transition: transition.name, from: meta.state, to: transition.to, revision: meta.revision, comment },
-  })];
+  const events: LifecycleEvent[] = [
+    createLifecycleEvent({
+      name: "workflow.transitioned",
+      collection: collection.slug,
+      documentId: id,
+      actorId: user?.sub,
+      payload: { transition: transition.name, from: meta.state, to: transition.to, revision: meta.revision, comment },
+    }),
+  ];
   const targetState = workflow.states.find((state) => state.name === transition.to)!;
   if (targetState.published) {
-    events.push(createLifecycleEvent({ name: "entry.published", collection: collection.slug, documentId: id, actorId: user?.sub, payload: { revision: meta.revision } }));
+    events.push(
+      createLifecycleEvent({
+        name: "entry.published",
+        collection: collection.slug,
+        documentId: id,
+        actorId: user?.sub,
+        payload: { revision: meta.revision },
+      }),
+    );
   } else if (transition.unpublish) {
-    events.push(createLifecycleEvent({ name: "entry.unpublished", collection: collection.slug, documentId: id, actorId: user?.sub, payload: { revision: meta.publishedRevision } }));
+    events.push(
+      createLifecycleEvent({
+        name: "entry.unpublished",
+        collection: collection.slug,
+        documentId: id,
+        actorId: user?.sub,
+        payload: { revision: meta.publishedRevision },
+      }),
+    );
   }
 
   const updated = await db.transaction(async (tx) => {
@@ -438,14 +488,18 @@ export async function transitionWorkflow(args: {
       lockedMeta.state !== meta.state ||
       (expectedRevision !== undefined && lockedMeta.revision !== expectedRevision)
     ) {
-      throw Object.assign(new Error("This entry changed since it was loaded. Refresh before transitioning it."), { statusCode: 409 });
+      throw Object.assign(new Error("This entry changed since it was loaded. Refresh before transitioning it."), {
+        statusCode: 409,
+      });
     }
     const now = new Date().toISOString();
     const { __published: _published, __workflow: _workflow, id: _id, ...working } = locked;
     const nextMeta: WorkflowMetadata = {
       ...lockedMeta,
       state: transition.to,
-      ...(targetState.published ? { publishedRevision: lockedMeta.revision, publishedAt: now, publishedBy: user?.sub } : {}),
+      ...(targetState.published
+        ? { publishedRevision: lockedMeta.revision, publishedAt: now, publishedBy: user?.sub }
+        : {}),
       ...(transition.unpublish ? { publishedRevision: undefined, publishedAt: undefined, publishedBy: undefined } : {}),
     };
     const data: Record<string, unknown> = { __workflow: nextMeta };
@@ -454,11 +508,36 @@ export async function transitionWorkflow(args: {
     const next = await tx.update({ collection: collection.slug, id, data });
     await tx.create({
       collection: WORKFLOW_HISTORY_COLLECTION,
-      data: { collection: collection.slug, documentId: id, transition: transition.name, from: lockedMeta.state, to: transition.to, revision: lockedMeta.revision, comment: comment ?? null, actorId: user?.sub ?? null, createdAt: now },
+      data: {
+        collection: collection.slug,
+        documentId: id,
+        transition: transition.name,
+        from: lockedMeta.state,
+        to: transition.to,
+        revision: lockedMeta.revision,
+        comment: comment ?? null,
+        actorId: user?.sub ?? null,
+        createdAt: now,
+      },
     });
     for (const event of events) await persistEvent(tx, event);
     if (collection.audit) {
-      await tx.create({ collection: "__audit", data: { collection: collection.slug, documentId: id, operation: "workflow.transition", user: user?.sub ?? null, timestamp: now, changes: JSON.stringify({ transition: transition.name, from: lockedMeta.state, to: transition.to, revision: lockedMeta.revision }) } });
+      await tx.create({
+        collection: "__audit",
+        data: {
+          collection: collection.slug,
+          documentId: id,
+          operation: "workflow.transition",
+          user: user?.sub ?? null,
+          timestamp: now,
+          changes: JSON.stringify({
+            transition: transition.name,
+            from: lockedMeta.state,
+            to: transition.to,
+            revision: lockedMeta.revision,
+          }),
+        },
+      });
     }
     return next;
   });
@@ -468,17 +547,22 @@ export async function transitionWorkflow(args: {
     try {
       await hook({ ...hookContext, doc: updated, event: events[0] });
     } catch (error) {
-      getObservabilityRuntime(config)?.recordWorkflowHookFailure({
-        collection: collection.slug,
-        transition: transition.name,
-      });
-      getConfigLogger(config, "workflow").error({
-        err: error,
-        msg: "afterTransition hook failed",
-        collection: collection.slug,
-        transition: transition.name,
-        documentId: id,
-      });
+      try {
+        const { getConfigLogger, getObservabilityRuntime } = await import("./observability.js");
+        getObservabilityRuntime(config)?.recordWorkflowHookFailure({
+          collection: collection.slug,
+          transition: transition.name,
+        });
+        getConfigLogger(config, "workflow").error({
+          err: error,
+          msg: "afterTransition hook failed",
+          collection: collection.slug,
+          transition: transition.name,
+          documentId: id,
+        });
+      } catch {
+        console.error("afterTransition hook failed:", error);
+      }
     }
   }
   return updated;

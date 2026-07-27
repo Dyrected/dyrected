@@ -1,6 +1,5 @@
 import jexl from 'jexl';
 import type { AccessResult } from '../types/access.js';
-import { getConfigLogger } from '../observability.js';
 
 /**
  * Jexl evaluator for Dyrected access control.
@@ -22,11 +21,7 @@ export async function evaluateAccess(
     }
     return !!result;
   } catch (err) {
-    getConfigLogger(context.config, 'access').error({
-      err,
-      msg: 'Jexl evaluation failed',
-      expression,
-    });
+    console.error('[dyrected:access] Failed to evaluate access expression:', err);
     return false;
   }
 }

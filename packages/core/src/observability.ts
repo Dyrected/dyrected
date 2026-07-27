@@ -31,7 +31,6 @@ import pino, {
   type Level,
   type Logger,
 } from "pino";
-import pinoPretty from "pino-pretty";
 import { Writable } from "node:stream";
 import type { ServerResponse } from "node:http";
 import type { DyrectedContext } from "./app.js";
@@ -361,14 +360,22 @@ function buildTransportStreams(
 }
 
 function defaultLoggerDestination(): DestinationStream {
-  if (process.env.NODE_ENV !== "production") {
-    return pinoPretty({
-      colorize: true,
-      ignore: "pid,hostname",
-      translateTime: "SYS:HH:MM:ss",
-      destination: 1,
-      sync: true,
-    }) as DestinationStream;
+  if (process.env.NODE_ENV !== "production" && typeof window === "undefined") {
+    try {
+      const req = (globalThis as unknown as { require?: (id: string) => any }).require;
+      if (req) {
+        const pinoPretty = req("pino-pretty");
+        return pinoPretty({
+          colorize: true,
+          ignore: "pid,hostname",
+          translateTime: "SYS:HH:MM:ss",
+          destination: 1,
+          sync: true,
+        }) as DestinationStream;
+      }
+    } catch {
+      // Fallback if pino-pretty or node module loading fails
+    }
   }
 
   return pinoDestination(1);

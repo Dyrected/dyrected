@@ -1,7 +1,6 @@
 import type { AuthenticatedUser, DyrectedConfig } from "../types/index.js";
 import type { AccessFunctionArgs, AccessPolicyResolver, AccessResult, AccessRule, NamedAccessPolicy } from "../types/access.js";
 import { evaluateAccess } from "./jexl.js";
-import { getConfigLogger } from "../observability.js";
 
 function isNamedAccessPolicy(value: unknown): value is NamedAccessPolicy {
   return !!value && typeof value === "object" && "policy" in value && typeof (value as { policy?: unknown }).policy === "string";
@@ -25,10 +24,7 @@ export async function resolveAccess<
     try {
       return await access(args);
     } catch (err) {
-      getConfigLogger(config, "access").error({
-        err,
-        msg: "Functional access check failed",
-      });
+      console.error("[dyrected:access] Functional access check failed:", err);
       return false;
     }
   }
@@ -36,10 +32,7 @@ export async function resolveAccess<
   if (isNamedAccessPolicy(access)) {
     const policy = config.accessPolicies?.[access.policy];
     if (policy === undefined) {
-      getConfigLogger(config, "access").error({
-        msg: "Unknown access policy",
-        policy: access.policy,
-      });
+      console.error(`[dyrected:access] Unknown access policy "${access.policy}"`);
       return false;
     }
 
@@ -53,11 +46,7 @@ export async function resolveAccess<
       const resolver = policy as AccessPolicyResolver<TDoc, TUser>;
       return await resolver({ ...args, params: access.params });
     } catch (err) {
-      getConfigLogger(config, "access").error({
-        err,
-        msg: "Access policy failed",
-        policy: access.policy,
-      });
+      console.error(`[dyrected:access] Access policy "${access.policy}" failed:`, err);
       return false;
     }
   }

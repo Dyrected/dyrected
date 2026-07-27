@@ -1,5 +1,4 @@
 import { SignJWT, jwtVerify, decodeJwt, type JWTPayload } from 'jose';
-import { TextEncoder } from 'node:util';
 
 export interface CollectionTokenPayload extends JWTPayload {
   sub: string;       // document id (or invited email for invite tokens)

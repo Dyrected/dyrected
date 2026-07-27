@@ -8,7 +8,6 @@ import type {
   FieldBeforeChangeHookArgs,
   ReadonlyDatabaseAdapter,
 } from "../types/index.js";
-import { getConfigLogger } from "../observability.js";
 import jexl from "jexl";
 import {
   assertValidDeclarativeHookExpression,
@@ -126,10 +125,7 @@ export async function runCollectionHooks(
       }
     } catch (err) {
       if (options.isolated) {
-        getConfigLogger(undefined, "hooks").error({
-          err,
-          msg: "Side-effect hook failed after a successful write",
-        });
+        console.error("Side-effect hook failed after a successful write", err);
       } else {
         throw err;
       }
