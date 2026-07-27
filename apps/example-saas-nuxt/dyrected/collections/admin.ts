@@ -1,4 +1,5 @@
 import { defineCollection, defineMultiSelectField, defineTextField } from "@dyrected/core";
+import { policy } from "../access-policies.js";
 
 export const Admin = defineCollection({
   slug: "admin",
@@ -22,8 +23,8 @@ export const Admin = defineCollection({
       label: "Roles",
       defaultValue: ["viewer"],
       access: {
-        read: { policy: "isAdmin" },
-        update: { policy: "isAdmin" },
+        read: policy("isAdmin"),
+        update: policy("isAdmin"),
       },
       options: [
         { label: "Admin", value: "admin" },

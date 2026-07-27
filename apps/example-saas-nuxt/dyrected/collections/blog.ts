@@ -2,15 +2,16 @@ import { defineCollection } from "@dyrected/core";
 import { Media } from "./media.js";
 import { Authors } from "./authors.js";
 import { blogSeed } from "../seed.js";
+import { policy } from "../access-policies.js";
 
 export const Blog = defineCollection({
   slug: "blog",
   labels: { plural: "Articles", singular: "Article" },
   access: {
     read: true,
-    create: { policy: "canManageContent" },
-    update: { policy: "canManageContent" },
-    delete: { policy: "isAdmin" },
+    create: policy("isAuthenticated"),
+    update: policy("isAuthenticated"),
+    delete: policy("isAdmin"),
   },
   admin: {
     useAsTitle: "title",

@@ -1,15 +1,16 @@
 import { defineCollection } from "@dyrected/core";
 import { Media } from "./media.js";
 import { pagesSeed } from "../seed.js";
+import { policy } from "../access-policies.js";
 
 export const Pages = defineCollection({
   slug: "pages",
   labels: { plural: "Pages", singular: "Page" },
   access: {
     read: true,
-    create: { policy: "canManageContent" },
-    update: { policy: "canManageContent" },
-    delete: { policy: "isAdmin" },
+    create: policy("isAuthenticated"),
+    update: policy("isAuthenticated"),
+    delete: policy("hasRole", { roles: ["admin", "owner"] }),
   },
   admin: {
     useAsTitle: "title",
