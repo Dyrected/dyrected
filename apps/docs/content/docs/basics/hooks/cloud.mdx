@@ -1,13 +1,13 @@
 ---
 title: Cloud-safe hooks
-description: Use declarative string hooks that survive schema sync to Dyrected Cloud, know which hook families are supported, and see what sync preserves or strips.
+description: Use declarative Jexl-style string hooks that survive schema sync to Dyrected Cloud, know which hook families are supported, and see what sync preserves or strips.
 ---
 
 Use Cloud-safe hooks when you want hook behavior that survives `sync:schema` and runs from the schema Dyrected Cloud stores.
 
 The important distinction is not only *which hook phase you want*, but *which hook shape Cloud can actually keep*. In practice, that means:
 
-- use **declarative string hooks** for simple read shaping and value transforms
+- use **declarative Jexl-style string hooks** for simple read shaping and value transforms
 - use **function hooks** for self-hosted async work, side effects, and anything that needs arbitrary server code
 
 If you are new to hooks themselves, start with the [Hooks overview](/docs/basics/hooks/overview). This page is the Cloud-specific guide.
@@ -16,8 +16,8 @@ If you are new to hooks themselves, start with the [Hooks overview](/docs/basics
 
 For most Cloud projects, the safest path is:
 
-1. use declarative string hooks for `beforeRead`, `afterRead`, and `beforeChange`
-2. use declarative string `admin.hooks.onChange` for browser-side form reactivity that should survive schema sync
+1. use declarative Jexl-style string hooks for `beforeRead`, `afterRead`, and `beforeChange`
+2. use declarative Jexl-style `admin.hooks.onChange` for browser-side form reactivity that should survive schema sync
 3. keep `afterChange`, delete hooks, and other side-effect hooks as self-hosted function hooks
 
 That avoids the two most common Cloud mistakes:

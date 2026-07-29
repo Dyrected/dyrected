@@ -1,12 +1,9 @@
-import type { ReactNode } from 'react'
-import { source } from '@/app/source'
-import { ClientDocsLayout } from '@/components/client-docs-layout'
-import { prepareTree } from '@/lib/unpublished'
+import type { ReactNode } from "react";
 
-export default function Layout({ children }: { children: ReactNode }) {
-  return (
-    <ClientDocsLayout tree={prepareTree(source.pageTree)}>
-      {children}
-    </ClientDocsLayout>
-  )
+export default function LegacyDocsLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return children;
 }

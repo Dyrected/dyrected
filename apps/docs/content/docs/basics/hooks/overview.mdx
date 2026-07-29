@@ -1,34 +1,73 @@
 ---
 title: Overview
-description: Hooks let you run server-side logic before and after documents are read and written.
+description: Use hooks safely in Cloud as content rules, or run unrestricted function hooks in self-hosted Dyrected.
+runtime: variant
+runtimeGroup: hooks-overview
+runtimeNotes: Cloud calls them hooks publicly but defines the supported form as serializable content rules; arbitrary TypeScript hook functions are self-hosted.
 ---
 
-Hooks are where you put logic that should run as part of Dyrected's data lifecycle itself, not as an optional extra around it. They are the right tool when a value must be normalized before save, a response must be reshaped before it leaves the API, or a successful write should trigger follow-up work such as cache revalidation, notifications, or audit records.
+Hooks are where content changes get cleaned up, shaped, or reacted to.
 
-By the end of this page, you should know which kind of hook to reach for, what each phase is good at, and where to go next for the exact lifecycle you need.
+The important first decision is runtime: Cloud hooks are content rules Dyrected can serialize and run on the hosted content backend, while self-hosted Dyrected can run arbitrary TypeScript functions inside your server.
 
-## The mental model
+By the end of this page, you should know which hook shape fits your runtime and where to put the behavior you need.
 
-Dyrected has three hook surfaces:
+## Start with the runtime boundary
+
+Use **Cloud-safe hooks** when the behavior should survive `sync:schema` and run in Dyrected Cloud. In practice, that means hooks defined as serializable Jexl-style content rules, not arbitrary functions.
+
+Use **function hooks** when the behavior needs arbitrary server code. Function hooks are self-hosted runtime behavior. Reach for them when the logic needs async work, external packages, database writes after persistence, custom integrations, or side effects that belong inside your application server.
+
+If you are building for Cloud and need asynchronous side effects, do not assume a function hook will run on the hosted backend. Cloud content events and webhooks are the intended model for that work, but they are still coming soon.
+
+## The hook surfaces
+
+Dyrected has four hook surfaces:
 
 - **Collection hooks** for document-level logic on repeatable content.
 - **Global hooks** for document-level logic on singleton data such as site settings.
-- **Field hooks** for logic that belongs to one field value rather than the whole document.
+- **Field hooks** for logic that belongs to one field value.
+- **Admin field hooks** for reactive form behavior in the dashboard.
 
-There is also a small set of **admin field hooks** that run in the browser to make forms reactive. Those are useful for editor experience, but they are not a security boundary. If a rule must hold on every write path, put it in a server hook.
+Admin hooks improve the editing experience, but they are not a security boundary. If a rule must hold on every API path, enforce it with access control, a server hook, or a Cloud-safe rule that runs on the backend.
 
-## Cloud-safe declarative hooks
+<CloudOnly>
 
-If you are deploying to Dyrected Cloud, there is a smaller Cloud-safe subset of hooks that can be serialized into schema and evaluated without arbitrary server code.
+## Cloud hooks are content rules
 
-The short version:
+In Cloud, hooks are content rules. They are serializable, so Dyrected can send them to Cloud during schema sync and evaluate them on the hosted content backend.
 
-- use **declarative string hooks** for simple read shaping and value transforms that should survive `sync:schema`
-- use **function hooks** for self-hosted async work, side effects, and anything that needs arbitrary server code
+The recommended Cloud path is:
+
+1. use declarative Jexl-style strings for simple `beforeRead`, `afterRead`, and `beforeChange` transforms
+2. use declarative Jexl-style `admin.hooks.onChange` for browser-side form reactivity that should survive schema sync
+3. keep asynchronous side effects out of Cloud hooks until Cloud content events and webhooks are public
+4. keep arbitrary function hooks in self-hosted projects
 
 For the full compatibility table, exact expression contexts, and what `sync:schema` preserves or strips, read [Cloud-safe hooks](/docs/basics/hooks/cloud).
 
-## Where each hook family fits
+</CloudOnly>
+
+<SelfHostedOnly>
+
+## Self-hosted function hooks
+
+Self-hosted Dyrected can run hook functions because the backend is your Node.js runtime. That means your hook can call services, use packages, read request context, perform side effects, or coordinate with application-specific backend logic.
+
+Use function hooks for self-hosted behavior such as:
+
+- normalizing data with custom TypeScript
+- validating a write against several fields
+- reshaping API responses
+- triggering cache revalidation after a write
+- calling internal services
+- coordinating with database-backed application records
+
+That power is intentionally not the Cloud default. Cloud keeps the content backend managed and predictable; self-hosted gives you the unrestricted runtime.
+
+</SelfHostedOnly>
+
+## Where each family fits
 
 ### Collections
 
@@ -76,14 +115,18 @@ Use them to derive a slug, recalculate a total, or update select options as edit
 
 ## The recommended decision tree
 
-- Use a **field hook** when one field can be transformed on its own.
-- Use a **collection or global hook** when the logic depends on several fields or on the operation itself.
+- Use a **Cloud-safe hook** when the behavior is a simple content rule that must run in Cloud.
+- Use a **field hook** when one value can be transformed on its own.
+- Use a **collection or global hook** when the logic depends on several fields or the surrounding operation.
 - Use an **admin hook** when the goal is immediate editor feedback in the dashboard.
-- Use **access control** instead of hooks when the question is simply who can read or write.
+- Use **access control** when the question is who can read or write.
+- Use a **self-hosted function hook** when the behavior needs arbitrary TypeScript or server-side side effects.
 
-## A complete example
+<SelfHostedOnly>
 
-This collection uses both sides of the lifecycle: `beforeChange` prepares the data that should be stored, and `afterChange` reacts only after the write has succeeded.
+## A self-hosted function-hook example
+
+This collection uses both sides of the lifecycle: `beforeChange` prepares the data that should be stored, and `afterChange` reacts only after the write has succeeded. Because the example includes an async side effect, treat it as self-hosted runtime code.
 
 ```ts
 import { defineCollection, defineTextField } from '@dyrected/core'
@@ -128,6 +171,10 @@ What this gives you:
 - The page revalidation only happens after the document is committed.
 - A failed revalidation does not undo the saved document.
 
+For a Cloud-safe slug transform, use a hook defined as a content rule instead. Keep the revalidation step outside Cloud hooks until Cloud content events and webhooks are public.
+
+</SelfHostedOnly>
+
 ## Runtime rules worth remembering
 
 - Hooks in an array run in order.
@@ -142,6 +189,7 @@ What this gives you:
 
 - [Collection hooks](/docs/basics/hooks/collections) for the full document lifecycle on collections.
 - [Cloud-safe hooks](/docs/basics/hooks/cloud) for the Cloud-specific compatibility rules.
+- [Lifecycle events](/docs/features/workflows/lifecycle-events) for content events, webhooks, and self-hosted handlers.
 - [Global hooks](/docs/basics/hooks/globals) for singleton settings and site-wide config.
 - [Field hooks](/docs/basics/hooks/fields) for value-level transforms and admin form reactivity.
 - [Hook context](/docs/basics/hooks/context) for the `req`, `user`, and `db` values hooks receive.

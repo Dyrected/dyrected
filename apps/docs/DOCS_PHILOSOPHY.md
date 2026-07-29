@@ -19,11 +19,15 @@ If someone can only remember one thing about their goal, they should be able to 
 
 Every page should be readable in layers:
 
-1. The simplest working example — enough to get going
-2. Common options and variations
-3. Advanced configuration and edge cases
+1. Reader goal and mental model — what the reader is trying to decide or finish
+2. Recommended path — the practical default and what “done” looks like
+3. Exact setup or configuration — enough to copy, adapt, and verify
+4. Common options and variations
+5. Advanced configuration and edge cases
 
 Put complexity below the fold. A reader should be able to stop as soon as their need is met without wading through options they don't need yet.
+
+Tables are confirmation tools, not the opening move. Use tables after the reader has the mental model, especially on comparison pages.
 
 ---
 
@@ -48,6 +52,16 @@ The recommended way is X. If you need more control, see [Advanced Configuration]
 ```
 
 This keeps beginners on the happy path while not hiding power from advanced users.
+
+For decision pages, explain the choice in the way developers actually think about the work:
+
+- who owns the backend boundary
+- what infrastructure the team wants to operate
+- where authentication and customer data already live
+- whether the CMS is a managed content service or part of the app runtime
+- what the visible success signal is after setup
+
+Avoid leading with internal capability names such as hooks, adapters, dispatchers, or policies unless those are already the reader's stated goal.
 
 ---
 
@@ -101,6 +115,7 @@ Use this rubric for onboarding pages such as `Introduction`, `Quickstart`, and d
 - Reduce setup anxiety by making each step feel bounded and visible.
 - Introduce Dyrected terms only when they help the reader complete the next action.
 - Link outward for deep reference instead of front-loading edge cases.
+- Enter the reader's situation before describing the product boundary. A developer should recognize themselves in the first screen.
 
 ### Writing rules for getting-started pages
 
@@ -108,6 +123,7 @@ Use this rubric for onboarding pages such as `Introduction`, `Quickstart`, and d
 - Surface the recommended path early.
 - If the page contains multiple paths, explain the difference in plain language before the branching sections.
 - Keep branch labels concrete: what the reader is choosing, what they will get, and who the path is for.
+- Put the mental model before the capability matrix. A table should sharpen a decision the prose already made understandable.
 - Before any code or setup block, explain what it does and what the reader should expect to see afterward.
 - After any important step, name the visible success signal: a route loads, a login works, an API responds, a page updates.
 - Use short sections and short transitions so the reader never loses their place.
@@ -127,12 +143,97 @@ Use this rubric for onboarding pages such as `Introduction`, `Quickstart`, and d
 
 ---
 
+## 9. Runtime docs rubric
+
+Use this rubric for Cloud, self-hosted, and runtime-choice pages.
+
+### The core runtime framing
+
+Dyrected Cloud is the managed content backend. It owns content storage, media, content APIs, editor access, publishing workflows, and Cloud-safe hooks defined as content rules.
+
+Self-hosted Dyrected runs inside the developer's application backend. It is for projects where the CMS must share the app runtime, infrastructure boundary, database strategy, account model, custom endpoints, function hooks, plugins, or server-side integrations.
+
+Do not frame the choice as “Cloud is simple, self-hosted is advanced.” Frame it as “managed content backend” versus “CMS inside your app backend.”
+
+### Cloud docs should sound like managed content infrastructure
+
+Cloud guidance should help developers who think:
+
+- “I need editable content for a custom website.”
+- “My React or Vue app needs a hosted content API.”
+- “My app already owns customer auth, billing, checkout, and product workflows.”
+- “I want clients or editors to manage content without operating a CMS server.”
+
+Cloud docs should not imply that Dyrected Cloud hosts arbitrary application backend logic, customer accounts, checkout, payments, product-specific workflows, or unrestricted server code.
+
+When Cloud events or webhooks are mentioned, mark them as coming soon until they are public.
+
+Call Cloud-safe hooks “hooks,” but define them immediately as content rules: serializable behavior Dyrected can sync and run in the hosted content backend.
+
+### Self-hosted docs should sound like runtime ownership
+
+Self-hosted guidance should help developers who think:
+
+- “The CMS must run in the same server as my app.”
+- “The CMS must live behind my network, database, compliance, or deployment boundary.”
+- “Dyrected should own application-user accounts.”
+- “Content writes need to run code inside my backend.”
+- “I need custom endpoints, local transactions, plugins, or direct infrastructure access.”
+
+Self-hosted docs should keep the current full-control story, but avoid making the choice feel like a generic “advanced features” upsell.
+
+### Auth boundary
+
+Cloud auth is content-workspace access: owners, team members, clients, editors, administrators, invitations, and dashboard access.
+
+Application-user auth stays in the application, a dedicated identity provider, or self-hosted Dyrected collection auth when Dyrected must own those accounts.
+
+Do not let Cloud auth copy sound like Dyrected Cloud is a hosted replacement for a product's customer identity system.
+
+---
+
+## 10. Structure borrowing
+
+It is acceptable to study strong documentation systems such as Laravel, Payload, or Sanity for structure.
+
+Borrow:
+
+- section order
+- heading progression
+- where the page teaches a mental model
+- where it switches from guide to reference
+- how it introduces recommended defaults and escape hatches
+
+Do not borrow:
+
+- wording
+- product claims
+- examples that Dyrected does not support
+- routes, APIs, or guarantees that are not true for Dyrected
+
+When rewriting an important page, identify the page type before editing:
+
+- **Conceptual guide:** explain what the concept is, when to use it, and what to read next.
+- **Configuration guide:** explain the mental model, show the recommended config, then document options.
+- **Reference-led guide:** explain when the reader needs the reference, then make exact fields, endpoints, or types easy to scan.
+
+If a page makes code-behavior claims, verify those claims against the relevant `@dyrected/*` package before presenting them as fact.
+
+Keep substantial rewrites review-ready until product or engineering has verified open claims.
+
+---
+
 ## Checklist for new doc pages
 
 - [ ] Page title matches the task, not the class/module name
-- [ ] Simplest example appears within the first screen of content
+- [ ] The first screen states the reader goal or decision
+- [ ] The mental model appears before tables, edge cases, or reference detail
+- [ ] The recommended path appears before escape hatches
+- [ ] Simplest example appears within the first screen of content when the page is a setup or configuration guide
 - [ ] No code example has `...` gaps or unexplained placeholders
 - [ ] Advanced options are below the fold, not in the introduction
 - [ ] Every code block is preceded by a prose explanation
 - [ ] The page can be understood by someone who has never read any other Dyrected doc
 - [ ] The voice feels like a calm, practical guide rather than product copy or raw reference text
+- [ ] Runtime pages frame Cloud as managed content infrastructure and self-hosted as runtime ownership
+- [ ] Product claims with uncertain availability are marked as coming soon or left for review

@@ -1,6 +1,7 @@
 ---
 title: Cookie Strategy
 description: Where to store a Dyrected session token between requests — httpOnly cookies, client-readable cookies, and storage — and what each choice means for security, since the server authenticates only from the Authorization header.
+runtime: self-hosted
 ---
 
 Dyrected's server never sets or reads an auth cookie. Login returns the token in the response body, and every authenticated request is proven by the `Authorization: Bearer <token>` header — nothing else. That means *where the token lives between requests is your decision*, and "cookie strategy" here is really about picking a storage spot and understanding its trade-offs.

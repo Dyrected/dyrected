@@ -103,6 +103,19 @@ function walk(directory) {
 walk(docsRoot);
 const corpus = mdxFiles.map((file) => fs.readFileSync(file, "utf8")).join("\n");
 const failures = [];
+const warnings = [];
+const runtimeAmbiguousDocsHrefPattern =
+  /\]\((\/docs\/[^)]+)\)|href\s*=\s*["'`](\/docs\/[^"'`]+)["'`]/g;
+const runtimeAmbiguousCodeAllowlist = new Set([
+  "apps/docs/app/docs/[...slug]/page.tsx",
+  "apps/docs/app/docs/page.tsx",
+]);
+
+function collectRuntimeAmbiguousDocsLinks(source) {
+  return [...source.matchAll(runtimeAmbiguousDocsHrefPattern)]
+    .map((match) => match[1] ?? match[2])
+    .filter(Boolean);
+}
 
 for (const [relativeKey, requirements] of Object.entries(hybridPages)) {
   const relative = relativeKey.split("#")[0];
@@ -316,7 +329,43 @@ for (const file of mdxFiles) {
       }
     }
   }
+
+  const ambiguousLinks = [...new Set(collectRuntimeAmbiguousDocsLinks(source))];
+  for (const link of ambiguousLinks) {
+    warnings.push(
+      `Runtime-ambiguous docs link in ${path.relative(root, file)}: ${link}`,
+    );
+  }
 }
+
+for (const relativeDirectory of ["apps/docs/app", "apps/docs/components"]) {
+  const directory = path.join(root, relativeDirectory);
+  const queue = [directory];
+
+  while (queue.length > 0) {
+    const current = queue.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const target = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        queue.push(target);
+        continue;
+      }
+      if (!/\.(?:ts|tsx)$/.test(entry.name)) continue;
+
+      const relative = path.relative(root, target).replace(/\\/g, "/");
+      if (runtimeAmbiguousCodeAllowlist.has(relative)) continue;
+
+      const source = fs.readFileSync(target, "utf8");
+      for (const link of collectRuntimeAmbiguousDocsLinks(source)) {
+        failures.push(
+          `Runtime-ambiguous docs link in ${relative}: ${link}`,
+        );
+      }
+    }
+  }
+}
+
+warnings.forEach((warning) => console.warn(`- ${warning}`));
 
 if (failures.length) {
   failures.forEach((failure) => console.error(`- ${failure}`));

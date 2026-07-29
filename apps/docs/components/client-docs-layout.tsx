@@ -9,8 +9,17 @@ import {
   useSidebar,
 } from 'fumadocs-ui/layouts/docs/slots/sidebar'
 import { DocsSidebar } from '@/components/docs-sidebar'
+import type { DocsSiteRuntime } from '@/lib/docs-runtime'
 
-export function ClientDocsLayout({ children, tree }: { children: ReactNode; tree: any }) {
+export function ClientDocsLayout({
+  children,
+  tree,
+  runtime,
+}: {
+  children: ReactNode
+  tree: any
+  runtime: DocsSiteRuntime
+}) {
   return (
     <DocsLayout
       tree={tree}
@@ -42,7 +51,7 @@ export function ClientDocsLayout({ children, tree }: { children: ReactNode; tree
       slots={{
         sidebar: {
           provider: SidebarProvider,
-          root: (props) => <DocsSidebar tree={tree} {...props} />,
+          root: (props) => <DocsSidebar tree={tree} runtime={runtime} {...props} />,
           trigger: SidebarTrigger,
           useSidebar,
         },

@@ -1,5 +1,6 @@
 {
   "title": "Authentication",
+  "runtimePolicy": "explicit-per-page",
   "pages": [
     "overview",
     "handing-off-to-editors",

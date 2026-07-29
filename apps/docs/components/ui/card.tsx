@@ -1,5 +1,9 @@
+"use client";
+
+import Link from "fumadocs-core/link";
 import { cn } from '@/lib/utils'
 import { ReactNode } from 'react'
+import { useRuntimeAwareHref } from "@/components/runtime-link-scope";
 
 interface CardProps {
   title: string
@@ -10,8 +14,10 @@ interface CardProps {
 }
 
 export function Card({ title, description, href, icon, className }: CardProps) {
+  const resolvedHref = useRuntimeAwareHref(href) ?? href;
+
   return (
-    <a href={href} className={cn('doc-card group relative flex flex-col gap-3 rounded-xl p-6', className)}>
+    <Link href={resolvedHref} className={cn('doc-card group relative flex flex-col gap-3 rounded-xl p-6', className)}>
       <div className="flex items-center gap-3">
         {icon && (
           <div className="doc-card-icon flex h-10 w-10 items-center justify-center rounded-lg">
@@ -46,6 +52,6 @@ export function Card({ title, description, href, icon, className }: CardProps) {
           <path d="m12 5 7 7-7 7" />
         </svg>
       </div>
-    </a>
+    </Link>
   )
 }

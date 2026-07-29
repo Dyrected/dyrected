@@ -1,6 +1,8 @@
 ---
 title: Admin SSO
 description: Let your team sign in to the Dyrected dashboard with an external identity provider — Okta, Azure AD, Google Workspace, or any OIDC provider — through the adminAuth config, with just-in-time provisioning and your own access rules.
+runtime: self-hosted
+runtimeGroup: admin-sso
 ---
 
 Dyrected can hand dashboard login over to an external identity provider. Instead of a local email and password, your team signs into the admin panel with **single sign-on (SSO)** through Okta, Azure AD, Google Workspace, or any standards-compliant OIDC (OpenID Connect) provider. You configure it once under `adminAuth`, and Dyrected takes care of the redirect dance, verifies the identity, and issues its own admin session.

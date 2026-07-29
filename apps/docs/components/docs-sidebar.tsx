@@ -15,6 +15,8 @@ import {
   useSidebar,
 } from 'fumadocs-ui/components/sidebar/base'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { RuntimeSelector } from '@/components/runtime-selector'
+import type { DocsSiteRuntime } from '@/lib/docs-runtime'
 import { cn } from '@/lib/utils'
 
 type TreePageNode = {
@@ -170,11 +172,13 @@ function GroupsNav({
 function SidebarInner({
   groups,
   pathname,
+  runtime,
   banner,
   footer,
 }: {
   groups: Group[]
   pathname: string
+  runtime: DocsSiteRuntime
   banner?: ReactNode
   footer?: ReactNode
 }) {
@@ -235,6 +239,7 @@ function SidebarInner({
         {slots.searchTrigger ? (
           <slots.searchTrigger.full hideIfDisabled={true} />
         ) : null}
+        <RuntimeSelector pathname={pathname} runtime={runtime} />
         {banner}
       </div>
 
@@ -261,12 +266,14 @@ function SidebarInner({
 
 export function DocsSidebar({
   tree,
+  runtime,
   banner,
   footer,
   className,
   ...rest
 }: SidebarProps & {
   tree: TreeRootNode
+  runtime: DocsSiteRuntime
 }) {
   const pathname = usePathname()
   const groups = useMemo(() => buildGroups(tree), [tree])
@@ -321,6 +328,7 @@ export function DocsSidebar({
                 <SidebarInner
                   groups={groups}
                   pathname={pathname}
+                  runtime={runtime}
                   banner={banner}
                   footer={footer}
                 />
@@ -342,6 +350,7 @@ export function DocsSidebar({
             <SidebarInner
               groups={groups}
               pathname={pathname}
+              runtime={runtime}
               banner={banner}
               footer={footer}
             />

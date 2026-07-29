@@ -1,6 +1,7 @@
 ---
 title: JWT Strategy
 description: How Dyrected signs session tokens — the DYRECTED_JWT_SECRET, HS256 signing, token expiry, the Authorization Bearer header, and how another service can verify a Dyrected token.
+runtime: self-hosted
 ---
 
 Every Dyrected session is a JSON Web Token (JWT) — a compact, signed string the client holds and sends back on each request. There are no server-side sessions to store or look up: the signature is what proves the token is genuine, and the server re-verifies it on every request. This page covers how that token is signed, what controls its lifetime, and how a separate service can verify one.

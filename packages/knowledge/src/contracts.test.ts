@@ -10,6 +10,7 @@ import {
   GENERATE_CMS_PROMPT_SELF_HOSTED,
   GENERATE_SITE_PROMPT,
   SKILL,
+  docsRuntimeManifest,
   endpoints,
   recipes,
   references,
@@ -31,6 +32,7 @@ describe("generated knowledge contracts", () => {
     expect(read("recipes.json")).toEqual(recipes);
     expect(read("references.json")).toEqual(references);
     expect(read("endpoints.json")).toEqual(endpoints);
+    expect(read("docs-runtime-manifest.json")).toEqual(docsRuntimeManifest);
   });
 
   it("documents the key public contracts", () => {

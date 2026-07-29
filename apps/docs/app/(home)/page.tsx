@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card'
 import { InstallCommand } from '@/components/install-command'
 import { CopyPromptButton } from '@/components/copy-prompt-button'
 import { NextLogo, NuxtLogo, ReactLogo, VueLogo } from '@/components/framework-logos'
+import { getRuntimePageUrl } from '@/lib/docs-runtime'
 import {
   Bot,
   Compass,
@@ -13,36 +14,41 @@ import {
   ArrowRight,
 } from 'lucide-react'
 
+const DOCS_PRODUCT_RUNTIME = 'cloud'
+
 // Framework quickstarts. AI agents is a first-class peer, listed first.
 const quickstarts = [
   {
     label: 'AI agents',
     descriptor: 'Set up with a coding agent',
-    href: '/docs/quick-start-guides/coding-agents-and-ai-app-builders/setting-up-your-cloud-site',
+    href: getRuntimePageUrl(
+      'quick-start-guides/coding-agents-and-ai-app-builders/setting-up-your-cloud-site',
+      DOCS_PRODUCT_RUNTIME,
+    ),
     badge: <Bot size={18} />,
   },
   {
     label: 'Next.js',
-    descriptor: 'App Router quick start',
-    href: '/docs/quick-start-guides/nextjs-quick-start/overview',
+    descriptor: 'Cloud or self-hosted',
+    href: getRuntimePageUrl('quick-start-guides/nextjs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
     badge: <NextLogo />,
   },
   {
     label: 'Nuxt',
-    descriptor: 'Nuxt 3 quick start',
-    href: '/docs/quick-start-guides/nuxtjs-quick-start/overview',
+    descriptor: 'Cloud or self-hosted',
+    href: getRuntimePageUrl('quick-start-guides/nuxtjs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
     badge: <NuxtLogo />,
   },
   {
     label: 'React',
-    descriptor: 'React quick start',
-    href: '/docs/quick-start-guides/reactjs-quick-start/overview',
+    descriptor: 'Cloud-backed setup',
+    href: getRuntimePageUrl('quick-start-guides/reactjs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
     badge: <ReactLogo />,
   },
   {
     label: 'Vue',
-    descriptor: 'Vue quick start',
-    href: '/docs/quick-start-guides/vuejs-quick-start/overview',
+    descriptor: 'Cloud-backed setup',
+    href: getRuntimePageUrl('quick-start-guides/vuejs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
     badge: <VueLogo />,
   },
 ]
@@ -51,15 +57,21 @@ export default function HomePage() {
   return (
     <main className="flex-1 space-y-24 pb-24">
       <Hero
-        title="Give every site you build a client-ready admin"
-        description="Dyrected adds a safe content admin to websites and SaaS apps, so clients and teams can update content without touching your design or filing engineering tickets."
+        title="Give every custom website a client-ready content backend"
+        description="Dyrected Cloud hosts the CMS backend for your site: structured content, media, content APIs, editor access, workflows, and Cloud-safe hooks defined as content rules. Self-hosted Dyrected is there when the CMS needs to run inside your app backend."
       >
         <div className="mt-2 flex flex-wrap items-center justify-center gap-4">
           <a
-            href="/docs/basics/getting-started/what-is-dyrected"
+            href={getRuntimePageUrl('basics/getting-started/what-is-dyrected', DOCS_PRODUCT_RUNTIME)}
             className="btn-lime rounded-full px-8 py-3 text-sm font-semibold"
           >
-            Start here
+            Start with Cloud
+          </a>
+          <a
+            href={getRuntimePageUrl('basics/getting-started/choose-a-runtime', DOCS_PRODUCT_RUNTIME)}
+            className="btn-violet-outline rounded-full px-8 py-3 text-sm font-semibold"
+          >
+            Choose a runtime
           </a>
           <a
             href="https://github.com/Dyrected/dyrected"
@@ -86,7 +98,7 @@ export default function HomePage() {
             </div>
             <InstallCommand />
             <a
-              href="/docs/basics/getting-started/installation"
+              href={getRuntimePageUrl('basics/getting-started/installation', DOCS_PRODUCT_RUNTIME)}
               className="link-violet mt-auto inline-flex items-center gap-1 text-sm font-medium"
             >
               Installation guide
@@ -108,7 +120,10 @@ export default function HomePage() {
               <CopyPromptButton mode="cloud" />
             </div>
             <a
-              href="/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt"
+              href={getRuntimePageUrl(
+                'quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt',
+                DOCS_PRODUCT_RUNTIME,
+              )}
               className="link-violet mt-auto inline-flex items-center gap-1 text-sm font-medium"
             >
               Using the Dyrected prompt
@@ -157,37 +172,37 @@ export default function HomePage() {
           <Card
             title="Core concepts"
             description="How collections, fields, globals, and access control fit together in a Dyrected config."
-            href="/docs/basics/getting-started/concepts"
+            href={getRuntimePageUrl('basics/getting-started/concepts', DOCS_PRODUCT_RUNTIME)}
             icon={<Compass size={20} />}
           />
           <Card
             title="Managing data"
             description="Query and mutate your content with the TypeScript SDK and the REST API."
-            href="/docs/managing-data/sdk-api/overview"
+            href={getRuntimePageUrl('managing-data/sdk-api/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<Database size={20} />}
           />
           <Card
             title="The admin panel"
             description="Configure the editing experience your clients and teams actually use every day."
-            href="/docs/features/admin/overview"
+            href={getRuntimePageUrl('features/admin/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<Eye size={20} />}
           />
           <Card
             title="Authentication"
-            description="Set up login, sessions, and API keys, then hand the admin off to editors safely."
-            href="/docs/features/authentication/overview"
+            description="Use Cloud for content-workspace access, or self-hosted collection auth when Dyrected should own application users."
+            href={getRuntimePageUrl('features/authentication/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<ShieldCheck size={20} />}
           />
           <Card
             title="Live preview"
             description="Let editors see content changes reflected in your real frontend as they type."
-            href="/docs/features/live-preview/overview"
+            href={getRuntimePageUrl('features/live-preview/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<Eye size={20} />}
           />
           <Card
             title="Deployment"
-            description="Take a Dyrected project to production, including builds without a live database."
-            href="/docs/deployment/production/deployment"
+            description="Deploy Cloud-backed sites and self-hosted runtimes with the right boundary in mind."
+            href={getRuntimePageUrl('deployment/production/deployment', DOCS_PRODUCT_RUNTIME)}
             icon={<Rocket size={20} />}
           />
         </div>

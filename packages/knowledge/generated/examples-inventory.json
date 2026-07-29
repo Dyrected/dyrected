@@ -3608,8 +3608,8 @@
     "id": "/features/workflows/lifecycle-events#example-1",
     "page": "/features/workflows/lifecycle-events",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/features/workflows/lifecycle-events#example-2",

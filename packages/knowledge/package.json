@@ -17,6 +17,7 @@
     "./endpoints.json": "./generated/endpoints.json",
     "./openapi.json": "./generated/openapi.json",
     "./examples-inventory.json": "./generated/examples-inventory.json",
+    "./docs-runtime-manifest.json": "./generated/docs-runtime-manifest.json",
     "./llms-index.json": "./generated/llms-index.json",
     "./ai-rules.md": "./generated/ai-rules.md",
     "./SKILL.md": "./generated/SKILL.md"

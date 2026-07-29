@@ -1,9 +1,11 @@
 import { recipes } from "./generated/recipes.js";
 import { endpoints, references } from "./generated/references.js";
+import { docsRuntimeManifest } from "./generated/runtime.js";
 import { findRecipesByIntent as searchRecipes } from "./search.js";
 
 export { recipes } from "./generated/recipes.js";
 export { endpoints, references } from "./generated/references.js";
+export { docsRuntimeManifest } from "./generated/runtime.js";
 export { AI_RULES, SKILL, buildAiRules } from "./generated/ai.js";
 export {
   CMS_PROMPT_CLOUD_CREDENTIAL_REQUEST,
@@ -13,6 +15,10 @@ export {
   GENERATE_SITE_PROMPT,
 } from "./generated/prompts.js";
 export type {
+  DocsRuntime,
+  DocsRuntimeManifestEntry,
+  DocsRuntimeManifestStatus,
+  DocsRuntimePolicy,
   EndpointReference,
   ExampleInventoryEntry,
   Recipe,
@@ -43,4 +49,8 @@ export function getEndpoint(method: string, path: string) {
     (endpoint) =>
       endpoint.method === method.toUpperCase() && endpoint.path === path,
   );
+}
+
+export function getDocsRuntimeEntry(relativePath: string) {
+  return docsRuntimeManifest.find((entry) => entry.relativePath === relativePath);
 }

@@ -1,6 +1,7 @@
 ---
 title: Token Data
 description: What a Dyrected session token actually carries — the identity claims sub, email, and collection — and how the full user object in your access rules and hooks is rebuilt from the database on each request.
+runtime: self-hosted
 ---
 
 A Dyrected session token is deliberately thin. It carries just enough to identify who is making a request, and nothing more. The rich `user` object you read in access rules and hooks is not pulled from the token — it is rebuilt from the database on each request. Understanding that split is the key to writing correct access control, so this page lays out exactly what is in the token and what is not.

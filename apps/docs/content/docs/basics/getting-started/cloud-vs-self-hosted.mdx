@@ -1,0 +1,100 @@
+---
+title: Cloud vs Self-hosted
+description: Compare Dyrected Cloud and self-hosted Dyrected by backend ownership, application boundaries, and runtime control.
+runtime: shared
+runtimeGroup: runtime-comparison
+---
+
+Use this page when you already understand Dyrected at a high level and want the side-by-side boundary.
+
+The question is not "which one is more advanced?" It is:
+
+**Do you want to consume a managed content backend, or do you need the CMS to run inside your application backend?**
+
+Both runtimes use the same code-first content model. Your schema still lives in TypeScript. Dyrected still turns that schema into an admin, content API, SDK, and editing workflow. The difference is who owns the backend that runs those pieces.
+
+## The mental model
+
+Choose **Dyrected Cloud** when your app needs content infrastructure but does not need to operate the CMS backend. This is the default path for custom websites, frontend apps, product marketing surfaces, docs, blogs, and client handoff.
+
+Choose **self-hosted Dyrected** when the CMS is part of your product backend. This is the path for application-user auth, custom endpoints, arbitrary TypeScript hooks, database control, server-side integrations, or infrastructure requirements that must live in your deployment.
+
+## Cloud: managed content backend
+
+In a Cloud-backed project, Dyrected owns the content backend:
+
+- content storage
+- media storage and delivery
+- content APIs
+- editor and team access
+- schema synchronization
+- drafts and publishing workflows
+- hooks defined as Cloud-safe content rules
+- content events and webhooks when that surface becomes public
+
+Your app still owns the frontend and the product behavior around it: routing, customer login, payments, checkout, subscriptions, analytics, tenant logic, and anything else that is not directly part of the content system.
+
+That split is useful when the app already has a backend, or when the site only needs a content backend.
+
+## Self-hosted: CMS inside your app backend
+
+In a self-hosted project, your application owns the Dyrected runtime. The CMS can participate directly in your server boundary:
+
+- application-user auth collections
+- custom endpoints
+- arbitrary TypeScript hooks
+- direct database adapter choice
+- transactions and custom persistence behavior
+- unrestricted server-side integrations
+- plugins and advanced backend behavior
+
+That control is useful when Dyrected is not just powering website content, but is part of the product backend itself. It also means you own deployment, secrets, storage, database connectivity, monitoring, upgrades, and recovery.
+
+## What stays the same
+
+The authoring model stays consistent across both runtimes:
+
+- collections and globals
+- fields and relationships
+- media fields
+- access rules
+- admin configuration
+- SDK and REST API consumption
+- schema-first development in TypeScript
+
+When behavior differs, the runtime selector keeps you in the right version of the docs.
+
+## Capability comparison
+
+| Capability | Dyrected Cloud | Self-hosted Dyrected |
+| --- | --- | --- |
+| Structured content models | Yes | Yes |
+| Generated admin | Hosted or embedded | Embedded in your app |
+| Content API | Managed by Dyrected | Runs in your application |
+| Database | Managed | Developer configured |
+| Media storage | Managed | Developer configured |
+| Editor access | Managed content-workspace access | Your admin/auth setup |
+| Drafts and publishing workflows | Yes | Yes |
+| Hooks as content rules | Cloud-safe declarative rules | Declarative rules and function hooks |
+| Content events and webhooks | Coming soon | In-process handlers and dispatcher |
+| Arbitrary TypeScript hooks | No | Yes |
+| Custom server endpoints | No | Yes |
+| Application-user authentication | Keep it in your app | Supported with collection auth |
+| General application backend logic | Keep it in your app | Supported inside your runtime |
+| Workspace plan limits | Sites, members, storage, and request limits by plan | Your infrastructure limits |
+
+## A quick way to decide
+
+If you are building a content-backed website, start with Cloud.
+
+If your sentence starts with "when content changes, run this code inside my backend," or "Dyrected should own these application accounts," choose self-hosted.
+
+If your app already owns accounts, billing, orders, tenants, or product permissions, keep those systems where they are and use Cloud for the content around them.
+
+If the project is Cloud-shaped but large, check plan fit separately on [Dyrected pricing](https://dyrected.com/pricing). Cloud currently enforces workspace limits for site count, invited members on limited plans, pooled media storage, and daily API requests where the plan defines a request cap.
+
+## Where to go next
+
+If you already know which runtime you need, continue to [Installation](/docs/basics/getting-started/installation).
+
+If you are still deciding, use [Choose a Runtime](/docs/basics/getting-started/choose-a-runtime) for task-based guidance.

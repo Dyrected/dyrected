@@ -1,107 +1,120 @@
 ---
 title: Use Cases
-description: Where Dyrected fits best, and how to tell if it matches the kind of product or site you are building.
+description: Where Dyrected Cloud and self-hosted Dyrected fit best, and how to avoid using the wrong runtime for the job.
+runtime: variant
+runtimeGroup: dyrected-use-cases
+runtimeNotes: Cloud-first content use cases plus self-hosted advanced runtime use cases.
 ---
 
-Dyrected works best when you want a real codebase and a real editing workflow at the same time. You keep the frontend, content model, and business logic in your repo. Editors get an admin experience for the parts they should be allowed to change.
+Use this page to match Dyrected to the kind of project you are building.
 
-That makes Dyrected a strong fit for more than one kind of project. The common thread is the same in each case: developers keep control of structure and behavior, while content updates move to clients, marketers, operators, or internal teams.
+Dyrected is strongest when a developer wants the content model in code, and someone else needs a safe place to edit the content later. The runtime choice decides where the CMS backend lives: managed by Dyrected Cloud or inside your application.
 
-## Client websites and agency handoff
+Most content-backed websites should start with Cloud. Self-hosted becomes the better path when the CMS needs to act like part of the product backend.
 
-This is the most obvious Dyrected use case.
+## Best first fit: custom websites
 
-If you build custom websites for clients, you usually want to hand off content editing without handing over the layout system, component logic, or deployment workflow. Dyrected is designed for that model. You define collections, globals, fields, access rules, and hooks in code, then let editors manage approved content through the admin.
+This is the clearest Dyrected Cloud use case.
 
-This works especially well when clients need to update:
+You are building a custom site, but the client or team needs to keep content fresh after launch. You want the layout, components, and deployment workflow to stay under developer control, while editors get a focused admin for approved content.
 
-- page content
-- services
-- testimonials
-- FAQs
-- navigation and footer content
-- announcements or landing page copy
+Dyrected Cloud works well for:
 
-If the site also needs flexible layouts, structured sections, or reusable blocks, that same model extends naturally into page-builder patterns rather than forcing you into a separate CMS stack.
+- marketing sites
+- service business websites
+- portfolio and agency sites
+- resource libraries
+- blogs, changelogs, and docs
+- landing pages with structured sections
+- shared navigation, footer, FAQ, testimonial, and service content
 
-## Product and marketing teams
+The success signal is simple: a real editor can update approved content and see it reach the frontend without opening the codebase.
 
-Dyrected is also a good fit when a product or marketing team needs to own ongoing content changes inside an existing app.
+## Frontend apps that already have a backend
 
-Typical examples include:
+Cloud is a strong fit for:
 
-- pricing pages
-- onboarding copy
+- pricing-page copy
+- onboarding content
 - help and support content
-- blog or changelog content
 - feature landing pages
 - campaign pages
+- customer-facing resource libraries
+- docs, changelogs, and release notes
 
-The advantage here is not just that content becomes editable. It is that the editable surface stays tied to the application code that already powers the product. Your frontend, API routes, auth boundaries, and custom business rules can stay where they already live instead of being split across disconnected systems.
+In these projects, the product app usually already owns customers, billing, permissions, subscriptions, tenant membership, analytics, and product workflows. Keep that product identity and business logic in the product app. Let Dyrected Cloud own the content backend around it.
 
-## Ecommerce with custom storefront control
+## React, Vue, Next.js, Nuxt, and AI-built sites
 
-Dyrected is also a strong fit for ecommerce teams that want to keep the storefront experience in their own codebase instead of forcing content and merchandising into separate tools.
+Dyrected works well with frontend stacks because the app consumes content through APIs instead of becoming the CMS backend itself.
 
-This is most useful when you want one system to manage:
+For React and Vue projects, the recommended setup is Cloud-backed. Your frontend reads from Dyrected Cloud, while Cloud handles content storage, media, editor access, and publishing.
 
-- product and catalog content
-- landing pages and campaign pages
-- merchandising copy
-- shared media and supporting content around the storefront
+For Next.js and Nuxt projects, start Cloud-backed unless the CMS must run inside the same backend boundary as your application.
 
-The value is not that Dyrected replaces every commerce service. It is that it can own the content-modeling and editorial side of the storefront while your team keeps full control over the frontend experience and integrates only the external services that still need to stay separate.
+Dyrected also works well with coding agents because the schema is TypeScript. An agent can inspect the config, understand the content model, and wire the frontend without reverse-engineering a separate CMS layer.
+
+## Ecommerce content, not ecommerce ownership
+
+Use Dyrected Cloud for the content side of a custom storefront:
+
+- product storytelling and merchandising copy
+- campaign landing pages
+- collection pages and buying guides
+- lookbooks and editorial content
+- shared storefront media
+
+Do not treat Cloud as the commerce engine. Keep checkout, orders, payments, tax, inventory truth, carts, and customer accounts in the systems designed to own them. Dyrected can own the content and editorial workflow around the storefront.
+
+## When self-hosted is the better fit
+
+Choose self-hosted Dyrected when the CMS is not just feeding content to a frontend. Choose it when the CMS must participate in your server runtime, account model, or data plane.
+
+Self-hosted is a better fit when you need:
+
+- application-user authentication collections
+- custom Dyrected API endpoints
+- arbitrary TypeScript hooks
+- database adapter control
+- server-side integrations that run inside your app
+- transactions or custom persistence behavior
+- plugins and advanced backend behavior
+- infrastructure ownership for compliance or deployment reasons
+
+These are real Dyrected capabilities. They are just not the default Cloud promise.
 
 ## Internal tools and governed workflows
 
-Some teams need more than a basic CMS. They need a structured admin surface, access control, auditability, and clear ownership around who can change what.
+Self-hosted can also fit internal tools when the records are part of your application backend:
 
-Dyrected fits well when the project needs:
+- internal operational records
+- support workflows
+- approval dashboards
+- application-specific admin surfaces
+- custom integrations with internal systems
 
-- a generated admin instead of a custom dashboard from scratch
-- collection and field-level access control
-- separate admin access from application user access
-- draft, review, or approval-oriented editorial flows
-- infrastructure ownership or stricter deployment boundaries
-
-That makes it a practical option for internal content operations, multi-team editing environments, and enterprise setups where the hard part is not CRUD itself but governance around it.
-
-## Repeatable delivery and AI-assisted builds
-
-Dyrected is a strong fit when you want to repeat a reliable content architecture across projects or move quickly with AI-assisted setup.
-
-Examples include:
-
-- developers who want one repeatable content architecture across projects
-- teams using Dyrected Cloud to reduce backend setup work
-- AI-driven app or website builds that still need a structured content model in code
-
-Because the schema lives in TypeScript, Dyrected also works unusually well with coding agents. An agent can inspect the config, understand the content model, and make safe updates without reverse-engineering a separate CMS layer first.
-
-## Mobile apps and other API-first clients
-
-Dyrected can also support mobile apps and other external clients when the content should be managed centrally and consumed over HTTP.
-
-This is the narrower use case: editors manage the content in Dyrected, and the client application reads that content through the REST API. That is useful when a mobile app needs shared marketing content, editorial content, support content, or other structured data without building a separate admin surface just for the app.
+Use self-hosted when those workflows need unrestricted server code or database control. Use Cloud when the workflow is content-scoped and can be expressed through content models, editor roles, publishing, and Cloud-safe hooks defined as content rules.
 
 ## Is Dyrected right for you?
 
 Dyrected is likely a strong fit when:
 
-- you want a code-first CMS that lives with your app
-- you need a safe content handoff to editors or clients
-- you want to keep control over structure, validation, hooks, and business logic
-- you need an admin UI without building one from scratch
-- you want to choose between self-hosting and a managed backend
-- you want one content source that can also serve web and mobile clients over the API
+- you want a code-first content platform for custom websites
+- editors need a safe admin for approved content
+- your schema should live in TypeScript
+- you want to choose between a managed content backend and a self-hosted runtime
+- your frontend should keep control over rendering and product behavior
 
 Dyrected may be a weaker fit when:
 
-- your project does not need an admin experience at all
-- the whole site can be managed comfortably in a no-code website builder
-- you only need a thin database viewer rather than a content system with editor workflows
+- the project does not need an admin experience
+- a no-code site builder owns the whole site comfortably
+- you only need a thin database viewer
 - your team does not want the content model in code
+- you expect Cloud to host arbitrary application backend logic
 
 ## Where to go next
 
-If Dyrected sounds like the right shape for your project, continue with [Concepts](/docs/basics/getting-started/concepts) or go straight to [Installation](/docs/basics/getting-started/installation). If your use case depends on API delivery, the closest next page is [REST API Overview](/docs/managing-data/rest-api/overview).
+- Compare capabilities in [Cloud vs Self-hosted](/docs/basics/getting-started/cloud-vs-self-hosted).
+- Choose a setup path in [Choose a Runtime](/docs/basics/getting-started/choose-a-runtime).
+- Continue to [Installation](/docs/basics/getting-started/installation) when you are ready to wire a project.

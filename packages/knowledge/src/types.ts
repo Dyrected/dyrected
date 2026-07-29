@@ -93,3 +93,25 @@ export interface ExampleInventoryEntry {
     | "illustrative";
   validation: string;
 }
+
+export type DocsRuntime = "shared" | "cloud" | "self-hosted" | "variant";
+
+export type DocsRuntimePolicy = "inherit" | "explicit-per-page";
+
+export type DocsRuntimeManifestStatus = "classified" | "legacy-unclassified";
+
+export interface DocsRuntimeManifestEntry {
+  id: string;
+  relativePath: string;
+  title: string;
+  description: string;
+  runtime: DocsRuntime;
+  runtimeGroup: string;
+  runtimeNotes: string;
+  sectionPath: string;
+  sourceFile: string;
+  urlCurrent: string;
+  urlCloud: string;
+  urlSelfHosted: string;
+  status: DocsRuntimeManifestStatus;
+}
