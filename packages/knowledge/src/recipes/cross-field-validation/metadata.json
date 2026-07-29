@@ -5,6 +5,8 @@
   "problem": "A field value is only valid in relation to another field, such as a start date and an end date.",
   "summary": "Use a collection hook to reject invalid combinations before the document reaches the database.",
   "category": "data-lifecycle",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses a beforeChange function hook for server-side validation.",
   "intents": [
     "validate fields before saving",
     "make sure an end date is after the start date",

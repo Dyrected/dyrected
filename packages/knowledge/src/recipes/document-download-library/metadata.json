@@ -5,6 +5,8 @@
   "problem": "Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records.",
   "summary": "Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.",
   "category": "integrations",
+  "runtime": "variant",
+  "runtimeNotes": "Upload collections exist in both runtimes, but Cloud uses managed storage while self-hosted owns adapters.",
   "intents": [
     "store downloadable documents",
     "create a pdf library",

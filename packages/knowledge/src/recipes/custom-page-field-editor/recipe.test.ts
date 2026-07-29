@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const recipePath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  "recipe.ts",
+  "recipe.tsx",
 );
 const recipeSource = fs.readFileSync(recipePath, "utf8");
 

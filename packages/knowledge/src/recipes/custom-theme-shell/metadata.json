@@ -5,6 +5,8 @@
   "problem": "The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode.",
   "summary": "Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.",
   "category": "custom-app-surfaces",
+  "runtime": "shared",
+  "runtimeNotes": "Client-side theme shell pattern is runtime-independent.",
   "intents": [
     "build a theme aware shell around dyrected ui",
     "share dyrected theme state across a dashboard",

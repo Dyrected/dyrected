@@ -5,6 +5,8 @@
   "problem": "SEO fields are useful, but they clutter the main content form when they sit beside every primary field.",
   "summary": "Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.",
   "category": "admin-experience",
+  "runtime": "shared",
+  "runtimeNotes": "Admin layout schema pattern is runtime-independent.",
   "intents": [
     "group seo fields in the admin",
     "move metadata into a separate tab",

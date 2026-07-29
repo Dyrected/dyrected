@@ -5,6 +5,8 @@
   "problem": "Different roles should have different permissions for reading, editing, publishing, or deleting content.",
   "summary": "Check user roles in collection access control so each operation matches the responsibilities of the current user.",
   "category": "access-control",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses function-based access rules for app-user roles; Cloud docs should use built-in policies or Jexl rules.",
   "intents": ["only editors can update content", "restrict deletion to admins", "make content publicly readable", "add role based access"],
   "concepts": ["access", "AuthenticatedUser", "roles"],
   "canonicalDocs": [

@@ -5,6 +5,8 @@
   "problem": "Content should move through draft and review before the right person is allowed to publish it.",
   "summary": "Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.",
   "category": "workflows",
+  "runtime": "shared",
+  "runtimeNotes": "Uses the standard editorial workflow rather than arbitrary runtime code.",
   "intents": ["add draft and publish states", "require review before publishing", "create an editorial workflow", "let editors submit content for approval"],
   "concepts": ["publishingWorkflow", "workflow transitions", "capabilities"],
   "canonicalDocs": [

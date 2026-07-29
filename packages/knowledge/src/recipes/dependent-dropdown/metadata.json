@@ -5,6 +5,8 @@
   "problem": "The valid options for one field depend on what the editor picked in another field.",
   "summary": "Update select options from sibling field data so the next choice stays constrained by the current form state.",
   "category": "admin-experience",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses an arbitrary admin.hooks.options function; Cloud should use serializable rules where available.",
   "intents": [
     "make one dropdown depend on another",
     "show states based on the selected country",

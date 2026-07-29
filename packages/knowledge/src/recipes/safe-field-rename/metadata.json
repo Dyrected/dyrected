@@ -5,6 +5,8 @@
   "problem": "You need to change a field name on a live schema without breaking the documents that already exist.",
   "summary": "Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.",
   "category": "data-lifecycle",
+  "runtime": "shared",
+  "runtimeNotes": "Schema evolution pattern is runtime-independent.",
   "intents": ["rename a field safely", "change a field name without losing data", "migrate an existing schema", "keep old documents working after a rename"],
   "concepts": ["renameTo", "defaultValue", "schema evolution"],
   "canonicalDocs": [

@@ -6,6 +6,8 @@
     "problem": "Content should disappear from normal views without being permanently deleted from the database.",
     "summary": "Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.",
     "category": "data-lifecycle",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses function-based collection access rules; Cloud should use serializable access policies instead.",
     "intents": [
       "archive content instead of deleting it",
       "hide old records from normal queries",
@@ -34,6 +36,8 @@
     "problem": "You want readable URLs without asking editors to hand-author slugs for every document.",
     "summary": "Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.",
     "category": "data-lifecycle",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses a beforeChange function hook and Admin hook function.",
     "intents": [
       "make the URL follow the title",
       "automatically generate a slug",
@@ -63,6 +67,8 @@
     "problem": "Entries need reusable categories so editors can organize content and build filtered listing pages.",
     "summary": "Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.",
     "category": "content-modeling",
+    "runtime": "shared",
+    "runtimeNotes": "Pure schema modeling pattern with no runtime-specific function hooks.",
     "intents": [
       "add categories to posts",
       "model reusable taxonomy entries",
@@ -91,6 +97,8 @@
     "problem": "Some fields only make sense after an editor has made an earlier choice.",
     "summary": "Use an Admin condition to hide irrelevant fields until the current form state makes them useful.",
     "category": "admin-experience",
+    "runtime": "shared",
+    "runtimeNotes": "Uses a serializable Jexl Admin condition that is valid in both runtimes.",
     "intents": [
       "show a field conditionally",
       "hide irrelevant form fields",
@@ -119,6 +127,8 @@
     "problem": "A field value is only valid in relation to another field, such as a start date and an end date.",
     "summary": "Use a collection hook to reject invalid combinations before the document reaches the database.",
     "category": "data-lifecycle",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses a beforeChange function hook for server-side validation.",
     "intents": [
       "validate fields before saving",
       "make sure an end date is after the start date",
@@ -147,6 +157,8 @@
     "problem": "A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling.",
     "summary": "Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.",
     "category": "custom-app-surfaces",
+    "runtime": "variant",
+    "runtimeNotes": "Client-side app surface can target either runtime, but app-user authentication remains application-owned.",
     "intents": [
       "build a custom field editor in my app",
       "edit a dyrected document inside a customer dashboard",
@@ -179,6 +191,8 @@
     "problem": "Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app.",
     "summary": "Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.",
     "category": "custom-app-surfaces",
+    "runtime": "variant",
+    "runtimeNotes": "Client media APIs can target either runtime, while storage ownership differs by runtime.",
     "intents": [
       "build a media picker in my app",
       "add upload and media selection to a customer dashboard page",
@@ -211,6 +225,8 @@
     "problem": "The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode.",
     "summary": "Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.",
     "category": "custom-app-surfaces",
+    "runtime": "shared",
+    "runtimeNotes": "Client-side theme shell pattern is runtime-independent.",
     "intents": [
       "build a theme aware shell around dyrected ui",
       "share dyrected theme state across a dashboard",
@@ -240,6 +256,8 @@
     "problem": "The valid options for one field depend on what the editor picked in another field.",
     "summary": "Update select options from sibling field data so the next choice stays constrained by the current form state.",
     "category": "admin-experience",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses an arbitrary admin.hooks.options function; Cloud should use serializable rules where available.",
     "intents": [
       "make one dropdown depend on another",
       "show states based on the selected country",
@@ -268,6 +286,8 @@
     "problem": "Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records.",
     "summary": "Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.",
     "category": "integrations",
+    "runtime": "variant",
+    "runtimeNotes": "Upload collections exist in both runtimes, but Cloud uses managed storage while self-hosted owns adapters.",
     "intents": [
       "store downloadable documents",
       "create a pdf library",
@@ -296,6 +316,8 @@
     "problem": "Content should move through draft and review before the right person is allowed to publish it.",
     "summary": "Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.",
     "category": "workflows",
+    "runtime": "shared",
+    "runtimeNotes": "Uses the standard editorial workflow rather than arbitrary runtime code.",
     "intents": [
       "add draft and publish states",
       "require review before publishing",
@@ -324,6 +346,8 @@
     "problem": "Editors need to manage shared site navigation without hardcoding links into the frontend.",
     "summary": "Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.",
     "category": "content-modeling",
+    "runtime": "shared",
+    "runtimeNotes": "Pure content modeling pattern with no runtime-specific behavior.",
     "intents": [
       "create editable navigation",
       "store menu links in the cms",
@@ -353,6 +377,8 @@
     "problem": "Records should belong to one user, but administrators still need a way to review or fix any entry.",
     "summary": "Scope writes to the owner by default and return `true` for admin users when they need broader access.",
     "category": "access-control",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses function-based access rules and app-user ownership hooks.",
     "intents": [
       "let users edit their own records",
       "allow admins to manage every document",
@@ -381,6 +407,8 @@
     "problem": "Signed-in users should only see or manage the records they own.",
     "summary": "Scope reads and writes to the current user in access control, then stamp ownership when records are created.",
     "category": "access-control",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses function-based access rules and beforeChange ownership stamping for app users.",
     "intents": [
       "users should only see their own records",
       "add row level access",
@@ -409,6 +437,8 @@
     "problem": "Editors need to build or rearrange page sections without turning every page into one giant content object.",
     "summary": "Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.",
     "category": "content-modeling",
+    "runtime": "shared",
+    "runtimeNotes": "Pure schema modeling pattern with no runtime-specific behavior.",
     "intents": [
       "build a page builder",
       "let editors arrange page sections",
@@ -437,6 +467,8 @@
     "problem": "Editors need to preview draft content on the real route before it is published.",
     "summary": "Set a relative `previewUrl`, prefer `previewMode: 'postMessage'`, and reserve token mode for routes that cannot receive browser messages.",
     "category": "workflows",
+    "runtime": "variant",
+    "runtimeNotes": "Preview URLs are shared, but token-mode guidance may differ between managed Cloud and self-hosted deployments.",
     "intents": [
       "preview draft content privately",
       "open live preview on the real route",
@@ -465,6 +497,8 @@
     "problem": "One record should point to another record, and you also want the reverse view without storing duplicate data.",
     "summary": "Store the owning relationship on one side and use a join field for the reverse lookup when you need one-to-many content structures.",
     "category": "content-modeling",
+    "runtime": "shared",
+    "runtimeNotes": "Pure schema relationship pattern with no runtime-specific behavior.",
     "intents": [
       "connect posts to authors",
       "show every post written by a user",
@@ -494,6 +528,8 @@
     "problem": "Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails.",
     "summary": "Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.",
     "category": "integrations",
+    "runtime": "variant",
+    "runtimeNotes": "Media modeling is shared, but generated image/storage behavior differs by runtime.",
     "intents": [
       "create responsive image sizes",
       "add generated media thumbnails",
@@ -522,6 +558,8 @@
     "problem": "Different roles should have different permissions for reading, editing, publishing, or deleting content.",
     "summary": "Check user roles in collection access control so each operation matches the responsibilities of the current user.",
     "category": "access-control",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses function-based access rules for app-user roles; Cloud docs should use built-in policies or Jexl rules.",
     "intents": [
       "only editors can update content",
       "restrict deletion to admins",
@@ -550,6 +588,8 @@
     "problem": "You need to change a field name on a live schema without breaking the documents that already exist.",
     "summary": "Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.",
     "category": "data-lifecycle",
+    "runtime": "shared",
+    "runtimeNotes": "Schema evolution pattern is runtime-independent.",
     "intents": [
       "rename a field safely",
       "change a field name without losing data",
@@ -578,6 +618,8 @@
     "problem": "SEO fields are useful, but they clutter the main content form when they sit beside every primary field.",
     "summary": "Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.",
     "category": "admin-experience",
+    "runtime": "shared",
+    "runtimeNotes": "Admin layout schema pattern is runtime-independent.",
     "intents": [
       "group seo fields in the admin",
       "move metadata into a separate tab",
@@ -606,6 +648,8 @@
     "problem": "You need one shared place for site name, support details, and other site-wide settings.",
     "summary": "Use a global for singleton content that should be edited once and reused across the site or app.",
     "category": "content-modeling",
+    "runtime": "shared",
+    "runtimeNotes": "Singleton content modeling pattern is runtime-independent.",
     "intents": [
       "create site settings",
       "store one shared settings document",
@@ -634,6 +678,8 @@
     "problem": "Users should only see or manage records that belong to their current workspace or organization.",
     "summary": "Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.",
     "category": "access-control",
+    "runtime": "self-hosted",
+    "runtimeNotes": "Uses function-based access rules and beforeChange tenant stamping for app-user workspaces.",
     "intents": [
       "add multi-tenant access control",
       "scope records to a workspace",
@@ -662,6 +708,8 @@
     "problem": "Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents.",
     "summary": "Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.",
     "category": "integrations",
+    "runtime": "variant",
+    "runtimeNotes": "Upload modeling is shared, but Cloud uses managed media while self-hosted owns storage adapters.",
     "intents": [
       "let editors upload images",
       "create a media library",

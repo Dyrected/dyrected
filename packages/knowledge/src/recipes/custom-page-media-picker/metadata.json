@@ -5,6 +5,8 @@
   "problem": "Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app.",
   "summary": "Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.",
   "category": "custom-app-surfaces",
+  "runtime": "variant",
+  "runtimeNotes": "Client media APIs can target either runtime, while storage ownership differs by runtime.",
   "intents": [
     "build a media picker in my app",
     "add upload and media selection to a customer dashboard page",

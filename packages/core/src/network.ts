@@ -34,7 +34,7 @@ export function resolveClientIp(
     if (value) return value;
   }
 
-  if (trustProxy) {
+  if (trustProxy === true || typeof trustProxy === "number") {
     const forwardedFor = pickForwardedFor(req.headers, trustProxy);
     if (forwardedFor) return forwardedFor;
   }
@@ -44,7 +44,7 @@ export function resolveClientIp(
 
 function pickForwardedFor(
   headers: Record<string, string>,
-  trustProxy: TrustProxyConfig,
+  trustProxy: true | number,
 ): string | null {
   const forwardedHeader = headers["x-forwarded-for"];
   if (forwardedHeader) {
@@ -55,6 +55,7 @@ function pickForwardedFor(
 
     if (chain.length > 0) {
       if (trustProxy === true) return chain[0];
+      if (trustProxy <= 0) return null;
       const trustedHops = Math.max(1, Math.floor(trustProxy));
       const candidateIndex = Math.max(0, chain.length - trustedHops);
       return chain[candidateIndex] ?? chain[0];
@@ -73,6 +74,7 @@ function pickForwardedFor(
   if (chain.length === 0) return null;
   if (trustProxy === true) return chain[0];
 
+  if (trustProxy <= 0) return null;
   const trustedHops = Math.max(1, Math.floor(trustProxy));
   const candidateIndex = Math.max(0, chain.length - trustedHops);
   return chain[candidateIndex] ?? chain[0];

@@ -5,6 +5,8 @@
   "problem": "Editors need to preview draft content on the real route before it is published.",
   "summary": "Set a relative `previewUrl`, prefer `previewMode: 'postMessage'`, and reserve token mode for routes that cannot receive browser messages.",
   "category": "workflows",
+  "runtime": "variant",
+  "runtimeNotes": "Preview URLs are shared, but token-mode guidance may differ between managed Cloud and self-hosted deployments.",
   "intents": [
     "preview draft content privately",
     "open live preview on the real route",

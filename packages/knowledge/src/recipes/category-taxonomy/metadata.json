@@ -5,6 +5,8 @@
   "problem": "Entries need reusable categories so editors can organize content and build filtered listing pages.",
   "summary": "Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.",
   "category": "content-modeling",
+  "runtime": "shared",
+  "runtimeNotes": "Pure schema modeling pattern with no runtime-specific function hooks.",
   "intents": [
     "add categories to posts",
     "model reusable taxonomy entries",

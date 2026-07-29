@@ -116,7 +116,9 @@ export async function DocsPageContent({
               Note,
               Warning,
               Mermaid,
-              RecipeExample,
+              RecipeExample: (props: { id: string }) => (
+                <RecipeExample {...props} runtime={runtime} />
+              ),
               CloudOnly,
               SelfHostedOnly,
               script: SafeScriptTag,

@@ -5,6 +5,8 @@
   "problem": "Users should only see or manage records that belong to their current workspace or organization.",
   "summary": "Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.",
   "category": "access-control",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses function-based access rules and beforeChange tenant stamping for app-user workspaces.",
   "intents": [
     "add multi-tenant access control",
     "scope records to a workspace",

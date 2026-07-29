@@ -5,6 +5,8 @@
   "problem": "You want readable URLs without asking editors to hand-author slugs for every document.",
   "summary": "Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.",
   "category": "data-lifecycle",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses a beforeChange function hook and Admin hook function.",
   "intents": [
     "make the URL follow the title",
     "automatically generate a slug",

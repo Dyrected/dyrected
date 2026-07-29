@@ -5,6 +5,8 @@
   "problem": "Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails.",
   "summary": "Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.",
   "category": "integrations",
+  "runtime": "variant",
+  "runtimeNotes": "Media modeling is shared, but generated image/storage behavior differs by runtime.",
   "intents": [
     "create responsive image sizes",
     "add generated media thumbnails",

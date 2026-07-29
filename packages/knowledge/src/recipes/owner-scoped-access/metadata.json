@@ -5,6 +5,8 @@
   "problem": "Signed-in users should only see or manage the records they own.",
   "summary": "Scope reads and writes to the current user in access control, then stamp ownership when records are created.",
   "category": "access-control",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses function-based access rules and beforeChange ownership stamping for app users.",
   "intents": ["users should only see their own records", "add row level access", "scope documents by owner", "prevent users reading another user's data"],
   "concepts": ["access.read", "where", "row-level access"],
   "canonicalDocs": [

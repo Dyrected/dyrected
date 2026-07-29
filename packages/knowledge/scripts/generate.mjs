@@ -42,6 +42,7 @@ const categories = new Set([
   "workflows",
   "integrations",
 ]);
+const runtimes = new Set(["shared", "cloud", "self-hosted", "variant"]);
 const recipeDocsPathMap = {
   "archive-instead-of-delete": "/docs/ecosystem/common-patterns/data-lifecycle",
   "auto-slug": "/docs/ecosystem/common-patterns/data-lifecycle",
@@ -97,6 +98,15 @@ function validateMetadata(directory, metadata) {
     throw new Error(`${directory}: recipe id must be stable kebab-case`);
   if (!categories.has(metadata.category))
     throw new Error(`${directory}: unsupported category ${metadata.category}`);
+  if (typeof metadata.runtime !== "string" || !runtimes.has(metadata.runtime)) {
+    throw new Error(`${directory}: unsupported runtime ${metadata.runtime}`);
+  }
+  if (
+    metadata.runtimeNotes !== undefined &&
+    typeof metadata.runtimeNotes !== "string"
+  ) {
+    throw new Error(`${directory}: runtimeNotes must be a string when present`);
+  }
   for (const key of ["intents", "concepts", "requires"]) {
     if (
       !Array.isArray(metadata[key]) ||
@@ -128,13 +138,30 @@ function validateMetadata(directory, metadata) {
     throw new Error(`${directory}: every recipe requires recipe.test.ts`);
 }
 
-function validateRecipeSource(directory, source) {
+function resolveRecipeSourceFile(directoryPath, directory) {
+  const candidates = ["recipe.ts", "recipe.tsx"].filter((filename) =>
+    fs.existsSync(path.join(directoryPath, filename)),
+  );
+  if (candidates.length === 0) {
+    throw new Error(`${directory}: every recipe requires recipe.ts or recipe.tsx`);
+  }
+  if (candidates.length > 1) {
+    throw new Error(`${directory}: use either recipe.ts or recipe.tsx, not both`);
+  }
+
+  return candidates[0];
+}
+
+function validateRecipeSource(directory, sourceFilename, source) {
+  const scriptKind = sourceFilename.endsWith(".tsx")
+    ? ts.ScriptKind.TSX
+    : ts.ScriptKind.TS;
   const file = ts.createSourceFile(
-    `${directory}/recipe.ts`,
+    `${directory}/${sourceFilename}`,
     source,
     ts.ScriptTarget.Latest,
     true,
-    ts.ScriptKind.TS,
+    scriptKind,
   );
   const propertyName = (property) => {
     if (!property.name) return undefined;
@@ -153,7 +180,7 @@ function validateRecipeSource(directory, source) {
   const requireLabel = (node) => {
     const position = file.getLineAndCharacterOfPosition(node.getStart(file));
     throw new Error(
-      `${directory}/recipe.ts:${position.line + 1} every named Dyrected field must define an explicit label`,
+      `${directory}/${sourceFilename}:${position.line + 1} every named Dyrected field must define an explicit label`,
     );
   };
 
@@ -405,10 +432,11 @@ const recipes = directories.map((directory) => {
     fs.readFileSync(path.join(directoryPath, "metadata.json"), "utf8"),
   );
   validateMetadata(directory, metadata);
+  const sourceFilename = resolveRecipeSourceFile(directoryPath, directory);
   const source = fs
-    .readFileSync(path.join(directoryPath, "recipe.ts"), "utf8")
+    .readFileSync(path.join(directoryPath, sourceFilename), "utf8")
     .trimEnd();
-  validateRecipeSource(directory, source);
+  validateRecipeSource(directory, sourceFilename, source);
   const docsPath = recipeDocsPathMap[metadata.id];
   if (!docsPath) {
     throw new Error(`${directory}: missing docsPath mapping`);

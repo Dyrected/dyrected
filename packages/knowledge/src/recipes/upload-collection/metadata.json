@@ -5,6 +5,8 @@
   "problem": "Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents.",
   "summary": "Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.",
   "category": "integrations",
+  "runtime": "variant",
+  "runtimeNotes": "Upload modeling is shared, but Cloud uses managed media while self-hosted owns storage adapters.",
   "intents": ["let editors upload images", "create a media library", "store uploaded files", "add image uploads to my project"],
   "concepts": ["upload", "StorageAdapter", "media"],
   "canonicalDocs": [

@@ -308,10 +308,20 @@ describe("generated knowledge contracts", () => {
   });
 
   it("exposes the long-form agent guide through both LLM indexes", () => {
-    const guideUrl =
-      "https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt";
+    const cloudGuideUrl =
+      "https://docs.dyrected.com/docs/cloud/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt";
+    const selfHostedGuideUrl =
+      "https://docs.dyrected.com/docs/self-hosted/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt";
     const llmsIndex = fs.readFileSync(
       path.join(repositoryRoot, "apps/docs/public/llms.txt"),
+      "utf8",
+    );
+    const llmsCloud = fs.readFileSync(
+      path.join(repositoryRoot, "apps/docs/public/llms-cloud.txt"),
+      "utf8",
+    );
+    const llmsSelfHosted = fs.readFileSync(
+      path.join(repositoryRoot, "apps/docs/public/llms-self-hosted.txt"),
       "utf8",
     );
     const llmsFull = fs.readFileSync(
@@ -319,8 +329,12 @@ describe("generated knowledge contracts", () => {
       "utf8",
     );
 
-    expect(llmsIndex).toContain(guideUrl);
-    expect(llmsFull).toContain(`Canonical URL: ${guideUrl}`);
+    expect(llmsIndex).toContain("https://docs.dyrected.com/llms-cloud.txt");
+    expect(llmsIndex).toContain("https://docs.dyrected.com/llms-self-hosted.txt");
+    expect(llmsCloud).toContain(cloudGuideUrl);
+    expect(llmsSelfHosted).toContain(selfHostedGuideUrl);
+    expect(llmsFull).toContain(`Canonical URL: ${cloudGuideUrl}`);
+    expect(llmsFull).toContain(`Canonical URL: ${selfHostedGuideUrl}`);
   });
 
   it("keeps canonical integration documentation links valid", () => {

@@ -5,6 +5,8 @@
   "problem": "Records should belong to one user, but administrators still need a way to review or fix any entry.",
   "summary": "Scope writes to the owner by default and return `true` for admin users when they need broader access.",
   "category": "access-control",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses function-based access rules and app-user ownership hooks.",
   "intents": [
     "let users edit their own records",
     "allow admins to manage every document",

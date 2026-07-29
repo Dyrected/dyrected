@@ -15,6 +15,10 @@ export interface Recipe {
   problem: string;
   summary: string;
   category: RecipeCategory;
+  /** Runtime where this recipe is valid. */
+  runtime: DocsRuntime;
+  /** Machine-readable migration note for runtime-aware docs tooling. */
+  runtimeNotes?: string;
   /** Plain-language requests that should resolve to this recipe. */
   intents: string[];
   /** Dyrected APIs and concepts demonstrated by the recipe. */

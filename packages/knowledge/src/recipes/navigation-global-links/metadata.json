@@ -5,6 +5,8 @@
   "problem": "Editors need to manage shared site navigation without hardcoding links into the frontend.",
   "summary": "Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.",
   "category": "content-modeling",
+  "runtime": "shared",
+  "runtimeNotes": "Pure content modeling pattern with no runtime-specific behavior.",
   "intents": [
     "create editable navigation",
     "store menu links in the cms",

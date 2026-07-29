@@ -5,6 +5,8 @@
   "problem": "You need one shared place for site name, support details, and other site-wide settings.",
   "summary": "Use a global for singleton content that should be edited once and reused across the site or app.",
   "category": "content-modeling",
+  "runtime": "shared",
+  "runtimeNotes": "Singleton content modeling pattern is runtime-independent.",
   "intents": [
     "create site settings",
     "store one shared settings document",

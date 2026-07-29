@@ -5,6 +5,8 @@
   "problem": "A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling.",
   "summary": "Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.",
   "category": "custom-app-surfaces",
+  "runtime": "variant",
+  "runtimeNotes": "Client-side app surface can target either runtime, but app-user authentication remains application-owned.",
   "intents": [
     "build a custom field editor in my app",
     "edit a dyrected document inside a customer dashboard",

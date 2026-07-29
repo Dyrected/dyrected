@@ -207,8 +207,9 @@ export class AdminAuthController {
 
   private getProvider(
     config: DyrectedConfig,
-    id: string,
+    id: string | undefined,
   ): AdminAuthProvider | undefined {
+    if (!id) return undefined;
     if (config.adminAuth?.mode !== "external") return undefined;
     return config.adminAuth.providers.find((provider) => provider.id === id);
   }
@@ -477,20 +478,18 @@ export class AdminAuthController {
         throw new Error("OIDC nonce verification failed.");
       }
       claims = payload as Record<string, unknown>;
-    } else if (
-      tokenBody.access_token &&
-      (provider.userInfoEndpoint || discovery.userinfo_endpoint)
-    ) {
-      const userInfo = await fetch(
-        provider.userInfoEndpoint || discovery.userinfo_endpoint,
-        {
-          headers: { Authorization: `Bearer ${tokenBody.access_token}` },
-        },
-      );
+    } else {
+      const userInfoEndpoint =
+        provider.userInfoEndpoint ?? discovery.userinfo_endpoint;
+      if (!tokenBody.access_token || !userInfoEndpoint) {
+        throw new Error("OIDC provider did not return usable identity claims.");
+      }
+
+      const userInfo = await fetch(userInfoEndpoint, {
+        headers: { Authorization: `Bearer ${tokenBody.access_token}` },
+      });
       if (!userInfo.ok) throw new Error("OIDC userinfo request failed.");
       claims = await userInfo.json();
-    } else {
-      throw new Error("OIDC provider did not return usable identity claims.");
     }
 
     return {

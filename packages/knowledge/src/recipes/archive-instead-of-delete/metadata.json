@@ -5,6 +5,8 @@
   "problem": "Content should disappear from normal views without being permanently deleted from the database.",
   "summary": "Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.",
   "category": "data-lifecycle",
+  "runtime": "self-hosted",
+  "runtimeNotes": "Uses function-based collection access rules; Cloud should use serializable access policies instead.",
   "intents": [
     "archive content instead of deleting it",
     "hide old records from normal queries",

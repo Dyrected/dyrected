@@ -5,6 +5,8 @@
   "problem": "Editors need to build or rearrange page sections without turning every page into one giant content object.",
   "summary": "Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.",
   "category": "content-modeling",
+  "runtime": "shared",
+  "runtimeNotes": "Pure schema modeling pattern with no runtime-specific behavior.",
   "intents": ["build a page builder", "let editors arrange page sections", "create reusable content blocks", "model flexible landing pages"],
   "concepts": ["blocks", "Block", "content modeling"],
   "canonicalDocs": [
