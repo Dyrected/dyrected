@@ -10,8 +10,8 @@
     "id": "/basics/access-control/cloud#example-2",
     "page": "/basics/access-control/cloud",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/basics/access-control/cloud#example-3",
@@ -24,15 +24,15 @@
     "id": "/basics/access-control/cloud#example-4",
     "page": "/basics/access-control/cloud",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/basics/access-control/cloud#example-5",
     "page": "/basics/access-control/cloud",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/basics/access-control/cloud#example-6",
@@ -52,8 +52,8 @@
     "id": "/basics/access-control/cloud#example-8",
     "page": "/basics/access-control/cloud",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/basics/access-control/cloud#example-9",
@@ -73,8 +73,8 @@
     "id": "/basics/access-control/cloud#example-11",
     "page": "/basics/access-control/cloud",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/basics/access-control/cloud#example-12",
@@ -87,8 +87,8 @@
     "id": "/basics/access-control/cloud#example-13",
     "page": "/basics/access-control/cloud",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/basics/access-control/cloud#example-14",
@@ -108,32 +108,11 @@
     "id": "/basics/access-control/cloud#example-16",
     "page": "/basics/access-control/cloud",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/basics/access-control/cloud#example-17",
-    "page": "/basics/access-control/cloud",
-    "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/basics/access-control/cloud#example-18",
-    "page": "/basics/access-control/cloud",
-    "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/basics/access-control/cloud#example-19",
-    "page": "/basics/access-control/cloud",
-    "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
-  },
-  {
-    "id": "/basics/access-control/cloud#example-20",
     "page": "/basics/access-control/cloud",
     "language": "bash",
     "classification": "command",
@@ -234,8 +213,8 @@
     "id": "/basics/access-control/collections#example-14",
     "page": "/basics/access-control/collections",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/basics/access-control/collections#example-15",
@@ -255,11 +234,32 @@
     "id": "/basics/access-control/collections#example-17",
     "page": "/basics/access-control/collections",
     "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/collections#example-18",
+    "page": "/basics/access-control/collections",
+    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/basics/access-control/collections#example-18",
+    "id": "/basics/access-control/collections#example-19",
+    "page": "/basics/access-control/collections",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/collections#example-20",
+    "page": "/basics/access-control/collections",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/collections#example-21",
     "page": "/basics/access-control/collections",
     "language": "ts",
     "classification": "syntax-checked",
@@ -336,6 +336,13 @@
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
+    "id": "/basics/access-control/globals#example-6",
+    "page": "/basics/access-control/globals",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
     "id": "/basics/access-control/overview#example-1",
     "page": "/basics/access-control/overview",
     "language": "json",
@@ -374,8 +381,8 @@
     "id": "/basics/access-control/overview#example-6",
     "page": "/basics/access-control/overview",
     "language": "ts",
-    "classification": "syntax-checked",
-    "validation": "Parsed by the TypeScript compiler"
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/basics/access-control/overview#example-7",
@@ -402,18 +409,46 @@
     "id": "/basics/access-control/overview#example-10",
     "page": "/basics/access-control/overview",
     "language": "ts",
-    "classification": "illustrative",
-    "validation": "Contains placeholders or intentionally partial source"
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
   },
   {
     "id": "/basics/access-control/overview#example-11",
+    "page": "/basics/access-control/overview",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/basics/access-control/overview#example-12",
     "page": "/basics/access-control/overview",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/basics/access-control/overview#example-12",
+    "id": "/basics/access-control/overview#example-13",
+    "page": "/basics/access-control/overview",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/overview#example-14",
+    "page": "/basics/access-control/overview",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/overview#example-15",
+    "page": "/basics/access-control/overview",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/basics/access-control/overview#example-16",
     "page": "/basics/access-control/overview",
     "language": "ts",
     "classification": "illustrative",
@@ -2371,6 +2406,41 @@
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/ecosystem/common-patterns/access-control#example-1",
+    "page": "/ecosystem/common-patterns/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/ecosystem/common-patterns/access-control#example-2",
+    "page": "/ecosystem/common-patterns/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/ecosystem/common-patterns/access-control#example-3",
+    "page": "/ecosystem/common-patterns/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/ecosystem/common-patterns/access-control#example-4",
+    "page": "/ecosystem/common-patterns/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/ecosystem/common-patterns/access-control#example-5",
+    "page": "/ecosystem/common-patterns/access-control",
+    "language": "ts",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
   },
   {
     "id": "/ecosystem/common-patterns/custom-app-surfaces#example-1",

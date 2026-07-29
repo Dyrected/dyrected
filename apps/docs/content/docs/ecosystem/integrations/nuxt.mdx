@@ -1,6 +1,9 @@
 ---
 title: Nuxt
 description: Use Dyrected in Nuxt with the first-party module, auto-imported composables, auto-registered components, and an optional self-hosted server handler.
+runtime: variant
+runtimeGroup: integration-nuxt
+runtimeNotes: Nuxt can mount self-hosted Dyrected or consume a Cloud/remote Dyrected API; self-hosted server-handler sections apply only when the backend lives inside Nuxt.
 ---
 
 `@dyrected/nuxt` is the recommended integration for Nuxt projects. It can do two different jobs:
@@ -9,6 +12,18 @@ description: Use Dyrected in Nuxt with the first-party module, auto-imported com
 - act as the Nuxt-side client integration for a remote Dyrected API
 
 That is why this package is usually the right starting point for Nuxt instead of wiring `@dyrected/vue` and `@dyrected/sdk` manually.
+
+<CloudOnly>
+
+For Cloud-backed Nuxt projects, use the module as the Nuxt-side integration for a remote Dyrected API. Dyrected Cloud owns the content backend; your Nuxt app owns rendering, routes, customer auth, and product behavior.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Nuxt projects, the server-handler sections show how to run Dyrected inside the same Nuxt application runtime.
+
+</SelfHostedOnly>
 
 ## What the module gives you
 

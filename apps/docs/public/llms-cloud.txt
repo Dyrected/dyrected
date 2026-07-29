@@ -12,7 +12,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 
 ## Documentation
 
-- [Dyrected Cloud](https://docs.dyrected.com/docs/cloud/basics/access-control/cloud): Use access control safely in Dyrected Cloud, choose between Jexl and built-in named policies, and know when to use `createdByCurrentUser`, `isOwner`, or `isSelf`.
+- [Dyrected Cloud](https://docs.dyrected.com/docs/cloud/basics/access-control/cloud): Use access control safely in Dyrected Cloud with Jexl rules, serializable named policies, and Cloud's built-in policy registry.
 - [Collections](https://docs.dyrected.com/docs/cloud/basics/access-control/collections): Read, create, update, and delete rules that decide who can touch a collection's documents.
 - [Fields](https://docs.dyrected.com/docs/cloud/basics/access-control/fields): Control whether individual fields can be read or written — enforced on the API and reflected in the admin panel.
 - [Globals](https://docs.dyrected.com/docs/cloud/basics/access-control/globals): Read and update rules for a global — the single-document config objects like site settings or a navigation menu.

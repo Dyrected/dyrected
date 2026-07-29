@@ -1,9 +1,24 @@
 ---
 title: Ecommerce
 description: A coming-soon ecommerce example focused on product content, media, relationships, and the editorial patterns teams usually need before launch.
+runtime: variant
+runtimeGroup: example-ecommerce
+runtimeNotes: Cloud ecommerce copy must focus on catalog/editorial content, not hosted checkout, payments, carts, or customer identity. Self-hosted may own deeper commerce backend behavior.
 ---
 
 This example is planned as the closest Dyrected reference for teams building a storefront, catalog, or merchandised content experience. It is meant to cover the content structures that usually sit behind product pages, category pages, promotional content, and media-heavy landing pages.
+
+<CloudOnly>
+
+For Cloud, read this as a content-backed storefront example. Dyrected Cloud should own catalog content, media, editorial pages, and publishing workflow. Your commerce app or commerce platform still owns carts, checkout, payments, orders, customer accounts, and product-specific business logic.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Dyrected, this example can grow into a fuller commerce backend story because the CMS can run inside the same application runtime as custom endpoints, function hooks, database behavior, and server-side integrations.
+
+</SelfHostedOnly>
 
 The full example is still coming soon, so use this page as a guide to the patterns that matter most while the repository work catches up.
 

@@ -1,9 +1,24 @@
 ---
 title: Integrations
 description: Common Dyrected patterns that connect content structure to supporting capabilities such as uploads and media collections.
+runtime: variant
+runtimeGroup: common-patterns-integrations
+runtimeNotes: Cloud media/storage are managed by Dyrected; self-hosted projects configure storage adapters and infrastructure directly.
 ---
 
 Use these patterns when the content model depends on a supporting capability outside ordinary text and relationships. These are usually the patterns that connect your content schema to media handling, storage, or other infrastructure-backed features.
+
+<CloudOnly>
+
+In Cloud, Dyrected owns the media backend and storage boundary. Use these patterns to model reusable assets and content relationships, but check Cloud plan fit for large media libraries.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+In self-hosted Dyrected, your app owns storage and image-processing infrastructure. Use these patterns with the storage adapter, bucket, and deployment model your runtime controls.
+
+</SelfHostedOnly>
 
 ## Create a media upload collection
 

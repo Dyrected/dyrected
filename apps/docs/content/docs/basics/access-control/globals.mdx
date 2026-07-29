@@ -1,11 +1,26 @@
 ---
 title: Globals
 description: Read and update rules for a global — the single-document config objects like site settings or a navigation menu.
+runtime: variant
+runtimeGroup: access-control-globals
+runtimeNotes: Global access applies in both runtimes; Cloud rules must stay serializable while self-hosted can use function rules.
 ---
 
 A global is a single document rather than a collection of many — site settings, a header menu, a homepage layout. Because there is only ever one document and you never create or delete it through the API, globals have just two access rules: `read` and `update`.
 
 Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes and the context a rule receives. This page covers the two rules a global supports.
+
+<CloudOnly>
+
+For Cloud globals, use booleans, Jexl strings, or serializable named policies. That keeps site settings, navigation, and other singleton content enforceable after schema sync.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted globals, function rules are also available when a singleton update needs local server logic or infrastructure checks.
+
+</SelfHostedOnly>
 
 ## The shape
 
@@ -73,7 +88,24 @@ Global rules run on the server with the standard [access context](/docs/basics/a
 - `doc` — the current stored global
 - `data` — the incoming update payload
 
-That makes globals practical for rules that depend on the stored value or the change being made. For example, allow updates only while the global is unlocked, and inspect the incoming payload with `data`:
+That makes globals practical for rules that depend on the stored value or the change being made.
+
+<CloudOnly>
+
+For Cloud, keep that logic serializable. This example lets anyone read a public global, and lets admins update it only while it is not locked:
+
+```ts
+access: {
+  read: "doc.visibility == 'public'",
+  update: "'admin' in user.roles && doc.locked != true",
+}
+```
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Dyrected, a function rule can inspect the stored document and incoming payload directly. For example, allow updates only while the global is unlocked, and inspect the incoming payload with `data`:
 
 ```ts
 access: {
@@ -81,6 +113,8 @@ access: {
   update: ({ doc, data }) => !doc?.locked && data?.locked !== true,
 }
 ```
+
+</SelfHostedOnly>
 
 <Note>
 A global rule should return `true` or `false`. Row-level filter objects, which collections use to scope a query, do not apply to a global — there is only one document — so a global rule that returns an object is treated as a denial.

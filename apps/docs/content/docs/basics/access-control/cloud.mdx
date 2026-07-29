@@ -1,30 +1,29 @@
 ---
 title: Dyrected Cloud
-description: Use access control safely in Dyrected Cloud, choose between Jexl and built-in named policies, and know when to use `createdByCurrentUser`, `isOwner`, or `isSelf`.
+description: Use access control safely in Dyrected Cloud with Jexl rules, serializable named policies, and Cloud's built-in policy registry.
+runtime: cloud
+runtimeGroup: access-control-cloud
 ---
 
-Use Dyrected Cloud access control when you want rules that survive `sync:schema` and run on the hosted backend. The important choice is not only *what rule you want*, but *what kind of rule Cloud can actually enforce*.
+Use Dyrected Cloud access control when your content backend is hosted by Dyrected and your rules need to survive `sync:schema`. Cloud can enforce rules that are serializable: booleans, Jexl strings, serializable named policies, and Cloud's built-in policies.
 
 If you only remember three things from this page, remember these:
 
 - **Jexl strings** are the safest default for Cloud.
-- **Function rules** do not sync to Cloud.
-- **Named policy references** work in Cloud when the referenced policy resolves on the Cloud backend.
+- **Serializable named policies** work when the policy value can sync as schema data.
+- **Function rules belong in self-hosted Dyrected**, not Cloud schemas.
 
 If you are new to access control itself, start with the [Access Control overview](/docs/basics/access-control/overview). This page is the Cloud-specific guide.
 
 ## The recommended path
 
-For most Cloud projects, the recommended path is:
+For most Cloud projects, start here:
 
-1. use **Jexl strings** for rules you want to be fully portable
-2. use a **named policy** when you want a reusable server-side filter or check and the policy value is serializable
-3. avoid **function rules** in any schema you plan to sync to Cloud
+1. use **Jexl strings** for collection, global, and field rules
+2. use a **built-in Cloud policy** when the policy name matches what you mean
+3. use a **site-defined named policy** only when its value is a string or boolean
 
-That avoids the two most common Cloud mistakes:
-
-- a function rule is stripped during `sync:schema`
-- a policy reference points to a function policy that was stripped during sync
+That keeps your access rules portable. They can be stored with the site schema, synced to Dyrected Cloud, and enforced by the hosted content backend.
 
 ## What works in Cloud
 
@@ -34,10 +33,9 @@ Dyrected Cloud can enforce these access rule shapes:
 |---|---|---|---|
 | `true` / `false` | Yes | Sometimes | Best for always-open or always-closed rules. |
 | Jexl string | Yes | Yes | Best general-purpose Cloud rule. |
-| Named policy reference | Yes, for serializable policies | Sometimes | Good for reusable Jexl or boolean policies, plus Cloud's built-in policy registry. |
-| Function rule | No | No | Stripped during `sync:schema`. |
+| Named policy reference | Yes, for built-in or serializable policies | Sometimes | Good when a reusable policy name makes the rule clearer. |
 
-Here is a quick example of a Cloud-safe rule:
+Here is a Cloud-safe rule that lets signed-in users see everything while anonymous readers only see published content:
 
 ```ts
 access: {
@@ -45,35 +43,27 @@ access: {
 }
 ```
 
-This works in Cloud because it is a Jexl string, not a function.
+This works in Cloud because the rule is a Jexl string. Cloud can store it with the synced schema and evaluate it in the hosted backend.
 
 ## What `sync:schema` sends to Cloud
 
-When you run `npx dyrected sync:schema`, Dyrected sends your schema shape to the Cloud backend. Collection rules, global rules, and field rules all sync, but function-based access rules do not.
+When you run `npx dyrected sync:schema`, Dyrected sends your serializable schema to the Cloud backend. Collection rules, global rules, field rules, and string or boolean policy values can sync.
 
-That means this self-hosted rule does **not** survive Cloud sync:
+Cloud sync keeps access-control data that can be represented as schema:
 
-```ts
-access: {
-  update: ({ user, doc }) => user?.sub === doc?.authorId,
-}
-```
+| Policy form | Cloud sync result |
+|---|---|
+| `accessPolicies: { canRead: true }` | Kept |
+| `accessPolicies: { canRead: "user != null" }` | Kept |
+| `{ policy: 'isAuthenticated' }` | Kept because it resolves to a Cloud built-in |
 
-For Cloud, rewrite it as a Jexl string or a built-in Cloud policy:
+Function rules and function policies do not become Cloud behavior. If a rule needs local services, direct database checks, side effects, or arbitrary server code, put that behavior in your application backend or use self-hosted Dyrected.
 
-```ts
-access: {
-  update: "{ authorId: { equals: user.sub } }",
-}
-```
+## Site-defined policies
 
-## Custom local policies vs Cloud policies
+Use site-defined policies when you want a reusable name for a rule that still stays serializable.
 
-This is the other Cloud behavior that trips people up.
-
-In a self-hosted app, you can define a local `accessPolicies` registry in your config and reference it anywhere in that app. Dyrected Cloud now supports the same idea for **serializable** policy values: if a policy is a **Jexl string** or a **boolean**, `sync:schema` sends it to Cloud as part of the site schema and Cloud resolves that policy name at runtime.
-
-This means a local config like this **does** work in Cloud:
+This policy works in Cloud because `canManageOrders` is a Jexl string:
 
 ```ts
 export default defineConfig({
@@ -86,50 +76,22 @@ export default defineConfig({
       access: {
         update: { policy: 'canManageOrders' },
       },
-      fields: [],
+      fields: [
+        { name: 'status', label: 'Status', type: 'text' },
+      ],
     }),
   ],
   globals: [],
 })
 ```
 
-After sync, Cloud can resolve `update: { policy: 'canManageOrders' }` because the policy itself is serializable data.
+After sync, Cloud can resolve `update: { policy: 'canManageOrders' }` because the policy value was sent as schema data.
 
-The important limitation is that **function policies still do not sync**. A config like this remains self-hosted-only:
-
-```ts
-export default defineConfig({
-  accessPolicies: {
-    canManageOrders: ({ user }) => user?.roles?.includes('admin') ?? false,
-  },
-  collections: [
-    defineCollection({
-      slug: 'orders',
-      access: {
-        update: { policy: 'canManageOrders' },
-      },
-      fields: [],
-    }),
-  ],
-  globals: [],
-})
-```
-
-When the policy value is a function, the sync strips it. The policy reference may still be present in the synced schema, but Cloud will not have that function resolver to execute. In practice, that means function policies are not portable to Cloud.
-
-Cloud sync keeps serializable policy data and strips executable policy code:
-
-| Policy form | Cloud sync result |
-|---|---|
-| `accessPolicies: { canRead: true }` | Kept |
-| `accessPolicies: { canRead: "user != null" }` | Kept |
-| `accessPolicies: { canRead: ({ user }) => !!user }` | Stripped |
-
-So the accurate Cloud rule is:
+Use this rule:
 
 - **string and boolean policies** can be user-defined and synced
-- **function policies** cannot
-- **built-in Cloud policies** are still available alongside synced site-defined policies
+- **built-in Cloud policies** are available without defining them in your site config
+- **policies that require executable code** are self-hosted-only
 
 ## Built-in named policies in Dyrected Cloud
 
@@ -167,7 +129,7 @@ When you are writing a Cloud rule, use this quick decision guide:
 | "Users can only see rows for this workspace or tenant." | `{ policy: 'isTenantMember' }` |
 | "Anonymous readers only see published content." | Jexl ternary or `{ policy: 'isPublished' }` on public reads |
 
-If the rule needs to react live in the admin form for **field-level** access, prefer **Jexl** over a function-style policy resolver.
+If the rule needs to react live in the admin form for **field-level** access, prefer **Jexl**. A Jexl field rule can be reflected in the editor UI and enforced by the API.
 
 ## `createdByCurrentUser` vs `isOwner`
 
@@ -189,7 +151,7 @@ access: {
 }
 ```
 
-That expands to the same idea as:
+That is the named-policy version of:
 
 ```ts
 access: {
@@ -219,7 +181,7 @@ access: {
 }
 ```
 
-That expands to the same idea as:
+That is the named-policy version of:
 
 ```ts
 access: {
@@ -265,7 +227,7 @@ Cloud does not infer those semantics for you. It only compares the current user 
 
 ### Side-by-side example
 
-Here is the same collection written both ways so the difference is obvious:
+Here is the same collection using both policies so the difference is obvious:
 
 ```ts
 export const Orders = defineCollection({
@@ -346,7 +308,7 @@ access: {
 }
 ```
 
-If you prefer a project-local policy name, a synced string policy now works too:
+If you prefer a project-local policy name, use a synced string policy:
 
 ```ts
 export default defineConfig({
@@ -408,7 +370,7 @@ In Cloud, use this rule of thumb:
 |---|---|
 | **Jexl string** | You want the most portable Cloud-safe rule, especially for field access and admin reactivity. |
 | **Named policy** | You want a reusable Cloud-backed rule and the policy value is serializable or built in. |
-| **Function rule** | Only in self-hosted projects. |
+| **Self-hosted Dyrected** | The rule needs application-server code, local services, or side effects. |
 
 If you are unsure, start with Jexl. Move to a named policy when the rule becomes repetitive or the policy name makes the intent clearer.
 
@@ -418,8 +380,8 @@ If you are unsure, start with Jexl. Move to a named policy when the rule becomes
 
 Check these first:
 
-- Did `sync:schema` strip a function rule?
-- Are you referencing a function policy that never reached Cloud?
+- Did the rule you tested locally depend on application-server code?
+- Is the policy value a Jexl string, a boolean, or a Cloud built-in?
 - Should this rule be an inline Jexl string instead?
 
 ### "I am not sure whether to use `createdByCurrentUser` or `isOwner`"

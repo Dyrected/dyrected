@@ -16,28 +16,25 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/basics/access-control/cloud
 
-Use Dyrected Cloud access control when you want rules that survive `sync:schema` and run on the hosted backend. The important choice is not only *what rule you want*, but *what kind of rule Cloud can actually enforce*.
+Use Dyrected Cloud access control when your content backend is hosted by Dyrected and your rules need to survive `sync:schema`. Cloud can enforce rules that are serializable: booleans, Jexl strings, serializable named policies, and Cloud's built-in policies.
 
 If you only remember three things from this page, remember these:
 
 - **Jexl strings** are the safest default for Cloud.
-- **Function rules** do not sync to Cloud.
-- **Named policy references** work in Cloud when the referenced policy resolves on the Cloud backend.
+- **Serializable named policies** work when the policy value can sync as schema data.
+- **Function rules belong in self-hosted Dyrected**, not Cloud schemas.
 
 If you are new to access control itself, start with the [Access Control overview](/docs/basics/access-control/overview). This page is the Cloud-specific guide.
 
 ## The recommended path
 
-For most Cloud projects, the recommended path is:
+For most Cloud projects, start here:
 
-1. use **Jexl strings** for rules you want to be fully portable
-2. use a **named policy** when you want a reusable server-side filter or check and the policy value is serializable
-3. avoid **function rules** in any schema you plan to sync to Cloud
+1. use **Jexl strings** for collection, global, and field rules
+2. use a **built-in Cloud policy** when the policy name matches what you mean
+3. use a **site-defined named policy** only when its value is a string or boolean
 
-That avoids the two most common Cloud mistakes:
-
-- a function rule is stripped during `sync:schema`
-- a policy reference points to a function policy that was stripped during sync
+That keeps your access rules portable. They can be stored with the site schema, synced to Dyrected Cloud, and enforced by the hosted content backend.
 
 ## What works in Cloud
 
@@ -47,10 +44,9 @@ Dyrected Cloud can enforce these access rule shapes:
 |---|---|---|---|
 | `true` / `false` | Yes | Sometimes | Best for always-open or always-closed rules. |
 | Jexl string | Yes | Yes | Best general-purpose Cloud rule. |
-| Named policy reference | Yes, for serializable policies | Sometimes | Good for reusable Jexl or boolean policies, plus Cloud's built-in policy registry. |
-| Function rule | No | No | Stripped during `sync:schema`. |
+| Named policy reference | Yes, for built-in or serializable policies | Sometimes | Good when a reusable policy name makes the rule clearer. |
 
-Here is a quick example of a Cloud-safe rule:
+Here is a Cloud-safe rule that lets signed-in users see everything while anonymous readers only see published content:
 
 ```ts
 access: {
@@ -58,35 +54,27 @@ access: {
 }
 ```
 
-This works in Cloud because it is a Jexl string, not a function.
+This works in Cloud because the rule is a Jexl string. Cloud can store it with the synced schema and evaluate it in the hosted backend.
 
 ## What `sync:schema` sends to Cloud
 
-When you run `npx dyrected sync:schema`, Dyrected sends your schema shape to the Cloud backend. Collection rules, global rules, and field rules all sync, but function-based access rules do not.
+When you run `npx dyrected sync:schema`, Dyrected sends your serializable schema to the Cloud backend. Collection rules, global rules, field rules, and string or boolean policy values can sync.
 
-That means this self-hosted rule does **not** survive Cloud sync:
+Cloud sync keeps access-control data that can be represented as schema:
 
-```ts
-access: {
-  update: ({ user, doc }) => user?.sub === doc?.authorId,
-}
-```
+| Policy form | Cloud sync result |
+|---|---|
+| `accessPolicies: { canRead: true }` | Kept |
+| `accessPolicies: { canRead: "user != null" }` | Kept |
+| `{ policy: 'isAuthenticated' }` | Kept because it resolves to a Cloud built-in |
 
-For Cloud, rewrite it as a Jexl string or a built-in Cloud policy:
+Function rules and function policies do not become Cloud behavior. If a rule needs local services, direct database checks, side effects, or arbitrary server code, put that behavior in your application backend or use self-hosted Dyrected.
 
-```ts
-access: {
-  update: "{ authorId: { equals: user.sub } }",
-}
-```
+## Site-defined policies
 
-## Custom local policies vs Cloud policies
+Use site-defined policies when you want a reusable name for a rule that still stays serializable.
 
-This is the other Cloud behavior that trips people up.
-
-In a self-hosted app, you can define a local `accessPolicies` registry in your config and reference it anywhere in that app. Dyrected Cloud now supports the same idea for **serializable** policy values: if a policy is a **Jexl string** or a **boolean**, `sync:schema` sends it to Cloud as part of the site schema and Cloud resolves that policy name at runtime.
-
-This means a local config like this **does** work in Cloud:
+This policy works in Cloud because `canManageOrders` is a Jexl string:
 
 ```ts
 export default defineConfig({
@@ -99,50 +87,22 @@ export default defineConfig({
       access: {
         update: { policy: 'canManageOrders' },
       },
-      fields: [],
+      fields: [
+        { name: 'status', label: 'Status', type: 'text' },
+      ],
     }),
   ],
   globals: [],
 })
 ```
 
-After sync, Cloud can resolve `update: { policy: 'canManageOrders' }` because the policy itself is serializable data.
+After sync, Cloud can resolve `update: { policy: 'canManageOrders' }` because the policy value was sent as schema data.
 
-The important limitation is that **function policies still do not sync**. A config like this remains self-hosted-only:
-
-```ts
-export default defineConfig({
-  accessPolicies: {
-    canManageOrders: ({ user }) => user?.roles?.includes('admin') ?? false,
-  },
-  collections: [
-    defineCollection({
-      slug: 'orders',
-      access: {
-        update: { policy: 'canManageOrders' },
-      },
-      fields: [],
-    }),
-  ],
-  globals: [],
-})
-```
-
-When the policy value is a function, the sync strips it. The policy reference may still be present in the synced schema, but Cloud will not have that function resolver to execute. In practice, that means function policies are not portable to Cloud.
-
-Cloud sync keeps serializable policy data and strips executable policy code:
-
-| Policy form | Cloud sync result |
-|---|---|
-| `accessPolicies: { canRead: true }` | Kept |
-| `accessPolicies: { canRead: "user != null" }` | Kept |
-| `accessPolicies: { canRead: ({ user }) => !!user }` | Stripped |
-
-So the accurate Cloud rule is:
+Use this rule:
 
 - **string and boolean policies** can be user-defined and synced
-- **function policies** cannot
-- **built-in Cloud policies** are still available alongside synced site-defined policies
+- **built-in Cloud policies** are available without defining them in your site config
+- **policies that require executable code** are self-hosted-only
 
 ## Built-in named policies in Dyrected Cloud
 
@@ -180,7 +140,7 @@ When you are writing a Cloud rule, use this quick decision guide:
 | "Users can only see rows for this workspace or tenant." | `{ policy: 'isTenantMember' }` |
 | "Anonymous readers only see published content." | Jexl ternary or `{ policy: 'isPublished' }` on public reads |
 
-If the rule needs to react live in the admin form for **field-level** access, prefer **Jexl** over a function-style policy resolver.
+If the rule needs to react live in the admin form for **field-level** access, prefer **Jexl**. A Jexl field rule can be reflected in the editor UI and enforced by the API.
 
 ## `createdByCurrentUser` vs `isOwner`
 
@@ -202,7 +162,7 @@ access: {
 }
 ```
 
-That expands to the same idea as:
+That is the named-policy version of:
 
 ```ts
 access: {
@@ -232,7 +192,7 @@ access: {
 }
 ```
 
-That expands to the same idea as:
+That is the named-policy version of:
 
 ```ts
 access: {
@@ -278,7 +238,7 @@ Cloud does not infer those semantics for you. It only compares the current user 
 
 ### Side-by-side example
 
-Here is the same collection written both ways so the difference is obvious:
+Here is the same collection using both policies so the difference is obvious:
 
 ```ts
 export const Orders = defineCollection({
@@ -359,7 +319,7 @@ access: {
 }
 ```
 
-If you prefer a project-local policy name, a synced string policy now works too:
+If you prefer a project-local policy name, use a synced string policy:
 
 ```ts
 export default defineConfig({
@@ -421,7 +381,7 @@ In Cloud, use this rule of thumb:
 |---|---|
 | **Jexl string** | You want the most portable Cloud-safe rule, especially for field access and admin reactivity. |
 | **Named policy** | You want a reusable Cloud-backed rule and the policy value is serializable or built in. |
-| **Function rule** | Only in self-hosted projects. |
+| **Self-hosted Dyrected** | The rule needs application-server code, local services, or side effects. |
 
 If you are unsure, start with Jexl. Move to a named policy when the rule becomes repetitive or the policy name makes the intent clearer.
 
@@ -431,8 +391,8 @@ If you are unsure, start with Jexl. Move to a named policy when the rule becomes
 
 Check these first:
 
-- Did `sync:schema` strip a function rule?
-- Are you referencing a function policy that never reached Cloud?
+- Did the rule you tested locally depend on application-server code?
+- Is the policy value a Jexl string, a boolean, or a Cloud built-in?
 - Should this rule be an inline Jexl string instead?
 
 ### "I am not sure whether to use `createdByCurrentUser` or `isOwner`"
@@ -476,8 +436,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/basics/access-control/collec
 
 Collection access control is where you lock down a collection's data. You attach up to four rules — one per operation — to the `access` key of a collection, and Dyrected runs the matching rule on the server before every request.
 
-Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes, the context a rule receives, and the allow / deny / filter result. This page focuses on the four collection operations and how to use them in real projects.
-
+Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes, the context a rule receives, and the allow / deny / filter result. This page focuses on the four collection operations and how to use them in real projects.For Cloud-backed collections, keep rules portable: booleans, Jexl strings, or named policies backed by serializable policy values. If an example uses a function rule, convert it before relying on it in Cloud.
 ## The shape
 
 All four rules live under `access`. Here is a collection that lets any signed-in user read, restricts writing to editors, and reserves deletion for admins:
@@ -587,10 +546,7 @@ That is enough for both broad role checks and document-aware rules.
 
 ## Document-aware rules
 
-For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean. Any of the rule shapes can do this: a function, a named policy, or a Jexl string that evaluates to an object.
-
-<Tabs items={['Jexl string', 'Function']}>
-<Tab value="Jexl string">
+For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean.In Cloud, use a Jexl string or a Cloud-backed named policy for document-aware rules.
 
 ```ts
 access: {
@@ -600,51 +556,16 @@ access: {
   delete: "{ author: { equals: user.sub } }",
 }
 ```
-
-</Tab>
-<Tab value="Function">
-
-```ts
-access: {
-  // A user can only read and modify documents they own
-  read: ({ user }) => ({ author: { equals: user?.sub } }),
-  update: ({ user }) => ({ author: { equals: user?.sub } }),
-  delete: ({ user }) => ({ author: { equals: user?.sub } }),
-}
-```
-
-</Tab>
-</Tabs>
-
 Dyrected applies the returned filter differently per operation:
 
 - **List** — merges the filter into the query, so the response only contains matching documents.
 - **Fetch one, update, delete** — checks whether the target document matches the filter; if it does not, the request is denied with `403`.
 
-Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean:
-
-<Tabs items={['Jexl string', 'Function']}>
-<Tab value="Jexl string">
-
-```ts
+Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean.```ts
 access: {
   create: "'editor' in user.roles && data.status != 'published'",
 }
 ```
-
-</Tab>
-<Tab value="Function">
-
-```ts
-access: {
-  create: ({ user, data }) =>
-    (user?.roles?.includes('editor') ?? false) && data?.status !== 'published',
-}
-```
-
-</Tab>
-</Tabs>
-
 ## Audit log access
 
 When a collection has `audit` enabled, Dyrected records every change and exposes it at `GET /:slug/__audit`. By default that log follows the collection's `read` rule — whoever can read the documents can read their history. To gate the audit trail separately, add a `readAudit` rule:
@@ -732,16 +653,14 @@ export const Articles = defineCollection({
 </Tab>
 <Tab value="Owner-scoped">
 
-Each user only sees and edits their own documents; admins are not special-cased here, so add a role check if they need to see everything.
-
-```ts
+Each user only sees and edits their own documents; admins are not special-cased here, so add a role check if they need to see everything.```ts
 export const Orders = defineCollection({
   slug: 'orders',
   access: {
-    read: ({ user }) => ({ customer: { equals: user?.sub } }),
+    read: "{ customer: { equals: user.sub } }",
     create: 'user != null',
-    update: ({ user }) => ({ customer: { equals: user?.sub } }),
-    delete: ({ user }) => ({ customer: { equals: user?.sub } }),
+    update: "{ customer: { equals: user.sub } }",
+    delete: "{ customer: { equals: user.sub } }",
   },
   fields: [
     { name: 'customer', label: 'Customer', type: 'text' },
@@ -749,7 +668,6 @@ export const Orders = defineCollection({
   ],
 })
 ```
-
 </Tab>
 <Tab value="Published or draft">
 
@@ -830,8 +748,7 @@ Field rules are enforced in two places at once:
 - **On the API** — a read-denied field is stripped from responses, and a write-denied field is dropped from the payload before the document is saved.
 - **In the admin panel** — the same rules hide a read-denied field and render a write-denied field read-only.
 
-So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](/docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.
-
+So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](/docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.For Cloud, prefer Jexl strings, `false`, and string-backed named policies. Those shapes can be enforced by the hosted backend and reflected in the admin form after schema sync.
 ## The shape
 
 Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
@@ -847,12 +764,9 @@ Add an `access` object with `read`, `create`, and/or `update` to any field. Use 
 }
 ```
 
-Omit a rule (or set it to `true`) to leave the field fully available.
-
-<Note>
-Field rules also accept functions and named policies. **Functions** (and function-based policies) run on the **server only** — the admin panel cannot execute them, so it will not hide or lock the field based on one. **Jexl strings**, `false`, and **string-based named policies** are enforced in both places: the server evaluates them, and the admin inlines them into the form. For a field rule that should behave the same in the form and on the API, use a Jexl string, a string named policy, or `false`.
+Omit a rule (or set it to `true`) to leave the field fully available.<Note>
+For Cloud field rules, use Jexl strings, `false`, or string-based named policies. Those shapes can sync to the hosted backend and stay visible to the admin form.
 </Note>
-
 ## What each rule does
 
 ### Read
@@ -964,8 +878,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/basics/access-control/global
 
 A global is a single document rather than a collection of many — site settings, a header menu, a homepage layout. Because there is only ever one document and you never create or delete it through the API, globals have just two access rules: `read` and `update`.
 
-Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes and the context a rule receives. This page covers the two rules a global supports.
-
+Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes and the context a rule receives. This page covers the two rules a global supports.For Cloud globals, use booleans, Jexl strings, or serializable named policies. That keeps site settings, navigation, and other singleton content enforceable after schema sync.
 ## The shape
 
 Attach `read` and `update` to the `access` key of a global. A typical setup makes settings readable by anyone (so your frontend can render them) while restricting edits to admins:
@@ -1032,15 +945,14 @@ Global rules run on the server with the standard [access context](/docs/basics/a
 - `doc` — the current stored global
 - `data` — the incoming update payload
 
-That makes globals practical for rules that depend on the stored value or the change being made. For example, allow updates only while the global is unlocked, and inspect the incoming payload with `data`:
+That makes globals practical for rules that depend on the stored value or the change being made.For Cloud, keep that logic serializable. This example lets anyone read a public global, and lets admins update it only while it is not locked:
 
 ```ts
 access: {
-  read: ({ doc }) => doc?.visibility === 'public',
-  update: ({ doc, data }) => !doc?.locked && data?.locked !== true,
+  read: "doc.visibility == 'public'",
+  update: "'admin' in user.roles && doc.locked != true",
 }
 ```
-
 <Note>
 A global rule should return `true` or `false`. Row-level filter objects, which collections use to scope a query, do not apply to a global — there is only one document — so a global rule that returns an object is treated as a denial.
 </Note>
@@ -1067,8 +979,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/basics/access-control/overvi
 
 Access control is how you decide who can do what with your data. In Dyrected you write that as small rules attached directly to a collection, a global, or a field. There is no separate permissions table and no global role registry to keep in sync — the rule lives next to the thing it protects, and Dyrected runs it on the server for every request.
 
-This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/docs/basics/access-control/collections), [globals](/docs/basics/access-control/globals), and [fields](/docs/basics/access-control/fields). If you are deploying to Dyrected Cloud, also read [Dyrected Cloud access control](/docs/basics/access-control/cloud) for the Cloud-specific policy limits and built-in policy names.
-
+This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/docs/basics/access-control/collections), [globals](/docs/basics/access-control/globals), and [fields](/docs/basics/access-control/fields). If you are deploying to Dyrected Cloud, also read [Dyrected Cloud access control](/docs/basics/access-control/cloud) for the Cloud-specific policy limits and built-in policy names.In Cloud, treat access rules as content rules that must sync to the hosted content backend. Use booleans, Jexl strings, and serializable named policies. Function rules are self-hosted-only because Cloud does not run arbitrary application code from your schema.
 ## The mental model
 
 An access rule answers one question: *should this request be allowed?* Dyrected evaluates the rule on the server, before it touches the database, and reads the result in three ways:
@@ -1085,31 +996,25 @@ A denied request always comes back in the same shape, so your frontend can detec
 
 Because the check runs before the database call, a denied read never loads the document and a denied write never persists anything.
 
-## The four rule shapes
-
-Every access rule can be written in one of four ways. They all produce the same allow / deny / filter result, so you can mix them freely across a project — and even across operations on the same collection.
+## The rule shapesIn Cloud, every access rule you sync should be serializable. That means booleans, Jexl strings, or named policies backed by Cloud built-ins, string policies, or boolean policies.
 
 ```ts
 access: {
-  read: true,                                       // 1. boolean
-  create: "'admin' in user.roles",                  // 2. Jexl string
-  update: ({ user, doc }) =>                          // 3. function
-    user?.roles?.includes('admin') || user?.sub === doc?.authorId,
-  delete: { policy: 'isAdmin' },                    // 4. named policy
+  read: true,                         // 1. boolean
+  create: "'admin' in user.roles",    // 2. Jexl string
+  delete: { policy: 'isAdmin' },      // 3. named policy
 }
 ```
 
-Pick the shape by what the rule needs to do and where it needs to run:
+Pick the shape by how much the rule needs to express:
 
 | Shape | Reach for it when | Runs on |
 |---|---|---|
-| **Boolean** | The answer never changes — always open or always closed. | — |
-| **Jexl string** | A serializable check like a role test or field comparison. Safe to sync to Dyrected Cloud. | Server |
-| **Function** | You need full server logic — async lookups, complex conditions, computed filters. | Self-hosted server only |
-| **Named policy** | You want a reusable rule you can name once and reference everywhere. Serializable, so it works with Cloud. | Server |
+| **Boolean** | The answer never changes — always open or always closed. | Cloud backend |
+| **Jexl string** | A serializable check like a role test or field comparison. | Cloud backend |
+| **Named policy** | You want a reusable rule and the policy is a Cloud built-in, string policy, or boolean policy. | Cloud backend |
 
-Booleans and Jexl strings cover most day-to-day rules. Reach for functions when a self-hosted app needs real logic, and named policies when you catch yourself repeating the same rule.
-
+Booleans and Jexl strings cover most Cloud rules. Reach for named policies when the same rule repeats or the policy name makes the intent clearer.
 ### Jexl strings
 
 A Jexl string is a small expression that Dyrected evaluates on the server. It reads like JavaScript comparison syntax, but it is a restricted, sandboxed language: it cannot call functions, import anything, or reach outside the values you hand it — which is exactly what makes it safe to store and sync to Cloud.
@@ -1146,30 +1051,10 @@ access: {
 
 For the complete expression syntax, see the [Jexl reference](https://github.com/TomFrost/Jexl).
 
-### Functions
-
-A function gives you the full server runtime, including `async` work. It receives the same context as every other rule and can return a boolean or a filter object:
-
-```ts
-access: {
-  update: async ({ user, doc }) => {
-    if (!user) return false
-    return user.roles?.includes('admin') || doc?.authorId === user.sub
-  },
-}
-```
-
-<Warning>
-Functions run only in your self-hosted server — they are **not** synced to Dyrected Cloud. When you run `sync-schema`, the CLI strips function rules from the payload and warns you with their exact paths. For any rule that needs to reach Cloud, use a **Jexl string** or a **named policy** instead.
-</Warning>
-
-<Note>
-Dyrected also validates declarative access expressions early. If a Jexl rule or string-based policy uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
-</Note>
 
 ### Named policies
 
-When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. In self-hosted Dyrected, that policy lives on your server config. In Dyrected Cloud, **string** and **boolean** policies sync as part of the site schema, while **function** policies do not:
+When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name.In Dyrected Cloud, string and boolean policies sync as part of the site schema. Cloud also provides built-in policies such as `isAuthenticated`, `hasRole`, `isOwner`, and `createdByCurrentUser`.
 
 ```ts
 export default defineConfig({
@@ -1190,52 +1075,15 @@ export default defineConfig({
 })
 ```
 
-A policy can be a **function** or a **Jexl string** — `accessPolicies: { isAdmin: "'admin' in user.roles" }`. String policies are inlined when the schema is sent to the admin panel, so a field or collection rule that references one stays reactive in the edit form, exactly like an inline Jexl rule. Function policies run on the server only and are not Cloud-portable.
+String policies are inlined when the schema is sent to the admin panel, so a field or collection rule that references one stays reactive in the edit form, exactly like an inline Jexl rule.
 
-You can pass `params` for a parameterized policy — `{ policy: 'hasRole', params: { role: 'editor' } }` — and read them inside the resolver as `params`. If a rule references a policy that is not registered, Dyrected fails closed and denies the request.
+If you need a policy with parameters, use one of the Cloud built-ins. For the current built-in policy list and common parameters, see [Dyrected Cloud access control](/docs/basics/access-control/cloud#built-in-named-policies-in-dyrected-cloud).
 
-### What a policy receives
+### The same rule, two Cloud-safe ways
 
-A function-based policy resolver receives the same access context as a normal access function, plus `params` from the policy reference.
+These rules are equivalent — each one says "a user can only touch their own documents." The result is identical; the shapes differ in how reusable they are.
 
-| Value | What it is |
-|---|---|
-| `user` | The authenticated caller, or `undefined` for an anonymous request |
-| `req` | The request context |
-| `doc` | The existing document, when Dyrected is checking one |
-| `data` | The incoming payload, on create and update |
-| `params` | Extra values passed by `{ policy: 'name', params: { ... } }` |
-
-That means a parameterized policy can stay reusable while still reacting to the current request:
-
-```ts
-export default defineConfig({
-  accessPolicies: {
-    hasRole: ({ user, params }) => {
-      const role = typeof params?.role === 'string' ? params.role : null
-      return role ? user?.roles?.includes(role) ?? false : false
-    },
-  },
-  collections: [
-    defineCollection({
-      slug: 'posts',
-      access: {
-        update: { policy: 'hasRole', params: { role: 'editor' } },
-      },
-      fields: [{ name: 'title', label: 'Title', type: 'text' }],
-    }),
-  ],
-  globals: [],
-})
-```
-
-If the policy value is a **Jexl string** or a **boolean**, there is no function parameter list, but the Jexl expression still reads the normal access context such as `user`, `doc`, and `data`.
-
-### The same rule, three ways
-
-These rules are equivalent — each one says "a user can only touch their own documents." The result is identical; the shapes differ in where they can run and how reusable they are.
-
-<Tabs items={['Jexl string', 'Named policy', 'Function']}>
+<Tabs items={['Jexl string', 'Named policy']}>
 <Tab value="Jexl string">
 
 Serializable and Cloud-safe — a good default.
@@ -1249,7 +1097,7 @@ access: {
 </Tab>
 <Tab value="Named policy">
 
-Defined once, referenced everywhere. A string policy is inlined for the admin panel and can sync to Cloud; a function policy stays on the server.
+Defined once, referenced everywhere. A string policy is inlined for the admin panel and can sync to Cloud.
 
 ```ts
 // defineConfig({ accessPolicies: { ownDocs: "{ owner: { equals: user.sub } }" } })
@@ -1260,23 +1108,7 @@ access: {
 ```
 
 </Tab>
-<Tab value="Function">
-
-Full server logic, including `async` work and lookups.
-
-```ts
-access: {
-  read: ({ user }) => ({ owner: { equals: user?.sub } }),
-}
-```
-
-</Tab>
 </Tabs>
-
-<Note>
-Function rules run only in a **self-hosted** app, where your own server executes your config. They are never sent to Dyrected Cloud — `sync-schema` strips them and warns you. For a Cloud-hosted backend, use a Jexl string or a **string/boolean named policy** instead.
-</Note>
-
 ## What a rule can see
 
 Every rule is evaluated with this context in scope:
@@ -10111,67 +9943,74 @@ Before you ship, verify the basics:
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/common-patterns/access-control
 
-Use these patterns when your main concern is who should be allowed to read, create, update, or delete content. They help you move from broad permissions toward rules that match how real teams and users work.
+Use these patterns when your main concern is who should be allowed to read, create, update, or delete content. They help you move from broad permissions toward rules that match how real teams and users work.In Cloud, keep access rules serializable. Use Jexl strings, boolean rules, and named policies that can sync to the hosted content backend. If a recipe stamps ownership with a function hook or depends on app-user accounts, treat that exact implementation as self-hosted and adapt the Cloud version to the Cloud-safe access-control pages.
+## Cloud-safe access patterns
 
-## Limit documents to their owner
+Use these patterns when Dyrected Cloud owns the content backend and your application still owns product-specific customer behavior.
 
-**Problem:** signed-in users should only see or manage the records they own.
+### Publish public content, keep drafts private
 
-This pattern returns a where constraint from collection access control and usually pairs it with a server hook that stamps ownership during creation. It is a good fit for customer dashboards, project spaces, and user-owned records.
+Use a Jexl ternary when anonymous readers should see only published entries, while signed-in editors can see draft and review content:
 
-### Example implementation
+```ts
+access: {
+  read: "user != null ? true : { status: { equals: 'published' } }",
+}
+```
 
-<RecipeExample id="owner-scoped-access" />
+This is the safest Cloud default for blogs, guides, marketing pages, catalogs, and documentation content.
+
+### Let editors write content
+
+Use role checks or the built-in `hasRole` policy when content operations follow an editor/admin model:
+
+```ts
+access: {
+  create: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  update: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  delete: { policy: 'hasRole', params: { role: 'admin' } },
+}
+```
+
+Use the equivalent Jexl string when the same rule should also drive field behavior in the admin form:
+
+```ts
+access: {
+  update: "'admin' in user.roles || 'editor' in user.roles",
+}
+```
+
+### Scope records to an owner
+
+Use `isOwner`, `createdByCurrentUser`, or a Jexl filter when a content record belongs to a specific user-like field:
+
+```ts
+access: {
+  read: { policy: 'isOwner', params: { field: 'ownerId' } },
+  update: { policy: 'isOwner', params: { field: 'ownerId' } },
+}
+```
+
+For the difference between creator, owner, and self rules, see [Dyrected Cloud access control](/docs/basics/access-control/cloud#createdbycurrentuser-vs-isowner).
+
+### Scope records to a workspace
+
+Use `isTenantMember` when content should stay inside a workspace, site, or tenant boundary:
+
+```ts
+access: {
+  read: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+  update: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+}
+```
+
+Keep checkout, billing, customer accounts, and product-specific authorization in your application backend. Cloud access rules should protect the content data Dyrected manages.
 
 Read the full docs:
 
+- [Dyrected Cloud access control](/docs/basics/access-control/cloud)
 - [Collection access control](/docs/basics/access-control/collections)
-- [Collection hooks](/docs/basics/hooks/collections)
-
-## Restrict content operations by user role
-
-**Problem:** different team roles should have different permissions, such as public reads, editor writes, or admin-only deletion.
-
-This pattern uses collection access control to check roles on each operation. It is the right starting point when content needs a clearer separation between editors, reviewers, administrators, or public readers.
-
-### Example implementation
-
-<RecipeExample id="role-based-access" />
-
-Read the full docs:
-
-- [Collection access control](/docs/basics/access-control/collections)
-- [Authentication overview](/docs/features/authentication/overview)
-
-## Scope content to the current workspace
-
-**Problem:** users should only see or manage records that belong to their current workspace or organization.
-
-This pattern stamps a tenant identifier onto new records and returns tenant-scoped access constraints for reads and writes. It is the starting point for multi-workspace SaaS apps where isolation matters as much as authentication.
-
-### Example implementation
-
-<RecipeExample id="tenant-scoped-access" />
-
-Read the full docs:
-
-- [Collection access control](/docs/basics/access-control/collections)
-- [Collection hooks](/docs/basics/hooks/collections)
-
-## Let owners edit records while admins manage everything
-
-**Problem:** ordinary users should stay scoped to their own records, but administrators still need a way to intervene.
-
-This pattern combines ownership rules with an admin override. It works well for tickets, support requests, user-owned projects, and other records where support or operations staff may need broader access than the original owner.
-
-### Example implementation
-
-<RecipeExample id="owner-or-admin-access" />
-
-Read the full docs:
-
-- [Collection access control](/docs/basics/access-control/collections)
-- [Authentication overview](/docs/features/authentication/overview)
+- [Field access control](/docs/basics/access-control/fields)
 
 ---
 
@@ -10676,8 +10515,7 @@ Reach for custom component registration only when you specifically need to plug 
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/common-patterns/data-lifecycle
 
-Use these patterns when the hard part is not the initial schema, but keeping data safe and predictable as editors create, update, and evolve content. They help protect URL structure, catch invalid changes, and handle schema evolution more carefully.
-
+Use these patterns when the hard part is not the initial schema, but keeping data safe and predictable as editors create, update, and evolve content. They help protect URL structure, catch invalid changes, and handle schema evolution more carefully.For Cloud, prefer lifecycle patterns that can be expressed as schema data: Jexl-style hooks, access rules, field defaults, and content modeling choices. Function hooks, database migrations, and arbitrary after-save side effects belong in self-hosted Dyrected unless a Cloud-specific surface says otherwise.
 ## Generate a slug from a title
 
 **Problem:** you want readable URLs, but you do not want editors hand-authoring slugs for every document.
@@ -10747,8 +10585,7 @@ Read the full docs:
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/common-patterns/integrations
 
-Use these patterns when the content model depends on a supporting capability outside ordinary text and relationships. These are usually the patterns that connect your content schema to media handling, storage, or other infrastructure-backed features.
-
+Use these patterns when the content model depends on a supporting capability outside ordinary text and relationships. These are usually the patterns that connect your content schema to media handling, storage, or other infrastructure-backed features.In Cloud, Dyrected owns the media backend and storage boundary. Use these patterns to model reusable assets and content relationships, but check Cloud plan fit for large media libraries.
 ## Create a media upload collection
 
 **Problem:** editors need a proper place to upload and manage files instead of scattering media fields across unrelated documents.
@@ -10803,6 +10640,8 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/common-patterns/ov
 
 Common patterns are the problem-first layer of the docs. They are here to help when you know what you are trying to solve, but you do not yet know which Dyrected feature or page to reach for.
 
+Some patterns are Cloud-safe as written. Others need self-hosted Dyrected because they run arbitrary server code, own application-user auth, or depend on local infrastructure. When that matters, the pattern page calls it out before the example.
+
 These pages stay intentionally short. Each pattern gives you:
 
 - the problem it helps solve
@@ -10847,8 +10686,7 @@ Patterns that connect content structure to supporting capabilities such as uploa
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/common-patterns/workflows
 
-Use these patterns when content needs more than simple CRUD. Workflows help when a document should move through a defined editorial process, with clear transitions and role-aware control over who can change its public state.
-
+Use these patterns when content needs more than simple CRUD. Workflows help when a document should move through a defined editorial process, with clear transitions and role-aware control over who can change its public state.In Cloud, use workflows for editorial states, review, publishing, and preview. Cloud content events and webhooks are still coming soon, so do not rely on Cloud to run arbitrary workflow handler code yet.
 ## Add draft, review, and publishing states
 
 **Problem:** editors need to work on content privately, send it for review, and only publish it when the right person approves.
@@ -10921,6 +10759,10 @@ This section is intentionally a placeholder for now.
 
 Dyrected's ecommerce story needs a clearer public teaching path before these pages should ship in the main navigation. Instead of sending readers into empty or incomplete docs, this landing page explains the gap and keeps the unfinished child pages out of the production sidebar.
 
+For Cloud, ecommerce docs should focus on catalog content, media, merchandising, landing pages, and editorial workflow. Checkout, payments, carts, orders, and customer accounts stay in the commerce app or commerce platform.
+
+For self-hosted Dyrected, future ecommerce docs may cover deeper backend behavior once the public package surface and recommended architecture are verified.
+
 ## What this section is expected to cover
 
 When this section is ready, it should teach:
@@ -10954,8 +10796,7 @@ Each ecommerce page should be published only after the public package behavior, 
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/examples/booking
 
-This example is planned for teams building a service-booking, appointment, or reservation flow where content and operational rules need to stay predictable. It is meant to show how Dyrected can support the editable side of the experience without turning business logic into fragile CMS configuration.
-
+This example is planned for teams building a service-booking, appointment, or reservation flow where content and operational rules need to stay predictable. It is meant to show how Dyrected can support the editable side of the experience without turning business logic into fragile CMS configuration.For Cloud, keep the boundary clear: Dyrected can manage editable service content, supporting media, and content rules. Your booking app should still own real-time availability, customer login, payments, reminders, and transactional scheduling logic.
 The implementation is still coming soon, so this page points you to the core patterns worth learning now.
 
 ## Example status
@@ -10995,8 +10836,7 @@ Because the full example is still in progress, treat this as the planned coverag
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/examples/ecommerce
 
-This example is planned as the closest Dyrected reference for teams building a storefront, catalog, or merchandised content experience. It is meant to cover the content structures that usually sit behind product pages, category pages, promotional content, and media-heavy landing pages.
-
+This example is planned as the closest Dyrected reference for teams building a storefront, catalog, or merchandised content experience. It is meant to cover the content structures that usually sit behind product pages, category pages, promotional content, and media-heavy landing pages.For Cloud, read this as a content-backed storefront example. Dyrected Cloud should own catalog content, media, editorial pages, and publishing workflow. Your commerce app or commerce platform still owns carts, checkout, payments, orders, customer accounts, and product-specific business logic.
 The full example is still coming soon, so use this page as a guide to the patterns that matter most while the repository work catches up.
 
 ## Example status
@@ -11081,6 +10921,8 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/examples/overview
 
 Examples are where Dyrected will show complete application shapes, not just isolated API features. The goal is to make it easier to answer a practical question: *which example is closest to what I am building?*
 
+The examples are still careful about runtime boundaries. Cloud examples should show Dyrected as the managed content backend around an app. Self-hosted examples can show Dyrected inside the app backend when the CMS needs to own runtime behavior.
+
 This section is intentionally light for now. The full example repositories are still coming together, so these pages focus on two things:
 
 - what each example app is meant to demonstrate
@@ -11151,8 +10993,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/integrations/nextj
 
 `@dyrected/next` is the recommended integration for Next.js App Router projects. It is the package to reach for when the Dyrected backend should live inside your Next app, or when a Next frontend wants the most convenient first-party wrapper around a running Dyrected API.
 
-By the end of this page, you should know the recommended mounting pattern, how to embed the admin, and where the Next package fits relative to the SDK and React layer.
-
+By the end of this page, you should know the recommended mounting pattern, how to embed the admin, and where the Next package fits relative to the SDK and React layer.For Cloud-backed Next.js projects, treat this page as the framework integration layer around a remote Dyrected API. Dyrected Cloud owns the content backend; your Next app owns rendering, routes, customer auth, and product behavior.
 ## What `@dyrected/next` adds
 
 `@dyrected/next` bundles the Next-specific pieces together:
@@ -11346,8 +11187,7 @@ Canonical URL: https://docs.dyrected.com/docs/cloud/ecosystem/integrations/nuxt
 - mount a self-hosted Dyrected backend inside the Nuxt app
 - act as the Nuxt-side client integration for a remote Dyrected API
 
-That is why this package is usually the right starting point for Nuxt instead of wiring `@dyrected/vue` and `@dyrected/sdk` manually.
-
+That is why this package is usually the right starting point for Nuxt instead of wiring `@dyrected/vue` and `@dyrected/sdk` manually.For Cloud-backed Nuxt projects, use the module as the Nuxt-side integration for a remote Dyrected API. Dyrected Cloud owns the content backend; your Nuxt app owns rendering, routes, customer auth, and product behavior.
 ## What the module gives you
 
 The Nuxt module adds the framework glue for you:
@@ -23516,472 +23356,13 @@ If that is the target, continue to [Installing Dyrected](/docs/quick-start-guide
 
 ## Self-hosted Dyrected
 
-## Dyrected Cloud
-
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/basics/access-control/cloud
-
-Use Dyrected Cloud access control when you want rules that survive `sync:schema` and run on the hosted backend. The important choice is not only *what rule you want*, but *what kind of rule Cloud can actually enforce*.
-
-If you only remember three things from this page, remember these:
-
-- **Jexl strings** are the safest default for Cloud.
-- **Function rules** do not sync to Cloud.
-- **Named policy references** work in Cloud when the referenced policy resolves on the Cloud backend.
-
-If you are new to access control itself, start with the [Access Control overview](/docs/basics/access-control/overview). This page is the Cloud-specific guide.
-
-## The recommended path
-
-For most Cloud projects, the recommended path is:
-
-1. use **Jexl strings** for rules you want to be fully portable
-2. use a **named policy** when you want a reusable server-side filter or check and the policy value is serializable
-3. avoid **function rules** in any schema you plan to sync to Cloud
-
-That avoids the two most common Cloud mistakes:
-
-- a function rule is stripped during `sync:schema`
-- a policy reference points to a function policy that was stripped during sync
-
-## What works in Cloud
-
-Dyrected Cloud can enforce these access rule shapes:
-
-| Rule shape | Cloud support | Good default? | Notes |
-|---|---|---|---|
-| `true` / `false` | Yes | Sometimes | Best for always-open or always-closed rules. |
-| Jexl string | Yes | Yes | Best general-purpose Cloud rule. |
-| Named policy reference | Yes, for serializable policies | Sometimes | Good for reusable Jexl or boolean policies, plus Cloud's built-in policy registry. |
-| Function rule | No | No | Stripped during `sync:schema`. |
-
-Here is a quick example of a Cloud-safe rule:
-
-```ts
-access: {
-  read: "user != null ? true : { status: { equals: 'published' } }",
-}
-```
-
-This works in Cloud because it is a Jexl string, not a function.
-
-## What `sync:schema` sends to Cloud
-
-When you run `npx dyrected sync:schema`, Dyrected sends your schema shape to the Cloud backend. Collection rules, global rules, and field rules all sync, but function-based access rules do not.
-
-That means this self-hosted rule does **not** survive Cloud sync:
-
-```ts
-access: {
-  update: ({ user, doc }) => user?.sub === doc?.authorId,
-}
-```
-
-For Cloud, rewrite it as a Jexl string or a built-in Cloud policy:
-
-```ts
-access: {
-  update: "{ authorId: { equals: user.sub } }",
-}
-```
-
-## Custom local policies vs Cloud policies
-
-This is the other Cloud behavior that trips people up.
-
-In a self-hosted app, you can define a local `accessPolicies` registry in your config and reference it anywhere in that app. Dyrected Cloud now supports the same idea for **serializable** policy values: if a policy is a **Jexl string** or a **boolean**, `sync:schema` sends it to Cloud as part of the site schema and Cloud resolves that policy name at runtime.
-
-This means a local config like this **does** work in Cloud:
-
-```ts
-export default defineConfig({
-  accessPolicies: {
-    canManageOrders: "'admin' in user.roles || 'editor' in user.roles",
-  },
-  collections: [
-    defineCollection({
-      slug: 'orders',
-      access: {
-        update: { policy: 'canManageOrders' },
-      },
-      fields: [],
-    }),
-  ],
-  globals: [],
-})
-```
-
-After sync, Cloud can resolve `update: { policy: 'canManageOrders' }` because the policy itself is serializable data.
-
-The important limitation is that **function policies still do not sync**. A config like this remains self-hosted-only:
-
-```ts
-export default defineConfig({
-  accessPolicies: {
-    canManageOrders: ({ user }) => user?.roles?.includes('admin') ?? false,
-  },
-  collections: [
-    defineCollection({
-      slug: 'orders',
-      access: {
-        update: { policy: 'canManageOrders' },
-      },
-      fields: [],
-    }),
-  ],
-  globals: [],
-})
-```
-
-When the policy value is a function, the sync strips it. The policy reference may still be present in the synced schema, but Cloud will not have that function resolver to execute. In practice, that means function policies are not portable to Cloud.
-
-Cloud sync keeps serializable policy data and strips executable policy code:
-
-| Policy form | Cloud sync result |
-|---|---|
-| `accessPolicies: { canRead: true }` | Kept |
-| `accessPolicies: { canRead: "user != null" }` | Kept |
-| `accessPolicies: { canRead: ({ user }) => !!user }` | Stripped |
-
-So the accurate Cloud rule is:
-
-- **string and boolean policies** can be user-defined and synced
-- **function policies** cannot
-- **built-in Cloud policies** are still available alongside synced site-defined policies
-
-## Built-in named policies in Dyrected Cloud
-
-Dyrected Cloud currently ships with these built-in named policies in its backend registry:
-
-| Policy | Use it when | Common params |
-|---|---|---|
-| `isAuthenticated` | The caller must be signed in. | — |
-| `hasRole` | Access depends on one or more role strings. | `role`, `roles` |
-| `isSelf` | The record should match the current user's own ID. | `field` |
-| `isOwner` | The record should match a custom ownership field such as `owner`, `ownerId`, or `customerId`. | `field` |
-| `isTenantMember` | Content should stay inside the current workspace, site, or tenant boundary. | `field`, `tenantId` |
-| `hasCapability` | Access depends on one or more capability strings. | `capability`, `capabilities` |
-| `isPublished` | Public reads should only see published entries. | `field`, `value` |
-| `canReadDrafts` | Certain roles or capabilities may read drafts. | `roles`, `capabilities` |
-| `fieldEquals` | You want a reusable equals filter. | `field`, `value` |
-| `fieldIn` | You want a reusable `in` filter. | `field`, `values` |
-| `createdByCurrentUser` | The record should match the user who originally created it. | `field` |
-| `notSelf` | The record should match everyone except the current user. | `field` |
-
-These built-ins sit alongside any site-defined **string** or **boolean** policies that reached Cloud through `sync:schema`.
-
-The rest of this page focuses on when to use them, not only what they are called.
-
-## Choose the right rule first
-
-When you are writing a Cloud rule, use this quick decision guide:
-
-| You want to say | Best fit |
-|---|---|
-| "Anyone can read this." | `read: true` |
-| "Only signed-in users can do this." | Jexl: `"user != null"` or policy: `{ policy: 'isAuthenticated' }` |
-| "Only admins or editors can do this." | Jexl role check, `{ policy: 'hasRole', params: { roles: [...] } }`, or a synced string policy such as `{ policy: 'canManageOrders' }` |
-| "Users can only see their own rows." | `{ policy: 'isSelf' }`, `{ policy: 'isOwner' }`, or `{ policy: 'createdByCurrentUser' }` depending on the field |
-| "Users can only see rows for this workspace or tenant." | `{ policy: 'isTenantMember' }` |
-| "Anonymous readers only see published content." | Jexl ternary or `{ policy: 'isPublished' }` on public reads |
-
-If the rule needs to react live in the admin form for **field-level** access, prefer **Jexl** over a function-style policy resolver.
-
-## `createdByCurrentUser` vs `isOwner`
-
-This is the most important distinction on the page.
-
-Both policies return the same *kind* of result: a filter that compares a field on the document to the current user's ID. The difference is not a hidden engine behavior. The difference is the **field they target by default** and the **meaning you are expressing**.
-
-### `createdByCurrentUser`
-
-Use `createdByCurrentUser` when the rule means:
-
-> "The current user may act on records they originally created."
-
-By default, this policy checks the built-in `createdBy` field:
-
-```ts
-access: {
-  read: { policy: 'createdByCurrentUser' },
-}
-```
-
-That expands to the same idea as:
-
-```ts
-access: {
-  read: "{ createdBy: { equals: user.sub } }",
-}
-```
-
-This is a good fit for:
-
-- contact submissions a user opened themselves
-- support tickets the user submitted
-- personal notes or drafts where "creator" is the rule you care about
-
-Dyrected adds `createdBy` automatically through its built-in system fields when `timestamps` are enabled, and `timestamps` default to `true`. So this policy is especially convenient when you want to lean on that built-in field instead of creating your own.
-
-### `isOwner`
-
-Use `isOwner` when the rule means:
-
-> "The current user may act on records owned by them according to this schema."
-
-By default, `isOwner` checks a field named `owner`:
-
-```ts
-access: {
-  read: { policy: 'isOwner' },
-}
-```
-
-That expands to the same idea as:
-
-```ts
-access: {
-  read: "{ owner: { equals: user.sub } }",
-}
-```
-
-In real projects, you will often pass a custom field because many schemas use names like `ownerId`, `customerId`, or `accountId`:
-
-```ts
-access: {
-  read: { policy: 'isOwner', params: { field: 'ownerId' } },
-}
-```
-
-This is a good fit for:
-
-- a project owned by one account
-- an order owned by a customer
-- a workspace record assigned to an owner
-- any document where ownership is a first-class business concept
-
-### The practical difference
-
-Use this rule of thumb:
-
-| If your question is... | Use |
-|---|---|
-| "Who created this record?" | `createdByCurrentUser` |
-| "Who owns this record right now?" | `isOwner` |
-
-That distinction matters because creator and owner are often **not** the same concept in a real app.
-
-If you point both policies at the same field, they behave the same way. For example, `createdByCurrentUser` and `isOwner` with `params: { field: 'createdBy' }` both return the same kind of equality filter. The dedicated policy name exists to make the rule's intent obvious to the next person reading the schema.
-
-For example:
-
-- an admin could create an order on behalf of a customer
-- a team member could create a project that belongs to a workspace owner
-- a record could be reassigned later, while `createdBy` still points to the original creator
-
-Cloud does not infer those semantics for you. It only compares the current user ID to the field you chose. Your job is to pick the field that matches your business meaning.
-
-### Side-by-side example
-
-Here is the same collection written both ways so the difference is obvious:
-
-```ts
-export const Orders = defineCollection({
-  slug: 'orders',
-  access: {
-    // "Users can read orders they created"
-    read: { policy: 'createdByCurrentUser' },
-
-    // "Users can update orders they own"
-    update: { policy: 'isOwner', params: { field: 'customerId' } },
-  },
-  fields: [
-    { name: 'customerId', label: 'Customer', type: 'text', required: true },
-    { name: 'status', label: 'Status', type: 'text' },
-  ],
-})
-```
-
-In that example:
-
-- `read` follows the built-in `createdBy`
-- `update` follows the custom business field `customerId`
-
-That is a valid setup when "who created it" and "who should control it" are different rules.
-
-### When to use `isSelf` instead
-
-Use `isSelf` when the record itself *is* the user's own record.
-
-For example, a profile collection usually wants:
-
-```ts
-access: {
-  read: { policy: 'isSelf' },
-  update: { policy: 'isSelf' },
-}
-```
-
-That is clearer than `isOwner` when the target document is the user's own account, profile, or member record.
-
-Use this rule of thumb:
-
-- `isSelf`: "this row is me"
-- `isOwner`: "this row belongs to me"
-- `createdByCurrentUser`: "I created this row"
-
-## Practical Cloud examples
-
-### Public published content, private drafts
-
-Use a Jexl ternary when public readers should only see published entries but signed-in staff should see everything:
-
-```ts
-access: {
-  read: "user != null ? true : { status: { equals: 'published' } }",
-}
-```
-
-This is often the cleanest Cloud-safe pattern because one rule covers both audiences.
-
-### Role-based writing access
-
-Use `hasRole` when your collections follow a simple admin/editor model:
-
-```ts
-access: {
-  create: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
-  update: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
-  delete: { policy: 'hasRole', params: { role: 'admin' } },
-}
-```
-
-If the same logic must also drive field-level admin behavior, the equivalent Jexl rule is often easier:
-
-```ts
-access: {
-  update: "'admin' in user.roles || 'editor' in user.roles",
-}
-```
-
-If you prefer a project-local policy name, a synced string policy now works too:
-
-```ts
-export default defineConfig({
-  accessPolicies: {
-    canManageOrders: "'admin' in user.roles || 'editor' in user.roles",
-  },
-  collections: [
-    defineCollection({
-      slug: 'orders',
-      access: {
-        create: { policy: 'canManageOrders' },
-        update: { policy: 'canManageOrders' },
-      },
-      fields: [
-        { name: 'status', label: 'Status', type: 'text' },
-      ],
-    }),
-  ],
-  globals: [],
-})
-```
-
-### Tenant-scoped data
-
-Use `isTenantMember` when documents should stay inside the current site or workspace boundary:
-
-```ts
-access: {
-  read: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
-  update: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
-}
-```
-
-This is a good fit for multi-tenant project, invoice, or asset collections.
-
-### Reusable equals and `in` filters
-
-Use `fieldEquals` and `fieldIn` when you want small reusable filters without inventing new custom policy names:
-
-```ts
-access: {
-  read: { policy: 'fieldEquals', params: { field: 'status', value: 'published' } },
-}
-```
-
-```ts
-access: {
-  read: { policy: 'fieldIn', params: { field: 'status', values: ['review', 'published'] } },
-}
-```
-
-These are especially useful when you want a named-policy shape but the logic is still simple.
-
-## Jexl vs built-in policy in Cloud
-
-In Cloud, use this rule of thumb:
-
-| Reach for | When |
-|---|---|
-| **Jexl string** | You want the most portable Cloud-safe rule, especially for field access and admin reactivity. |
-| **Named policy** | You want a reusable Cloud-backed rule and the policy value is serializable or built in. |
-| **Function rule** | Only in self-hosted projects. |
-
-If you are unsure, start with Jexl. Move to a named policy when the rule becomes repetitive or the policy name makes the intent clearer.
-
-## Troubleshooting
-
-### "It worked locally, but Cloud denied it"
-
-Check these first:
-
-- Did `sync:schema` strip a function rule?
-- Are you referencing a function policy that never reached Cloud?
-- Should this rule be an inline Jexl string instead?
-
-### "I am not sure whether to use `createdByCurrentUser` or `isOwner`"
-
-Ask this question:
-
-> Do I care about the document's original creator, or the document's business owner?
-
-Then map the answer like this:
-
-- original creator: `createdByCurrentUser`
-- business owner field such as `ownerId` or `customerId`: `isOwner`
-- the document is the user's own record: `isSelf`
-
-### "The admin form is not hiding or locking fields the way I expected"
-
-For field access, prefer inline Jexl when the admin form should react live in the same way as the API.
-
-### "I changed access rules, but Cloud still behaves the old way"
-
-Run:
-
-```bash
-npx dyrected sync:schema
-```
-
-If the updated schema did not reach Cloud, the old rules are still active there.
-
-## Related pages
-
-- [Access Control overview](/docs/basics/access-control/overview)
-- [Collection access control](/docs/basics/access-control/collections)
-- [Field access control](/docs/basics/access-control/fields)
-- [CLI overview](/docs/basics/cli/overview)
-
----
-
 ## Collections
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/basics/access-control/collections
 
 Collection access control is where you lock down a collection's data. You attach up to four rules — one per operation — to the `access` key of a collection, and Dyrected runs the matching rule on the server before every request.
 
-Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes, the context a rule receives, and the allow / deny / filter result. This page focuses on the four collection operations and how to use them in real projects.
-
+Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes, the context a rule receives, and the allow / deny / filter result. This page focuses on the four collection operations and how to use them in real projects.For self-hosted collections, function rules are available because Dyrected runs inside your application backend. Use them when access depends on local services, database-specific checks, or application-user behavior that cannot be represented as a Jexl expression.
 ## The shape
 
 All four rules live under `access`. Here is a collection that lets any signed-in user read, restricts writing to editors, and reserves deletion for admins:
@@ -24091,7 +23472,7 @@ That is enough for both broad role checks and document-aware rules.
 
 ## Document-aware rules
 
-For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean. Any of the rule shapes can do this: a function, a named policy, or a Jexl string that evaluates to an object.
+For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean.Any of the rule shapes can do this: a function, a named policy, or a Jexl string that evaluates to an object.
 
 <Tabs items={['Jexl string', 'Function']}>
 <Tab value="Jexl string">
@@ -24119,15 +23500,12 @@ access: {
 
 </Tab>
 </Tabs>
-
 Dyrected applies the returned filter differently per operation:
 
 - **List** — merges the filter into the query, so the response only contains matching documents.
 - **Fetch one, update, delete** — checks whether the target document matches the filter; if it does not, the request is denied with `403`.
 
-Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean:
-
-<Tabs items={['Jexl string', 'Function']}>
+Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean.<Tabs items={['Jexl string', 'Function']}>
 <Tab value="Jexl string">
 
 ```ts
@@ -24148,7 +23526,6 @@ access: {
 
 </Tab>
 </Tabs>
-
 ## Audit log access
 
 When a collection has `audit` enabled, Dyrected records every change and exposes it at `GET /:slug/__audit`. By default that log follows the collection's `read` rule — whoever can read the documents can read their history. To gate the audit trail separately, add a `readAudit` rule:
@@ -24236,9 +23613,7 @@ export const Articles = defineCollection({
 </Tab>
 <Tab value="Owner-scoped">
 
-Each user only sees and edits their own documents; admins are not special-cased here, so add a role check if they need to see everything.
-
-```ts
+Each user only sees and edits their own documents; admins are not special-cased here, so add a role check if they need to see everything.```ts
 export const Orders = defineCollection({
   slug: 'orders',
   access: {
@@ -24253,7 +23628,6 @@ export const Orders = defineCollection({
   ],
 })
 ```
-
 </Tab>
 <Tab value="Published or draft">
 
@@ -24334,8 +23708,7 @@ Field rules are enforced in two places at once:
 - **On the API** — a read-denied field is stripped from responses, and a write-denied field is dropped from the payload before the document is saved.
 - **In the admin panel** — the same rules hide a read-denied field and render a write-denied field read-only.
 
-So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](/docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.
-
+So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](/docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.For self-hosted Dyrected, field access can also use function rules when a field decision needs local runtime code. Use Jexl strings when the same behavior should stay visible in the admin form.
 ## The shape
 
 Add an `access` object with `read`, `create`, and/or `update` to any field. Use a Jexl string for a conditional rule, or the literal `false` to always apply the restriction:
@@ -24351,12 +23724,9 @@ Add an `access` object with `read`, `create`, and/or `update` to any field. Use 
 }
 ```
 
-Omit a rule (or set it to `true`) to leave the field fully available.
-
-<Note>
+Omit a rule (or set it to `true`) to leave the field fully available.<Note>
 Field rules also accept functions and named policies. **Functions** (and function-based policies) run on the **server only** — the admin panel cannot execute them, so it will not hide or lock the field based on one. **Jexl strings**, `false`, and **string-based named policies** are enforced in both places: the server evaluates them, and the admin inlines them into the form. For a field rule that should behave the same in the form and on the API, use a Jexl string, a string named policy, or `false`.
 </Note>
-
 ## What each rule does
 
 ### Read
@@ -24468,8 +23838,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/basics/access-control/
 
 A global is a single document rather than a collection of many — site settings, a header menu, a homepage layout. Because there is only ever one document and you never create or delete it through the API, globals have just two access rules: `read` and `update`.
 
-Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes and the context a rule receives. This page covers the two rules a global supports.
-
+Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes and the context a rule receives. This page covers the two rules a global supports.For self-hosted globals, function rules are also available when a singleton update needs local server logic or infrastructure checks.
 ## The shape
 
 Attach `read` and `update` to the `access` key of a global. A typical setup makes settings readable by anyone (so your frontend can render them) while restricting edits to admins:
@@ -24536,7 +23905,7 @@ Global rules run on the server with the standard [access context](/docs/basics/a
 - `doc` — the current stored global
 - `data` — the incoming update payload
 
-That makes globals practical for rules that depend on the stored value or the change being made. For example, allow updates only while the global is unlocked, and inspect the incoming payload with `data`:
+That makes globals practical for rules that depend on the stored value or the change being made.For self-hosted Dyrected, a function rule can inspect the stored document and incoming payload directly. For example, allow updates only while the global is unlocked, and inspect the incoming payload with `data`:
 
 ```ts
 access: {
@@ -24544,7 +23913,6 @@ access: {
   update: ({ doc, data }) => !doc?.locked && data?.locked !== true,
 }
 ```
-
 <Note>
 A global rule should return `true` or `false`. Row-level filter objects, which collections use to scope a query, do not apply to a global — there is only one document — so a global rule that returns an object is treated as a denial.
 </Note>
@@ -24571,8 +23939,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/basics/access-control/
 
 Access control is how you decide who can do what with your data. In Dyrected you write that as small rules attached directly to a collection, a global, or a field. There is no separate permissions table and no global role registry to keep in sync — the rule lives next to the thing it protects, and Dyrected runs it on the server for every request.
 
-This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/docs/basics/access-control/collections), [globals](/docs/basics/access-control/globals), and [fields](/docs/basics/access-control/fields). If you are deploying to Dyrected Cloud, also read [Dyrected Cloud access control](/docs/basics/access-control/cloud) for the Cloud-specific policy limits and built-in policy names.
-
+This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/docs/basics/access-control/collections), [globals](/docs/basics/access-control/globals), and [fields](/docs/basics/access-control/fields). If you are deploying to Dyrected Cloud, also read [Dyrected Cloud access control](/docs/basics/access-control/cloud) for the Cloud-specific policy limits and built-in policy names.In self-hosted Dyrected, access rules run inside your application backend. Use Jexl strings when they are enough, and use function rules or function policies when the decision needs your server runtime, database boundary, or application-user model.
 ## The mental model
 
 An access rule answers one question: *should this request be allowed?* Dyrected evaluates the rule on the server, before it touches the database, and reads the result in three ways:
@@ -24589,9 +23956,7 @@ A denied request always comes back in the same shape, so your frontend can detec
 
 Because the check runs before the database call, a denied read never loads the document and a denied write never persists anything.
 
-## The four rule shapes
-
-Every access rule can be written in one of four ways. They all produce the same allow / deny / filter result, so you can mix them freely across a project — and even across operations on the same collection.
+## The rule shapesEvery access rule can be written in one of four ways. They all produce the same allow / deny / filter result, so you can mix them freely across a project — and even across operations on the same collection.
 
 ```ts
 access: {
@@ -24610,10 +23975,9 @@ Pick the shape by what the rule needs to do and where it needs to run:
 | **Boolean** | The answer never changes — always open or always closed. | — |
 | **Jexl string** | A serializable check like a role test or field comparison. Safe to sync to Dyrected Cloud. | Server |
 | **Function** | You need full server logic — async lookups, complex conditions, computed filters. | Self-hosted server only |
-| **Named policy** | You want a reusable rule you can name once and reference everywhere. Serializable, so it works with Cloud. | Server |
+| **Named policy** | You want a reusable rule you can name once and reference everywhere. Serializable policies work with Cloud; function policies stay self-hosted. | Server |
 
 Booleans and Jexl strings cover most day-to-day rules. Reach for functions when a self-hosted app needs real logic, and named policies when you catch yourself repeating the same rule.
-
 ### Jexl strings
 
 A Jexl string is a small expression that Dyrected evaluates on the server. It reads like JavaScript comparison syntax, but it is a restricted, sandboxed language: it cannot call functions, import anything, or reach outside the values you hand it — which is exactly what makes it safe to store and sync to Cloud.
@@ -24648,9 +24012,7 @@ access: {
 }
 ```
 
-For the complete expression syntax, see the [Jexl reference](https://github.com/TomFrost/Jexl).
-
-### Functions
+For the complete expression syntax, see the [Jexl reference](https://github.com/TomFrost/Jexl).### Functions
 
 A function gives you the full server runtime, including `async` work. It receives the same context as every other rule and can return a boolean or a filter object:
 
@@ -24670,10 +24032,9 @@ Functions run only in your self-hosted server — they are **not** synced to Dyr
 <Note>
 Dyrected also validates declarative access expressions early. If a Jexl rule or string-based policy uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
 </Note>
-
 ### Named policies
 
-When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. In self-hosted Dyrected, that policy lives on your server config. In Dyrected Cloud, **string** and **boolean** policies sync as part of the site schema, while **function** policies do not:
+When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name.In self-hosted Dyrected, that policy lives on your server config. String and boolean policies are portable, while function policies can use your application server.
 
 ```ts
 export default defineConfig({
@@ -24780,7 +24141,6 @@ access: {
 <Note>
 Function rules run only in a **self-hosted** app, where your own server executes your config. They are never sent to Dyrected Cloud — `sync-schema` strips them and warns you. For a Cloud-hosted backend, use a Jexl string or a **string/boolean named policy** instead.
 </Note>
-
 ## What a rule can see
 
 Every rule is evaluated with this context in scope:
@@ -31550,221 +30910,6 @@ Use these pages to choose the right runtime, then move into setup, modeling, and
 
 ---
 
-## Cloud-safe hooks
-
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/basics/hooks/cloud
-
-Use Cloud-safe hooks when you want hook behavior that survives `sync:schema` and runs from the schema Dyrected Cloud stores.
-
-The important distinction is not only *which hook phase you want*, but *which hook shape Cloud can actually keep*. In practice, that means:
-
-- use **declarative Jexl-style string hooks** for simple read shaping and value transforms
-- use **function hooks** for self-hosted async work, side effects, and anything that needs arbitrary server code
-
-If you are new to hooks themselves, start with the [Hooks overview](/docs/basics/hooks/overview). This page is the Cloud-specific guide.
-
-## The recommended path
-
-For most Cloud projects, the safest path is:
-
-1. use declarative Jexl-style string hooks for `beforeRead`, `afterRead`, and `beforeChange`
-2. use declarative Jexl-style `admin.hooks.onChange` for browser-side form reactivity that should survive schema sync
-3. keep `afterChange`, delete hooks, and other side-effect hooks as self-hosted function hooks
-
-That avoids the two most common Cloud mistakes:
-
-- a function hook is stripped during `sync:schema`
-- a hook family is technically valid in self-hosted Dyrected but not part of the Cloud-safe subset
-
-## What works in Cloud
-
-Dyrected Cloud keeps the following declarative hook surfaces:
-
-| Hook surface | Function form | Declarative string form | Survives `sync:schema` |
-| --- | --- | --- | --- |
-| collection/global `beforeRead` | Yes | Yes | Yes |
-| collection/global `afterRead` | Yes | Yes | Yes |
-| collection/global `beforeChange` | Yes | Yes | Yes |
-| collection/global `afterChange` | Yes | No | No |
-| collection `beforeDelete` / `afterDelete` | Yes | No | No |
-| field `beforeChange` | Yes | Yes | Yes |
-| field `afterRead` | Yes | No | No |
-| field `admin.hooks.onChange` | Yes | Yes | Yes |
-| field `admin.hooks.options` | Yes | No | No |
-
-If a hook family is not in the declarative subset, Cloud sync strips it.
-
-## What a declarative hook can see
-
-Cloud-safe hooks use the same expression model, but each surface gets a small, explicit context.
-
-### Collection and global `beforeRead`
-
-Use this when you want to reshape the query before the read runs.
-
-Available values:
-
-- `req`
-- `user`
-- `query`
-
-Example:
-
-```ts
-hooks: {
-  beforeRead: [
-    "user != null ? query : { status: { equals: 'published' } }",
-  ],
-}
-```
-
-### Collection and global `afterRead`
-
-Use this when the stored document is correct, but the returned document should be shaped differently.
-
-Available values:
-
-- `req`
-- `user`
-- `doc`
-
-Example:
-
-```ts
-hooks: {
-  afterRead: [
-    "user != null ? doc : { internalNotes: null }",
-  ],
-}
-```
-
-When the expression returns an object, Dyrected merges that object into the current document before continuing to the next hook.
-
-### Collection and global `beforeChange`
-
-Use this when you want to patch the incoming write payload before create or update.
-
-Available values:
-
-- `req`
-- `user`
-- `data`
-- `doc`
-- `operation`
-
-Example:
-
-```ts
-hooks: {
-  beforeChange: [
-    "{ slug: data.title }",
-  ],
-}
-```
-
-When the expression returns an object, Dyrected merges that object into the current `data` payload before passing it to the next hook.
-
-### Field `beforeChange`
-
-Use this when one field value should be transformed the same way on every write path, including nested `object`, `array`, and `blocks` fields.
-
-Available values:
-
-- `value`
-- `data`
-- `originalDoc`
-- `user`
-
-Example:
-
-```ts
-{
-  name: 'statusLabel',
-  type: 'text',
-  hooks: {
-    beforeChange: [
-      "value != null ? value + '!' : value",
-    ],
-  },
-}
-```
-
-### Field `admin.hooks.onChange`
-
-Use this when a form field should react to sibling values in the admin UI and you want that declarative behavior to survive schema sync.
-
-Available values:
-
-- `value`
-- `siblingData`
-- `data`
-
-Example:
-
-```ts
-{
-  name: 'slug',
-  type: 'text',
-  admin: {
-    hooks: {
-      onChange: "siblingData.title != null ? siblingData.title : value",
-    },
-  },
-}
-```
-
-This declarative form returns the next field value. It does not support imperative `setValue`.
-
-## What `sync:schema` preserves and strips
-
-When you run `npx dyrected sync:schema`, Dyrected intentionally sanitizes hook config for Cloud.
-
-It keeps:
-
-- supported declarative string hooks on collection/global `beforeRead`, `afterRead`, and `beforeChange`
-- supported declarative string hooks on field `beforeChange`
-- declarative string `field.admin.hooks.onChange`
-
-It strips:
-
-- function hooks on every hook surface
-- unsupported hook families such as `afterChange`, delete hooks, field `afterRead`, and `admin.hooks.options`
-
-If a mixed hook array contains both strings and functions, Cloud keeps the surviving string hooks in the same order and strips the function entries. If nothing survives, the hook key is omitted.
-
-The CLI warns with the exact schema path for every stripped hook entry.
-
-<Note>
-Dyrected also validates declarative hook expressions early. If a string hook uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
-</Note>
-
-## Why the unsupported hooks are still out of scope
-
-The unsupported hook families are the ones most likely to need capabilities that do not belong in synced schema data:
-
-- async work
-- external API calls
-- DB writes after persistence
-- secret-backed integrations
-- imperative admin behavior such as recomputing option lists
-
-That is why `afterChange`, delete hooks, `field.afterRead`, and `admin.hooks.options` remain function-only for now. They are better candidates for a later plugin or extension model than for serialized schema execution.
-
-## Practical rule of thumb
-
-- If the logic is a synchronous transform of `query`, `doc`, `data`, or `value`, the declarative string form is probably the right Cloud-safe choice.
-- If the logic needs side effects, async calls, imperative control flow, or writable server capabilities, keep it as a function hook and treat it as self-hosted-only for now.
-
-## Related pages
-
-- [Hooks overview](/docs/basics/hooks/overview) for the overall hook model.
-- [Collection hooks](/docs/basics/hooks/collections) for collection lifecycle guidance.
-- [Global hooks](/docs/basics/hooks/globals) for singleton lifecycle guidance.
-- [Field hooks](/docs/basics/hooks/fields) for field-level and admin hook behavior.
-- [CLI](/docs/basics/cli/overview) for `sync:schema` behavior.
-
----
-
 ## Collections
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/basics/hooks/collections
@@ -33662,8 +32807,7 @@ Before you ship, verify the basics:
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/common-patterns/access-control
 
-Use these patterns when your main concern is who should be allowed to read, create, update, or delete content. They help you move from broad permissions toward rules that match how real teams and users work.
-
+Use these patterns when your main concern is who should be allowed to read, create, update, or delete content. They help you move from broad permissions toward rules that match how real teams and users work.In self-hosted Dyrected, these patterns can use the full application runtime: collection auth, function access rules, function hooks, local policies, and tenant logic that belongs inside your server boundary.
 ## Limit documents to their owner
 
 **Problem:** signed-in users should only see or manage the records they own.
@@ -34227,8 +33371,7 @@ Reach for custom component registration only when you specifically need to plug 
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/common-patterns/data-lifecycle
 
-Use these patterns when the hard part is not the initial schema, but keeping data safe and predictable as editors create, update, and evolve content. They help protect URL structure, catch invalid changes, and handle schema evolution more carefully.
-
+Use these patterns when the hard part is not the initial schema, but keeping data safe and predictable as editors create, update, and evolve content. They help protect URL structure, catch invalid changes, and handle schema evolution more carefully.For self-hosted Dyrected, lifecycle patterns can use your application runtime directly. That is the right fit for function hooks, database migrations, transaction-aware changes, and side effects that must run inside your server.
 ## Generate a slug from a title
 
 **Problem:** you want readable URLs, but you do not want editors hand-authoring slugs for every document.
@@ -34298,8 +33441,7 @@ Read the full docs:
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/common-patterns/integrations
 
-Use these patterns when the content model depends on a supporting capability outside ordinary text and relationships. These are usually the patterns that connect your content schema to media handling, storage, or other infrastructure-backed features.
-
+Use these patterns when the content model depends on a supporting capability outside ordinary text and relationships. These are usually the patterns that connect your content schema to media handling, storage, or other infrastructure-backed features.In self-hosted Dyrected, your app owns storage and image-processing infrastructure. Use these patterns with the storage adapter, bucket, and deployment model your runtime controls.
 ## Create a media upload collection
 
 **Problem:** editors need a proper place to upload and manage files instead of scattering media fields across unrelated documents.
@@ -34354,6 +33496,8 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/common-patte
 
 Common patterns are the problem-first layer of the docs. They are here to help when you know what you are trying to solve, but you do not yet know which Dyrected feature or page to reach for.
 
+Some patterns are Cloud-safe as written. Others need self-hosted Dyrected because they run arbitrary server code, own application-user auth, or depend on local infrastructure. When that matters, the pattern page calls it out before the example.
+
 These pages stay intentionally short. Each pattern gives you:
 
 - the problem it helps solve
@@ -34398,8 +33542,7 @@ Patterns that connect content structure to supporting capabilities such as uploa
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/common-patterns/workflows
 
-Use these patterns when content needs more than simple CRUD. Workflows help when a document should move through a defined editorial process, with clear transitions and role-aware control over who can change its public state.
-
+Use these patterns when content needs more than simple CRUD. Workflows help when a document should move through a defined editorial process, with clear transitions and role-aware control over who can change its public state.In self-hosted Dyrected, workflow changes can also feed local lifecycle handlers and server-side integrations because the CMS runs inside your application runtime.
 ## Add draft, review, and publishing states
 
 **Problem:** editors need to work on content privately, send it for review, and only publish it when the right person approves.
@@ -34472,6 +33615,10 @@ This section is intentionally a placeholder for now.
 
 Dyrected's ecommerce story needs a clearer public teaching path before these pages should ship in the main navigation. Instead of sending readers into empty or incomplete docs, this landing page explains the gap and keeps the unfinished child pages out of the production sidebar.
 
+For Cloud, ecommerce docs should focus on catalog content, media, merchandising, landing pages, and editorial workflow. Checkout, payments, carts, orders, and customer accounts stay in the commerce app or commerce platform.
+
+For self-hosted Dyrected, future ecommerce docs may cover deeper backend behavior once the public package surface and recommended architecture are verified.
+
 ## What this section is expected to cover
 
 When this section is ready, it should teach:
@@ -34505,8 +33652,7 @@ Each ecommerce page should be published only after the public package behavior, 
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/examples/booking
 
-This example is planned for teams building a service-booking, appointment, or reservation flow where content and operational rules need to stay predictable. It is meant to show how Dyrected can support the editable side of the experience without turning business logic into fragile CMS configuration.
-
+This example is planned for teams building a service-booking, appointment, or reservation flow where content and operational rules need to stay predictable. It is meant to show how Dyrected can support the editable side of the experience without turning business logic into fragile CMS configuration.For self-hosted Dyrected, the example can include application-user auth, local validation hooks, transaction-aware scheduling behavior, and integrations that need to run in your backend.
 The implementation is still coming soon, so this page points you to the core patterns worth learning now.
 
 ## Example status
@@ -34546,8 +33692,7 @@ Because the full example is still in progress, treat this as the planned coverag
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/examples/ecommerce
 
-This example is planned as the closest Dyrected reference for teams building a storefront, catalog, or merchandised content experience. It is meant to cover the content structures that usually sit behind product pages, category pages, promotional content, and media-heavy landing pages.
-
+This example is planned as the closest Dyrected reference for teams building a storefront, catalog, or merchandised content experience. It is meant to cover the content structures that usually sit behind product pages, category pages, promotional content, and media-heavy landing pages.For self-hosted Dyrected, this example can grow into a fuller commerce backend story because the CMS can run inside the same application runtime as custom endpoints, function hooks, database behavior, and server-side integrations.
 The full example is still coming soon, so use this page as a guide to the patterns that matter most while the repository work catches up.
 
 ## Example status
@@ -34632,6 +33777,8 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/examples/ove
 
 Examples are where Dyrected will show complete application shapes, not just isolated API features. The goal is to make it easier to answer a practical question: *which example is closest to what I am building?*
 
+The examples are still careful about runtime boundaries. Cloud examples should show Dyrected as the managed content backend around an app. Self-hosted examples can show Dyrected inside the app backend when the CMS needs to own runtime behavior.
+
 This section is intentionally light for now. The full example repositories are still coming together, so these pages focus on two things:
 
 - what each example app is meant to demonstrate
@@ -34702,8 +33849,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/integrations
 
 `@dyrected/next` is the recommended integration for Next.js App Router projects. It is the package to reach for when the Dyrected backend should live inside your Next app, or when a Next frontend wants the most convenient first-party wrapper around a running Dyrected API.
 
-By the end of this page, you should know the recommended mounting pattern, how to embed the admin, and where the Next package fits relative to the SDK and React layer.
-
+By the end of this page, you should know the recommended mounting pattern, how to embed the admin, and where the Next package fits relative to the SDK and React layer.For self-hosted Next.js projects, the route handler and embedded admin sections show how to run Dyrected inside the same Next application runtime.
 ## What `@dyrected/next` adds
 
 `@dyrected/next` bundles the Next-specific pieces together:
@@ -34897,8 +34043,7 @@ Canonical URL: https://docs.dyrected.com/docs/self-hosted/ecosystem/integrations
 - mount a self-hosted Dyrected backend inside the Nuxt app
 - act as the Nuxt-side client integration for a remote Dyrected API
 
-That is why this package is usually the right starting point for Nuxt instead of wiring `@dyrected/vue` and `@dyrected/sdk` manually.
-
+That is why this package is usually the right starting point for Nuxt instead of wiring `@dyrected/vue` and `@dyrected/sdk` manually.For self-hosted Nuxt projects, the server-handler sections show how to run Dyrected inside the same Nuxt application runtime.
 ## What the module gives you
 
 The Nuxt module adds the framework glue for you:
@@ -43476,142 +42621,6 @@ You are done here when:
 
 ---
 
-## Setting Up Your Cloud Site
-
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/quick-start-guides/coding-agents-and-ai-app-builders/setting-up-your-cloud-site
-
-Use this page when you want Dyrected Cloud to handle the backend for a site you already built with a coding agent or AI app builder. By the end, you should have one Dyrected site, the three values your integration needs, and a clear decision about whether editors will use the hosted admin or your own `/admin` route.
-
-Dyrected Cloud answers one setup question: where the CMS backend runs. It does not replace your existing frontend, and it does not force you to move the admin to a different domain unless you want to.
-
-## What a Cloud site gives you
-
-When you create a site in Dyrected Cloud, Dyrected hosts the content API, database, storage, and admin authentication for that site.
-
-That is the recommended path when:
-
-- your frontend already exists
-- you want the shortest route to a working editor
-- you do not want to provision your own database or storage first
-- you are connecting Dyrected through an AI builder workflow
-
-If you want Dyrected fully self-hosted inside your Next.js or Nuxt app instead, start with [Installation](/docs/basics/getting-started/installation).
-
-## Before you start
-
-Have these ready before you connect anything:
-
-- the website project open in the AI builder or code editor that owns the code
-- a Dyrected account
-- a clear idea of which website this site belongs to
-
-You do not need to model the schema yet. The prompt-guided flow handles that later.
-
-## Create the site
-
-Go to [app.dyrected.com](https://app.dyrected.com) and create a new site.
-
-As soon as the site exists, keep the setup area open. That is where you can copy the guided prompt and confirm the connection details for this site.
-
-<Note>
-Screenshot placeholder: Dyrected Cloud setup screen showing the prompt entry point right after site creation.
-</Note>
-
-## Collect the three values the integration needs
-
-Every Cloud-backed setup depends on the same three values:
-
-- `Site ID`
-- `Site API key`
-- `Base URL`
-
-These values identify the Cloud site and tell the app where to send content requests.
-
-Create and manage the site in `app.dyrected.com`. That hosted dashboard is the control surface. The `Base URL` is the backend URL your frontend or embedded admin uses when it sends requests to that Dyrected site.
-
-The easiest path is to copy the setup prompt from Dyrected and let it ask for these values at the right stage. If you are connecting things manually, keep them nearby before you continue.
-
-<Note>
-Screenshot placeholder: site settings area showing where `Site ID`, `Site API key`, and `Base URL` are surfaced.
-</Note>
-
-## What gets written to environment variables
-
-The exact variable names depend on how you are connecting the site.
-
-If you run `npx dyrected init` in a self-hosted Next.js or Nuxt project, the current CLI writes these Cloud variables into `.env.example`:
-
-- `DYRECTED_URL`
-- `DYRECTED_API_KEY`
-- `DYRECTED_SITE_ID`
-
-It also writes public frontend variables for local admin/API access:
-
-- Next.js: `NEXT_PUBLIC_DYRECTED_URL`, `NEXT_PUBLIC_DYRECTED_API_KEY`
-- Nuxt: `NUXT_PUBLIC_DYRECTED_URL`, `NUXT_PUBLIC_DYRECTED_API_KEY`
-
-If you are using the React or Vue setup that connects to Cloud directly, the current CLI writes:
-
-- `VITE_DYRECTED_URL`
-- `VITE_DYRECTED_API_KEY`
-- `VITE_DYRECTED_SITE_ID`
-
-That split matters. The runtime supports several environment-variable fallbacks, but this page only calls a variable CLI-generated when the current scaffold actually writes it.
-
-## Choose how editors will sign in
-
-Once the backend is on Dyrected Cloud, you still have two valid admin entry points.
-
-Both options use the same Dyrected Cloud backend. You are choosing where editors sign in, not where content is stored.
-
-### Hosted admin
-
-Choose the hosted admin when you want the fastest handoff and the lowest maintenance.
-
-Editors sign in on Dyrected's hosted dashboard. This is the simplest option when:
-
-- you want Dyrected to own the editor surface
-- you want Dyrected to handle admin updates
-- you do not need the editor UI under your own domain
-
-### Embedded admin
-
-Choose the embedded admin when you want editors to work inside your app, usually at `/admin`.
-
-This is the better fit when:
-
-- the client expects everything on the site's own domain
-- you want tighter brand or product control around the editor entry point
-- you are already mounting the admin through your app integration
-
-With this path, your app owns the admin route and update cadence, while Dyrected Cloud still owns the backend.
-
-## Recommended path
-
-For AI-built websites, the recommended order is:
-
-1. Create the Cloud site.
-2. Copy the Dyrected setup prompt.
-3. Paste it into the same AI builder that owns the website code.
-4. Review the editable-content checklist it sends back.
-5. Give it the `Site ID`, `Site API key`, and `Base URL` when it asks.
-6. Test one real content change before inviting editors.
-
-That flow is explained in [Using the Dyrected prompt](/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt).
-
-## Success check
-
-You are ready to move on when:
-
-- the site exists in Dyrected Cloud
-- you know whether the admin will be hosted or embedded
-- you have the `Site ID`, `Site API key`, and `Base URL`
-- the website project is open in the tool that will make the integration changes
-
-If those four things are true, continue to [Using the Dyrected prompt](/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt).
-
----
-
 ## Using the Dyrected prompt
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt
@@ -45190,57 +44199,6 @@ You are ready for the next step when:
 - you are no longer depending on manual admin entry just to prove the site works
 
 Once that is true, continue to [Displaying Content in Next.js](/docs/quick-start-guides/nextjs-quick-start/displaying-content-in-nextjs).
-
----
-
-## Setting Up Your Cloud Site
-
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/quick-start-guides/nextjs-quick-start/setting-up-your-cloud-site
-
-Use this page when you already know the Next.js project will use Dyrected Cloud and you want the short Cloud-specific prep before running the full install flow.
-
-By the end, you should have one Dyrected Cloud site, the three values the install needs, and a clear answer to one practical question: will editors use hosted admin or your own `/admin` route?
-
-## What this page is for
-
-The main Next.js setup page now covers both Cloud-backed and self-hosted installation in one place:
-
-- [Installing Dyrected](/docs/quick-start-guides/nextjs-quick-start/installing-dyrected)
-
-This page is only the Cloud-specific preflight for readers who already know they want Dyrected Cloud to host the backend.
-
-## What to prepare before install
-
-Create the site in [app.dyrected.com](https://app.dyrected.com), then keep these three values together:
-
-- `Site ID`
-- `Site API key`
-- `Base URL`
-
-Those are the values the Next.js install flow will need when you wire the generated environment variables.
-
-## Decide the editor entry point
-
-Once the backend is on Dyrected Cloud, you still choose where editors sign in:
-
-- **Hosted admin** if you want Dyrected to own the editor surface and update cadence
-- **Embedded admin** if editors should work in your Next.js app at a route like `/admin`
-
-Both options use the same Cloud backend.
-
-## Continue with the full setup
-
-Once you have the Cloud site and those three values, continue to [Installing Dyrected](/docs/quick-start-guides/nextjs-quick-start/installing-dyrected), which now covers the full Next.js setup flow.
-
-## Success check
-
-You are ready to continue when:
-
-- the site exists in Dyrected Cloud
-- you have the `Site ID`, `Site API key`, and `Base URL`
-- you know whether editors will use hosted admin or your own `/admin` route
-
-Once those are true, continue to [Installing Dyrected](/docs/quick-start-guides/nextjs-quick-start/installing-dyrected).
 
 ---
 

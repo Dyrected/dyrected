@@ -1,9 +1,98 @@
 ---
 title: Access Control
 description: Common Dyrected patterns for row-level access, role-based permissions, and deciding who can operate on which content.
+runtime: variant
+runtimeGroup: common-patterns-access-control
+runtimeNotes: Cloud access patterns should use Jexl strings, serializable policies, and Cloud workspace identity; self-hosted patterns may use function access, hooks, and application-user auth.
 ---
 
 Use these patterns when your main concern is who should be allowed to read, create, update, or delete content. They help you move from broad permissions toward rules that match how real teams and users work.
+
+<CloudOnly>
+
+In Cloud, keep access rules serializable. Use Jexl strings, boolean rules, and named policies that can sync to the hosted content backend. If a recipe stamps ownership with a function hook or depends on app-user accounts, treat that exact implementation as self-hosted and adapt the Cloud version to the Cloud-safe access-control pages.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+In self-hosted Dyrected, these patterns can use the full application runtime: collection auth, function access rules, function hooks, local policies, and tenant logic that belongs inside your server boundary.
+
+</SelfHostedOnly>
+
+<CloudOnly>
+
+## Cloud-safe access patterns
+
+Use these patterns when Dyrected Cloud owns the content backend and your application still owns product-specific customer behavior.
+
+### Publish public content, keep drafts private
+
+Use a Jexl ternary when anonymous readers should see only published entries, while signed-in editors can see draft and review content:
+
+```ts
+access: {
+  read: "user != null ? true : { status: { equals: 'published' } }",
+}
+```
+
+This is the safest Cloud default for blogs, guides, marketing pages, catalogs, and documentation content.
+
+### Let editors write content
+
+Use role checks or the built-in `hasRole` policy when content operations follow an editor/admin model:
+
+```ts
+access: {
+  create: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  update: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  delete: { policy: 'hasRole', params: { role: 'admin' } },
+}
+```
+
+Use the equivalent Jexl string when the same rule should also drive field behavior in the admin form:
+
+```ts
+access: {
+  update: "'admin' in user.roles || 'editor' in user.roles",
+}
+```
+
+### Scope records to an owner
+
+Use `isOwner`, `createdByCurrentUser`, or a Jexl filter when a content record belongs to a specific user-like field:
+
+```ts
+access: {
+  read: { policy: 'isOwner', params: { field: 'ownerId' } },
+  update: { policy: 'isOwner', params: { field: 'ownerId' } },
+}
+```
+
+For the difference between creator, owner, and self rules, see [Dyrected Cloud access control](/docs/basics/access-control/cloud#createdbycurrentuser-vs-isowner).
+
+### Scope records to a workspace
+
+Use `isTenantMember` when content should stay inside a workspace, site, or tenant boundary:
+
+```ts
+access: {
+  read: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+  update: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+}
+```
+
+Keep checkout, billing, customer accounts, and product-specific authorization in your application backend. Cloud access rules should protect the content data Dyrected manages.
+
+Read the full docs:
+
+- [Dyrected Cloud access control](/docs/basics/access-control/cloud)
+- [Collection access control](/docs/basics/access-control/collections)
+- [Field access control](/docs/basics/access-control/fields)
+
+</CloudOnly>
+
+<SelfHostedOnly>
 
 ## Limit documents to their owner
 
@@ -64,3 +153,5 @@ Read the full docs:
 
 - [Collection access control](/docs/basics/access-control/collections)
 - [Authentication overview](/docs/features/authentication/overview)
+
+</SelfHostedOnly>

@@ -1,9 +1,24 @@
 ---
 title: Booking
 description: A coming-soon booking example focused on scheduling-friendly content models, validation, permissions, and editor-managed service flows.
+runtime: variant
+runtimeGroup: example-booking
+runtimeNotes: Cloud booking copy should focus on editable service content and rules; self-hosted may own scheduling transactions, app-user auth, and operational backend logic.
 ---
 
 This example is planned for teams building a service-booking, appointment, or reservation flow where content and operational rules need to stay predictable. It is meant to show how Dyrected can support the editable side of the experience without turning business logic into fragile CMS configuration.
+
+<CloudOnly>
+
+For Cloud, keep the boundary clear: Dyrected can manage editable service content, supporting media, and content rules. Your booking app should still own real-time availability, customer login, payments, reminders, and transactional scheduling logic.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Dyrected, the example can include application-user auth, local validation hooks, transaction-aware scheduling behavior, and integrations that need to run in your backend.
+
+</SelfHostedOnly>
 
 The implementation is still coming soon, so this page points you to the core patterns worth learning now.
 

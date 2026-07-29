@@ -1,9 +1,24 @@
 ---
 title: Data Lifecycle
 description: Common Dyrected patterns for slugs, validation, and schema changes that need to stay safe as content changes over time.
+runtime: variant
+runtimeGroup: common-patterns-data-lifecycle
+runtimeNotes: Cloud-safe lifecycle behavior must use serializable Jexl-style rules; self-hosted can use function hooks, migrations, and database-local behavior.
 ---
 
 Use these patterns when the hard part is not the initial schema, but keeping data safe and predictable as editors create, update, and evolve content. They help protect URL structure, catch invalid changes, and handle schema evolution more carefully.
+
+<CloudOnly>
+
+For Cloud, prefer lifecycle patterns that can be expressed as schema data: Jexl-style hooks, access rules, field defaults, and content modeling choices. Function hooks, database migrations, and arbitrary after-save side effects belong in self-hosted Dyrected unless a Cloud-specific surface says otherwise.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Dyrected, lifecycle patterns can use your application runtime directly. That is the right fit for function hooks, database migrations, transaction-aware changes, and side effects that must run inside your server.
+
+</SelfHostedOnly>
 
 ## Generate a slug from a title
 

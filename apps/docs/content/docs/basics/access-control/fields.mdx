@@ -1,6 +1,9 @@
 ---
 title: Fields
 description: Control whether individual fields can be read or written — enforced on the API and reflected in the admin panel.
+runtime: variant
+runtimeGroup: access-control-fields
+runtimeNotes: Field access applies in both runtimes; Cloud and admin reactivity should use Jexl strings, false, or string-backed named policies.
 ---
 
 Field access control lets you protect a single field instead of the whole document. You can hide an internal note from everyone except admins, or make a slug editable only while a document is being created. You set this with `read` and `update` rules on a field's `access` key.
@@ -11,6 +14,18 @@ Field rules are enforced in two places at once:
 - **In the admin panel** — the same rules hide a read-denied field and render a write-denied field read-only.
 
 So field access is a real server-side boundary, not just a display hint. Read the [Access Control overview](/docs/basics/access-control/overview) for the shared model, then use this page for the field-specific behavior.
+
+<CloudOnly>
+
+For Cloud, prefer Jexl strings, `false`, and string-backed named policies. Those shapes can be enforced by the hosted backend and reflected in the admin form after schema sync.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Dyrected, field access can also use function rules when a field decision needs local runtime code. Use Jexl strings when the same behavior should stay visible in the admin form.
+
+</SelfHostedOnly>
 
 ## The shape
 
@@ -29,9 +44,21 @@ Add an `access` object with `read`, `create`, and/or `update` to any field. Use 
 
 Omit a rule (or set it to `true`) to leave the field fully available.
 
+<CloudOnly>
+
+<Note>
+For Cloud field rules, use Jexl strings, `false`, or string-based named policies. Those shapes can sync to the hosted backend and stay visible to the admin form.
+</Note>
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
 <Note>
 Field rules also accept functions and named policies. **Functions** (and function-based policies) run on the **server only** — the admin panel cannot execute them, so it will not hide or lock the field based on one. **Jexl strings**, `false`, and **string-based named policies** are enforced in both places: the server evaluates them, and the admin inlines them into the form. For a field rule that should behave the same in the form and on the API, use a Jexl string, a string named policy, or `false`.
 </Note>
+
+</SelfHostedOnly>
 
 ## What each rule does
 

@@ -1,11 +1,26 @@
 ---
 title: Next.js
 description: Use Dyrected inside a Next.js App Router project with the self-hosted route handler, admin wrapper, and Next-aware client utilities.
+runtime: variant
+runtimeGroup: integration-nextjs
+runtimeNotes: Next.js can host self-hosted Dyrected or consume a Cloud/remote Dyrected API; self-hosted route-handler sections apply only when the backend lives inside Next.
 ---
 
 `@dyrected/next` is the recommended integration for Next.js App Router projects. It is the package to reach for when the Dyrected backend should live inside your Next app, or when a Next frontend wants the most convenient first-party wrapper around a running Dyrected API.
 
 By the end of this page, you should know the recommended mounting pattern, how to embed the admin, and where the Next package fits relative to the SDK and React layer.
+
+<CloudOnly>
+
+For Cloud-backed Next.js projects, treat this page as the framework integration layer around a remote Dyrected API. Dyrected Cloud owns the content backend; your Next app owns rendering, routes, customer auth, and product behavior.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Next.js projects, the route handler and embedded admin sections show how to run Dyrected inside the same Next application runtime.
+
+</SelfHostedOnly>
 
 ## What `@dyrected/next` adds
 

@@ -1,5 +1,6 @@
 {
   "title": "Access Control",
+  "runtimePolicy": "explicit-per-page",
   "pages": [
     "overview",
     "cloud",

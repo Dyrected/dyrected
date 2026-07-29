@@ -1,11 +1,26 @@
 ---
 title: Collections
 description: Read, create, update, and delete rules that decide who can touch a collection's documents.
+runtime: variant
+runtimeGroup: access-control-collections
+runtimeNotes: Collection access applies in both runtimes; Cloud examples should favor Jexl strings and serializable policies, while self-hosted may use function rules.
 ---
 
 Collection access control is where you lock down a collection's data. You attach up to four rules — one per operation — to the `access` key of a collection, and Dyrected runs the matching rule on the server before every request.
 
 Read the [Access Control overview](/docs/basics/access-control/overview) first for the shared model — the four rule shapes, the context a rule receives, and the allow / deny / filter result. This page focuses on the four collection operations and how to use them in real projects.
+
+<CloudOnly>
+
+For Cloud-backed collections, keep rules portable: booleans, Jexl strings, or named policies backed by serializable policy values. If an example uses a function rule, convert it before relying on it in Cloud.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted collections, function rules are available because Dyrected runs inside your application backend. Use them when access depends on local services, database-specific checks, or application-user behavior that cannot be represented as a Jexl expression.
+
+</SelfHostedOnly>
 
 ## The shape
 
@@ -116,7 +131,26 @@ That is enough for both broad role checks and document-aware rules.
 
 ## Document-aware rules
 
-For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean. Any of the rule shapes can do this: a function, a named policy, or a Jexl string that evaluates to an object.
+For ownership or tenant scoping — "users only see their own orders," "editors only touch their team's posts" — return a `where`-style **object** instead of a boolean.
+
+<CloudOnly>
+
+In Cloud, use a Jexl string or a Cloud-backed named policy for document-aware rules.
+
+```ts
+access: {
+  // A user can only read and modify documents they own
+  read: "{ author: { equals: user.sub } }",
+  update: "{ author: { equals: user.sub } }",
+  delete: "{ author: { equals: user.sub } }",
+}
+```
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+Any of the rule shapes can do this: a function, a named policy, or a Jexl string that evaluates to an object.
 
 <Tabs items={['Jexl string', 'Function']}>
 <Tab value="Jexl string">
@@ -145,12 +179,26 @@ access: {
 </Tab>
 </Tabs>
 
+</SelfHostedOnly>
+
 Dyrected applies the returned filter differently per operation:
 
 - **List** — merges the filter into the query, so the response only contains matching documents.
 - **Fetch one, update, delete** — checks whether the target document matches the filter; if it does not, the request is denied with `403`.
 
-Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean:
+Keep `create` rules boolean — there is no existing document to match a filter against, so a `create` rule that returns an object is treated as a denial. To gate creation on the incoming payload, read `data` and return a boolean.
+
+<CloudOnly>
+
+```ts
+access: {
+  create: "'editor' in user.roles && data.status != 'published'",
+}
+```
+
+</CloudOnly>
+
+<SelfHostedOnly>
 
 <Tabs items={['Jexl string', 'Function']}>
 <Tab value="Jexl string">
@@ -173,6 +221,8 @@ access: {
 
 </Tab>
 </Tabs>
+
+</SelfHostedOnly>
 
 ## Audit log access
 
@@ -263,6 +313,28 @@ export const Articles = defineCollection({
 
 Each user only sees and edits their own documents; admins are not special-cased here, so add a role check if they need to see everything.
 
+<CloudOnly>
+
+```ts
+export const Orders = defineCollection({
+  slug: 'orders',
+  access: {
+    read: "{ customer: { equals: user.sub } }",
+    create: 'user != null',
+    update: "{ customer: { equals: user.sub } }",
+    delete: "{ customer: { equals: user.sub } }",
+  },
+  fields: [
+    { name: 'customer', label: 'Customer', type: 'text' },
+    { name: 'total', label: 'Total', type: 'number' },
+  ],
+})
+```
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
 ```ts
 export const Orders = defineCollection({
   slug: 'orders',
@@ -278,6 +350,8 @@ export const Orders = defineCollection({
   ],
 })
 ```
+
+</SelfHostedOnly>
 
 </Tab>
 <Tab value="Published or draft">

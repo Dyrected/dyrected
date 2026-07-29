@@ -1,9 +1,24 @@
 ---
 title: Workflows
 description: Common Dyrected patterns for draft, review, and publishing flows when content should move through named states before it goes live.
+runtime: variant
+runtimeGroup: common-patterns-workflows
+runtimeNotes: Editorial workflow states are shared; Cloud content events/webhooks are coming soon while self-hosted can use current handlers and dispatcher behavior.
 ---
 
 Use these patterns when content needs more than simple CRUD. Workflows help when a document should move through a defined editorial process, with clear transitions and role-aware control over who can change its public state.
+
+<CloudOnly>
+
+In Cloud, use workflows for editorial states, review, publishing, and preview. Cloud content events and webhooks are still coming soon, so do not rely on Cloud to run arbitrary workflow handler code yet.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+In self-hosted Dyrected, workflow changes can also feed local lifecycle handlers and server-side integrations because the CMS runs inside your application runtime.
+
+</SelfHostedOnly>
 
 ## Add draft, review, and publishing states
 

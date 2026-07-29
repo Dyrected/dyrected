@@ -1,11 +1,26 @@
 ---
 title: Overview
 description: How Dyrected decides who can read and write your data — the rules you attach to collections, globals, and fields.
+runtime: variant
+runtimeGroup: access-control-overview
+runtimeNotes: Cloud access rules must be serializable Jexl strings, booleans, or synced policies; self-hosted can run function rules and function policies.
 ---
 
 Access control is how you decide who can do what with your data. In Dyrected you write that as small rules attached directly to a collection, a global, or a field. There is no separate permissions table and no global role registry to keep in sync — the rule lives next to the thing it protects, and Dyrected runs it on the server for every request.
 
 This page is the model: what a rule is, the shapes it can take, when it runs, and what it can see. The pages that follow show where to put rules for [collections](/docs/basics/access-control/collections), [globals](/docs/basics/access-control/globals), and [fields](/docs/basics/access-control/fields). If you are deploying to Dyrected Cloud, also read [Dyrected Cloud access control](/docs/basics/access-control/cloud) for the Cloud-specific policy limits and built-in policy names.
+
+<CloudOnly>
+
+In Cloud, treat access rules as content rules that must sync to the hosted content backend. Use booleans, Jexl strings, and serializable named policies. Function rules are self-hosted-only because Cloud does not run arbitrary application code from your schema.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+In self-hosted Dyrected, access rules run inside your application backend. Use Jexl strings when they are enough, and use function rules or function policies when the decision needs your server runtime, database boundary, or application-user model.
+
+</SelfHostedOnly>
 
 ## The mental model
 
@@ -23,7 +38,33 @@ A denied request always comes back in the same shape, so your frontend can detec
 
 Because the check runs before the database call, a denied read never loads the document and a denied write never persists anything.
 
-## The four rule shapes
+## The rule shapes
+
+<CloudOnly>
+
+In Cloud, every access rule you sync should be serializable. That means booleans, Jexl strings, or named policies backed by Cloud built-ins, string policies, or boolean policies.
+
+```ts
+access: {
+  read: true,                         // 1. boolean
+  create: "'admin' in user.roles",    // 2. Jexl string
+  delete: { policy: 'isAdmin' },      // 3. named policy
+}
+```
+
+Pick the shape by how much the rule needs to express:
+
+| Shape | Reach for it when | Runs on |
+|---|---|---|
+| **Boolean** | The answer never changes — always open or always closed. | Cloud backend |
+| **Jexl string** | A serializable check like a role test or field comparison. | Cloud backend |
+| **Named policy** | You want a reusable rule and the policy is a Cloud built-in, string policy, or boolean policy. | Cloud backend |
+
+Booleans and Jexl strings cover most Cloud rules. Reach for named policies when the same rule repeats or the policy name makes the intent clearer.
+
+</CloudOnly>
+
+<SelfHostedOnly>
 
 Every access rule can be written in one of four ways. They all produce the same allow / deny / filter result, so you can mix them freely across a project — and even across operations on the same collection.
 
@@ -44,9 +85,11 @@ Pick the shape by what the rule needs to do and where it needs to run:
 | **Boolean** | The answer never changes — always open or always closed. | — |
 | **Jexl string** | A serializable check like a role test or field comparison. Safe to sync to Dyrected Cloud. | Server |
 | **Function** | You need full server logic — async lookups, complex conditions, computed filters. | Self-hosted server only |
-| **Named policy** | You want a reusable rule you can name once and reference everywhere. Serializable, so it works with Cloud. | Server |
+| **Named policy** | You want a reusable rule you can name once and reference everywhere. Serializable policies work with Cloud; function policies stay self-hosted. | Server |
 
 Booleans and Jexl strings cover most day-to-day rules. Reach for functions when a self-hosted app needs real logic, and named policies when you catch yourself repeating the same rule.
+
+</SelfHostedOnly>
 
 ### Jexl strings
 
@@ -84,6 +127,8 @@ access: {
 
 For the complete expression syntax, see the [Jexl reference](https://github.com/TomFrost/Jexl).
 
+<SelfHostedOnly>
+
 ### Functions
 
 A function gives you the full server runtime, including `async` work. It receives the same context as every other rule and can return a boolean or a filter object:
@@ -105,9 +150,75 @@ Functions run only in your self-hosted server — they are **not** synced to Dyr
 Dyrected also validates declarative access expressions early. If a Jexl rule or string-based policy uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
 </Note>
 
+</SelfHostedOnly>
+
 ### Named policies
 
-When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name. In self-hosted Dyrected, that policy lives on your server config. In Dyrected Cloud, **string** and **boolean** policies sync as part of the site schema, while **function** policies do not:
+When the same rule shows up on several collections, define it once under `accessPolicies` and reference it by name.
+
+<CloudOnly>
+
+In Dyrected Cloud, string and boolean policies sync as part of the site schema. Cloud also provides built-in policies such as `isAuthenticated`, `hasRole`, `isOwner`, and `createdByCurrentUser`.
+
+```ts
+export default defineConfig({
+  accessPolicies: {
+    isAdmin: "'admin' in user.roles",
+  },
+  collections: [
+    defineCollection({
+      slug: 'posts',
+      access: {
+        create: { policy: 'isAdmin' },
+        delete: { policy: 'isAdmin' },
+      },
+      fields: [{ name: 'title', label: 'Title', type: 'text' }],
+    }),
+  ],
+  globals: [],
+})
+```
+
+String policies are inlined when the schema is sent to the admin panel, so a field or collection rule that references one stays reactive in the edit form, exactly like an inline Jexl rule.
+
+If you need a policy with parameters, use one of the Cloud built-ins. For the current built-in policy list and common parameters, see [Dyrected Cloud access control](/docs/basics/access-control/cloud#built-in-named-policies-in-dyrected-cloud).
+
+### The same rule, two Cloud-safe ways
+
+These rules are equivalent — each one says "a user can only touch their own documents." The result is identical; the shapes differ in how reusable they are.
+
+<Tabs items={['Jexl string', 'Named policy']}>
+<Tab value="Jexl string">
+
+Serializable and Cloud-safe — a good default.
+
+```ts
+access: {
+  read: "{ owner: { equals: user.sub } }",
+}
+```
+
+</Tab>
+<Tab value="Named policy">
+
+Defined once, referenced everywhere. A string policy is inlined for the admin panel and can sync to Cloud.
+
+```ts
+// defineConfig({ accessPolicies: { ownDocs: "{ owner: { equals: user.sub } }" } })
+
+access: {
+  read: { policy: 'ownDocs' },
+}
+```
+
+</Tab>
+</Tabs>
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+In self-hosted Dyrected, that policy lives on your server config. String and boolean policies are portable, while function policies can use your application server.
 
 ```ts
 export default defineConfig({
@@ -214,6 +325,8 @@ access: {
 <Note>
 Function rules run only in a **self-hosted** app, where your own server executes your config. They are never sent to Dyrected Cloud — `sync-schema` strips them and warns you. For a Cloud-hosted backend, use a Jexl string or a **string/boolean named policy** instead.
 </Note>
+
+</SelfHostedOnly>
 
 ## What a rule can see
 
