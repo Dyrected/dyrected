@@ -1,0 +1,66 @@
+---
+title: Spreadsheet View
+description: Switch any collection list into a grid and edit many records inline — no opening one edit form at a time.
+---
+
+Some edits don't need a full form. Fixing a dozen prices, flipping a "featured" flag across several posts, filling in a missing field on many records — that's spreadsheet work, and the collection list can become a spreadsheet for exactly this. Spreadsheet View turns the list into an editable grid where you change values in place and save them all at once.
+
+By the end of this page you should know how to switch into the grid, how different field types behave when you edit them, and how pending changes are saved or discarded.
+
+## Two views of the same list
+
+Every collection list has two layout modes. The default **List View** is for browsing and filtering (see [The Collection List](/docs/editor-experience/list-view)); **Spreadsheet View** is for bulk editing. Open the **View** button in the top-right of any list and choose **Spreadsheet** under Layout Mode.
+
+The choice is saved per editor and per collection, so switching is non-destructive — an editor can flip to the grid, make changes, and flip back. The grid shows the collection's fields in definition order, respecting the same column visibility and ordering as List View.
+
+## Editing cells
+
+How a cell commits depends on its field type. Simple values edit inline; richer values open a small popover anchored to the cell.
+
+**Inline fields** — edited directly in the cell:
+
+| Field type | Behavior |
+|---|---|
+| `text`, `email`, `url` | Click and type. Commits when you leave the cell. |
+| `number` | Click and type. Commits when you leave the cell. |
+| `boolean` | Click the checkbox to toggle. Commits immediately. |
+| `date`, `datetime`, `time` | Click to open the picker inline. Commits on change. |
+
+**Popover fields** — clicking opens an anchored editor; `Escape` discards and closes:
+
+| Field type | Popover |
+|---|---|
+| `textarea`, `json` | Editor that commits when you click outside. |
+| `select`, `radio` | Option list; commits on selection. |
+| `multiSelect` | Checkable options; each toggle commits. |
+| `relationship`, `image`, `icon` | The same picker as the edit form; commits on selection. |
+| `object` | Inline sub-form using the normal field components; commits on blur. |
+| `array` | Per-item sub-form with Add/Remove; commits on blur. |
+
+**Rich text** opens a slide-out panel with the full editor; changes commit when you close it.
+
+`blocks` fields can't be edited in the grid — their structure doesn't collapse into a cell, so open the document's edit form for those. Fields marked `admin.hidden: true` are excluded, and `admin.readOnly: true` fields show but can't be edited — the same rules as the main form.
+
+## Saving and discarding
+
+Edits are held locally until you commit them, so you can make a batch of changes and review before saving. When anything is pending, a bar appears at the bottom of the grid with a count of modified and new records:
+
+- **Save Changes** sends every pending update and new row to the API together, then clears the pending state.
+- **Discard** reverts all unsaved changes, including any rows you added.
+
+<Callout type="warn">
+  Leaving the page while changes are pending does **not** warn you — unlike the single edit form. Save before you
+  navigate away, or your pending grid edits are lost.
+</Callout>
+
+## Adding rows
+
+Click **+ Add row** at the bottom of the grid to append an empty record. New rows count toward the pending-changes total and are created through the collection's normal `create` endpoint when you save — so access control and validation apply exactly as they would in the edit form.
+
+## Keyboard navigation
+
+The grid supports the spreadsheet keys you'd expect — `Tab`/`Shift+Tab` to move between cells, `Enter` to confirm and move down, `Escape` to cancel, arrow keys to navigate, `Delete`/`Backspace` to clear a cell, and `Ctrl/Cmd+C` / `Ctrl/Cmd+V` to copy and paste cell values.
+
+## Recommended path
+
+Reach for Spreadsheet View when you're changing the same few fields across many records and don't need the full form. Make your edits, glance at the pending-changes bar, and **Save Changes** in one go. For pulling data in or out of the collection rather than editing in place, use [CSV Import & Export](/docs/editor-experience/csv-import-export).

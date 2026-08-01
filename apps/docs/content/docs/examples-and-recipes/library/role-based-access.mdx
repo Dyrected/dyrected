@@ -1,0 +1,49 @@
+---
+title: Restrict content operations by user role
+description: Allow public reads, editor writes, and administrator deletion with collection access rules.
+runtime: self-hosted
+runtimeGroup: recipe-role-based-access
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Allow public reads, editor writes, and administrator deletion with collection access rules.
+
+## Use this when
+
+- only editors can update content
+- restrict deletion to admins
+- make content publicly readable
+- add role based access
+
+## Dyrected concepts
+
+`access`, `AuthenticatedUser`, `roles`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Articles = defineCollection({
+  slug: "articles",
+  access: {
+    read: () => true,
+    create: ({ user }) => user?.roles?.some((role) => role === "editor" || role === "admin") ?? false,
+    update: ({ user }) => user?.roles?.some((role) => role === "editor" || role === "admin") ?? false,
+    delete: ({ user }) => user?.roles?.includes("admin") ?? false,
+  },
+  fields: [defineTextField({ name: "title", label: "Title", required: true })],
+});
+```
+{/* GENERATED:RECIPE:END */}

@@ -15,9 +15,9 @@
   ],
   "concepts": ["beforeChange", "validation", "throw to abort"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/data-lifecycle",
-    "/docs/basics/hooks/collections",
-    "/docs/basics/fields/datetime"
+    "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+    "/docs/deployment-and-operations/server-runtime/hooks/collections",
+    "/docs/model-content/fields/datetime"
   ],
   "requires": []
 }

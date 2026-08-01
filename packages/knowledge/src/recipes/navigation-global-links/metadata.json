@@ -15,10 +15,10 @@
   ],
   "concepts": ["defineGlobal", "array", "url"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/content-modeling",
-    "/docs/basics/configuration/globals",
-    "/docs/basics/fields/array",
-    "/docs/basics/fields/url"
+    "/docs/examples-and-recipes/application-patterns/content-modeling",
+    "/docs/model-content/configuration/globals",
+    "/docs/model-content/fields/array",
+    "/docs/model-content/fields/url"
   ],
   "requires": []
 }

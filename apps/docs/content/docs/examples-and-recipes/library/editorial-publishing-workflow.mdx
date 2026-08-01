@@ -1,0 +1,47 @@
+---
+title: Add draft, review, and publishing states
+description: Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
+runtime: shared
+runtimeGroup: recipe-editorial-publishing-workflow
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.
+
+## Use this when
+
+- add draft and publish states
+- require review before publishing
+- create an editorial workflow
+- let editors submit content for approval
+
+## Dyrected concepts
+
+`publishingWorkflow`, `workflow transitions`, `capabilities`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineRichTextField, defineTextField, publishingWorkflow } from "@dyrected/core";
+
+export const Posts = defineCollection({
+  slug: "posts",
+  workflow: publishingWorkflow(),
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineRichTextField({ name: "body", label: "Body", required: true }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

@@ -34,6 +34,7 @@ type TreeFolderNode = {
   type: 'folder'
   name: ReactNode
   children: TreeNode[]
+  index?: TreePageNode
 }
 
 type TreeRootNode = {
@@ -43,15 +44,24 @@ type TreeRootNode = {
 type TreeNode = TreeFolderNode | TreePageNode | TreeSeparatorNode
 
 type Topic = {
+  type: 'topic'
   key: string
   title: ReactNode
   pages: TreePageNode[]
 }
 
+type PageItem = {
+  type: 'page'
+  key: string
+  page: TreePageNode
+}
+
+type GroupItem = Topic | PageItem
+
 type Group = {
   key: string
   title: ReactNode
-  topics: Topic[]
+  items: GroupItem[]
 }
 
 function isFolderNode(node: TreeNode): node is TreeFolderNode {
@@ -66,11 +76,40 @@ function buildGroups(tree: TreeRootNode): Group[] {
   return tree.children.filter(isFolderNode).map((group, groupIndex) => ({
     key: `group-${groupIndex}`,
     title: group.name,
-    topics: group.children.filter(isFolderNode).map((topic, topicIndex) => ({
-      key: `group-${groupIndex}-topic-${topicIndex}`,
-      title: topic.name,
-      pages: topic.children.filter(isPageNode),
-    })),
+    items: [
+      ...(group.index
+        ? [
+            {
+              type: 'page' as const,
+              key: `group-${groupIndex}-index`,
+              page: group.index,
+            },
+          ]
+        : []),
+      ...group.children
+      .map((child, childIndex): GroupItem | undefined => {
+        if (isPageNode(child)) {
+          return {
+            type: 'page',
+            key: `group-${groupIndex}-page-${childIndex}`,
+            page: child,
+          }
+        }
+
+        if (!isFolderNode(child)) return undefined
+
+        return {
+          type: 'topic',
+          key: `group-${groupIndex}-topic-${childIndex}`,
+          title: child.name,
+          pages: [
+            ...(child.index ? [child.index] : []),
+            ...child.children.filter(isPageNode),
+          ],
+        }
+      })
+      .filter((item): item is GroupItem => item !== undefined),
+    ],
   }))
 }
 
@@ -82,8 +121,9 @@ function getActiveTopicKeys(groups: Group[], pathname: string): Record<string, s
   const out: Record<string, string | null> = {}
 
   for (const group of groups) {
-    const activeTopic = group.topics.find((topic) =>
-      topic.pages.some((page) => isPageActive(pathname, page.url)),
+    const activeTopic = group.items.find((item) =>
+      item.type === 'topic' &&
+      item.pages.some((page) => isPageActive(pathname, page.url)),
     )
     out[group.key] = activeTopic?.key ?? null
   }
@@ -110,7 +150,26 @@ function GroupsNav({
             {group.title}
           </h2>
           <div className="flex flex-col gap-0.5">
-            {group.topics.map((topic) => {
+            {group.items.map((item) => {
+              if (item.type === 'page') {
+                const active = isPageActive(pathname, item.page.url)
+
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.page.url}
+                    data-active={active}
+                    className={cn(
+                      'rounded-lg px-2 py-2 text-sm text-fd-foreground transition-colors hover:bg-fd-accent/40 hover:text-fd-accent-foreground',
+                      active && 'font-medium text-fd-primary',
+                    )}
+                  >
+                    {item.page.name}
+                  </Link>
+                )
+              }
+
+              const topic = item
               const isOpen = openTopics[topic.key] ?? false
               const hasActivePage = topic.pages.some((page) =>
                 isPageActive(pathname, page.url),
@@ -188,7 +247,7 @@ function SidebarInner({
     const initial: Record<string, boolean> = {}
 
     for (const group of groups) {
-      for (const topic of group.topics) {
+      for (const topic of group.items.filter((item): item is Topic => item.type === 'topic')) {
         initial[topic.key] = active[group.key] === topic.key
       }
     }

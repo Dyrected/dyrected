@@ -1,0 +1,84 @@
+---
+title: Content Modeling
+description: Application patterns for reusable sections, relationships between records, and content structures that can grow with a project.
+runtime: shared
+runtimeGroup: application-patterns-content-modeling
+---
+
+Use these patterns when the main question is how to shape the content itself. They help you decide how records relate to each other, how flexible a page should be, and how to avoid locking editors into brittle one-off structures.
+
+## Build flexible pages from reusable blocks
+
+**Problem:** you want editors to build or rearrange page sections without turning each page into one giant object.
+
+This pattern uses blocks to model page sections as reusable building blocks inside a page layout. It is the right starting point when you need flexible landing pages, marketing pages, or reusable content sections.
+
+### Example implementation
+
+<RecipeExample id="page-builder-blocks" />
+
+Read the full docs:
+
+- [Blocks fields](/docs/model-content/fields/blocks)
+- [Collections](/docs/model-content/configuration/collections)
+
+## Model a relationship and its reverse lookup
+
+**Problem:** one record should point to another record, and you also want the reverse view without storing duplicate data.
+
+This pattern stores the owning relationship on one side and uses a join field for the reverse lookup. It is a good fit for authors and posts, products and categories, or any one-to-many content structure.
+
+### Example implementation
+
+<RecipeExample id="relationship-and-reverse-join" />
+
+Read the full docs:
+
+- [Relationship fields](/docs/model-content/fields/relationship)
+- [Join fields](/docs/model-content/fields/join)
+
+## Create a site settings global
+
+**Problem:** you need one shared place for site name, support details, and other values that should only exist once.
+
+This pattern uses a global for singleton content instead of forcing editors to manage a one-row collection. It fits site settings, contact information, default CTA copy, and other values reused across many frontend surfaces.
+
+### Example implementation
+
+<RecipeExample id="site-settings-global" />
+
+Read the full docs:
+
+- [Globals](/docs/model-content/configuration/globals)
+- [URL fields](/docs/model-content/fields/url)
+
+## Create a navigation global with nested links
+
+**Problem:** editors need to manage shared navigation without hardcoding menus in the frontend.
+
+This pattern models navigation as repeatable rows in a global, with one level of child links for grouped menus or dropdowns. It is a practical default for headers, footers, and docs navigation that should stay structured.
+
+### Example implementation
+
+<RecipeExample id="navigation-global-links" />
+
+Read the full docs:
+
+- [Globals](/docs/model-content/configuration/globals)
+- [Array fields](/docs/model-content/fields/array)
+- [URL fields](/docs/model-content/fields/url)
+
+## Create a category taxonomy for content
+
+**Problem:** entries need reusable categories so editors can organize content and build filtered listing pages.
+
+This pattern stores categories in their own collection and relates content back to them with a has-many relationship field. It is a good fit for blogs, resources, case studies, and any content type that benefits from reusable taxonomy entries.
+
+### Example implementation
+
+<RecipeExample id="category-taxonomy" />
+
+Read the full docs:
+
+- [Collections](/docs/model-content/configuration/collections)
+- [Relationship fields](/docs/model-content/fields/relationship)

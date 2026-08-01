@@ -1,0 +1,174 @@
+---
+title: Lifecycle events
+description: "React to workflow changes with the right runtime model: upcoming Cloud events and webhooks, or self-hosted handlers and dispatchers."
+runtime: variant
+runtimeGroup: lifecycle-events
+runtimeNotes: Cloud events/webhooks are coming soon; self-hosted can run handler functions and dispatchers now.
+---
+
+Use lifecycle events when something should happen after content changes, but that work should not be hidden inside the editor's save button.
+
+Lifecycle events are records of workflow changes: a draft was saved, a document moved through review, or published content changed. They let the rest of your system react after the content operation has a durable event record.
+
+The runtime matters here. In Dyrected Cloud, think in terms of managed content events and webhook destinations, but treat that Cloud surface as coming soon. In self-hosted Dyrected, you can register TypeScript handlers and run the dispatcher inside your own application today.
+
+## The events
+
+Four events fire on workflow-enabled collections:
+
+| Event | Fires when |
+| --- | --- |
+| `revision.created` | A working draft is saved. |
+| `workflow.transitioned` | Any transition runs, such as `submit`, `publish`, `reject`, or a custom transition. |
+| `entry.published` | A transition moves a document into a `published` state and updates the public snapshot. |
+| `entry.unpublished` | A transition marked `unpublish` removes the document from the public snapshot. |
+
+`workflow.transitioned` is the broad event. `entry.published` and `entry.unpublished` are the narrow events for changes that affect the live site.
+
+<CloudOnly>
+
+## Cloud events and webhooks are coming soon
+
+Use the Cloud model when Dyrected hosts the content backend for your site. Cloud events and webhooks are the intended path for content-scoped side effects:
+
+- revalidate a frontend route
+- notify a team when a document is ready
+- send a signed webhook to another system
+- update a search index
+- trigger content automation after publish
+
+Keep the boundary tight: Cloud events are for content lifecycle work, not arbitrary application backend hosting. Checkout, customer sessions, product activity, and transactional workflows should stay in your application or the external systems that own them.
+
+Because this Cloud surface is still coming soon, do not build a production Cloud integration that depends on hosted event delivery yet.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+## Self-hosted: register handlers in code
+
+In self-hosted Dyrected, handlers live in your config and run inside your application server. Use them when the event needs unrestricted TypeScript or direct access to your runtime.
+
+Add handlers to the `events` block of your config. Each handler receives the event, so branch on `event.name` and `event.collection` before doing work:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  // collections, db, storage, and the rest of your config
+  events: {
+    handlers: [
+      async (event) => {
+        if (event.name !== "entry.published") return;
+
+        await fetch("https://cache.example.com/purge", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            eventId: event.id,
+            collection: event.collection,
+            documentId: event.documentId,
+          }),
+        });
+      },
+    ],
+  },
+});
+```
+
+Use `event.id` when you call external systems. Event delivery is at-least-once, so the receiver should be able to ignore a duplicate delivery for the same event id.
+
+## Delivery guarantees
+
+Every event is written to durable storage before handlers run. From there:
+
+- delivery is attempted immediately after the change
+- failures retry with exponential backoff
+- delivery is at-least-once, so handlers must be idempotent
+- failed events remain recorded after the retry limit
+
+Self-hosted projects can tune the retry policy alongside handlers:
+
+```ts
+events: {
+  handlers: [/* your handlers */],
+  maxAttempts: 5,
+  retryDelayMs: 2000,
+}
+```
+
+## Running the self-hosted dispatcher
+
+Self-hosted deployments should run the dispatcher on a schedule so failed or missed events continue retrying.
+
+```ts
+import { dispatchPendingLifecycleEvents } from "@dyrected/core";
+import config from "./dyrected.config";
+
+const delivered = await dispatchPendingLifecycleEvents(config);
+console.log(`Delivered ${delivered} lifecycle events`);
+```
+
+Run that from a cron job, worker process, or scheduled task that has access to the same config and database as your Dyrected runtime.
+
+Without a scheduled dispatcher, a self-hosted deployment still gets the immediate attempt, but failed events do not keep retrying until the dispatcher runs again.
+
+## The event shape
+
+Each handler receives a `LifecycleEvent`:
+
+```ts
+interface LifecycleEvent {
+  id: string;
+  name: "revision.created" | "workflow.transitioned" | "entry.published" | "entry.unpublished";
+  collection: string;
+  documentId: string;
+  occurredAt: string;
+  actorId?: string;
+  payload: Record<string, unknown>;
+  attempts: number;
+  status: "pending" | "processing" | "delivered" | "failed";
+  nextAttemptAt?: string;
+  deliveredAt?: string;
+  lastError?: string;
+}
+```
+
+Events are stored in a hidden `__lifecycle_events` collection that Dyrected manages for you. Reading that collection directly is not the normal workflow; handlers and dispatchers are the public integration point.
+
+## Inline hooks vs lifecycle events
+
+Lifecycle events run after a change commits and are designed for side effects. When logic must run inside the workflow transition itself, use workflow hooks instead.
+
+Use `beforeTransition` when the move should be blocked unless a rule passes:
+
+```ts
+import { definePublishingWorkflow } from "@dyrected/core";
+import type { WorkflowConfig } from "@dyrected/core";
+
+const workflow: WorkflowConfig = {
+  ...definePublishingWorkflow({ editors: ["writer"], publishers: ["editor"] }),
+  hooks: {
+    beforeTransition: [
+      ({ transition, doc }) => {
+        if (transition.to === "published" && !doc.seoDescription) {
+          throw new Error("Add an SEO description before publishing.");
+        }
+      },
+    ],
+  },
+};
+```
+
+Use `afterTransition` only for quick in-process reactions. It is not retried like a lifecycle event, so do not use it for side effects that must not be lost.
+
+</SelfHostedOnly>
+
+## Which one to reach for
+
+- Use **Cloud events or webhooks** for Cloud content reactions once that surface is public.
+- Use **self-hosted handlers** when you need arbitrary TypeScript inside your own server runtime.
+- Use **`beforeTransition` hooks** when logic must block or allow the transition.
+- Use **`afterTransition` hooks** for quick same-request reactions that can safely fail without retry.
+
+For the workflow model itself, start with [Editorial workflows](/docs/editor-experience/publishing/overview).

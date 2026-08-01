@@ -47,47 +47,47 @@ const configTemplateSource = fs.readFileSync(
 );
 const mdxFiles = [];
 const hybridPages = {
-  "basics/configuration/overview.mdx": {
+  "model-content/configuration/overview.mdx": {
     marker: "REFERENCE-CONFIGURATION",
     headings: [],
   },
-  "basics/configuration/collections.mdx": {
+  "model-content/configuration/collections.mdx": {
     marker: "REFERENCE-CONFIGURATION-COLLECTIONS",
     headings: [],
   },
-  "basics/configuration/globals.mdx": {
+  "model-content/configuration/globals.mdx": {
     marker: "REFERENCE-CONFIGURATION-GLOBALS",
     headings: [],
   },
-  "basics/fields/overview.mdx": {
+  "model-content/fields/overview.mdx": {
     marker: "REFERENCE-FIELDS",
     headings: [],
   },
-  "basics/hooks/overview.mdx": {
+  "deployment-and-operations/server-runtime/hooks/overview.mdx": {
     marker: "REFERENCE-HOOKS",
     headings: [],
   },
-  "managing-data/sdk-api/overview.mdx": {
+  "deliver-content/sdk-api/overview.mdx": {
     marker: "REFERENCE-SDK",
     headings: [],
   },
-  "features/workflows/overview.mdx": {
+  "editor-experience/publishing/overview.mdx": {
     marker: "REFERENCE-WORKFLOWS",
     headings: [],
   },
-  "managing-data/rest-api/overview.mdx": {
+  "deliver-content/rest-api/overview.mdx": {
     marker: "REFERENCE-REST-API",
     headings: [],
   },
-  "features/upload/storage-adapters.mdx": {
+  "model-content/media/storage-adapters.mdx": {
     marker: "REFERENCE-STORAGE-ADAPTERS",
     headings: [],
   },
-  "basics/database/overview.mdx": {
+  "deployment-and-operations/infrastructure/database/overview.mdx": {
     marker: "REFERENCE-DATABASE-ADAPTERS",
     headings: [],
   },
-  "managing-data/rest-api/overview.mdx#openapi": {
+  "deliver-content/rest-api/overview.mdx#openapi": {
     marker: "REFERENCE-OPENAPI",
     headings: [],
   },
@@ -107,7 +107,6 @@ const warnings = [];
 const runtimeAmbiguousDocsHrefPattern =
   /\]\((\/docs\/[^)]+)\)|href\s*=\s*["'`](\/docs\/[^"'`]+)["'`]/g;
 const runtimeAmbiguousCodeAllowlist = new Set([
-  "apps/docs/app/docs/[...slug]/page.tsx",
   "apps/docs/app/docs/page.tsx",
 ]);
 
@@ -144,7 +143,16 @@ for (const [relativeKey, requirements] of Object.entries(hybridPages)) {
   }
 }
 
-for (const filename of mdxFiles.filter((file) => file.includes(`${path.sep}recipes${path.sep}`) && !file.endsWith(`${path.sep}index.mdx`))) {
+const generatedRecipesRoot = path.join(
+  docsRoot,
+  "examples-and-recipes",
+  "library",
+);
+for (const filename of mdxFiles.filter(
+  (file) =>
+    path.dirname(file) === generatedRecipesRoot &&
+    !file.endsWith(`${path.sep}index.mdx`),
+)) {
   const source = fs.readFileSync(filename, "utf8");
   for (const marker of ["{/* GENERATED:RECIPE:START */}", "{/* GENERATED:RECIPE:END */}"]) {
     if (source.split(marker).length !== 2) {
@@ -299,7 +307,7 @@ for (const file of mdxFiles) {
     const raw = match[1];
     const [pathname] = raw.split("#");
     const relative = decodeURIComponent(pathname.replace(/^\/docs\/?/, ""));
-    const page = relative || "getting-started/introduction";
+    const page = relative || "start-here/what-is-dyrected";
     const candidates = [
       path.join(docsRoot, `${page}.mdx`),
       path.join(docsRoot, page, "index.mdx"),

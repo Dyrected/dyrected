@@ -1,0 +1,14 @@
+{
+  "title": "React",
+  "runtimeDefault": "cloud",
+  "pages": [
+    "overview",
+    "installing-dyrected",
+    "package-reference",
+    "defining-a-schema",
+    "creating-your-first-content",
+    "displaying-content-in-react",
+    "adding-a-visual-editor-in-reactjs",
+    "building-landing-pages-for-marketing"
+  ]
+}

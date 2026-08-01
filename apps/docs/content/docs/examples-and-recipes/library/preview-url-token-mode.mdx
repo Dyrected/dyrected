@@ -1,0 +1,52 @@
+---
+title: Configure preview URLs with postMessage live preview
+description: Set a preview URL expression and postMessage live preview mode for routable frontend content.
+runtime: variant
+runtimeGroup: recipe-preview-url-token-mode
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Set a preview URL expression and postMessage live preview mode for routable frontend content.
+
+## Use this when
+
+- preview draft content privately
+- open live preview on the real route
+- use postmessage preview
+- configure preview urls for a collection
+
+## Dyrected concepts
+
+`previewUrl`, `previewMode`, `urlPattern`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const Docs = defineCollection({
+  slug: "docs",
+  admin: {
+    useAsTitle: "title",
+    previewUrl: "slug ? '/docs/' + slug : null",
+    previewMode: "postMessage",
+    urlPattern: "/docs/{slug}",
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

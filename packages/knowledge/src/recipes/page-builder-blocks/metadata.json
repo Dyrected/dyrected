@@ -10,9 +10,9 @@
   "intents": ["build a page builder", "let editors arrange page sections", "create reusable content blocks", "model flexible landing pages"],
   "concepts": ["blocks", "Block", "content modeling"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/content-modeling",
-    "/docs/basics/fields/blocks",
-    "/docs/basics/configuration/collections"
+    "/docs/examples-and-recipes/application-patterns/content-modeling",
+    "/docs/model-content/fields/blocks",
+    "/docs/model-content/configuration/collections"
   ],
   "requires": []
 }

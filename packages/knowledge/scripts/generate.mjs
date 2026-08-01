@@ -28,7 +28,7 @@ const promptTemplatesRoot = path.join(packageRoot, "src/prompt-templates");
 const sharedRulesRoot = path.join(packageRoot, "src/shared-rules");
 const promptSnapshotsRoot = path.join(packageRoot, "src/prompt-snapshots");
 const testFixturesRoot = path.join(packageRoot, "src/test-fixtures");
-const docsRoot = path.join(repositoryRoot, "apps/docs/content/docs/recipes");
+const docsRoot = path.join(repositoryRoot, "apps/docs/content/docs/examples-and-recipes");
 const allDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
 const newDocsRoot = path.join(repositoryRoot, "apps/docs/content/docs");
 const docsPublicRoot = path.join(repositoryRoot, "apps/docs/public");
@@ -44,33 +44,30 @@ const categories = new Set([
 ]);
 const runtimes = new Set(["shared", "cloud", "self-hosted", "variant"]);
 const recipeDocsPathMap = {
-  "archive-instead-of-delete": "/docs/ecosystem/common-patterns/data-lifecycle",
-  "auto-slug": "/docs/ecosystem/common-patterns/data-lifecycle",
-  "category-taxonomy": "/docs/ecosystem/common-patterns/content-modeling",
-  "conditional-admin-field": "/docs/ecosystem/common-patterns/admin-experience",
-  "cross-field-validation": "/docs/ecosystem/common-patterns/data-lifecycle",
-  "custom-page-field-editor":
-    "/docs/ecosystem/common-patterns/custom-app-surfaces",
-  "custom-page-media-picker":
-    "/docs/ecosystem/common-patterns/custom-app-surfaces",
-  "custom-theme-shell": "/docs/ecosystem/common-patterns/custom-app-surfaces",
-  "dependent-dropdown": "/docs/ecosystem/common-patterns/admin-experience",
-  "document-download-library": "/docs/ecosystem/common-patterns/integrations",
-  "editorial-publishing-workflow": "/docs/ecosystem/common-patterns/workflows",
-  "navigation-global-links": "/docs/ecosystem/common-patterns/content-modeling",
-  "owner-or-admin-access": "/docs/ecosystem/common-patterns/access-control",
-  "owner-scoped-access": "/docs/ecosystem/common-patterns/access-control",
-  "page-builder-blocks": "/docs/ecosystem/common-patterns/content-modeling",
-  "preview-url-token-mode": "/docs/ecosystem/common-patterns/workflows",
-  "relationship-and-reverse-join":
-    "/docs/ecosystem/common-patterns/content-modeling",
-  "responsive-image-library": "/docs/ecosystem/common-patterns/integrations",
-  "role-based-access": "/docs/ecosystem/common-patterns/access-control",
-  "safe-field-rename": "/docs/ecosystem/common-patterns/data-lifecycle",
-  "seo-tab-fields": "/docs/ecosystem/common-patterns/admin-experience",
-  "site-settings-global": "/docs/ecosystem/common-patterns/content-modeling",
-  "tenant-scoped-access": "/docs/ecosystem/common-patterns/access-control",
-  "upload-collection": "/docs/ecosystem/common-patterns/integrations",
+  "archive-instead-of-delete": "/docs/examples-and-recipes/library/archive-instead-of-delete",
+  "auto-slug": "/docs/examples-and-recipes/library/auto-slug",
+  "category-taxonomy": "/docs/examples-and-recipes/library/category-taxonomy",
+  "conditional-admin-field": "/docs/examples-and-recipes/library/conditional-admin-field",
+  "cross-field-validation": "/docs/examples-and-recipes/library/cross-field-validation",
+  "custom-page-field-editor": "/docs/examples-and-recipes/library/custom-page-field-editor",
+  "custom-page-media-picker": "/docs/examples-and-recipes/library/custom-page-media-picker",
+  "custom-theme-shell": "/docs/examples-and-recipes/library/custom-theme-shell",
+  "dependent-dropdown": "/docs/examples-and-recipes/library/dependent-dropdown",
+  "document-download-library": "/docs/examples-and-recipes/library/document-download-library",
+  "editorial-publishing-workflow": "/docs/examples-and-recipes/library/editorial-publishing-workflow",
+  "navigation-global-links": "/docs/examples-and-recipes/library/navigation-global-links",
+  "owner-or-admin-access": "/docs/examples-and-recipes/library/owner-or-admin-access",
+  "owner-scoped-access": "/docs/examples-and-recipes/library/owner-scoped-access",
+  "page-builder-blocks": "/docs/examples-and-recipes/library/page-builder-blocks",
+  "preview-url-token-mode": "/docs/examples-and-recipes/library/preview-url-token-mode",
+  "relationship-and-reverse-join": "/docs/examples-and-recipes/library/relationship-and-reverse-join",
+  "responsive-image-library": "/docs/examples-and-recipes/library/responsive-image-library",
+  "role-based-access": "/docs/examples-and-recipes/library/role-based-access",
+  "safe-field-rename": "/docs/examples-and-recipes/library/safe-field-rename",
+  "seo-tab-fields": "/docs/examples-and-recipes/library/seo-tab-fields",
+  "site-settings-global": "/docs/examples-and-recipes/library/site-settings-global",
+  "tenant-scoped-access": "/docs/examples-and-recipes/library/tenant-scoped-access",
+  "upload-collection": "/docs/examples-and-recipes/library/upload-collection",
 };
 
 function fail(message) {
@@ -506,6 +503,10 @@ ${conceptList}
 
 **Additional packages:** ${requires}
 
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
 ## Complete recipe
 
 This is the canonical source compiled and behavior-tested by \`@dyrected/knowledge\`.
@@ -514,7 +515,7 @@ This is the canonical source compiled and behavior-tested by \`@dyrected/knowled
 ${recipe.source}
 \`\`\``;
     outputGeneratedRegion(
-      path.join(docsRoot, `${recipe.id}.mdx`),
+      path.join(docsRoot, "library", `${recipe.id}.mdx`),
       "RECIPE",
       generatedRecipe,
     );
@@ -532,7 +533,7 @@ function outputRecipeFenceRegion(target, region, recipeId) {
 
 const customAppSurfacesPage = path.join(
   newDocsRoot,
-  "ecosystem/common-patterns/custom-app-surfaces.mdx",
+  "examples-and-recipes/application-patterns/custom-app-surfaces.mdx",
 );
 
 if (fs.existsSync(customAppSurfacesPage)) {
@@ -925,7 +926,7 @@ const isDatabaseAdapter = (entry) =>
 // be classified onto a leaf page it falls back to the topic overview page.
 const referenceTargets = [
   {
-    file: "basics/configuration/overview.mdx",
+    file: "model-content/configuration/overview.mdx",
     region: "REFERENCE-CONFIGURATION",
     select: (entry) =>
       entry.category === "configuration" &&
@@ -933,50 +934,50 @@ const referenceTargets = [
       entry.name !== "GlobalConfig",
   },
   {
-    file: "basics/configuration/collections.mdx",
+    file: "model-content/configuration/collections.mdx",
     region: "REFERENCE-CONFIGURATION-COLLECTIONS",
     select: (entry) => entry.name === "CollectionConfig",
   },
   {
-    file: "basics/configuration/globals.mdx",
+    file: "model-content/configuration/globals.mdx",
     region: "REFERENCE-CONFIGURATION-GLOBALS",
     select: (entry) => entry.name === "GlobalConfig",
   },
   {
-    file: "basics/fields/overview.mdx",
+    file: "model-content/fields/overview.mdx",
     region: "REFERENCE-FIELDS",
     select: (entry) =>
       entry.category === "fields" && !fieldPageByName.has(entry.name),
   },
   ...Object.entries(fieldPageContracts).map(([file, names]) => ({
-    file: `basics/fields/${file}`,
+    file: `model-content/fields/${file}`,
     region: `REFERENCE-FIELD-${file.replace(/\.mdx$/, "").toUpperCase()}`,
     select: (entry) => names.includes(entry.name),
   })),
   {
-    file: "basics/hooks/overview.mdx",
+    file: "deployment-and-operations/server-runtime/hooks/overview.mdx",
     region: "REFERENCE-HOOKS",
     select: (entry) => entry.category === "hooks",
   },
   {
-    file: "managing-data/sdk-api/overview.mdx",
+    file: "deliver-content/sdk-api/overview.mdx",
     region: "REFERENCE-SDK",
     select: (entry) => entry.category === "sdk",
   },
   {
-    file: "basics/database/overview.mdx",
+    file: "deployment-and-operations/infrastructure/database/overview.mdx",
     region: "REFERENCE-DATABASE-ADAPTERS",
     select: (entry) =>
       entry.category === "adapters" && isDatabaseAdapter(entry),
   },
   {
-    file: "features/upload/storage-adapters.mdx",
+    file: "model-content/media/storage-adapters.mdx",
     region: "REFERENCE-STORAGE-ADAPTERS",
     select: (entry) =>
       entry.category === "adapters" && !isDatabaseAdapter(entry),
   },
   {
-    file: "features/workflows/overview.mdx",
+    file: "editor-experience/publishing/overview.mdx",
     region: "REFERENCE-WORKFLOWS",
     select: (entry) => entry.category === "workflows",
   },
@@ -998,14 +999,14 @@ const endpointRows = endpoints
   .join("\n");
 const restInventory = `| Method | Path | Summary | Authentication |\n| --- | --- | --- | --- |\n${endpointRows}`;
 // The REST inventory and OpenAPI/codegen guidance share the canonical REST API
-// page, so both regions live in managing-data/rest-api/overview.mdx.
+// page, so both regions live in deliver-content/rest-api/overview.mdx.
 outputGeneratedRegion(
-  path.join(newDocsRoot, "managing-data/rest-api/overview.mdx"),
+  path.join(newDocsRoot, "deliver-content/rest-api/overview.mdx"),
   "REFERENCE-REST-API",
   restInventory,
 );
 outputGeneratedRegion(
-  path.join(newDocsRoot, "managing-data/rest-api/overview.mdx"),
+  path.join(newDocsRoot, "deliver-content/rest-api/overview.mdx"),
   "REFERENCE-OPENAPI",
   `The representative document currently contains **${endpoints.length} operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.`,
 );
@@ -1028,7 +1029,27 @@ if (fs.existsSync(docsRoot)) {
   );
   outputFile(
     path.join(docsRoot, "meta.json"),
-    `${JSON.stringify({ title: "Recipes", pages: ["index", ...groupedPages] }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        title: "Examples & Recipes",
+        runtimeDefault: "shared",
+        pages: ["index", "library", "examples", "application-patterns", "ecommerce"],
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  outputFile(
+    path.join(docsRoot, "library", "meta.json"),
+    `${JSON.stringify(
+      {
+        title: "Recipe Library",
+        runtimeDefault: "shared",
+        pages: groupedPages,
+      },
+      null,
+      2,
+    )}\n`,
   );
 }
 
@@ -1161,24 +1182,24 @@ const generatedSections = {
     .join("\n"),
   INTENTS: intentLines.join("\n"),
   REFERENCES: [
-    "- [Installation](https://docs.dyrected.com/docs/basics/getting-started/installation)",
-    "- [CLI and schema synchronization](https://docs.dyrected.com/docs/basics/cli/overview)",
-    "- [Configuration](https://docs.dyrected.com/docs/basics/configuration/overview)",
-    "- [Collections](https://docs.dyrected.com/docs/basics/configuration/collections)",
-    "- [Globals](https://docs.dyrected.com/docs/basics/configuration/globals)",
-    "- [Fields](https://docs.dyrected.com/docs/basics/fields/overview)",
-    "- [Rich text](https://docs.dyrected.com/docs/basics/fields/rich-text)",
-    "- [Blocks](https://docs.dyrected.com/docs/basics/fields/blocks)",
-    "- [Admin](https://docs.dyrected.com/docs/features/admin/overview)",
-    "- [Preview](https://docs.dyrected.com/docs/features/admin/preview)",
-    "- [Hooks](https://docs.dyrected.com/docs/basics/hooks/overview)",
-    "- [Database adapters](https://docs.dyrected.com/docs/basics/database/overview)",
-    "- [Storage adapters](https://docs.dyrected.com/docs/features/upload/storage-adapters)",
-    "- [SDK](https://docs.dyrected.com/docs/managing-data/sdk-api/overview)",
-    "- [Workflows](https://docs.dyrected.com/docs/features/workflows/overview)",
-    "- [REST and OpenAPI](https://docs.dyrected.com/docs/managing-data/rest-api/overview)",
+    "- [Installation](https://docs.dyrected.com/docs/start-here/installation)",
+    "- [CLI and schema synchronization](https://docs.dyrected.com/docs/reference/cli)",
+    "- [Configuration](https://docs.dyrected.com/docs/model-content/configuration/overview)",
+    "- [Collections](https://docs.dyrected.com/docs/model-content/configuration/collections)",
+    "- [Globals](https://docs.dyrected.com/docs/model-content/configuration/globals)",
+    "- [Fields](https://docs.dyrected.com/docs/model-content/fields/overview)",
+    "- [Rich text](https://docs.dyrected.com/docs/model-content/fields/rich-text)",
+    "- [Blocks](https://docs.dyrected.com/docs/model-content/fields/blocks)",
+    "- [Admin](https://docs.dyrected.com/docs/editor-experience/overview)",
+    "- [Preview](https://docs.dyrected.com/docs/editor-experience/preview)",
+    "- [Hooks](https://docs.dyrected.com/docs/model-content/content-rules/hooks)",
+    "- [Database adapters](https://docs.dyrected.com/docs/deployment-and-operations/infrastructure/database/overview)",
+    "- [Storage adapters](https://docs.dyrected.com/docs/model-content/media/storage-adapters)",
+    "- [SDK](https://docs.dyrected.com/docs/deliver-content/sdk-api/overview)",
+    "- [Workflows](https://docs.dyrected.com/docs/editor-experience/publishing/overview)",
+    "- [REST and OpenAPI](https://docs.dyrected.com/docs/deliver-content/rest-api/overview)",
     "- [Documentation index for agents](https://docs.dyrected.com/llms.txt)",
-    "- [Existing-site agent workflow](https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt)",
+    "- [Existing-site agent workflow](https://docs.dyrected.com/docs/guides/ai-and-coding-agents/using-the-dyrected-prompt)",
   ].join("\n"),
 };
 function renderHybridTemplate(templatePath) {
@@ -1409,6 +1430,77 @@ const runtimeDocEntries = docsRuntimeManifest.map((entry) => {
     source: authored.source,
   };
 });
+const runtimeManifestByPath = new Map(
+  runtimeDocEntries.map((entry) => [entry.relativePath, entry]),
+);
+const runtimeManifestByGroup = new Map();
+for (const entry of runtimeDocEntries) {
+  if (!entry.runtimeGroup) continue;
+  const entries = runtimeManifestByGroup.get(entry.runtimeGroup) ?? [];
+  entries.push(entry);
+  runtimeManifestByGroup.set(entry.runtimeGroup, entries);
+}
+
+function runtimeOverviewUrl(siteRuntime) {
+  return `https://docs.dyrected.com/docs/${siteRuntime}/start-here/what-is-dyrected`;
+}
+
+function runtimeDocsLink(href, siteRuntime) {
+  if (!href.startsWith("/docs")) return href;
+
+  const [, pathPart = href, suffix = ""] =
+    href.match(/^([^?#]*)([?#].*)?$/) ?? [];
+  const normalizedPath = pathPart.replace(/\/$/, "");
+
+  if (
+    normalizedPath === "/docs/cloud" ||
+    normalizedPath === "/docs/self-hosted"
+  ) {
+    return `${runtimeOverviewUrl(
+      normalizedPath === "/docs/cloud" ? "cloud" : "self-hosted",
+    )}${suffix}`;
+  }
+
+  if (
+    normalizedPath.startsWith("/docs/cloud/") ||
+    normalizedPath.startsWith("/docs/self-hosted/")
+  ) {
+    return `https://docs.dyrected.com${normalizedPath}${suffix}`;
+  }
+
+  if (normalizedPath === "/docs") {
+    return `${runtimeOverviewUrl(siteRuntime)}${suffix}`;
+  }
+
+  const relativePath = normalizedPath.replace(/^\/docs\//, "");
+  const entry = runtimeManifestByPath.get(relativePath);
+  if (!entry) return runtimeOverviewUrl(siteRuntime);
+
+  if (siteRuntimeSupports(entry.runtime, siteRuntime)) {
+    return `${getRuntimeUrl(entry, siteRuntime)}${suffix}`;
+  }
+
+  if (entry.runtimeGroup) {
+    const equivalent = runtimeManifestByGroup
+      .get(entry.runtimeGroup)
+      ?.find((candidate) => siteRuntimeSupports(candidate.runtime, siteRuntime));
+    if (equivalent) return `${getRuntimeUrl(equivalent, siteRuntime)}${suffix}`;
+  }
+
+  return runtimeOverviewUrl(siteRuntime);
+}
+
+function rewriteRuntimeDocsLinks(source, siteRuntime) {
+  return source
+    .replace(
+      /(\]\()((?:\/docs)(?:[^)\s]*))/g,
+      (_match, prefix, href) => `${prefix}${runtimeDocsLink(href, siteRuntime)}`,
+    )
+    .replace(
+      /(href=["'])((?:\/docs)(?:[^"']*))/g,
+      (_match, prefix, href) => `${prefix}${runtimeDocsLink(href, siteRuntime)}`,
+    );
+}
 
 function renderRuntimeConciseDocs(siteRuntime) {
   return runtimeDocEntries
@@ -1425,7 +1517,11 @@ function renderRuntimeFullDocs(siteRuntime) {
     .filter((entry) => siteRuntimeSupports(entry.runtime, siteRuntime))
     .map((entry) => {
       const url = getRuntimeUrl(entry, siteRuntime);
-      return `## ${entry.title}\n\nCanonical URL: ${url}\n\n${normalizeMdx(entry.source, siteRuntime)}`;
+      const content = rewriteRuntimeDocsLinks(
+        normalizeMdx(entry.source, siteRuntime),
+        siteRuntime,
+      );
+      return `## ${entry.title}\n\nCanonical URL: ${url}\n\n${content}`;
     })
     .join("\n\n---\n\n");
 }

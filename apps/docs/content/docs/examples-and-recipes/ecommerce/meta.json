@@ -1,0 +1,11 @@
+{
+  "title": "Ecommerce",
+  "runtimePolicy": "explicit-per-page",
+  "pages": [
+    "overview",
+    "__frontend",
+    "__plugin",
+    "__payment-adapters",
+    "__advanced"
+  ]
+}

@@ -21,8 +21,8 @@
     "useField"
   ],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/custom-app-surfaces",
-    "/docs/features/admin/form-and-field-hooks"
+    "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+    "/docs/editor-experience/form-and-field-hooks"
   ],
   "requires": [
     "@dyrected/admin",

@@ -1,0 +1,50 @@
+---
+title: Create a media upload collection
+description: Enable file uploads and capture accessible metadata in a dedicated media collection.
+runtime: variant
+runtimeGroup: recipe-upload-collection
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Enable file uploads and capture accessible metadata in a dedicated media collection.
+
+## Use this when
+
+- let editors upload images
+- create a media library
+- store uploaded files
+- add image uploads to my project
+
+## Dyrected concepts
+
+`upload`, `StorageAdapter`, `media`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField, defineTextareaField } from "@dyrected/core";
+
+export const Media = defineCollection({
+  slug: "media",
+  upload: {
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+    maxFileSize: 10 * 1024 * 1024,
+  },
+  fields: [
+    defineTextField({ name: "alt", label: "Alternative text", required: true }),
+    defineTextareaField({ name: "caption", label: "Caption" }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

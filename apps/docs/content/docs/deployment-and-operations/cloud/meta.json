@@ -1,0 +1,7 @@
+{
+  "title": "Cloud",
+  "runtimeDefault": "cloud",
+  "pages": [
+    "overview"
+  ]
+}

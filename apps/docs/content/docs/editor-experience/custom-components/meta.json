@@ -1,0 +1,14 @@
+{
+  "title": "Custom Components",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "overview",
+    "dashboard",
+    "list-view",
+    "__custom-providers",
+    "__customizing-views",
+    "__document-views",
+    "__edit-view",
+    "__root-components"
+  ]
+}

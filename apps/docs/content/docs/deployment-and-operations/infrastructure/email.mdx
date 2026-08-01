@@ -1,0 +1,248 @@
+---
+title: Overview
+description: Configure transactional email, customize the built-in auth emails, and understand when Dyrected sends them.
+---
+
+Use this page when you need Dyrected to send real email for authentication flows such as invites and password resets. By the end, you should know what the top-level `email` config does, which built-in emails Dyrected sends for you, how development fallback behaves, and where to customize the message content.
+
+## The mental model
+
+Dyrected does not try to be your email provider. It does two narrower jobs:
+
+- it decides **when** an auth flow should send an email
+- it renders the built-in HTML for those auth emails unless you override it
+
+You decide **how** the message is actually delivered by wiring your provider into the top-level `email.send` function.
+
+That split is the main thing to keep in mind:
+
+- `email.send` is the transport boundary
+- `email.templates` is the content override boundary
+- your auth flows trigger the built-in messages
+
+## When to configure email
+
+Configure `email` when your project uses any flow that sends mail to the user:
+
+- password reset
+- invitations
+- first-account or invited-account welcome emails
+- password-changed notifications
+
+If you are not using those flows yet, you can leave `email` unset while you are still building locally. In development, Dyrected falls back to an Ethereal preview inbox when `nodemailer` is available, so you can still test the flow without a real provider.
+
+For production, treat email as required anywhere those flows are part of the real user journey. Password reset, invites, and account-notification flows should use a real provider before you ship.
+
+## Recommended starting point
+
+The recommended path is to wire one provider first, keep the built-in templates, and only customize the template content once the flow itself is working.
+
+Here is the smallest complete setup with Resend:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({
+        from: 'no-reply@myapp.com',
+        to,
+        subject,
+        html,
+      })
+    },
+  },
+  collections: [],
+  globals: [],
+})
+```
+
+Once this is in place, Dyrected can hand your provider the recipient, subject, and rendered HTML for any built-in auth email.
+
+Resend is just the example here. The `send` shape is the real contract, so you can swap in any provider that can send `{ to, subject, html }`.
+
+## What the top-level `email` config does
+
+The top-level `email` config has three important pieces:
+
+- `from`: the sender address your provider should use
+- `send`: the function Dyrected calls with `{ to, subject, html }`
+- `templates`: optional overrides for the built-in auth emails
+
+Dyrected does not scaffold provider-specific email environment variables for you. Add the provider secrets your transport needs yourself, and keep them in your normal environment management flow.
+
+For the exact type signature, the root configuration reference still lives on [Configuration Overview](/docs/model-content/configuration/overview).
+
+## Development fallback
+
+If `email` is not configured and `NODE_ENV` is not `production`, Dyrected tries to send through Ethereal using `nodemailer`.
+
+On first send, it logs:
+
+- that it is using Ethereal for development preview
+- the Ethereal login details
+- a preview URL for the rendered message
+
+That gives you a safe way to test invite and reset flows before you connect a real provider.
+
+If `nodemailer` is not available, Dyrected logs a warning and skips sending in development.
+
+## The built-in emails Dyrected sends
+
+Dyrected currently sends four auth-related emails for you:
+
+| Email | Trigger | What the template receives |
+| --- | --- | --- |
+| Welcome | first user registration or invite acceptance | `{ email }` |
+| Invite | authenticated `invite` call | `{ token, invitedByEmail?, url? }` |
+| Reset password | `forgot-password` | `{ token, url? }` |
+| Password changed | successful `reset-password` | `{ email }` |
+
+All four are best-effort. The API flow still completes if sending fails, and the failure is logged on the server.
+
+Four details matter here:
+
+- `forgot-password` can receive a `resetUrl`; if it does, the reset email gets both the raw token and the full link, and the default template prefers the link
+- `invite` can receive an `inviteUrl`; if it does, the invite email gets both the raw token and the full acceptance link, and the default template prefers the link
+- invite tokens currently expire in 7 days, and reset tokens expire in 1 hour
+- a successful password reset also sends the password-changed notification as a security alert
+
+For the endpoint-by-endpoint behavior, use [Authentication Operations](/docs/deployment-and-operations/authentication/operations).
+
+## Customize the built-in templates
+
+Once the provider is working, customize the built-in messages by adding `templates` under `email`.
+
+Each template function returns:
+
+- `html`, which is required
+- `subject`, which is optional
+
+If you omit `subject`, Dyrected keeps the built-in default subject line.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export default defineConfig({
+  email: {
+    from: 'no-reply@myapp.com',
+    send: async ({ to, subject, html }) => {
+      await resend.emails.send({
+        from: 'no-reply@myapp.com',
+        to,
+        subject,
+        html,
+      })
+    },
+    templates: {
+      welcome: ({ email }) => ({
+        subject: 'Welcome to Acme',
+        html: `<p>Your account is ready for ${email}.</p>`,
+      }),
+      invite: ({ token, invitedByEmail, url }) => ({
+        subject: "You've been invited",
+        html: url
+          ? `
+            <p>${invitedByEmail ?? 'Someone'} invited you to join.</p>
+            <p><a href="${url}">Accept your invitation</a></p>
+            <p>If the button does not work, copy this link:</p>
+            <pre>${url}</pre>
+          `
+          : `
+            <p>${invitedByEmail ?? 'Someone'} invited you to join.</p>
+            <p>Your invite token is:</p>
+            <pre>${token}</pre>
+          `,
+      }),
+      resetPassword: ({ token, url }) => ({
+        subject: 'Reset your password',
+        html: url
+          ? `<p><a href="${url}">Reset your password</a></p>`
+          : `<p>Your reset token is:</p><pre>${token}</pre>`,
+      }),
+      passwordChanged: ({ email }) => ({
+        subject: 'Your password was changed',
+        html: `<p>The password for ${email} was just changed.</p>`,
+      }),
+    },
+  },
+  collections: [],
+  globals: [],
+})
+```
+
+The built-in default templates escape user-supplied values before rendering. If you replace them with custom HTML, you own the safety of that markup.
+
+For most projects, the recommended path is to pass `inviteUrl` and `resetUrl` from the product surface that should finish the flow. That keeps both emails link-first, matches the admin experience, and avoids teaching end users how to handle raw tokens unless you intentionally want a token-based flow.
+
+Keep the auth endpoint semantics on [Authentication Operations](/docs/deployment-and-operations/authentication/operations). This page is for the transport setup, the built-in email triggers, and template customization.
+
+## Advanced paths
+
+Most projects only need one provider and the four built-in auth emails. If you need more control, there are two common advanced paths.
+
+### Send your own app emails from hooks
+
+Use built-in auth emails for auth flows, then send product-specific email yourself from hooks or other server code.
+
+For example, an `afterChange` hook can send an order confirmation:
+
+```ts
+import { defineCollection, defineConfig, defineEmailField } from '@dyrected/core'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+const Orders = defineCollection({
+  slug: 'orders',
+  hooks: {
+    afterChange: [
+      async ({ doc, operation }) => {
+        if (operation !== 'create') return
+
+        await resend.emails.send({
+          from: 'orders@myapp.com',
+          to: doc.customerEmail,
+          subject: `Order #${doc.id} confirmed`,
+          html: '<p>Thanks for your order.</p>',
+        })
+      },
+    ],
+  },
+  fields: [
+    defineEmailField({
+      name: 'customerEmail',
+      label: 'Customer email',
+      required: true,
+    }),
+  ],
+})
+
+export default defineConfig({
+  collections: [Orders],
+  globals: [],
+})
+```
+
+### Keep transport stable, swap templates later
+
+If different projects need different branding, keep the same `send` implementation and change only the `templates` functions per project. That gives you one delivery path with different message content.
+
+If you also need product emails such as order confirmations or marketing messages, treat that as a separate email system in your app. This page stays on Dyrected's built-in auth emails and the top-level transport setup they rely on.
+
+## Success check
+
+You are ready to move on when you can answer these plainly:
+
+- which auth flows in this project need email
+- which provider will handle delivery
+- whether the built-in templates are good enough or need overrides
+- whether you need only auth email or also custom app email from hooks

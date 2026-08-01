@@ -1,0 +1,61 @@
+---
+title: Create a navigation global with nested links
+description: Model reusable navigation links in one global, including one level of child links for grouped menus.
+runtime: shared
+runtimeGroup: recipe-navigation-global-links
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Model reusable navigation links in one global, including one level of child links for grouped menus.
+
+## Use this when
+
+- create editable navigation
+- store menu links in the cms
+- manage a navbar global
+- add nested navigation links
+
+## Dyrected concepts
+
+`defineGlobal`, `array`, `url`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineArrayField, defineGlobal, defineTextField, defineUrlField } from "@dyrected/core";
+
+export const Navigation = defineGlobal({
+  slug: "navigation",
+  label: "Navigation",
+  fields: [
+    defineArrayField({
+      name: "items",
+      label: "Navigation items",
+      fields: [
+        defineTextField({ name: "label", label: "Label", required: true }),
+        defineUrlField({ name: "link", label: "Link", required: true }),
+        defineArrayField({
+          name: "children",
+          label: "Child links",
+          fields: [
+            defineTextField({ name: "label", label: "Label", required: true }),
+            defineUrlField({ name: "link", label: "Link", required: true }),
+          ],
+        }),
+      ],
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

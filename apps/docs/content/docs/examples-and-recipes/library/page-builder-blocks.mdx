@@ -1,0 +1,68 @@
+---
+title: Build flexible pages from reusable blocks
+description: Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
+runtime: shared
+runtimeGroup: recipe-page-builder-blocks
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.
+
+## Use this when
+
+- build a page builder
+- let editors arrange page sections
+- create reusable content blocks
+- model flexible landing pages
+
+## Dyrected concepts
+
+`blocks`, `Block`, `content modeling`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineBlock, defineBlocksField, defineCollection, defineTextField, defineTextareaField, defineUrlField } from "@dyrected/core";
+
+export const HeroBlock = defineBlock({
+  slug: "hero",
+  labels: { singular: "Hero", plural: "Heroes" },
+  fields: [
+    defineTextField({ name: "heading", label: "Heading", required: true }),
+    defineTextareaField({ name: "body", label: "Body" }),
+  ],
+});
+
+export const CallToActionBlock = defineBlock({
+  slug: "callToAction",
+  labels: { singular: "Call to action", plural: "Calls to action" },
+  fields: [
+    defineTextField({ name: "label", label: "Link label", required: true }),
+    defineUrlField({ name: "url", label: "URL", required: true }),
+  ],
+});
+
+export const Pages = defineCollection({
+  slug: "pages",
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineBlocksField({
+      name: "layout",
+      label: "Page layout",
+      blocks: [HeroBlock, CallToActionBlock],
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

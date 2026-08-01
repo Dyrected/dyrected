@@ -1,0 +1,172 @@
+---
+title: Package Reference
+description: Use Dyrected in Nuxt with the first-party module, auto-imported composables, auto-registered components, and an optional self-hosted server handler.
+runtime: variant
+runtimeGroup: framework-guides-nuxt-package-reference
+runtimeNotes: Nuxt can mount self-hosted Dyrected or consume a Cloud/remote Dyrected API; self-hosted server-handler sections apply only when the backend lives inside Nuxt.
+---
+
+`@dyrected/nuxt` is the recommended integration for Nuxt projects. It can do two different jobs:
+
+- mount a self-hosted Dyrected backend inside the Nuxt app
+- act as the Nuxt-side client integration for a remote Dyrected API
+
+That is why this package is usually the right starting point for Nuxt instead of wiring `@dyrected/vue` and `@dyrected/sdk` manually.
+
+<CloudOnly>
+
+For Cloud-backed Nuxt projects, use the module as the Nuxt-side integration for a remote Dyrected API. Dyrected Cloud owns the content backend; your Nuxt app owns rendering, routes, customer auth, and product behavior.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Nuxt projects, the server-handler sections show how to run Dyrected inside the same Nuxt application runtime.
+
+</SelfHostedOnly>
+
+## What the module gives you
+
+The Nuxt module adds the framework glue for you:
+
+- auto-imported Dyrected composables
+- auto-registered components like `DyrectedAdmin`, `DyrectedImage`, and `DyrectedMedia`
+- a Nitro server handler when `apiBase` is a relative path
+- a provided SDK client that uses Nuxt request fetching
+
+It also installs `@nuxt/image` so the shipped image component can render through Nuxt's image layer.
+
+## Install the module
+
+```bash
+pnpm add @dyrected/nuxt @dyrected/sdk
+```
+
+For self-hosted mode, also install the core package and your chosen database adapter.
+
+## Remote API mode
+
+If Dyrected is already running somewhere else, point the module at that API:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: {
+    apiBase: process.env.NUXT_PUBLIC_DYRECTED_URL || "",
+  },
+});
+```
+
+When `apiBase` is an absolute URL, the module does not add the Nitro server handler. In that mode, Nuxt acts as a client of the running Dyrected API.
+
+## Self-hosted mode
+
+If the Dyrected backend should run inside the Nuxt app, keep `apiBase` as a relative path and merge in your config:
+
+```ts
+// nuxt.config.ts
+import config from "./dyrected.config";
+
+export default defineNuxtConfig({
+  modules: ["@dyrected/nuxt"],
+  dyrected: {
+    ...config,
+    apiBase: "/dyrected",
+    adminPath: "admin",
+  },
+});
+```
+
+With a relative `apiBase`, the module registers the server handler for you and serves Dyrected under that path.
+
+## Add the admin page
+
+The module auto-registers `DyrectedAdmin`, but you still choose the route that renders it:
+
+```vue
+<!-- app/pages/admin.vue -->
+<script setup lang="ts">
+definePageMeta({ layout: false });
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin />
+  </ClientOnly>
+</template>
+```
+
+Use `ClientOnly` here because the admin UI needs the browser DOM.
+
+## `DyrectedAdmin` theme props
+
+When the Nuxt app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` instead of letting the embedded admin keep a separate theme preference.
+
+The component accepts three theme-control props:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `system-theme`: the current resolved OS theme, either `light` or `dark`
+- `on-theme-change`: callback fired when the admin changes its preferred theme
+
+```vue
+<!-- app/pages/admin.vue -->
+<script setup lang="ts">
+definePageMeta({ layout: false });
+
+const { preference, systemTheme, setTheme } = useTheme();
+</script>
+
+<template>
+  <ClientOnly>
+    <DyrectedAdmin
+      :theme="preference"
+      :system-theme="systemTheme"
+      :on-theme-change="setTheme"
+    />
+  </ClientOnly>
+</template>
+```
+
+This keeps the site and embedded admin on the same preference while still letting admin-side theme controls update the host app state.
+
+## Fetch content with auto-imported composables
+
+For normal reads, the module gives you a configured SDK client and Nuxt-friendly shortcuts:
+
+- `useDyrectedCollection`
+- `useDyrectedDoc`
+- `useDyrectedGlobal`
+- `useDyrectedAuth`
+- `useLivePreview`
+
+Those are auto-imported by the module.
+
+For the end-to-end rendering workflow, use [Displaying Content in Nuxt](/docs/guides/frameworks/nuxt/displaying-content-in-nuxtjs).
+
+## Default path expectations
+
+The module defaults `apiBase` to `/dyrected`. That means the typical self-hosted API surface is `/dyrected/api/...`, which lines up with the other framework integrations and the admin wrapper defaults.
+
+If you change the path, keep your runtime config and any hard-coded app expectations aligned with it.
+
+## Production expectations
+
+For self-hosted Nuxt:
+
+- the runtime still needs live database connectivity
+- the module can rebuild the Dyrected app when the server handler initializes
+- a successful front-end build alone does not prove the backend boundary is healthy
+
+For remote API mode:
+
+- Nuxt only needs to be able to reach the configured Dyrected URL
+- your production concern becomes API availability and credentials, not local server mounting
+
+## Related pages
+
+- [Choose a package](/docs/guides/frameworks/choose-a-package)
+- [Vue package reference](/docs/guides/frameworks/vue/package-reference)
+- [Displaying content in Nuxt](/docs/guides/frameworks/nuxt/displaying-content-in-nuxtjs)
+- [Admin](/docs/editor-experience/overview)
+- [Deployment](/docs/deployment-and-operations/production/deployment)

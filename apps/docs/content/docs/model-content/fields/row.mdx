@@ -1,0 +1,31 @@
+---
+title: Row
+description: A layout-only field that arranges its child fields horizontally in the admin UI.
+---
+
+The row field is layout only. It groups its child fields onto a single horizontal row in the admin editor and writes their values at the parent level, so it changes presentation without adding a nesting key to your document. Use it to place related fields — like a first and last name — side by side.
+
+```ts
+defineRowField({
+  fields: [
+    defineTextField({ name: 'firstName', label: 'First name' }),
+    defineTextField({ name: 'lastName', label: 'Last name' }),
+  ],
+})
+```
+
+Because a row has no `name`, it stores nothing of its own — `firstName` and `lastName` above save straight onto the document, exactly as if the row weren't there. To size the columns, set `admin.width` on each child (for example `'50%'`), and the row lays the fields out to match.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/model-content/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-ROW:START */}
+## RowField
+
+A layout-only container that arranges its child `fields` horizontally in the admin UI. Stores no value of its own.
+
+```ts
+export type RowField = TypedField<"row", unknown>;
+```
+{/* GENERATED:REFERENCE-FIELD-ROW:END */}

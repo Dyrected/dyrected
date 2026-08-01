@@ -1,0 +1,9 @@
+{
+  "title": "Production",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "deployment",
+    "building-without-a-db-connection",
+    "preventing-abuse"
+  ]
+}

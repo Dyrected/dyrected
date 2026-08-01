@@ -1,0 +1,55 @@
+---
+title: Group SEO fields into an Admin tab
+description: Keep secondary metadata together under an SEO tab so the main editing form stays focused.
+runtime: shared
+runtimeGroup: recipe-seo-tab-fields
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Keep secondary metadata together under an SEO tab so the main editing form stays focused.
+
+## Use this when
+
+- group seo fields in the admin
+- move metadata into a separate tab
+- keep forms cleaner with tabs
+- add an seo tab to a collection
+
+## Dyrected concepts
+
+`defineTab`, `admin.tab`, `useAsTitle`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTab, defineTextField, defineTextareaField, defineUrlField } from "@dyrected/core";
+
+export const Pages = defineCollection({
+  slug: "pages",
+  admin: { useAsTitle: "title" },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+    ...defineTab({
+      label: "SEO",
+      fields: [
+        defineTextField({ name: "metaTitle", label: "Meta title" }),
+        defineTextareaField({ name: "metaDescription", label: "Meta description" }),
+        defineUrlField({ name: "canonicalUrl", label: "Canonical URL" }),
+      ],
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

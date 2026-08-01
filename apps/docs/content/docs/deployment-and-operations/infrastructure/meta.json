@@ -1,0 +1,11 @@
+{
+  "title": "Infrastructure",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "overview",
+    "database",
+    "environment-variables",
+    "logging",
+    "email"
+  ]
+}

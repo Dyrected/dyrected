@@ -1,0 +1,331 @@
+---
+title: Admin SSO
+description: Let your team sign in to the Dyrected dashboard with an external identity provider — Okta, Azure AD, Google Workspace, or any OIDC provider — through the adminAuth config, with just-in-time provisioning and your own access rules.
+runtime: self-hosted
+runtimeGroup: admin-sso
+---
+
+Dyrected can hand dashboard login over to an external identity provider. Instead of a local email and password, your team signs into the admin panel with **single sign-on (SSO)** through Okta, Azure AD, Google Workspace, or any standards-compliant OIDC (OpenID Connect) provider. You configure it once under `adminAuth`, and Dyrected takes care of the redirect dance, verifies the identity, and issues its own admin session.
+
+This page is about **who reaches the CMS dashboard** — it does not touch how your *application's* users log in. Those still use collection auth (`auth: true`), completely independently. If you haven't read [Authentication overview](/docs/editor-experience/editor-accounts) yet, start there for the collection-auth model; this page picks up where dashboard sign-in leaves off.
+
+By the end you'll have a working Okta (or Azure/Google) login on your admin panel, gated by an access rule you control.
+
+## When to reach for it
+
+Admin SSO is the right tool when:
+
+- your team already signs into internal tools through an identity provider
+- dashboard access should be governed separately from customer or member login
+- you want central control over who can open the CMS
+- you need just-in-time provisioning, or a pre-approved allowlist, for admin accounts
+
+If you only need local email-and-password login for a handful of editors, you don't need any of this — see [Handing off to editors](/docs/editor-experience/hand-off-to-editors) instead.
+
+## How the flow works
+
+External sign-in is a redirect handshake between the browser, Dyrected, and your provider:
+
+1. The login screen sees that `adminAuth.mode` is `external` and shows your provider.
+2. The admin clicks it, and the browser hits `GET /api/admin/auth/<providerId>/start`.
+3. Dyrected redirects to the provider's authorization endpoint.
+4. The provider authenticates the person and redirects back to `GET /api/admin/auth/<providerId>/callback`.
+5. Dyrected verifies the identity claims (the ID token's signature, issuer, audience, and nonce).
+6. Your `resolveAccess` function decides whether this identity is allowed in, and with which roles.
+7. Dyrected provisions or updates a matching record in your admin auth collection.
+8. Dyrected signs **its own** admin token and returns the browser to the dashboard, now signed in.
+
+The takeaway: the provider owns *identity*, while Dyrected still owns its *session* and *access rules*. A valid login at your provider is necessary but not sufficient — `resolveAccess` has the final say.
+
+## Before you start
+
+You'll need:
+
+- a Dyrected app serving an admin route (for example `/admin`)
+- an identity provider that supports OpenID Connect
+- an admin auth collection in your config (details below)
+- a public callback URL the provider can reach
+
+<Callout type="info">
+Even with external SSO, Dyrected keeps a local record for each admin. That's what stores their `email`, `name`, `roles`, and the link back to the external identity (`authProvider`, `externalSubject`, `lastLoginAt`). SSO decides *who* may log in; the collection is *where* their admin-side profile and roles live.
+</Callout>
+
+<Steps>
+
+<Step>
+### Define an admin auth collection
+
+Dyrected treats the slug **`__admins`** specially: when a collection with that slug exists, it's automatically the dashboard's login gateway. Using it means you don't have to set `collectionSlug` at all.
+
+```ts
+import { defineCollection, defineTextField, defineMultiSelectField, defineDateTimeField } from '@dyrected/core'
+
+export const Admins = defineCollection({
+  slug: '__admins',
+  auth: true,
+  fields: [
+    defineTextField({ name: 'name', label: 'Name' }),
+    defineMultiSelectField({
+      name: 'roles',
+      label: 'Roles',
+      options: ['admin', 'editor', 'publisher'],
+    }),
+    // Written by Dyrected on each external login — hide them from editors.
+    defineTextField({ name: 'authProvider', label: 'Auth provider', admin: { hidden: true } }),
+    defineTextField({ name: 'externalSubject', label: 'External subject', admin: { hidden: true } }),
+    defineDateTimeField({ name: 'lastLoginAt', label: 'Last login', admin: { hidden: true } }),
+  ],
+})
+```
+
+<Callout type="warn">
+`__admins` **always wins**. If your config contains an `__admins` collection, Dyrected uses it as the admin auth collection even when `collectionSlug` points somewhere else — the explicit slug only applies when no `__admins` exists (and, failing that, Dyrected falls back to the first collection with `auth: true`). If your login succeeds but `/me` fails, this precedence is the usual cause. See [Handing off to editors](/docs/editor-experience/hand-off-to-editors) for how the `__admins` gateway keeps customer and admin logins apart.
+</Callout>
+</Step>
+
+<Step>
+### Configure `adminAuth`
+
+Add an external `adminAuth` block to `defineConfig`, with one provider to start:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { Admins } from './collections/admins'
+
+export default defineConfig({
+  collections: [Admins],
+  globals: [],
+  adminAuth: {
+    mode: 'external',
+    provisioningMode: 'jit_plus_membership_management',
+    providers: [
+      {
+        id: 'okta',
+        type: 'oidc',
+        displayName: 'Okta',
+        issuer: process.env.OKTA_ISSUER!,
+        clientId: process.env.OKTA_CLIENT_ID!,
+        clientSecret: process.env.OKTA_CLIENT_SECRET!,
+        scopes: ['openid', 'profile', 'email'],
+        autoRedirect: true,
+      },
+    ],
+  },
+})
+```
+
+An OIDC provider needs four fields at minimum: `id`, `type: 'oidc'`, `issuer`, `clientId`, and `clientSecret`. Everything else is optional:
+
+- `displayName` — the label on the login button (defaults to a humanized `id`)
+- `scopes` — defaults to `['openid', 'profile', 'email']`
+- `autoRedirect` — skip the button and jump straight to the provider
+- `redirectUri` — pin an exact callback URL (see the next step)
+- `claimMapping` — remap non-standard claim names
+- `allowJitProvisioning` — set `false` to require this provider's users be pre-provisioned, even under a JIT mode
+
+Dyrected discovers the provider's endpoints automatically from `issuer` + `/.well-known/openid-configuration`. If your provider doesn't publish a discovery document, set `authorizationEndpoint`, `tokenEndpoint`, `userInfoEndpoint`, and `jwks_uri` explicitly on the provider.
+</Step>
+
+<Step>
+### Register the callback URL with your provider
+
+By default Dyrected's callback is:
+
+```txt
+https://your-app.com/api/admin/auth/<providerId>/callback
+```
+
+So the Okta provider above would use:
+
+```txt
+https://cms.example.com/api/admin/auth/okta/callback
+```
+
+Register that exact URL in your identity provider. A few constraints matter:
+
+- the callback must be publicly reachable by the provider
+- it must resolve to the same Dyrected app that serves the admin UI
+- if you set `redirectUri` in the provider config, *that* exact value must be the one registered
+
+</Step>
+
+<Step>
+### Choose a provisioning mode
+
+`provisioningMode` decides how external identities become admin records. It defaults to `jit_plus_membership_management`.
+
+| Mode | What happens | Use when |
+| --- | --- | --- |
+| `jit_only` | Any identity that passes `resolveAccess` is created on first login. | Your provider is the source of truth for membership and you don't need Dyrected-side records to pre-exist. |
+| `jit_plus_membership_management` | First-login creation **plus** Dyrected keeps a membership record it updates each login. | Most teams. The recommended default. |
+| `preprovisioned_only` | A valid login is **rejected** unless a matching admin record already exists. | Accounts must be approved or created before anyone can sign in. |
+
+You can also override this per provider with `allowJitProvisioning: false`, which forces pre-provisioning for just that provider while leaving others on a JIT mode.
+</Step>
+
+<Step>
+### Map claims if your provider is non-standard
+
+Out of the box Dyrected reads the standard claims: `sub`, `email`, and `name`. Roles, groups, and tenant claims are only read when you name them in `claimMapping` — Dyrected won't guess.
+
+```ts
+providers: [
+  {
+    id: 'azure',
+    type: 'oidc',
+    displayName: 'Azure AD',
+    issuer: process.env.AZURE_ISSUER!,
+    clientId: process.env.AZURE_CLIENT_ID!,
+    clientSecret: process.env.AZURE_CLIENT_SECRET!,
+    claimMapping: {
+      sub: 'sub',
+      email: 'email',
+      name: 'name',
+      roles: 'roles',
+      groups: 'groups',
+    },
+  },
+],
+```
+
+Map a claim when:
+
+- the provider puts roles or groups under a custom name and you want them on the resolved identity
+- `resolveAccess` needs `groups` to decide who's allowed in
+- you pass tenant- or site-scoping claims through `siteIds` / `workspaceIds`
+
+Whatever the mapping, the full raw token is always available as `identity.rawClaims` inside `resolveAccess`.
+</Step>
+
+<Step>
+### Write `resolveAccess` — the gate
+
+`resolveAccess` is the most important part of the setup. It runs after a successful login and decides two things: whether this identity may enter the dashboard at all, and which Dyrected-side roles (and any extra data) to store on their record.
+
+<Callout type="warn">
+If you omit `resolveAccess`, Dyrected admits **every** successfully-authenticated identity by default (with whatever `roles` claim came through). That's almost always too open — anyone who can log into your provider could reach the CMS. Add an explicit gate for any real deployment.
+</Callout>
+
+```ts
+adminAuth: {
+  mode: 'external',
+  provisioningMode: 'jit_plus_membership_management',
+  providers: [
+    {
+      id: 'okta',
+      type: 'oidc',
+      issuer: process.env.OKTA_ISSUER!,
+      clientId: process.env.OKTA_CLIENT_ID!,
+      clientSecret: process.env.OKTA_CLIENT_SECRET!,
+      claimMapping: { roles: 'roles', groups: 'groups' },
+    },
+  ],
+  resolveAccess: ({ identity }) => {
+    const groups = identity.groups ?? []
+    const isAdmin = groups.includes('cms-admins')
+    const isEditor = groups.includes('cms-editors')
+
+    if (!isAdmin && !isEditor) {
+      return { allowed: false }
+    }
+
+    return {
+      allowed: true,
+      roles: isAdmin ? ['admin'] : ['editor'],
+      data: { department: identity.rawClaims?.department },
+    }
+  },
+}
+```
+
+Return `{ allowed: false }` to reject the login. Return `{ allowed: true, roles, data }` to admit it — `roles` becomes the admin's Dyrected roles, and `data` is merged onto their record. `resolveAccess` receives the resolved `identity`, the `providerId`, any `siteId` / `workspaceId`, request metadata, and the existing `user` record if one is already provisioned.
+</Step>
+
+<Step>
+### Test the whole redirect chain
+
+Don't stop at saving the config — walk the full flow in a browser. The two endpoints to watch:
+
+```txt
+GET /api/admin/auth/okta/start      # kicks off the redirect to the provider
+GET /api/admin/auth/okta/callback   # the provider redirects back here
+```
+
+A healthy login ends with:
+
+- the browser back on the admin UI, signed in as the provisioned user
+- a Dyrected admin token issued for your admin collection
+- `/me` on that collection resolving successfully
+
+If any step misbehaves, jump to [Troubleshooting](#troubleshooting) below — the error messages map directly to specific misconfigurations.
+</Step>
+
+</Steps>
+
+## The admin auth endpoints
+
+For reference, external sign-in lives under `/api/admin/`:
+
+| Method & path | Purpose |
+| --- | --- |
+| `GET /api/admin/auth/providers` | List the configured providers (id, type, display name) for the login screen. |
+| `GET /api/admin/auth/:provider/start` | Begin the redirect to the provider. |
+| `GET /api/admin/auth/:provider/callback` | Where the provider redirects back; completes the exchange and returns to the dashboard. |
+| `POST /api/admin/auth/:provider/exchange` | Programmatic exchange — returns `{ token, collectionSlug, providerId }` as JSON instead of redirecting. Useful for SPA or custom login shells. |
+| `POST /api/admin/logout` | Stateless logout. Discard the token client-side. |
+
+## Beyond OIDC: custom JWT providers
+
+OIDC is the common path, but a provider can also be `type: 'custom'` (or `'cloud'`). Instead of running the OIDC redirect and discovery, a custom provider accepts a JWT your own system has already minted and verifies it — with a shared `secret`, a remote `jwksUri`, or an unsigned decode guarded by `issuer` / `audience` checks. Reach for this when identity is brokered by a system you control rather than a standards-compliant OIDC endpoint. The provisioning, `claimMapping`, and `resolveAccess` behavior is identical; only how the token arrives differs.
+
+## Multi-tenant: per-site providers
+
+If your deployment resolves schema per request through `onSchemaFetch`, `adminAuth` can be resolved per site too. That lets different sites use different identity providers or different access rules, with a platform control plane storing each site's settings. The request must resolve the correct `siteId` (via the `X-Site-Id` header or context), and `onSchemaFetch(siteId)` returns that tenant's `adminAuth`. The callback URL still points at the Dyrected app; only access resolution varies by site.
+
+## Local development
+
+Local SSO is usually fiddlier than production, because providers often reject arbitrary `localhost` callbacks. A few practical tips:
+
+- Prefer a provider that allows registering an `http://localhost` callback for development.
+- Otherwise, use a tunnel (or a development hostname) so the provider can reach your callback.
+- Keep local and production client credentials separate.
+- Test both the initial redirect **and** the callback exchange — a working login button doesn't prove the callback resolves.
+
+If your provider demands an exact redirect URI, set `redirectUri` on the provider so the generated flow matches what you registered.
+
+## Troubleshooting
+
+Every failure surfaces a specific message. Match it here:
+
+| Message | Likely cause | Check |
+| --- | --- | --- |
+| `Admin auth provider not found.` | The provider ID in the URL isn't in `providers`, or `mode` isn't `external`. | `mode: 'external'`, the provider `id`, and whether `onSchemaFetch` returns the expected `adminAuth`. |
+| `Missing OIDC callback parameters.` | The provider didn't return `code` and `state`. | Callback URL registration, and that the provider redirects to the right route. |
+| `Failed to load OIDC discovery document.` | Dyrected couldn't fetch `/.well-known/openid-configuration`. | The `issuer` URL and network reachability from your server. |
+| `OIDC token exchange failed.` | The authorization code couldn't be exchanged for tokens. | `clientId`, `clientSecret`, `redirectUri`, and whether the provider expects a different redirect URI than the one being sent. |
+| `OIDC nonce verification failed.` / `OIDC state verification failed.` | Callback verification failed. | Whether the callback completes in the same browser flow, whether a proxy interferes, and that `DYRECTED_JWT_SECRET` is stable across the request chain. |
+| `External identity is missing a subject.` | No usable `sub` claim. | The provider's token contents, and `claimMapping.sub` if the provider uses a non-standard claim. |
+| `This account has not been provisioned for admin access.` | `preprovisioned_only` (or `allowJitProvisioning: false`) and no matching admin record exists. | Create the admin record first, or switch to a JIT provisioning mode. |
+| `Access denied for this site.` | `resolveAccess` returned `allowed: false`. | The group/role claims from the provider and your tenant/site logic in `resolveAccess`. |
+| Login succeeds but `/me` fails | The admin token was issued for a different collection than the UI expects. | `collectionSlug`, that your admin collection has `auth: true`, and the `__admins` precedence note above. |
+
+## A conservative baseline
+
+For a setup that works for most teams:
+
+1. use `__admins` as the admin collection
+2. set `adminAuth.mode` to `external`
+3. configure one OIDC provider
+4. keep `provisioningMode: 'jit_plus_membership_management'`
+5. map `groups`
+6. gate access in `resolveAccess`
+7. store Dyrected-side roles on the admin record
+
+That gives you a clean split: your provider owns identity and group membership, while Dyrected owns admin sessions and content permissions.
+
+## Where to go next
+
+- [Authentication overview](/docs/editor-experience/editor-accounts) — the collection-auth model this sits alongside
+- [Handing off to editors](/docs/editor-experience/hand-off-to-editors) — onboarding editors and keeping customer login separate from admin
+- [JWT Strategy](/docs/deployment-and-operations/authentication/jwt-strategy) — how Dyrected signs the admin token it issues after SSO
+- [Configuration overview](/docs/model-content/configuration/overview) — the full `AdminAuthConfig` type reference

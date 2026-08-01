@@ -1,0 +1,7 @@
+{
+  "title": "Performance",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "overview"
+  ]
+}

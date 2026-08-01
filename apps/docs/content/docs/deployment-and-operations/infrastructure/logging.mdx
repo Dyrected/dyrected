@@ -1,0 +1,406 @@
+---
+title: Logging and Observability
+description: Configure Dyrected's root logger, request logging, redaction, transports, tracing, metrics, and sampling from `dyrected.config.ts`.
+---
+
+Dyrected gives you two related config surfaces for runtime observability:
+
+- `logger` controls the root Pino logger Dyrected writes into
+- `observability` controls request logging, body capture, redaction, sampling, tracing, metrics, and Dyrected-managed transports
+
+If you only need the recommended path, start with the default logger and add `observability` options as your deployment needs them.
+
+## Logger
+
+Dyrected uses Pino for runtime logging. By default, Dyrected creates a logger named `dyrected`, pretty-prints to stdout in non-production environments, and writes structured request-completion logs.
+
+The `logger` option accepts either logger options with an optional destination stream, or a pre-instantiated Pino logger.
+
+## 1. Logger options with an optional destination stream
+
+Pass a `{ options, destination? }` object when you want Dyrected to create the logger for you.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  logger: {
+    options: {
+      level: 'info',
+      name: 'dyrected',
+    },
+  },
+})
+```
+
+If you want the logger to write somewhere other than the default stdout destination, pass a destination stream:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+import pino from 'pino'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  logger: {
+    options: {
+      level: 'debug',
+    },
+    destination: pino.destination('/var/log/dyrected.log'),
+  },
+})
+```
+
+This is the simplest way to change log level, logger name, or destination without taking over the full logger lifecycle yourself.
+
+## 2. Pre-instantiated logger
+
+Pass a fully configured Pino logger when you already own the transport, formatting, or environment-specific setup.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+import pino from 'pino'
+import pinoPretty from 'pino-pretty'
+
+const logger = pino(
+  { level: 'debug', name: 'my-app' },
+  pinoPretty({ colorize: true }),
+)
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  logger,
+})
+```
+
+Use this form when you want to reuse an existing logging policy across your app. When you pass an instantiated logger, Dyrected writes into that logger and does not override its transport behavior.
+
+## 3. Disabling Dyrected-created logging
+
+Set `DISABLE_LOGGING=true` to suppress log output from loggers Dyrected creates itself.
+
+```bash
+DISABLE_LOGGING=true node server.js
+```
+
+If you pass your own instantiated logger, that logger keeps its own behavior.
+
+## Request logging
+
+Request logging is enabled by default. Dyrected writes one structured completion event per logged request with fields such as:
+
+- `method`
+- `path`
+- `statusCode`
+- `durationMs`
+- `requestId`
+- `siteId` when present
+- `workspaceId` when present
+- `contentType`
+- `contentLength`
+
+Successful requests log at `info` when sampled. `4xx` requests log at `warn`, and `5xx` requests log at `error`.
+
+You can make the request-logging surface explicit in config like this:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    requestLogging: {
+      enabled: true,
+    },
+  },
+})
+```
+
+## Body logging
+
+Body logging is off by default. Turn it on only when you have a clear debugging need and you are comfortable with the redaction policy for that environment.
+
+Dyrected only attempts body capture when:
+
+- `observability.requestLogging.logBodies` is `true`
+- the request is sampled for body capture
+- the request `content-type` includes `application/json`
+
+Multipart and binary payload contents are not logged. If a body is too large or cannot be parsed safely after capture, Dyrected logs metadata about the capture attempt instead of logging raw payload content.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    requestLogging: {
+      logBodies: true,
+      maxBodyBytes: 8192,
+    },
+    sampling: {
+      successRate: 1,
+      bodySuccessRate: 0.1,
+    },
+  },
+})
+```
+
+That keeps ordinary request logs on while capturing a smaller sample of successful bodies.
+
+If you turned body logging on and still do not see bodies in request logs, use [Troubleshooting](/docs/troubleshooting/overview#request-bodies-are-missing-from-logs) for the fast checks.
+
+## Redaction
+
+Dyrected redacts common secrets before request headers or JSON bodies are logged or exported.
+
+Default redacted headers:
+
+- `authorization`
+- `cookie`
+- `set-cookie`
+- `x-api-key`
+
+Default redacted body paths:
+
+- `password`
+- `currentPassword`
+- `newPassword`
+- `confirmPassword`
+- `token`
+- `refreshToken`
+- `accessToken`
+- `secret`
+- `apiKey`
+- `inviteToken`
+- `resetToken`
+
+You can extend that list with your own header names and JSON paths:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    requestLogging: {
+      logBodies: true,
+      includeHeaders: ['authorization', 'content-type', 'x-request-id'],
+      redactHeaders: ['x-customer-token'],
+      redactPaths: ['profile.secret', 'tokens.*.value'],
+    },
+  },
+})
+```
+
+Dyrected supports dotted paths and `*` wildcards for nested JSON structures.
+
+## Transports
+
+If Dyrected creates the logger, you can also configure Dyrected-managed transport targets through `observability.transports.targets`.
+
+Supported target types:
+
+- `stdout`
+- `stderr`
+- `file`
+- `otlp`
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    transports: {
+      targets: [
+        { type: 'stdout' },
+        { type: 'file', path: '/var/log/dyrected.jsonl' },
+      ],
+    },
+  },
+})
+```
+
+This transport layer only applies when Dyrected is creating the logger.
+
+## Tracing
+
+Dyrected uses OpenTelemetry for tracing. When tracing is enabled, Dyrected creates one request span per traced request and attaches request attributes such as method, route, status code, request id, site id, and workspace id.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    tracing: {
+      enabled: true,
+      serviceName: 'my-dyrected-app',
+      exporter: 'otlp',
+      endpoint: 'https://otel.example.com/v1/traces',
+      headers: {
+        authorization: `Bearer ${process.env.OTEL_TOKEN!}`,
+      },
+    },
+  },
+})
+```
+
+When a request span is active, Dyrected also adds `traceId` and `spanId` to the request-scoped logger context.
+
+## Metrics
+
+Dyrected uses OpenTelemetry metrics internally. You can export those metrics through OTLP or expose them on a Prometheus scrape route.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    metrics: {
+      enabled: true,
+      exporter: 'prometheus',
+      path: '/metrics',
+    },
+  },
+})
+```
+
+Dyrected emits metrics for:
+
+- request count
+- request duration
+- auth failures
+- uncaught errors
+- audit write failures
+- email send failures
+- workflow hook failures
+
+The Prometheus route is only registered when metrics are enabled and the exporter is set to `prometheus`.
+
+## Sampling
+
+Sampling lets you keep noisy success-path traffic under control without dropping warning and error signals.
+
+Dyrected samples successful request logs, request traces, and request-body capture separately. `4xx` and `5xx` requests are kept by default.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+  observability: {
+    sampling: {
+      successRate: 0.1,
+      traceSuccessRate: 0.1,
+      bodySuccessRate: 0.02,
+      alwaysKeep4xx: true,
+      alwaysKeep5xx: true,
+    },
+  },
+})
+```
+
+When a request id is present, Dyrected uses deterministic request-id-based sampling instead of pure randomness.
+
+## Audit logging versus runtime logging
+
+Runtime logging helps you operate the service. Audit logging helps you answer who changed content and when.
+
+Keep those two jobs separate:
+
+- runtime logs are for debugging, monitoring, and production operations
+- audit logs are durable content-history records stored in `__audit`
+
+If you need edit history or accountability, read [Audit Overview](/docs/editor-experience/audit-history). Runtime logs do not replace it.
+
+## Config reference
+
+These are the top-level shapes you configure from `dyrected.config.ts`:
+
+```ts
+type DyrectedLoggerConfig =
+  | {
+      options: import('pino').LoggerOptions
+      destination?: import('pino').DestinationStream
+    }
+  | import('pino').Logger
+
+interface DyrectedObservabilityConfig {
+  requestLogging?: {
+    enabled?: boolean
+    logBodies?: boolean
+    maxBodyBytes?: number
+    redactPaths?: string[]
+    includeHeaders?: string[]
+    redactHeaders?: string[]
+  }
+  sampling?: {
+    successRate?: number
+    traceSuccessRate?: number
+    bodySuccessRate?: number
+    alwaysKeep4xx?: boolean
+    alwaysKeep5xx?: boolean
+  }
+  tracing?: {
+    enabled?: boolean
+    serviceName?: string
+    exporter?: 'otlp' | 'console' | 'none'
+    headers?: Record<string, string>
+    endpoint?: string
+  }
+  metrics?: {
+    enabled?: boolean
+    exporter?: 'otlp' | 'prometheus' | 'none'
+    endpoint?: string
+    path?: string
+  }
+  transports?: {
+    targets?: Array<
+      | { type: 'stdout' }
+      | { type: 'stderr' }
+      | { type: 'file'; path: string }
+      | { type: 'otlp'; endpoint: string; headers?: Record<string, string> }
+    >
+  }
+}
+```
+
+## Related pages
+
+- [Configuration Overview](/docs/model-content/configuration/overview)
+- [Environment Variables](/docs/deployment-and-operations/infrastructure/environment-variables)
+- [Audit Overview](/docs/editor-experience/audit-history)
+- [Deployment](/docs/deployment-and-operations/production/deployment)

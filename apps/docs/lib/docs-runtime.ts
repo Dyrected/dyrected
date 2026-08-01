@@ -10,7 +10,7 @@ import {
 
 export const DOCS_SITE_RUNTIMES = ["cloud", "self-hosted"] as const;
 export const DOCS_DEFAULT_RUNTIME: DocsSiteRuntime = "cloud";
-export const DOCS_OVERVIEW_RELATIVE_PATH = "basics/getting-started/what-is-dyrected";
+export const DOCS_OVERVIEW_RELATIVE_PATH = "start-here/what-is-dyrected";
 
 export type DocsSiteRuntime = (typeof DOCS_SITE_RUNTIMES)[number];
 
@@ -190,17 +190,4 @@ export function getRuntimeEntryForSlug(slug: string[] | undefined, siteRuntime: 
   if (!runtimeSupportsSite(entry.runtime, siteRuntime)) return undefined;
 
   return entry;
-}
-
-export function resolveLegacyDocsRedirect(
-  slug: string[] | undefined,
-  defaultRuntime: DocsSiteRuntime = DOCS_DEFAULT_RUNTIME,
-): string | undefined {
-  const relativePath = normalizeDocsSlug(slug);
-  if (!relativePath) return getRuntimeOverviewUrl(defaultRuntime);
-
-  const entry = getDocsRuntimeEntryByRelativePath(relativePath);
-  if (!entry) return undefined;
-
-  return getEquivalentRuntimeUrl(relativePath, defaultRuntime) ?? getEquivalentRuntimeUrl(relativePath, "cloud");
 }

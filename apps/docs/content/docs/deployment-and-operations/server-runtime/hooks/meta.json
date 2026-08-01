@@ -1,0 +1,11 @@
+{
+  "title": "Hooks",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "overview",
+    "collections",
+    "globals",
+    "fields",
+    "context"
+  ]
+}

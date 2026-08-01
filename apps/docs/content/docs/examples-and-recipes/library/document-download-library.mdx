@@ -1,0 +1,55 @@
+---
+title: Create a document download library
+description: Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.
+runtime: variant
+runtimeGroup: recipe-document-download-library
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.
+
+## Use this when
+
+- store downloadable documents
+- create a pdf library
+- manage shared downloads
+- add a documents upload collection
+
+## Dyrected concepts
+
+`upload`, `allowedMimeTypes`, `maxFileSize`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField, defineTextareaField } from "@dyrected/core";
+
+export const Documents = defineCollection({
+  slug: "documents",
+  admin: { useAsTitle: "title" },
+  upload: {
+    allowedMimeTypes: [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ],
+    maxFileSize: 20 * 1024 * 1024,
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextareaField({ name: "summary", label: "Summary" }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

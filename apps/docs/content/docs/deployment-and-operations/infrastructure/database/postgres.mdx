@@ -1,0 +1,57 @@
+---
+title: Postgres
+description: Connect a self-hosted Dyrected app to PostgreSQL, the recommended adapter for most production deployments.
+---
+
+Postgres is the adapter to reach for when you want a durable, relational database for production. You install `@dyrected/db-postgres`, point it at a connection URL, and pass it as the `db` key in `dyrected.config.ts`. From there Dyrected handles the tables and every read and write for you.
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+})
+```
+
+Set `DATABASE_URL` to a standard Postgres connection string, for example `postgres://user:password@host:5432/my_app`. When you start your app, Dyrected connects and prepares the schema. This adapter works with any standard Postgres, including managed services like Supabase, Neon, Amazon RDS, and Railway.
+
+> **Dyrected Cloud manages the database for you.** You only configure a `db` adapter when you self-host. Cloud projects normally omit `db`. See the [Database overview](/docs/deployment-and-operations/infrastructure/database/overview).
+
+## Configuration
+
+The Postgres adapter takes a single `url` option:
+
+```ts
+postgresAdapter({ url: process.env.DATABASE_URL! })
+```
+
+That is the whole documented surface. Connection pooling, SSL, and timeouts are controlled by your provider and the connection string itself, so tune those where your database is hosted rather than adding constructor options.
+
+## What happens on startup
+
+The first time your app connects, the adapter creates a table for each collection that doesn't have one yet, plus an internal table that holds your globals. Adding a new collection or field usually works on your next boot with no extra step. For the full picture of how schema changes are applied over time, see [Migrations](/docs/deployment-and-operations/infrastructure/database/migrations).
+
+As a local-development convenience, if the database named in your URL doesn't exist yet, the adapter will attempt to create it (this needs the `CREATEDB` privilege). Don't rely on this in production: create the database ahead of time through your provider. On a locked-down managed host the adapter can't create it and will expect it to already exist.
+
+## How your data is stored
+
+Each collection maps to a table named `collection_<slug>`. Every document is stored as a single JSONB `data` column alongside `id`, `created_at`, and `updated_at`. Globals live in an internal key/value table.
+
+Because the document body lives in JSONB, you can filter and sort on any field without declaring it up front. Fields you mark with `promoted: true` are also lifted into their own real, typed columns so the database can work with them directly. That is the mechanism to reach for on fields you query often. See [Indexes](/docs/deployment-and-operations/infrastructure/database/indexes) for when and how to promote a field.
+
+## Transactions and raw SQL
+
+The Postgres adapter runs multi-step writes as real database transactions, and workflow transitions rely on this. Reads issued inside a transaction take row locks, so concurrent writers wait their turn — that makes read-modify-write safe. See [Transactions](/docs/deployment-and-operations/infrastructure/database/transactions) for how to group operations yourself.
+
+For advanced cases, the Postgres adapter can also run raw SQL. Reach for collections, fields, and the query APIs first, and treat raw SQL as an escape hatch for the rare thing the document model can't express.
+
+## Deploying to production
+
+Postgres is the recommended adapter for most production deployments because it is durable, handles concurrency well, and is widely hosted. A few things worth knowing before you ship:
+
+- Provide the connection string through an environment variable rather than hardcoding it.
+- Serverless and edge runtimes open many short-lived connections. Use your provider's connection pooler when the platform recommends one.
+- Startup schema sync is additive: it creates missing tables and adds promoted columns, but it does not drop or retype existing ones. Back up before a schema change and roll it out carefully. See [Migrations](/docs/deployment-and-operations/infrastructure/database/migrations) and [Deployment](/docs/deployment-and-operations/production/deployment).

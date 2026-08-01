@@ -1,0 +1,91 @@
+---
+title: Preview
+description: Give editors a link from any document to its real page on your site, and open that page in a live pane beside the form.
+---
+
+Editors want to see the page, not just the fields. Preview connects a document in the admin to its rendered URL on your frontend, so an editor can jump from the edit form to the live page — or watch it update beside the form as they type.
+
+By the end of this page you should know how Dyrected builds a preview URL from a document, the two places that URL shows up, and which form to write it in so it keeps working in the cloud.
+
+## One setting, two surfaces
+
+Preview is driven by a single collection option: `admin.previewUrl`. You give Dyrected a way to turn a document into a URL, and it uses that in two places:
+
+- **A "View" link on the list page** that opens the document's page in a new tab.
+- **A live preview pane on the edit page** that renders the page in an iframe next to the form and keeps it in sync as the editor works.
+
+You don't configure these separately. Set `previewUrl` once and both light up. If `previewUrl` resolves to `null` or `undefined` for a document, the link and the pane are simply hidden for it.
+
+## Building the URL
+
+`previewUrl` takes the current document and returns the URL its content lives at. You can write it two ways.
+
+The recommended form is a **Jexl string expression** — a small, safe expression language that reads fields off the document. It works locally and, importantly, it survives being synced to Dyrected Cloud:
+
+```ts
+export default defineConfig({
+  collections: [
+    {
+      slug: "posts",
+      admin: {
+        // Resolve the slug, and map the home page to "/"
+        previewUrl: "slug ? (slug == 'home' ? '/' : '/' + slug) : null",
+      },
+    },
+  ],
+});
+```
+
+The other form is a **JavaScript function**. It receives the document and an options object with the active `locale`, and returns a URL or `null`:
+
+```ts
+export default defineConfig({
+  collections: [
+    {
+      slug: "posts",
+      admin: {
+        previewUrl: (doc, { locale }) => {
+          if (!doc?.slug) return null;
+          return `https://mysite.com/posts/${doc.slug}`;
+        },
+      },
+    },
+  ],
+});
+```
+
+Relative URLs are resolved against your configured site URL, so returning `/posts/hello` is enough when your frontend origin is already known.
+
+<Callout type="warn">
+  If you use Dyrected Cloud Sync, use the **Jexl string** form. Your schema is serialized to JSON before it is sent to
+  the cloud, and JSON cannot carry a JavaScript function — a function passed to `previewUrl` is stringified and will
+  break the preview. Keep functions for local-only, self-hosted setups.
+</Callout>
+
+<Note>
+Dyrected also validates declarative `previewUrl` expressions early. If a Jexl `previewUrl` uses unsupported context or invalid syntax, Dyrected points to the exact config path so you can fix it before sync or runtime.
+</Note>
+
+## Choosing how the pane stays in sync
+
+The live pane needs to show unsaved edits, which means the admin has to hand draft data to your frontend. `admin.previewMode` controls how:
+
+| Mode          | How it works                                                                 | Reach for it when                                          |
+| ------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `postMessage` | The admin posts draft data straight into the iframe, no server round-trip    | Your frontend is same-origin or CORS-enabled (the default fit) |
+| `token`       | The admin issues a short-lived signed preview token your frontend redeems     | Statically generated sites that fetch draft data server-side |
+
+`postMessage` is the simpler path and needs no extra endpoint, and it's the one to start with — it gives live-as-you-type updates and click-to-edit. Reach for `token` only when your frontend renders on the server and can't receive a browser message; it's refresh-based and has no click-to-edit. Both are documented in the Live Preview section below.
+
+## Wiring up the frontend
+
+Setting `previewUrl` gives you the link and opens the pane, but the *live* part — your page re-rendering as the editor types — is work your frontend does. It listens for the draft data and re-renders with it. That flow, including the `useLivePreview` hook and click-to-edit field mapping, is its own feature:
+
+- [Live Preview overview](/docs/editor-experience/publishing/live-preview/overview) — how the pane and your frontend talk to each other.
+- [Connecting your frontend](/docs/editor-experience/publishing/live-preview/frontend) — the overlay model behind live data.
+- [Client-side integration](/docs/editor-experience/publishing/live-preview/client-side) — wiring `useLivePreview`, `useDyPath`, and `<Blocks>` into your pages (`postMessage`).
+- [Server-side integration](/docs/editor-experience/publishing/live-preview/server-side) — the `token` flow for server-rendered and statically generated sites.
+
+## Recommended path
+
+Start with a Jexl string `previewUrl` and the default `postMessage` mode. That gives editors a working "View" link and a live pane with the least setup, and it keeps working if you later adopt Cloud Sync. Move to a function only when your URL logic is genuinely too complex for an expression and you are staying self-hosted; move to `token` only when your frontend can't receive browser messages.

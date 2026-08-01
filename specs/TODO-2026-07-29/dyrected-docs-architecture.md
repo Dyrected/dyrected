@@ -1,5 +1,52 @@
 # Proposed Dyrected Documentation Information Architecture
 
+## Current IA decision
+
+This spec should now optimize around documentation that exists today. Do not
+create top-level sections or placeholder pages just because an ideal future IA
+names them.
+
+The current outer doors should be:
+
+```text
+Start Here
+Model Content
+Deliver Content
+Editor Experience
+Guides
+Examples & Recipes
+Deployment & Operations
+Reference
+Troubleshooting
+```
+
+Use runtime filtering inside those doors instead of exposing every runtime
+capability as its own top-level menu item.
+
+Current consolidation decisions:
+
+| Previous / current area | New home | Notes |
+| --- | --- | --- |
+| `framework-guides` | `guides/frameworks` or `guides` | Keep framework-first pages. |
+| `ai-and-coding-agents` | `guides/ai-and-coding-agents` | AI setup is a guide, not a top-level door. |
+| `recipes` | `examples-and-recipes` | Outer label should be **Examples & Recipes**. Generated recipes remain under a library/list page. |
+| `publishing-and-workflows` | `editor-experience/publishing` | Publishing, drafts, versions, preview, and editorial workflows belong with editor work. |
+| `media` | `model-content/media` | Upload collections, image fields, and storage adapter notes start from content modelling. Editor-only media picker material can live under Editor Experience later. |
+| `cloud-operations` | `deployment-and-operations/cloud` | Cloud operations should not be a top-level door. |
+| `infrastructure` | `deployment-and-operations/infrastructure` | Self-hosted infrastructure belongs with deployment and operations. |
+| `deployment-and-operations` | `deployment-and-operations` | Keep the outer label **Deployment & Operations**. |
+| `admin-and-editors` | `editor-experience` | Avoid a second admin/editor top-level section. Runtime filtering decides which pages appear. |
+| `authentication` | `editor-experience/authentication` or `deployment-and-operations/authentication` | Keep Cloud editor/team auth separate from self-hosted app-user auth. Choose final placement during the consolidation pass based on page intent. |
+| `server-runtime` | `deployment-and-operations/server-runtime` | Hooks/custom endpoints are self-hosted runtime operations, not a Cloud top-level concept. |
+| `plugins-and-extensions` | `deployment-and-operations/plugins-and-extensions` | Keep unpublished placeholders out of navigation. |
+| `application-patterns` | `examples-and-recipes/application-patterns` | Application-shaped examples are self-hosted examples/patterns. |
+| `content-rules-and-integrations` | `model-content/content-rules` | Cloud-safe rules and access policies are part of modelling content behavior. |
+
+If a page does not exist, leave it out of the menu. Future items can be added
+only when the page is real and review-ready.
+
+---
+
 ## 1. Documentation model
 
 Dyrected should have:
@@ -109,21 +156,18 @@ Cloud should be the default runtime when someone arrives from the main Dyrected 
 
 ---
 
-# 4. Shared top-level documentation pages
+# 4. Shared entry pages
 
-These pages sit above the runtime-specific documentation.
+These pages should remain under `start-here` for now. Do not create another
+top-level shared-docs layer.
 
 ```text
-Docs Home
+Start Here
 ├── What is Dyrected?
 ├── Cloud vs Self-hosted
 ├── Choose a Runtime
-├── Product Principles
-├── Supported Frameworks
-├── Changelog
-├── Migration Guides
-├── Status and Known Limitations
-└── Support
+├── Installation
+└── Use Cases
 ```
 
 ## What is Dyrected?
@@ -195,16 +239,21 @@ Dyrected Cloud
 ├── Model Content
 ├── Deliver Content
 ├── Editor Experience
-├── Publishing and Workflows
-├── Content Rules and Integrations
-├── Media
-├── Framework Guides
-├── Cloud Operations
-├── Recipes and Examples
-├── AI and Coding Agents
+├── Guides
+├── Examples & Recipes
+├── Deployment & Operations
 ├── Reference
 └── Troubleshooting
 ```
+
+Cloud-specific material should appear inside those doors:
+
+* content rules and access policies under **Model Content**;
+* media/upload modelling under **Model Content**;
+* publishing, versions, preview and handoff under **Editor Experience**;
+* framework and AI setup under **Guides**;
+* Cloud projects, schema sync, credentials and limits under **Deployment &
+  Operations**.
 
 ## 5.1 Start Here
 
@@ -412,10 +461,10 @@ Valid examples:
 
 The object being edited should remain content.
 
-## 5.5 Publishing and Workflows
+## 5.5 Editor Experience / Publishing
 
 ```text
-Publishing and Workflows
+Editor Experience / Publishing
 ├── Overview
 ├── Drafts and Published Content
 ├── Autosave
@@ -528,14 +577,15 @@ Media
 └── Storage Limits
 ```
 
-Cloud should discuss managed media storage.
+Cloud should discuss managed media storage. Storage adapter details can remain in
+the same Media section, but Cloud copy should frame custom storage as a
+self-hosted or explicitly configured concern rather than a default Cloud setup
+step.
 
-Storage adapters do not belong in this Cloud section.
-
-## 5.8 Framework Guides
+## 5.8 Guides / Frameworks
 
 ```text
-Framework Guides
+Guides / Frameworks
 ├── Next.js
 │   ├── Overview
 │   ├── Installation
@@ -560,10 +610,10 @@ Every framework quick start should show one runtime only.
 
 The Cloud version should never introduce a self-hosted route handler as a secondary option halfway through installation.
 
-## 5.9 Cloud Operations
+## 5.9 Deployment & Operations / Cloud
 
 ```text
-Cloud Operations
+Deployment & Operations / Cloud
 ├── Cloud Architecture
 ├── Projects and Sites
 ├── Schema Sync
@@ -598,10 +648,10 @@ Explain:
 
 Do not frame schema sync mainly as “which hooks get stripped.”
 
-## 5.10 Cloud Recipes and Examples
+## 5.10 Examples & Recipes / Cloud
 
 ```text
-Recipes and Examples
+Examples & Recipes
 ├── Agency Website Handoff
 ├── Marketing Website
 ├── Portfolio Website
@@ -642,10 +692,10 @@ Cloud should not imply that it manages:
 * fulfilment;
 * transactional inventory.
 
-## 5.11 Cloud AI and Coding Agents
+## 5.11 Guides / AI and Coding Agents
 
 ```text
-AI and Coding Agents
+Guides / AI and Coding Agents
 ├── Overview
 ├── Install the Dyrected Agent Skill
 ├── Cloud Agent Rules
@@ -707,20 +757,22 @@ Self-hosted Dyrected
 ├── Start Here
 ├── Model Content
 ├── Deliver Content
-├── Admin and Editors
-├── Server Runtime
-├── Authentication
-├── Infrastructure
-├── Publishing and Workflows
-├── Media and Storage
-├── Framework Integrations
-├── Plugins and Extensions
-├── Application Patterns
-├── Deployment and Operations
-├── AI and Coding Agents
+├── Editor Experience
+├── Guides
+├── Examples & Recipes
+├── Deployment & Operations
 ├── Reference
 └── Troubleshooting
 ```
+
+Self-hosted-specific material should appear inside the smaller doors:
+
+* admin customization and editor accounts under **Editor Experience**;
+* publishing, versions, preview and workflows under **Editor Experience**;
+* framework and AI setup under **Guides**;
+* application patterns under **Examples & Recipes**;
+* database, storage, server runtime, hooks, plugins, auth collections,
+  infrastructure and production deployment under **Deployment & Operations**.
 
 ## 6.1 Start Here
 
@@ -880,12 +932,12 @@ Infrastructure
 
 The current database adapter documentation already identifies these adapters as part of a Self-hosted Dyrected application, so moving them under this runtime makes the existing intention explicit.
 
-## 6.8 Publishing and Workflows
+## 6.8 Editor Experience / Publishing
 
 Mostly shared with Cloud:
 
 ```text
-Publishing and Workflows
+Editor Experience / Publishing
 ├── Drafts
 ├── Versions
 ├── Autosave
@@ -900,10 +952,11 @@ Publishing and Workflows
 
 The Self-hosted version may include arbitrary TypeScript handlers.
 
-## 6.9 Media and Storage
+## 6.9 Media
 
 ```text
-Media and Storage
+Media
+├── Overview
 ├── Upload Collections
 ├── Storage Adapters
 ├── Local Storage
@@ -916,10 +969,10 @@ Media and Storage
 └── Serving Media
 ```
 
-## 6.10 Framework Integrations
+## 6.10 Guides / Frameworks
 
 ```text
-Framework Integrations
+Guides / Frameworks
 ├── Next.js
 │   ├── Overview
 │   ├── Installation
@@ -989,10 +1042,10 @@ These patterns should be marked clearly:
 
 This is where the existing application-shaped examples can live without confusing Cloud users.
 
-## 6.13 Deployment and Operations
+## 6.13 Deployment & Operations
 
 ```text
-Deployment and Operations
+Deployment & Operations
 ├── Production Architecture
 ├── Deployment Overview
 ├── Building Without a Database
@@ -1011,10 +1064,10 @@ Deployment and Operations
 └── Production Checklist
 ```
 
-## 6.14 Self-hosted AI and Coding Agents
+## 6.14 Guides / AI and Coding Agents
 
 ```text
-AI and Coding Agents
+Guides / AI and Coding Agents
 ├── Overview
 ├── Install the Agent Skill
 ├── Self-hosted Agent Rules
@@ -1275,36 +1328,33 @@ The current `llms.txt` is a canonical flat map and begins immediately with indiv
 
 ---
 
-# 11. Current section migration map
+# 11. Current real-content consolidation map
 
-| Current section        | Proposed location                                                      | Action                                   |
-| ---------------------- | ---------------------------------------------------------------------- | ---------------------------------------- |
-| Getting Started        | Runtime-specific Start Here                                            | Split                                    |
-| Concepts               | Shared Model Content introduction                                      | Keep and rewrite                         |
-| Configuration          | Shared project configuration                                           | Keep with runtime variants               |
-| Fields                 | Model Content                                                          | Keep                                     |
-| Access Control         | Roles and Permissions                                                  | Adapt examples by runtime                |
-| Hooks                  | Cloud Rules/Events and Self-hosted Server Runtime                      | Split completely                         |
-| Database               | Self-hosted Infrastructure                                             | Move                                     |
-| Managing Data          | Deliver Content                                                        | Rename                                   |
-| REST API               | Deliver Content                                                        | Keep and reframe as content API in Cloud |
-| Admin                  | Editor Experience                                                      | Keep                                     |
-| Authentication         | Cloud Editor Accounts and Self-hosted Authentication                   | Split                                    |
-| Audit                  | Editor Experience / Operations                                         | Keep                                     |
-| Custom Components      | Admin customization                                                    | Keep with runtime boundaries             |
-| Email                  | Editor notifications in Cloud; email adapter in Self-hosted            | Split                                    |
-| Live Preview           | Publishing and Workflows                                               | Keep                                     |
-| Upload                 | Cloud Media and Self-hosted Media/Storage                              | Split                                    |
-| Workflows              | Publishing and Workflows                                               | Keep                                     |
-| Deployment             | Self-hosted Deployment and Operations                                  | Move                                     |
-| Common Patterns        | Runtime-aware Recipes                                                  | Reorganize                               |
-| Custom App Surfaces    | Embedded Content Editing in Cloud; Application Surfaces in Self-hosted | Split                                    |
-| Ecommerce              | Storefront Content in Cloud; Ecommerce Application in Self-hosted      | Split                                    |
-| Plugins                | Primarily Self-hosted until Cloud-safe plugins exist                   | Move                                     |
-| Framework Integrations | Runtime-specific Framework Guides                                      | Split                                    |
-| Quick Starts           | Runtime + framework matrix                                             | Rebuild                                  |
-| Coding Agents          | Runtime-specific AI sections                                           | Split                                    |
-| Troubleshooting        | Runtime-specific troubleshooting                                       | Split                                    |
+| Current real folder | New outer door | Action |
+| --- | --- | --- |
+| `start-here` | Start Here | Keep. |
+| `model-content` | Model Content | Keep. |
+| `content-rules-and-integrations` | Model Content | Move under content modelling as content rules/access policies. |
+| `media` | Model Content | Move under Model Content as media/upload modelling. |
+| `deliver-content` | Deliver Content | Keep. |
+| `editor-experience` | Editor Experience | Keep. |
+| `admin-and-editors` | Editor Experience | Merge into the same section with runtime filtering. |
+| `publishing-and-workflows` | Editor Experience | Move under Editor Experience as publishing/preview/workflow pages. |
+| `framework-guides` | Guides | Move under Guides. |
+| `ai-and-coding-agents` | Guides | Move under Guides. |
+| `recipes` | Examples & Recipes | Rename outer door. |
+| `application-patterns` | Examples & Recipes | Move under examples/patterns. |
+| `cloud-operations` | Deployment & Operations | Move under Deployment & Operations. |
+| `infrastructure` | Deployment & Operations | Move under Deployment & Operations. |
+| `deployment-and-operations` | Deployment & Operations | Keep as the destination section. |
+| `server-runtime` | Deployment & Operations | Move under self-hosted runtime operations. |
+| `authentication` | Deployment & Operations or Editor Experience | Decide page-by-page. Cloud editor/team auth belongs in Editor Experience; self-hosted app-user/auth-collection pages likely belong in Deployment & Operations. |
+| `plugins-and-extensions` | Deployment & Operations | Move under self-hosted operations; keep unpublished placeholders hidden. |
+| `reference` | Reference | Keep. |
+| `troubleshooting` | Troubleshooting | Keep. |
+
+Do not add missing pages during this consolidation. Move only pages that exist
+and are published or intentionally visible.
 
 ---
 
@@ -1314,50 +1364,73 @@ Do not organise the documentation primarily by internal package architecture.
 
 Use the order in which a developer succeeds.
 
-## Cloud sidebar
+## Shared outer door order
 
 ```text
 Start Here
 Model Content
 Deliver Content
 Editor Experience
-Publishing and Workflows
-Content Rules and Integrations
-Media
-Framework Guides
-Recipes
-Cloud Operations
-AI and Coding Agents
+Guides
+Examples & Recipes
+Deployment & Operations
 Reference
 Troubleshooting
 ```
 
-## Self-hosted sidebar
+## Cloud sidebar behavior
 
 ```text
 Start Here
 Model Content
 Deliver Content
-Admin and Editors
-Server Runtime
-Authentication
-Publishing and Workflows
-Media and Storage
-Framework Integrations
-Plugins and Extensions
-Application Patterns
-Infrastructure
-Deployment and Operations
-AI and Coding Agents
+Editor Experience
+Guides
+Examples & Recipes
+Deployment & Operations
 Reference
 Troubleshooting
 ```
+
+Cloud filtering should hide self-hosted-only runtime pages such as database
+adapters, arbitrary TypeScript hooks, plugins, application-user auth
+collections, custom endpoints and self-hosted deployment checklists.
+
+## Self-hosted sidebar behavior
+
+```text
+Start Here
+Model Content
+Deliver Content
+Editor Experience
+Guides
+Examples & Recipes
+Deployment & Operations
+Reference
+Troubleshooting
+```
+
+Self-hosted filtering should include runtime pages such as server hooks,
+database adapters, storage adapters, app-user auth collections, plugins,
+application patterns and production deployment.
 
 ---
 
 # 13. Recommended implementation order
 
-## Phase 1: Establish the boundary
+## Phase 1: Consolidate the real IA
+
+1. Rename the outer menu to the smaller door set:
+   `Start Here`, `Model Content`, `Deliver Content`, `Editor Experience`,
+   `Guides`, `Examples & Recipes`, `Deployment & Operations`, `Reference`,
+   `Troubleshooting`.
+2. Move only existing, published pages.
+3. Keep missing/future pages out of navigation, search and AI docs.
+4. Regenerate runtime manifest, search indexes and `llms` files.
+5. Verify Cloud and Self-hosted sidebars use the same outer doors with
+   runtime-specific children.
+
+## Phase 2: Establish the runtime boundary
 
 1. Add the runtime selector.
 2. Add Cloud versus Self-hosted.
@@ -1366,15 +1439,17 @@ Troubleshooting
 5. Create separate `llms` files.
 6. Remove unpublished placeholder pages from navigation and AI indexes.
 
-## Phase 2: Split the confusing features
+## Phase 3: Split or relocate the confusing features
 
-1. Split hooks into Cloud Content Rules, Cloud Content Events and Self-hosted Server Hooks.
-2. Split authentication into Cloud Editor Accounts and Self-hosted Authentication Collections.
-3. Move database and production deployment into Self-hosted.
-4. Split Custom App Surfaces.
-5. Split ecommerce examples.
+1. Move content rules/access policies under Model Content.
+2. Move publishing and live preview under Editor Experience.
+3. Move media/upload pages under Model Content.
+4. Move framework guides and AI/coding-agent pages under Guides.
+5. Move recipes and application patterns under Examples & Recipes.
+6. Move Cloud operations, infrastructure, deployment, server runtime, plugins
+   and self-hosted auth/runtime pages under Deployment & Operations.
 
-## Phase 3: Rebuild the onboarding paths
+## Phase 4: Rebuild the onboarding paths
 
 1. Create a Cloud-first successful quick start.
 2. Create a separate Self-hosted quick start.
@@ -1382,7 +1457,7 @@ Troubleshooting
 4. Remove mixed-runtime code examples.
 5. Add migration guidance between runtimes.
 
-## Phase 4: Strengthen Cloud
+## Phase 5: Strengthen Cloud when pages are real
 
 1. Document content events.
 2. Document signed webhooks.

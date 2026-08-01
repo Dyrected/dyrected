@@ -1,0 +1,57 @@
+---
+title: Archive records instead of deleting them
+description: Add an archive flag, hide archived rows from normal readers, and disable destructive deletion.
+runtime: self-hosted
+runtimeGroup: recipe-archive-instead-of-delete
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Add an archive flag, hide archived rows from normal readers, and disable destructive deletion.
+
+## Use this when
+
+- archive content instead of deleting it
+- hide old records from normal queries
+- soft delete documents
+- retire entries without removing them
+
+## Dyrected concepts
+
+`access`, `defaultValue`, `soft delete`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineBooleanField, defineCollection, defineTextField } from "@dyrected/core";
+
+export const Announcements = defineCollection({
+  slug: "announcements",
+  access: {
+    read: ({ user }) =>
+      user?.roles?.includes("admin") ? true : { archived: { equals: false } },
+    create: ({ user }) => Boolean(user),
+    update: ({ user }) => Boolean(user),
+    delete: () => false,
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineBooleanField({
+      name: "archived",
+      label: "Archived",
+      defaultValue: false,
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

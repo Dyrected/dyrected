@@ -1,0 +1,11 @@
+{
+  "title": "Typed SDK",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "filter",
+    "sort",
+    "pagination",
+    "depth"
+  ]
+}

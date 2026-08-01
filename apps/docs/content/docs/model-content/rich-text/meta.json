@@ -1,0 +1,19 @@
+{
+  "title": "Rich Text",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "official-features",
+    "custom-features",
+    "blocks",
+    "converters",
+    "converting-html",
+    "converting-jsx",
+    "converting-markdown",
+    "converting-plaintext",
+    "rendering-on-demand",
+    "slate",
+    "views",
+    "migration"
+  ]
+}

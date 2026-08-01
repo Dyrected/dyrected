@@ -1,0 +1,11 @@
+{
+  "title": "Start Here",
+  "runtimeDefault": "shared",
+  "pages": [
+    "what-is-dyrected",
+    "cloud-vs-self-hosted",
+    "choose-a-runtime",
+    "use-cases",
+    "installation"
+  ]
+}

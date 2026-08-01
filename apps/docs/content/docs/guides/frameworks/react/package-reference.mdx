@@ -1,0 +1,130 @@
+---
+title: Package Reference
+description: Use Dyrected in a plain React app with a provider, hooks, live preview, and an embeddable admin route.
+runtime: shared
+runtimeGroup: framework-guides-react-package-reference
+runtimeNotes: React can consume a Cloud-backed or self-hosted Dyrected API; it does not decide where the backend runs.
+---
+
+`@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
+
+If you are already in Next.js, prefer [`@dyrected/next`](/docs/guides/frameworks/nextjs/package-reference) instead.
+
+## What the package gives you
+
+The React package adds:
+
+- `DyrectedProvider`
+- `useDyrected`
+- `useLivePreview`
+- `Blocks` and `useDyPath`
+- `DyrectedAdmin`
+- media and icon components
+
+It assumes you already have a running Dyrected API to talk to.
+
+## Install the packages
+
+```bash
+pnpm add @dyrected/react @dyrected/sdk
+```
+
+If you want to embed the admin UI too, make sure your app also has the admin peer dependencies available:
+
+```bash
+pnpm add react-router-dom @tanstack/react-query
+```
+
+## Provide one shared client
+
+Create the SDK client once and provide it to the app root:
+
+```tsx
+// src/main.tsx
+import ReactDOM from "react-dom/client";
+import { DyrectedProvider } from "@dyrected/react";
+import { createClient } from "@dyrected/sdk";
+import App from "./App";
+
+const client = createClient({
+  baseUrl: import.meta.env.VITE_DYRECTED_URL,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+});
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <DyrectedProvider client={client}>
+    <App />
+  </DyrectedProvider>,
+);
+```
+
+From there, every component can read the shared client through `useDyrected()`.
+
+## Fetch content in components
+
+Use `useDyrected()` when a component needs the shared SDK client from `DyrectedProvider`. For the full rendering workflow, use [Displaying Content in React](/docs/guides/frameworks/react/displaying-content-in-react).
+
+## Add live preview when the page needs it
+
+Use `useLivePreview` when a route should update from the admin preview iframe. Keep the published fetch path as the main implementation, then make preview additive on top of it.
+
+For the guided flow, use [Adding a Visual Editor in React](/docs/guides/frameworks/react/adding-a-visual-editor-in-reactjs).
+
+## Embed the admin
+
+If the React app should host the admin too, render `DyrectedAdmin` on a dedicated route:
+
+```tsx
+import { DyrectedAdmin } from "@dyrected/react";
+import "@dyrected/admin/styles";
+
+export function AdminPage() {
+  return (
+    <DyrectedAdmin
+      baseUrl={import.meta.env.VITE_DYRECTED_URL}
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+    />
+  );
+}
+```
+
+This is the right path when the React app is only an admin host or when it needs to embed the dashboard alongside the rest of the app.
+
+## `DyrectedAdmin` theme props
+
+When the React app already owns a dark, light, or system preference, pass that state into `DyrectedAdmin` so the embedded admin uses the same preference.
+
+The component accepts:
+
+- `theme`: the preferred theme, one of `system`, `light`, or `dark`
+- `systemTheme`: the currently resolved system theme, either `light` or `dark`
+- `onThemeChange`: callback fired when the admin changes its preferred theme
+
+```tsx
+import { useState } from "react";
+import { DyrectedAdmin } from "@dyrected/react";
+import "@dyrected/admin/styles";
+
+export function AdminPage() {
+  const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [systemTheme] = useState<"light" | "dark">("light");
+
+  return (
+    <DyrectedAdmin
+      baseUrl={import.meta.env.VITE_DYRECTED_URL}
+      apiKey={import.meta.env.VITE_DYRECTED_API_KEY}
+      theme={theme}
+      systemTheme={systemTheme}
+      onThemeChange={setTheme}
+    />
+  );
+}
+```
+
+## Related pages
+
+- [Choose a package](/docs/guides/frameworks/choose-a-package)
+- [SDK](/docs/guides/frameworks/sdk)
+- [Displaying content in React](/docs/guides/frameworks/react/displaying-content-in-react)
+- [Live preview](/docs/editor-experience/publishing/live-preview/overview)
+- [Admin](/docs/editor-experience/overview)

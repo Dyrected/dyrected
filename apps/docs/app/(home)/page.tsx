@@ -22,7 +22,7 @@ const quickstarts = [
     label: 'AI agents',
     descriptor: 'Set up with a coding agent',
     href: getRuntimePageUrl(
-      'quick-start-guides/coding-agents-and-ai-app-builders/setting-up-your-cloud-site',
+      'ai-and-coding-agents/setting-up-your-cloud-site',
       DOCS_PRODUCT_RUNTIME,
     ),
     badge: <Bot size={18} />,
@@ -30,25 +30,25 @@ const quickstarts = [
   {
     label: 'Next.js',
     descriptor: 'Cloud or self-hosted',
-    href: getRuntimePageUrl('quick-start-guides/nextjs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('framework-guides/nextjs/overview', DOCS_PRODUCT_RUNTIME),
     badge: <NextLogo />,
   },
   {
     label: 'Nuxt',
     descriptor: 'Cloud or self-hosted',
-    href: getRuntimePageUrl('quick-start-guides/nuxtjs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('framework-guides/nuxt/overview', DOCS_PRODUCT_RUNTIME),
     badge: <NuxtLogo />,
   },
   {
     label: 'React',
     descriptor: 'Cloud-backed setup',
-    href: getRuntimePageUrl('quick-start-guides/reactjs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('framework-guides/react/overview', DOCS_PRODUCT_RUNTIME),
     badge: <ReactLogo />,
   },
   {
     label: 'Vue',
     descriptor: 'Cloud-backed setup',
-    href: getRuntimePageUrl('quick-start-guides/vuejs-quick-start/overview', DOCS_PRODUCT_RUNTIME),
+    href: getRuntimePageUrl('framework-guides/vue/overview', DOCS_PRODUCT_RUNTIME),
     badge: <VueLogo />,
   },
 ]
@@ -62,13 +62,13 @@ export default function HomePage() {
       >
         <div className="mt-2 flex flex-wrap items-center justify-center gap-4">
           <a
-            href={getRuntimePageUrl('basics/getting-started/what-is-dyrected', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('start-here/what-is-dyrected', DOCS_PRODUCT_RUNTIME)}
             className="btn-lime rounded-full px-8 py-3 text-sm font-semibold"
           >
             Start with Cloud
           </a>
           <a
-            href={getRuntimePageUrl('basics/getting-started/choose-a-runtime', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('start-here/choose-a-runtime', DOCS_PRODUCT_RUNTIME)}
             className="btn-violet-outline rounded-full px-8 py-3 text-sm font-semibold"
           >
             Choose a runtime
@@ -98,7 +98,7 @@ export default function HomePage() {
             </div>
             <InstallCommand />
             <a
-              href={getRuntimePageUrl('basics/getting-started/installation', DOCS_PRODUCT_RUNTIME)}
+              href={getRuntimePageUrl('start-here/installation', DOCS_PRODUCT_RUNTIME)}
               className="link-violet mt-auto inline-flex items-center gap-1 text-sm font-medium"
             >
               Installation guide
@@ -121,7 +121,7 @@ export default function HomePage() {
             </div>
             <a
               href={getRuntimePageUrl(
-                'quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt',
+                'ai-and-coding-agents/using-the-dyrected-prompt',
                 DOCS_PRODUCT_RUNTIME,
               )}
               className="link-violet mt-auto inline-flex items-center gap-1 text-sm font-medium"
@@ -172,37 +172,37 @@ export default function HomePage() {
           <Card
             title="Core concepts"
             description="How collections, fields, globals, and access control fit together in a Dyrected config."
-            href={getRuntimePageUrl('basics/getting-started/concepts', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('model-content/concepts', DOCS_PRODUCT_RUNTIME)}
             icon={<Compass size={20} />}
           />
           <Card
             title="Managing data"
             description="Query and mutate your content with the TypeScript SDK and the REST API."
-            href={getRuntimePageUrl('managing-data/sdk-api/overview', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('deliver-content/sdk-api/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<Database size={20} />}
           />
           <Card
             title="The admin panel"
             description="Configure the editing experience your clients and teams actually use every day."
-            href={getRuntimePageUrl('features/admin/overview', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('editor-experience/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<Eye size={20} />}
           />
           <Card
             title="Authentication"
             description="Use Cloud for content-workspace access, or self-hosted collection auth when Dyrected should own application users."
-            href={getRuntimePageUrl('features/authentication/overview', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('editor-experience/editor-accounts', DOCS_PRODUCT_RUNTIME)}
             icon={<ShieldCheck size={20} />}
           />
           <Card
             title="Live preview"
             description="Let editors see content changes reflected in your real frontend as they type."
-            href={getRuntimePageUrl('features/live-preview/overview', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('publishing-and-workflows/live-preview/overview', DOCS_PRODUCT_RUNTIME)}
             icon={<Eye size={20} />}
           />
           <Card
             title="Deployment"
             description="Deploy Cloud-backed sites and self-hosted runtimes with the right boundary in mind."
-            href={getRuntimePageUrl('deployment/production/deployment', DOCS_PRODUCT_RUNTIME)}
+            href={getRuntimePageUrl('deployment-and-operations/production/deployment', DOCS_PRODUCT_RUNTIME)}
             icon={<Rocket size={20} />}
           />
         </div>

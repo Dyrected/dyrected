@@ -1,0 +1,12 @@
+{
+  "title": "Frameworks",
+  "runtimeDefault": "cloud",
+  "pages": [
+    "choose-a-package",
+    "sdk",
+    "nextjs",
+    "nuxt",
+    "react",
+    "vue"
+  ]
+}

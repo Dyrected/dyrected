@@ -1,0 +1,107 @@
+---
+title: Datetime
+description: A field for a specific instant, stored as an ISO string and shown with a date-and-time picker.
+---
+
+The datetime field stores a specific instant — a moment with both a date and a time — such as a publication time or an appointment slot. Editors get a combined date-and-time picker, and values cross the API as ISO-compatible strings. Since an instant carries no timezone of its own, decide how you want to present it and be explicit about the timezone on your frontend.
+
+Reach for [Date](/docs/model-content/fields/date) when only the calendar day matters, or [Time](/docs/model-content/fields/time) when you need a time of day whose date lives elsewhere.
+
+```ts
+defineDateTimeField({ name: 'publishAt', label: 'Publish at' })
+```
+
+## Formatting how the instant displays
+
+By default a datetime shows both the date and the time in the admin list. Set `admin.format` to change the style, or to show a relative time like "in 2 hours" when that's more useful than an exact stamp:
+
+```ts
+defineDateTimeField({ name: 'publishAt', label: 'Publish at', admin: { format: 'relative' } })
+```
+
+To control the date and time parts separately, pass an object with a `dateStyle` and `timeStyle`:
+
+```ts
+defineDateTimeField({
+  name: 'publishAt',
+  label: 'Publish at',
+  admin: { format: { type: 'datetime', dateStyle: 'medium', timeStyle: 'short' } },
+})
+```
+
+Both `dateStyle` and `timeStyle` accept `'short'`, `'medium'`, `'long'`, or `'full'`. Add a `locale` (a BCP 47 tag like `'en-GB'`) to pin the formatting; leave it off to follow the viewer's browser locale.
+
+Formatting is display-only — the value is still stored and returned as an ISO string, so your frontend stays in charge of how the instant appears, including which timezone you present it in.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/model-content/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-DATETIME:START */}
+## DateFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type DateFieldAdmin = {
+  /** How the value is displayed in read-only Admin surfaces (list cells, read-only inputs). Does not affect storage or editing. */
+  format?: DateFormat;
+};
+```
+
+
+## DateFormat
+
+How a `date`, `datetime`, or `time` field's value is presented in read-only
+Admin surfaces. Display only and JSON-serializable so it round-trips through
+Dyrected Cloud.
+
+Pass a shorthand string (`format: "relative"`) or an object for finer control
+(`format: { type: "date", dateStyle: "long" }`).
+
+```ts
+export type DateFormat =
+  /** Shorthand for the matching object form, using that format's defaults. */
+  | "date"
+  | "datetime"
+  | "time"
+  | "relative"
+  /** Calendar date, e.g. `Jan 5, 2026`. */
+  | {
+      type: "date";
+      dateStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Date and time together, e.g. `Jan 5, 2026, 2:30 PM`. */
+  | {
+      type: "datetime";
+      dateStyle?: "short" | "medium" | "long" | "full";
+      timeStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Time of day, e.g. `2:30 PM`. */
+  | {
+      type: "time";
+      timeStyle?: "short" | "medium" | "long" | "full";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    }
+  /** Relative to now, e.g. `3 days ago`, `in 2 hours`. */
+  | {
+      type: "relative";
+      /** BCP 47 locale tag. Defaults to the viewer's browser locale. */
+      locale?: string;
+    };
+```
+
+
+## DateTimeField
+
+A specific instant, stored and returned as an ISO date-time string.
+
+```ts
+export type DateTimeField = TypedField<"datetime", string, DateFieldAdmin>;
+```
+{/* GENERATED:REFERENCE-FIELD-DATETIME:END */}

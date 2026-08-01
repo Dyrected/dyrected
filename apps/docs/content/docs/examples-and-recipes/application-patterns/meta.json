@@ -1,0 +1,14 @@
+{
+  "title": "Application Patterns",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "content-modeling",
+    "access-control",
+    "admin-experience",
+    "custom-app-surfaces",
+    "data-lifecycle",
+    "workflows",
+    "integrations"
+  ]
+}

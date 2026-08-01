@@ -1,0 +1,165 @@
+---
+title: Cookie Strategy
+description: Where to store a Dyrected session token between requests — httpOnly cookies, client-readable cookies, and storage — and what each choice means for security, since the server authenticates only from the Authorization header.
+runtime: self-hosted
+---
+
+Dyrected's server never sets or reads an auth cookie. Login returns the token in the response body, and every authenticated request is proven by the `Authorization: Bearer <token>` header — nothing else. That means *where the token lives between requests is your decision*, and "cookie strategy" here is really about picking a storage spot and understanding its trade-offs.
+
+By the end of this page you should know the options, which one to reach for by default, and what each choice does to your exposure. If you want the signing mechanics behind the token, see [JWT Strategy](/docs/deployment-and-operations/authentication/jwt-strategy).
+
+## The mental model
+
+There are two separate steps, and keeping them apart makes the choices clear:
+
+1. **Storage** — after login you get a token string. You decide where to keep it: a cookie, browser storage, or a server session. Dyrected has no opinion and no involvement here.
+2. **Transport** — on each request, the token must arrive in the `Authorization` header. The server authenticates from that header alone.
+
+Because transport is always the header, a token sitting in a cookie is not automatically sent to Dyrected — something in your app has to read it and attach the header. The browser never sends your Dyrected token on its own; it goes out only when your code puts it in the `Authorization` header.
+
+The real question, then, is which storage spot best protects the token itself.
+
+## The options at a glance
+
+| Storage | Readable by JavaScript? | Best for |
+| --- | --- | --- |
+| `httpOnly` cookie | No | Server-rendered apps (Next.js) — strongest protection against token theft via XSS |
+| Client-readable cookie | Yes | Apps that need the token in the browser and want it to survive reloads (the Nuxt helper uses this) |
+| Browser storage (`localStorage`) | Yes | SPAs that manage auth entirely client-side (the Vue helper uses this) |
+| In memory only | Yes, but lost on reload | Short-lived server scripts and the raw SDK default |
+
+The safest default, when your framework allows it, is an **`httpOnly` cookie set by your own server**. Because scripts on the page cannot read an `httpOnly` cookie, a cross-site scripting bug cannot steal the token straight out of storage. The trade-off is that only your server code can read it, so you attach the header on the server.
+
+## Next.js: httpOnly cookie
+
+In Next.js, log the user in inside a Server Action, then store the returned token in an `httpOnly` cookie. The browser holds it but never exposes it to page scripts:
+
+```ts
+// app/login/actions.ts
+'use server'
+import { cookies } from 'next/headers'
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
+
+export async function login(email: string, password: string) {
+  const { token, user } = await client.collection('users').login(email, password)
+
+  cookies().set('dyrected-token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  })
+  return user
+}
+```
+
+On later requests, read the cookie on the server and hand the token to the SDK so it goes out as the `Authorization` header:
+
+```ts
+// Reading the current user in a Server Component
+import { cookies } from 'next/headers'
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! })
+
+export async function getUser() {
+  const token = cookies().get('dyrected-token')?.value
+  if (!token) return null
+
+  client.setToken(token)
+  try {
+    return await client.collection('users').me()
+  } catch {
+    return null
+  }
+}
+```
+
+To keep signed-out visitors away from protected pages, check the cookie in middleware:
+
+```ts
+// middleware.ts
+import { NextRequest, NextResponse } from 'next/server'
+
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get('dyrected-token')?.value
+  if (!token) return NextResponse.redirect(new URL('/login', req.url))
+  return NextResponse.next()
+}
+
+export const config = { matcher: ['/dashboard/:path*', '/account/:path*'] }
+```
+
+## Nuxt: the built-in composable
+
+Nuxt ships `useDyrectedAuth`, which handles storage for you. Pass the auth collection's slug; it reads your Dyrected connection from runtime config:
+
+```vue
+<!-- components/LoginForm.vue -->
+<script setup lang="ts">
+const { user, isLoggedIn, login, logout } = useDyrectedAuth('users')
+
+async function submit(e: Event) {
+  const form = e.target as HTMLFormElement
+  await login(form.email.value, form.password.value)
+}
+</script>
+
+<template>
+  <div v-if="isLoggedIn">
+    Hello, {{ user?.email }} — <button @click="logout">Log out</button>
+  </div>
+  <form v-else @submit.prevent="submit">
+    <input name="email" type="email" placeholder="Email" />
+    <input name="password" type="password" placeholder="Password" />
+    <button type="submit">Log in</button>
+  </form>
+</template>
+```
+
+Under the hood the Nuxt helper stores the token in a cookie named `dyrected_token_<slug>` with a 7-day lifetime and `sameSite: 'lax'`. That cookie is readable by client code (it is not `httpOnly`), which is what lets the composable stay reactive across reloads. It is a good default for Nuxt apps; just know the token is reachable by scripts on the page, so treat XSS prevention as part of your security work.
+
+## Vue (SPA): the built-in composable
+
+The Vue composable has the same shape but takes your connection details explicitly, and it stores the token in `localStorage` under `dyrected_token_<slug>`:
+
+```ts
+const { user, isLoggedIn, login, logout } = useDyrectedAuth('users', {
+  baseUrl: import.meta.env.VITE_DYRECTED_URL,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+})
+```
+
+`localStorage` survives reloads and is simple for a pure SPA, with the same caveat as a client-readable cookie: page scripts can read it, so it is only as safe as your app is from XSS.
+
+## React and the raw SDK
+
+The React package does not ship an auth hook, so you wire storage yourself against the SDK. The SDK holds the token **in memory only** — it never persists it — so on its own the session is lost on reload:
+
+```ts
+import { createClient } from '@dyrected/sdk'
+
+const client = createClient({ baseUrl: import.meta.env.VITE_DYRECTED_URL })
+
+const { token } = await client.collection('users').login(email, password)
+client.setToken(token) // in memory for this client instance
+```
+
+To survive reloads, persist that `token` yourself — write it to a cookie or `localStorage` after login, and call `client.setToken(saved)` when your app boots. This gives you full control and the same trade-offs as the options above: an `httpOnly` cookie (set via a small server route) is the most protective; a client-readable cookie or `localStorage` is simpler but reachable by scripts.
+
+## Choosing
+
+- **Server-rendered app (Next.js)?** Use an `httpOnly` cookie set by your server. Strongest protection, and you already have a server to read it.
+- **Nuxt app?** Use `useDyrectedAuth` — the cookie storage is handled and sensible.
+- **Pure SPA (Vue/React)?** Use the Vue composable, or persist the token yourself. Accept that the token is script-readable and invest in XSS hardening.
+- **Short-lived server script?** In-memory is fine; there is nothing to persist.
+
+Whatever you pick, remember to clear the stored token on logout (`client.clearToken()` plus removing it from your cookie or storage), or the next visit will look signed in with a token you meant to discard.
+
+## Where to go next
+
+- [JWT Strategy](/docs/deployment-and-operations/authentication/jwt-strategy) — how the token is signed and how long it lasts
+- [Operations](/docs/deployment-and-operations/authentication/operations) — the login and logout endpoints
+- [Token Data](/docs/deployment-and-operations/authentication/token-data) — what the stored token actually contains

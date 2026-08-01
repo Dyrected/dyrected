@@ -1,0 +1,157 @@
+---
+title: Access Control
+description: Application patterns for row-level access, role-based permissions, and deciding who can operate on which content.
+runtime: variant
+runtimeGroup: application-patterns-access-control
+runtimeNotes: Cloud access patterns should use Jexl strings, serializable policies, and Cloud workspace identity; self-hosted patterns may use function access, hooks, and application-user auth.
+---
+
+Use these patterns when your main concern is who should be allowed to read, create, update, or delete content. They help you move from broad permissions toward rules that match how real teams and users work.
+
+<CloudOnly>
+
+In Cloud, keep access rules serializable. Use Jexl strings, boolean rules, and named policies that can sync to the hosted content backend. If a recipe stamps ownership with a function hook or depends on app-user accounts, treat that exact implementation as self-hosted and adapt the Cloud version to the Cloud-safe access-control pages.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+In self-hosted Dyrected, these patterns can use the full application runtime: collection auth, function access rules, function hooks, local policies, and tenant logic that belongs inside your server boundary.
+
+</SelfHostedOnly>
+
+<CloudOnly>
+
+## Cloud-safe access patterns
+
+Use these patterns when Dyrected Cloud owns the content backend and your application still owns product-specific customer behavior.
+
+### Publish public content, keep drafts private
+
+Use a Jexl ternary when anonymous readers should see only published entries, while signed-in editors can see draft and review content:
+
+```ts
+access: {
+  read: "user != null ? true : { status: { equals: 'published' } }",
+}
+```
+
+This is the safest Cloud default for blogs, guides, marketing pages, catalogs, and documentation content.
+
+### Let editors write content
+
+Use role checks or the built-in `hasRole` policy when content operations follow an editor/admin model:
+
+```ts
+access: {
+  create: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  update: { policy: 'hasRole', params: { roles: ['admin', 'editor'] } },
+  delete: { policy: 'hasRole', params: { role: 'admin' } },
+}
+```
+
+Use the equivalent Jexl string when the same rule should also drive field behavior in the admin form:
+
+```ts
+access: {
+  update: "'admin' in user.roles || 'editor' in user.roles",
+}
+```
+
+### Scope records to an owner
+
+Use `isOwner`, `createdByCurrentUser`, or a Jexl filter when a content record belongs to a specific user-like field:
+
+```ts
+access: {
+  read: { policy: 'isOwner', params: { field: 'ownerId' } },
+  update: { policy: 'isOwner', params: { field: 'ownerId' } },
+}
+```
+
+For the difference between creator, owner, and self rules, see [Dyrected Cloud access control](/docs/model-content/content-rules/access-control/cloud#createdbycurrentuser-vs-isowner).
+
+### Scope records to a workspace
+
+Use `isTenantMember` when content should stay inside a workspace, site, or tenant boundary:
+
+```ts
+access: {
+  read: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+  update: { policy: 'isTenantMember', params: { field: 'workspaceId' } },
+}
+```
+
+Keep checkout, billing, customer accounts, and product-specific authorization in your application backend. Cloud access rules should protect the content data Dyrected manages.
+
+Read the full docs:
+
+- [Dyrected Cloud access control](/docs/model-content/content-rules/access-control/cloud)
+- [Collection access control](/docs/model-content/content-rules/access-control/collections)
+- [Field access control](/docs/model-content/content-rules/access-control/fields)
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+## Limit documents to their owner
+
+**Problem:** signed-in users should only see or manage the records they own.
+
+This pattern returns a where constraint from collection access control and usually pairs it with a server hook that stamps ownership during creation. It is a good fit for customer dashboards, project spaces, and user-owned records.
+
+### Example implementation
+
+<RecipeExample id="owner-scoped-access" />
+
+Read the full docs:
+
+- [Collection access control](/docs/model-content/content-rules/access-control/collections)
+- [Collection hooks](/docs/deployment-and-operations/server-runtime/hooks/collections)
+
+## Restrict content operations by user role
+
+**Problem:** different team roles should have different permissions, such as public reads, editor writes, or admin-only deletion.
+
+This pattern uses collection access control to check roles on each operation. It is the right starting point when content needs a clearer separation between editors, reviewers, administrators, or public readers.
+
+### Example implementation
+
+<RecipeExample id="role-based-access" />
+
+Read the full docs:
+
+- [Collection access control](/docs/model-content/content-rules/access-control/collections)
+- [Authentication overview](/docs/editor-experience/editor-accounts)
+
+## Scope content to the current workspace
+
+**Problem:** users should only see or manage records that belong to their current workspace or organization.
+
+This pattern stamps a tenant identifier onto new records and returns tenant-scoped access constraints for reads and writes. It is the starting point for multi-workspace SaaS apps where isolation matters as much as authentication.
+
+### Example implementation
+
+<RecipeExample id="tenant-scoped-access" />
+
+Read the full docs:
+
+- [Collection access control](/docs/model-content/content-rules/access-control/collections)
+- [Collection hooks](/docs/deployment-and-operations/server-runtime/hooks/collections)
+
+## Let owners edit records while admins manage everything
+
+**Problem:** ordinary users should stay scoped to their own records, but administrators still need a way to intervene.
+
+This pattern combines ownership rules with an admin override. It works well for tickets, support requests, user-owned projects, and other records where support or operations staff may need broader access than the original owner.
+
+### Example implementation
+
+<RecipeExample id="owner-or-admin-access" />
+
+Read the full docs:
+
+- [Collection access control](/docs/model-content/content-rules/access-control/collections)
+- [Authentication overview](/docs/editor-experience/editor-accounts)
+
+</SelfHostedOnly>

@@ -10,9 +10,9 @@
   "intents": ["connect posts to authors", "show every post written by a user", "create a reverse relationship", "model one-to-many content"],
   "concepts": ["relationship", "join", "relationTo", "depth"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/content-modeling",
-    "/docs/basics/fields/relationship",
-    "/docs/basics/fields/join"
+    "/docs/examples-and-recipes/application-patterns/content-modeling",
+    "/docs/model-content/fields/relationship",
+    "/docs/model-content/fields/join"
   ],
   "requires": []
 }

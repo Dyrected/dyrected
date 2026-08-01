@@ -1,0 +1,56 @@
+---
+title: Create a responsive image library
+description: Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.
+runtime: variant
+runtimeGroup: recipe-responsive-image-library
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.
+
+## Use this when
+
+- create responsive image sizes
+- add generated media thumbnails
+- build a reusable image library
+- configure upload image presets
+
+## Dyrected concepts
+
+`upload`, `imageSizes`, `adminThumbnail`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField, defineTextareaField } from "@dyrected/core";
+
+export const Media = defineCollection({
+  slug: "media",
+  admin: { useAsTitle: "alt" },
+  upload: {
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+    maxFileSize: 10 * 1024 * 1024,
+    adminThumbnail: "card",
+    imageSizes: [
+      { name: "card", width: 640, height: 480, fit: "cover" },
+      { name: "hero", width: 1600, height: 900, fit: "cover" },
+    ],
+  },
+  fields: [
+    defineTextField({ name: "alt", label: "Alternative text", required: true }),
+    defineTextareaField({ name: "caption", label: "Caption" }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

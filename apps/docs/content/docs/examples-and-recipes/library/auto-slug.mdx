@@ -1,0 +1,75 @@
+---
+title: Generate a slug from a title
+description: Generate stable URL slugs on the server while showing editors the value live in the Admin UI.
+runtime: self-hosted
+runtimeGroup: recipe-auto-slug
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Generate stable URL slugs on the server while showing editors the value live in the Admin UI.
+
+## Use this when
+
+- make the URL follow the title
+- automatically generate a slug
+- create friendly URLs from titles
+- keep a slug synchronized with a title
+
+## Dyrected concepts
+
+`beforeChange`, `admin.hooks.onChange`, `promoted`, `unique`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+export const toSlug = (value: unknown) =>
+  String(value ?? "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+export const Posts = defineCollection({
+  slug: "posts",
+  hooks: {
+    beforeChange: [
+      ({ data, operation }) => {
+        if (operation === "create" || data.title !== undefined) {
+          return { ...data, slug: toSlug(data.title) };
+        }
+        return data;
+      },
+    ],
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({
+      name: "slug",
+      label: "Slug",
+      required: true,
+      unique: true,
+      promoted: true,
+      admin: {
+        hooks: {
+          onChange:
+            "value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value",
+        },
+      },
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

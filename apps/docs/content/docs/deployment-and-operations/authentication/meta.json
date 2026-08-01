@@ -1,0 +1,16 @@
+{
+  "title": "Authentication",
+  "runtimeDefault": "self-hosted",
+  "runtimePolicy": "inherit",
+  "pages": [
+    "overview",
+    "admin-sso",
+    "operations",
+    "jwt-strategy",
+    "cookie-strategy",
+    "token-data",
+    "__api-key-strategy",
+    "__custom-strategies",
+    "__email-verification"
+  ]
+}

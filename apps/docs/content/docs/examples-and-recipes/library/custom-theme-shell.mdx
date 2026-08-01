@@ -1,0 +1,71 @@
+---
+title: Build a theme-aware shell around Dyrected UI
+description: Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.
+runtime: shared
+runtimeGroup: recipe-custom-theme-shell
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.
+
+## Use this when
+
+- build a theme aware shell around dyrected ui
+- share dyrected theme state across a dashboard
+- add a dyrected theme switcher to my app shell
+- keep my product page and dyrected ui on the same theme
+
+## Dyrected concepts
+
+`AdminThemeProvider`, `AdminThemedRoot`, `useAdminTheme`
+
+**Additional packages:** `@dyrected/react`
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import {
+  AdminThemeProvider,
+  AdminThemedRoot,
+  useAdminTheme,
+} from "@dyrected/react";
+
+function ThemeSwitcher() {
+  const { theme, setTheme } = useAdminTheme();
+
+  return (
+    <select
+      value={theme}
+      onChange={(event) => setTheme(event.target.value as "system" | "light" | "dark")}
+    >
+      <option value="system">System</option>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+  );
+}
+
+export default function DashboardRoute() {
+  return (
+    <AdminThemeProvider>
+      <AdminThemedRoot>
+        <header>
+          <ThemeSwitcher />
+        </header>
+
+        <main>{/* page content */}</main>
+      </AdminThemedRoot>
+    </AdminThemeProvider>
+  );
+}
+```
+{/* GENERATED:RECIPE:END */}

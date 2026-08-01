@@ -1,0 +1,67 @@
+---
+title: Limit documents to their owner
+description: Return a where constraint from access control so authenticated users only read their own records.
+runtime: self-hosted
+runtimeGroup: recipe-owner-scoped-access
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Return a where constraint from access control so authenticated users only read their own records.
+
+## Use this when
+
+- users should only see their own records
+- add row level access
+- scope documents by owner
+- prevent users reading another user's data
+
+## Dyrected concepts
+
+`access.read`, `where`, `row-level access`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineRelationshipField, defineTextField } from "@dyrected/core";
+
+export const Projects = defineCollection({
+  slug: "projects",
+  access: {
+    read: ({ user }) => (user ? { owner: { equals: user.sub } } : false),
+    create: ({ user }) => Boolean(user),
+    update: ({ user }) => (user ? { owner: { equals: user.sub } } : false),
+    delete: ({ user }) => (user ? { owner: { equals: user.sub } } : false),
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, operation, user }) => {
+        if (operation !== "create") return data;
+        if (!user) throw new Error("Authentication is required to create a project.");
+        return { ...data, owner: user.sub };
+      },
+    ],
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Project name", required: true }),
+    defineRelationshipField({
+      name: "owner",
+      label: "Owner",
+      relationTo: "users",
+      required: true,
+      admin: { readOnly: true },
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

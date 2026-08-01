@@ -10,9 +10,9 @@
   "intents": ["add draft and publish states", "require review before publishing", "create an editorial workflow", "let editors submit content for approval"],
   "concepts": ["publishingWorkflow", "workflow transitions", "capabilities"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/workflows",
-    "/docs/features/workflows/overview",
-    "/docs/features/workflows/custom-workflows"
+    "/docs/examples-and-recipes/application-patterns/workflows",
+    "/docs/editor-experience/publishing/overview",
+    "/docs/editor-experience/publishing/custom-workflows"
   ],
   "requires": []
 }

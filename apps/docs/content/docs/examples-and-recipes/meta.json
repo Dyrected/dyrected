@@ -1,0 +1,11 @@
+{
+  "title": "Examples & Recipes",
+  "runtimeDefault": "shared",
+  "pages": [
+    "index",
+    "library",
+    "examples",
+    "application-patterns",
+    "ecommerce"
+  ]
+}

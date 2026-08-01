@@ -15,9 +15,9 @@
   ],
   "concepts": ["upload", "imageSizes", "adminThumbnail"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/integrations",
-    "/docs/features/upload/overview",
-    "/docs/features/upload/storage-adapters"
+    "/docs/examples-and-recipes/application-patterns/integrations",
+    "/docs/model-content/media/overview",
+    "/docs/model-content/media/storage-adapters"
   ],
   "requires": []
 }

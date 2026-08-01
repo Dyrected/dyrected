@@ -1,0 +1,88 @@
+---
+title: Scope content to the current workspace
+description: Stamp a workspace identifier onto new records and filter reads and writes to that tenant boundary.
+runtime: self-hosted
+runtimeGroup: recipe-tenant-scoped-access
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Stamp a workspace identifier onto new records and filter reads and writes to that tenant boundary.
+
+## Use this when
+
+- add multi-tenant access control
+- scope records to a workspace
+- keep organizations isolated
+- limit data by tenant
+
+## Dyrected concepts
+
+`access`, `beforeChange`, `tenant isolation`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineTextField } from "@dyrected/core";
+
+const getWorkspaceId = (user?: unknown) => {
+  if (!user || typeof user !== "object") return undefined;
+  const workspaceId = (user as Record<string, unknown>).workspaceId;
+  return typeof workspaceId === "string" && workspaceId.length > 0
+    ? workspaceId
+    : undefined;
+};
+
+export const Projects = defineCollection({
+  slug: "projects",
+  access: {
+    read: ({ user }) =>
+      getWorkspaceId(user)
+        ? { workspaceId: { equals: getWorkspaceId(user) } }
+        : false,
+    create: ({ user }) => Boolean(getWorkspaceId(user)),
+    update: ({ user }) =>
+      getWorkspaceId(user)
+        ? { workspaceId: { equals: getWorkspaceId(user) } }
+        : false,
+    delete: ({ user }) =>
+      user?.roles?.includes("admin")
+        ? true
+        : getWorkspaceId(user)
+          ? { workspaceId: { equals: getWorkspaceId(user) } }
+          : false,
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, operation, user }) => {
+        if (operation !== "create") return data;
+        const workspaceId = getWorkspaceId(user);
+        if (!workspaceId) {
+          throw new Error("A workspace is required to create a project.");
+        }
+        return { ...data, workspaceId };
+      },
+    ],
+  },
+  fields: [
+    defineTextField({ name: "name", label: "Project name", required: true }),
+    defineTextField({
+      name: "workspaceId",
+      label: "Workspace ID",
+      required: true,
+      admin: { readOnly: true },
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

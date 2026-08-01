@@ -15,9 +15,9 @@
   ],
   "concepts": ["relationship", "hasMany", "urlPattern"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/content-modeling",
-    "/docs/basics/fields/relationship",
-    "/docs/basics/configuration/collections"
+    "/docs/examples-and-recipes/application-patterns/content-modeling",
+    "/docs/model-content/fields/relationship",
+    "/docs/model-content/configuration/collections"
   ],
   "requires": []
 }

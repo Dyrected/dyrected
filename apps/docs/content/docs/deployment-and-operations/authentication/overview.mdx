@@ -1,0 +1,173 @@
+---
+title: Authentication Overview
+description: Use self-hosted Dyrected collection auth for application users, editor sessions, and custom authentication flows.
+runtime: self-hosted
+runtimeGroup: authentication-overview
+runtimeNotes: Cloud auth is editor/admin access for the hosted content workspace; collection auth is self-hosted application-user auth.
+---
+
+This page helps you put authentication in the right place before you build around it.
+
+In **Dyrected Cloud**, authentication is about who can enter the hosted content workspace: owners, teammates, clients, editors, and administrators. Your application still owns customer login, member accounts, checkout sessions, tenant membership, and product-specific identity.
+
+In **self-hosted Dyrected**, authentication can also be part of your application runtime. That is where collection auth, JWT sessions, password reset, invitations, and auth endpoints belong.
+
+
+## Self-hosted collection auth
+
+Authentication in self-hosted Dyrected is opt-in and lives on your collections. Turn a collection into a login provider with `auth`, and Dyrected adds the fields, routes, and session behavior needed to use those documents as real accounts.
+
+Use this path when Dyrected is part of your application backend and should own one or more account collections.
+
+## What enabling `auth` does
+
+An **auth collection** is a normal collection with login attached. When you enable `auth`, three things happen:
+
+1. **Fields are injected.** Every document gets an `email` field and a `password` field. The email is required and unique. The password is hashed on save and never returned in API responses.
+2. **Endpoints are mounted.** Auth routes appear under `/api/collections/{slug}/` for login, logout, the current user, password reset, invitations, and related flows.
+3. **Sessions become available.** On login, the server signs a JSON Web Token (JWT) and returns it. Future requests send that token, and Dyrected turns it back into a `user` that access rules and hooks can read.
+
+You can enable auth on more than one collection. A common shape is one collection for application members and a separate `__admins` collection for people who can log into the CMS dashboard.
+
+## Start with `auth: true`
+
+Add `auth: true` to a collection when you want the default setup. You declare only the extra fields you want:
+
+```ts
+// dyrected.config.ts
+import { defineCollection } from "@dyrected/core";
+
+export const Users = defineCollection({
+  slug: "users",
+  auth: true,
+  fields: [{ name: "name", label: "Name", type: "text" }],
+});
+```
+
+That collection now has working login endpoints.
+
+Before anyone can log in, set the signing secret Dyrected uses for session tokens:
+
+```bash
+# .env.local
+DYRECTED_JWT_SECRET=a-long-random-secret-at-least-32-chars
+```
+
+The same secret must be present in every environment, and it must not be empty. Auth collections throw at startup if `DYRECTED_JWT_SECRET` is missing. Changing it invalidates existing sessions.
+
+## Tune auth only when you need to
+
+The recommended path is still `auth: true`. Reach for an object only when you need to change built-in behavior.
+
+The most important production options today are the login lockout settings:
+
+```ts
+export const Users = defineCollection({
+  slug: "users",
+  auth: {
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000, // 15 minutes
+  },
+  fields: [{ name: "name", label: "Name", type: "text" }],
+});
+```
+
+`maxLoginAttempts` controls how many bad passwords Dyrected allows before locking the account. `lockTime` controls how long that lock lasts, in milliseconds.
+
+This protects the account itself. It does **not** replace host-level rate limiting, WAF rules, or proxy throttling for public routes. Keep those in place too, especially for auth, uploads, and preview endpoints. The deployment side of that lives in [Preventing Abuse](/docs/deployment-and-operations/production/preventing-abuse).
+
+## Know what Dyrected injects
+
+Enabling auth injects these fields into the collection. You can redefine them to add labels or admin options, but their core constraints are always enforced:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `email` | `email` | Required and unique. This is the login identifier. |
+| `password` | `text` | Required, hashed on save, and stripped from API read responses. |
+| `roles` | `select` | Available by default so you have somewhere to store permissions from day one. |
+
+If you declare `roles` yourself on an auth collection, keep it as a multi-value field. Dyrected treats `user.roles` as an array of strings in access rules, workflow capability checks, and admin auth flows.
+
+Dyrected also mounts auth endpoints under `/api/collections/{slug}/`: `login`, `logout`, `me`, `refresh-token`, `forgot-password`, `reset-password`, `invite`, `accept-invite`, `init`, and `first-user`. Each request and response shape is documented in [Operations](/docs/deployment-and-operations/authentication/operations).
+
+## Understand the session model
+
+Dyrected uses signed bearer tokens backed by a server-side session record. Every successful login creates a session and returns a JWT that points at it.
+
+That means three useful things are true at once:
+
+- clients send a normal `Authorization: Bearer <token>` header
+- the server re-hydrates the live user document on each request
+- logout, password reset, and password change can revoke the session immediately
+
+Tokens still expire on their own after 7 days by default, but there is a real server-side invalidation point too.
+
+## Log in and read the user
+
+```ts
+import { createClient } from "@dyrected/sdk";
+
+const client = createClient({ baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL! });
+
+const { token, user } = await client
+  .collection("users")
+  .login("jane@example.com", "hunter2");
+
+client.setToken(token);
+
+const me = await client.collection("users").me();
+```
+
+The SDK holds the token in memory only. Deciding where the token lives between requests is the job of the [Cookie Strategy](/docs/deployment-and-operations/authentication/cookie-strategy) page.
+
+## Use roles in access control
+
+The injected `roles` field is where permissions can live, but Dyrected does not enforce any role meaning on its own. Roles only matter when an access function reads them:
+
+```ts
+export const Orders = defineCollection({
+  slug: "orders",
+  access: {
+    read: ({ user }) => !!user,
+    create: ({ user }) => !!user,
+    update: ({ user }) => user?.roles?.includes("admin"),
+  },
+  fields: [{ name: "total", label: "Total", type: "number" }],
+});
+```
+
+`user.roles` is available here even though the token itself does not carry roles. Dyrected re-hydrates the user from the database on each request. For the full model, see [Access Control](/docs/model-content/content-rules/access-control/overview).
+
+## Separate application users from dashboard users
+
+You can have more than one auth collection, and they are independent: separate endpoints, separate tokens, separate sessions. Someone logged into your storefront as a `customer` has no relationship to whoever can log into the CMS.
+
+Dyrected treats one slug specially: **`__admins`**. When a collection with that slug exists, it becomes the sole login gateway for the dashboard. Any other auth collection powers your application, not the CMS. This is how you keep customer accounts from reaching the admin panel.
+
+The full walkthrough lives in [Handing Off to Editors](/docs/editor-experience/hand-off-to-editors).
+
+## Know where dashboard SSO fits
+
+Everything above describes **collection auth**. Dyrected also supports external sign-in for the dashboard through `adminAuth`, so admins can log in with an identity provider or custom JWT provider instead of a local password.
+
+This is separate from collection auth. It only governs who reaches the CMS and uses routes under `/api/admin/auth/`. If your team needs single sign-on for the admin panel, see [Admin SSO](/docs/deployment-and-operations/authentication/admin-sso).
+
+## Keep user sessions and project credentials separate
+
+For server-to-server calls, keep two concepts separate:
+
+- **A user session** is obtained by logging a real user in and sent as `Authorization: Bearer <token>`.
+- **A project credential** is the `DYRECTED_API_KEY` configured for the SDK and sent as the `x-api-key` header.
+
+The project credential identifies your application to the Dyrected backend. It is not a per-user login and does not stand in for a user session.
+
+## Where to go next
+
+- [Operations](/docs/deployment-and-operations/authentication/operations) — every auth endpoint with its request and response shape
+- [JWT Strategy](/docs/deployment-and-operations/authentication/jwt-strategy) — signing, secret, expiry, external verification
+- [Cookie Strategy](/docs/deployment-and-operations/authentication/cookie-strategy) — where to keep the token between requests
+- [Token Data](/docs/deployment-and-operations/authentication/token-data) — what the token carries and how `user` is built
+- [Handing Off to Editors](/docs/editor-experience/hand-off-to-editors) — onboard your first editors safely
+- [Admin SSO](/docs/deployment-and-operations/authentication/admin-sso) — external dashboard sign-in
+- [Access Control](/docs/model-content/content-rules/access-control/overview) — turn the signed-in user into permissions
+

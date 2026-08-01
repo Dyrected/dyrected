@@ -1,0 +1,9 @@
+{
+  "title": "Versions",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "drafts",
+    "autosave"
+  ]
+}

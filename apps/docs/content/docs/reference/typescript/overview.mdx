@@ -1,0 +1,225 @@
+---
+title: Overview
+description: Understand Dyrected's TypeScript story, when inference is enough, and when to generate a shareable types file.
+---
+
+Use this section when you want Dyrected to feel type-safe end to end instead of treating your schema, SDK calls, and frontend code as separate untyped islands. By the end of this page, you should know the three TypeScript paths Dyrected gives you, which one to start with, and when to move from inferred types to a generated file.
+
+## The mental model
+
+Dyrected's TypeScript support comes from three different layers:
+
+- **schema inference while you write config** in `@dyrected/core`
+- **typed SDK calls** in `@dyrected/sdk`
+- **generated interfaces** from `npx dyrected generate:types`
+
+Those layers solve different problems.
+
+Schema inference helps when you are authoring `dyrected.config.ts` and want hooks, collections, globals, and reusable field definitions to stay in sync with the fields you actually declared.
+
+SDK typing helps when you are reading or mutating content from application code and want `collection('posts').find()` or `global('settings').get()` to return the right shapes.
+
+Generated types help when you want a real file on disk that can be imported elsewhere, shared with another app, or produced from a remote schema instead of only from local TypeScript inference.
+
+## The recommended path
+
+Start with inference first.
+
+If your schema and your app live in the same codebase, the cleanest path is:
+
+1. define collections and globals with the typed helpers from `@dyrected/core`
+2. export those constants
+3. derive your SDK schema with `InferSchema`
+
+That gives you strong types without a generation step.
+
+Reach for generated types when one of these is true:
+
+- you want a standalone `dyrected-types.ts` file
+- your frontend or another package should consume types without importing the full schema config
+- you are pointing at Dyrected Cloud or another running instance and want types from `/api/schemas`
+
+When you choose that generated-file path, the type you use with the SDK is `DyrectedSchema` from `dyrected-types.ts`.
+
+## What you get from inference
+
+The builder helpers in `@dyrected/core` preserve the literal shape of your schema while you write it.
+
+For example, `defineCollection` and `defineGlobal` infer document shapes from the `fields` arrays you pass in. That means hooks and other config-local code can stay typed without you writing a second interface by hand.
+
+```ts
+import {
+  defineCollection,
+  defineConfig,
+  defineSelectField,
+  defineTextField,
+} from "@dyrected/core";
+
+export const Posts = defineCollection({
+  slug: "posts",
+  fields: [
+    defineTextField({
+      name: "title",
+      label: "Title",
+      required: true,
+    }),
+    defineSelectField({
+      name: "status",
+      label: "Status",
+      options: ["draft", "published"],
+      required: true,
+    }),
+  ],
+  hooks: {
+    beforeChange: [
+      ({ data }) => {
+        data.status;
+        data.title;
+        return data;
+      },
+    ],
+  },
+});
+
+export default defineConfig({
+  collections: [Posts],
+  globals: [],
+});
+```
+
+In that hook, `data.status` is inferred from the actual field options, not from a manually duplicated interface.
+
+If you want the same idea at the field-array level, `@dyrected/core` also exports `InferDocShape`. That is useful when you build shared field groups and want to derive the document shape directly from the field list itself.
+
+## What you get from the SDK
+
+Once you export your collection and global constants, `@dyrected/sdk` can derive a typed client schema from them with `InferSchema`.
+
+```ts
+import { createClient, type InferSchema } from "@dyrected/sdk";
+import type { Posts, Settings } from "./dyrected.config";
+
+type Schema = InferSchema<
+  { posts: typeof Posts },
+  { settings: typeof Settings }
+>;
+
+const client = createClient<Schema>({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+});
+
+const { docs } = await client.collection("posts").find();
+const site = await client.global("settings").get();
+```
+
+This is the best fit when your app can import the schema constants directly and you want the SDK to follow those source-of-truth definitions.
+
+The dedicated page for that workflow is [InferSchema](/docs/reference/typescript/infer-schema).
+
+## Inference limits and edge cases
+
+Inference is the recommended path, but it is not magic. A few limits matter in practice.
+
+### Config-time inference is not the same as read-time population
+
+Inside `@dyrected/core`, config-level inference only knows the schema shape you declared. It does not know which relationships will later be populated at runtime.
+
+That means a relationship or image field in config-time inference is treated as an ID-shaped value, not a hydrated related document.
+
+Use SDK typing or generated types for the read side of the system, where populated documents and collection/global result shapes matter more.
+
+### `select` and `radio` inference in config code stay broader than generated types
+
+At config-authoring time, `InferDocShape` treats `select` and `radio` fields as `string`, even if you declared a small fixed options list.
+
+That is useful to know because the generated-types workflow is more specific there: static options become string unions in the generated file.
+
+If exact option unions are important outside the schema authoring layer, generated types may be the better fit.
+
+### `InferSchema` depends on exported constants and matching slug keys
+
+`InferSchema` works best when you export the collection and global constants directly and give the schema map keys that match the slugs you call through the SDK.
+
+If a slug contains punctuation such as a hyphen, use that exact string key in the map:
+
+```ts
+type Schema = InferSchema<
+  { posts: typeof Posts },
+  { "site-settings": typeof SiteSettings }
+>;
+```
+
+If your app cannot import those schema constants cleanly, switch to [Generating Types](/docs/reference/typescript/generating-types) instead of forcing a brittle import boundary.
+
+### Explicit document types are still a valid escape hatch
+
+Sometimes you want a richer or more constrained type than field inference can express comfortably.
+
+That is when `defineCollection<TDoc>()` or `defineGlobal<TDoc>()` earns its keep. Use it when you need a deliberate manual boundary, not as the default for every collection.
+
+## When generated types are the better fit
+
+Sometimes inference is not the best boundary.
+
+Use generated types when:
+
+- your app should import a plain types file instead of the schema constants
+- your schema lives in a backend package but the frontend should stay decoupled from that package
+- you want to generate types from a running Cloud or self-hosted site instead of from local config
+
+The CLI command is:
+
+```bash
+npx dyrected generate:types
+```
+
+By default, Dyrected writes the file into your app's source directory (`src/dyrected-types.ts`, or `app/dyrected-types.ts` in Nuxt) so your TypeScript program picks it up. That file includes:
+
+- a `Media` interface
+- one interface per collection
+- one interface per global, with a `Global` suffix
+- a `DyrectedSchema` interface, plus a module augmentation that registers it so typing works with no generics
+
+The next page covers that flow in detail: [Generating Types](/docs/reference/typescript/generating-types).
+
+If you already have that generated file, use it directly:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+const client = createClient<DyrectedSchema>({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+});
+```
+
+The generated file also registers your schema globally, so passing `<DyrectedSchema>` is optional — once the file is part of your project, `createClient()` and the React/Vue/Nuxt hooks are typed against it automatically, with no per-call generics. See [Automatic typing](/docs/reference/typescript/generating-types#automatic-typing-no-generics-needed).
+
+## What belongs on this page
+
+This page is the strategy page for TypeScript in Dyrected:
+
+- what the TypeScript surface is
+- when to use inference
+- when to use generated types
+- what the recommended path is
+
+It does not try to document every CLI flag or every exported helper in depth.
+
+Use these follow-up pages when you are ready:
+
+- [InferSchema](/docs/reference/typescript/infer-schema) for the same-repo typed SDK workflow built from exported schema constants
+- [Generating Types](/docs/reference/typescript/generating-types) for the CLI workflow and generated-file shape
+- [SDK Overview](/docs/deliver-content/sdk-api/overview) for the full client surface after your schema typing is in place
+
+## Escape hatches
+
+The recommended path is inferred schema constants plus `InferSchema`, but you are not locked into that.
+
+If you need more control, these are the main escape hatches:
+
+- pass an explicit document type to `defineCollection<TDoc>()` or `defineGlobal<TDoc>()` when inference is not the right fit
+- use `InferDocShape` when you want to derive a type from a reusable field array
+- switch to `generate:types` when a real file boundary is more useful than local inference
+
+The important rule is to keep one source of truth. Do not maintain a hand-written interface and a separate schema shape unless you genuinely need that extra control.

@@ -1,0 +1,10 @@
+{
+  "title": "TypeScript",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "generating-types",
+    "infer-schema",
+    "typescript-plugin"
+  ]
+}

@@ -20,13 +20,13 @@
       "soft delete"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/data-lifecycle",
-      "/docs/basics/access-control/collections",
-      "/docs/basics/configuration/collections"
+      "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+      "/docs/model-content/content-rules/access-control/collections",
+      "/docs/model-content/configuration/collections"
     ],
     "requires": [],
     "source": "import { defineBooleanField, defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Announcements = defineCollection({\n  slug: \"announcements\",\n  access: {\n    read: ({ user }) =>\n      user?.roles?.includes(\"admin\") ? true : { archived: { equals: false } },\n    create: ({ user }) => Boolean(user),\n    update: ({ user }) => Boolean(user),\n    delete: () => false,\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineBooleanField({\n      name: \"archived\",\n      label: \"Archived\",\n      defaultValue: false,\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "docsPath": "/docs/examples-and-recipes/library/archive-instead-of-delete",
     "snippetStatus": "validated"
   },
   {
@@ -51,13 +51,13 @@
       "unique"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/data-lifecycle",
-      "/docs/basics/configuration/collections",
-      "/docs/basics/hooks/collections"
+      "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+      "/docs/model-content/configuration/collections",
+      "/docs/deployment-and-operations/server-runtime/hooks/collections"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const toSlug = (value: unknown) =>\n  String(value ?? \"\")\n    .toLowerCase()\n    .trim()\n    .replace(/[^a-z0-9]+/g, \"-\")\n    .replace(/(^-|-$)/g, \"\");\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  hooks: {\n    beforeChange: [\n      ({ data, operation }) => {\n        if (operation === \"create\" || data.title !== undefined) {\n          return { ...data, slug: toSlug(data.title) };\n        }\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({\n      name: \"slug\",\n      label: \"Slug\",\n      required: true,\n      unique: true,\n      promoted: true,\n      admin: {\n        hooks: {\n          onChange:\n            \"value == '' || value == null ? (siblingData.title != null ? slugify(siblingData.title) : value) : value\",\n        },\n      },\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "docsPath": "/docs/examples-and-recipes/library/auto-slug",
     "snippetStatus": "validated"
   },
   {
@@ -81,13 +81,13 @@
       "urlPattern"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/content-modeling",
-      "/docs/basics/fields/relationship",
-      "/docs/basics/configuration/collections"
+      "/docs/examples-and-recipes/application-patterns/content-modeling",
+      "/docs/model-content/fields/relationship",
+      "/docs/model-content/configuration/collections"
     ],
     "requires": [],
     "source": "import { defineCollection, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Categories = defineCollection({\n  slug: \"categories\",\n  admin: { useAsTitle: \"title\", urlPattern: \"/categories/{slug}\" },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  admin: { useAsTitle: \"title\", urlPattern: \"/blog/{slug}\" },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n    defineRelationshipField({\n      name: \"categories\",\n      label: \"Categories\",\n      relationTo: \"categories\",\n      hasMany: true,\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "docsPath": "/docs/examples-and-recipes/library/category-taxonomy",
     "snippetStatus": "validated"
   },
   {
@@ -111,13 +111,13 @@
       "conditional fields"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/admin-experience",
-      "/docs/features/admin/overview",
-      "/docs/basics/configuration/collections"
+      "/docs/examples-and-recipes/application-patterns/admin-experience",
+      "/docs/editor-experience/overview",
+      "/docs/model-content/configuration/collections"
     ],
     "requires": [],
     "source": "import { defineCollection, defineNumberField, defineTextField } from \"@dyrected/core\";\n\nexport const Orders = defineCollection({\n  slug: \"orders\",\n  fields: [\n    defineTextField({ name: \"couponCode\", label: \"Coupon code\" }),\n    defineNumberField({\n      name: \"discountPercent\",\n      label: \"Discount percentage\",\n      admin: { condition: \"couponCode != null && couponCode != ''\" },\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+    "docsPath": "/docs/examples-and-recipes/library/conditional-admin-field",
     "snippetStatus": "validated"
   },
   {
@@ -141,13 +141,13 @@
       "throw to abort"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/data-lifecycle",
-      "/docs/basics/hooks/collections",
-      "/docs/basics/fields/datetime"
+      "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+      "/docs/deployment-and-operations/server-runtime/hooks/collections",
+      "/docs/model-content/fields/datetime"
     ],
     "requires": [],
     "source": "import { defineCollection, defineDateTimeField, defineTextField } from \"@dyrected/core\";\n\nexport const Events = defineCollection({\n  slug: \"events\",\n  hooks: {\n    beforeChange: [\n      ({ data, doc }) => {\n        const startsAt = data.startsAt ?? doc?.startsAt;\n        const endsAt = data.endsAt ?? doc?.endsAt;\n\n        const start = startsAt ? new Date(startsAt) : undefined;\n        const end = endsAt ? new Date(endsAt) : undefined;\n\n        if (start && Number.isNaN(start.getTime())) {\n          throw new Error(\"The event start time must be a valid date.\");\n        }\n        if (end && Number.isNaN(end.getTime())) {\n          throw new Error(\"The event end time must be a valid date.\");\n        }\n        if (start && end && end <= start) {\n          throw new Error(\"The event end time must be after its start time.\");\n        }\n\n        return data;\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineDateTimeField({\n      name: \"startsAt\",\n      label: \"Starts at\",\n      required: true,\n    }),\n    defineDateTimeField({\n      name: \"endsAt\",\n      label: \"Ends at\",\n      required: true,\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "docsPath": "/docs/examples-and-recipes/library/cross-field-validation",
     "snippetStatus": "validated"
   },
   {
@@ -173,15 +173,15 @@
       "useField"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/custom-app-surfaces",
-      "/docs/features/admin/form-and-field-hooks"
+      "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+      "/docs/editor-experience/form-and-field-hooks"
     ],
     "requires": [
       "@dyrected/admin",
       "@dyrected/react"
     ],
     "source": "import {\n  DyrectedFieldPathProvider,\n  DyrectedFormProvider,\n  useDyrectedForm,\n  useField,\n} from \"@dyrected/react\";\nimport { createDyrectedFormController } from \"@dyrected/admin/public\";\n\nconst controller = createDyrectedFormController({\n  collection: \"customers\",\n  fields: [\n    { name: \"fullName\", type: \"text\", label: \"Full name\" },\n    { name: \"email\", type: \"email\", label: \"Email address\" },\n    {\n      name: \"complaintDraft\",\n      type: \"object\",\n      label: \"Complaint draft\",\n      fields: [\n        { name: \"orderNumber\", type: \"text\", label: \"Order number\" },\n        { name: \"subject\", type: \"text\", label: \"Subject\" },\n        { name: \"message\", type: \"textarea\", label: \"Complaint message\" },\n      ],\n    },\n  ],\n  initialValues: {\n    fullName: \"Amara Okafor\",\n    email: \"amara@example.com\",\n    complaintDraft: {\n      orderNumber: \"ORD-2048\",\n      subject: \"Damaged package on arrival\",\n      message: \"The shipping box arrived wet and the product inside is scratched.\",\n    },\n  },\n});\n\nfunction CustomerIdentityCard() {\n  const fullName = useField(\"fullName\");\n  const email = useField(\"email\");\n\n  return (\n    <section className=\"space-y-4\">\n      <input\n        value={String(fullName.value ?? \"\")}\n        onChange={(event) => fullName.setValue(event.target.value)}\n      />\n\n      <input\n        type=\"email\"\n        value={String(email.value ?? \"\")}\n        onChange={(event) => email.setValue(event.target.value)}\n      />\n    </section>\n  );\n}\n\nfunction ComplaintDraftEditor() {\n  const orderNumber = useField(\"orderNumber\");\n  const subject = useField(\"subject\");\n  const message = useField(\"message\");\n\n  return (\n    <section className=\"space-y-4\">\n      <input\n        value={String(orderNumber.value ?? \"\")}\n        onChange={(event) => orderNumber.setValue(event.target.value)}\n      />\n\n      <input\n        value={String(subject.value ?? \"\")}\n        onChange={(event) => subject.setValue(event.target.value)}\n      />\n\n      <textarea\n        value={String(message.value ?? \"\")}\n        onChange={(event) => message.setValue(event.target.value)}\n      />\n    </section>\n  );\n}\n\nfunction CustomerComplaintPage() {\n  const form = useDyrectedForm();\n\n  return (\n    <form\n      className=\"space-y-6\"\n      onSubmit={(event) => {\n        event.preventDefault();\n        void form.submit();\n      }}\n    >\n      <h1>Complaint draft for signed-in customer</h1>\n\n      <CustomerIdentityCard />\n\n      <DyrectedFieldPathProvider path=\"complaintDraft\">\n        <ComplaintDraftEditor />\n      </DyrectedFieldPathProvider>\n\n      <button type=\"submit\" disabled={form.isSubmitting}>\n        Save complaint draft\n      </button>\n    </form>\n  );\n}\n\nexport default function CustomerComplaintRoute() {\n  return (\n    <DyrectedFormProvider controller={controller}>\n      <CustomerComplaintPage />\n    </DyrectedFormProvider>\n  );\n}",
-    "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "docsPath": "/docs/examples-and-recipes/library/custom-page-field-editor",
     "snippetStatus": "validated"
   },
   {
@@ -206,16 +206,16 @@
       "useMediaLibrary"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/custom-app-surfaces",
-      "/docs/features/admin/media-hooks",
-      "/docs/features/upload/overview"
+      "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+      "/docs/editor-experience/media-hooks",
+      "/docs/model-content/media/overview"
     ],
     "requires": [
       "@dyrected/react",
       "@dyrected/sdk"
     ],
     "source": "import { useState } from \"react\";\nimport { createClient } from \"@dyrected/sdk\";\nimport {\n  DyrectedProvider,\n  useMediaLibrary,\n  useMediaUpload,\n  useMediaURL,\n} from \"@dyrected/react\";\n\nconst client = createClient({\n  baseUrl: \"https://example.com/dyrected\",\n  apiKey: \"YOUR_API_KEY\",\n});\n\nconst signedInCustomer = {\n  id: \"cus_42\",\n  fullName: \"Amara Okafor\",\n  orderNumber: \"ORD-2048\",\n};\n\nfunction ComplaintAttachmentPage() {\n  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);\n\n  const library = useMediaLibrary({\n    collection: \"media\",\n    multiple: false,\n  });\n\n  const upload = useMediaUpload({\n    collectionSlug: \"media\",\n    onAllCompleted: async () => {\n      await library.load();\n    },\n  });\n\n  const mediaURL = useMediaURL({\n    collection: \"media\",\n    onCompleted: async () => {\n      await library.load();\n    },\n  });\n\n  return (\n    <div className=\"space-y-6\">\n      <section className=\"space-y-3\">\n        <h1>Submit complaint for {signedInCustomer.orderNumber}</h1>\n        <p>\n          {signedInCustomer.fullName} can attach screenshots of the damaged item,\n          delivery label, or chat transcript before sending the complaint.\n        </p>\n\n        <input\n          type=\"file\"\n          multiple\n          onChange={(event) => {\n            const files = Array.from(event.target.files ?? []);\n            void upload.uploadFiles(files);\n          }}\n        />\n\n        {upload.items.map((item) => (\n          <div key={item.id}>\n            <div>{item.file.name}</div>\n            <div>{item.status}</div>\n            <div>{item.progress}%</div>\n          </div>\n        ))}\n      </section>\n\n      <section className=\"space-y-3\">\n        <h2>Import proof from URL</h2>\n\n        <input\n          type=\"url\"\n          value={mediaURL.url}\n          onChange={(event) => mediaURL.setUrl(event.target.value)}\n          placeholder=\"https://example.com/delivery-photo.jpg\"\n        />\n\n        <button onClick={() => void mediaURL.submit()} disabled={mediaURL.isSubmitting}>\n          Import attachment\n        </button>\n\n        {mediaURL.error ? <p>{mediaURL.error}</p> : null}\n      </section>\n\n      <section className=\"space-y-3\">\n        <div className=\"flex items-center gap-3\">\n          <h2>Previous attachments</h2>\n          <button onClick={() => void library.load()} disabled={library.isLoading}>\n            Refresh\n          </button>\n        </div>\n\n        <input\n          type=\"search\"\n          value={library.search}\n          onChange={(event) => library.setSearch(event.target.value)}\n          placeholder=\"Search files\"\n        />\n\n        <div className=\"grid grid-cols-3 gap-4\">\n          {library.items.map((item) => (\n            <button\n              key={item.id}\n              type=\"button\"\n              onClick={() => {\n                library.select(item);\n                setSelectedAttachmentId(item.id);\n              }}\n            >\n              <div>{item.filename ?? item.url}</div>\n              <div>{item.mimeType}</div>\n            </button>\n          ))}\n        </div>\n\n        <p>Selected complaint attachment: {selectedAttachmentId ?? \"None\"}</p>\n      </section>\n    </div>\n  );\n}\n\nexport default function ComplaintAttachmentRoute() {\n  return (\n    <DyrectedProvider client={client}>\n      <ComplaintAttachmentPage />\n    </DyrectedProvider>\n  );\n}",
-    "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "docsPath": "/docs/examples-and-recipes/library/custom-page-media-picker",
     "snippetStatus": "validated"
   },
   {
@@ -239,14 +239,14 @@
       "useAdminTheme"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/custom-app-surfaces",
-      "/docs/features/admin/theme-hooks"
+      "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+      "/docs/editor-experience/theme-hooks"
     ],
     "requires": [
       "@dyrected/react"
     ],
     "source": "import {\n  AdminThemeProvider,\n  AdminThemedRoot,\n  useAdminTheme,\n} from \"@dyrected/react\";\n\nfunction ThemeSwitcher() {\n  const { theme, setTheme } = useAdminTheme();\n\n  return (\n    <select\n      value={theme}\n      onChange={(event) => setTheme(event.target.value as \"system\" | \"light\" | \"dark\")}\n    >\n      <option value=\"system\">System</option>\n      <option value=\"light\">Light</option>\n      <option value=\"dark\">Dark</option>\n    </select>\n  );\n}\n\nexport default function DashboardRoute() {\n  return (\n    <AdminThemeProvider>\n      <AdminThemedRoot>\n        <header>\n          <ThemeSwitcher />\n        </header>\n\n        <main>{/* page content */}</main>\n      </AdminThemedRoot>\n    </AdminThemeProvider>\n  );\n}",
-    "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+    "docsPath": "/docs/examples-and-recipes/library/custom-theme-shell",
     "snippetStatus": "validated"
   },
   {
@@ -270,13 +270,13 @@
       "siblingData"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/admin-experience",
-      "/docs/features/admin/overview",
-      "/docs/basics/fields/select"
+      "/docs/examples-and-recipes/application-patterns/admin-experience",
+      "/docs/editor-experience/overview",
+      "/docs/model-content/fields/select"
     ],
     "requires": [],
     "source": "import { defineCollection, defineSelectField } from \"@dyrected/core\";\n\nexport const Locations = defineCollection({\n  slug: \"locations\",\n  fields: [\n    defineSelectField({\n      name: \"country\",\n      label: \"Country\",\n      required: true,\n      options: [\n        { label: \"Nigeria\", value: \"ng\" },\n        { label: \"United States\", value: \"us\" },\n      ],\n    }),\n    defineSelectField({\n      name: \"region\",\n      label: \"State or region\",\n      required: true,\n      options: [],\n      admin: {\n        hooks: {\n          options: ({ siblingData }) => {\n            if (siblingData.country === \"ng\") return [\"Lagos\", \"Abuja\", \"Oyo\"];\n            if (siblingData.country === \"us\")\n              return [\"California\", \"New York\", \"Texas\"];\n            return [];\n          },\n        },\n      },\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+    "docsPath": "/docs/examples-and-recipes/library/dependent-dropdown",
     "snippetStatus": "validated"
   },
   {
@@ -300,13 +300,13 @@
       "maxFileSize"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/integrations",
-      "/docs/features/upload/overview",
-      "/docs/features/upload/storage-adapters"
+      "/docs/examples-and-recipes/application-patterns/integrations",
+      "/docs/model-content/media/overview",
+      "/docs/model-content/media/storage-adapters"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Documents = defineCollection({\n  slug: \"documents\",\n  admin: { useAsTitle: \"title\" },\n  upload: {\n    allowedMimeTypes: [\n      \"application/pdf\",\n      \"application/vnd.openxmlformats-officedocument.wordprocessingml.document\",\n      \"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\",\n    ],\n    maxFileSize: 20 * 1024 * 1024,\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextareaField({ name: \"summary\", label: \"Summary\" }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/integrations",
+    "docsPath": "/docs/examples-and-recipes/library/document-download-library",
     "snippetStatus": "validated"
   },
   {
@@ -330,13 +330,13 @@
       "capabilities"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/workflows",
-      "/docs/features/workflows/overview",
-      "/docs/features/workflows/custom-workflows"
+      "/docs/examples-and-recipes/application-patterns/workflows",
+      "/docs/editor-experience/publishing/overview",
+      "/docs/editor-experience/publishing/custom-workflows"
     ],
     "requires": [],
     "source": "import { defineCollection, defineRichTextField, defineTextField, publishingWorkflow } from \"@dyrected/core\";\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  workflow: publishingWorkflow(),\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRichTextField({ name: \"body\", label: \"Body\", required: true }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/workflows",
+    "docsPath": "/docs/examples-and-recipes/library/editorial-publishing-workflow",
     "snippetStatus": "validated"
   },
   {
@@ -360,14 +360,14 @@
       "url"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/content-modeling",
-      "/docs/basics/configuration/globals",
-      "/docs/basics/fields/array",
-      "/docs/basics/fields/url"
+      "/docs/examples-and-recipes/application-patterns/content-modeling",
+      "/docs/model-content/configuration/globals",
+      "/docs/model-content/fields/array",
+      "/docs/model-content/fields/url"
     ],
     "requires": [],
     "source": "import { defineArrayField, defineGlobal, defineTextField, defineUrlField } from \"@dyrected/core\";\n\nexport const Navigation = defineGlobal({\n  slug: \"navigation\",\n  label: \"Navigation\",\n  fields: [\n    defineArrayField({\n      name: \"items\",\n      label: \"Navigation items\",\n      fields: [\n        defineTextField({ name: \"label\", label: \"Label\", required: true }),\n        defineUrlField({ name: \"link\", label: \"Link\", required: true }),\n        defineArrayField({\n          name: \"children\",\n          label: \"Child links\",\n          fields: [\n            defineTextField({ name: \"label\", label: \"Label\", required: true }),\n            defineUrlField({ name: \"link\", label: \"Link\", required: true }),\n          ],\n        }),\n      ],\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "docsPath": "/docs/examples-and-recipes/library/navigation-global-links",
     "snippetStatus": "validated"
   },
   {
@@ -391,13 +391,13 @@
       "beforeChange"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/access-control",
-      "/docs/basics/access-control/collections",
-      "/docs/features/authentication/overview"
+      "/docs/examples-and-recipes/application-patterns/access-control",
+      "/docs/model-content/content-rules/access-control/collections",
+      "/docs/editor-experience/editor-accounts"
     ],
     "requires": [],
     "source": "import { defineCollection, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nconst ownerConstraint = (user?: { sub?: string; roles?: string[] }) => {\n  if (user?.roles?.includes(\"admin\")) return true;\n  return user?.sub ? { owner: { equals: user.sub } } : false;\n};\n\nexport const Tickets = defineCollection({\n  slug: \"tickets\",\n  access: {\n    read: ({ user }) => ownerConstraint(user),\n    create: ({ user }) => Boolean(user?.sub),\n    update: ({ user }) => ownerConstraint(user),\n    delete: ({ user }) => ownerConstraint(user),\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        if (!user?.sub) throw new Error(\"Authentication is required.\");\n        return { ...data, owner: user.sub };\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"subject\", label: \"Subject\", required: true }),\n    defineRelationshipField({\n      name: \"owner\",\n      label: \"Owner\",\n      relationTo: \"users\",\n      required: true,\n      admin: { readOnly: true },\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/access-control",
+    "docsPath": "/docs/examples-and-recipes/library/owner-or-admin-access",
     "snippetStatus": "validated"
   },
   {
@@ -421,13 +421,13 @@
       "row-level access"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/access-control",
-      "/docs/basics/access-control/collections",
-      "/docs/basics/hooks/collections"
+      "/docs/examples-and-recipes/application-patterns/access-control",
+      "/docs/model-content/content-rules/access-control/collections",
+      "/docs/deployment-and-operations/server-runtime/hooks/collections"
     ],
     "requires": [],
     "source": "import { defineCollection, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Projects = defineCollection({\n  slug: \"projects\",\n  access: {\n    read: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    create: ({ user }) => Boolean(user),\n    update: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n    delete: ({ user }) => (user ? { owner: { equals: user.sub } } : false),\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        if (!user) throw new Error(\"Authentication is required to create a project.\");\n        return { ...data, owner: user.sub };\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"name\", label: \"Project name\", required: true }),\n    defineRelationshipField({\n      name: \"owner\",\n      label: \"Owner\",\n      relationTo: \"users\",\n      required: true,\n      admin: { readOnly: true },\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/access-control",
+    "docsPath": "/docs/examples-and-recipes/library/owner-scoped-access",
     "snippetStatus": "validated"
   },
   {
@@ -451,13 +451,13 @@
       "content modeling"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/content-modeling",
-      "/docs/basics/fields/blocks",
-      "/docs/basics/configuration/collections"
+      "/docs/examples-and-recipes/application-patterns/content-modeling",
+      "/docs/model-content/fields/blocks",
+      "/docs/model-content/configuration/collections"
     ],
     "requires": [],
     "source": "import { defineBlock, defineBlocksField, defineCollection, defineTextField, defineTextareaField, defineUrlField } from \"@dyrected/core\";\n\nexport const HeroBlock = defineBlock({\n  slug: \"hero\",\n  labels: { singular: \"Hero\", plural: \"Heroes\" },\n  fields: [\n    defineTextField({ name: \"heading\", label: \"Heading\", required: true }),\n    defineTextareaField({ name: \"body\", label: \"Body\" }),\n  ],\n});\n\nexport const CallToActionBlock = defineBlock({\n  slug: \"callToAction\",\n  labels: { singular: \"Call to action\", plural: \"Calls to action\" },\n  fields: [\n    defineTextField({ name: \"label\", label: \"Link label\", required: true }),\n    defineUrlField({ name: \"url\", label: \"URL\", required: true }),\n  ],\n});\n\nexport const Pages = defineCollection({\n  slug: \"pages\",\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineBlocksField({\n      name: \"layout\",\n      label: \"Page layout\",\n      blocks: [HeroBlock, CallToActionBlock],\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "docsPath": "/docs/examples-and-recipes/library/page-builder-blocks",
     "snippetStatus": "validated"
   },
   {
@@ -481,13 +481,13 @@
       "urlPattern"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/workflows",
-      "/docs/features/admin/preview",
-      "/docs/features/live-preview/overview"
+      "/docs/examples-and-recipes/application-patterns/workflows",
+      "/docs/editor-experience/preview",
+      "/docs/editor-experience/publishing/live-preview/overview"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Docs = defineCollection({\n  slug: \"docs\",\n  admin: {\n    useAsTitle: \"title\",\n    previewUrl: \"slug ? '/docs/' + slug : null\",\n    previewMode: \"postMessage\",\n    urlPattern: \"/docs/{slug}\",\n  },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/workflows",
+    "docsPath": "/docs/examples-and-recipes/library/preview-url-token-mode",
     "snippetStatus": "validated"
   },
   {
@@ -512,13 +512,13 @@
       "depth"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/content-modeling",
-      "/docs/basics/fields/relationship",
-      "/docs/basics/fields/join"
+      "/docs/examples-and-recipes/application-patterns/content-modeling",
+      "/docs/model-content/fields/relationship",
+      "/docs/model-content/fields/join"
     ],
     "requires": [],
     "source": "import { defineCollection, defineJoinField, defineRelationshipField, defineTextField } from \"@dyrected/core\";\n\nexport const Users = defineCollection({\n  slug: \"users\",\n  auth: true,\n  fields: [\n    defineTextField({ name: \"name\", label: \"Name\", required: true }),\n    defineJoinField({\n      name: \"posts\",\n      label: \"Posts\",\n      collection: \"posts\",\n      on: \"author\",\n      limit: 20,\n    }),\n  ],\n});\n\nexport const Posts = defineCollection({\n  slug: \"posts\",\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineRelationshipField({\n      name: \"author\",\n      label: \"Author\",\n      relationTo: \"users\",\n      required: true,\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "docsPath": "/docs/examples-and-recipes/library/relationship-and-reverse-join",
     "snippetStatus": "validated"
   },
   {
@@ -542,13 +542,13 @@
       "adminThumbnail"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/integrations",
-      "/docs/features/upload/overview",
-      "/docs/features/upload/storage-adapters"
+      "/docs/examples-and-recipes/application-patterns/integrations",
+      "/docs/model-content/media/overview",
+      "/docs/model-content/media/storage-adapters"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  admin: { useAsTitle: \"alt\" },\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n    adminThumbnail: \"card\",\n    imageSizes: [\n      { name: \"card\", width: 640, height: 480, fit: \"cover\" },\n      { name: \"hero\", width: 1600, height: 900, fit: \"cover\" },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"alt\", label: \"Alternative text\", required: true }),\n    defineTextareaField({ name: \"caption\", label: \"Caption\" }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/integrations",
+    "docsPath": "/docs/examples-and-recipes/library/responsive-image-library",
     "snippetStatus": "validated"
   },
   {
@@ -572,13 +572,13 @@
       "roles"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/access-control",
-      "/docs/basics/access-control/collections",
-      "/docs/features/authentication/overview"
+      "/docs/examples-and-recipes/application-patterns/access-control",
+      "/docs/model-content/content-rules/access-control/collections",
+      "/docs/editor-experience/editor-accounts"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Articles = defineCollection({\n  slug: \"articles\",\n  access: {\n    read: () => true,\n    create: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    update: ({ user }) => user?.roles?.some((role) => role === \"editor\" || role === \"admin\") ?? false,\n    delete: ({ user }) => user?.roles?.includes(\"admin\") ?? false,\n  },\n  fields: [defineTextField({ name: \"title\", label: \"Title\", required: true })],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/access-control",
+    "docsPath": "/docs/examples-and-recipes/library/role-based-access",
     "snippetStatus": "validated"
   },
   {
@@ -602,13 +602,13 @@
       "schema evolution"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/data-lifecycle",
-      "/docs/basics/configuration/collections",
-      "/docs/basics/database/migrations"
+      "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+      "/docs/model-content/configuration/collections",
+      "/docs/deployment-and-operations/infrastructure/database/migrations"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nexport const Customers = defineCollection({\n  slug: \"customers\",\n  fields: [\n    defineTextField({\n      name: \"fullName\",\n      label: \"Full name\",\n      renameTo: \"name\",\n      defaultValue: \"\",\n      required: true,\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+    "docsPath": "/docs/examples-and-recipes/library/safe-field-rename",
     "snippetStatus": "validated"
   },
   {
@@ -632,13 +632,13 @@
       "useAsTitle"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/admin-experience",
-      "/docs/features/admin/overview",
-      "/docs/basics/configuration/collections"
+      "/docs/examples-and-recipes/application-patterns/admin-experience",
+      "/docs/editor-experience/overview",
+      "/docs/model-content/configuration/collections"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTab, defineTextField, defineTextareaField, defineUrlField } from \"@dyrected/core\";\n\nexport const Pages = defineCollection({\n  slug: \"pages\",\n  admin: { useAsTitle: \"title\" },\n  fields: [\n    defineTextField({ name: \"title\", label: \"Title\", required: true }),\n    defineTextField({ name: \"slug\", label: \"Slug\", required: true, unique: true }),\n    ...defineTab({\n      label: \"SEO\",\n      fields: [\n        defineTextField({ name: \"metaTitle\", label: \"Meta title\" }),\n        defineTextareaField({ name: \"metaDescription\", label: \"Meta description\" }),\n        defineUrlField({ name: \"canonicalUrl\", label: \"Canonical URL\" }),\n      ],\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+    "docsPath": "/docs/examples-and-recipes/library/seo-tab-fields",
     "snippetStatus": "validated"
   },
   {
@@ -662,13 +662,13 @@
       "singleton content"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/content-modeling",
-      "/docs/basics/configuration/globals",
-      "/docs/basics/fields/url"
+      "/docs/examples-and-recipes/application-patterns/content-modeling",
+      "/docs/model-content/configuration/globals",
+      "/docs/model-content/fields/url"
     ],
     "requires": [],
     "source": "import { defineEmailField, defineGlobal, defineTextField, defineUrlField } from \"@dyrected/core\";\n\nexport const SiteSettings = defineGlobal({\n  slug: \"site-settings\",\n  label: \"Site settings\",\n  initialData: {\n    siteName: \"Acme Studio\",\n    supportEmail: \"hello@example.com\",\n  },\n  fields: [\n    defineTextField({ name: \"siteName\", label: \"Site name\", required: true }),\n    defineTextField({ name: \"tagline\", label: \"Tagline\", defaultValue: \"\" }),\n    defineEmailField({\n      name: \"supportEmail\",\n      label: \"Support email\",\n      required: true,\n    }),\n    defineUrlField({\n      name: \"primaryCta\",\n      label: \"Primary call to action\",\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+    "docsPath": "/docs/examples-and-recipes/library/site-settings-global",
     "snippetStatus": "validated"
   },
   {
@@ -692,13 +692,13 @@
       "tenant isolation"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/access-control",
-      "/docs/basics/access-control/collections",
-      "/docs/basics/hooks/collections"
+      "/docs/examples-and-recipes/application-patterns/access-control",
+      "/docs/model-content/content-rules/access-control/collections",
+      "/docs/deployment-and-operations/server-runtime/hooks/collections"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField } from \"@dyrected/core\";\n\nconst getWorkspaceId = (user?: unknown) => {\n  if (!user || typeof user !== \"object\") return undefined;\n  const workspaceId = (user as Record<string, unknown>).workspaceId;\n  return typeof workspaceId === \"string\" && workspaceId.length > 0\n    ? workspaceId\n    : undefined;\n};\n\nexport const Projects = defineCollection({\n  slug: \"projects\",\n  access: {\n    read: ({ user }) =>\n      getWorkspaceId(user)\n        ? { workspaceId: { equals: getWorkspaceId(user) } }\n        : false,\n    create: ({ user }) => Boolean(getWorkspaceId(user)),\n    update: ({ user }) =>\n      getWorkspaceId(user)\n        ? { workspaceId: { equals: getWorkspaceId(user) } }\n        : false,\n    delete: ({ user }) =>\n      user?.roles?.includes(\"admin\")\n        ? true\n        : getWorkspaceId(user)\n          ? { workspaceId: { equals: getWorkspaceId(user) } }\n          : false,\n  },\n  hooks: {\n    beforeChange: [\n      ({ data, operation, user }) => {\n        if (operation !== \"create\") return data;\n        const workspaceId = getWorkspaceId(user);\n        if (!workspaceId) {\n          throw new Error(\"A workspace is required to create a project.\");\n        }\n        return { ...data, workspaceId };\n      },\n    ],\n  },\n  fields: [\n    defineTextField({ name: \"name\", label: \"Project name\", required: true }),\n    defineTextField({\n      name: \"workspaceId\",\n      label: \"Workspace ID\",\n      required: true,\n      admin: { readOnly: true },\n    }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/access-control",
+    "docsPath": "/docs/examples-and-recipes/library/tenant-scoped-access",
     "snippetStatus": "validated"
   },
   {
@@ -722,13 +722,13 @@
       "media"
     ],
     "canonicalDocs": [
-      "/docs/ecosystem/common-patterns/integrations",
-      "/docs/features/upload/overview",
-      "/docs/features/upload/storage-adapters"
+      "/docs/examples-and-recipes/application-patterns/integrations",
+      "/docs/model-content/media/overview",
+      "/docs/model-content/media/storage-adapters"
     ],
     "requires": [],
     "source": "import { defineCollection, defineTextField, defineTextareaField } from \"@dyrected/core\";\n\nexport const Media = defineCollection({\n  slug: \"media\",\n  upload: {\n    allowedMimeTypes: [\"image/jpeg\", \"image/png\", \"image/webp\"],\n    maxFileSize: 10 * 1024 * 1024,\n  },\n  fields: [\n    defineTextField({ name: \"alt\", label: \"Alternative text\", required: true }),\n    defineTextareaField({ name: \"caption\", label: \"Caption\" }),\n  ],\n});",
-    "docsPath": "/docs/ecosystem/common-patterns/integrations",
+    "docsPath": "/docs/examples-and-recipes/library/upload-collection",
     "snippetStatus": "validated"
   }
 ]

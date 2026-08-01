@@ -10,9 +10,9 @@
   "intents": ["only editors can update content", "restrict deletion to admins", "make content publicly readable", "add role based access"],
   "concepts": ["access", "AuthenticatedUser", "roles"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/access-control",
-    "/docs/basics/access-control/collections",
-    "/docs/features/authentication/overview"
+    "/docs/examples-and-recipes/application-patterns/access-control",
+    "/docs/model-content/content-rules/access-control/collections",
+    "/docs/editor-experience/editor-accounts"
   ],
   "requires": []
 }

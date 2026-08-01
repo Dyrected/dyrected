@@ -10,9 +10,9 @@
   "intents": ["let editors upload images", "create a media library", "store uploaded files", "add image uploads to my project"],
   "concepts": ["upload", "StorageAdapter", "media"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/integrations",
-    "/docs/features/upload/overview",
-    "/docs/features/upload/storage-adapters"
+    "/docs/examples-and-recipes/application-patterns/integrations",
+    "/docs/model-content/media/overview",
+    "/docs/model-content/media/storage-adapters"
   ],
   "requires": []
 }

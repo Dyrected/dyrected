@@ -1,0 +1,10 @@
+{
+  "title": "Live Preview",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "frontend",
+    "client-side",
+    "server-side"
+  ]
+}

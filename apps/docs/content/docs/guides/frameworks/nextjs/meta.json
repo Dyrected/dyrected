@@ -1,0 +1,15 @@
+{
+  "title": "Next.js",
+  "runtimeDefault": "cloud",
+  "pages": [
+    "overview",
+    "setting-up-your-cloud-site",
+    "installing-dyrected",
+    "package-reference",
+    "defining-a-schema",
+    "setting-up-initial-data",
+    "displaying-content-in-nextjs",
+    "adding-a-visual-editor-in-nextjs",
+    "building-landing-pages-for-marketing"
+  ]
+}

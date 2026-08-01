@@ -1,0 +1,90 @@
+---
+title: Choose a Runtime
+description: Choose Dyrected Cloud or self-hosted Dyrected based on where the CMS backend should live and what your app already owns.
+runtime: shared
+runtimeGroup: choose-runtime
+---
+
+Use this page when you know you want Dyrected, but you are not sure whether to start with Cloud or self-hosted.
+
+For most websites and frontend apps, start with **Dyrected Cloud**. You get a managed content backend, and your app keeps owning the product parts it already owns: rendering, routing, customer login, checkout, payments, analytics, and business logic.
+
+Choose **self-hosted Dyrected** when the CMS backend needs to live inside your app backend.
+
+## The useful question
+
+Ask this first:
+
+**Do I want to consume a managed content backend, or do I need the CMS to be part of my application runtime?**
+
+If your project mostly needs editable pages, media, navigation, FAQs, posts, changelogs, docs, resources, or marketing content, Cloud is usually the right starting point.
+
+If your project needs Dyrected to share your database boundary, account model, custom server routes, transactions, internal services, or deployment rules, choose self-hosted.
+
+## Start with Cloud when your app already has a backend
+
+Many projects do not need Dyrected to become the application backend. They already have one, or they do not need one beyond content.
+
+Start with Cloud when:
+
+- you are adding editable content to a custom website
+- your React or Vue app needs a hosted content API
+- your Next.js or Nuxt app should read managed content instead of hosting the CMS backend
+- clients or editors need a safe content workspace
+- your app already owns customer accounts, checkout, billing, product workflows, or analytics
+- you do not want to operate a CMS database, file storage, admin deployment, or editor access system
+
+The success signal is simple: an editor can change approved content in Dyrected Cloud and see that change reach the frontend.
+
+## Cloud plan limits to keep in mind
+
+Cloud removes CMS infrastructure work, but it still has workspace plan limits. Current Cloud plans enforce limits around:
+
+- how many sites a workspace can host
+- how many people can be invited on limited plans
+- how much pooled media storage the workspace can use
+- daily API request volume on plans that define a request cap
+
+Those limits are a planning detail, not the main runtime decision. If you know a project needs many client sites, a large media library, or heavier API traffic, check the current plan details on [Dyrected pricing](https://dyrected.com/pricing) before handoff.
+
+## Choose self-hosted when the CMS is part of the product backend
+
+Self-hosted Dyrected is for projects where the CMS cannot sit outside the application runtime.
+
+Choose self-hosted when:
+
+- Dyrected should own application-user accounts through collection auth
+- content saves need to run code inside your app server
+- the CMS must use your database, storage, network, or compliance boundary
+- you need custom Dyrected API routes in the same backend
+- content changes must coordinate with local transactions, plugins, or internal services
+- your team wants to own deployment, secrets, storage, monitoring, and recovery
+
+The success signal is different here: the Dyrected runtime deploys with your app and participates safely in the same backend boundary.
+
+## How to decide in practice
+
+| If you are thinking... | Choose |
+| --- | --- |
+| "I need editable content, not another backend to operate." | Cloud |
+| "My frontend needs a hosted content API." | Cloud |
+| "My client needs a safe place to edit website content." | Cloud |
+| "My product already owns auth, billing, checkout, and user data." | Cloud |
+| "The CMS must run behind the same infrastructure boundary as my app." | Self-hosted |
+| "Dyrected should own app-user login, not only editor access." | Self-hosted |
+| "Content writes need to call internal services or run custom server code." | Self-hosted |
+| "My deployment or compliance rules do not allow a managed CMS backend." | Self-hosted |
+
+## Keep auth and hooks in the right place
+
+In Cloud projects, Dyrected manages access to the content workspace. Your app still owns customer login, member accounts, checkout sessions, subscriptions, and product-specific permissions.
+
+Cloud-safe hooks are hooks defined as content rules: serializable Jexl-style expressions Dyrected can sync and run in the hosted content backend.
+
+In self-hosted projects, Dyrected can own account collections because it is running inside your application backend. Self-hosted can also run function hooks, custom endpoints, plugins, and server-side integrations because your server is the runtime.
+
+## Where to go next
+
+- If Cloud is right, start with [Setting Up Your Cloud Site](/docs/guides/ai-and-coding-agents/setting-up-your-cloud-site).
+- If you want the framework path first, start with [Installation](/docs/start-here/installation).
+- If you want the side-by-side capability table, read [Cloud vs Self-hosted](/docs/start-here/cloud-vs-self-hosted).

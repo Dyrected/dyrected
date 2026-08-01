@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
         gConfig.default && (gConfig.default.collections || gConfig.default.globals || gConfig.default.db)
           ? gConfig.default
           : gConfig;
-      console.log("[dyrected/nuxt] chosen configObj keys:", Object.keys(configObj || {}));
+      // console.log("[dyrected/nuxt] chosen configObj keys:", Object.keys(configObj || {}));
       dyrectedConfig = { ...dyrectedConfig, ...configObj };
     }
 
@@ -35,8 +35,8 @@ export default defineEventHandler(async (event) => {
     if (!dyrectedConfig.storage || typeof (dyrectedConfig.storage as any).upload !== "function") {
       dyrectedConfig.storage = (globalThis as any).__dyrected_storage;
     }
-    console.log("[dyrected/nuxt] Final dyrectedConfig keys:", Object.keys(dyrectedConfig));
-    console.log("[dyrected/nuxt] Initializing app. DB:", !!dyrectedConfig.db, "Storage:", !!dyrectedConfig.storage);
+    // console.log("[dyrected/nuxt] Final dyrectedConfig keys:", Object.keys(dyrectedConfig));
+    // console.log("[dyrected/nuxt] Initializing app. DB:", !!dyrectedConfig.db, "Storage:", !!dyrectedConfig.storage);
     app = await createDyrectedApp(dyrectedConfig);
   }
 

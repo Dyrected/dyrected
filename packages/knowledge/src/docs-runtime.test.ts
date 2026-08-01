@@ -29,7 +29,7 @@ afterEach(() => {
 describe("docs runtime metadata", () => {
   it("builds a classified manifest entry for a page with runtime metadata", () => {
     const docsRoot = makeDocsRoot();
-    const page = path.join(docsRoot, "features/authentication/overview.mdx");
+    const page = path.join(docsRoot, "authentication/overview.mdx");
     write(
       page,
       [
@@ -53,13 +53,13 @@ describe("docs runtime metadata", () => {
     expect(failures).toEqual([]);
     expect(warnings).toEqual([]);
     expect(manifest[0]).toMatchObject({
-      relativePath: "features/authentication/overview",
+      relativePath: "authentication/overview",
       runtime: "variant",
       runtimeGroup: "authentication-overview",
       status: "classified",
-      urlCloud: "https://docs.dyrected.com/docs/cloud/features/authentication/overview",
+      urlCloud: "https://docs.dyrected.com/docs/cloud/authentication/overview",
       urlSelfHosted:
-        "https://docs.dyrected.com/docs/self-hosted/features/authentication/overview",
+        "https://docs.dyrected.com/docs/self-hosted/authentication/overview",
     });
   });
 
@@ -83,7 +83,7 @@ describe("docs runtime metadata", () => {
   it("fails invalid runtimePolicy values in meta.json", () => {
     const docsRoot = makeDocsRoot();
     write(
-      path.join(docsRoot, "features/authentication/meta.json"),
+      path.join(docsRoot, "authentication/meta.json"),
       JSON.stringify(
         {
           title: "Authentication",
@@ -101,7 +101,7 @@ describe("docs runtime metadata", () => {
   it("requires explicit page runtime inside explicit-per-page sections", () => {
     const docsRoot = makeDocsRoot();
     write(
-      path.join(docsRoot, "features/authentication/meta.json"),
+      path.join(docsRoot, "authentication/meta.json"),
       JSON.stringify(
         {
           title: "Authentication",
@@ -111,7 +111,7 @@ describe("docs runtime metadata", () => {
         2,
       ),
     );
-    const page = path.join(docsRoot, "features/authentication/overview.mdx");
+    const page = path.join(docsRoot, "authentication/overview.mdx");
     write(page, ["---", "title: Overview", "---", "", "Auth docs"].join("\n"));
 
     const { failures } = buildDocsRuntimeManifest({
@@ -125,7 +125,7 @@ describe("docs runtime metadata", () => {
 
   it("warns and marks legacy-unclassified pages when runtime metadata is absent outside migrated sections", () => {
     const docsRoot = makeDocsRoot();
-    const page = path.join(docsRoot, "basics/getting-started/what-is-dyrected.mdx");
+    const page = path.join(docsRoot, "start-here/what-is-dyrected.mdx");
     write(
       page,
       ["---", "title: What is Dyrected?", "---", "", "Intro"].join("\n"),

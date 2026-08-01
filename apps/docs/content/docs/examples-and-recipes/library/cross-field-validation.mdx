@@ -1,0 +1,78 @@
+---
+title: Validate related fields before saving
+description: Reject invalid combinations of field values before they reach the database.
+runtime: self-hosted
+runtimeGroup: recipe-cross-field-validation
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Reject invalid combinations of field values before they reach the database.
+
+## Use this when
+
+- validate fields before saving
+- make sure an end date is after the start date
+- reject invalid form submissions
+- validate multiple fields together
+
+## Dyrected concepts
+
+`beforeChange`, `validation`, `throw to abort`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineDateTimeField, defineTextField } from "@dyrected/core";
+
+export const Events = defineCollection({
+  slug: "events",
+  hooks: {
+    beforeChange: [
+      ({ data, doc }) => {
+        const startsAt = data.startsAt ?? doc?.startsAt;
+        const endsAt = data.endsAt ?? doc?.endsAt;
+
+        const start = startsAt ? new Date(startsAt) : undefined;
+        const end = endsAt ? new Date(endsAt) : undefined;
+
+        if (start && Number.isNaN(start.getTime())) {
+          throw new Error("The event start time must be a valid date.");
+        }
+        if (end && Number.isNaN(end.getTime())) {
+          throw new Error("The event end time must be a valid date.");
+        }
+        if (start && end && end <= start) {
+          throw new Error("The event end time must be after its start time.");
+        }
+
+        return data;
+      },
+    ],
+  },
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineDateTimeField({
+      name: "startsAt",
+      label: "Starts at",
+      required: true,
+    }),
+    defineDateTimeField({
+      name: "endsAt",
+      label: "Ends at",
+      required: true,
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

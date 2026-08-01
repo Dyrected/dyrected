@@ -1,0 +1,12 @@
+{
+  "title": "Model Content",
+  "runtimeDefault": "shared",
+  "pages": [
+    "concepts",
+    "configuration",
+    "fields",
+    "rich-text",
+    "content-rules",
+    "media"
+  ]
+}

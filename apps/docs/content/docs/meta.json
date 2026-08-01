@@ -1,11 +1,14 @@
 {
   "title": "Docs",
   "pages": [
-    "basics",
-    "quick-start-guides",
-    "managing-data",
-    "features",
-    "ecosystem",
-    "deployment"
+    "start-here",
+    "model-content",
+    "deliver-content",
+    "editor-experience",
+    "guides",
+    "examples-and-recipes",
+    "deployment-and-operations",
+    "reference",
+    "troubleshooting"
   ]
 }

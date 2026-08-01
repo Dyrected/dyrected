@@ -1,0 +1,94 @@
+---
+title: JWT Strategy
+description: How Dyrected signs session tokens — the DYRECTED_JWT_SECRET, HS256 signing, token expiry, the Authorization Bearer header, and how another service can verify a Dyrected token.
+runtime: self-hosted
+---
+
+Every Dyrected session is a JSON Web Token (JWT) — a compact, signed string the client holds and sends back on each request. There are no server-side sessions to store or look up: the signature is what proves the token is genuine, and the server re-verifies it on every request. This page covers how that token is signed, what controls its lifetime, and how a separate service can verify one.
+
+For what the token *carries* (its claims) and how they become the `user` object in your access rules, see [Token Data](/docs/deployment-and-operations/authentication/token-data). This page is about the signing mechanics.
+
+## How signing works
+
+When a user logs in, Dyrected signs a token with the [`jose`](https://github.com/panva/jose) library using the **HS256** algorithm — a symmetric signature, meaning the same secret both signs and verifies the token. The secret comes from a single environment variable:
+
+```bash
+# .env.local
+DYRECTED_JWT_SECRET=a-long-random-secret-at-least-32-chars
+```
+
+A few things follow from HS256 being symmetric:
+
+- **The secret is the keys to the kingdom.** Anyone who holds it can mint valid tokens. Keep it out of client bundles and version control, and use a long, random value.
+- **It must be set.** Auth collections read `DYRECTED_JWT_SECRET` with no fallback and throw at startup if it is missing or empty. There is no default.
+- **The same secret must be present everywhere.** Every environment and every instance that verifies tokens needs the identical value, or tokens signed in one place will fail to verify in another.
+- **Rotating it logs everyone out.** Change the secret and every previously issued token stops verifying at once. That is the intended way to force a global sign-out — just expect the disruption.
+
+<Callout type="info">
+Dyrected uses your `DYRECTED_JWT_SECRET` directly as the HS256 signing key (UTF-8 encoded). It does not hash or truncate the secret first, so if you verify tokens elsewhere, use the raw secret exactly as configured.
+</Callout>
+
+## Token lifetime
+
+Session tokens expire **7 days** after they are issued. The token carries a standard `exp` claim, and the server rejects anything past it with a `401`.
+
+Seven days is currently a fixed default rather than a per-project setting — there is no environment variable or config option to change the session lifetime today. If a session needs to outlive the window, refresh it before it lapses using the `refresh-token` operation, which issues a fresh 7-day token from a still-valid one:
+
+```ts
+const { token } = await client.collection('users').refreshToken()
+client.setToken(token)
+```
+
+An expired token cannot refresh itself, so schedule the refresh while the current token is still good.
+
+## Sending the token
+
+Dyrected reads the token from one place: the `Authorization` header, using the `Bearer` scheme.
+
+```
+Authorization: Bearer <token>
+```
+
+There is no cookie parsing on the server and no query-string fallback — if the header is absent, the request is treated as unauthenticated. The SDK sets this header for you once you hand it a token:
+
+```ts
+const { token } = await client.collection('users').login(email, password)
+client.setToken(token) // all subsequent requests carry Authorization: Bearer <token>
+```
+
+If you make raw `fetch` calls outside the SDK, set the header yourself:
+
+```ts
+const res = await fetch(`${baseUrl}/api/collections/users/me`, {
+  headers: { Authorization: `Bearer ${token}` },
+})
+```
+
+Because the server only ever looks at this header, *where you keep the token between requests* is entirely your choice — a cookie, storage, or a framework helper. That decision is covered in [Cookie Strategy](/docs/deployment-and-operations/authentication/cookie-strategy).
+
+## Verifying a token in another service
+
+Since tokens are signed with a secret you control, any service that holds the same `DYRECTED_JWT_SECRET` can verify a Dyrected token independently — no call back to Dyrected required. This is useful for a separate API or edge function that needs to trust a Dyrected session.
+
+Verify with HS256 and the raw secret, then read the claims:
+
+```ts
+import { jwtVerify } from 'jose'
+
+const secret = new TextEncoder().encode(process.env.DYRECTED_JWT_SECRET!)
+
+const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] })
+// payload.sub        → the user's document id
+// payload.email      → the user's email
+// payload.collection → which auth collection issued it
+// payload.exp        → expiry (verified automatically)
+```
+
+`jwtVerify` checks the signature and the `exp` claim for you and throws if either fails. Keep in mind that the token carries only identity claims — `sub`, `email`, and `collection` — not the user's roles or full profile. If your other service needs roles or other fields, look the user up by `sub` after verifying, rather than trusting data that is not in the token. [Token Data](/docs/deployment-and-operations/authentication/token-data) explains exactly what is and isn't in the payload.
+
+## Where to go next
+
+- [Token Data](/docs/deployment-and-operations/authentication/token-data) — the exact claims in the token and how `user` is assembled
+- [Cookie Strategy](/docs/deployment-and-operations/authentication/cookie-strategy) — where to store the token between requests
+- [Operations](/docs/deployment-and-operations/authentication/operations) — the login and refresh endpoints in full
+- [Environment Variables](/docs/deployment-and-operations/infrastructure/environment-variables) — where `DYRECTED_JWT_SECRET` fits among your other settings

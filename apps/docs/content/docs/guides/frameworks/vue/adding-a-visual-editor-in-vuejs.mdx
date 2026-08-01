@@ -1,0 +1,154 @@
+---
+title: Adding a Visual Editor in Vue
+description: Add live preview and click-to-edit to a Vue route that already renders Dyrected content, starting with the simplest supported preview flow.
+---
+
+Use this page when your Vue route already renders Dyrected content and you want editors to preview changes against the real frontend instead of guessing from raw form fields alone.
+
+By the end, you should understand the minimum preview contract, the recommended first preview mode, and how Dyrected's click-to-edit helpers fit into a Vue page that already knows how to render its own content.
+
+In the quick-start flow, this page turns a working content route into an editor-friendly preview route. After that, the next step is turning the same setup into a controlled custom-page workflow.
+
+## Start with the right mental model
+
+In Dyrected, a visual editor is not a second website builder. It is your real frontend opened in a preview context while the admin keeps track of which document and field the editor is changing.
+
+That means a working visual editor depends on three things:
+
+- the collection knows which frontend URL to open
+- the frontend can receive draft data
+- rendered fields expose stable paths when you want click-to-edit behavior
+
+<Steps>
+<Step>
+### Set the preview target on the routable content type
+
+Before you wire preview, make sure the content type has one real frontend route to open.
+
+For most SPA quick starts, that means the `pages` content type should expose a route based on `slug`.
+
+If the content has no reliable frontend route yet, finish the normal render path first.
+
+</Step>
+<Step>
+### Start with the default preview mode
+
+The safest first quick-start path is the default `postMessage` flow. It works well when your frontend already fetches a document and can replace that document with draft data in the browser.
+
+Use token-based preview later only when you need a separate token handoff instead of a live preview channel.
+
+</Step>
+<Step>
+### Pass fetched content into a preview view component
+
+Because the Vue `useLivePreview` composable takes its initial data at creation time, the cleanest first setup is to fetch the document in one component and pass it into a preview view component once it exists:
+
+```vue
+<!-- PageRoute.vue -->
+<script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+import PreviewPageView from "./PreviewPageView.vue";
+
+const route = useRoute();
+const { docs, pending } = useDyrectedCollection("pages", {
+  where: { slug: { equals: route.params.slug } },
+  depth: 1,
+  limit: 1,
+});
+
+const page = computed(() => docs.value[0] ?? null);
+</script>
+
+<template>
+  <p v-if="pending">Loading...</p>
+  <PreviewPageView v-else-if="page" :initial-page="page" />
+  <p v-else>Page not found.</p>
+</template>
+```
+
+```vue
+<!-- PreviewPageView.vue -->
+<script setup lang="ts">
+const props = defineProps<{ initialPage: any }>();
+const { data: page, isLive } = useLivePreview({
+  initialData: props.initialPage,
+});
+</script>
+
+<template>
+  <article class="prose mx-auto">
+    <span v-if="isLive" class="preview-badge">Live preview</span>
+    <h1>{{ page.title }}</h1>
+    <DyrectedRichText v-if="page.content" :content="page.content" />
+  </article>
+</template>
+```
+
+This keeps the first preview integration small: fetch the document normally, then let the composable receive draft updates when the preview pane is open.
+
+</Step>
+<Step>
+### Add click-to-edit where it matters
+
+Click-to-edit only works reliably when the frontend renders fields through the path-aware helpers Dyrected already exposes.
+
+For block content, that usually means rendering through `<Blocks>` and using `useDyPath()` inside the block component:
+
+```vue
+<script setup lang="ts">
+defineProps<{ heading: string; subheading?: string }>();
+
+const dyHeading = useDyPath("heading");
+const dySubheading = useDyPath("subheading");
+</script>
+
+<template>
+  <section>
+    <h1 v-bind="dyHeading">{{ heading }}</h1>
+    <p v-if="subheading" v-bind="dySubheading">{{ subheading }}</p>
+  </section>
+</template>
+```
+
+Those paths are what let the preview surface map a click in the frontend back to the matching field in the editor.
+
+</Step>
+<Step>
+### Test one real preview route
+
+Open the document from the admin, launch preview, and make one visible change while the page is open.
+
+The success signal is simple:
+
+- the correct frontend route opens
+- draft edits appear there while you type
+- clicking a supported element takes you back to the right field
+
+</Step>
+</Steps>
+
+## Recommended path
+
+Do the visual editor work in this order:
+
+1. make the normal page render work
+2. set the routable content's preview target
+3. wire the first route to `useLivePreview`
+4. add path-aware block rendering only where editors need click-to-edit
+
+That order prevents the preview system from becoming the first place a page ever works.
+
+## Escape hatches
+
+If you need broader background on preview semantics, keep this page as the quick-start integration step and use [Displaying Content Overview](/docs/deliver-content/displaying-content/overview) for the rendering helpers.
+
+## Success check
+
+You are ready for the next step when:
+
+- a document opens the correct frontend route from the admin
+- draft changes show up in that route during editing
+- block-based areas keep their field paths stable enough for click-to-edit where needed
+
+Once that is true, continue to [Let Editors Build Custom Pages in Vue with Dyrected](/docs/guides/frameworks/vue/building-landing-pages-for-marketing).

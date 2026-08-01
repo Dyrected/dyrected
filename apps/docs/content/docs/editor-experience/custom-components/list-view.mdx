@@ -1,0 +1,107 @@
+---
+title: List View
+description: Inject your own components around a collection's list — a header, a banner above the table, a summary below it — using the four list slots.
+---
+
+The collection list is where editors browse, filter, and act on records. You can't rebuild it, but you can add your own components around it: a header with a custom action, a banner above the table, a summary row or custom pagination below. Dyrected gives you four slots on every collection list for this.
+
+By the end of this page you should know the four list slots, the rich set of props your slot components receive, and how to register them per collection. This page assumes the declare-then-provide pattern from the [Custom Components overview](/docs/editor-experience/custom-components/overview).
+
+## The four slots
+
+A collection list has four injection points, top to bottom:
+
+- **`beforeList`** — above everything, including the toolbar.
+- **`beforeListTable`** — between the toolbar and the table.
+- **`afterListTable`** — directly below the table.
+- **`afterList`** — at the very bottom.
+
+Each is a list, so you can stack components. Unlike dashboard slots, these are declared **per collection**, under that collection's `admin.components`:
+
+```ts
+export const Posts = defineCollection({
+  slug: "posts",
+  admin: {
+    components: {
+      beforeList: ["posts-header"],
+      afterListTable: ["posts-summary"],
+    },
+  },
+  fields: [...],
+});
+```
+
+Then register the components under the `collectionList` group when you mount the admin, matched by the same keys:
+
+```tsx
+import { DyrectedAdmin } from "@dyrected/next/admin";
+import { PostsHeader } from "./PostsHeader";
+import { PostsSummary } from "./PostsSummary";
+
+export default function AdminPage() {
+  return (
+    <DyrectedAdmin
+      components={{
+        collectionList: {
+          "posts-header": PostsHeader,
+          "posts-summary": PostsSummary,
+        },
+      }}
+    />
+  );
+}
+```
+
+The registry key is the slot-key name you declared (`"posts-header"`), not the collection slug — the component renders wherever that key appears in a collection's slot lists. A key with no matching component is skipped (with a dev warning), and a component that throws is isolated by an error boundary so the list still renders.
+
+<Callout type="info">
+  These slots also appear on upload (media) collections — a `upload: true` collection's list uses the same four slots,
+  declared the same way on its `admin.components`.
+</Callout>
+
+## What your component receives
+
+List slot components get everything about the current list — the data, its loading and pagination state, the user's permissions, and links — so they can render summaries, actions, or context without re-fetching:
+
+| Prop | What it is |
+|---|---|
+| `client` | The authenticated Dyrected client, for any extra API calls |
+| `user` | The signed-in user document, or `null` |
+| `collection` | The full config of the collection being listed |
+| `collectionSlug` | The collection's slug (e.g. `"posts"`) |
+| `response` | The raw paginated response from the last query (or `undefined` while loading) |
+| `documents` | The documents currently shown, unwrapped from `response` |
+| `isLoading` | `true` while the list query is in flight |
+| `pagination` | `{ page, totalPages, total, hasNextPage, hasPrevPage }` |
+| `permissions` | `{ canRead, canCreate }` for the current user on this collection |
+| `urls` | `{ collection, create }` — admin links to the list and the new-document form |
+
+For example, a summary that shows the total count below the table:
+
+```tsx
+import type { CollectionListSlotProps } from "@dyrected/admin";
+
+export function PostsSummary({ pagination, isLoading }: CollectionListSlotProps) {
+  if (isLoading) return null;
+  return (
+    <div className="dy-px-4 dy-py-2 dy-text-sm dy-text-muted-foreground">
+      {pagination.total} posts total
+    </div>
+  );
+}
+```
+
+Because you receive `documents`, `pagination`, and `permissions`, most list add-ons need no data fetching of their own — read what's already there. Reach for `client` only when you need something the list didn't load.
+
+<Callout type="info">
+  Slot props intentionally don't expose setters for the list's filters, sorting, or row selection — they're for adding
+  content alongside the list, not driving its internal state. Use `client` if you need to run your own query.
+</Callout>
+
+## Using Vue components
+
+In a Vue or Nuxt app, register Vue components in the same `collectionList` map; they're wrapped automatically and receive the props above as Vue props. See the [overview](/docs/editor-experience/custom-components/overview#using-vue-components).
+
+## Recommended path
+
+Use `beforeList` for a header or collection-level action, `beforeListTable` for a banner or notice, and `afterListTable` / `afterList` for summaries and totals. Read from the props you're given — `documents`, `pagination`, `permissions` — before reaching for `client`. For components on the dashboard instead, see [Dashboard](/docs/editor-experience/custom-components/dashboard).

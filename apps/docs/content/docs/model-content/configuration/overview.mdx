@@ -1,0 +1,393 @@
+---
+title: Overview
+description: Learn what lives in `dyrected.config.ts` and how the root config shapes your content model, admin, and runtime.
+---
+
+Your `dyrected.config.ts` is the source of truth for a Dyrected project. It defines the content model, the admin shape, the infrastructure adapters, and the runtime rules Dyrected uses to generate APIs and editing surfaces.
+
+If you only remember one thing from this section, make it this: most Dyrected setup decisions flow from one typed config object.
+
+## What the config controls
+
+The root config brings together a few major areas:
+
+- `collections` for repeatable content
+- `globals` for singleton content
+- `db`, `storage`, and `image` for self-hosted infrastructure
+- `admin` and `adminAuth` for dashboard behavior
+- `logger` for the root Pino logger
+- `observability` for request logging, redaction, sampling, tracing, metrics, and transports
+- `email`, `redis`, `events`, and `cors` for runtime services
+
+In self-hosted projects, you usually provide adapters and secrets yourself. In Dyrected Cloud, Dyrected provides the backend infrastructure for you, including the database, storage, and API hosting. Your content model still starts from the same config shape.
+
+## A minimal config
+
+Start with the smallest useful shape and grow from there:
+
+```ts
+import { defineConfig } from '@dyrected/core'
+import { postgresAdapter } from '@dyrected/db-postgres'
+
+export default defineConfig({
+  db: postgresAdapter({ url: process.env.DATABASE_URL! }),
+  collections: [],
+  globals: [],
+})
+```
+
+This file is typed, so your editor can guide you while you add collections, globals, hooks, and admin options.
+
+As your project grows, you can keep collections and globals in separate files and import them into `dyrected.config.ts`. The root config stays the place where everything is assembled.
+
+## Collections and globals come first
+
+Most Dyrected projects begin by deciding what belongs in `collections` and what belongs in `globals`.
+
+- Use a collection when the content has many entries, like posts, products, users, or submissions.
+- Use a global when the content has one shared document, like navigation, site settings, or footer content.
+
+That content model then drives the generated admin UI, the REST API, and the SDK types.
+
+## Common top-level keys
+
+### `collections`
+
+Collections define repeatable documents with shared fields, hooks, access rules, and admin options.
+
+See [Collections](/docs/model-content/configuration/collections).
+
+### `globals`
+
+Globals define singleton documents such as navigation, SEO defaults, or theme settings.
+
+See [Globals](/docs/model-content/configuration/globals).
+
+### `db`
+
+The `db` key connects Dyrected to a database adapter in self-hosted projects. The adapter you choose depends on your deployment target and infrastructure.
+
+### `storage`
+
+Use `storage` when you have upload-enabled collections and need Dyrected to persist files.
+
+### `admin`
+
+The top-level `admin` config controls branding and metadata for the dashboard. Collection- and global-level `admin` options control sidebar behavior, labels, previews, and list presentation.
+
+### `adminAuth`
+
+Use `adminAuth` when you need to control how people log in to the dashboard itself. This is separate from collection-level `auth: true`, which powers application authentication.
+
+### `email`
+
+The `email` config wires transactional messages such as invites, password resets, and password-changed security notifications to your provider. In practice, treat it as required before any production handoff that depends on auth email.
+
+### `logger`
+
+Use `logger` when you want to control the root Pino logger Dyrected writes into.
+
+See [Logging and Observability](/docs/deployment-and-operations/infrastructure/logging).
+
+### `observability`
+
+Use `observability` for request logs, request-body capture, redaction, sampling, tracing, metrics, and Dyrected-managed transports.
+
+See [Logging and Observability](/docs/deployment-and-operations/infrastructure/logging).
+
+### `cors`
+
+Use `cors` to allow browser requests from the origins that should be able to call your Dyrected API.
+
+## Practical rules
+
+- Keep collection slugs, global slugs, and persisted field names stable once content exists.
+- Keep provider credentials in environment variables, not in the config source.
+- Treat config changes like application changes, because they affect data shape, API behavior, and editor workflows.
+- Prefer small, reviewable config edits instead of large schema rewrites.
+
+## Where to go next
+
+- Read [Collections](/docs/model-content/configuration/collections) when the content has many entries.
+- Read [Globals](/docs/model-content/configuration/globals) when the content should exist once.
+- Read [Environment Variables](/docs/deployment-and-operations/infrastructure/environment-variables) before wiring secrets and framework-specific URLs.
+- Go back to [Concepts](/docs/model-content/concepts) if you want the high-level mental model first.
+
+## Generated reference
+
+The contracts below are generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so their signatures stay in sync with the package you install. Use the prose above to learn how the config works, and use this region as the exact source of truth for `DyrectedConfig` and admin options. The `CollectionConfig` and `GlobalConfig` contracts live on their own pages.
+
+{/* GENERATED:REFERENCE-CONFIGURATION:START */}
+## AdminConfig
+
+Branding and metadata options for the Dyrected Admin UI.
+
+```ts
+export interface AdminConfig {
+  /** Custom component slots around the built-in dashboard. */
+  components?: AdminDashboardComponentSlots;
+  branding?: {
+    /** Full logo image shown in the expanded sidebar. URL or imported image asset. */
+    logo?: string;
+    /** Compact logo mark used in the collapsed sidebar state. */
+    logoMark?: string;
+    /** Text alternative or addition to the logo image. */
+    logoText?: string;
+    /**
+     * Brand colour used for committed, filled actions — Save, Create, Upload —
+     * and active/selected states. Accepts a hex string, a named colour
+     * (`amber`, `lime`, `violet`, `green`, `blue`, `red`, `purple`, `orange`),
+     * or a raw HSL triplet (`"217 91% 60%"`). Applied in both light and dark mode.
+     *
+     * This is one half of the two-colour brand model. Use {@link accentColor}
+     * for links and navigation accents. If you only set `primaryColor`, it is
+     * reused for accents too, matching the single-brand-colour look.
+     * @example '#6366f1'
+     * @example 'blue'
+     * @example 'hsl(240 50% 60%)'
+     */
+    primaryColor?: string;
+    /**
+     * Brand colour used for links, active navigation details, hover text, and
+     * focus rings — the "accent" half of the two-colour brand model, mapped to
+     * the admin's `--intelligence` token. Accepts the same formats as
+     * {@link primaryColor} and applies in both light and dark mode.
+     *
+     * Set this when your brand has a distinct link/accent colour separate from
+     * your primary action colour. When omitted, accents fall back to
+     * `primaryColor` (if set) or the built-in default.
+     * @example '#8b5cf6'
+     * @example 'violet'
+     */
+    accentColor?: string;
+    /** Browser tab favicon URL. */
+    favicon?: string;
+    /** Font family for body and UI text. Must be loaded separately. */
+    fontSans?: string;
+    /** Font family for headings. Must be loaded separately. */
+    fontSerif?: string;
+  };
+  meta?: {
+    /**
+     * String appended to every Admin page's `<title>`.
+     * @default '- Dyrected'
+     */
+    titleSuffix?: string;
+  };
+  /**
+   * The canonical/base URL of the frontend website for links and iframe live previews.
+   */
+  siteUrl?: string;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>components</code> (optional) | Custom component slots around the built-in dashboard. |
+| <code>branding</code> (optional) |  |
+| <code>meta</code> (optional) |  |
+| <code>siteUrl</code> (optional) | The canonical/base URL of the frontend website for links and iframe live previews. |
+
+
+## DyrectedConfig
+
+The root configuration object passed to `createDyrectedApp`.
+
+This is the single source of truth for your entire Dyrected instance —
+collections, globals, database adapter, storage, email, and more.
+
+```ts
+export interface DyrectedConfig<
+  TUser extends AuthenticatedUser = AuthenticatedUser,
+> {
+  /**
+   * Reusable block definitions that `blocks` fields can reference by slug via
+   * `blockReferences`.
+   */
+  blocks?: Block[];
+
+  /** Collection definitions. Each collection maps to a database table/collection. */
+  collections: CollectionConfig<any>[];
+
+  /** Global (singleton) definitions. Each global maps to a single document. */
+  globals: GlobalConfig<any>[];
+
+  /**
+   * The database adapter. Required for all data operations.
+   * @see DatabaseAdapter
+   */
+  db?: DatabaseAdapter;
+
+  /**
+   * The storage adapter for file uploads.
+   * Required when any collection has `upload: true`.
+   * @see StorageAdapter
+   */
+  storage?: StorageAdapter;
+
+  /**
+   * The image processing service. Required when any upload collection
+   * defines `imageSizes`.
+   * @see ImageService
+   */
+  image?: ImageService;
+
+  /**
+   * Runtime logger configuration. Accepts either logger options/destination or
+   * a fully-instantiated Pino logger.
+   */
+  logger?: DyrectedLoggerConfig;
+
+  /**
+   * Request logging, redaction, sampling, tracing, metrics, and transport
+   * configuration for the Dyrected server runtime.
+   */
+  observability?: DyrectedObservabilityConfig;
+
+  /** Admin UI branding and metadata. */
+  admin?: AdminConfig;
+
+  /**
+   * Deployment-level authentication strategy for the CMS dashboard (`/admin`).
+   * This is separate from collection-level `auth: true`, which continues to
+   * power application/customer auth independently.
+   */
+  adminAuth?: AdminAuthConfig;
+
+  /**
+   * Named access policies available to collection, global, and field access
+   * rules via `{ policy: 'name' }`.
+   *
+   * A policy can be a **function** (full server logic, evaluated to a static
+   * boolean when serialized for the admin panel) or a **Jexl string** (or
+   * boolean). String policies are inlined when the schema is sent to the admin,
+   * so the admin panel evaluates them live against the current form — the same
+   * way it evaluates inline Jexl rules.
+   */
+  accessPolicies?: Record<
+    string,
+    AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean
+  >;
+
+  /**
+   * Email transport configuration. Required for welcome emails, password
+   * resets, and invite links.
+   *
+   * @example
+   * email: {
+   *   from: 'no-reply@myapp.com',
+   *   send: async ({ to, subject, html }) => {
+   *     await resend.emails.send({ from, to, subject, html })
+   *   },
+   * }
+   */
+  email?: {
+    /** The `From` address for all outbound emails. */
+    from: string;
+
+    /** The send function. Wire in any email provider (Resend, SendGrid, SES, etc.). */
+    send: (args: {
+      to: string;
+      subject: string;
+      html: string;
+    }) => Promise<void>;
+
+    /** Override the default email templates. */
+    templates?: {
+      welcome?: (args: { email: string }) => { subject?: string; html: string };
+      invite?: (args: { token: string; invitedByEmail?: string; url?: string }) => {
+        subject?: string;
+        html: string;
+      };
+      resetPassword?: (args: { token: string; url?: string }) => {
+        subject?: string;
+        html: string;
+      };
+      passwordChanged?: (args: { email: string }) => {
+        subject?: string;
+        html: string;
+      };
+    };
+  };
+
+  /**
+   * Redis connection URL. Required for distributed caching of dynamic option
+   * resolvers and other server-side caches in multi-instance deployments.
+   *
+   * @example
+   * redis: { url: process.env.REDIS_URL }
+   */
+  redis?: {
+    url: string;
+  };
+
+  /** Durable lifecycle-event delivery configuration. */
+  events?: {
+    handlers: LifecycleEventHandler[];
+
+    /** Maximum delivery attempts before an event remains failed. Defaults to 8. */
+    maxAttempts?: number;
+
+    /** Initial exponential-backoff delay in milliseconds. Defaults to 1000. */
+    retryDelayMs?: number;
+  };
+
+  /**
+   * Cross-Origin Resource Sharing (CORS) configuration.
+   * List all origins that are allowed to call the Dyrected API.
+   *
+   * @example
+   * cors: { origins: ['https://myapp.com', 'https://www.myapp.com'] }
+   */
+  cors?: {
+    origins: string[];
+  };
+
+  /**
+   * App-level HTTP request rate limiting.
+   *
+   * Similar to Payload's `rateLimit` option, this counts requests by client IP
+   * over a rolling time window and returns `429` responses once the limit is
+   * exhausted.
+   */
+  rateLimit?: RateLimitConfig;
+
+  /**
+   * Callback to dynamically fetch additional collections and globals for a
+   * given site ID at request time. Used in multi-tenant deployments where each
+   * site has its own schema stored in the database.
+   */
+  onSchemaFetch?: (siteId: string) => Promise<{
+    blocks?: Block[];
+    collections?: CollectionConfig<any>[];
+    globals?: GlobalConfig<any>[];
+    accessPolicies?: Record<
+      string,
+      AccessPolicyResolver<Record<string, unknown>, TUser> | string | boolean
+    >;
+    admin?: AdminConfig;
+    adminAuth?: AdminAuthConfig;
+  }>;
+}
+```
+
+| Option | Description |
+| --- | --- |
+| <code>blocks</code> (optional) | Reusable block definitions that &#96;blocks&#96; fields can reference by slug via &#96;blockReferences&#96;. |
+| <code>collections</code> (required) | Collection definitions. Each collection maps to a database table/collection. |
+| <code>globals</code> (required) | Global (singleton) definitions. Each global maps to a single document. |
+| <code>db</code> (optional) | The database adapter. Required for all data operations.  See: DatabaseAdapter |
+| <code>storage</code> (optional) | The storage adapter for file uploads. Required when any collection has &#96;upload: true&#96;.  See: StorageAdapter |
+| <code>image</code> (optional) | The image processing service. Required when any upload collection defines &#96;imageSizes&#96;.  See: ImageService |
+| <code>logger</code> (optional) | Runtime logger configuration. Accepts either logger options/destination or a fully-instantiated Pino logger. |
+| <code>observability</code> (optional) | Request logging, redaction, sampling, tracing, metrics, and transport configuration for the Dyrected server runtime. |
+| <code>admin</code> (optional) | Admin UI branding and metadata. |
+| <code>adminAuth</code> (optional) | Deployment-level authentication strategy for the CMS dashboard (&#96;/admin&#96;). This is separate from collection-level &#96;auth: true&#96;, which continues to power application/customer auth independently. |
+| <code>accessPolicies</code> (optional) | Named access policies available to collection, global, and field access rules via &#96;&#123; policy: 'name' &#125;&#96;.  A policy can be a **function** (full server logic, evaluated to a static boolean when serialized for the admin panel) or a **Jexl string** (or boolean). String policies are inlined when the schema is sent to the admin, so the admin panel evaluates them live against the current form — the same way it evaluates inline Jexl rules. |
+| <code>email</code> (optional) | Email transport configuration. Required for welcome emails, password resets, and invite links. |
+| <code>redis</code> (optional) | Redis connection URL. Required for distributed caching of dynamic option resolvers and other server-side caches in multi-instance deployments. |
+| <code>events</code> (optional) | Durable lifecycle-event delivery configuration. |
+| <code>cors</code> (optional) | Cross-Origin Resource Sharing (CORS) configuration. List all origins that are allowed to call the Dyrected API. |
+| <code>rateLimit</code> (optional) | App-level HTTP request rate limiting.  Similar to Payload's &#96;rateLimit&#96; option, this counts requests by client IP over a rolling time window and returns &#96;429&#96; responses once the limit is exhausted. |
+| <code>onSchemaFetch</code> (optional) | Callback to dynamically fetch additional collections and globals for a given site ID at request time. Used in multi-tenant deployments where each site has its own schema stored in the database. |
+{/* GENERATED:REFERENCE-CONFIGURATION:END */}

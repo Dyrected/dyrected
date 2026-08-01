@@ -1,0 +1,69 @@
+---
+title: Update a dropdown from another field
+description: Change available Admin UI options immediately when an editor changes a related field.
+runtime: self-hosted
+runtimeGroup: recipe-dependent-dropdown
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Change available Admin UI options immediately when an editor changes a related field.
+
+## Use this when
+
+- make one dropdown depend on another
+- show states based on the selected country
+- create a cascading dropdown
+- update select options while editing
+
+## Dyrected concepts
+
+`admin.hooks.options`, `select`, `siblingData`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineSelectField } from "@dyrected/core";
+
+export const Locations = defineCollection({
+  slug: "locations",
+  fields: [
+    defineSelectField({
+      name: "country",
+      label: "Country",
+      required: true,
+      options: [
+        { label: "Nigeria", value: "ng" },
+        { label: "United States", value: "us" },
+      ],
+    }),
+    defineSelectField({
+      name: "region",
+      label: "State or region",
+      required: true,
+      options: [],
+      admin: {
+        hooks: {
+          options: ({ siblingData }) => {
+            if (siblingData.country === "ng") return ["Lagos", "Abuja", "Oyo"];
+            if (siblingData.country === "us")
+              return ["California", "New York", "Texas"];
+            return [];
+          },
+        },
+      },
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

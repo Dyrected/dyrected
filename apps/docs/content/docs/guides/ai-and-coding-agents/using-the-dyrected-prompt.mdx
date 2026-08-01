@@ -1,0 +1,306 @@
+---
+title: Using the Dyrected prompt
+description: Give a coding agent a staged, project-aware workflow for connecting an existing site to Dyrected without changing its design or behaviour.
+---
+
+Use the Dyrected prompt when a site already exists and the same coding agent can
+inspect and edit its project. The prompt guides the agent from content
+inventory to a verified editor handoff without asking the operator to design a
+schema.
+
+By the end, the approved content should be editable in Dyrected, the existing
+frontend should still look and behave the same, and one real editor change
+should have been verified on the public site.
+
+## Choose the right setup prompt
+
+Use the Cloud prompt when the project connects to a Dyrected Cloud site:
+
+<CopyPromptButton />
+
+Use the self-hosted prompt when the project runs its own Dyrected backend:
+
+<CopyPromptButton mode="self-hosted" />
+
+Paste the prompt into the coding agent that owns the project. Do not paste it
+into a tool that cannot inspect files, run commands, or verify the frontend.
+
+If you are installing Dyrected manually instead, start with
+[Installation](/docs/start-here/installation).
+
+## Before you begin
+
+For Dyrected Cloud, create the site and keep its Site ID, Site API key, and Base
+URL ready. The prompt waits until the content plan is approved before asking
+for them.
+
+If the Cloud site is not ready, follow
+[Setting up your Cloud site](/docs/guides/ai-and-coding-agents/setting-up-your-cloud-site).
+
+Keep the current project available to the agent. The workflow depends on
+reading the real routes, components, content sources, images, and installed
+packages before making decisions.
+
+## Why the workflow has approval gates
+
+A useful CMS integration starts with editing boundaries, not field types.
+
+The prompt pauses after the agent identifies what should become editable. This
+lets the operator correct the content scope before code or schema work begins.
+It pauses again after safe local preparation and before installation. The final
+pause verifies the only result that matters: an editor change reaches the real
+frontend.
+
+The operator answers questions such as:
+
+- Should the client be able to add more of these?
+- Should this image be replaceable?
+- Should editors be able to arrange these existing sections?
+- Should this interactive value be editable or protected?
+
+The agent decides the technical implementation from the current docs and
+installed package types.
+
+## What the agent does
+
+### Stage 1: inspect the project
+
+The agent does not change files. It inventories:
+
+- public pages and routes
+- shared navigation, footer, and business information
+- repeated content such as posts, products, people, projects, services, or FAQs
+- visible page sections
+- meaningful images and long-form content
+- content definitions used by existing interactive features
+- the current framework, package manager, deployment target, and Dyrected state
+
+The output is a short plain-language editing checklist. Each item says whether
+the client can edit it, add or remove entries, or arrange approved sections.
+
+### Stage 2: prepare only when needed
+
+Some projects keep content mixed with component logic. In that case, the agent
+may first move approved content into serializable local data while preserving
+the exact rendered result.
+
+This is not a mandatory refactor. If the content can be connected safely
+without an intermediate extraction, the agent should avoid unnecessary work.
+
+State, event handlers, calculations, validation, authentication, submissions,
+animations, and other runtime behaviour remain in code.
+
+### Stage 3: approve the editing plan
+
+The agent translates the inventory into a client editing experience:
+
+- Globals for one shared site-wide value
+- Collections for repeatable business content
+- Page entries for appropriate public content pages
+- Reusable blocks for meaningful visible page sections
+
+This stage also identifies existing variants, editable media, previewable
+routes, initial content, and any content-driven feature definitions. The agent
+still presents this in plain language rather than raw configuration.
+
+### Stage 4: install and connect
+
+After approval, the agent uses the official CLI initialization flow when
+Dyrected is absent. In automated agent work, it should pass the non-interactive
+`dyrected init` options from the installed CLI instead of bypassing setup
+because the default command can prompt. If Dyrected is already present, it reads
+and extends the existing setup.
+
+The implementation proceeds in small related batches. Each batch defines the
+approved content, seeds existing values, connects the actual frontend, and
+verifies one recognizable edit before more schema is added.
+
+The agent should not stop because collections appear in Admin. Dyrected must
+become the runtime source for the approved frontend content.
+
+### Stage 5: hand off
+
+The final handoff explains what the client can edit, add, remove, arrange, and
+preview. It also states which design and behaviour changes still require the
+developer.
+
+The client message stays in plain language and does not expose implementation
+details or credentials.
+
+## The modeling defaults
+
+These defaults keep the editing experience useful without giving editors
+arbitrary design control.
+
+### Shared content becomes a Global
+
+Use Globals for content with one current shared value, such as navigation,
+footer content, contact details, and default metadata.
+
+Do not turn a home page or landing page into a Global. A page is not site-wide
+settings.
+
+Read [Globals](/docs/model-content/configuration/globals) for the supported
+configuration.
+
+### Repeatable business content becomes a Collection
+
+Use Collections for recognizable entries the owner may add, remove, relate,
+filter, or publish over time. The project decides the collection names; the
+prompt does not assume every site has posts, products, projects, or team
+members.
+
+Read [Collections](/docs/model-content/configuration/collections) before defining
+collection behaviour.
+
+### Pages use approved section blocks
+
+When the project has public content pages, each appropriate page becomes an
+entry with a title, route information, existing metadata, and one ordered
+blocks field.
+
+Hero and other visible content sections belong in that ordered field. Editors
+may arrange only block types and variants that the frontend already knows how
+to render.
+
+A blocks field uses inline blocks or registered block references, never both.
+Read [Blocks](/docs/model-content/fields/blocks) for both supported approaches.
+
+When a collection supports preview and has a page layout or blocks field, put
+that layout field in its own Admin tab. Keep page details and SEO metadata in
+separate tabs when that makes the editor easier to use. Use
+[`defineTab`](/docs/model-content/fields/tabs) for this; tabs change the Admin editing
+experience, not the stored content shape.
+
+If editors can create pages, the frontend also needs a tested dynamic route.
+Creating a document in Admin does not create a public route by itself.
+
+### Long-form content uses rich text
+
+Blog bodies, articles, policies, case studies, and other formatted content
+should use `defineRichTextField`. A textarea containing Markdown does not give
+editors the supported rich-text experience.
+
+Dyrected rich text stores an HTML string. If the project currently stores
+long-form content as Markdown, the migration should convert it to equivalent
+safe HTML for the initial seed and preserve headings, lists, links, quotes, and
+inline formatting.
+
+Do not model prose as an array of paragraph rows. If editors are managing
+formatted paragraphs, use rich text. Arrays are for true repeatable items such
+as steps, FAQs, links, cards, and feature rows.
+
+Read [Rich text](/docs/model-content/fields/rich-text) for the field contract and
+supported editor controls.
+
+## What a good Admin should feel like
+
+The generated Admin is part of the deliverable. A non-technical editor should
+not have to understand slugs, component names, or schema structure.
+
+Each collection should have:
+
+- human-readable singular and plural labels
+- a valid Lucide icon name that matches the content
+- a human-readable title or name as its display title
+- that same title first in the default list columns
+- clear field labels and concise descriptions where needed
+
+Each Global should have a clear singular label and a valid Lucide icon name.
+
+The icon configuration stores a supported Lucide name, not a React component.
+Technical identifiers, variants, and behavioural settings should use
+controlled values rather than arbitrary editor input.
+
+The exact supported Admin options live in
+[Configuration](/docs/model-content/configuration/overview) and
+[Admin](/docs/editor-experience/overview).
+
+## Schema and content safety
+
+The agent reads the existing local and remote schema before synchronization.
+It must not silently remove or directly rename persisted collections, globals,
+fields, blocks, or variants.
+
+Initial content should be safe to run more than once:
+
+- seed only approved existing content
+- preserve stable identities and relationships
+- do not overwrite editor changes
+- do not create duplicate entries
+- do not fabricate media records
+
+The agent generates types and validates the local schema before running schema
+synchronization. Read [CLI and schema synchronization](/docs/reference/cli)
+and [Database migrations](/docs/deployment-and-operations/infrastructure/database/migrations) for the current
+commands and deployment differences.
+
+## Preview and frontend safety
+
+Preview follows the project's existing routes. For Cloud-compatible schemas,
+the recommended `previewUrl` is a serializable Jexl expression that returns a
+relative path.
+
+Relative paths are resolved against the configured site URL. The expression
+should return a route such as `/blog/example`; it should not concatenate
+`siteUrl` itself.
+
+Read [Admin preview](/docs/editor-experience/preview) before choosing a preview
+mode, and [Live Preview](/docs/editor-experience/publishing/live-preview/overview) before wiring
+unsaved edits or click-to-edit.
+
+When connecting the frontend:
+
+- pass only serializable data between server and client boundaries
+- resolve React components and Lucide components inside the code boundary that
+  owns them
+- normalize Dyrected data into existing component props
+- preserve current caching unless a change is needed for content freshness
+- keep private credentials out of browser code
+- handle missing and unknown content safely
+
+Use the supported [SDK](/docs/deliver-content/sdk-api/overview) rather than
+inventing data methods or routes.
+
+## Verification bar
+
+The integration is complete only when all applicable checks pass:
+
+1. Existing content appears in Dyrected without duplicates.
+2. The Admin labels, icons, titles, and list columns make sense to an editor.
+3. The frontend reads approved content from Dyrected.
+4. One recognizable edit appears on the correct public route.
+5. Approved add, remove, arrange, and preview actions work.
+6. Existing routes, design, responsive behaviour, and interactions remain
+   unchanged.
+7. Generated types, schema validation, lint, type checking, tests, and the
+   production build pass.
+8. Schema synchronization runs only after local validation succeeds.
+9. No private credential or non-serializable value reaches browser data.
+
+If a command cannot run because of the local environment, the agent should
+state the exact limitation and use the next-best available check instead of
+claiming success.
+
+## Documentation map
+
+The prompt tells the agent to start with the
+[LLM documentation index](https://docs.dyrected.com/llms.txt), then use the
+current task page:
+
+- [Installation](/docs/start-here/installation)
+- [CLI and schema synchronization](/docs/reference/cli)
+- [Configuration](/docs/model-content/configuration/overview)
+- [Collections](/docs/model-content/configuration/collections)
+- [Globals](/docs/model-content/configuration/globals)
+- [Fields](/docs/model-content/fields/overview)
+- [Rich text](/docs/model-content/fields/rich-text)
+- [Blocks](/docs/model-content/fields/blocks)
+- [Admin](/docs/editor-experience/overview)
+- [Admin preview](/docs/editor-experience/preview)
+- [Storage adapters](/docs/model-content/media/storage-adapters)
+- [SDK](/docs/deliver-content/sdk-api/overview)
+
+The installed package remains the final API authority. When a current docs
+example and the installed TypeScript types differ, the agent should explain the
+difference and follow the installed version.

@@ -1,0 +1,16 @@
+---
+title: Autosave
+---
+
+Autosave for draft editing is now documented in the canonical workflow and collection-config pages, because it only applies to workflow-enabled collections.
+
+Use these pages instead:
+
+- [Workflows Overview](/docs/editor-experience/publishing/overview) for how autosave fits the working-draft versus published-snapshot model
+- [Collections](/docs/model-content/configuration/collections#workflow-draft-autosave) for `admin.autosave` and `admin.autosaveDelayMs`
+
+The short version:
+
+- collections with `workflow` or `drafts: true` autosave draft revisions in the Admin by default
+- `admin.autosave: false` switches a collection back to explicit manual draft saves
+- autosave never publishes content or performs a workflow transition

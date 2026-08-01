@@ -1,0 +1,34 @@
+---
+title: Document Locking
+description: How Dyrected handles two people editing the same document today, and how to avoid overwrites without a locking feature.
+---
+
+If you've used other content systems, you may be looking for document locking — the behavior where one editor opening a document blocks or warns everyone else until they're done. It's worth being direct: Dyrected does not have a document-locking feature today. This page explains what actually happens when two people edit the same document, and the practical ways to keep edits from stepping on each other in the meantime.
+
+By the end you should know exactly what protection you have now, what you don't, and which existing features to lean on instead.
+
+## What happens with concurrent edits today
+
+Dyrected does not lock documents, reserve them per editor, or show a "someone else is editing this" banner. Two editors can open the same document at once, and saves are **last-write-wins**: whoever saves second overwrites the first save with the contents of their form. There is no automatic merge and no version-conflict prompt at save time.
+
+The one guard that does exist is local to each editor's own browser: if you have unsaved changes and try to navigate away, the admin warns you before you lose them. That protects you from your own accidental navigation — it does nothing about a second person editing in parallel.
+
+<Callout type="warn">
+  Do not rely on any locking behavior. If two editors save the same document close together, the later save wins and the
+  earlier one is lost silently. Plan your workflow around that until a locking feature exists.
+</Callout>
+
+## How to avoid overwrites in the meantime
+
+Until there's a first-class locking feature, a few existing capabilities cover most of the risk:
+
+- **Use workflows.** With [Workflows](/docs/editor-experience/publishing/overview) enabled, edits move through an explicit revision flow, so an overwrite is recoverable from workflow history and never updates the published snapshot by accident.
+- **Use workflows for review.** [Workflows](/docs/editor-experience/publishing/overview) separate an editable working revision from the published snapshot, so parallel editing at least never touches live content until someone deliberately transitions it.
+- **Narrow who can edit what.** [Access Control](/docs/model-content/content-rules/access-control/overview) lets you scope update rights so fewer people can edit the same document at once — for example, restricting a collection to its owner.
+- **Coordinate on high-traffic documents.** For a handful of frequently co-edited globals or landing pages, a light team convention ("ping before you edit the homepage") is often enough on a small team.
+
+None of these is a lock. They reduce how often overwrites happen and make them recoverable when they do.
+
+## Recommended path
+
+Treat concurrent editing as a workflow question, not a safety net the admin provides. Turn on versions so nothing is unrecoverable, use workflows to keep live content stable, and scope update access so the set of people who can collide on a document stays small. If true locking is a hard requirement for your team, raise it — it is a known gap, not a configured-off option.

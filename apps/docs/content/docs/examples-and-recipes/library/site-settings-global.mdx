@@ -1,0 +1,60 @@
+---
+title: Create a site settings global
+description: Keep shared site-wide values in a single global instead of scattering them across collections.
+runtime: shared
+runtimeGroup: recipe-site-settings-global
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Keep shared site-wide values in a single global instead of scattering them across collections.
+
+## Use this when
+
+- create site settings
+- store one shared settings document
+- make a singleton config record
+- manage site-wide content in one place
+
+## Dyrected concepts
+
+`defineGlobal`, `initialData`, `singleton content`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineEmailField, defineGlobal, defineTextField, defineUrlField } from "@dyrected/core";
+
+export const SiteSettings = defineGlobal({
+  slug: "site-settings",
+  label: "Site settings",
+  initialData: {
+    siteName: "Acme Studio",
+    supportEmail: "hello@example.com",
+  },
+  fields: [
+    defineTextField({ name: "siteName", label: "Site name", required: true }),
+    defineTextField({ name: "tagline", label: "Tagline", defaultValue: "" }),
+    defineEmailField({
+      name: "supportEmail",
+      label: "Support email",
+      required: true,
+    }),
+    defineUrlField({
+      name: "primaryCta",
+      label: "Primary call to action",
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

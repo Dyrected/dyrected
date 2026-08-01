@@ -1,0 +1,30 @@
+{
+  "title": "Fields",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "text",
+    "textarea",
+    "rich-text",
+    "number",
+    "boolean",
+    "date",
+    "datetime",
+    "time",
+    "email",
+    "url",
+    "select",
+    "radio",
+    "multi-select",
+    "object",
+    "array",
+    "blocks",
+    "relationship",
+    "join",
+    "image",
+    "json",
+    "row",
+    "tabs",
+    "icon"
+  ]
+}

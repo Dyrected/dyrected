@@ -10,9 +10,9 @@
   "intents": ["show a field conditionally", "hide irrelevant form fields", "show discount only with a coupon", "make the admin form react to another field"],
   "concepts": ["admin.condition", "Jexl", "conditional fields"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/admin-experience",
-    "/docs/features/admin/overview",
-    "/docs/basics/configuration/collections"
+    "/docs/examples-and-recipes/application-patterns/admin-experience",
+    "/docs/editor-experience/overview",
+    "/docs/model-content/configuration/collections"
   ],
   "requires": []
 }

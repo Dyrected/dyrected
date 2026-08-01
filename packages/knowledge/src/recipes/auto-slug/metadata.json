@@ -15,9 +15,9 @@
   ],
   "concepts": ["beforeChange", "admin.hooks.onChange", "promoted", "unique"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/data-lifecycle",
-    "/docs/basics/configuration/collections",
-    "/docs/basics/hooks/collections"
+    "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+    "/docs/model-content/configuration/collections",
+    "/docs/deployment-and-operations/server-runtime/hooks/collections"
   ],
   "requires": []
 }

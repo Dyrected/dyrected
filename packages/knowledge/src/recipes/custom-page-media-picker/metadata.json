@@ -20,9 +20,9 @@
     "useMediaLibrary"
   ],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/custom-app-surfaces",
-    "/docs/features/admin/media-hooks",
-    "/docs/features/upload/overview"
+    "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+    "/docs/editor-experience/media-hooks",
+    "/docs/model-content/media/overview"
   ],
   "requires": [
     "@dyrected/react",

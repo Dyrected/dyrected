@@ -1,0 +1,161 @@
+---
+title: Preventing Abuse
+description: Protect a production Dyrected app with Dyrected's built-in rate limiting and login lockout, then add the host-layer controls that still belong at your edge.
+---
+
+This page helps you decide which abuse protections belong in Dyrected itself and which still belong at your host, proxy, or edge.
+
+Dyrected gives you two built-in protections now:
+
+- built-in HTTP rate limiting for `/api` routes
+- built-in auth account lockout for repeated failed logins
+
+That is a good base layer, not a full security perimeter. In production you should still assume public routes, auth flows, preview routes, and upload paths need deliberate protection from the stack around Dyrected too.
+
+The recommended path is:
+
+1. turn on Dyrected's built-in API rate limiting and configure proxy trust correctly
+2. leave auth lockout on unless you have a deliberate reason to disable it
+3. keep secrets and privileged keys server-side
+4. treat preview, uploads, and side-effect routes as real attack surfaces
+5. add host-level rate limits and network controls where Dyrected is not the right layer
+6. test the abuse cases you care about before launch
+
+## Start with Dyrected's built-in rate limiting
+
+Dyrected now ships with in-process API rate limiting enabled by default. Out of the box it protects `/api` with a per-IP limit of `500` requests per `15` minutes.
+
+That gives you a sensible default immediately, but it only works well if Dyrected can identify the real client correctly. If you are deployed behind a reverse proxy or platform edge, set `trustProxy` so Dyrected reads the forwarded client IP instead of treating the proxy hop as the caller:
+
+```ts
+import { defineConfig } from "@dyrected/core";
+
+export default defineConfig({
+  rateLimit: {
+    max: 500,
+    window: 15 * 60 * 1000,
+    trustProxy: true,
+  },
+  // ...
+});
+```
+
+Use `trustProxy: true` when you trust the full forwarded chain from your platform. Use a number when you need to trust a specific number of proxy hops from the right side of that chain.
+
+The recommended path is to leave the default `/api` scope alone unless you know you need something narrower or broader. If you do need more control:
+
+- use `rateLimit.paths` to change which route prefixes are protected
+- use `rateLimit.skip` for the rare request class that should bypass the in-app limiter
+- use `enabled: false` only if another layer is intentionally taking over this job
+
+One caveat matters in production: this limiter is **in-process**. It is a useful app-layer protection, but it is not a distributed rate limit shared across multiple app instances.
+
+## Keep account lockout on
+
+Rate limiting protects the route. Account lockout protects a specific user record after repeated bad password attempts. The two layers solve different problems, so keep both.
+
+For auth collections, Dyrected enables login lockout by default. You only need to tune it when your product needs a different threshold or lock window:
+
+```ts
+export const Users = defineCollection({
+  slug: "users",
+  auth: {
+    maxLoginAttempts: 5,
+    lockTime: 15 * 60 * 1000,
+  },
+  fields: [{ name: "name", label: "Name", type: "text" }],
+});
+```
+
+Set `maxLoginAttempts: 0` only if you have another deliberate lockout strategy and understand the tradeoff.
+
+## Add host and edge protection on top
+
+Dyrected's limiter protects the app layer. Your host or edge should still protect the infrastructure in front of it.
+
+That matters most for:
+
+- auth endpoints
+- media uploads
+- preview routes
+- custom routes that call third-party services
+- any public collection endpoint that is expensive to query
+
+Keep the normal protection mechanisms for your host too:
+
+- framework middleware
+- edge middleware
+- reverse proxy or CDN rules
+- provider-native throttling
+- bot protection, WAF, or IP allowlists when needed
+
+If you run more than one app instance, this outer layer stops being optional. It becomes the shared limit that protects the whole deployment.
+
+## Keep privileged credentials out of the browser
+
+This is still one of the simplest and highest-value production rules:
+
+- server-side keys stay server-side
+- browser-visible keys should only expose the access you actually intend to expose
+
+If you embed the admin or use browser-side SDK calls, use your framework's public runtime variables only for values that are meant to be public in that environment. Do not leak your server-only API key just because a page needs content.
+
+## Treat preview and uploads as public surfaces
+
+Server-side preview tokens are short-lived, but they are still bearer credentials. Anyone holding the token can redeem that draft until it expires.
+
+For token-mode preview in production:
+
+- set `DYRECTED_JWT_SECRET`
+- keep preview URLs out of places they do not need to go
+- guard sensitive preview routes at the app layer if the content is sensitive
+
+Uploads deserve the same mindset. If a route accepts files, check that:
+
+- `create` and `update` access are as restrictive as they should be
+- public `read` access is intentional
+- your storage and serving setup match the sensitivity of the files
+
+## Bound expensive reads and side effects
+
+Abuse is not only malicious traffic. Real traffic spikes also expose weak spots.
+
+A route can become expensive just by asking for too much data. Keep collection reads bounded:
+
+- set explicit `limit` values on list queries
+- keep `depth` only as high as the page actually needs
+- promote fields you filter or sort on frequently
+
+Hooks need the same discipline. If a hook sends email, calls a webhook, or touches another API, decide whether that side effect should block the write. If not, fail it safely:
+
+```ts
+afterChange: [
+  async ({ doc }) => {
+    try {
+      await sendWebhook(doc);
+    } catch (error) {
+      console.error("Webhook failed:", error);
+    }
+  },
+];
+```
+
+That keeps downstream failures from turning into avoidable admin outages.
+
+## Pre-launch checks
+
+Before you ship, verify the basics:
+
+- built-in Dyrected rate limiting sees the real client IP in production because `trustProxy` is set correctly
+- repeated login attempts hit Dyrected's account lockout and also get throttled by the host layer
+- upload endpoints are protected the way you expect
+- preview URLs cannot be reused long after issuance
+- public collection reads have sane limits
+- external side effects degrade safely under failure
+
+## Related pages
+
+- [Deployment](/docs/deployment-and-operations/production/deployment)
+- [Authentication Overview](/docs/editor-experience/editor-accounts)
+- [Server-side integration](/docs/editor-experience/publishing/live-preview/server-side)
+- [Performance](/docs/deployment-and-operations/performance/overview)

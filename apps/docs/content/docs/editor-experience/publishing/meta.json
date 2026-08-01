@@ -1,0 +1,11 @@
+{
+  "title": "Publishing and Workflows",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "custom-workflows",
+    "lifecycle-events",
+    "live-preview",
+    "__versions"
+  ]
+}

@@ -28,19 +28,19 @@ feature being implemented:
 
 - Documentation index: https://docs.dyrected.com/llms.txt
 - Documentation home: https://docs.dyrected.com
-- Existing-site agent workflow: https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt
-- Installation: https://docs.dyrected.com/docs/basics/getting-started/installation
-- CLI and schema synchronization: https://docs.dyrected.com/docs/basics/cli/overview
-- Configuration: https://docs.dyrected.com/docs/basics/configuration/overview
-- Collections: https://docs.dyrected.com/docs/basics/configuration/collections
-- Globals: https://docs.dyrected.com/docs/basics/configuration/globals
-- Fields: https://docs.dyrected.com/docs/basics/fields/overview
-- Rich text: https://docs.dyrected.com/docs/basics/fields/rich-text
-- Blocks: https://docs.dyrected.com/docs/basics/fields/blocks
-- Admin: https://docs.dyrected.com/docs/features/admin/overview
-- Preview: https://docs.dyrected.com/docs/features/admin/preview
-- Storage adapters: https://docs.dyrected.com/docs/features/upload/storage-adapters
-- SDK: https://docs.dyrected.com/docs/managing-data/sdk-api/overview
+- Existing-site agent workflow: https://docs.dyrected.com/docs/guides/ai-and-coding-agents/using-the-dyrected-prompt
+- Installation: https://docs.dyrected.com/docs/start-here/installation
+- CLI and schema synchronization: https://docs.dyrected.com/docs/reference/cli
+- Configuration: https://docs.dyrected.com/docs/model-content/configuration/overview
+- Collections: https://docs.dyrected.com/docs/model-content/configuration/collections
+- Globals: https://docs.dyrected.com/docs/model-content/configuration/globals
+- Fields: https://docs.dyrected.com/docs/model-content/fields/overview
+- Rich text: https://docs.dyrected.com/docs/model-content/fields/rich-text
+- Blocks: https://docs.dyrected.com/docs/model-content/fields/blocks
+- Admin: https://docs.dyrected.com/docs/editor-experience/overview
+- Preview: https://docs.dyrected.com/docs/editor-experience/preview
+- Storage adapters: https://docs.dyrected.com/docs/model-content/media/storage-adapters
+- SDK: https://docs.dyrected.com/docs/deliver-content/sdk-api/overview
 
 Read the installed package version, public exports, and TypeScript types before
 using a Dyrected API. If the docs and installed package differ, explain the

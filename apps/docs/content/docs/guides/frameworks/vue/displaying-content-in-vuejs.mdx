@@ -1,0 +1,151 @@
+---
+title: Displaying Content in Vue.js
+description: Fetch Dyrected content in a Vue SPA, render common field types correctly, and prove one real route before moving into preview.
+---
+
+Use this page when your Cloud content model exists and you want your Vue routes to render real Dyrected content instead of hardcoded placeholders.
+
+By the end, you should know the recommended client setup for a Vue app, how to fetch a document, and how to render the common Dyrected field shapes before you add preview.
+
+This page comes after the content model and first content exist. Once one real route renders correctly, the next step is to open that same route in Dyrected's preview flow.
+
+## The mental model
+
+In a Vue SPA, Dyrected does not render the page for you. Your route still owns the component tree. Dyrected's job is to supply the data shape, while your app decides how that data becomes UI.
+
+That means displaying content is a two-part job:
+
+1. make the Dyrected client available in the app
+2. fetch the document you need and render its fields correctly
+
+Most fields are plain values. The special cases are usually:
+
+- uploads and images
+- rich text
+- blocks
+
+## Start by wiring the client once
+
+Provide one configured client at app startup so the composables can reuse it everywhere:
+
+```ts
+import { createApp } from "vue";
+import { createClient } from "@dyrected/sdk";
+import { DYRECTED_CLIENT_KEY } from "@dyrected/vue";
+import App from "./App.vue";
+
+const client = createClient({
+  baseUrl: import.meta.env.VITE_DYRECTED_URL,
+  apiKey: import.meta.env.VITE_DYRECTED_API_KEY,
+  siteId: import.meta.env.VITE_DYRECTED_SITE_ID,
+});
+
+createApp(App).provide(DYRECTED_CLIENT_KEY, client).mount("#app");
+```
+
+This gives your routes one shared Cloud client instead of rebuilding it ad hoc in every page.
+
+## A simple page route example
+
+This example fetches one document from the `pages` collection and renders it in a route:
+
+```vue
+<script setup lang="ts">
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+
+const route = useRoute();
+
+const { docs, pending } = useDyrectedCollection("pages", {
+  where: { slug: { equals: route.params.slug } },
+  depth: 1,
+  limit: 1,
+});
+
+const page = computed(() => docs.value[0] ?? null);
+</script>
+
+<template>
+  <p v-if="pending">Loading...</p>
+  <p v-else-if="!page">Page not found.</p>
+  <article v-else class="prose mx-auto">
+    <h1>{{ page.title }}</h1>
+    <DyrectedImage v-if="page.featuredImage" :media="page.featuredImage" :alt="page.title" />
+    <DyrectedRichText v-if="page.content" :content="page.content" />
+  </article>
+</template>
+```
+
+The important pattern is not the styling. It is the separation:
+
+- the route fetches typed content from Dyrected
+- the component decides how that content should look in the real app
+
+## Which renderer to use for common field shapes
+
+The Vue integration gives you the helpers you will need most often:
+
+- `<DyrectedImage>` for image uploads
+- `<DyrectedMedia>` for mixed media
+- `<DyrectedRichText>` for HTML produced by the editor
+- `<Blocks>` for block-based page sections
+
+Use plain Vue markup for ordinary text, dates, booleans, and simple relationships. Reach for the helpers when the field shape already carries rendering semantics.
+
+## Rendering blocks
+
+If your content type uses a `blocks` field, map each `blockType` to a real component:
+
+```vue
+<script setup lang="ts">
+import HeroBlock from "@/components/blocks/HeroBlock.vue";
+import CtaBlock from "@/components/blocks/CtaBlock.vue";
+
+const blockComponents = {
+  hero: HeroBlock,
+  cta: CtaBlock,
+};
+</script>
+
+<template>
+  <Blocks
+    :items="page.layout"
+    path="layout"
+    :components="blockComponents"
+  />
+</template>
+```
+
+This matters for two reasons:
+
+- it keeps the layout system in your codebase
+- it gives live preview a stable way to map block content back to the right field paths later
+
+## Recommended path
+
+For a first render path, do not try to make every content type dynamic at once.
+
+Start by proving one page end to end:
+
+1. provide the client once
+2. fetch one collection
+3. render one route
+4. confirm an edit in the admin changes the frontend output
+
+Once that works, expand to shared navigation, more collections, and eventually block-based layouts if the app needs them.
+
+## Escape hatches
+
+If JavaScript is not the consumer, drop down to the [REST API Overview](/docs/deliver-content/rest-api/overview). For Vue SPAs, the SDK and `@dyrected/vue` helpers should stay the default path.
+
+For broader component coverage beyond the quick-start use case, continue to [Displaying Content Overview](/docs/deliver-content/displaying-content/overview) and [SDK API Overview](/docs/deliver-content/sdk-api/overview).
+
+## Success check
+
+You are ready for the next step when:
+
+- a real Vue route renders content fetched from Dyrected Cloud
+- the route handles missing content safely
+- at least one structured field shape is rendered with the proper helper
+
+Once that is true, continue to [Adding a Visual Editor in Vue](/docs/guides/frameworks/vue/adding-a-visual-editor-in-vuejs).

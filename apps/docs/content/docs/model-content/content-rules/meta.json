@@ -1,0 +1,11 @@
+{
+  "title": "Content Rules",
+  "runtimeDefault": "cloud",
+  "runtimePolicy": "inherit",
+  "pages": [
+    "hooks",
+    "cloud-safe-hooks",
+    "declarative-expressions",
+    "access-control"
+  ]
+}

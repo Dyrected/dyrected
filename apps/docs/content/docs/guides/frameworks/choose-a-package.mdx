@@ -1,0 +1,54 @@
+---
+title: Choose a Package
+description: Choose the Dyrected package that matches your framework, app shape, and backend boundary.
+runtime: variant
+runtimeGroup: framework-guides-choose-a-package
+runtimeNotes: React and Vue can consume Cloud-backed APIs; Next and Nuxt can either mount a self-hosted backend or integrate with a remote Dyrected API.
+---
+
+Use this page when you know your frontend framework, but you are not sure which Dyrected package should own the integration.
+
+The practical choice is not "which package has the most features?" It is: **where does the Dyrected backend live, and how much framework glue do you want?**
+
+- If you are building a **Next.js** app, start with [`@dyrected/next`](/docs/guides/frameworks/nextjs/package-reference).
+- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](/docs/guides/frameworks/nuxt/package-reference).
+- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](/docs/guides/frameworks/react/package-reference).
+- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](/docs/guides/frameworks/vue/package-reference).
+- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](/docs/guides/frameworks/sdk).
+
+## The package map
+
+| Package           | Reach for it when                                                                            | What it gives you                                                                                          |
+| ----------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `@dyrected/next`  | You are in a Next.js App Router project and want the strongest first-party integration.      | Self-hosted route handler, admin wrapper, Next-aware media components, `withDyrected`, and SDK re-exports. |
+| `@dyrected/nuxt`  | You are in Nuxt and want the backend mounted by the module or want Nuxt-aware client wiring. | Nuxt module, auto-imported composables, auto-registered components, server handler, and admin bridge.      |
+| `@dyrected/react` | You are in a plain React app or want the lowest React integration layer.                     | Provider, hooks, live preview, admin wrapper, and UI helpers.                                              |
+| `@dyrected/vue`   | You are in a plain Vue 3 app and need Vue-side composables and the admin bridge.             | Vue composables, live preview, auth helpers, and a React-in-Vue admin wrapper.                             |
+| `@dyrected/sdk`   | You want a framework-agnostic typed client.                                                  | Reads, writes, auth helpers, uploads, preview helpers, and typed query APIs.                               |
+
+## Recommended paths
+
+For most teams, the first choice is straightforward:
+
+- **Next.js project:** start with `@dyrected/next`
+- **Nuxt project:** start with `@dyrected/nuxt`
+- **React or Vue app talking to Cloud or another existing API:** start with `@dyrected/react` or `@dyrected/vue`
+- **Scripts, utilities, or another app consuming content:** start with `@dyrected/sdk`
+
+If a higher-level integration exists for your framework, prefer it over assembling the lower-level pieces yourself.
+
+## What this section covers
+
+These pages focus on the framework boundary:
+
+- how to mount or point at the API
+- how to embed the admin
+- which package owns framework-specific setup
+- where live preview and typed SDK usage fit
+
+Deeper feature pages still live elsewhere:
+
+- [Editor experience](/docs/editor-experience/overview)
+- [Live preview](/docs/editor-experience/publishing/live-preview/overview)
+- [SDK API](/docs/deliver-content/sdk-api/overview)
+- [TypeScript](/docs/reference/typescript/overview)

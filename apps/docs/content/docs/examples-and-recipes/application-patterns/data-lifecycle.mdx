@@ -1,0 +1,84 @@
+---
+title: Data Lifecycle
+description: Application patterns for slugs, validation, and schema changes that need to stay safe as content changes over time.
+runtime: variant
+runtimeGroup: application-patterns-data-lifecycle
+runtimeNotes: Cloud-safe lifecycle behavior must use serializable Jexl-style rules; self-hosted can use function hooks, migrations, and database-local behavior.
+---
+
+Use these patterns when the hard part is not the initial schema, but keeping data safe and predictable as editors create, update, and evolve content. They help protect URL structure, catch invalid changes, and handle schema evolution more carefully.
+
+<CloudOnly>
+
+For Cloud, prefer lifecycle patterns that can be expressed as schema data: Jexl-style hooks, access rules, field defaults, and content modeling choices. Function hooks, database migrations, and arbitrary after-save side effects belong in self-hosted Dyrected unless a Cloud-specific surface says otherwise.
+
+</CloudOnly>
+
+<SelfHostedOnly>
+
+For self-hosted Dyrected, lifecycle patterns can use your application runtime directly. That is the right fit for function hooks, database migrations, transaction-aware changes, and side effects that must run inside your server.
+
+</SelfHostedOnly>
+
+## Generate a slug from a title
+
+**Problem:** you want readable URLs, but you do not want editors hand-authoring slugs for every document.
+
+This pattern generates the slug on the server and can also mirror it live in the Admin UI. It is a strong default for article pages, documentation content, and any collection that needs stable URL-friendly paths.
+
+### Example implementation
+
+<RecipeExample id="auto-slug" />
+
+> [!TIP]
+> You can use Dyrected's built-in Jexl helper functions—such as `slugify(siblingData.title)` or `lower(siblingData.name)`—directly in declarative string hooks for 100% Cloud-safe live field derivation.
+
+Read the full docs:
+
+- [Collections](/docs/model-content/configuration/collections)
+- [Collection hooks](/docs/deployment-and-operations/server-runtime/hooks/collections)
+
+## Validate related fields before saving
+
+**Problem:** one field value is only valid in relation to another field, such as a start date and an end date.
+
+This pattern uses a collection hook to reject invalid combinations before they reach the database. It is a good fit for dates, time windows, numeric ranges, and any rule that depends on multiple values together.
+
+### Example implementation
+
+<RecipeExample id="cross-field-validation" />
+
+Read the full docs:
+
+- [Collection hooks](/docs/deployment-and-operations/server-runtime/hooks/collections)
+- [Date and time fields](/docs/model-content/fields/datetime)
+
+## Rename a field without orphaning existing data
+
+**Problem:** you need to change a field name on a live schema without breaking the documents that already exist.
+
+This pattern uses `renameTo` and a safe default so old content can continue working while the schema migrates. It is the safer path when a schema needs to evolve without forcing a risky big-bang rename.
+
+### Example implementation
+
+<RecipeExample id="safe-field-rename" />
+
+Read the full docs:
+
+- [Collections](/docs/model-content/configuration/collections)
+- [Database migrations](/docs/deployment-and-operations/infrastructure/database/migrations)
+
+## Archive records instead of deleting them
+
+**Problem:** content should disappear from normal views without being permanently deleted from the database.
+
+This pattern adds an archive flag, hides archived rows from normal readers, and disables destructive deletion. It is useful for announcements, listings, or internal records that may need to be restored or audited later.
+
+### Example implementation
+
+<RecipeExample id="archive-instead-of-delete" />
+
+Read the full docs:
+
+- [Collection access control](/docs/model-content/content-rules/access-control/collections)
+- [Collections](/docs/model-content/configuration/collections)

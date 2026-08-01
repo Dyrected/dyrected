@@ -15,9 +15,9 @@
   ],
   "concepts": ["access", "defaultValue", "soft delete"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/data-lifecycle",
-    "/docs/basics/access-control/collections",
-    "/docs/basics/configuration/collections"
+    "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+    "/docs/model-content/content-rules/access-control/collections",
+    "/docs/model-content/configuration/collections"
   ],
   "requires": []
 }

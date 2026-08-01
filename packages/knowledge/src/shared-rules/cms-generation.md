@@ -80,7 +80,7 @@ layout-building field in its own Admin tab with `defineTab`. Keep primary page
 details and SEO metadata in separate tabs when that improves editor focus.
 Tabs are editor presentation only; they must not change stored data shape.
 
-Reference: https://docs.dyrected.com/docs/basics/fields/tabs
+Reference: https://docs.dyrected.com/docs/model-content/fields/tabs
 
 ## Access and Validation
 

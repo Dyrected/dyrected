@@ -1,0 +1,8 @@
+{
+  "title": "Media",
+  "runtimeDefault": "variant",
+  "pages": [
+    "overview",
+    "storage-adapters"
+  ]
+}

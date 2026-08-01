@@ -1,0 +1,13 @@
+{
+  "title": "Deployment & Operations",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "cloud",
+    "infrastructure",
+    "server-runtime",
+    "authentication",
+    "plugins-and-extensions",
+    "production",
+    "performance"
+  ]
+}

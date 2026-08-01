@@ -1,0 +1,104 @@
+---
+title: Text
+description: A single-line string field for short values like titles, names, and slugs.
+---
+
+The text field stores a single line of plain text. It is the field you reach for most often: titles, names, slugs, short labels, and any short free-form value. When the value needs line breaks, use [Textarea](/docs/model-content/fields/textarea); when it needs formatting like bold or links, use [Rich Text](/docs/model-content/fields/rich-text); when it comes from a fixed set of choices, use [Select](/docs/model-content/fields/select).
+
+```ts
+defineTextField({ name: 'title', label: 'Title', required: true })
+```
+
+## Guiding entry with length limits
+
+Text fields accept two advisory limits: `maxLength` (characters) and `maxWords`. Both show a live counter in the admin editor, so writers can see where they stand as they type.
+
+```ts
+defineTextField({ name: 'summary', label: 'Summary', maxLength: 160 })
+```
+
+These limits guide the editing experience but do not reject an over-length value on their own. When you need a hard cap enforced on every write, add a [hook](/docs/model-content/content-rules/hooks) that validates the value.
+
+## Filtering and sorting
+
+If you filter or sort on a text field often — a `slug` or a status-like label — mark it `promoted` so it becomes an indexed column instead of living inside the JSON document. See [Database indexes](/docs/deployment-and-operations/infrastructure/database/indexes) for when that trade-off is worth it.
+
+## Formatting how the value displays
+
+Set `admin.format` to change how a text value reads in the admin list — without touching what's stored. The simple transforms take a shorthand string:
+
+```ts
+defineTextField({ name: 'sku', label: 'SKU', admin: { format: 'code' } })
+```
+
+`code` renders the value in a monospace pill, which suits IDs, SKUs, and reference codes. `uppercase`, `lowercase`, and `capitalize` change the letter case for display only.
+
+Two formats take options. Use `truncate` to keep a long value from stretching a column, and `mask` to hide all but the last few characters of something sensitive like a token or key:
+
+```ts
+defineTextField({ name: 'apiKey', label: 'API key', admin: { format: { type: 'mask', reveal: 4 } } })
+```
+
+That shows `sk_live_1234` as `••••••••1234` in the list. `reveal` defaults to `4`; set `character` to change the masking symbol. Since this is display-only, the full value is still stored and still editable in the form — it's just not shown in full in the list.
+
+## Generated reference
+
+The contract below is generated from the public `@dyrected/core` exports by `@dyrected/knowledge`, so it stays in sync with the package. See [Fields](/docs/model-content/fields/overview) for the shared field options every type accepts.
+
+{/* GENERATED:REFERENCE-FIELD-TEXT:START */}
+## TextField
+
+Exported type from @dyrected/core.
+
+```ts
+export type TextField = TypedField<"text", string, TextFieldAdmin> &
+  CharacterLimitFieldConfig &
+  WordLimitFieldConfig;
+```
+
+
+## TextFieldAdmin
+
+Exported type from @dyrected/core.
+
+```ts
+export type TextFieldAdmin = CharacterLimitFieldAdmin &
+  WordLimitFieldAdmin & {
+    /** How the value is displayed in read-only Admin surfaces. Does not affect storage or editing. */
+    format?: TextFormat;
+  };
+```
+
+
+## TextFormat
+
+How a `text` or `textarea` value is presented in read-only Admin surfaces.
+Display only — the stored string is unchanged. Pass a shorthand string for the
+simple transforms, or an object for `truncate` and `mask`.
+
+```ts
+export type TextFormat =
+  /** Shorthand for the matching object form. */
+  | "uppercase"
+  | "lowercase"
+  | "capitalize"
+  | "code"
+  /** Change the letter case for display. */
+  | { type: "uppercase" | "lowercase" | "capitalize" }
+  /** Render in a monospace pill — good for IDs, SKUs, and short codes. */
+  | { type: "code" }
+  /** Cut the text to `length` characters with a trailing ellipsis. */
+  | { type: "truncate"; length: number }
+  /**
+   * Hide all but the last few characters — for tokens, keys, or reference
+   * numbers you don't want fully visible in a list.
+   */
+  | {
+      type: "mask";
+      /** How many trailing characters stay visible. Defaults to `4`. */
+      reveal?: number;
+      /** Character used for the hidden portion. Defaults to `"•"`. */
+      character?: string;
+    };
+```
+{/* GENERATED:REFERENCE-FIELD-TEXT:END */}

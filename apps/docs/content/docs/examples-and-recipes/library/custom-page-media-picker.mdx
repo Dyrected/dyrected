@@ -1,0 +1,167 @@
+---
+title: Build a media picker directly into a page
+description: Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.
+runtime: variant
+runtimeGroup: recipe-custom-page-media-picker
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.
+
+## Use this when
+
+- build a media picker in my app
+- add upload and media selection to a customer dashboard page
+- let customers attach screenshots without using the admin modal
+- create a complaint attachment picker
+
+## Dyrected concepts
+
+`DyrectedProvider`, `useMediaUpload`, `useMediaURL`, `useMediaLibrary`
+
+**Additional packages:** `@dyrected/react`, `@dyrected/sdk`
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { useState } from "react";
+import { createClient } from "@dyrected/sdk";
+import {
+  DyrectedProvider,
+  useMediaLibrary,
+  useMediaUpload,
+  useMediaURL,
+} from "@dyrected/react";
+
+const client = createClient({
+  baseUrl: "https://example.com/dyrected",
+  apiKey: "YOUR_API_KEY",
+});
+
+const signedInCustomer = {
+  id: "cus_42",
+  fullName: "Amara Okafor",
+  orderNumber: "ORD-2048",
+};
+
+function ComplaintAttachmentPage() {
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(null);
+
+  const library = useMediaLibrary({
+    collection: "media",
+    multiple: false,
+  });
+
+  const upload = useMediaUpload({
+    collectionSlug: "media",
+    onAllCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  const mediaURL = useMediaURL({
+    collection: "media",
+    onCompleted: async () => {
+      await library.load();
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <section className="space-y-3">
+        <h1>Submit complaint for {signedInCustomer.orderNumber}</h1>
+        <p>
+          {signedInCustomer.fullName} can attach screenshots of the damaged item,
+          delivery label, or chat transcript before sending the complaint.
+        </p>
+
+        <input
+          type="file"
+          multiple
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            void upload.uploadFiles(files);
+          }}
+        />
+
+        {upload.items.map((item) => (
+          <div key={item.id}>
+            <div>{item.file.name}</div>
+            <div>{item.status}</div>
+            <div>{item.progress}%</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="space-y-3">
+        <h2>Import proof from URL</h2>
+
+        <input
+          type="url"
+          value={mediaURL.url}
+          onChange={(event) => mediaURL.setUrl(event.target.value)}
+          placeholder="https://example.com/delivery-photo.jpg"
+        />
+
+        <button onClick={() => void mediaURL.submit()} disabled={mediaURL.isSubmitting}>
+          Import attachment
+        </button>
+
+        {mediaURL.error ? <p>{mediaURL.error}</p> : null}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-3">
+          <h2>Previous attachments</h2>
+          <button onClick={() => void library.load()} disabled={library.isLoading}>
+            Refresh
+          </button>
+        </div>
+
+        <input
+          type="search"
+          value={library.search}
+          onChange={(event) => library.setSearch(event.target.value)}
+          placeholder="Search files"
+        />
+
+        <div className="grid grid-cols-3 gap-4">
+          {library.items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                library.select(item);
+                setSelectedAttachmentId(item.id);
+              }}
+            >
+              <div>{item.filename ?? item.url}</div>
+              <div>{item.mimeType}</div>
+            </button>
+          ))}
+        </div>
+
+        <p>Selected complaint attachment: {selectedAttachmentId ?? "None"}</p>
+      </section>
+    </div>
+  );
+}
+
+export default function ComplaintAttachmentRoute() {
+  return (
+    <DyrectedProvider client={client}>
+      <ComplaintAttachmentPage />
+    </DyrectedProvider>
+  );
+}
+```
+{/* GENERATED:RECIPE:END */}

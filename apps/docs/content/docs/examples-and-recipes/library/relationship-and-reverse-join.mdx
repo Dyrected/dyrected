@@ -1,0 +1,66 @@
+---
+title: Model a relationship and its reverse lookup
+description: Store an author relationship on posts and expose the author's posts through a virtual join field.
+runtime: shared
+runtimeGroup: recipe-relationship-and-reverse-join
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Store an author relationship on posts and expose the author's posts through a virtual join field.
+
+## Use this when
+
+- connect posts to authors
+- show every post written by a user
+- create a reverse relationship
+- model one-to-many content
+
+## Dyrected concepts
+
+`relationship`, `join`, `relationTo`, `depth`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineJoinField, defineRelationshipField, defineTextField } from "@dyrected/core";
+
+export const Users = defineCollection({
+  slug: "users",
+  auth: true,
+  fields: [
+    defineTextField({ name: "name", label: "Name", required: true }),
+    defineJoinField({
+      name: "posts",
+      label: "Posts",
+      collection: "posts",
+      on: "author",
+      limit: 20,
+    }),
+  ],
+});
+
+export const Posts = defineCollection({
+  slug: "posts",
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineRelationshipField({
+      name: "author",
+      label: "Author",
+      relationTo: "users",
+      required: true,
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

@@ -1,0 +1,14 @@
+{
+  "title": "Database Adapters",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "overview",
+    "postgres",
+    "mysql",
+    "mongodb",
+    "sqlite",
+    "indexes",
+    "transactions",
+    "migrations"
+  ]
+}

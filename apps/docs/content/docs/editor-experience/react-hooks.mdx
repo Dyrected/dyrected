@@ -1,0 +1,136 @@
+---
+title: Hooks & Composables
+description: Use Dyrected's hooks and composables to build media flows, editing UI, and themed product surfaces without rebuilding the state layer yourself.
+---
+
+These APIs are for any UI that needs to work closely with Dyrected data and state, not only the built-in admin.
+
+You might reach for them when you are building:
+
+- a custom media picker
+- an "upload via URL" flow
+- a document editor inside your own product
+- a merchant dashboard for managing content or assets
+- an internal tool that needs Dyrected form or theme state
+- a custom admin component that should behave like the built-in UI
+
+By the end of this page you should know:
+
+- what kinds of problems these APIs solve
+- which public surfaces exist today
+- which page to open next for the thing you are trying to build
+- where to go next for media, form, field, and theme examples
+
+## Start with the job to be done
+
+Most teams land here because they need one of a few practical things:
+
+- let a user upload files with progress
+- let a user paste a media URL
+- show a media library and let the user pick an asset
+- build a custom document editing experience
+- build a custom field input
+- keep theme state shared across a custom shell
+
+If that sounds like you, jump straight to the matching page:
+
+- [Media Hooks & Composables](/docs/editor-experience/media-hooks)
+- [Form & Field Hooks](/docs/editor-experience/form-and-field-hooks)
+- [Theme Hooks](/docs/editor-experience/theme-hooks)
+
+This page is the short orientation guide for how those pieces fit together.
+
+## What exists today
+
+There are three public areas:
+
+- **Media APIs**
+  - upload queue
+  - URL import
+  - media library browsing and selection
+  - documented on [Media Hooks & Composables](/docs/editor-experience/media-hooks)
+- **Form and field APIs**
+  - form state
+  - field state
+  - nested field path helpers
+  - documented on [Form & Field Hooks](/docs/editor-experience/form-and-field-hooks)
+- **Theme APIs**
+  - theme preference
+  - resolved theme
+  - themed root setup
+  - documented on [Theme Hooks](/docs/editor-experience/theme-hooks)
+
+## Start with the highest-level API
+
+In most cases, you should start with the hook or composable and stay there.
+
+In practice that means:
+
+- use the public hook or composable inside your component
+- follow the page-level setup steps when a provider or root wrapper is needed
+- ignore the lower-level pieces unless a guide explicitly brings them up
+
+Most readers can stop there.
+
+## The same ideas exist in both frameworks
+
+The examples later in this section show both React and Vue versions of the same ideas.
+
+The names are slightly different because the frameworks work differently:
+
+- React returns plain values from hooks
+- Vue returns refs from composables
+
+But the public behavior stays aligned:
+
+- media upload works the same way
+- media URL import works the same way
+- media library state works the same way
+- form and field state follow the same contract
+- theme state follows the same contract
+
+## Custom components and hooks solve different problems
+
+Custom components and hooks/composables are related, but they are not the same thing:
+
+- **Custom components** decide where your UI plugs into the admin: custom field inputs, dashboard slots, list slots
+- **Hooks and composables** decide how any Dyrected-aware UI reads and updates state once it is mounted
+
+If you need to register a field component or a slot, start with [Custom Components](/docs/editor-experience/custom-components/overview). If you already know where your UI goes and now need state, use the pages in this section.
+
+## Where to import from
+
+Once you know which API layer you need, choose the package that matches your app:
+
+| Package | Use it for |
+| --- | --- |
+| `@dyrected/react` | React and Next.js apps |
+| `@dyrected/vue` | Vue and Nuxt apps |
+| `@dyrected/admin/public` | Lower-level controller setup and advanced integrations |
+
+That means:
+
+- if your app is React or Next.js, import the public hooks from `@dyrected/react`
+- if your app is Vue or Nuxt, import the public composables from `@dyrected/vue`
+- you can ignore the lower-level package unless a guide explicitly brings it up
+
+## Recommended path
+
+Start from the job you need to get done:
+
+- uploading files
+- importing media from a URL
+- browsing and selecting assets
+- editing document state
+- building custom field inputs
+- sharing theme state across a shell
+
+Then pick the matching page below. Each page will show the React and Vue version when it matters.
+
+From here:
+
+- Go to [Media Hooks & Composables](/docs/editor-experience/media-hooks) if you are building uploaders, URL import, media pickers, or asset workflows in your own app.
+- Go to [Form & Field Hooks](/docs/editor-experience/form-and-field-hooks) if you are building custom field UI or document-editing interfaces.
+- Go to [Theme Hooks](/docs/editor-experience/theme-hooks) if you are building a themed custom shell around Dyrected-powered UI.
+
+The controller layer exists underneath these APIs so the behavior stays consistent, but most readers do not need to think about it directly.

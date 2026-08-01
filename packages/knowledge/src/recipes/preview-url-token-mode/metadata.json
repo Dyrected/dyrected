@@ -15,9 +15,9 @@
   ],
   "concepts": ["previewUrl", "previewMode", "urlPattern"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/workflows",
-    "/docs/features/admin/preview",
-    "/docs/features/live-preview/overview"
+    "/docs/examples-and-recipes/application-patterns/workflows",
+    "/docs/editor-experience/preview",
+    "/docs/editor-experience/publishing/live-preview/overview"
   ],
   "requires": []
 }

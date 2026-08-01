@@ -19,8 +19,8 @@
     "useAdminTheme"
   ],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/custom-app-surfaces",
-    "/docs/features/admin/theme-hooks"
+    "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+    "/docs/editor-experience/theme-hooks"
   ],
   "requires": [
     "@dyrected/react"

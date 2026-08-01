@@ -1,0 +1,61 @@
+---
+title: Overview
+description: Follow the full React quick start to connect Dyrected Cloud, model content, render it in your app, add preview, and hand the editing surface to content teams.
+---
+
+Use this quick start when you already have a React app and want to hand parts of it over to editors without turning the frontend into a separate hosted site builder.
+
+By the end of this guide set, you should have a Dyrected-backed React app with a working admin route, a first content model, real content in Dyrected Cloud, a frontend render path, and a preview flow that lets editors see what they are changing.
+
+Read the pages in order. Each one assumes the previous step is already working and hands you into the next part of the setup.
+
+## The steps
+
+This quick start is meant to feel like one sequence:
+
+1. **Step 1:** [Install Dyrected](/docs/guides/frameworks/react/installing-dyrected) and connect the app to Dyrected Cloud.
+2. **Step 2:** [Define the first schema](/docs/guides/frameworks/react/defining-a-schema) your app actually needs.
+3. **Step 3:** [Create your first content](/docs/guides/frameworks/react/creating-your-first-content) so the frontend is not wiring against an empty CMS.
+4. **Step 4:** [Display that content in React](/docs/guides/frameworks/react/displaying-content-in-react).
+5. **Step 5:** Add a [visual editor workflow](/docs/guides/frameworks/react/adding-a-visual-editor-in-reactjs).
+6. **Step 6:** [Let editors build custom pages in React](/docs/guides/frameworks/react/building-landing-pages-for-marketing).
+
+## The mental model
+
+In a React SPA, Dyrected does not replace your router, components, styling, or deployment flow. Your app still owns the routes and rendering. Dyrected adds three things around that:
+
+- a Cloud-backed content model
+- an admin experience for editing that content
+- SDK and UI helpers for reading and previewing it in the app
+
+That split matters because it keeps the handoff clean. Editors can change approved content, while your repo still owns layout, behavior, and anything that would break the frontend if it were made arbitrary.
+
+## Recommended path
+
+If you want the fastest first success, start with:
+
+- one routable collection such as `pages`
+- one upload collection such as `media`
+- one or two globals such as `navigation` or `settings`
+- one real page in Dyrected Cloud before you wire the frontend
+
+Do not start with every edge case, every role, and every flexible layout idea. Start with the smallest content model that can survive one real editor workflow.
+
+## Before you begin
+
+This quick start assumes:
+
+- you are using a React SPA
+- you are comfortable editing the app router and root setup directly
+- you want Dyrected Cloud to provide the backend for this app
+
+## Success check
+
+You are on the right guide path if your goal is:
+
+- editors log in at a route like `/admin`
+- content lives in Dyrected Cloud
+- your React routes fetch and render that content directly
+- preview stays close to the real frontend instead of becoming a second unpublished site
+
+If that is the target, continue to [Installing Dyrected](/docs/guides/frameworks/react/installing-dyrected).

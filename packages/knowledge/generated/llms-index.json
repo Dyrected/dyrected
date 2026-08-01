@@ -7,11 +7,11 @@
       "description": "Add an archive flag, hide archived rows from normal readers, and disable destructive deletion.",
       "problem": "Content should disappear from normal views without being permanently deleted from the database.",
       "summary": "Use an `archived` flag plus read and delete rules so records can be retired safely instead of destroyed.",
-      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "docsPath": "/docs/examples-and-recipes/library/archive-instead-of-delete",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/data-lifecycle",
-        "/docs/basics/access-control/collections",
-        "/docs/basics/configuration/collections"
+        "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+        "/docs/model-content/content-rules/access-control/collections",
+        "/docs/model-content/configuration/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -27,11 +27,11 @@
       "description": "Generate stable URL slugs on the server while showing editors the value live in the Admin UI.",
       "problem": "You want readable URLs without asking editors to hand-author slugs for every document.",
       "summary": "Generate the slug on the server and optionally mirror it live in Admin so titles and URL fields stay aligned.",
-      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "docsPath": "/docs/examples-and-recipes/library/auto-slug",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/data-lifecycle",
-        "/docs/basics/configuration/collections",
-        "/docs/basics/hooks/collections"
+        "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+        "/docs/model-content/configuration/collections",
+        "/docs/deployment-and-operations/server-runtime/hooks/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -47,11 +47,11 @@
       "description": "Use a reusable categories collection and a has-many relationship from content entries that need tagging.",
       "problem": "Entries need reusable categories so editors can organize content and build filtered listing pages.",
       "summary": "Store taxonomy entries in their own collection and connect content to them with a has-many relationship field.",
-      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "docsPath": "/docs/examples-and-recipes/library/category-taxonomy",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/content-modeling",
-        "/docs/basics/fields/relationship",
-        "/docs/basics/configuration/collections"
+        "/docs/examples-and-recipes/application-patterns/content-modeling",
+        "/docs/model-content/fields/relationship",
+        "/docs/model-content/configuration/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -67,11 +67,11 @@
       "description": "Use a serializable Admin condition to reveal a field from the editor's current form values.",
       "problem": "Some fields only make sense after an editor has made an earlier choice.",
       "summary": "Use an Admin condition to hide irrelevant fields until the current form state makes them useful.",
-      "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+      "docsPath": "/docs/examples-and-recipes/library/conditional-admin-field",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/admin-experience",
-        "/docs/features/admin/overview",
-        "/docs/basics/configuration/collections"
+        "/docs/examples-and-recipes/application-patterns/admin-experience",
+        "/docs/editor-experience/overview",
+        "/docs/model-content/configuration/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -87,11 +87,11 @@
       "description": "Reject invalid combinations of field values before they reach the database.",
       "problem": "A field value is only valid in relation to another field, such as a start date and an end date.",
       "summary": "Use a collection hook to reject invalid combinations before the document reaches the database.",
-      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "docsPath": "/docs/examples-and-recipes/library/cross-field-validation",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/data-lifecycle",
-        "/docs/basics/hooks/collections",
-        "/docs/basics/fields/datetime"
+        "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+        "/docs/deployment-and-operations/server-runtime/hooks/collections",
+        "/docs/model-content/fields/datetime"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -107,10 +107,10 @@
       "description": "Let a signed-in customer edit a complaint draft on their dashboard without rebuilding document state or nested field paths.",
       "problem": "A customer dashboard needs to edit customer-owned complaint draft fields and nested order details without recreating form state, validation, and path handling.",
       "summary": "Create one form controller for the signed-in customer record, then use the public form and field APIs in smaller dashboard components so complaint editing stays consistent.",
-      "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "docsPath": "/docs/examples-and-recipes/library/custom-page-field-editor",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/custom-app-surfaces",
-        "/docs/features/admin/form-and-field-hooks"
+        "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+        "/docs/editor-experience/form-and-field-hooks"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -126,11 +126,11 @@
       "description": "Let a signed-in customer attach screenshots or receipts while submitting an order complaint from a dashboard page.",
       "problem": "Customers need to upload screenshots, import a proof URL, and choose an existing attachment without leaving the complaint form in the app.",
       "summary": "Use the public media APIs together on a customer dashboard page so complaint attachments, uploads, and library selection all share Dyrected's media pipeline.",
-      "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "docsPath": "/docs/examples-and-recipes/library/custom-page-media-picker",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/custom-app-surfaces",
-        "/docs/features/admin/media-hooks",
-        "/docs/features/upload/overview"
+        "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+        "/docs/editor-experience/media-hooks",
+        "/docs/model-content/media/overview"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -146,10 +146,10 @@
       "description": "Mount one Dyrected theme boundary at the app shell and keep page-level UI aligned with the resolved theme.",
       "problem": "The page, layout shell, and Dyrected-powered UI all need to agree on the same light and dark mode.",
       "summary": "Use the public theme provider and hook near the app root so custom shells, dashboards, and Dyrected UI share one resolved theme state.",
-      "docsPath": "/docs/ecosystem/common-patterns/custom-app-surfaces",
+      "docsPath": "/docs/examples-and-recipes/library/custom-theme-shell",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/custom-app-surfaces",
-        "/docs/features/admin/theme-hooks"
+        "/docs/examples-and-recipes/application-patterns/custom-app-surfaces",
+        "/docs/editor-experience/theme-hooks"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -165,11 +165,11 @@
       "description": "Change available Admin UI options immediately when an editor changes a related field.",
       "problem": "The valid options for one field depend on what the editor picked in another field.",
       "summary": "Update select options from sibling field data so the next choice stays constrained by the current form state.",
-      "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+      "docsPath": "/docs/examples-and-recipes/library/dependent-dropdown",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/admin-experience",
-        "/docs/features/admin/overview",
-        "/docs/basics/fields/select"
+        "/docs/examples-and-recipes/application-patterns/admin-experience",
+        "/docs/editor-experience/overview",
+        "/docs/model-content/fields/select"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -185,11 +185,11 @@
       "description": "Use an upload collection for PDFs and office documents that need shared metadata and reuse across the site.",
       "problem": "Editors need a dedicated place to manage downloadable files instead of attaching them ad hoc in many records.",
       "summary": "Create an upload-enabled collection for documents so downloads stay reusable, searchable, and consistently described.",
-      "docsPath": "/docs/ecosystem/common-patterns/integrations",
+      "docsPath": "/docs/examples-and-recipes/library/document-download-library",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/integrations",
-        "/docs/features/upload/overview",
-        "/docs/features/upload/storage-adapters"
+        "/docs/examples-and-recipes/application-patterns/integrations",
+        "/docs/model-content/media/overview",
+        "/docs/model-content/media/storage-adapters"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -205,11 +205,11 @@
       "description": "Attach Dyrected's standard editorial workflow and its capability-aware transitions to a collection.",
       "problem": "Content should move through draft and review before the right person is allowed to publish it.",
       "summary": "Attach Dyrected's editorial workflow so documents move through named states instead of going live immediately.",
-      "docsPath": "/docs/ecosystem/common-patterns/workflows",
+      "docsPath": "/docs/examples-and-recipes/library/editorial-publishing-workflow",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/workflows",
-        "/docs/features/workflows/overview",
-        "/docs/features/workflows/custom-workflows"
+        "/docs/examples-and-recipes/application-patterns/workflows",
+        "/docs/editor-experience/publishing/overview",
+        "/docs/editor-experience/publishing/custom-workflows"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -225,12 +225,12 @@
       "description": "Model reusable navigation links in one global, including one level of child links for grouped menus.",
       "problem": "Editors need to manage shared site navigation without hardcoding links into the frontend.",
       "summary": "Use a global with repeatable link rows so navigation stays editable, structured, and reused across pages.",
-      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "docsPath": "/docs/examples-and-recipes/library/navigation-global-links",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/content-modeling",
-        "/docs/basics/configuration/globals",
-        "/docs/basics/fields/array",
-        "/docs/basics/fields/url"
+        "/docs/examples-and-recipes/application-patterns/content-modeling",
+        "/docs/model-content/configuration/globals",
+        "/docs/model-content/fields/array",
+        "/docs/model-content/fields/url"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -246,11 +246,11 @@
       "description": "Combine ownership rules with an admin override so ordinary users stay scoped while administrators can intervene.",
       "problem": "Records should belong to one user, but administrators still need a way to review or fix any entry.",
       "summary": "Scope writes to the owner by default and return `true` for admin users when they need broader access.",
-      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "docsPath": "/docs/examples-and-recipes/library/owner-or-admin-access",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/access-control",
-        "/docs/basics/access-control/collections",
-        "/docs/features/authentication/overview"
+        "/docs/examples-and-recipes/application-patterns/access-control",
+        "/docs/model-content/content-rules/access-control/collections",
+        "/docs/editor-experience/editor-accounts"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -266,11 +266,11 @@
       "description": "Return a where constraint from access control so authenticated users only read their own records.",
       "problem": "Signed-in users should only see or manage the records they own.",
       "summary": "Scope reads and writes to the current user in access control, then stamp ownership when records are created.",
-      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "docsPath": "/docs/examples-and-recipes/library/owner-scoped-access",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/access-control",
-        "/docs/basics/access-control/collections",
-        "/docs/basics/hooks/collections"
+        "/docs/examples-and-recipes/application-patterns/access-control",
+        "/docs/model-content/content-rules/access-control/collections",
+        "/docs/deployment-and-operations/server-runtime/hooks/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -286,11 +286,11 @@
       "description": "Define labeled hero, rich-text, and call-to-action blocks for an editor-controlled page layout.",
       "problem": "Editors need to build or rearrange page sections without turning every page into one giant content object.",
       "summary": "Use blocks to model reusable page sections inside a page layout so pages stay flexible without becoming unstructured.",
-      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "docsPath": "/docs/examples-and-recipes/library/page-builder-blocks",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/content-modeling",
-        "/docs/basics/fields/blocks",
-        "/docs/basics/configuration/collections"
+        "/docs/examples-and-recipes/application-patterns/content-modeling",
+        "/docs/model-content/fields/blocks",
+        "/docs/model-content/configuration/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -306,11 +306,11 @@
       "description": "Set a preview URL expression and postMessage live preview mode for routable frontend content.",
       "problem": "Editors need to preview draft content on the real route before it is published.",
       "summary": "Set a relative `previewUrl`, prefer `previewMode: 'postMessage'`, and reserve token mode for routes that cannot receive browser messages.",
-      "docsPath": "/docs/ecosystem/common-patterns/workflows",
+      "docsPath": "/docs/examples-and-recipes/library/preview-url-token-mode",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/workflows",
-        "/docs/features/admin/preview",
-        "/docs/features/live-preview/overview"
+        "/docs/examples-and-recipes/application-patterns/workflows",
+        "/docs/editor-experience/preview",
+        "/docs/editor-experience/publishing/live-preview/overview"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -326,11 +326,11 @@
       "description": "Store an author relationship on posts and expose the author's posts through a virtual join field.",
       "problem": "One record should point to another record, and you also want the reverse view without storing duplicate data.",
       "summary": "Store the owning relationship on one side and use a join field for the reverse lookup when you need one-to-many content structures.",
-      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "docsPath": "/docs/examples-and-recipes/library/relationship-and-reverse-join",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/content-modeling",
-        "/docs/basics/fields/relationship",
-        "/docs/basics/fields/join"
+        "/docs/examples-and-recipes/application-patterns/content-modeling",
+        "/docs/model-content/fields/relationship",
+        "/docs/model-content/fields/join"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -346,11 +346,11 @@
       "description": "Define reusable image sizes and a thumbnail preset on an upload collection for media-driven projects.",
       "problem": "Editors need a reusable image library with predictable generated sizes for cards, hero sections, and thumbnails.",
       "summary": "Use upload image sizes so one source image can serve multiple frontend layouts without custom per-page handling.",
-      "docsPath": "/docs/ecosystem/common-patterns/integrations",
+      "docsPath": "/docs/examples-and-recipes/library/responsive-image-library",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/integrations",
-        "/docs/features/upload/overview",
-        "/docs/features/upload/storage-adapters"
+        "/docs/examples-and-recipes/application-patterns/integrations",
+        "/docs/model-content/media/overview",
+        "/docs/model-content/media/storage-adapters"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -366,11 +366,11 @@
       "description": "Allow public reads, editor writes, and administrator deletion with collection access rules.",
       "problem": "Different roles should have different permissions for reading, editing, publishing, or deleting content.",
       "summary": "Check user roles in collection access control so each operation matches the responsibilities of the current user.",
-      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "docsPath": "/docs/examples-and-recipes/library/role-based-access",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/access-control",
-        "/docs/basics/access-control/collections",
-        "/docs/features/authentication/overview"
+        "/docs/examples-and-recipes/application-patterns/access-control",
+        "/docs/model-content/content-rules/access-control/collections",
+        "/docs/editor-experience/editor-accounts"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -386,11 +386,11 @@
       "description": "Use renameTo and a safe default while documents migrate lazily to a new field name.",
       "problem": "You need to change a field name on a live schema without breaking the documents that already exist.",
       "summary": "Use renameTo and a safe default so old data keeps working while the schema evolves toward the new field name.",
-      "docsPath": "/docs/ecosystem/common-patterns/data-lifecycle",
+      "docsPath": "/docs/examples-and-recipes/library/safe-field-rename",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/data-lifecycle",
-        "/docs/basics/configuration/collections",
-        "/docs/basics/database/migrations"
+        "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+        "/docs/model-content/configuration/collections",
+        "/docs/deployment-and-operations/infrastructure/database/migrations"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -406,11 +406,11 @@
       "description": "Keep secondary metadata together under an SEO tab so the main editing form stays focused.",
       "problem": "SEO fields are useful, but they clutter the main content form when they sit beside every primary field.",
       "summary": "Use `defineTab` to keep SEO metadata grouped in the Admin without changing the stored document shape.",
-      "docsPath": "/docs/ecosystem/common-patterns/admin-experience",
+      "docsPath": "/docs/examples-and-recipes/library/seo-tab-fields",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/admin-experience",
-        "/docs/features/admin/overview",
-        "/docs/basics/configuration/collections"
+        "/docs/examples-and-recipes/application-patterns/admin-experience",
+        "/docs/editor-experience/overview",
+        "/docs/model-content/configuration/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -426,11 +426,11 @@
       "description": "Keep shared site-wide values in a single global instead of scattering them across collections.",
       "problem": "You need one shared place for site name, support details, and other site-wide settings.",
       "summary": "Use a global for singleton content that should be edited once and reused across the site or app.",
-      "docsPath": "/docs/ecosystem/common-patterns/content-modeling",
+      "docsPath": "/docs/examples-and-recipes/library/site-settings-global",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/content-modeling",
-        "/docs/basics/configuration/globals",
-        "/docs/basics/fields/url"
+        "/docs/examples-and-recipes/application-patterns/content-modeling",
+        "/docs/model-content/configuration/globals",
+        "/docs/model-content/fields/url"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -446,11 +446,11 @@
       "description": "Stamp a workspace identifier onto new records and filter reads and writes to that tenant boundary.",
       "problem": "Users should only see or manage records that belong to their current workspace or organization.",
       "summary": "Use collection access rules and a create-time hook to keep each tenant's data isolated from the others.",
-      "docsPath": "/docs/ecosystem/common-patterns/access-control",
+      "docsPath": "/docs/examples-and-recipes/library/tenant-scoped-access",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/access-control",
-        "/docs/basics/access-control/collections",
-        "/docs/basics/hooks/collections"
+        "/docs/examples-and-recipes/application-patterns/access-control",
+        "/docs/model-content/content-rules/access-control/collections",
+        "/docs/deployment-and-operations/server-runtime/hooks/collections"
       ],
       "snippetStatus": "validated",
       "intents": [
@@ -466,11 +466,11 @@
       "description": "Enable file uploads and capture accessible metadata in a dedicated media collection.",
       "problem": "Editors need a proper place to upload and reuse files instead of scattering media fields across unrelated documents.",
       "summary": "Create a dedicated upload collection with file rules and metadata fields so media can be managed and reused cleanly.",
-      "docsPath": "/docs/ecosystem/common-patterns/integrations",
+      "docsPath": "/docs/examples-and-recipes/library/upload-collection",
       "canonicalDocs": [
-        "/docs/ecosystem/common-patterns/integrations",
-        "/docs/features/upload/overview",
-        "/docs/features/upload/storage-adapters"
+        "/docs/examples-and-recipes/application-patterns/integrations",
+        "/docs/model-content/media/overview",
+        "/docs/model-content/media/storage-adapters"
       ],
       "snippetStatus": "validated",
       "intents": [

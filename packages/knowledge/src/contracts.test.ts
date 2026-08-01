@@ -134,7 +134,7 @@ describe("generated knowledge contracts", () => {
       expect(content).toContain("not a textarea containing");
       expect(content).toContain("https://docs.dyrected.com/llms.txt");
       expect(content).toContain(
-        "https://docs.dyrected.com/docs/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt",
+        "https://docs.dyrected.com/docs/guides/ai-and-coding-agents/using-the-dyrected-prompt",
       );
     }
   });
@@ -209,39 +209,45 @@ describe("generated knowledge contracts", () => {
   ];
   const referenceTargets = [
     {
-      file: "basics/configuration/overview.mdx",
+      file: "model-content/configuration/overview.mdx",
       region: "REFERENCE-CONFIGURATION",
     },
     {
-      file: "basics/configuration/collections.mdx",
+      file: "model-content/configuration/collections.mdx",
       region: "REFERENCE-CONFIGURATION-COLLECTIONS",
     },
     {
-      file: "basics/configuration/globals.mdx",
+      file: "model-content/configuration/globals.mdx",
       region: "REFERENCE-CONFIGURATION-GLOBALS",
     },
-    { file: "basics/fields/overview.mdx", region: "REFERENCE-FIELDS" },
+    { file: "model-content/fields/overview.mdx", region: "REFERENCE-FIELDS" },
     ...fieldPageSlugs.map((slug) => ({
-      file: `basics/fields/${slug}.mdx`,
+      file: `model-content/fields/${slug}.mdx`,
       region: `REFERENCE-FIELD-${slug.toUpperCase()}`,
     })),
-    { file: "basics/hooks/overview.mdx", region: "REFERENCE-HOOKS" },
-    { file: "managing-data/sdk-api/overview.mdx", region: "REFERENCE-SDK" },
     {
-      file: "basics/database/overview.mdx",
+      file: "deployment-and-operations/server-runtime/hooks/overview.mdx",
+      region: "REFERENCE-HOOKS",
+    },
+    { file: "deliver-content/sdk-api/overview.mdx", region: "REFERENCE-SDK" },
+    {
+      file: "deployment-and-operations/infrastructure/database/overview.mdx",
       region: "REFERENCE-DATABASE-ADAPTERS",
     },
     {
-      file: "features/upload/storage-adapters.mdx",
+      file: "model-content/media/storage-adapters.mdx",
       region: "REFERENCE-STORAGE-ADAPTERS",
     },
-    { file: "features/workflows/overview.mdx", region: "REFERENCE-WORKFLOWS" },
     {
-      file: "managing-data/rest-api/overview.mdx",
+      file: "editor-experience/publishing/overview.mdx",
+      region: "REFERENCE-WORKFLOWS",
+    },
+    {
+      file: "deliver-content/rest-api/overview.mdx",
       region: "REFERENCE-REST-API",
     },
     {
-      file: "managing-data/rest-api/overview.mdx",
+      file: "deliver-content/rest-api/overview.mdx",
       region: "REFERENCE-OPENAPI",
     },
   ];
@@ -292,26 +298,26 @@ describe("generated knowledge contracts", () => {
     const guide = fs.readFileSync(
       path.join(
         newDocsRoot,
-        "quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt.mdx",
+        "guides/ai-and-coding-agents/using-the-dyrected-prompt.mdx",
       ),
       "utf8",
     );
 
     expect(guide).toContain("<CopyPromptButton />");
     expect(guide).toContain('<CopyPromptButton mode="self-hosted" />');
-    expect(guide).toContain("/docs/basics/configuration/collections");
-    expect(guide).toContain("/docs/basics/fields/blocks");
-    expect(guide).toContain("/docs/basics/fields/rich-text");
-    expect(guide).toContain("/docs/features/admin/preview");
+    expect(guide).toContain("/docs/model-content/configuration/collections");
+    expect(guide).toContain("/docs/model-content/fields/blocks");
+    expect(guide).toContain("/docs/model-content/fields/rich-text");
+    expect(guide).toContain("/docs/editor-experience/preview");
     expect(guide).not.toContain("GENERATED:MODELING_RULES");
     expect(guide.split("\n").length).toBeLessThan(400);
   });
 
   it("exposes the long-form agent guide through both LLM indexes", () => {
     const cloudGuideUrl =
-      "https://docs.dyrected.com/docs/cloud/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt";
+      "https://docs.dyrected.com/docs/cloud/guides/ai-and-coding-agents/using-the-dyrected-prompt";
     const selfHostedGuideUrl =
-      "https://docs.dyrected.com/docs/self-hosted/quick-start-guides/coding-agents-and-ai-app-builders/using-the-dyrected-prompt";
+      "https://docs.dyrected.com/docs/self-hosted/guides/ai-and-coding-agents/using-the-dyrected-prompt";
     const llmsIndex = fs.readFileSync(
       path.join(repositoryRoot, "apps/docs/public/llms.txt"),
       "utf8",
@@ -365,7 +371,7 @@ describe("generated knowledge contracts", () => {
 
   it("renders generated member docs as option descriptions without a signature column", () => {
     const collectionsPage = fs.readFileSync(
-      path.join(newDocsRoot, "basics/configuration/collections.mdx"),
+      path.join(newDocsRoot, "model-content/configuration/collections.mdx"),
       "utf8",
     );
 
@@ -378,16 +384,22 @@ describe("generated knowledge contracts", () => {
   });
 
   it("gives the workflow reference one canonical home in docs", () => {
-    const page = path.join(newDocsRoot, "features/workflows/overview.mdx");
+    const page = path.join(
+      newDocsRoot,
+      "editor-experience/publishing/overview.mdx",
+    );
     expect(fs.existsSync(page), "workflow page is missing").toBe(true);
     const source = fs.readFileSync(page, "utf8");
     expect(source).toContain("{/* GENERATED:REFERENCE-WORKFLOWS:START */}");
     expect(source).toContain("{/* GENERATED:REFERENCE-WORKFLOWS:END */}");
-    // The workflow page is registered in the Features navigation.
-    const featuresMeta = JSON.parse(
-      fs.readFileSync(path.join(newDocsRoot, "features/meta.json"), "utf8"),
+    // The workflow page is registered in the runtime-aware navigation.
+    const workflowMeta = JSON.parse(
+      fs.readFileSync(
+        path.join(newDocsRoot, "editor-experience/publishing/meta.json"),
+        "utf8",
+      ),
     );
-    expect(featuresMeta.pages).toContain("workflows");
+    expect(workflowMeta.pages).toContain("overview");
     // Workflow contracts are actually generated.
     const workflowRefs = references.filter(
       (reference) => reference.category === "workflows",
@@ -397,7 +409,7 @@ describe("generated knowledge contracts", () => {
 
   it("makes the REST API overview the canonical home for OpenAPI guidance", () => {
     const restApi = fs.readFileSync(
-      path.join(newDocsRoot, "managing-data/rest-api/overview.mdx"),
+      path.join(newDocsRoot, "deliver-content/rest-api/overview.mdx"),
       "utf8",
     );
     // Endpoint inventory and OpenAPI facts both live on the one REST page.
@@ -406,7 +418,7 @@ describe("generated knowledge contracts", () => {
     // OpenAPI is documented here rather than on a separate reference page.
     expect(
       fs.existsSync(
-        path.join(newDocsRoot, "managing-data/rest-api/openapi.mdx"),
+        path.join(newDocsRoot, "deliver-content/rest-api/openapi.mdx"),
       ),
     ).toBe(false);
   });

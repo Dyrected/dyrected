@@ -1,0 +1,50 @@
+---
+title: Show an Admin field only when it is relevant
+description: Use a serializable Admin condition to reveal a field from the editor's current form values.
+runtime: shared
+runtimeGroup: recipe-conditional-admin-field
+runtimeNotes: Generated recipe page; runtime metadata is sourced from @dyrected/knowledge recipe metadata.
+---
+
+This generated recipe is review-ready source material. Use it from the runtime where it appears in the sidebar and search results.
+
+{/* GENERATED:RECIPE:START */}
+Use a serializable Admin condition to reveal a field from the editor's current form values.
+
+## Use this when
+
+- show a field conditionally
+- hide irrelevant form fields
+- show discount only with a coupon
+- make the admin form react to another field
+
+## Dyrected concepts
+
+`admin.condition`, `Jexl`, `conditional fields`
+
+**Additional packages:** No additional packages.
+
+## Decisions and cautions
+
+Use this recipe only when its runtime matches the project you are documenting or building. Cloud recipes must stay inside the managed content backend boundary. Self-hosted recipes may use the server runtime, database, hooks, and infrastructure you control.
+
+## Complete recipe
+
+This is the canonical source compiled and behavior-tested by `@dyrected/knowledge`.
+
+```ts
+import { defineCollection, defineNumberField, defineTextField } from "@dyrected/core";
+
+export const Orders = defineCollection({
+  slug: "orders",
+  fields: [
+    defineTextField({ name: "couponCode", label: "Coupon code" }),
+    defineNumberField({
+      name: "discountPercent",
+      label: "Discount percentage",
+      admin: { condition: "couponCode != null && couponCode != ''" },
+    }),
+  ],
+});
+```
+{/* GENERATED:RECIPE:END */}

@@ -1,0 +1,19 @@
+{
+  "title": "Plugins and Extensions",
+  "runtimeDefault": "self-hosted",
+  "pages": [
+    "overview",
+    "__advanced-plugin-api",
+    "__build-your-own",
+    "__form-builder",
+    "__import-export",
+    "__mcp",
+    "__multi-tenant",
+    "__nested-docs",
+    "__redirects",
+    "__search",
+    "__sentry",
+    "__seo",
+    "__stripe"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "title": "AI and Coding Agents",
+  "runtimeDefault": "shared",
+  "pages": [
+    "setting-up-your-cloud-site",
+    "add-dyrected-skill-to-your-agent",
+    "using-the-dyrected-prompt"
+  ]
+}

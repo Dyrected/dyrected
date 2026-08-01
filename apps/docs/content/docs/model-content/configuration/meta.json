@@ -1,0 +1,11 @@
+{
+  "title": "Configuration",
+  "runtimeDefault": "shared",
+  "pages": [
+    "overview",
+    "collections",
+    "globals",
+    "__i18n",
+    "__localization"
+  ]
+}

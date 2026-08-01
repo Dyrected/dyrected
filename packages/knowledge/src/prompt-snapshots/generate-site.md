@@ -198,7 +198,7 @@ and other long-form content.
 - Render rich content through `DyrectedRichText` or the installed documented
   rich-content boundary.
 
-Reference: https://docs.dyrected.com/docs/basics/fields/rich-text
+Reference: https://docs.dyrected.com/docs/model-content/fields/rich-text
 
 Use arrays for real repeatable items such as steps, FAQs, links, features, or
 cards, not as a substitute for rich text.
@@ -376,10 +376,10 @@ Do not leave CMS-powered routes permanently stale.
 
 References:
 
-- https://docs.dyrected.com/docs/features/admin/preview
-- https://docs.dyrected.com/docs/features/live-preview/overview
-- https://docs.dyrected.com/docs/features/live-preview/frontend
-- https://docs.dyrected.com/docs/features/live-preview/client-side
+- https://docs.dyrected.com/docs/editor-experience/preview
+- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/overview
+- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/frontend
+- https://docs.dyrected.com/docs/editor-experience/publishing/live-preview/client-side
 
 ## Links, Media, and Rich Content
 

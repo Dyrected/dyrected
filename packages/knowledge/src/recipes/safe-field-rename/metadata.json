@@ -10,9 +10,9 @@
   "intents": ["rename a field safely", "change a field name without losing data", "migrate an existing schema", "keep old documents working after a rename"],
   "concepts": ["renameTo", "defaultValue", "schema evolution"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/data-lifecycle",
-    "/docs/basics/configuration/collections",
-    "/docs/basics/database/migrations"
+    "/docs/examples-and-recipes/application-patterns/data-lifecycle",
+    "/docs/model-content/configuration/collections",
+    "/docs/deployment-and-operations/infrastructure/database/migrations"
   ],
   "requires": []
 }

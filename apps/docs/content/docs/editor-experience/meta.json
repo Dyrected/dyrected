@@ -1,0 +1,27 @@
+{
+  "title": "Editor Experience",
+  "runtimeDefault": "variant",
+  "runtimePolicy": "inherit",
+  "pages": [
+    "overview",
+    "editor-accounts",
+    "publishing",
+    "hand-off-to-editors",
+    "list-view",
+    "spreadsheet-view",
+    "csv-import-export",
+    "preferences",
+    "preview",
+    "customizing-css",
+    "metadata",
+    "custom-admin-panel-location",
+    "react-hooks",
+    "media-hooks",
+    "form-and-field-hooks",
+    "theme-hooks",
+    "custom-components",
+    "accessibility",
+    "audit-history",
+    "__document-locking"
+  ]
+}

@@ -15,9 +15,9 @@
   ],
   "concepts": ["admin.hooks.options", "select", "siblingData"],
   "canonicalDocs": [
-    "/docs/ecosystem/common-patterns/admin-experience",
-    "/docs/features/admin/overview",
-    "/docs/basics/fields/select"
+    "/docs/examples-and-recipes/application-patterns/admin-experience",
+    "/docs/editor-experience/overview",
+    "/docs/model-content/fields/select"
   ],
   "requires": []
 }

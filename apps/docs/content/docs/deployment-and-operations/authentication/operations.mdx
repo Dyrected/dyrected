@@ -1,0 +1,235 @@
+---
+title: Operations
+description: Every authentication endpoint an auth collection exposes — login, logout, the current user, token refresh, password reset, and invitations — with exact request and response shapes and the matching SDK methods.
+runtime: self-hosted
+---
+
+This page is the endpoint guide for auth collections. Use it when you already understand what `auth` is and need the exact route, request shape, return shape, or SDK helper for a specific operation.
+
+Enabling `auth: true` on a collection mounts a fixed set of authentication endpoints under `/api/collections/{slug}/`. If you are new to the concept, start with the [Overview](/docs/editor-experience/editor-accounts) first — this page assumes you already know what an auth collection is.
+
+Throughout, `{slug}` is your collection's slug (for example `users` or `__admins`), and every path is prefixed with `/api/collections/`.
+
+## The full list
+
+| Method | Path                           | Auth   | SDK method                              | Returns                |
+| ------ | ------------------------------ | ------ | --------------------------------------- | ---------------------- |
+| `GET`  | `/{slug}/init`                 | Public | `isInitialized()`                       | `{ initialized }`      |
+| `POST` | `/{slug}/first-user`           | Public | `registerFirstUser(data)`               | `{ token, user }`      |
+| `POST` | `/{slug}/login`                | Public | `login(email, password)`                | `{ token, user }`      |
+| `POST` | `/{slug}/logout`               | Public | `logout()`                              | `{ success, message }` |
+| `GET`  | `/{slug}/me`                   | Bearer | `me()`                                  | the user document      |
+| `POST` | `/{slug}/refresh-token`        | Bearer | `refreshToken()`                        | `{ token }`            |
+| `POST` | `/{slug}/forgot-password`      | Public | `sendResetLink(email, resetUrl?)`       | `{ success, message }` |
+| `POST` | `/{slug}/reset-password`       | Public | `resetPassword(token, password)`        | `{ success, message }` |
+| `POST` | `/{slug}/{id}/change-password` | Bearer | `changePassword(id, payload)`           | `{ success, message }` |
+| `POST` | `/{slug}/invite`               | Bearer | `invite(email, inviteUrlOrOptions?)`    | `{ success, message, token, inviteUrl? }` |
+| `POST` | `/{slug}/accept-invite`        | Public | `acceptInvite(token, password, extra?)` | `{ token, user }`      |
+
+"Bearer" means the request must include a valid `Authorization: Bearer <token>` header. The rest are public. The `password` field is stripped from every user object these endpoints return.
+
+The examples below use the SDK, since that is how most apps call these. Every method maps 1:1 to the REST route in the table, so you can call the raw endpoint directly if you prefer.
+
+## Bootstrapping the first account
+
+A brand-new auth collection has no users, and login needs one to exist. These two endpoints solve the chicken-and-egg problem.
+
+`init` tells you whether any user exists yet, which is handy for deciding whether to show a "create first admin" screen or a normal login form:
+
+```ts
+const { initialized } = await client.collection("users").isInitialized();
+// GET /api/collections/users/init → { "initialized": false }
+```
+
+`first-user` creates that very first account. It only works while the collection is empty — once any user exists it returns `403`. The first user is always created with `roles: ["admin"]`, and you get back a signed-in session immediately:
+
+```ts
+const { token, user } = await client.collection("users").registerFirstUser({
+  email: "owner@example.com",
+  password: "a-strong-password",
+  name: "Site Owner",
+});
+client.setToken(token);
+// POST /api/collections/users/first-user → { token, user }
+```
+
+Any extra fields you include (like `name` above) are saved onto the new document.
+
+## Logging in and out
+
+`login` exchanges an email and password for a token and the user record. A wrong email and a wrong password return the same `401` with the message `"Invalid email or password."`, so the endpoint never reveals which accounts exist during normal failures:
+
+```ts
+const { token, user } = await client
+  .collection("users")
+  .login("jane@example.com", "hunter2");
+client.setToken(token);
+// POST /api/collections/users/login → { token, user }
+```
+
+If the collection's built-in lockout is enabled and someone keeps guessing wrong passwords, Dyrected temporarily locks that account and `login` starts returning `429 Too Many Requests` until the lock window expires:
+
+```json
+{
+  "error": true,
+  "message": "Too many login attempts. Try again later.",
+  "retryAfterSeconds": 600
+}
+```
+
+The response also includes a `Retry-After` header. By default Dyrected locks an account after 5 failed attempts for 10 minutes, and you can change both values on the collection with `auth: { maxLoginAttempts, lockTime }`.
+
+`logout` now revokes the current server-tracked session, so the token stops working immediately even before it expires:
+
+```ts
+await client.collection("users").logout();
+client.clearToken();
+// POST /api/collections/users/logout
+// → { "success": true, "message": "Logged out." }
+```
+
+The normal SDK helper covers the current session only. If you want to sign the account out everywhere, call the same endpoint with `allSessions=true`:
+
+```ts
+await fetch("/api/collections/users/logout?allSessions=true", {
+  method: "POST",
+  headers: { Authorization: `Bearer ${token}` },
+});
+```
+
+Calling `clearToken()` still matters because your app should stop sending the token it was holding, but the server now revokes the backing session too.
+
+## Reading the current user
+
+`me` returns the signed-in user's current document. It requires a Bearer token and returns the user object **directly** — not wrapped in a `{ user }` envelope:
+
+```ts
+const user = await client.collection("users").me();
+// GET /api/collections/users/me
+// → { "id": "...", "email": "jane@example.com", "name": "Jane", "roles": [...] }
+```
+
+If the token is missing or invalid you get a `401`; if the account was deleted since the token was issued you get a `404`.
+
+## Refreshing a session
+
+Tokens expire (7 days by default). `refresh-token` issues a fresh token from a still-valid one, extending the current session without asking the user to log in again:
+
+```ts
+const { token } = await client.collection("users").refreshToken();
+client.setToken(token);
+// POST /api/collections/users/refresh-token → { token }
+```
+
+This requires a valid Bearer token — an expired token cannot refresh itself, so refresh before it lapses. The refreshed token keeps the same underlying session instead of silently creating a second one.
+
+## Password recovery
+
+This is a two-step flow. First, `forgot-password` sends a reset email. It **always** returns `200` with the same message whether or not the email belongs to a real account, so it can never be used to probe which emails are registered:
+
+```ts
+await client.collection("users").sendResetLink(
+  "jane@example.com",
+  "https://mysite.com/reset-password", // optional
+);
+// POST /api/collections/users/forgot-password
+// → { "success": true, "message": "If an account with that email exists, a reset link has been sent." }
+```
+
+When you pass a `resetUrl`, Dyrected builds a clickable link by appending `token=<token>` to it, and the email links there. Omit it and the email template receives only the raw token — useful if you would rather build the link yourself. After a successful reset, Dyrected also sends a password-changed notification email as a security alert. To customize the email content, see [Email](/docs/deployment-and-operations/infrastructure/email).
+
+Second, `reset-password` sets the new password using the token from that email:
+
+```ts
+await client
+  .collection("users")
+  .resetPassword(tokenFromEmail, "a-new-password");
+// POST /api/collections/users/reset-password
+// → { "success": true, "message": "Password has been reset. You can now log in." }
+```
+
+The reset token is single-purpose and time-limited — it is valid for one hour and only works against the collection it was issued for. A successful reset also revokes that user's active sessions so older login tokens stop working.
+
+## Changing a known password
+
+When the user is signed in and just wants to change their password, use `change-password` instead of the reset flow. It requires a Bearer token and targets the user's own `id`:
+
+```ts
+await client.collection("users").changePassword(user.id, {
+  oldPassword: "hunter2",
+  newPassword: "an-even-better-password",
+  confirmPassword: "an-even-better-password",
+});
+// POST /api/collections/users/{id}/change-password → { success, message }
+```
+
+A successful password change revokes that user's active sessions too, so any older tokens need to be replaced with a fresh login.
+
+## Inviting users
+
+Invitations let an existing, signed-in user bring someone new in without handing out a shared password. `invite` sends an invitation email to an address that does not yet have an active account — it requires a Bearer token, and returns `409` if the email is already registered with an active user:
+
+```ts
+const inviteEntryUrl = "https://cms.example.com/admin";
+
+await client.collection("users").invite(
+  "newteammate@example.com",
+  {
+    inviteUrl: inviteEntryUrl,
+    data: { roles: ["editor"] },
+  },
+);
+// POST /api/collections/users/invite
+// → { success: true, message, token, inviteUrl }
+```
+
+When you pass `inviteUrl`, Dyrected emails a clickable acceptance link in the same style as password reset emails. Without it, the default template falls back to the raw invite token.
+
+The important implementation detail is that the invite endpoint also pre-creates a **pending** user record. That means:
+
+- invited users can already appear in the admin list before they accept
+- any `data` you pass during invite, such as a role field, is stored on that pending record
+- the invited user cannot log in yet; login returns a pending-invite error until they accept
+
+The invited person completes signup with `accept-invite`, which is public — the invite token is what authorizes it. Their email comes from the token, so they only choose a password (plus any extra fields you collect). On success the pending user is activated, signed in, and the response is `201`:
+
+```ts
+const { token, user } = await client.collection("users").acceptInvite(
+  inviteTokenFromEmail,
+  "their-chosen-password",
+  { name: "New Teammate" }, // optional extra fields
+);
+client.setToken(token);
+// POST /api/collections/users/accept-invite → { token, user }
+```
+
+An invite token is valid for 7 days. Accepting an already-used invite returns `409`.
+
+## Error shapes
+
+Errors come back with a matching HTTP status and a consistent body:
+
+```json
+{ "error": true, "message": "Invalid email or password." }
+```
+
+Through the SDK these surface as a `DyrectedError` with a `statusCode` and an `errors` array, so you can branch on the status:
+
+```ts
+import { DyrectedError } from "@dyrected/sdk";
+
+try {
+  await client.collection("users").login(email, password);
+} catch (err) {
+  if (err instanceof DyrectedError && err.statusCode === 401) {
+    // show "wrong email or password"
+  }
+}
+```
+
+## Where to go next
+
+- [Token Data](/docs/deployment-and-operations/authentication/token-data) — what the returned token carries and how `user` is built on the server
+- [JWT Strategy](/docs/deployment-and-operations/authentication/jwt-strategy) — signing, expiry, and external verification
+- [Cookie Strategy](/docs/deployment-and-operations/authentication/cookie-strategy) — where to store the token these endpoints return
+- [Email](/docs/deployment-and-operations/infrastructure/email) — customize the reset and invite emails

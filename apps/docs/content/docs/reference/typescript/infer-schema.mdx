@@ -1,0 +1,175 @@
+---
+title: InferSchema
+description: Derive a typed SDK schema from your exported collection and global constants, and know when this path is better than generating a file.
+---
+
+Use this page when your schema and your application code live in the same codebase and you want the SDK to follow your exported schema constants directly. By the end, you should know what `InferSchema` does, how to wire it up, what the key map should look like, and when to switch to generated types instead.
+
+## What `InferSchema` is for
+
+`InferSchema` is the bridge between your Dyrected schema code and the SDK.
+
+You use it when:
+
+- your collections and globals are already exported from `dyrected.config.ts`
+- your app can import those constants directly
+- you want `createClient<Schema>()` to return typed collection and global results without generating a separate file first
+
+This is the recommended path for a same-repo app because it keeps one source of truth: the schema constants themselves.
+
+## The basic shape
+
+`InferSchema` takes two maps:
+
+- a map of collection slugs to exported collection constants
+- an optional map of global slugs to exported global constants
+
+Then you pass the result to `createClient<Schema>()`.
+
+```ts
+import { createClient, type InferSchema } from "@dyrected/sdk";
+import type { Posts, Settings } from "./dyrected.config";
+
+type Schema = InferSchema<
+  { posts: typeof Posts },
+  { settings: typeof Settings }
+>;
+
+const client = createClient<Schema>({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+});
+
+const { docs: posts } = await client.collection("posts").find();
+const settings = await client.global("settings").get();
+```
+
+That is the whole idea: export the real schema constants once, then let the SDK read its type information from those exports.
+
+## Export the schema constants intentionally
+
+This only works cleanly if your collections and globals are exported as named constants, not hidden inside the final `defineConfig()` call.
+
+```ts
+import {
+  defineCollection,
+  defineConfig,
+  defineGlobal,
+  defineTextField,
+} from "@dyrected/core";
+
+export const Posts = defineCollection({
+  slug: "posts",
+  fields: [
+    defineTextField({
+      name: "title",
+      label: "Title",
+      required: true,
+    }),
+  ],
+});
+
+export const Settings = defineGlobal({
+  slug: "settings",
+  fields: [
+    defineTextField({
+      name: "siteName",
+      label: "Site name",
+      required: true,
+    }),
+  ],
+});
+
+export default defineConfig({
+  collections: [Posts],
+  globals: [Settings],
+});
+```
+
+If the constants are not exported, `InferSchema` has nothing stable to point at.
+
+## Match the keys to the slugs you call
+
+The keys you pass into `InferSchema` should match the slugs you use through the SDK.
+
+For simple slugs:
+
+```ts
+type Schema = InferSchema<
+  { posts: typeof Posts },
+  { settings: typeof Settings }
+>;
+```
+
+For slugs with hyphens or other non-identifier characters, use the exact string key:
+
+```ts
+type Schema = InferSchema<
+  { posts: typeof Posts },
+  { "site-settings": typeof SiteSettings }
+>;
+```
+
+That matters because the SDK methods are slug-based:
+
+```ts
+await client.global("site-settings").get();
+```
+
+If the schema map and the SDK slug do not line up, you lose the clean typed path you were trying to create.
+
+## When `InferSchema` is the better fit
+
+Use `InferSchema` when:
+
+- the frontend and schema code are in one repo
+- importing schema constants is acceptable at the type layer
+- you want zero generation step
+- you want changes to the schema exports to flow straight into SDK typing
+
+This is usually the best developer experience during active application development.
+
+## When to switch to generated types instead
+
+`InferSchema` is not always the right boundary.
+
+Use [Generating Types](/docs/reference/typescript/generating-types) instead when:
+
+- another app or package should consume types without importing schema code
+- the schema lives in a backend-only package and you want the frontend to stay decoupled
+- you want a committed generated contract file
+- you want to generate from a running self-hosted instance instead of local config
+
+When you switch to that workflow, the generated type you pass to the SDK is `DyrectedSchema` from `dyrected-types.ts`:
+
+```ts
+import { createClient } from "@dyrected/sdk";
+import type { DyrectedSchema } from "./dyrected-types";
+
+const client = createClient<DyrectedSchema>({
+  baseUrl: process.env.NEXT_PUBLIC_DYRECTED_URL!,
+});
+```
+
+That is the main tradeoff:
+
+- `InferSchema` is cleaner inside one codebase
+- generated types are cleaner across boundaries
+
+## Edge cases to keep in mind
+
+A few practical limits matter here.
+
+- `InferSchema` depends on the exported collection/global constant types, so it does not help if those exports are unavailable where the SDK client is created.
+- Config-time inference and SDK read-time typing solve different problems. `InferSchema` gives you the SDK shape, but it does not replace config-authoring helpers such as `InferDocShape`.
+- If you need a document type that intentionally diverges from automatic field inference, you can still pass explicit generics to `defineCollection<TDoc>()` or `defineGlobal<TDoc>()`.
+
+## Recommended path
+
+The recommended order is:
+
+1. export your collection and global constants
+2. create a `Schema` type with `InferSchema`
+3. pass that type to `createClient<Schema>()`
+4. move to generated types only when you hit a real package or deployment boundary
+
+That keeps the type story simple and keeps the schema constants as the source of truth.
