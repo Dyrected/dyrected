@@ -6,7 +6,7 @@
     "predev": "pnpm docs:generate",
     "dev": "next dev -p 3001",
     "prebuild": "pnpm docs:generate",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint",
     "docs:generate": "pnpm --filter @dyrected/knowledge generate",
