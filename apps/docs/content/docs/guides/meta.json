@@ -2,7 +2,12 @@
   "title": "Guides",
   "runtimeDefault": "shared",
   "pages": [
-    "frameworks",
-    "ai-and-coding-agents"
+    "ai-and-coding-agents",
+    "choose-a-package",
+    "nextjs",
+    "nuxt",
+    "react",
+    "vue",
+    "sdk"
   ]
 }
