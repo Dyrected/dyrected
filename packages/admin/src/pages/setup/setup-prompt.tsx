@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ArrowUpRight, Check, Copy } from "lucide-react";
 import { buildGuideUrl, buildPrompt } from "./utils";
+import { isNewerVersion, useLatestRelease } from "../../hooks/use-latest-release";
 
 export interface SetupPromptConfig {
   siteName?: string;
@@ -68,43 +69,9 @@ export function SetupPromptUI({ config }: SetupPromptProps) {
   const currentVersion =
     (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION ||
     "0.0.0";
-  const [latestVersion, setLatestVersion] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("dyrected_latest_release");
-  });
-
-  useEffect(() => {
-    if (!latestVersion) {
-      fetch("https://registry.npmjs.org/@dyrected/core/latest")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.version) {
-            setLatestVersion(data.version);
-            localStorage.setItem("dyrected_latest_release", data.version);
-            localStorage.setItem(
-              "dyrected_latest_release_timestamp",
-              String(Date.now()),
-            );
-          }
-        })
-        .catch(() => {});
-    }
-  }, [latestVersion]);
-
-  const hasUpdate =
-    latestVersion &&
-    latestVersion !== currentVersion &&
-    (() => {
-      const lParts = latestVersion.split(".").map(Number);
-      const cParts = currentVersion.split(".").map(Number);
-      for (let i = 0; i < 3; i++) {
-        const l = lParts[i] || 0;
-        const c = cParts[i] || 0;
-        if (l > c) return true;
-        if (l < c) return false;
-      }
-      return false;
-    })();
+  const { data: latestRelease } = useLatestRelease();
+  const latestVersion = latestRelease?.version ?? null;
+  const hasUpdate = latestVersion ? isNewerVersion(latestVersion, currentVersion) : false;
 
   return (
     <div className="dy-mx-auto dy-max-w-3xl dy-space-y-10 dy-px-4 dy-py-8">

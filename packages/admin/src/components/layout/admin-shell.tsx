@@ -24,6 +24,7 @@ import {
   Users,
 } from "lucide-react"
 import { useDyrected } from "../../providers/dyrected-context"
+import { isNewerVersion, useLatestRelease } from "../../hooks/use-latest-release"
 import { cn, getMediaUrl } from "../../lib/utils"
 import { resolveAdminIcon } from "../../lib/admin-icons"
 import { BrandingProvider } from "./branding-provider"
@@ -595,85 +596,16 @@ function SidebarInner({
   )
 }
 
-// ---------------------------------------------------------------------------
-// AdminShell
-// ---------------------------------------------------------------------------
-function isNewerVersion(latest: string, current: string): boolean {
-  if (latest === current) return false;
-  const lParts = latest.split(".").map(Number);
-  const cParts = current.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    const l = lParts[i] || 0;
-    const c = cParts[i] || 0;
-    if (l > c) return true;
-    if (l < c) return false;
-  }
-  return false;
-}
-
 function useUpdateCheck() {
   const currentVersion = (import.meta.env as Record<string, string | undefined>).DYRECTED_VERSION || "0.0.0";
-  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(() => {
-    if (typeof window === "undefined") return null;
-    const cacheKey = "dyrected_latest_release";
-    const cacheTimeKey = "dyrected_latest_release_timestamp";
-    const cachedVersion = localStorage.getItem(cacheKey);
-    const cachedTimestamp = localStorage.getItem(cacheTimeKey);
-    const oneDay = 24 * 60 * 60 * 1000;
+  const { data } = useLatestRelease();
 
-    if (cachedVersion && cachedTimestamp && Date.now() - Number(cachedTimestamp) < oneDay) {
-      return {
-        latestVersion: cachedVersion,
-        hasUpdate: isNewerVersion(cachedVersion, currentVersion),
-      };
-    }
-    return null;
-  });
+  if (!data?.version) return null;
 
-  useEffect(() => {
-    let cancelled = false;
-    const cacheKey = "dyrected_latest_release";
-    const cacheTimeKey = "dyrected_latest_release_timestamp";
-    const oneDay = 24 * 60 * 60 * 1000;
-
-    const cachedVersion = localStorage.getItem(cacheKey);
-    const cachedTimestamp = localStorage.getItem(cacheTimeKey);
-
-    if (cachedVersion && cachedTimestamp && Date.now() - Number(cachedTimestamp) < oneDay) {
-      return;
-    }
-
-    async function fetchLatest() {
-      try {
-        const res = await fetch("https://registry.npmjs.org/@dyrected/core/latest");
-        if (!res.ok) return;
-        const data = await res.json();
-        const latest = data?.version;
-
-        if (latest) {
-          localStorage.setItem(cacheKey, latest);
-          localStorage.setItem(cacheTimeKey, String(Date.now()));
-
-          if (!cancelled) {
-            setUpdateInfo({
-              latestVersion: latest,
-              hasUpdate: isNewerVersion(latest, currentVersion),
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Failed to check for updates:", err);
-      }
-    }
-
-    fetchLatest();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentVersion]);
-
-  return updateInfo;
+  return {
+    latestVersion: data.version,
+    hasUpdate: isNewerVersion(data.version, currentVersion),
+  };
 }
 
 export function AdminShell({
@@ -697,7 +629,9 @@ export function AdminShell({
   // path (not mobileOpen) so opening the drawer never re-triggers this; the
   // setter is a no-op when it is already closed.
   useEffect(() => {
-    setMobileOpen(false)
+    queueMicrotask(() => {
+      setMobileOpen(false)
+    })
   }, [location.pathname])
 
   // Lock scroll on mobile when open

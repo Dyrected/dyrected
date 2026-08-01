@@ -301,7 +301,11 @@ export function AdminUI({
     })
   }, [isThemeControlled, onThemeChange, systemTheme, theme, themeController])
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    queueMicrotask(() => {
+      setMounted(true);
+    });
+  }, []);
 
   if (!mounted) {
     // Theme context isn't available pre-mount, so best-effort match the system
@@ -321,18 +325,18 @@ export function AdminUI({
   return (
     <div className="dy-admin-ui dy-h-full">
       <ErrorBoundary>
-        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken} defaultTechStack={defaultTechStack}>
-          <AdminThemeProvider controller={activeThemeController}>
-            <AdminThemedRoot>
-              <QueryProvider>
+        <QueryProvider>
+          <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId} components={components} initialToken={initialToken} defaultTechStack={defaultTechStack}>
+            <AdminThemeProvider controller={activeThemeController}>
+              <AdminThemedRoot>
                 <HashRouter>
                   <AdminRoutes onNavigate={onNavigate} isEmbedded={isEmbedded} />
                 </HashRouter>
-              </QueryProvider>
-              <Toaster position="top-center" expand={true} richColors />
-            </AdminThemedRoot>
-          </AdminThemeProvider>
-        </DyrectedProvider>
+                <Toaster position="top-center" expand={true} richColors />
+              </AdminThemedRoot>
+            </AdminThemeProvider>
+          </DyrectedProvider>
+        </QueryProvider>
       </ErrorBoundary>
     </div>
   );
@@ -409,7 +413,11 @@ export function AdminStandalone({
     })
   }, [isThemeControlled, onThemeChange, systemTheme, theme, themeController])
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    queueMicrotask(() => {
+      setMounted(true);
+    });
+  }, []);
 
   if (!mounted) {
     const prefersDark =
@@ -424,18 +432,18 @@ export function AdminStandalone({
 
   return (
     <div className="dy-admin-ui dy-h-full">
-      <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
-        <AdminThemeProvider controller={activeThemeController}>
-          <AdminThemedRoot>
-            <QueryProvider>
+      <QueryProvider>
+        <DyrectedProvider apiKey={apiKey} baseUrl={baseUrl} siteId={siteId}>
+          <AdminThemeProvider controller={activeThemeController}>
+            <AdminThemedRoot>
               <MemoryRouter>
                 <AdminRoutes />
               </MemoryRouter>
-            </QueryProvider>
-            <Toaster position="top-center" expand={true} richColors />
-          </AdminThemedRoot>
-        </AdminThemeProvider>
-      </DyrectedProvider>
+              <Toaster position="top-center" expand={true} richColors />
+            </AdminThemedRoot>
+          </AdminThemeProvider>
+        </DyrectedProvider>
+      </QueryProvider>
     </div>
   );
 }

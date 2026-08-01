@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDyrected } from "../../providers/dyrected-context";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoginPage } from "../../pages/auth/login-page";
 import { FirstUserPage } from "../../pages/auth/first-user-page";
 import { ExternalLoginPage } from "../../pages/auth/external-login-page";
@@ -36,10 +36,28 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       error: params.get("dyrectedExternalError"),
     };
   }, []);
-  const pendingExternalToken = !!externalParams.token;
+  const [pendingExternalToken, setPendingExternalToken] = useState(() => !!externalParams.token);
   const externalError = externalExchangeError ?? externalParams.error;
 
   const authCollection = resolveAdminAuthCollection(schemas?.collections, adminAuth?.collectionSlug);
+  const clearExternalAuthParams = React.useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    params.delete("dyrectedExternalToken");
+    params.delete("dyrectedExternalProvider");
+    params.delete("dyrectedAdminCollection");
+    params.delete("dyrectedExternalError");
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
+    window.history.replaceState({}, document.title, nextUrl);
+    setPendingExternalToken(false);
+  }, []);
+  const exchangeExternalAuthMutation = useMutation({
+    mutationFn: async ({ provider, token }: { provider: string; token: string }) => {
+      return client!.exchangeAdminAuth(provider, { token });
+    },
+  });
 
   useEffect(() => {
     if (
@@ -54,45 +72,40 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     handledExternalTokenRef.current = externalParams.token;
     let cancelled = false;
 
-    const completeExternalAuth = async () => {
-      try {
-        if (externalParams.provider) {
-          if (!client) return;
-          const exchanged = await client.exchangeAdminAuth(externalParams.provider, {
-            token: externalParams.token,
-          });
+    if (!externalParams.provider) {
+      setToken(externalParams.token, externalParams.collection);
+      queueMicrotask(() => {
+        clearExternalAuthParams();
+      });
+      return;
+    }
+
+    exchangeExternalAuthMutation.mutate(
+      { provider: externalParams.provider, token: externalParams.token },
+      {
+        onSuccess: (exchanged) => {
           if (cancelled) return;
           setExternalExchangeError(null);
           setToken(exchanged.token, exchanged.collectionSlug);
-        } else {
-          setExternalExchangeError(null);
-          setToken(externalParams.token, externalParams.collection);
-        }
-      } catch (error) {
-        if (cancelled) return;
-        handledExternalTokenRef.current = null;
-        setExternalExchangeError(
-          error instanceof Error ? error.message : "External authentication failed.",
-        );
-      }
-
-      if (cancelled || typeof window === "undefined") return;
-      const params = new URLSearchParams(window.location.search);
-      params.delete("dyrectedExternalToken");
-      params.delete("dyrectedExternalProvider");
-      params.delete("dyrectedAdminCollection");
-      params.delete("dyrectedExternalError");
-      const nextSearch = params.toString();
-      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}${window.location.hash}`;
-      window.history.replaceState({}, document.title, nextUrl);
-    };
-
-    void completeExternalAuth();
+        },
+        onError: (error) => {
+          if (cancelled) return;
+          handledExternalTokenRef.current = null;
+          setExternalExchangeError(
+            error instanceof Error ? error.message : "External authentication failed.",
+          );
+        },
+        onSettled: () => {
+          if (cancelled) return;
+          clearExternalAuthParams();
+        },
+      },
+    );
 
     return () => {
       cancelled = true;
     }
-  }, [client, externalParams.collection, externalParams.provider, externalParams.token, isExternalAdminAuth, setToken]);
+  }, [clearExternalAuthParams, client, exchangeExternalAuthMutation, externalParams.collection, externalParams.provider, externalParams.token, isExternalAdminAuth, setToken]);
 
   useEffect(() => {
     if (!isExternalAdminAuth || user || !client) return;
@@ -109,7 +122,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     enabled: !!client && !!authCollection && !isExternalAdminAuth,
   });
 
-  const isLoading = !schemas || isResolvingStoredSession || pendingExternalToken || (!isExternalAdminAuth && authCollection && isLoadingInit);
+  const isLoading =
+    !schemas ||
+    isResolvingStoredSession ||
+    exchangeExternalAuthMutation.isPending ||
+    pendingExternalToken ||
+    (!isExternalAdminAuth && authCollection && isLoadingInit);
 
   // Cloud-managed: host application has already authenticated the user.
   // Skip setup and login flow — render the admin shell directly.

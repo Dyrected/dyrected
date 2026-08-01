@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, DyrectedClient, DyrectedError } from "@dyrected/sdk";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AdminSchemas } from "../types/admin-components";
 import type { Block, Field } from "@dyrected/core";
 import { getAdminCollectionSlug, type AdminUser } from "./admin-auth";
@@ -98,7 +99,6 @@ export function DyrectedProvider({
         : null) ||
       undefined,
   );
-  const [schemas, setSchemas] = useState<AdminSchemas | null>(null);
   const [isResolvingStoredSession, setIsResolvingStoredSession] = useState(false);
   const initialTokenUser = useMemo(
     () => (initialToken ? decodeTokenPayload(initialToken) : null),
@@ -120,33 +120,22 @@ export function DyrectedProvider({
       siteId: siteId || undefined,
     });
   }, [apiKey, baseUrl, siteId]);
+  const queryClient = useQueryClient();
+
+  const {
+    data: schemas = null,
+    error: schemasError,
+  } = useQuery({
+    queryKey: ["schemas", baseUrl, apiKey ?? null, siteId ?? null],
+    queryFn: async () => resolveSchemas(await client!.getSchemas()),
+    enabled: !!client,
+  });
 
   useEffect(() => {
-    let cancelled = false;
-
-    if (!client) {
-      return () => {
-        cancelled = true;
-      };
+    if (schemasError) {
+      console.error("Failed to fetch schemas:", schemasError);
     }
-
-    client.getSchemas().then(
-      (nextSchemas) => {
-        if (cancelled) return;
-        const resolved = resolveSchemas(nextSchemas);
-        setSchemas((prev) => (prev === resolved ? prev : resolved));
-      },
-      (err) => {
-        if (cancelled) return;
-        console.error("Failed to fetch schemas:", err);
-        setSchemas((prev) => (prev === null ? prev : null));
-      },
-    );
-
-    return () => {
-      cancelled = true;
-    };
-  }, [client]);
+  }, [schemasError]);
 
   const activeUser = initialTokenUser ?? user;
 
@@ -174,6 +163,16 @@ export function DyrectedProvider({
       (error.statusCode === 401 || error.statusCode === 404)
     );
   }, []);
+
+  const logoutMutation = useMutation({
+    mutationFn: async (collectionSlug: string) => {
+      await client!.collection(collectionSlug).logout();
+    },
+    onSettled: () => {
+      clearPersistedAuthState(client);
+      queryClient.removeQueries({ queryKey: ["schemas"] });
+    },
+  });
 
   const setAuth = useCallback(
     (newUrl: string, newKey: string, newSiteId?: string) => {
@@ -232,7 +231,9 @@ export function DyrectedProvider({
 
   useEffect(() => {
     if (initialToken || !client || !schemas || activeUser) {
-      setIsResolvingStoredSession(false);
+      queueMicrotask(() => {
+        setIsResolvingStoredSession(false);
+      });
       return;
     }
     const token = localStorage.getItem("dyrected_token");
@@ -240,12 +241,16 @@ export function DyrectedProvider({
       authCollectionSlug || getAdminCollectionSlug(schemas);
 
     if (!token || !resolvedCollectionSlug) {
-      setIsResolvingStoredSession(false);
+      queueMicrotask(() => {
+        setIsResolvingStoredSession(false);
+      });
       return;
     }
 
     let cancelled = false;
-    setIsResolvingStoredSession(true);
+    queueMicrotask(() => {
+      setIsResolvingStoredSession(true);
+    });
     client.setToken(token);
     client
       .collection(resolvedCollectionSlug)
@@ -283,21 +288,20 @@ export function DyrectedProvider({
   ]);
 
   const logout = useCallback(() => {
-    void (async () => {
-      const resolvedCollectionSlug =
-        authCollectionSlug || getAdminCollectionSlug(schemas);
+    const resolvedCollectionSlug =
+      authCollectionSlug || getAdminCollectionSlug(schemas);
 
-      try {
-        if (client && resolvedCollectionSlug) {
-          await client.collection(resolvedCollectionSlug).logout();
-        }
-      } catch (error) {
+    if (!client || !resolvedCollectionSlug) {
+      clearPersistedAuthState(client);
+      return;
+    }
+
+    logoutMutation.mutate(resolvedCollectionSlug, {
+      onError: (error) => {
         console.warn("Failed to revoke admin session during logout:", error);
-      } finally {
-        clearPersistedAuthState(client);
-      }
-    })();
-  }, [authCollectionSlug, clearPersistedAuthState, client, schemas]);
+      },
+    });
+  }, [authCollectionSlug, clearPersistedAuthState, client, logoutMutation, schemas]);
 
   return (
     <DyrectedContext.Provider
