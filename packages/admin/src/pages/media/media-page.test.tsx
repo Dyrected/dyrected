@@ -11,6 +11,7 @@ vi.mock("../../providers/dyrected-context", () => ({
 }))
 
 vi.mock("@tanstack/react-query", () => ({
+  keepPreviousData: Symbol("keepPreviousData"),
   useInfiniteQuery: () => ({
     data: {
       pages: [{
@@ -95,9 +96,10 @@ describe("MediaPage component slots", () => {
 
     const orderedTestIds = Array.from(container.querySelectorAll("[data-testid]"))
       .map((element) => element.getAttribute("data-testid"))
-      .filter((testId) => ["before-list", "before-table", "media-grid", "after-table", "after-list"].includes(testId || ""))
+      .filter((testId) => ["before-list", "before-table", "after-table", "after-list"].includes(testId || ""))
 
-    expect(orderedTestIds).toEqual(["before-list", "before-table", "media-grid", "after-table", "after-list"])
+    expect(orderedTestIds).toEqual(["before-list", "before-table", "after-table", "after-list"])
+    expect(screen.getByText("photo.jpg")).toBeTruthy()
     expect(screen.getByTestId("after-list").getAttribute("data-documents")).toBe("1")
     expect(screen.getByTestId("after-list").getAttribute("data-can-create")).toBe("true")
   })

@@ -2282,561 +2282,561 @@
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs#example-1",
-    "page": "/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs",
+    "id": "/guides/nextjs/adding-a-visual-editor-in-nextjs#example-1",
+    "page": "/guides/nextjs/adding-a-visual-editor-in-nextjs",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs#example-2",
-    "page": "/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs",
+    "id": "/guides/nextjs/adding-a-visual-editor-in-nextjs#example-2",
+    "page": "/guides/nextjs/adding-a-visual-editor-in-nextjs",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs#example-3",
-    "page": "/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs",
+    "id": "/guides/nextjs/adding-a-visual-editor-in-nextjs#example-3",
+    "page": "/guides/nextjs/adding-a-visual-editor-in-nextjs",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/building-landing-pages-for-marketing#example-1",
-    "page": "/guides/frameworks/nextjs/building-landing-pages-for-marketing",
+    "id": "/guides/nextjs/building-landing-pages-for-marketing#example-1",
+    "page": "/guides/nextjs/building-landing-pages-for-marketing",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/building-landing-pages-for-marketing#example-2",
-    "page": "/guides/frameworks/nextjs/building-landing-pages-for-marketing",
+    "id": "/guides/nextjs/building-landing-pages-for-marketing#example-2",
+    "page": "/guides/nextjs/building-landing-pages-for-marketing",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/building-landing-pages-for-marketing#example-3",
-    "page": "/guides/frameworks/nextjs/building-landing-pages-for-marketing",
+    "id": "/guides/nextjs/building-landing-pages-for-marketing#example-3",
+    "page": "/guides/nextjs/building-landing-pages-for-marketing",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/building-landing-pages-for-marketing#example-4",
-    "page": "/guides/frameworks/nextjs/building-landing-pages-for-marketing",
+    "id": "/guides/nextjs/building-landing-pages-for-marketing#example-4",
+    "page": "/guides/nextjs/building-landing-pages-for-marketing",
     "language": "tsx",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nextjs/defining-a-schema#example-1",
-    "page": "/guides/frameworks/nextjs/defining-a-schema",
+    "id": "/guides/nextjs/defining-a-schema#example-1",
+    "page": "/guides/nextjs/defining-a-schema",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/displaying-content-in-nextjs#example-1",
-    "page": "/guides/frameworks/nextjs/displaying-content-in-nextjs",
+    "id": "/guides/nextjs/displaying-content-in-nextjs#example-1",
+    "page": "/guides/nextjs/displaying-content-in-nextjs",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/displaying-content-in-nextjs#example-2",
-    "page": "/guides/frameworks/nextjs/displaying-content-in-nextjs",
+    "id": "/guides/nextjs/displaying-content-in-nextjs#example-2",
+    "page": "/guides/nextjs/displaying-content-in-nextjs",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/displaying-content-in-nextjs#example-3",
-    "page": "/guides/frameworks/nextjs/displaying-content-in-nextjs",
+    "id": "/guides/nextjs/displaying-content-in-nextjs#example-3",
+    "page": "/guides/nextjs/displaying-content-in-nextjs",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/installing-dyrected#example-1",
-    "page": "/guides/frameworks/nextjs/installing-dyrected",
+    "id": "/guides/nextjs/installing-dyrected#example-1",
+    "page": "/guides/nextjs/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nextjs/installing-dyrected#example-2",
-    "page": "/guides/frameworks/nextjs/installing-dyrected",
+    "id": "/guides/nextjs/installing-dyrected#example-2",
+    "page": "/guides/nextjs/installing-dyrected",
     "language": "text",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/nextjs/installing-dyrected#example-3",
-    "page": "/guides/frameworks/nextjs/installing-dyrected",
+    "id": "/guides/nextjs/installing-dyrected#example-3",
+    "page": "/guides/nextjs/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nextjs/installing-dyrected#example-4",
-    "page": "/guides/frameworks/nextjs/installing-dyrected",
+    "id": "/guides/nextjs/installing-dyrected#example-4",
+    "page": "/guides/nextjs/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nextjs/installing-dyrected#example-5",
-    "page": "/guides/frameworks/nextjs/installing-dyrected",
+    "id": "/guides/nextjs/installing-dyrected#example-5",
+    "page": "/guides/nextjs/installing-dyrected",
     "language": "text",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/nextjs/installing-dyrected#example-6",
-    "page": "/guides/frameworks/nextjs/installing-dyrected",
+    "id": "/guides/nextjs/installing-dyrected#example-6",
+    "page": "/guides/nextjs/installing-dyrected",
     "language": "text",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/nextjs/package-reference#example-1",
-    "page": "/guides/frameworks/nextjs/package-reference",
+    "id": "/guides/nextjs/package-reference#example-1",
+    "page": "/guides/nextjs/package-reference",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nextjs/package-reference#example-2",
-    "page": "/guides/frameworks/nextjs/package-reference",
+    "id": "/guides/nextjs/package-reference#example-2",
+    "page": "/guides/nextjs/package-reference",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/package-reference#example-3",
-    "page": "/guides/frameworks/nextjs/package-reference",
+    "id": "/guides/nextjs/package-reference#example-3",
+    "page": "/guides/nextjs/package-reference",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nextjs/package-reference#example-4",
-    "page": "/guides/frameworks/nextjs/package-reference",
+    "id": "/guides/nextjs/package-reference#example-4",
+    "page": "/guides/nextjs/package-reference",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/package-reference#example-5",
-    "page": "/guides/frameworks/nextjs/package-reference",
+    "id": "/guides/nextjs/package-reference#example-5",
+    "page": "/guides/nextjs/package-reference",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/package-reference#example-6",
-    "page": "/guides/frameworks/nextjs/package-reference",
+    "id": "/guides/nextjs/package-reference#example-6",
+    "page": "/guides/nextjs/package-reference",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/package-reference#example-7",
-    "page": "/guides/frameworks/nextjs/package-reference",
+    "id": "/guides/nextjs/package-reference#example-7",
+    "page": "/guides/nextjs/package-reference",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nextjs/setting-up-initial-data#example-1",
-    "page": "/guides/frameworks/nextjs/setting-up-initial-data",
+    "id": "/guides/nextjs/setting-up-initial-data#example-1",
+    "page": "/guides/nextjs/setting-up-initial-data",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nextjs/setting-up-initial-data#example-2",
-    "page": "/guides/frameworks/nextjs/setting-up-initial-data",
+    "id": "/guides/nextjs/setting-up-initial-data#example-2",
+    "page": "/guides/nextjs/setting-up-initial-data",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs#example-1",
-    "page": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs",
+    "id": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs#example-1",
+    "page": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs#example-2",
-    "page": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs",
+    "id": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs#example-2",
+    "page": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs#example-3",
-    "page": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs",
+    "id": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs#example-3",
+    "page": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs#example-4",
-    "page": "/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs",
+    "id": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs#example-4",
+    "page": "/guides/nuxt/adding-a-visual-editor-in-nuxtjs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/nuxt/building-landing-pages-for-marketing#example-1",
-    "page": "/guides/frameworks/nuxt/building-landing-pages-for-marketing",
+    "id": "/guides/nuxt/building-landing-pages-for-marketing#example-1",
+    "page": "/guides/nuxt/building-landing-pages-for-marketing",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nuxt/defining-a-schema#example-1",
-    "page": "/guides/frameworks/nuxt/defining-a-schema",
+    "id": "/guides/nuxt/defining-a-schema#example-1",
+    "page": "/guides/nuxt/defining-a-schema",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nuxt/displaying-content-in-nuxtjs#example-1",
-    "page": "/guides/frameworks/nuxt/displaying-content-in-nuxtjs",
+    "id": "/guides/nuxt/displaying-content-in-nuxtjs#example-1",
+    "page": "/guides/nuxt/displaying-content-in-nuxtjs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/nuxt/displaying-content-in-nuxtjs#example-2",
-    "page": "/guides/frameworks/nuxt/displaying-content-in-nuxtjs",
+    "id": "/guides/nuxt/displaying-content-in-nuxtjs#example-2",
+    "page": "/guides/nuxt/displaying-content-in-nuxtjs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/nuxt/installing-dyrected#example-1",
-    "page": "/guides/frameworks/nuxt/installing-dyrected",
+    "id": "/guides/nuxt/installing-dyrected#example-1",
+    "page": "/guides/nuxt/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nuxt/installing-dyrected#example-2",
-    "page": "/guides/frameworks/nuxt/installing-dyrected",
+    "id": "/guides/nuxt/installing-dyrected#example-2",
+    "page": "/guides/nuxt/installing-dyrected",
     "language": "text",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/nuxt/installing-dyrected#example-3",
-    "page": "/guides/frameworks/nuxt/installing-dyrected",
+    "id": "/guides/nuxt/installing-dyrected#example-3",
+    "page": "/guides/nuxt/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nuxt/installing-dyrected#example-4",
-    "page": "/guides/frameworks/nuxt/installing-dyrected",
+    "id": "/guides/nuxt/installing-dyrected#example-4",
+    "page": "/guides/nuxt/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nuxt/installing-dyrected#example-5",
-    "page": "/guides/frameworks/nuxt/installing-dyrected",
+    "id": "/guides/nuxt/installing-dyrected#example-5",
+    "page": "/guides/nuxt/installing-dyrected",
     "language": "text",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/nuxt/package-reference#example-1",
-    "page": "/guides/frameworks/nuxt/package-reference",
+    "id": "/guides/nuxt/package-reference#example-1",
+    "page": "/guides/nuxt/package-reference",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/nuxt/package-reference#example-2",
-    "page": "/guides/frameworks/nuxt/package-reference",
+    "id": "/guides/nuxt/package-reference#example-2",
+    "page": "/guides/nuxt/package-reference",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/nuxt/package-reference#example-3",
-    "page": "/guides/frameworks/nuxt/package-reference",
+    "id": "/guides/nuxt/package-reference#example-3",
+    "page": "/guides/nuxt/package-reference",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nuxt/package-reference#example-4",
-    "page": "/guides/frameworks/nuxt/package-reference",
+    "id": "/guides/nuxt/package-reference#example-4",
+    "page": "/guides/nuxt/package-reference",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/nuxt/package-reference#example-5",
-    "page": "/guides/frameworks/nuxt/package-reference",
+    "id": "/guides/nuxt/package-reference#example-5",
+    "page": "/guides/nuxt/package-reference",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/nuxt/setting-up-initial-data#example-1",
-    "page": "/guides/frameworks/nuxt/setting-up-initial-data",
+    "id": "/guides/nuxt/setting-up-initial-data#example-1",
+    "page": "/guides/nuxt/setting-up-initial-data",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/nuxt/setting-up-initial-data#example-2",
-    "page": "/guides/frameworks/nuxt/setting-up-initial-data",
+    "id": "/guides/nuxt/setting-up-initial-data#example-2",
+    "page": "/guides/nuxt/setting-up-initial-data",
     "language": "ts",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/react/adding-a-visual-editor-in-reactjs#example-1",
-    "page": "/guides/frameworks/react/adding-a-visual-editor-in-reactjs",
+    "id": "/guides/react/adding-a-visual-editor-in-reactjs#example-1",
+    "page": "/guides/react/adding-a-visual-editor-in-reactjs",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/react/adding-a-visual-editor-in-reactjs#example-2",
-    "page": "/guides/frameworks/react/adding-a-visual-editor-in-reactjs",
+    "id": "/guides/react/adding-a-visual-editor-in-reactjs#example-2",
+    "page": "/guides/react/adding-a-visual-editor-in-reactjs",
     "language": "tsx",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/react/defining-a-schema#example-1",
-    "page": "/guides/frameworks/react/defining-a-schema",
+    "id": "/guides/react/defining-a-schema#example-1",
+    "page": "/guides/react/defining-a-schema",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/react/displaying-content-in-react#example-1",
-    "page": "/guides/frameworks/react/displaying-content-in-react",
+    "id": "/guides/react/displaying-content-in-react#example-1",
+    "page": "/guides/react/displaying-content-in-react",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/react/displaying-content-in-react#example-2",
-    "page": "/guides/frameworks/react/displaying-content-in-react",
+    "id": "/guides/react/displaying-content-in-react#example-2",
+    "page": "/guides/react/displaying-content-in-react",
     "language": "tsx",
     "classification": "illustrative",
     "validation": "Contains placeholders or intentionally partial source"
   },
   {
-    "id": "/guides/frameworks/react/displaying-content-in-react#example-3",
-    "page": "/guides/frameworks/react/displaying-content-in-react",
+    "id": "/guides/react/displaying-content-in-react#example-3",
+    "page": "/guides/react/displaying-content-in-react",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/react/installing-dyrected#example-1",
-    "page": "/guides/frameworks/react/installing-dyrected",
+    "id": "/guides/react/installing-dyrected#example-1",
+    "page": "/guides/react/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/react/installing-dyrected#example-2",
-    "page": "/guides/frameworks/react/installing-dyrected",
+    "id": "/guides/react/installing-dyrected#example-2",
+    "page": "/guides/react/installing-dyrected",
     "language": "text",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/react/installing-dyrected#example-3",
-    "page": "/guides/frameworks/react/installing-dyrected",
+    "id": "/guides/react/installing-dyrected#example-3",
+    "page": "/guides/react/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/react/installing-dyrected#example-4",
-    "page": "/guides/frameworks/react/installing-dyrected",
+    "id": "/guides/react/installing-dyrected#example-4",
+    "page": "/guides/react/installing-dyrected",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/react/package-reference#example-1",
-    "page": "/guides/frameworks/react/package-reference",
+    "id": "/guides/react/package-reference#example-1",
+    "page": "/guides/react/package-reference",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/react/package-reference#example-2",
-    "page": "/guides/frameworks/react/package-reference",
+    "id": "/guides/react/package-reference#example-2",
+    "page": "/guides/react/package-reference",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/react/package-reference#example-3",
-    "page": "/guides/frameworks/react/package-reference",
+    "id": "/guides/react/package-reference#example-3",
+    "page": "/guides/react/package-reference",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/react/package-reference#example-4",
-    "page": "/guides/frameworks/react/package-reference",
+    "id": "/guides/react/package-reference#example-4",
+    "page": "/guides/react/package-reference",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/react/package-reference#example-5",
-    "page": "/guides/frameworks/react/package-reference",
+    "id": "/guides/react/package-reference#example-5",
+    "page": "/guides/react/package-reference",
     "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/sdk#example-1",
-    "page": "/guides/frameworks/sdk",
+    "id": "/guides/sdk#example-1",
+    "page": "/guides/sdk",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/sdk#example-2",
-    "page": "/guides/frameworks/sdk",
+    "id": "/guides/sdk#example-2",
+    "page": "/guides/sdk",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/sdk#example-3",
-    "page": "/guides/frameworks/sdk",
+    "id": "/guides/sdk#example-3",
+    "page": "/guides/sdk",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/sdk#example-4",
-    "page": "/guides/frameworks/sdk",
+    "id": "/guides/sdk#example-4",
+    "page": "/guides/sdk",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/vue/adding-a-visual-editor-in-vuejs#example-1",
-    "page": "/guides/frameworks/vue/adding-a-visual-editor-in-vuejs",
+    "id": "/guides/vue/adding-a-visual-editor-in-vuejs#example-1",
+    "page": "/guides/vue/adding-a-visual-editor-in-vuejs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/vue/adding-a-visual-editor-in-vuejs#example-2",
-    "page": "/guides/frameworks/vue/adding-a-visual-editor-in-vuejs",
+    "id": "/guides/vue/adding-a-visual-editor-in-vuejs#example-2",
+    "page": "/guides/vue/adding-a-visual-editor-in-vuejs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/vue/adding-a-visual-editor-in-vuejs#example-3",
-    "page": "/guides/frameworks/vue/adding-a-visual-editor-in-vuejs",
+    "id": "/guides/vue/adding-a-visual-editor-in-vuejs#example-3",
+    "page": "/guides/vue/adding-a-visual-editor-in-vuejs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/vue/defining-a-schema#example-1",
-    "page": "/guides/frameworks/vue/defining-a-schema",
+    "id": "/guides/vue/defining-a-schema#example-1",
+    "page": "/guides/vue/defining-a-schema",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/vue/displaying-content-in-vuejs#example-1",
-    "page": "/guides/frameworks/vue/displaying-content-in-vuejs",
+    "id": "/guides/vue/displaying-content-in-vuejs#example-1",
+    "page": "/guides/vue/displaying-content-in-vuejs",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/vue/displaying-content-in-vuejs#example-2",
-    "page": "/guides/frameworks/vue/displaying-content-in-vuejs",
+    "id": "/guides/vue/displaying-content-in-vuejs#example-2",
+    "page": "/guides/vue/displaying-content-in-vuejs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/vue/displaying-content-in-vuejs#example-3",
-    "page": "/guides/frameworks/vue/displaying-content-in-vuejs",
+    "id": "/guides/vue/displaying-content-in-vuejs#example-3",
+    "page": "/guides/vue/displaying-content-in-vuejs",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/vue/installing-dyrected#example-1",
-    "page": "/guides/frameworks/vue/installing-dyrected",
+    "id": "/guides/vue/installing-dyrected#example-1",
+    "page": "/guides/vue/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/vue/installing-dyrected#example-2",
-    "page": "/guides/frameworks/vue/installing-dyrected",
+    "id": "/guides/vue/installing-dyrected#example-2",
+    "page": "/guides/vue/installing-dyrected",
     "language": "text",
     "classification": "illustrative",
     "validation": "Output, prose, or non-executable illustration"
   },
   {
-    "id": "/guides/frameworks/vue/installing-dyrected#example-3",
-    "page": "/guides/frameworks/vue/installing-dyrected",
+    "id": "/guides/vue/installing-dyrected#example-3",
+    "page": "/guides/vue/installing-dyrected",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/vue/installing-dyrected#example-4",
-    "page": "/guides/frameworks/vue/installing-dyrected",
+    "id": "/guides/vue/installing-dyrected#example-4",
+    "page": "/guides/vue/installing-dyrected",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/vue/package-reference#example-1",
-    "page": "/guides/frameworks/vue/package-reference",
+    "id": "/guides/vue/package-reference#example-1",
+    "page": "/guides/vue/package-reference",
     "language": "bash",
     "classification": "command",
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
-    "id": "/guides/frameworks/vue/package-reference#example-2",
-    "page": "/guides/frameworks/vue/package-reference",
+    "id": "/guides/vue/package-reference#example-2",
+    "page": "/guides/vue/package-reference",
     "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/guides/frameworks/vue/package-reference#example-3",
-    "page": "/guides/frameworks/vue/package-reference",
+    "id": "/guides/vue/package-reference#example-3",
+    "page": "/guides/vue/package-reference",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"
   },
   {
-    "id": "/guides/frameworks/vue/package-reference#example-4",
-    "page": "/guides/frameworks/vue/package-reference",
+    "id": "/guides/vue/package-reference#example-4",
+    "page": "/guides/vue/package-reference",
     "language": "vue",
     "classification": "syntax-checked",
     "validation": "Inventoried vue example"

@@ -12253,17 +12253,17 @@ difference and follow the installed version.
 
 ## Choose a Package
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/choose-a-package
 
 Use this page when you know your frontend framework, but you are not sure which Dyrected package should own the integration.
 
 The practical choice is not "which package has the most features?" It is: **where does the Dyrected backend live, and how much framework glue do you want?**
 
-- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nextjs/package-reference).
-- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference).
-- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/react/package-reference).
-- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/vue/package-reference).
-- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/sdk).
+- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
 
 ## The package map
 
@@ -12306,7 +12306,7 @@ Deeper feature pages still live elsewhere:
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nextjs/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/nextjs/package-reference
 
 `@dyrected/next` is the recommended package for Next.js App Router projects. It is the package to reach for when a Next frontend wants first-party Dyrected helpers, or when a self-hosted project needs the Dyrected backend mounted inside the same Next app.
 
@@ -12466,7 +12466,7 @@ In production, remember two things:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in Next.js](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
@@ -12476,7 +12476,7 @@ In production, remember two things:
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/nuxt/package-reference
 
 `@dyrected/nuxt` is the recommended integration for Nuxt projects. It can do two different jobs:
 
@@ -12624,8 +12624,8 @@ For remote API mode:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
-- [Vue package reference](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/vue/package-reference)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Vue package reference](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in Nuxt](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
 - [Deployment](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/production/deployment)
@@ -12634,11 +12634,11 @@ For remote API mode:
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/react/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/react/package-reference
 
 `@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
 
-If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nextjs/package-reference) instead.
+If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) instead.
 
 ## What the package gives you
 
@@ -12753,8 +12753,8 @@ export function AdminPage() {
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
-- [SDK](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/sdk)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [SDK](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in React](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
@@ -12763,13 +12763,13 @@ export function AdminPage() {
 
 ## SDK
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/sdk
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/sdk
 
 `@dyrected/sdk` is the framework-agnostic client for Dyrected. Use it when you want one typed client that works in scripts, servers, browser code, or another app that should not depend on a framework wrapper.
 
 If your framework already has a higher-level package, prefer that package first and drop to the SDK when you need lower-level control.
 
-For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package).
+For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
 
 ## Install the package
 
@@ -12834,11 +12834,11 @@ For the full API surface, deeper query pages, and the generated reference, use t
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/vue/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/vue/package-reference
 
 `@dyrected/vue` is the Vue 3 integration layer for Dyrected. Use it when you are in a plain Vue app and want first-party composables plus the admin bridge.
 
-If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
+If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
 
 ## What the package gives you
 
@@ -12957,8 +12957,8 @@ For the guided flow, use [Adding a Visual Editor in Vue](https://docs.dyrected.c
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
-- [Nuxt package reference](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Nuxt package reference](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in Vue](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)

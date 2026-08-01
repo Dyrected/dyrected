@@ -6987,17 +6987,17 @@ difference and follow the installed version.
 
 ## Choose a Package
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/choose-a-package
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/choose-a-package
 
 Use this page when you know your frontend framework, but you are not sure which Dyrected package should own the integration.
 
 The practical choice is not "which package has the most features?" It is: **where does the Dyrected backend live, and how much framework glue do you want?**
 
-- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/package-reference).
-- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/package-reference).
-- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/package-reference).
-- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/package-reference).
-- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/cloud/guides/frameworks/sdk).
+- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## The package map
 
@@ -7040,7 +7040,7 @@ Deeper feature pages still live elsewhere:
 
 ## Adding a Visual Editor in Next.js
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/adding-a-visual-editor-in-nextjs
 
 Use this page when your Next.js route already renders Dyrected content and you want editors to preview changes against the real frontend instead of guessing from raw form fields alone.
 
@@ -7193,7 +7193,7 @@ Once preview works on one real route, you are ready to turn that route into a co
 - matching frontend components for those sections
 - one real workflow where editors create and arrange a landing page in preview
 
-Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/building-landing-pages-for-marketing).
+Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Success check
 
@@ -7203,15 +7203,15 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/building-landing-pages-for-marketing).
+Once that is true, the preview integration is working. Continue to [Let Editors Build Custom Pages in Next.js with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Let Editors Build Custom Pages in Next.js with Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/building-landing-pages-for-marketing
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs). This is the page where schema, rendering, and visual preview finally become one complete workflow for editors. At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). This is the page where schema, rendering, and visual preview finally become one complete workflow for editors. At this point, the important pieces should already exist:
 
 - the `pages` collection exists
 - the frontend can render Dyrected content
@@ -7476,7 +7476,7 @@ function HeroBlockView(props: {
 />;
 ```
 
-If you need the shared rendering pattern first, go back to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs), especially the section on rendering blocks.
+If you need the shared rendering pattern first, go back to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), especially the section on rendering blocks.
 
 </Step>
 <Step>
@@ -7529,10 +7529,10 @@ That is the moment this guide is aiming for. It proves editors are no longer jus
 
 This workflow only works because the earlier quick-start pages already handled the pieces below:
 
-- [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/defining-a-schema) shaped the content model
-- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-initial-data) made the first load non-empty
-- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs) made the frontend render real content
-- [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs) made editors preview and click into that content
+- [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) shaped the content model
+- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the first load non-empty
+- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the frontend render real content
+- [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made editors preview and click into that content
 
 This page is where those pieces finally become one editor-ready landing-page workflow.
 
@@ -7556,7 +7556,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs)
+- [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
 ## Success check
 
@@ -7574,9 +7574,9 @@ Once that is true, editors can create a page, add approved sections, reorder the
 
 ## Defining a Schema
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/defining-a-schema
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/installing-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
 
 By the end, you should know what to keep, what to remove, and how to shape the first version of the schema without modeling more than the frontend can safely render yet.
 
@@ -7745,13 +7745,13 @@ You are ready for the next step when:
 - shared site content lives in globals where that makes sense
 - preview can open a real frontend route for that routable content
 
-Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-initial-data).
+Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Displaying Content in Next.js
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/displaying-content-in-nextjs
 
 Use this page when your schema exists and you want your Next.js routes to render real Dyrected content instead of hardcoded placeholders.
 
@@ -7890,15 +7890,15 @@ You are ready for the next step when:
 - the route handles missing documents safely
 - at least one structured field shape is rendered with the proper helper instead of an ad hoc shortcut
 
-Once that is true, continue to [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs).
+Once that is true, continue to [Adding a Visual Editor in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Installing Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/installing-dyrected
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing Next.js app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/defining-a-schema).
+Use this page when you are ready to add Dyrected to an existing Next.js app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 For this quick start, **Dyrected Cloud is the recommended path**. It keeps the first setup small: you connect your app, point the admin at your Cloud site, and confirm `/admin` loads before you start modeling content.
 
@@ -8099,13 +8099,13 @@ You are ready for the next page when:
 - `/admin` loads
 - on the self-hosted path, the local route handler exists too
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/defining-a-schema).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Overview
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/overview
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/overview
 
 Use this quick start when you already have a Next.js App Router project and want to hand parts of it over to editors without moving the site into a separate CMS product.
 
@@ -8117,12 +8117,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/installing-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Next.js app.
-2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/defining-a-schema) that matches what the site really needs to edit.
-3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-initial-data) so a new environment does not start empty.
-4. **Step 4:** [Display that content in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/adding-a-visual-editor-in-nextjs).
-6. **Step 6:** [Let editors build custom pages in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/building-landing-pages-for-marketing) when you want approved reusable sections instead of one fixed page shape.
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Next.js app.
+2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) that matches what the site really needs to edit.
+3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so a new environment does not start empty.
+4. **Step 4:** [Display that content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+6. **Step 6:** [Let editors build custom pages in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) when you want approved reusable sections instead of one fixed page shape.
 
 ## The mental model
 
@@ -8155,7 +8155,7 @@ This quick start assumes:
 
 If you are still deciding whether Dyrected matches the kind of product or site you are building, start with [Use Cases](https://docs.dyrected.com/docs/cloud/start-here/use-cases) and [Concepts](https://docs.dyrected.com/docs/cloud/model-content/concepts).
 
-If you already know the backend will live on Dyrected Cloud and only want the short credential-prep step first, use [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-your-cloud-site) before the main install page.
+If you already know the backend will live on Dyrected Cloud and only want the short credential-prep step first, use [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) before the main install page.
 
 When the framework setup is done and you are ready to give access to another person, use [Handing Off to Editors](https://docs.dyrected.com/docs/cloud/editor-experience/hand-off-to-editors). That shared guide covers the Cloud and self-hosted onboarding paths without tying them to one frontend framework.
 
@@ -8168,13 +8168,13 @@ You are on the right guide path if your goal is:
 - your Next.js routes fetch and render Dyrected content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/installing-dyrected). If you already know you are using Dyrected Cloud and want the short prep step first, read [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-your-cloud-site) and then return to the install page.
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). If you already know you are using Dyrected Cloud and want the short prep step first, read [Setting Up Your Cloud Site](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and then return to the install page.
 
 ---
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/package-reference
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/package-reference
 
 `@dyrected/next` is the recommended package for Next.js App Router projects. It is the package to reach for when a Next frontend wants first-party Dyrected helpers, or when a self-hosted project needs the Dyrected backend mounted inside the same Next app.
 
@@ -8310,7 +8310,7 @@ export function AdminClientPage() {
 
 Use `getDyrectedClient()` when a server component, route handler, or server action needs a configured SDK client. The helper reads `NEXT_PUBLIC_DYRECTED_URL` first, then `DYRECTED_URL`, and falls back to `http://localhost:3000` if neither is set. It also reads the matching API key variables.
 
-For the end-to-end rendering workflow, use [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs).
+For the end-to-end rendering workflow, use [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Use the rest of the stack from the same package
 
@@ -8334,8 +8334,8 @@ In production, remember two things:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/frameworks/choose-a-package)
-- [Displaying content in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 - [Live preview](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview)
 - [Deployment](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
@@ -8344,7 +8344,7 @@ In production, remember two things:
 
 ## Setting Up Initial Data
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-initial-data
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-initial-data
 
 Use this page when your website already has real content and you do not want Dyrected to open with blank collections, blank globals, and nothing useful to render.
 
@@ -8477,13 +8477,13 @@ You are ready for the next step when:
 - shared site chrome has safe defaults
 - you are no longer depending on manual admin entry just to prove the site works
 
-Once that is true, continue to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/displaying-content-in-nextjs).
+Once that is true, continue to [Displaying Content in Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Setting Up Your Cloud Site
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-your-cloud-site
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nextjs/setting-up-your-cloud-site
 
 Use this page when you already know the Next.js project will use Dyrected Cloud and you want the short Cloud-specific prep before running the full install flow.
 
@@ -8493,7 +8493,7 @@ By the end, you should have one Dyrected Cloud site, the three values the instal
 
 The main Next.js setup page now covers both Cloud-backed and self-hosted installation in one place:
 
-- [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/installing-dyrected)
+- [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
 This page is only the Cloud-specific preflight for readers who already know they want Dyrected Cloud to host the backend.
 
@@ -8518,7 +8518,7 @@ Both options use the same Cloud backend.
 
 ## Continue with the full setup
 
-Once you have the Cloud site and those three values, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/installing-dyrected), which now covers the full Next.js setup flow.
+Once you have the Cloud site and those three values, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), which now covers the full Next.js setup flow.
 
 ## Success check
 
@@ -8528,13 +8528,13 @@ You are ready to continue when:
 - you have the `Site ID`, `Site API key`, and `Base URL`
 - you know whether editors will use hosted admin or your own `/admin` route
 
-Once those are true, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/installing-dyrected).
+Once those are true, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Adding a Visual Editor in Nuxt
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/adding-a-visual-editor-in-nuxtjs
 
 Use this page when your Nuxt route already renders Dyrected content and you want editors to preview changes against the real frontend instead of guessing from raw form fields alone.
 
@@ -8694,15 +8694,15 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in Nuxt with Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/building-landing-pages-for-marketing).
+Once that is true, continue to [Let Editors Build Custom Pages in Nuxt with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Let Editors Build Custom Pages in Nuxt with Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/building-landing-pages-for-marketing
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the important pieces should already exist:
 
 - the `pages` collection exists
 - the frontend can render Dyrected content
@@ -8879,10 +8879,10 @@ That is the moment this guide is aiming for. It proves editors are no longer jus
 
 This workflow only works because the earlier quick-start pages already handled the pieces below:
 
-- [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/defining-a-schema) shaped the content model
-- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/setting-up-initial-data) made the first load non-empty
-- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/displaying-content-in-nuxtjs) made the frontend render real content
-- [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs) made editors preview and click into that content
+- [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) shaped the content model
+- [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the first load non-empty
+- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made the frontend render real content
+- [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) made editors preview and click into that content
 
 This page is where those pieces finally become one editor-ready landing-page workflow.
 
@@ -8906,7 +8906,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/displaying-content-in-nuxtjs)
+- [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
 ## Success check
 
@@ -8924,9 +8924,9 @@ Once that is true, your Nuxt quick start is complete. When you are ready to give
 
 ## Defining a Schema
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/defining-a-schema
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/installing-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, Dyrected is already mounted into your app and `/admin` should load. The next job is to turn the starter config into a schema that matches your real site instead of the generic example content.
 
 By the end, you should know what to keep, what to remove, and how to shape the first version of the schema without modeling more than the frontend can safely render yet.
 
@@ -9095,13 +9095,13 @@ You are ready for the next step when:
 - shared site content lives in globals where that makes sense
 - preview can open a real frontend route for that routable content
 
-Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/setting-up-initial-data).
+Once that is true, continue to [Setting Up Initial Data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Displaying Content in Nuxt
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/displaying-content-in-nuxtjs
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/displaying-content-in-nuxtjs
 
 Use this page when your schema exists and you want your Nuxt routes to render real Dyrected content instead of hardcoded placeholders.
 
@@ -9237,15 +9237,15 @@ You are ready for the next step when:
 - the route handles missing documents safely
 - at least one structured field shape is rendered with the proper helper instead of an ad hoc shortcut
 
-Once that is true, continue to [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs).
+Once that is true, continue to [Adding a Visual Editor in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Installing Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/installing-dyrected
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing Nuxt app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/defining-a-schema).
+Use this page when you are ready to add Dyrected to an existing Nuxt app and want the quickest path to a working admin. By the end, you should have Dyrected mounted into your app, know which backend path you chose, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 For this quick start, **Dyrected Cloud is the recommended path**. It keeps the first setup small: you connect your app, point the Nuxt module at your Cloud site, and confirm `/admin` loads before you start modeling content.
 
@@ -9449,13 +9449,13 @@ You are ready for the next page when:
 - `/admin` loads
 - on the self-hosted path, the Nuxt module is serving the local Dyrected API route too
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/defining-a-schema).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Overview
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/overview
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/overview
 
 Use this quick start when you already have a Nuxt 3 project and want to hand parts of it over to editors without moving the frontend into a separate CMS product.
 
@@ -9467,12 +9467,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/installing-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Nuxt app.
-2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/defining-a-schema) that matches what the site really needs to edit.
-3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/setting-up-initial-data) so a new environment does not start empty.
-4. **Step 4:** [Display that content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/displaying-content-in-nuxtjs).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/adding-a-visual-editor-in-nuxtjs).
-6. **Step 6:** [Let editors build custom pages in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/building-landing-pages-for-marketing).
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and choose whether the backend will live in Dyrected Cloud or inside your Nuxt app.
+2. **Step 2:** [Define a schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) that matches what the site really needs to edit.
+3. **Step 3:** Add [initial data](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so a new environment does not start empty.
+4. **Step 4:** [Display that content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+6. **Step 6:** [Let editors build custom pages in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## The mental model
 
@@ -9516,13 +9516,13 @@ You are on the right guide path if your goal is:
 - your Nuxt routes fetch and render Dyrected content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/installing-dyrected).
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/package-reference
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/package-reference
 
 `@dyrected/nuxt` is the recommended integration for Nuxt projects. It can do two different jobs:
 
@@ -9647,7 +9647,7 @@ For normal reads, the module gives you a configured SDK client and Nuxt-friendly
 
 Those are auto-imported by the module.
 
-For the end-to-end rendering workflow, use [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/displaying-content-in-nuxtjs).
+For the end-to-end rendering workflow, use [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Default path expectations
 
@@ -9670,9 +9670,9 @@ For remote API mode:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/frameworks/choose-a-package)
-- [Vue package reference](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/package-reference)
-- [Displaying content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/displaying-content-in-nuxtjs)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Vue package reference](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 - [Deployment](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
@@ -9680,7 +9680,7 @@ For remote API mode:
 
 ## Setting Up Initial Data
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/setting-up-initial-data
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/nuxt/setting-up-initial-data
 
 Use this page when your website already has real content and you do not want Dyrected to open with blank collections, blank globals, and nothing useful to render.
 
@@ -9813,13 +9813,13 @@ You are ready for the next step when:
 - shared site chrome has safe defaults
 - you are no longer depending on manual admin entry just to prove the site works
 
-Once that is true, continue to [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/displaying-content-in-nuxtjs).
+Once that is true, continue to [Displaying Content in Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Adding a Visual Editor in React
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/adding-a-visual-editor-in-reactjs
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/adding-a-visual-editor-in-reactjs
 
 Use this page when your React route already renders Dyrected content and you want editors to preview changes against the real frontend instead of guessing from raw form fields alone.
 
@@ -9947,15 +9947,15 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in React with Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/building-landing-pages-for-marketing).
+Once that is true, continue to [Let Editors Build Custom Pages in React with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Let Editors Build Custom Pages in React with Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/building-landing-pages-for-marketing
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/adding-a-visual-editor-in-reactjs). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the important pieces should already exist:
 
 - the `pages` content type exists
 - the frontend can render Dyrected content
@@ -10068,7 +10068,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/displaying-content-in-react)
+- [Displaying Content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
 ## Success check
 
@@ -10083,7 +10083,7 @@ You are ready to call the React quick start structurally complete when:
 
 ## Creating Your First Content
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/creating-your-first-content
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/creating-your-first-content
 
 Use this page when the first content model is already clear and you want your React app to fetch something real before you wire deeper rendering logic.
 
@@ -10188,7 +10188,7 @@ That is enough to make the next rendering step concrete instead of hypothetical.
 
 ## Escape hatches
 
-If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/defining-a-schema) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
+If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
 
 ## Success check
 
@@ -10198,15 +10198,15 @@ You are ready for the next step when:
 - the app has one or more shared records it can read
 - you can point to one real piece of content the frontend should render next
 
-Once that is true, continue to [Displaying Content in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/displaying-content-in-react).
+Once that is true, continue to [Displaying Content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Defining a Schema
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/defining-a-schema
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/installing-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your React app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your React app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
 
 By the end, you should know what the first collections and globals should be, what belongs in each, and how to avoid modeling more than the frontend can safely render yet.
 
@@ -10352,13 +10352,13 @@ You are ready for the next step when:
 - you know which shared content belongs in globals
 - you have one small first model the frontend can actually consume
 
-Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/creating-your-first-content).
+Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Displaying Content in React
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/displaying-content-in-react
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/displaying-content-in-react
 
 Use this page when your Cloud content model exists and you want your React routes to render real Dyrected content instead of hardcoded placeholders.
 
@@ -10523,15 +10523,15 @@ You are ready for the next step when:
 - the route handles missing content safely
 - at least one structured field shape is rendered with the proper helper
 
-Once that is true, continue to [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/adding-a-visual-editor-in-reactjs).
+Once that is true, continue to [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Installing Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/installing-dyrected
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing React app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/defining-a-schema).
+Use this page when you are ready to add Dyrected to an existing React app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 For React, this quick start is **Cloud-only**. The current SPA path connects a React app to Dyrected Cloud and does not support running the full Dyrected backend inside the app itself.
 
@@ -10703,13 +10703,13 @@ You are ready for the next page when:
 - `dyrected.config.ts` exists
 - the admin loads against your Dyrected Cloud site
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/defining-a-schema).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Overview
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/overview
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/overview
 
 Use this quick start when you already have a React app and want to hand parts of it over to editors without turning the frontend into a separate hosted site builder.
 
@@ -10721,12 +10721,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/installing-dyrected) and connect the app to Dyrected Cloud.
-2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/defining-a-schema) your app actually needs.
-3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/creating-your-first-content) so the frontend is not wiring against an empty CMS.
-4. **Step 4:** [Display that content in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/displaying-content-in-react).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/adding-a-visual-editor-in-reactjs).
-6. **Step 6:** [Let editors build custom pages in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/building-landing-pages-for-marketing).
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and connect the app to Dyrected Cloud.
+2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) your app actually needs.
+3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so the frontend is not wiring against an empty CMS.
+4. **Step 4:** [Display that content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+6. **Step 6:** [Let editors build custom pages in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## The mental model
 
@@ -10766,17 +10766,17 @@ You are on the right guide path if your goal is:
 - your React routes fetch and render that content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/installing-dyrected).
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/react/package-reference
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/react/package-reference
 
 `@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
 
-If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/package-reference) instead.
+If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead.
 
 ## What the package gives you
 
@@ -10830,13 +10830,13 @@ From there, every component can read the shared client through `useDyrected()`.
 
 ## Fetch content in components
 
-Use `useDyrected()` when a component needs the shared SDK client from `DyrectedProvider`. For the full rendering workflow, use [Displaying Content in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/displaying-content-in-react).
+Use `useDyrected()` when a component needs the shared SDK client from `DyrectedProvider`. For the full rendering workflow, use [Displaying Content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Add live preview when the page needs it
 
 Use `useLivePreview` when a route should update from the admin preview iframe. Keep the published fetch path as the main implementation, then make preview additive on top of it.
 
-For the guided flow, use [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/adding-a-visual-editor-in-reactjs).
+For the guided flow, use [Adding a Visual Editor in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Embed the admin
 
@@ -10891,9 +10891,9 @@ export function AdminPage() {
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/frameworks/choose-a-package)
-- [SDK](https://docs.dyrected.com/docs/cloud/guides/frameworks/sdk)
-- [Displaying content in React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/displaying-content-in-react)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [SDK](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying content in React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 
@@ -10901,13 +10901,13 @@ export function AdminPage() {
 
 ## SDK
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/sdk
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/sdk
 
 `@dyrected/sdk` is the framework-agnostic client for Dyrected. Use it when you want one typed client that works in scripts, servers, browser code, or another app that should not depend on a framework wrapper.
 
 If your framework already has a higher-level package, prefer that package first and drop to the SDK when you need lower-level control.
 
-For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/cloud/guides/frameworks/choose-a-package).
+For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Install the package
 
@@ -10972,7 +10972,7 @@ For the full API surface, deeper query pages, and the generated reference, use t
 
 ## Adding a Visual Editor in Vue
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/adding-a-visual-editor-in-vuejs
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/adding-a-visual-editor-in-vuejs
 
 Use this page when your Vue route already renders Dyrected content and you want editors to preview changes against the real frontend instead of guessing from raw form fields alone.
 
@@ -11122,15 +11122,15 @@ You are ready for the next step when:
 - draft changes show up in that route during editing
 - block-based areas keep their field paths stable enough for click-to-edit where needed
 
-Once that is true, continue to [Let Editors Build Custom Pages in Vue with Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/building-landing-pages-for-marketing).
+Once that is true, continue to [Let Editors Build Custom Pages in Vue with Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Let Editors Build Custom Pages in Vue with Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/building-landing-pages-for-marketing
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/building-landing-pages-for-marketing
 
-Use this page after [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/adding-a-visual-editor-in-vuejs). At this point, the important pieces should already exist:
+Use this page after [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the important pieces should already exist:
 
 - the `pages` content type exists
 - the frontend can render Dyrected content
@@ -11243,7 +11243,7 @@ Use this page for the quick-start version of the pattern. For the full backgroun
 
 - [Blocks](https://docs.dyrected.com/docs/cloud/model-content/fields/blocks)
 - [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections)
-- [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/displaying-content-in-vuejs)
+- [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 
 ## Success check
 
@@ -11258,7 +11258,7 @@ You are ready to call the Vue quick start structurally complete when:
 
 ## Creating Your First Content
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/creating-your-first-content
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/creating-your-first-content
 
 Use this page when the first content model is already clear and you want your Vue app to fetch something real before you wire deeper rendering logic.
 
@@ -11363,7 +11363,7 @@ That is enough to make the next rendering step concrete instead of hypothetical.
 
 ## Escape hatches
 
-If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/defining-a-schema) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
+If you need the deeper content-model background, go back to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and then use the broader [Collections](https://docs.dyrected.com/docs/cloud/model-content/configuration/collections) and [Globals](https://docs.dyrected.com/docs/cloud/model-content/configuration/globals) references.
 
 ## Success check
 
@@ -11373,15 +11373,15 @@ You are ready for the next step when:
 - the app has one or more shared records it can read
 - you can point to one real piece of content the frontend should render next
 
-Once that is true, continue to [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/displaying-content-in-vuejs).
+Once that is true, continue to [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Defining a Schema
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/defining-a-schema
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/defining-a-schema
 
-Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/installing-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your Vue app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
+Use this page after [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected). At this point, the admin route should load, `dyrected.config.ts` should exist, and your Vue app should already know how to talk to Dyrected Cloud. The next job is deciding what content model the Cloud site actually needs.
 
 By the end, you should know what the first collections and globals should be, what belongs in each, and how to avoid modeling more than the frontend can safely render yet.
 
@@ -11527,13 +11527,13 @@ You are ready for the next step when:
 - you know which shared content belongs in globals
 - you have one small first model the frontend can actually consume
 
-Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/creating-your-first-content).
+Once that is true, continue to [Creating Your First Content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Displaying Content in Vue.js
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/displaying-content-in-vuejs
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/displaying-content-in-vuejs
 
 Use this page when your Cloud content model exists and you want your Vue routes to render real Dyrected content instead of hardcoded placeholders.
 
@@ -11680,15 +11680,15 @@ You are ready for the next step when:
 - the route handles missing content safely
 - at least one structured field shape is rendered with the proper helper
 
-Once that is true, continue to [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/adding-a-visual-editor-in-vuejs).
+Once that is true, continue to [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Installing Dyrected
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/installing-dyrected
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/installing-dyrected
 
-Use this page when you are ready to add Dyrected to an existing Vue app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/defining-a-schema).
+Use this page when you are ready to add Dyrected to an existing Vue app and want the quickest path to a working admin. By the end, you should have the Cloud connection values in place, a generated `dyrected.config.ts`, an admin route mounted in your app, and be ready to move on to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 For Vue, this quick start is **Cloud-only**. The current SPA path connects a Vue app to Dyrected Cloud and does not support running the full Dyrected backend inside the app itself.
 
@@ -11857,13 +11857,13 @@ You are ready for the next page when:
 - `dyrected.config.ts` exists
 - the admin loads against your Dyrected Cloud site
 
-Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/defining-a-schema).
+Once those are true, continue to [Defining a Schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Overview
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/overview
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/overview
 
 Use this quick start when you already have a Vue app and want to hand parts of it over to editors without turning the frontend into a separate hosted site builder.
 
@@ -11875,12 +11875,12 @@ Read the pages in order. Each one assumes the previous step is already working a
 
 This quick start is meant to feel like one sequence:
 
-1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/installing-dyrected) and connect the app to Dyrected Cloud.
-2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/defining-a-schema) your app actually needs.
-3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/creating-your-first-content) so the frontend is not wiring against an empty CMS.
-4. **Step 4:** [Display that content in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/displaying-content-in-vuejs).
-5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/adding-a-visual-editor-in-vuejs).
-6. **Step 6:** [Let editors build custom pages in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/building-landing-pages-for-marketing).
+1. **Step 1:** [Install Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) and connect the app to Dyrected Cloud.
+2. **Step 2:** [Define the first schema](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) your app actually needs.
+3. **Step 3:** [Create your first content](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) so the frontend is not wiring against an empty CMS.
+4. **Step 4:** [Display that content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+5. **Step 5:** Add a [visual editor workflow](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+6. **Step 6:** [Let editors build custom pages in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## The mental model
 
@@ -11920,17 +11920,17 @@ You are on the right guide path if your goal is:
 - your Vue routes fetch and render that content directly
 - preview stays close to the real frontend instead of becoming a second unpublished site
 
-If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/installing-dyrected).
+If that is the target, continue to [Installing Dyrected](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/package-reference
+Canonical URL: https://docs.dyrected.com/docs/cloud/guides/vue/package-reference
 
 `@dyrected/vue` is the Vue 3 integration layer for Dyrected. Use it when you are in a plain Vue app and want first-party composables plus the admin bridge.
 
-If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/package-reference) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
+If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
 
 ## What the package gives you
 
@@ -11979,7 +11979,7 @@ That gives the composables one shared client to work with.
 
 Use `useDyrectedCollection`, `useDyrected`, `useDyrectedGlobal`, `useDyrectedAuth`, and `useLivePreview` when Vue components need a Dyrected client or content state.
 
-For the full rendering workflow, use [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/displaying-content-in-vuejs).
+For the full rendering workflow, use [Displaying Content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Embed the admin
 
@@ -12045,13 +12045,13 @@ function setTheme(next: "system" | "light" | "dark") {
 
 Use `useLivePreview` for preview-enabled pages. Keep the published fetch path as the main implementation, then render the returned preview data when the admin preview iframe sends updates.
 
-For the guided flow, use [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/adding-a-visual-editor-in-vuejs).
+For the guided flow, use [Adding a Visual Editor in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/cloud/guides/frameworks/choose-a-package)
-- [Nuxt package reference](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/package-reference)
-- [Displaying content in Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/displaying-content-in-vuejs)
+- [Choose a package](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Nuxt package reference](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
+- [Displaying content in Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/cloud/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/cloud/editor-experience/overview)
 
@@ -12183,7 +12183,7 @@ Adapters such as `@dyrected/db-postgres`, `@dyrected/db-mysql`, `@dyrected/db-sq
 
 ## Next step
 
-If this mental model feels clear, continue to [Installation](https://docs.dyrected.com/docs/cloud/start-here/installation). If you want the practical setup path after that, go to the quick start guide that matches your frontend: [Next.js](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/overview), [Nuxt](https://docs.dyrected.com/docs/cloud/guides/frameworks/nuxt/overview), [React](https://docs.dyrected.com/docs/cloud/guides/frameworks/react/overview), or [Vue](https://docs.dyrected.com/docs/cloud/guides/frameworks/vue/overview).
+If this mental model feels clear, continue to [Installation](https://docs.dyrected.com/docs/cloud/start-here/installation). If you want the practical setup path after that, go to the quick start guide that matches your frontend: [Next.js](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), [Nuxt](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), [React](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected), or [Vue](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 ---
 
@@ -20395,7 +20395,7 @@ Before you install, make sure you have:
 </Note>
 
 <Note>
-**Dyrected Cloud is the fastest way to go live** and works with every framework — it hosts the database, storage, and API for you, with no infrastructure to provision. See [Setting up your Cloud site](https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/setting-up-your-cloud-site).
+**Dyrected Cloud is the fastest way to go live** and works with every framework — it hosts the database, storage, and API for you, with no infrastructure to provision. See [Setting up your Cloud site](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
 
 **Next.js and Nuxt** can also self-host the full backend inside your app when you want full control — that is the path this page walks through. **React and Vue** are a frontend and admin only, so they always connect to a Dyrected Cloud backend.
 
@@ -20685,7 +20685,7 @@ That command writes `dyrected-types.ts` into your app's source directory (`src/`
   <Card
     title="Next.js quick start"
     description="Model a schema, display content, and invite editors in a real Next.js app."
-    href="https://docs.dyrected.com/docs/cloud/guides/frameworks/nextjs/overview"
+    href="https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected"
   />
   <Card
     title="Admin"
@@ -33401,17 +33401,17 @@ difference and follow the installed version.
 
 ## Choose a Package
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/choose-a-package
 
 Use this page when you know your frontend framework, but you are not sure which Dyrected package should own the integration.
 
 The practical choice is not "which package has the most features?" It is: **where does the Dyrected backend live, and how much framework glue do you want?**
 
-- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nextjs/package-reference).
-- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference).
-- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/react/package-reference).
-- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/vue/package-reference).
-- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/sdk).
+- If you are building a **Next.js** app, start with [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you are building a **Nuxt** app, start with [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you already have a running Dyrected API and need a **React** integration, use [`@dyrected/react`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you already have a running Dyrected API and need a **Vue** integration, use [`@dyrected/vue`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
+- If you only need a typed client and no framework glue, use [`@dyrected/sdk`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
 
 ## The package map
 
@@ -33454,7 +33454,7 @@ Deeper feature pages still live elsewhere:
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nextjs/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/nextjs/package-reference
 
 `@dyrected/next` is the recommended package for Next.js App Router projects. It is the package to reach for when a Next frontend wants first-party Dyrected helpers, or when a self-hosted project needs the Dyrected backend mounted inside the same Next app.
 
@@ -33614,7 +33614,7 @@ In production, remember two things:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in Next.js](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
@@ -33624,7 +33624,7 @@ In production, remember two things:
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/nuxt/package-reference
 
 `@dyrected/nuxt` is the recommended integration for Nuxt projects. It can do two different jobs:
 
@@ -33772,8 +33772,8 @@ For remote API mode:
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
-- [Vue package reference](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/vue/package-reference)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Vue package reference](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in Nuxt](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
 - [Deployment](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/production/deployment)
@@ -33782,11 +33782,11 @@ For remote API mode:
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/react/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/react/package-reference
 
 `@dyrected/react` is the React integration layer for Dyrected. Use it when you are in a plain React app, a Vite app, or another React setup that does not already have a higher-level Dyrected framework package.
 
-If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nextjs/package-reference) instead.
+If you are already in Next.js, prefer [`@dyrected/next`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) instead.
 
 ## What the package gives you
 
@@ -33901,8 +33901,8 @@ export function AdminPage() {
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
-- [SDK](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/sdk)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [SDK](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in React](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)
@@ -33911,13 +33911,13 @@ export function AdminPage() {
 
 ## SDK
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/sdk
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/sdk
 
 `@dyrected/sdk` is the framework-agnostic client for Dyrected. Use it when you want one typed client that works in scripts, servers, browser code, or another app that should not depend on a framework wrapper.
 
 If your framework already has a higher-level package, prefer that package first and drop to the SDK when you need lower-level control.
 
-For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package).
+For the package selection map, start with [Choose a Package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected).
 
 ## Install the package
 
@@ -33982,11 +33982,11 @@ For the full API surface, deeper query pages, and the generated reference, use t
 
 ## Package Reference
 
-Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/frameworks/vue/package-reference
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/guides/vue/package-reference
 
 `@dyrected/vue` is the Vue 3 integration layer for Dyrected. Use it when you are in a plain Vue app and want first-party composables plus the admin bridge.
 
-If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
+If you are in Nuxt, prefer [`@dyrected/nuxt`](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected) instead because it builds on top of this package and adds the Nuxt-specific setup for you.
 
 ## What the package gives you
 
@@ -34105,8 +34105,8 @@ For the guided flow, use [Adding a Visual Editor in Vue](https://docs.dyrected.c
 
 ## Related pages
 
-- [Choose a package](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/choose-a-package)
-- [Nuxt package reference](https://docs.dyrected.com/docs/self-hosted/guides/frameworks/nuxt/package-reference)
+- [Choose a package](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
+- [Nuxt package reference](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Displaying content in Vue](https://docs.dyrected.com/docs/self-hosted/start-here/what-is-dyrected)
 - [Live preview](https://docs.dyrected.com/docs/self-hosted/editor-experience/publishing/live-preview/overview)
 - [Admin](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview)

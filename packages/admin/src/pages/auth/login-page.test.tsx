@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { LoginPage } from "./login-page"
@@ -47,8 +47,13 @@ describe("LoginPage invite flow", () => {
 
   it("switches to the invite setup view when an invite token is present", async () => {
     render(<LoginPage collectionSlug="users" onLogin={vi.fn()} />)
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
 
-    expect(await screen.findByRole("heading", { name: "Accept Invitation" })).toBeTruthy()
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Accept Invitation" })).toBeTruthy()
+    })
     expect(screen.getByLabelText("Create Password")).toBeTruthy()
     expect(toastMock.info).toHaveBeenCalled()
   })
@@ -58,9 +63,14 @@ describe("LoginPage invite flow", () => {
     acceptInviteMock.mockResolvedValue({ token: "session-token", user: { id: "user-1" } })
 
     render(<LoginPage collectionSlug="users" onLogin={onLogin} />)
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
 
     const user = userEvent.setup()
-    await screen.findByRole("heading", { name: "Accept Invitation" })
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Accept Invitation" })).toBeTruthy()
+    })
     await user.type(screen.getByLabelText("Create Password"), "StrongPass123!")
     await user.type(screen.getByLabelText("Confirm Password"), "StrongPass123!")
     await user.click(screen.getAllByRole("button", { name: "Accept Invitation" })[0])
