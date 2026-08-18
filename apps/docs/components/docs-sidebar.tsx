@@ -83,40 +83,57 @@ function isSeparatorNode(node: TreeNode): node is TreeSeparatorNode {
 }
 
 function buildGroups(tree: TreeRootNode): Group[] {
-  return tree.children.filter(isFolderNode).map((group, groupIndex) => ({
-    key: `group-${groupIndex}`,
-    title: group.name,
-    items: [
-      ...(group.index
-        ? [
-            {
-              type: 'page' as const,
-              key: `group-${groupIndex}-index`,
-              page: group.index,
-            },
-          ]
-        : []),
-      ...group.children
-      .map((child, childIndex): GroupItem | undefined => {
-        if (isPageNode(child)) {
-          return {
+  return tree.children.filter(isFolderNode).map((group, groupIndex) => {
+    const items: GroupItem[] = []
+
+    if (group.index) {
+      items.push({
+        type: 'page' as const,
+        key: `group-${groupIndex}-index`,
+        page: group.index,
+      })
+    }
+
+    let currentSeparatorTopic: Topic | null = null
+
+    for (let childIndex = 0; childIndex < group.children.length; childIndex++) {
+      const child = group.children[childIndex]
+
+      if (isSeparatorNode(child)) {
+        if (child.name) {
+          currentSeparatorTopic = {
+            type: 'topic',
+            key: `group-${groupIndex}-topic-sep-${childIndex}`,
+            title: child.name,
+            pages: [],
+          }
+          items.push(currentSeparatorTopic)
+        } else {
+          currentSeparatorTopic = null
+          items.push({
+            type: 'separator',
+            key: `group-${groupIndex}-separator-${childIndex}`,
+          })
+        }
+        continue
+      }
+
+      if (isPageNode(child)) {
+        if (currentSeparatorTopic) {
+          currentSeparatorTopic.pages.push(child)
+        } else {
+          items.push({
             type: 'page',
             key: `group-${groupIndex}-page-${childIndex}`,
             page: child,
-          }
+          })
         }
+        continue
+      }
 
-        if (isSeparatorNode(child)) {
-          return {
-            type: 'separator',
-            key: `group-${groupIndex}-separator-${childIndex}`,
-            title: child.name,
-          }
-        }
-
-        if (!isFolderNode(child)) return undefined
-
-        return {
+      if (isFolderNode(child)) {
+        currentSeparatorTopic = null
+        items.push({
           type: 'topic',
           key: `group-${groupIndex}-topic-${childIndex}`,
           title: child.name,
@@ -124,11 +141,16 @@ function buildGroups(tree: TreeRootNode): Group[] {
             ...(child.index ? [child.index] : []),
             ...child.children.filter(isPageNode),
           ],
-        }
-      })
-      .filter((item): item is GroupItem => item !== undefined),
-    ],
-  }))
+        })
+      }
+    }
+
+    return {
+      key: `group-${groupIndex}`,
+      title: group.name,
+      items,
+    }
+  })
 }
 
 function isPageActive(pathname: string, url: string): boolean {
