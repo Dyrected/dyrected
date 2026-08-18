@@ -1,5 +1,32 @@
 # @dyrected/db-mongodb
 
+## 2.8.0
+
+### Minor Changes
+
+- ### Added
+  - **Detail View System**:
+    - Added read-only Detail View pages and configurable layout renderers for collections (`/collections/:slug/:id`) and globals (`/globals/:slug`).
+    - Added layout configuration helpers in `@dyrected/core`: `defineDetailView`, `defineSection`, `defineFieldCard`, `defineRepeatCard`, `defineTab`, `defineTabs`, `defineComputedCard`, `defineDivider`, `defineInfoText`, and `defineFieldGrid`.
+    - Added support for dynamic conditional visibility on detail cards, sections, and tabs using boolean values or JEXL expressions evaluated against `{ doc, user }`.
+    - Added type-aware formatters and display variants including currency, percentages, progress bars, star ratings, tags, avatars, color swatches, and relations.
+    - Added custom component slot support for detail views in both React and Vue runtimes.
+
+  - **Collection Aggregations System**:
+    - Added `POST /api/collections/:slug/aggregate` endpoint to `@dyrected/core` and integrated it into the OpenAPI specification generator.
+    - Added collection `aggregate()` method to `@dyrected/sdk`.
+    - Implemented database aggregation queries across all adapters: `@dyrected/db-postgres`, `@dyrected/db-mysql` (with `IF()` conditional aggregation), `@dyrected/db-mongodb`, and `@dyrected/db-sqlite`.
+    - Added comprehensive security checks and access control gates for collection aggregations.
+
+  - **Knowledge & Documentation Runtime**:
+    - Added runtime-aware documentation manifest generator in `@dyrected/knowledge`.
+    - Synchronized OpenAPI endpoints, recipes, and LLM reference indexes.
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/core@2.8.0
+
 ## 2.7.1
 
 ### Patch Changes

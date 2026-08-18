@@ -1,5 +1,14 @@
 # @dyrected/react
 
+## 2.8.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @dyrected/admin@2.8.0
+  - @dyrected/core@2.8.0
+  - @dyrected/sdk@2.8.0
+
 ## 2.7.1
 
 ### Patch Changes
