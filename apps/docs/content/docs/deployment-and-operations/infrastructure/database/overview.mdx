@@ -87,6 +87,15 @@ export interface DatabaseAdapter {
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
 
+  /**
+   * Run one or more named statistical aggregations (count, sum, avg, min, max)
+   * in a single query. Returns a flat record of metric names to numbers or null.
+   */
+  aggregate(args: {
+    collection: string;
+    aggregates: Record<string, any>;
+  }): Promise<Record<string, number | null>>;
+
   /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */
   getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 

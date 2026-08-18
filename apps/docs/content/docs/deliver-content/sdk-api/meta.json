@@ -6,6 +6,7 @@
     "filter",
     "sort",
     "pagination",
-    "depth"
+    "depth",
+    "aggregate"
   ]
 }

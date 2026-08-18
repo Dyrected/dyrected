@@ -49,6 +49,29 @@ const response = await fetch(`/api/collections/posts?${query}`)
 
 Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`. Note that the `limit` parameter is capped at `100` for list operations to ensure performance and reliability.
 
+## Collection aggregations
+
+Compute statistical totals, averages, counts, minimums, and maximums across a collection in a single request without loading documents:
+
+```bash
+POST /api/collections/:slug/aggregate
+```
+
+Send a JSON object where each key maps to an aggregation operation:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "totalOrders": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" },
+    "avgPaid": { "avg": "totalAmount", "where": { "status": { "equals": "paid" } } }
+  }'
+```
+
+Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](/docs/deliver-content/sdk-api/aggregate).
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.

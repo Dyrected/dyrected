@@ -1,0 +1,154 @@
+---
+title: Aggregating Statistics
+description: Compute counts, sums, averages, minimums, and maximums across a collection in a single database query without loading documents.
+runtime: shared
+runtimeGroup: typed-sdk
+runtimeNotes: Aggregation runs directly inside PostgreSQL, MySQL, SQLite, and MongoDB.
+---
+
+When building dashboards, overview cards, or summary widgets, fetching full documents just to calculate counts or totals wastes memory, bandwidth, and CPU.
+
+The `.aggregate()` method computes summary statistics directly inside your database in a single query. It returns a flat object with numeric results or `null`, keeping your client light and fast.
+
+```ts
+const stats = await client.collection("rsvp_records").aggregate({
+  totalGuests: { count: "*" },
+  attendingGuests: { count: "*", where: { attending: { equals: true } } },
+  totalAsoebiYards: { sum: "asoebiYards", cast: "number" },
+  averagePartySize: { avg: "partySize" },
+});
+
+console.log(stats.totalGuests); // e.g. 150
+console.log(stats.attendingGuests); // e.g. 120
+console.log(stats.totalAsoebiYards); // e.g. 380
+console.log(stats.averagePartySize); // e.g. 2.4
+```
+
+---
+
+## When to use aggregation
+
+Use `.aggregate()` whenever you need statistical summaries rather than individual records:
+
+- **Dashboard metrics**: Total revenue, pending order count, average customer rating.
+- **Form and event summaries**: Total submissions, confirmed attendees, total item counts.
+- **Range exploration**: Earliest order date (`min`), highest transaction value (`max`).
+
+If you need the actual document contents, reach for [`.find()`](/docs/deliver-content/sdk-api/overview) or [`.findOne()`](/docs/deliver-content/sdk-api/overview) instead.
+
+---
+
+## Supported operations
+
+Every key in your aggregate request defines one metric. You can mix and match any number of operations in a single call:
+
+| Operation | Syntax | Description | Return Type |
+|---|---|---|---|
+| **Count** | `{ count: "*" }` | Counts matching documents in the collection. | `number` |
+| **Sum** | `{ sum: "field", cast?: "number" }` | Computes the total of all numeric values for a field. | `number \| null` |
+| **Average** | `{ avg: "field", cast?: "number" }` | Computes the mathematical mean of a numeric field. | `number \| null` |
+| **Minimum** | `{ min: "field", cast?: "number" }` | Finds the smallest numeric value for a field. | `number \| null` |
+| **Maximum** | `{ max: "field", cast?: "number" }` | Finds the largest numeric value for a field. | `number \| null` |
+
+```ts
+const metrics = await client.collection("orders").aggregate({
+  totalOrders: { count: "*" },
+  totalRevenue: { sum: "totalAmount" },
+  averageOrderValue: { avg: "totalAmount" },
+  lowestSale: { min: "totalAmount" },
+  highestSale: { max: "totalAmount" },
+});
+```
+
+If no documents match an aggregation, `count` returns `0`, while `sum`, `avg`, `min`, and `max` return `null`.
+
+---
+
+## Per-aggregate filtering
+
+Each metric can define its own independent `where` clause. This lets you calculate totals for different categories or statuses in one round trip:
+
+```ts
+const ticketStats = await client.collection("tickets").aggregate({
+  totalTickets: { count: "*" },
+  openTickets: {
+    count: "*",
+    where: { status: { equals: "open" } },
+  },
+  highPriorityResolved: {
+    count: "*",
+    where: {
+      status: { equals: "resolved" },
+      priority: { equals: "high" },
+    },
+  },
+  avgResolutionHours: {
+    avg: "resolutionTimeHours",
+    where: { status: { equals: "resolved" } },
+  },
+});
+```
+
+All standard Dyrected [filtering operators](/docs/deliver-content/sdk-api/filter) — including `equals`, `not_equals`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, `exists`, and nested `AND` / `OR` blocks — are supported inside each aggregate's `where` object.
+
+---
+
+## Type casting with `cast`
+
+In collections where numbers were stored as strings or extracted from unstructured inputs (such as `"5"` or `"12.50"`), pass the `cast` option so your database can parse and aggregate them safely:
+
+```ts
+const yardage = await client.collection("rsvps").aggregate({
+  totalYards: {
+    sum: "asoebiYards",
+    cast: "number",
+  },
+});
+```
+
+### Supported cast targets
+
+- `"number"` or `"float"`: Casts values to double precision floats.
+- `"integer"`: Casts values to 64-bit integers.
+- `"boolean"`: Casts values to booleans.
+- `"date"`: Casts string timestamps to database datetime types.
+- `"string"`: Treats values as raw strings.
+
+> **Safe casting guarantee**: If a document contains a non-numeric string (such as `"unknown"` or `"N/A"`), the database converts that single value to `null` before aggregating. It will not cause query failure or skew other valid numbers.
+
+---
+
+## Access control and security
+
+Collection aggregations respect your collection's `access.read` rule:
+
+1. **Gate evaluation**: If `access.read` returns `false` (or resolves to a boolean `false` for the current user), the API immediately rejects the request with `403 Forbidden`.
+2. **Row-level constraint injection**: If `access.read` returns a filter object (such as `{ tenantId: { equals: user.tenantId } }`), Dyrected automatically injects that constraint into every aggregate operation's `where` clause using an `AND` intersection.
+3. **No document leakage**: Aggregations do not trigger `beforeRead` or `afterRead` document hooks because no individual document contents are retrieved or exposed.
+
+---
+
+## REST API endpoint
+
+If you are calling Dyrected outside of TypeScript or the SDK, send a `POST` request to `/api/collections/:slug/aggregate`:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "totalCount": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" },
+    "avgOrder": { "avg": "totalAmount", "where": { "status": { "equals": "completed" } } }
+  }'
+```
+
+### Response format (`200 OK`)
+
+```json
+{
+  "totalCount": 1420,
+  "totalRevenue": 89450.75,
+  "avgOrder": 63.00
+}
+```
