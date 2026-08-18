@@ -1,4 +1,10 @@
-import { defineCollection } from "@dyrected/core";
+import {
+  defineCollection,
+  displaySection,
+  displayField,
+  displayTabs,
+  displayTab,
+} from "@dyrected/core";
 import { Media } from "./media.js";
 import { productsSeed } from "../seed.js";
 
@@ -11,6 +17,35 @@ export const Products = defineCollection({
     useAsTitle: "title",
     icon: "Boxes",
   },
+  detail: [
+    displaySection("Product Overview", [
+      displayField("title", { span: 8 }),
+      displayField("sku", { span: 4, display: "copyable" }),
+      displayField("description", { span: 12 }),
+    ], { span: 8 }),
+    displaySection("Pricing & Inventory", [
+      displayField("price", { display: "currency", currency: "USD", span: 6 }),
+      displayField("discount", { display: "percent", span: 6 }),
+      displayField("stock", { display: "progress", span: 6 }),
+      displayField("status", { display: "badge", span: 6 }),
+      displayField("rating", { display: "star", span: 6 }),
+      displayField("featured", { display: "boolean", span: 6 }),
+    ], { span: 4 }),
+    displaySection("Media & Gallery", [
+      displayField("image", { span: 12 }),
+    ], { span: 12, collapsible: true }),
+    displaySection("Technical Details & Meta", [
+      displayTabs([
+        displayTab("Metadata", [
+          displayField("metadata", { display: "key-value", keyLabel: "Property", valueLabel: "Value", span: 12 }),
+        ]),
+        displayTab("Publishing", [
+          displayField("slug", { span: 6, display: "copyable" }),
+          displayField("publishedAt", { span: 6, display: "relative" }),
+        ]),
+      ]),
+    ], { span: 12 }),
+  ],
   fields: [
     { label: "Title", name: "title", type: "text", required: true },
     {

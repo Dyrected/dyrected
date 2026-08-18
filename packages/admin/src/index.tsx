@@ -7,6 +7,7 @@ import {
   MemoryRouter,
   Routes,
   Route,
+  Navigate,
   useParams,
   useLocation,
 } from "react-router-dom";
@@ -18,7 +19,9 @@ import { AdminShell } from "./components/layout/admin-shell";
 import { Dashboard } from "./pages/dashboard/dashboard";
 import { CollectionListPage } from "./pages/collections/list-page";
 import { EditEntryPage } from "./pages/collections/edit-page";
+import { DetailEntryPage } from "./pages/collections/detail-page";
 import { MediaPage } from "./pages/media/media-page";
+import { GlobalDetailPage } from "./pages/globals/detail-page";
 import { GlobalEditorPage } from "./pages/globals/editor-page";
 import { SetupPromptUI } from "./pages/setup/setup-prompt";
 import { ErrorBoundary } from "./components/error-boundary";
@@ -187,6 +190,11 @@ function NavigationSync({ onNavigate }: NavigationSyncProps) {
   return null;
 }
 
+function LegacyCollectionEditRedirect() {
+  const { slug, id } = useParams<{ slug: string; id: string }>();
+  return <Navigate to={`/collections/${slug}/${id}/edit`} replace />;
+}
+
 // ─── Route tree (shared between embedded and standalone) ──────────────────────
 
 function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: string) => void, isEmbedded?: boolean }) {
@@ -199,9 +207,12 @@ function AdminRoutes({ onNavigate, isEmbedded = false }: { onNavigate?: (path: s
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/collections/:slug" element={<CollectionRoute />} />
+            <Route path="/collections/:slug/:id" element={<DetailEntryPage />} />
             <Route path="/collections/:slug/new" element={<EditEntryPage />} />
-            <Route path="/collections/:slug/edit/:id" element={<EditEntryPage />} />
-            <Route path="/globals/:slug" element={<GlobalEditorPage />} />
+            <Route path="/collections/:slug/edit/:id" element={<LegacyCollectionEditRedirect />} />
+            <Route path="/collections/:slug/:id/edit" element={<EditEntryPage />} />
+            <Route path="/globals/:slug" element={<GlobalDetailPage />} />
+            <Route path="/globals/:slug/edit" element={<GlobalEditorPage />} />
             <Route path="/setup" element={<SetupPage />} />
             <Route path="*" element={<AdminNotFound />} />
           </Routes>

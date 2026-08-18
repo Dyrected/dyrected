@@ -61,7 +61,7 @@ export function JoinField({ schema, control }: JoinFieldProps) {
             <button
               key={item.id}
               type="button"
-              onClick={() => navigate(`/collections/${targetCollection}/edit/${item.id}`)}
+              onClick={() => navigate(`/collections/${targetCollection}/${item.id}/edit`)}
               className="dy-flex dy-items-center dy-justify-between dy-w-full dy-px-4 dy-py-3 dy-text-sm hover:dy-bg-muted/30 dy-transition-colors dy-text-left dy-group"
             >
               <div className="dy-flex dy-items-center dy-gap-3">

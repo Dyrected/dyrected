@@ -16,6 +16,7 @@ import {
   toHookRequestContext,
 } from "../utils/access-control.js";
 import { getRequestLogger } from "../observability.js";
+import { evaluateDetailComputed } from "../detail.js";
 
 export class GlobalController {
   private global: GlobalConfig;
@@ -110,18 +111,28 @@ export class GlobalController {
       docWithFieldHooks,
     );
 
+    let finalDoc = docWithFieldAccess;
+
     if (depth > 0 && docWithFieldAccess) {
       const populationService = new PopulationService(db!, config.collections);
-      const populatedData = await populationService.populate({
+      finalDoc = await populationService.populate({
         data: docWithFieldAccess,
         fields: this.global.fields,
         currentDepth: 0,
         maxDepth: depth,
       });
-      return c.json(populatedData);
     }
 
-    return c.json(docWithFieldAccess);
+    if (finalDoc && this.global.detail) {
+      finalDoc = await evaluateDetailComputed(
+        this.global.detail,
+        finalDoc,
+        user,
+        readonlyDb,
+      );
+    }
+
+    return c.json(finalDoc);
   }
 
   async update(c: Context<DyrectedContext>) {

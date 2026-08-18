@@ -54,7 +54,7 @@ export interface DyrectedContext {
 /**
  * Create the main Dyrected Hono application.
  */
-export async function createDyrectedApp(rawConfig: DyrectedConfig) {
+export async function createDyrectedApp(rawConfig: DyrectedConfig | any) {
   const config = normalizeConfig(rawConfig);
   const observability = createObservabilityRuntime(config);
   bindObservabilityRuntime(config, observability);
@@ -202,7 +202,7 @@ export async function createDyrectedApp(rawConfig: DyrectedConfig) {
     observability.config.metrics.exporter === 'prometheus' &&
     observability.prometheusExporter
   ) {
-    app.get(observability.config.metrics.path, async (c) => {
+    app.get(observability.config.metrics.path, async (_c) => {
       const metrics = await renderPrometheusMetrics(
         observability.prometheusExporter!,
       );

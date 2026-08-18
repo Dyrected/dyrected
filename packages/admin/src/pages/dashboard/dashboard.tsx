@@ -563,7 +563,7 @@ export function Dashboard() {
               {recentEdits.map((edit) => (
                 <Link
                   key={`${edit.collectionSlug}-${edit.id}`}
-                  to={`/collections/${edit.collectionSlug}/edit/${edit.id}`}
+                  to={`/collections/${edit.collectionSlug}/${edit.id}/edit`}
                   className="dy-group dy-grid dy-gap-3 dy-px-4 dy-py-3 dy-transition-colors hover:dy-bg-primary/[0.03] sm:dy-grid-cols-[minmax(0,1fr)_auto_auto] sm:dy-items-center"
                 >
                   <div className="dy-min-w-0">

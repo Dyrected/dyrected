@@ -911,7 +911,7 @@ function MediaDetailsDialog({ item, collectionSlug, onClose, baseUrl, onUpdate, 
               <div className="dy-grid dy-grid-cols-2 dy-gap-2 sm:dy-flex">
                 {collectionSlug && (
                   <Button className="dy-col-span-2 dy-h-11 dy-rounded-lg dy-font-bold dy-gap-2 dy-bg-card sm:dy-flex-1" variant="outline" asChild>
-                    <Link to={`/collections/${collectionSlug}/edit/${item.id}`}>
+                    <Link to={`/collections/${collectionSlug}/${item.id}/edit`}>
                       <Pencil className="dy-h-4 dy-w-4" />
                       Edit Full Details
                     </Link>

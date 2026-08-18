@@ -8,8 +8,15 @@ import {
   defineSelectField,
   defineTextField,
   defineTextareaField,
+  displaySection,
+  displayField,
+  displayTabs,
+  displayTab,
+  displayRepeat,
+  displayComputed,
 } from "@dyrected/core";
 import type { Block, Field } from "@dyrected/core";
+import { postgresAdapter } from "@dyrected/db-postgres";
 
 import aboutContent from "./src/app/about/about-content.json";
 import blogContent from "./src/app/blog/blog-content.json";
@@ -414,6 +421,9 @@ const Admins = defineCollection({
   slug: "__admins",
   labels: { singular: "Admin", plural: "Admins" },
   auth: true,
+  admin: {
+    useAsTitle: "name",
+  },
   fields: [
     { name: "name", label: "Name", type: "text", required: true },
     {
@@ -516,6 +526,59 @@ const SiteSettings = defineGlobal({
     },
   ],
   initialData: siteContent,
+  detail: [
+    displayComputed("Header links", "count(doc.navigation.links)", { span: 6 }),
+    displayComputed("Footer links", "count(doc.footer.socialLinks)", { span: 6 }),
+    displayTabs([
+      displayTab(
+        "Brand & SEO",
+        [
+          displaySection("Brand Identity", [
+            displayField("brand.name", { span: 6 }),
+            displayField("brand.descriptor", { span: 6 }),
+          ]),
+          displaySection("Search Engine Optimization", [
+            displayField("seo.title", { span: 12 }),
+            displayField("seo.description", { span: 12 }),
+          ]),
+        ],
+        { icon: "Globe" },
+      ),
+      displayTab(
+        "Navigation",
+        [
+          displaySection("Header Navigation", [
+            displayField("navigation.dashboardLabel", { span: 4 }),
+            displayField("navigation.diagnosticLabel", { span: 4 }),
+            displayField("navigation.mobileAssessmentLabel", { span: 4 }),
+            displayRepeat("navigation.links", [displayField("href", { hideLabel: true })], {
+              span: 12,
+              layout: "cards",
+              titleField: "label",
+              columns: 4,
+            }),
+          ]),
+        ],
+        { icon: "Compass" },
+      ),
+      displayTab(
+        "Footer & Legal",
+        [
+          displaySection("Footer Content", [
+            displayField("footer.tagline", { span: 12 }),
+            displayField("footer.copyright", { span: 6 }),
+            displayField("footer.disclaimer", { span: 6 }),
+          ]),
+          displaySection("Footer Links & Newsletter", [
+            displayField("footer.socialLinks", { span: 6 }),
+            displayField("footer.linkGroups", { span: 6 }),
+            displayField("footer.newsletter", { span: 12 }),
+          ]),
+        ],
+        { icon: "FileText" },
+      ),
+    ]),
+  ],
   access: {
     read: () => true,
     update: ({ user }) =>
@@ -526,6 +589,25 @@ const SiteSettings = defineGlobal({
 const Pages = defineCollection({
   slug: "pages",
   labels: { singular: "Page", plural: "Pages" },
+  admin: {
+    useAsTitle: "title",
+  },
+  detail: false,
+  /*[
+    displayField("slug", { span: 6, display: "copyable" }),
+    displaySection(
+      "Hero Section",
+      [
+        displayField("hero.badge", { span: 4, display: "badge" }),
+        displayField("hero.titlePrefix", { span: 4 }),
+        displayField("hero.titleHighlight", { span: 4 }),
+        displayField("hero.description", { span: 12 }),
+      ],
+      { span: 12 },
+    ),
+    displaySection("Layout Blocks", [displayField("layout", { span: 12 })], { span: 12 }),
+    displayComputed("totalBlocks", "count(doc.layout)"),
+  ]*/
   fields: [
     { name: "slug", label: "Slug", type: "text", required: true, unique: true },
     { name: "title", label: "Title", type: "text", required: true },
@@ -643,6 +725,29 @@ const Pages = defineCollection({
 const Services = defineCollection({
   slug: "services",
   labels: { singular: "Service", plural: "Services" },
+  admin: {
+    useAsTitle: "name",
+    defaultColumns: ["name", "price", "duration", "id"],
+  },
+  detail: [
+    displaySection(
+      "Service Overview",
+      [
+        displayField("name", { span: 8 }),
+        displayField("price", { span: 2, display: "badge" }),
+        displayField("duration", { span: 2, display: "badge" }),
+        displayField("id", { span: 12, display: "copyable" }),
+        displayField("description", { span: 12 }),
+      ],
+      { span: 8 },
+    ),
+    displaySection(
+      "Benefits & Highlights",
+      [displayRepeat("benefits", [displayField("benefit", { hideLabel: true })], { layout: "list" })],
+      { span: 4 },
+    ),
+    displayComputed("benefitsCount", "count(doc.benefits)"),
+  ],
   fields: [
     { name: "id", label: "Service ID", type: "text", required: true, unique: true },
     { name: "name", label: "Name", type: "text", required: true },
@@ -671,6 +776,19 @@ const Services = defineCollection({
 const BlogArticles = defineCollection({
   slug: "blog-articles",
   labels: { singular: "Blog article", plural: "Blog articles" },
+  admin: {
+    useAsTitle: "title",
+    defaultColumns: ["title", "slug", "date", "category", "readTime"],
+  },
+  detail: [
+    displayField("title", { span: 12 }),
+    displayField("slug", { span: 6, display: "copyable" }),
+    displayField("date", { span: 6 }),
+    displayField("category", { span: 6, display: "badge" }),
+    displayField("readTime", { span: 6, display: "badge" }),
+    displayField("excerpt", { span: 12 }),
+    displaySection("Content Body", [displayField("body", { span: 12 })], { span: 12 }),
+  ],
   fields: [
     { name: "slug", label: "Slug", type: "text", required: true, unique: true },
     { name: "title", label: "Title", type: "text", required: true },
@@ -701,6 +819,28 @@ const BlogArticles = defineCollection({
 const AssessmentCategories = defineGlobal({
   slug: "assessment-categories",
   label: "Assessment categories",
+  detail: [
+    displayComputed("Total categories", "count(doc.categories)", { span: 6 }),
+    displayComputed("Dummy stat", "'No data'", { span: 6 }),
+    displayRepeat(
+      "categories",
+      [
+        displayField("key", { hideLabel: false, span: 4, display: "badge" }),
+        // displayField("title", { span: 8 }),
+        displayField("summary", { span: 12 }),
+        displayField("range", { span: 12, label: "Range" }),
+        displayField("strengths", { span: 12, label: "Strengths" }),
+        displayField("growthOpportunities", { span: 12, label: "Growth Opportunities" }),
+        displayField("recommendation", { span: 12, hideLabel: false }),
+      ],
+      {
+        span: 12,
+        layout: "cards",
+        useAsTitle: "title",
+        icon: "Folder",
+      },
+    ),
+  ],
   fields: [
     {
       name: "categories",
@@ -749,6 +889,9 @@ const AssessmentCategories = defineGlobal({
 });
 
 export default defineConfig({
+  db: postgresAdapter({
+    url: process.env.DATABASE_URL as string,
+  }),
   admin: {
     branding: {
       logoText: "Future You Coaching",

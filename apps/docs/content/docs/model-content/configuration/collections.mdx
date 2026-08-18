@@ -437,6 +437,13 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     urlPattern?: string;
   };
+
+  /**
+   * Presentation schema defining the layout and fields displayed in the Record Detail View.
+   *
+   * @see {@link https://dyrected.com/docs/admin/detail-views Detail Views overview}
+   */
+  detail?: DetailSchema<TDoc>;
 }
 ```
 
@@ -457,6 +464,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
+| <code>detail</code> (optional) | Presentation schema defining the layout and fields displayed in the Record Detail View.  See: [Detail Views overview](https://dyrected.com/docs/admin/detail-views) |
 {/* GENERATED:REFERENCE-CONFIGURATION-COLLECTIONS:END */}
 
 ## `admin` options

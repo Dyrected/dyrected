@@ -1,5 +1,5 @@
 import { defineConfig } from "@dyrected/core";
-import { exampleSaasAccessPolicies } from "./dyrected/access-policies";
+import { exampleSaasAccessPolicies } from "./dyrected/access-policies.js";
 import { postgresAdapter } from "@dyrected/db-postgres";
 // Collections
 import { Media } from "./dyrected/collections/media.js";

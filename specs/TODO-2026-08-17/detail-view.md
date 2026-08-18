@@ -1409,7 +1409,99 @@ These should be driven by actual use cases rather than included in the initial i
 
 ---
 
-# 32. Design Principle
+# 32. Detail Views for Globals
+
+Detail Views apply to **Globals**, with a refined singleton lifecycle model.
+
+## The Architectural Distinction
+
+```text
+Collection
+→ many records
+→ List → Detail → Edit
+
+Global
+→ one singleton document
+→ Detail → Edit
+```
+
+Collections represent multi-record datasets where a user selects an entry from a table/list before inspecting or editing it. In contrast, a Global represents a single stateful document (e.g., Site Settings, Navigation, Header, Footer, Analytics Configuration).
+
+## Schema Definition
+
+The Global schema follows the exact same field-definition model as collections, providing a parallel `detail` API:
+
+```ts
+defineGlobal({
+  slug: 'siteSettings',
+  label: 'Site Settings',
+
+  fields: [
+    { name: 'siteName', type: 'text', required: true },
+    { name: 'logo', type: 'relationship', relationTo: 'media' },
+    { name: 'description', type: 'textarea' },
+    { name: 'twitter', type: 'text' },
+    { name: 'instagram', type: 'text' },
+    { name: 'linkedin', type: 'text' },
+  ],
+
+  detail: [
+    displaySection('General Information', [
+      displayField('siteName', { span: 8 }),
+      displayField('logo', { span: 4, display: 'image' }),
+      displayField('description', { span: 12 }),
+    ], { span: 8 }),
+
+    displaySection('Social & Presence', [
+      displayField('twitter', { span: 6, display: 'copyable' }),
+      displayField('instagram', { span: 6, display: 'copyable' }),
+      displayField('linkedin', { span: 6, display: 'copyable' }),
+      displayComputed('Configured Accounts', {
+        expression: 'count([doc.twitter, doc.instagram, doc.linkedin])',
+        span: 6,
+      }),
+    ], { span: 4 }),
+  ],
+})
+```
+
+## Why Detail Views for Globals are Valuable
+
+Globals often contain complex configurations and settings that are **much easier to comprehend as a composed dashboard page** than as a raw, unbounded editing form.
+
+For example:
+
+```text
+Site Settings
+
+┌──────────────────────────────────────┐  ┌──────────────────────────────────────┐
+│ General Information                  │  │ Social & Presence                    │
+│                                      │  │                                      │
+│ Site Name       Dyrected CMS         │  │ Twitter         @dyrected            │
+│ Logo            [media image]        │  │ Instagram       @dyrected            │
+│ Description     Headless CMS...      │  │ LinkedIn        dyrected-cms         │
+└──────────────────────────────────────┘  │ Configured      3                    │
+                                          └──────────────────────────────────────┘
+```
+
+## Navigation & UX Lifecycle
+
+For Globals, **Detail is the default landing experience**:
+
+```text
+Collection ───► List ───► Detail ───► Edit
+
+Global     ───► Detail ───► Edit
+```
+
+1. **Navigation Entry**: Selecting a Global in the sidebar navigates directly to `/globals/:slug` (rendering its Detail View).
+2. **Action Bar**: Displays the Global title, metadata, last updated time, and a primary **"Edit"** button.
+3. **Editing Mode**: Clicking "Edit" switches to the editor form (`/globals/:slug/edit`), where saving or clicking the "Back" button seamlessly returns to the Global Detail View (`/globals/:slug`).
+4. **Unified Presentation Engine**: The exact same `display*` primitives (`displaySection`, `displayGrid`, `displayField`, `displayTabs`, `displayTab`, `displayRepeat`, `displayComputed`) and renderer components power both Collections and Globals, ensuring zero code duplication.
+
+---
+
+# 33. Design Principle
 
 The Detail View should extend the core Dyrected model:
 

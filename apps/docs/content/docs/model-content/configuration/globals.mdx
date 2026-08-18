@@ -196,6 +196,13 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   };
 
   /**
+   * Presentation schema defining the layout and fields displayed in the Global Detail View.
+   *
+   * @see {@link https://dyrected.com/docs/admin/detail-views Detail Views overview}
+   */
+  detail?: DetailSchema<TDoc>;
+
+  /**
    * Initial data to seed this global with the first time it is fetched and
    * found to be empty.
    */
@@ -213,6 +220,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>access</code> (optional) | Access control for reading and updating this global. |
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
+| <code>detail</code> (optional) | Presentation schema defining the layout and fields displayed in the Global Detail View.  See: [Detail Views overview](https://dyrected.com/docs/admin/detail-views) |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:END */}
 

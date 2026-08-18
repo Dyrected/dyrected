@@ -98,6 +98,9 @@ importers:
       '@dyrected/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@dyrected/db-postgres':
+        specifier: workspace:*
+        version: link:../../packages/db-postgres
       '@dyrected/next':
         specifier: workspace:*
         version: link:../../packages/next
