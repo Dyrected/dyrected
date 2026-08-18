@@ -204,6 +204,51 @@ export function runAggregateAdapterContract(
       expect(result.maxMissing).toBeNull();
     });
 
+    it("handles empty aggregate objects gracefully returning empty object", async () => {
+      const db = await createAdapter();
+      const collection = `agg-empty-obj-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [{ name: "score", type: "number" }],
+      };
+      await db.sync?.([config], []);
+      const result = await db.aggregate({ collection, aggregates: {} });
+      expect(result).toEqual({});
+    });
+
+    it("strictly returns null for mixed alphanumeric strings like '123abc' and handles promoted numeric columns", async () => {
+      const db = await createAdapter();
+      const collection = `agg-promoted-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "score", type: "number", promoted: true }, // promoted column
+          { name: "mixedVal", type: "text" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { score: 10, mixedVal: "100" } });
+      await db.create({ collection, data: { score: 25, mixedVal: "123abc" } }); // mixed alphanumeric
+      await db.create({ collection, data: { score: 15, mixedVal: "3 yards" } }); // mixed text
+
+      const result = await db.aggregate({
+        collection,
+        aggregates: {
+          promotedSum: { sum: "score" },
+          promotedAvg: { avg: "score" },
+          mixedSum: { sum: "mixedVal", cast: "number" },
+          mixedCount: { count: "*" },
+        },
+      });
+
+      expect(result.promotedSum).toBeCloseTo(50);
+      expect(result.promotedAvg).toBeCloseTo(50 / 3);
+      // Only "100" is valid numeric. "123abc" and "3 yards" must be null and ignored
+      expect(result.mixedSum).toBeCloseTo(100);
+      expect(result.mixedCount).toBe(3);
+    });
+
     it("returns null for sum/avg/min/max on an empty collection", async () => {
       const db = await createAdapter();
       const collection = `agg-empty-${Date.now()}-${Math.random().toString(36).slice(2)}`;

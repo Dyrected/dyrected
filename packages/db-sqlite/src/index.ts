@@ -284,6 +284,10 @@ export class SqliteAdapter implements DatabaseAdapter {
     collection: string;
     aggregates: Record<string, any>;
   }): Promise<Record<string, number | null>> {
+    if (Object.keys(args.aggregates).length === 0) {
+      return {};
+    }
+
     await this.ensureTable(args.collection);
     const tableName = this.getTableName(args.collection);
 
@@ -307,12 +311,11 @@ export class SqliteAdapter implements DatabaseAdapter {
      */
     const toCastExpr = (rawField: string, cast: string | undefined): string => {
       const base = toFieldExpr(rawField);
-      if (!cast || cast === 'string') return base;
+      if (cast === 'string') return base;
       if (cast === 'boolean') return `CAST(${base} AS INTEGER)`;
       if (cast === 'date') return base; // SQLite stores dates as text
       // number / integer / float: return NULL for non-numeric values
-      // Pattern: optional sign, one or more digits, optional decimal part
-      return `CASE WHEN ${base} GLOB '[+-]*[0-9]*' OR ${base} GLOB '[0-9]*' THEN CAST(${base} AS REAL) ELSE NULL END`;
+      return `CASE WHEN (${base} GLOB '[0-9]*' OR ${base} GLOB '[+-]*') AND (${base} NOT GLOB '*[^0-9.eE+-]*') THEN CAST(${base} AS REAL) ELSE NULL END`;
     };
 
     const selectParts: string[] = [];

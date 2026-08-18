@@ -196,6 +196,10 @@ export class MongoAdapter implements DatabaseAdapter {
     collection: string;
     aggregates: Record<string, any>;
   }): Promise<Record<string, number | null>> {
+    if (Object.keys(args.aggregates).length === 0) {
+      return {};
+    }
+
     await this.ensureInitialized();
     const col = this.db.collection(this.getCollectionName(args.collection));
 

@@ -215,8 +215,11 @@ export class PostgresAdapter implements DatabaseAdapter {
         if (field.type === "number") sqlType = "NUMERIC";
         if (field.type === "boolean") sqlType = "BOOLEAN";
 
+        const targetTable = slug.includes(".")
+          ? slug
+          : `"${`collection_${slug}`.replace(/"/g, '""')}"`;
         await this.sql.unsafe(
-          `ALTER TABLE ${slug.includes(".") ? slug : `collection_${slug}`} ADD COLUMN "${field.name}" ${sqlType}`,
+          `ALTER TABLE ${targetTable} ADD COLUMN "${field.name.replace(/"/g, '""')}" ${sqlType}`,
         );
       }
     }
@@ -456,6 +459,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     collection: string;
     aggregates: Record<string, any>;
   }): Promise<Record<string, number | null>> {
+    if (Object.keys(args.aggregates).length === 0) {
+      return {};
+    }
+
     await this.ensureInitialized();
     await this.ensureTable(args.collection);
 
@@ -489,10 +496,10 @@ export class PostgresAdapter implements DatabaseAdapter {
       if (cast === "string") return base;
       if (cast === "boolean") return `(${base})::boolean`;
       if (cast === "date") return `(${base})::timestamptz`;
-      // By default for numeric operations (or number / integer / float), safe numeric cast is required
-      // because data->>'field' extraction yields text in Postgres
+      // By default for numeric operations (or number / integer / float), safe numeric cast is required.
+      // We cast base to text before regex check so it works on both json text extraction and promoted numeric columns.
       const pgType = cast === "integer" ? "bigint" : "double precision";
-      return `CASE WHEN ${base} ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (${base})::${pgType} ELSE NULL END`;
+      return `CASE WHEN (${base})::text ~ '^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN (${base})::${pgType} ELSE NULL END`;
     };
 
     // Build SELECT expressions and accumulate all params.

@@ -395,6 +395,10 @@ FIX INSTRUCTIONS:
     collection: string;
     aggregates: Record<string, any>;
   }): Promise<Record<string, number | null>> {
+    if (Object.keys(args.aggregates).length === 0) {
+      return {};
+    }
+
     const tableName = this.getTableName(args.collection);
     if (!this.inTransaction) await this.ensureTable(args.collection);
 
@@ -417,12 +421,12 @@ FIX INSTRUCTIONS:
      */
     const toCastExpr = (rawField: string, cast: string | undefined): string => {
       const base = toFieldExpr(rawField);
-      if (!cast || cast === "string") return base;
+      if (cast === "string") return base;
       if (cast === "boolean") return `IF(${base} IS NOT NULL, IF(${base} IN ('true','1'), 1, 0), NULL)`;
       if (cast === "date") return `CAST(${base} AS DATETIME)`;
       // number / integer / float — safe NULL on invalid input
       const sqlType = cast === "integer" ? "SIGNED" : "DECIMAL(20,6)";
-      return `IF(${base} REGEXP '^-?[0-9]+(\\\\.[0-9]+)?$', CAST(${base} AS ${sqlType}), NULL)`;
+      return `IF(${base} REGEXP '^-?[0-9]+(\\\\.[0-9]+)?([eE][+-]?[0-9]+)?$', CAST(${base} AS ${sqlType}), NULL)`;
     };
 
     const selectParts: string[] = [];
