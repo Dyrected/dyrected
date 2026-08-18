@@ -14,6 +14,8 @@ import {
   displayTab,
   displayRepeat,
   displayComputed,
+  displayDivider,
+  displayText,
 } from "@dyrected/core";
 import type { Block, Field } from "@dyrected/core";
 import { postgresAdapter } from "@dyrected/db-postgres";
@@ -822,6 +824,10 @@ const AssessmentCategories = defineGlobal({
   detail: [
     displayComputed("Total categories", "count(doc.categories)", { span: 6 }),
     displayComputed("Dummy stat", "'No data'", { span: 6 }),
+    displayDivider({ spacing: "md" }),
+    displayText("Category Breakdown", { variant: "heading" }),
+    displayText("Review performance metrics and feedback across all categories.", { variant: "muted" }),
+
     displayRepeat(
       "categories",
       [
