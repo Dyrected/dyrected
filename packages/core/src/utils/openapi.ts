@@ -460,6 +460,72 @@ export function generateOpenApi(config: DyrectedConfig) {
         responses: { 200: { description: "Deleted and failed document IDs" } },
       },
     };
+
+    spec.paths[`${path}/aggregate`] = {
+      post: {
+        tags: [collectionTag],
+        summary: `Aggregate ${labels.plural}`,
+        description: `Compute statistical aggregations (count, sum, avg, min, max) across ${labels.plural}.`,
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                additionalProperties: {
+                  type: "object",
+                  properties: {
+                    count: { type: "string", example: "*" },
+                    sum: { type: "string", description: "Field to sum" },
+                    avg: { type: "string", description: "Field to average" },
+                    min: { type: "string", description: "Field for minimum" },
+                    max: { type: "string", description: "Field for maximum" },
+                    cast: {
+                      type: "string",
+                      enum: [
+                        "number",
+                        "integer",
+                        "float",
+                        "boolean",
+                        "date",
+                        "string",
+                      ],
+                    },
+                    where: {
+                      type: "object",
+                      description: "Per-aggregate filter condition",
+                      additionalProperties: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "number",
+                    nullable: true,
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            description: "Bad Request - Invalid aggregate input",
+          },
+          403: {
+            description: "Forbidden - Access denied by read rule",
+          },
+        },
+      },
+    };
     if (collection.audit) {
       spec.paths[`${path}/__audit`] = {
         get: {

@@ -30,6 +30,21 @@
     "status": "classified"
   },
   {
+    "id": "deliver-content--sdk-api--aggregate",
+    "relativePath": "deliver-content/sdk-api/aggregate",
+    "title": "Aggregating Statistics",
+    "description": "Compute counts, sums, averages, minimums, and maximums across a collection in a single database query without loading documents.",
+    "runtime": "shared",
+    "runtimeGroup": "typed-sdk",
+    "runtimeNotes": "Aggregation runs directly inside PostgreSQL, MySQL, SQLite, and MongoDB.",
+    "sectionPath": "deliver-content/sdk-api",
+    "sourceFile": "apps/docs/content/docs/deliver-content/sdk-api/aggregate.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/deliver-content/sdk-api/aggregate",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/aggregate",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/aggregate",
+    "status": "classified"
+  },
+  {
     "id": "deliver-content--sdk-api--depth",
     "relativePath": "deliver-content/sdk-api/depth",
     "title": "Depth",

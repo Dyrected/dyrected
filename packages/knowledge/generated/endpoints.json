@@ -153,6 +153,22 @@
     ]
   },
   {
+    "id": "POST /api/collections/media/aggregate",
+    "method": "POST",
+    "path": "/api/collections/media/aggregate",
+    "summary": "Aggregate Media",
+    "tags": [
+      "Collection: Media"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400",
+      "403"
+    ]
+  },
+  {
     "id": "DELETE /api/collections/media/delete-many",
     "method": "DELETE",
     "path": "/api/collections/media/delete-many",
@@ -425,6 +441,22 @@
     ]
   },
   {
+    "id": "POST /api/collections/posts/aggregate",
+    "method": "POST",
+    "path": "/api/collections/posts/aggregate",
+    "summary": "Aggregate Posts",
+    "tags": [
+      "Collection: Posts"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400",
+      "403"
+    ]
+  },
+  {
     "id": "DELETE /api/collections/posts/delete-many",
     "method": "DELETE",
     "path": "/api/collections/posts/delete-many",
@@ -588,6 +620,22 @@
     "responses": [
       "200",
       "400"
+    ]
+  },
+  {
+    "id": "POST /api/collections/users/aggregate",
+    "method": "POST",
+    "path": "/api/collections/users/aggregate",
+    "summary": "Aggregate Users",
+    "tags": [
+      "Collection: Users"
+    ],
+    "authenticated": true,
+    "parameters": [],
+    "responses": [
+      "200",
+      "400",
+      "403"
     ]
   },
   {

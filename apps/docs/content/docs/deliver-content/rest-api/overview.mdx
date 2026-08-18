@@ -111,6 +111,7 @@ The table below is generated from a representative maximal configuration so it c
 | DELETE | `/api/collections/media/{id}` | Delete Media item | Required |
 | GET | `/api/collections/media/{id}` | Get a single Media item | Required |
 | PATCH | `/api/collections/media/{id}` | Update Media item | Required |
+| POST | `/api/collections/media/aggregate` | Aggregate Media | Required |
 | DELETE | `/api/collections/media/delete-many` | Delete multiple Media | Required |
 | GET | `/api/collections/media/media` | List Media | Required |
 | POST | `/api/collections/media/media` | Upload Media item | Required |
@@ -123,6 +124,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/posts/{id}` | Update Post | Required |
 | POST | `/api/collections/posts/{id}/transitions/{transition}` | Transition Post workflow | Required |
 | GET | `/api/collections/posts/{id}/workflow-history` | Get Post workflow history | Required |
+| POST | `/api/collections/posts/aggregate` | Aggregate Posts | Required |
 | DELETE | `/api/collections/posts/delete-many` | Delete multiple Posts | Required |
 | GET | `/api/collections/users` | Find Users | Required |
 | POST | `/api/collections/users` | Create User | Required |
@@ -131,6 +133,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/users/{id}` | Update User | Required |
 | POST | `/api/collections/users/{id}/change-password` | Change a User password | Required |
 | POST | `/api/collections/users/accept-invite` | Accept an invitation | Public |
+| POST | `/api/collections/users/aggregate` | Aggregate Users | Required |
 | DELETE | `/api/collections/users/delete-many` | Delete multiple Users | Required |
 | POST | `/api/collections/users/first-user` | Register the first User | Public |
 | POST | `/api/collections/users/forgot-password` | Request a password reset | Public |
@@ -157,5 +160,5 @@ The table below is generated from a representative maximal configuration so it c
 ## Representative facts
 
 {/* GENERATED:REFERENCE-OPENAPI:START */}
-The representative document currently contains **47 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+The representative document currently contains **50 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
 {/* GENERATED:REFERENCE-OPENAPI:END */}

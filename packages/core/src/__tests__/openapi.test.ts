@@ -58,6 +58,7 @@ describe("OpenAPI generation", () => {
         "/api/collections/posts/__audit",
         "/api/collections/posts/{id}",
         "/api/collections/posts/delete-many",
+        "/api/collections/posts/aggregate",
         "/api/collections/posts/{id}/transitions/{transition}",
         "/api/collections/posts/{id}/workflow-history",
         "/api/collections/users/login",
@@ -70,6 +71,7 @@ describe("OpenAPI generation", () => {
       ]),
     );
 
+    expect(spec.paths["/api/collections/posts/aggregate"]?.post?.summary).toBe("Aggregate posts");
     expect(spec.paths["/api/collections/posts"]?.get?.tags).toEqual(["Collection: posts"]);
     expect(spec.paths["/api/collections/posts"]?.get?.parameters).toEqual(
       expect.arrayContaining([

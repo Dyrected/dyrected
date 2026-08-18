@@ -151,6 +151,29 @@ const response = await fetch(`/api/collections/posts?${query}`)
 
 Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`. Note that the `limit` parameter is capped at `100` for list operations to ensure performance and reliability.
 
+## Collection aggregations
+
+Compute statistical totals, averages, counts, minimums, and maximums across a collection in a single request without loading documents:
+
+```bash
+POST /api/collections/:slug/aggregate
+```
+
+Send a JSON object where each key maps to an aggregation operation:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "totalOrders": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" },
+    "avgPaid": { "avg": "totalAmount", "where": { "status": { "equals": "paid" } } }
+  }'
+```
+
+Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/aggregate).
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.
@@ -190,6 +213,7 @@ The table below is generated from a representative maximal configuration so it c
 | DELETE | `/api/collections/media/{id}` | Delete Media item | Required |
 | GET | `/api/collections/media/{id}` | Get a single Media item | Required |
 | PATCH | `/api/collections/media/{id}` | Update Media item | Required |
+| POST | `/api/collections/media/aggregate` | Aggregate Media | Required |
 | DELETE | `/api/collections/media/delete-many` | Delete multiple Media | Required |
 | GET | `/api/collections/media/media` | List Media | Required |
 | POST | `/api/collections/media/media` | Upload Media item | Required |
@@ -202,6 +226,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/posts/{id}` | Update Post | Required |
 | POST | `/api/collections/posts/{id}/transitions/{transition}` | Transition Post workflow | Required |
 | GET | `/api/collections/posts/{id}/workflow-history` | Get Post workflow history | Required |
+| POST | `/api/collections/posts/aggregate` | Aggregate Posts | Required |
 | DELETE | `/api/collections/posts/delete-many` | Delete multiple Posts | Required |
 | GET | `/api/collections/users` | Find Users | Required |
 | POST | `/api/collections/users` | Create User | Required |
@@ -210,6 +235,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/users/{id}` | Update User | Required |
 | POST | `/api/collections/users/{id}/change-password` | Change a User password | Required |
 | POST | `/api/collections/users/accept-invite` | Accept an invitation | Public |
+| POST | `/api/collections/users/aggregate` | Aggregate Users | Required |
 | DELETE | `/api/collections/users/delete-many` | Delete multiple Users | Required |
 | POST | `/api/collections/users/first-user` | Register the first User | Public |
 | POST | `/api/collections/users/forgot-password` | Request a password reset | Public |
@@ -236,7 +262,160 @@ The table below is generated from a representative maximal configuration so it c
 ## Representative facts
 
 
-The representative document currently contains **47 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+The representative document currently contains **50 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+
+---
+
+## Aggregating Statistics
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/aggregate
+
+When building dashboards, overview cards, or summary widgets, fetching full documents just to calculate counts or totals wastes memory, bandwidth, and CPU.
+
+The `.aggregate()` method computes summary statistics directly inside your database in a single query. It returns a flat object with numeric results or `null`, keeping your client light and fast.
+
+```ts
+const stats = await client.collection("rsvp_records").aggregate({
+  totalGuests: { count: "*" },
+  attendingGuests: { count: "*", where: { attending: { equals: true } } },
+  totalAsoebiYards: { sum: "asoebiYards", cast: "number" },
+  averagePartySize: { avg: "partySize" },
+});
+
+console.log(stats.totalGuests); // e.g. 150
+console.log(stats.attendingGuests); // e.g. 120
+console.log(stats.totalAsoebiYards); // e.g. 380
+console.log(stats.averagePartySize); // e.g. 2.4
+```
+
+---
+
+## When to use aggregation
+
+Use `.aggregate()` whenever you need statistical summaries rather than individual records:
+
+- **Dashboard metrics**: Total revenue, pending order count, average customer rating.
+- **Form and event summaries**: Total submissions, confirmed attendees, total item counts.
+- **Range exploration**: Earliest order date (`min`), highest transaction value (`max`).
+
+If you need the actual document contents, reach for [`.find()`](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/overview) or [`.findOne()`](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/overview) instead.
+
+---
+
+## Supported operations
+
+Every key in your aggregate request defines one metric. You can mix and match any number of operations in a single call:
+
+| Operation | Syntax | Description | Return Type |
+|---|---|---|---|
+| **Count** | `{ count: "*" }` | Counts matching documents in the collection. | `number` |
+| **Sum** | `{ sum: "field", cast?: "number" }` | Computes the total of all numeric values for a field. | `number \| null` |
+| **Average** | `{ avg: "field", cast?: "number" }` | Computes the mathematical mean of a numeric field. | `number \| null` |
+| **Minimum** | `{ min: "field", cast?: "number" }` | Finds the smallest numeric value for a field. | `number \| null` |
+| **Maximum** | `{ max: "field", cast?: "number" }` | Finds the largest numeric value for a field. | `number \| null` |
+
+```ts
+const metrics = await client.collection("orders").aggregate({
+  totalOrders: { count: "*" },
+  totalRevenue: { sum: "totalAmount" },
+  averageOrderValue: { avg: "totalAmount" },
+  lowestSale: { min: "totalAmount" },
+  highestSale: { max: "totalAmount" },
+});
+```
+
+If no documents match an aggregation, `count` returns `0`, while `sum`, `avg`, `min`, and `max` return `null`.
+
+---
+
+## Per-aggregate filtering
+
+Each metric can define its own independent `where` clause. This lets you calculate totals for different categories or statuses in one round trip:
+
+```ts
+const ticketStats = await client.collection("tickets").aggregate({
+  totalTickets: { count: "*" },
+  openTickets: {
+    count: "*",
+    where: { status: { equals: "open" } },
+  },
+  highPriorityResolved: {
+    count: "*",
+    where: {
+      status: { equals: "resolved" },
+      priority: { equals: "high" },
+    },
+  },
+  avgResolutionHours: {
+    avg: "resolutionTimeHours",
+    where: { status: { equals: "resolved" } },
+  },
+});
+```
+
+All standard Dyrected [filtering operators](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/filter) — including `equals`, `not_equals`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, `exists`, and nested `AND` / `OR` blocks — are supported inside each aggregate's `where` object.
+
+---
+
+## Type casting with `cast`
+
+In collections where numbers were stored as strings or extracted from unstructured inputs (such as `"5"` or `"12.50"`), pass the `cast` option so your database can parse and aggregate them safely:
+
+```ts
+const yardage = await client.collection("rsvps").aggregate({
+  totalYards: {
+    sum: "asoebiYards",
+    cast: "number",
+  },
+});
+```
+
+### Supported cast targets
+
+- `"number"` or `"float"`: Casts values to double precision floats.
+- `"integer"`: Casts values to 64-bit integers.
+- `"boolean"`: Casts values to booleans.
+- `"date"`: Casts string timestamps to database datetime types.
+- `"string"`: Treats values as raw strings.
+
+> **Safe casting guarantee**: If a document contains a non-numeric string (such as `"unknown"` or `"N/A"`), the database converts that single value to `null` before aggregating. It will not cause query failure or skew other valid numbers.
+
+---
+
+## Access control and security
+
+Collection aggregations respect your collection's `access.read` rule:
+
+1. **Gate evaluation**: If `access.read` returns `false` (or resolves to a boolean `false` for the current user), the API immediately rejects the request with `403 Forbidden`.
+2. **Row-level constraint injection**: If `access.read` returns a filter object (such as `{ tenantId: { equals: user.tenantId } }`), Dyrected automatically injects that constraint into every aggregate operation's `where` clause using an `AND` intersection.
+3. **No document leakage**: Aggregations do not trigger `beforeRead` or `afterRead` document hooks because no individual document contents are retrieved or exposed.
+
+---
+
+## REST API endpoint
+
+If you are calling Dyrected outside of TypeScript or the SDK, send a `POST` request to `/api/collections/:slug/aggregate`:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "totalCount": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" },
+    "avgOrder": { "avg": "totalAmount", "where": { "status": { "equals": "completed" } } }
+  }'
+```
+
+### Response format (`200 OK`)
+
+```json
+{
+  "totalCount": 1420,
+  "totalRevenue": 89450.75,
+  "avgOrder": 63.00
+}
+```
 
 ---
 
@@ -459,6 +638,7 @@ If your app and schema live in the same codebase and you prefer not to generate 
 - Read and write collections through `client.collection('slug')`.
 - Read and update singletons through `client.global('slug')`.
 - Shape reads with [sort](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/sort), [filter](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/filter), [depth](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/depth), [pagination](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/pagination), and free-text `search`.
+- Compute fast statistics and counts with [aggregate](https://docs.dyrected.com/docs/cloud/deliver-content/sdk-api/aggregate).
 - Upload files and run workflow transitions on documents that support them.
 
 For example, collection search is now first-class in the SDK:
@@ -21297,6 +21477,29 @@ const response = await fetch(`/api/collections/posts?${query}`)
 
 Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`. Note that the `limit` parameter is capped at `100` for list operations to ensure performance and reliability.
 
+## Collection aggregations
+
+Compute statistical totals, averages, counts, minimums, and maximums across a collection in a single request without loading documents:
+
+```bash
+POST /api/collections/:slug/aggregate
+```
+
+Send a JSON object where each key maps to an aggregation operation:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "totalOrders": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" },
+    "avgPaid": { "avg": "totalAmount", "where": { "status": { "equals": "paid" } } }
+  }'
+```
+
+Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/aggregate).
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.
@@ -21336,6 +21539,7 @@ The table below is generated from a representative maximal configuration so it c
 | DELETE | `/api/collections/media/{id}` | Delete Media item | Required |
 | GET | `/api/collections/media/{id}` | Get a single Media item | Required |
 | PATCH | `/api/collections/media/{id}` | Update Media item | Required |
+| POST | `/api/collections/media/aggregate` | Aggregate Media | Required |
 | DELETE | `/api/collections/media/delete-many` | Delete multiple Media | Required |
 | GET | `/api/collections/media/media` | List Media | Required |
 | POST | `/api/collections/media/media` | Upload Media item | Required |
@@ -21348,6 +21552,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/posts/{id}` | Update Post | Required |
 | POST | `/api/collections/posts/{id}/transitions/{transition}` | Transition Post workflow | Required |
 | GET | `/api/collections/posts/{id}/workflow-history` | Get Post workflow history | Required |
+| POST | `/api/collections/posts/aggregate` | Aggregate Posts | Required |
 | DELETE | `/api/collections/posts/delete-many` | Delete multiple Posts | Required |
 | GET | `/api/collections/users` | Find Users | Required |
 | POST | `/api/collections/users` | Create User | Required |
@@ -21356,6 +21561,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/users/{id}` | Update User | Required |
 | POST | `/api/collections/users/{id}/change-password` | Change a User password | Required |
 | POST | `/api/collections/users/accept-invite` | Accept an invitation | Public |
+| POST | `/api/collections/users/aggregate` | Aggregate Users | Required |
 | DELETE | `/api/collections/users/delete-many` | Delete multiple Users | Required |
 | POST | `/api/collections/users/first-user` | Register the first User | Public |
 | POST | `/api/collections/users/forgot-password` | Request a password reset | Public |
@@ -21382,7 +21588,160 @@ The table below is generated from a representative maximal configuration so it c
 ## Representative facts
 
 
-The representative document currently contains **47 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+The representative document currently contains **50 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
+
+---
+
+## Aggregating Statistics
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/aggregate
+
+When building dashboards, overview cards, or summary widgets, fetching full documents just to calculate counts or totals wastes memory, bandwidth, and CPU.
+
+The `.aggregate()` method computes summary statistics directly inside your database in a single query. It returns a flat object with numeric results or `null`, keeping your client light and fast.
+
+```ts
+const stats = await client.collection("rsvp_records").aggregate({
+  totalGuests: { count: "*" },
+  attendingGuests: { count: "*", where: { attending: { equals: true } } },
+  totalAsoebiYards: { sum: "asoebiYards", cast: "number" },
+  averagePartySize: { avg: "partySize" },
+});
+
+console.log(stats.totalGuests); // e.g. 150
+console.log(stats.attendingGuests); // e.g. 120
+console.log(stats.totalAsoebiYards); // e.g. 380
+console.log(stats.averagePartySize); // e.g. 2.4
+```
+
+---
+
+## When to use aggregation
+
+Use `.aggregate()` whenever you need statistical summaries rather than individual records:
+
+- **Dashboard metrics**: Total revenue, pending order count, average customer rating.
+- **Form and event summaries**: Total submissions, confirmed attendees, total item counts.
+- **Range exploration**: Earliest order date (`min`), highest transaction value (`max`).
+
+If you need the actual document contents, reach for [`.find()`](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/overview) or [`.findOne()`](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/overview) instead.
+
+---
+
+## Supported operations
+
+Every key in your aggregate request defines one metric. You can mix and match any number of operations in a single call:
+
+| Operation | Syntax | Description | Return Type |
+|---|---|---|---|
+| **Count** | `{ count: "*" }` | Counts matching documents in the collection. | `number` |
+| **Sum** | `{ sum: "field", cast?: "number" }` | Computes the total of all numeric values for a field. | `number \| null` |
+| **Average** | `{ avg: "field", cast?: "number" }` | Computes the mathematical mean of a numeric field. | `number \| null` |
+| **Minimum** | `{ min: "field", cast?: "number" }` | Finds the smallest numeric value for a field. | `number \| null` |
+| **Maximum** | `{ max: "field", cast?: "number" }` | Finds the largest numeric value for a field. | `number \| null` |
+
+```ts
+const metrics = await client.collection("orders").aggregate({
+  totalOrders: { count: "*" },
+  totalRevenue: { sum: "totalAmount" },
+  averageOrderValue: { avg: "totalAmount" },
+  lowestSale: { min: "totalAmount" },
+  highestSale: { max: "totalAmount" },
+});
+```
+
+If no documents match an aggregation, `count` returns `0`, while `sum`, `avg`, `min`, and `max` return `null`.
+
+---
+
+## Per-aggregate filtering
+
+Each metric can define its own independent `where` clause. This lets you calculate totals for different categories or statuses in one round trip:
+
+```ts
+const ticketStats = await client.collection("tickets").aggregate({
+  totalTickets: { count: "*" },
+  openTickets: {
+    count: "*",
+    where: { status: { equals: "open" } },
+  },
+  highPriorityResolved: {
+    count: "*",
+    where: {
+      status: { equals: "resolved" },
+      priority: { equals: "high" },
+    },
+  },
+  avgResolutionHours: {
+    avg: "resolutionTimeHours",
+    where: { status: { equals: "resolved" } },
+  },
+});
+```
+
+All standard Dyrected [filtering operators](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/filter) — including `equals`, `not_equals`, `gt`, `gte`, `lt`, `lte`, `in`, `not_in`, `exists`, and nested `AND` / `OR` blocks — are supported inside each aggregate's `where` object.
+
+---
+
+## Type casting with `cast`
+
+In collections where numbers were stored as strings or extracted from unstructured inputs (such as `"5"` or `"12.50"`), pass the `cast` option so your database can parse and aggregate them safely:
+
+```ts
+const yardage = await client.collection("rsvps").aggregate({
+  totalYards: {
+    sum: "asoebiYards",
+    cast: "number",
+  },
+});
+```
+
+### Supported cast targets
+
+- `"number"` or `"float"`: Casts values to double precision floats.
+- `"integer"`: Casts values to 64-bit integers.
+- `"boolean"`: Casts values to booleans.
+- `"date"`: Casts string timestamps to database datetime types.
+- `"string"`: Treats values as raw strings.
+
+> **Safe casting guarantee**: If a document contains a non-numeric string (such as `"unknown"` or `"N/A"`), the database converts that single value to `null` before aggregating. It will not cause query failure or skew other valid numbers.
+
+---
+
+## Access control and security
+
+Collection aggregations respect your collection's `access.read` rule:
+
+1. **Gate evaluation**: If `access.read` returns `false` (or resolves to a boolean `false` for the current user), the API immediately rejects the request with `403 Forbidden`.
+2. **Row-level constraint injection**: If `access.read` returns a filter object (such as `{ tenantId: { equals: user.tenantId } }`), Dyrected automatically injects that constraint into every aggregate operation's `where` clause using an `AND` intersection.
+3. **No document leakage**: Aggregations do not trigger `beforeRead` or `afterRead` document hooks because no individual document contents are retrieved or exposed.
+
+---
+
+## REST API endpoint
+
+If you are calling Dyrected outside of TypeScript or the SDK, send a `POST` request to `/api/collections/:slug/aggregate`:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "totalCount": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" },
+    "avgOrder": { "avg": "totalAmount", "where": { "status": { "equals": "completed" } } }
+  }'
+```
+
+### Response format (`200 OK`)
+
+```json
+{
+  "totalCount": 1420,
+  "totalRevenue": 89450.75,
+  "avgOrder": 63.00
+}
+```
 
 ---
 
@@ -21605,6 +21964,7 @@ If your app and schema live in the same codebase and you prefer not to generate 
 - Read and write collections through `client.collection('slug')`.
 - Read and update singletons through `client.global('slug')`.
 - Shape reads with [sort](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/sort), [filter](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/filter), [depth](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/depth), [pagination](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/pagination), and free-text `search`.
+- Compute fast statistics and counts with [aggregate](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/aggregate).
 - Upload files and run workflow transitions on documents that support them.
 
 For example, collection search is now first-class in the SDK:
@@ -23576,6 +23936,15 @@ export interface DatabaseAdapter {
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
 
+  /**
+   * Compute aggregate statistics across a collection without returning documents.
+   *
+   * Each named key in `args.aggregates` maps to a `count`, `sum`, `avg`, `min`,
+   * or `max` operation, with optional `where` filtering and `cast` conversion.
+   * The result is a flat object of the same named keys mapped to `number | null`.
+   */
+  aggregate(args: AggregateArgs): Promise<AggregateResult>;
+
   /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */
   getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 
@@ -23610,6 +23979,7 @@ export interface DatabaseAdapter {
 | <code>create</code> (required) | Insert a new document and return it with its generated &#96;id&#96;. |
 | <code>update</code> (required) | Update a document by ID and return the updated document. |
 | <code>delete</code> (required) | Delete a document by ID. Return value is intentionally untyped — callers do not use it. |
+| <code>aggregate</code> (required) | Compute aggregate statistics across a collection without returning documents.  Each named key in &#96;args.aggregates&#96; maps to a &#96;count&#96;, &#96;sum&#96;, &#96;avg&#96;, &#96;min&#96;, or &#96;max&#96; operation, with optional &#96;where&#96; filtering and &#96;cast&#96; conversion. The result is a flat object of the same named keys mapped to &#96;number &#124; null&#96;. |
 | <code>getGlobal</code> (required) | Fetch the singleton document for a global. Returns an empty object if not yet initialised. |
 | <code>updateGlobal</code> (required) | Create or replace the singleton document for a global. |
 | <code>sync</code> (required) | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
@@ -23656,7 +24026,7 @@ export interface PaginatedResult<T = Record<string, any>> {
 Exported type from @dyrected/core.
 
 ```ts
-export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal">;
+export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal" | "aggregate">;
 ```
 
 ---
