@@ -254,9 +254,11 @@ export class MongoAdapter implements DatabaseAdapter {
 
     // Flatten: $facet returns { name: [{ _id: null, result: value }] | [] }
     const result: Record<string, number | null> = {};
-    for (const name of Object.keys(args.aggregates)) {
+    for (const [name, op] of Object.entries(args.aggregates)) {
       const facetDocs: any[] = raw?.[name] ?? [];
-      result[name] = facetDocs.length > 0 ? (facetDocs[0].result ?? null) : null;
+      const defaultValue = "count" in op ? 0 : null;
+      result[name] =
+        facetDocs.length > 0 ? (facetDocs[0].result ?? defaultValue) : defaultValue;
     }
 
     return result;
