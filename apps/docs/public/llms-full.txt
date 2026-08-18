@@ -1650,6 +1650,464 @@ Set `primaryColor`, `accentColor`, `logo`, and fonts in `admin.branding` first �
 
 ---
 
+## Detail Views
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/editor-experience/detail-view
+
+A Detail View gives editors a readable summary of a record or global before they open the full edit form. Use it when a document has important status, repeated data, computed totals, or nested settings that are easier to review as a dashboard than as one long form.
+
+By the end of this page you should know what Dyrected shows by default, how to replace that with your own layout, and which display helpers to reach for as the document gets more complex.
+
+## How Detail Views fit into the admin
+
+Collection records and globals have two jobs in the admin:
+
+- The **Detail View** is for reading and reviewing the current document.
+- The **Edit View** is for changing and saving the document.
+
+When a collection or global does not define `detail`, Dyrected generates a conservative layout from its `fields`. That default layout skips hidden fields and sensitive fields such as passwords, salts, reset tokens, API keys, and secrets. Longer content fields stay in the main area, while compact metadata such as selects, booleans, and dates can move into an overview column.
+
+If a document does not need a read-first screen, set `detail: false`. Editors will go straight to the edit form instead.
+
+```ts
+
+
+export const Pages = defineCollection({
+  slug: "pages",
+  labels: { singular: "Page", plural: "Pages" },
+  admin: {
+    useAsTitle: "title",
+  },
+  detail: false,
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+  ],
+});
+```
+
+That is useful for content that editors almost always need to change immediately, such as page builder documents with large block fields.
+
+## Build a first custom Detail View
+
+The recommended starting point is a few sections with fields inside them. Each item can use `span` to control how much of the 12-column layout it takes.
+
+```ts
+
+  defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextareaField,
+  defineTextField,
+  displayField,
+  displaySection,
+} from "@dyrected/core";
+
+export const Products = defineCollection({
+  slug: "products",
+  labels: { singular: "Product", plural: "Products" },
+  admin: {
+    useAsTitle: "title",
+    defaultColumns: ["title", "sku", "price", "status"],
+  },
+  detail: [
+    displaySection(
+      "Product Overview",
+      [
+        displayField("title", { span: 8 }),
+        displayField("sku", { span: 4, display: "copyable" }),
+        displayField("description", { span: 12 }),
+      ],
+      { span: 8 },
+    ),
+    displaySection(
+      "Pricing",
+      [
+        displayField("price", { span: 6, display: "currency", currency: "USD" }),
+        displayField("status", { span: 6, display: "badge" }),
+      ],
+      { span: 4 },
+    ),
+  ],
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "sku", label: "SKU", required: true }),
+    defineTextareaField({ name: "description", label: "Description" }),
+    defineNumberField({ name: "price", label: "Price", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Status",
+      options: ["draft", "active", "archived"],
+      defaultValue: "draft",
+    }),
+  ],
+});
+```
+
+In this example, the overview section takes eight columns and the pricing section takes four columns on wide screens. Inside each section, nested fields use the same 12-column idea for their own row.
+
+### Global Detail View (Singleton Document)
+
+Detail Views work identically for globals. Use them to create a clean overview dashboard for site settings, assessment categories, or company metadata:
+
+```ts
+
+  defineArrayField,
+  defineEmailField,
+  defineGlobal,
+  defineNumberField,
+  defineTextField,
+  defineUrlField,
+  displayComputed,
+  displayField,
+  displaySection,
+} from "@dyrected/core";
+
+export const SiteSettings = defineGlobal({
+  slug: "site-settings",
+  label: "Site Settings",
+  detail: [
+    displaySection(
+      "Identity & Contact",
+      [
+        displayField("siteName", { span: 6 }),
+        displayField("supportEmail", { span: 6, display: "copyable" }),
+        displayField("rating", { span: 6, display: "star-rating" }),
+        displayField("primaryIcon", { span: 6, display: "icon" }),
+      ],
+      { span: 8, icon: "Settings" },
+    ),
+    displaySection("Quick Stats", [displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 })], {
+      span: 4,
+    }),
+  ],
+  fields: [
+    defineTextField({ name: "siteName", label: "Site Name", required: true }),
+    defineEmailField({ name: "supportEmail", label: "Support Email", required: true }),
+    defineNumberField({ name: "rating", label: "Customer Rating", defaultValue: 5 }),
+    defineTextField({ name: "primaryIcon", label: "Primary Icon", defaultValue: "Globe" }),
+    defineArrayField({
+      name: "socialLinks",
+      label: "Social Links",
+      fields: [
+        defineTextField({ name: "platform", label: "Platform" }),
+        defineUrlField({ name: "url", label: "URL" }),
+      ],
+    }),
+  ],
+});
+```
+
+## Arrange content with layout helpers
+
+Use layout helpers when the record needs more than a flat list of fields.
+
+### Sections
+
+`displaySection(title, items, options)` groups fields and other detail items under a heading. Sections can have a description, icon, span, and collapsible behavior.
+
+```ts
+displaySection(
+  "Publishing",
+  [
+    displayField("status", { span: 6, display: "badge" }),
+    displayField("publishedAt", { span: 6, display: "relative" }),
+  ],
+  {
+    span: 12,
+    icon: "CalendarCheck",
+    description: "Review the publication state before editing.",
+    collapsible: true,
+    collapsedByDefault: false,
+  },
+);
+```
+
+Use `collapsible: true` and `collapsedByDefault: true` when a section contains secondary details or audit logs that editors rarely need to inspect immediately.
+
+Use sections for the main regions of a document: overview, publishing, pricing, SEO, technical metadata, or internal notes.
+
+### Tabs
+
+`displayTabs()` and `displayTab()` split a dense record into focused panels. A tab can include an icon and a badge expression.
+
+```ts
+displayTabs(
+  [
+    displayTab("Metadata", [
+      displayField("slug", { span: 6, display: "copyable" }),
+      displayField("seo.title", { span: 6 }),
+    ]),
+    displayTab("Links", [displayField("navigation.links", { span: 12, display: "table" })], {
+      icon: "Link",
+      badge: "count(doc.navigation.links)",
+    }),
+  ],
+  { span: 12, defaultTab: "Metadata" },
+);
+```
+
+Tabs work best when every tab answers a clear review question. If the content is only two or three fields, keep it in a section.
+
+### Grids
+
+`displayGrid(columns, items, options)` creates a compact grid inside the Detail View. Use it when several related values should scan as a group.
+
+```ts
+displayGrid(
+  3,
+  [
+    displayField("views", { display: "number" }),
+    displayField("conversionRate", { display: "percent" }),
+    displayField("featured", { display: "boolean" }),
+  ],
+  { span: 12 },
+);
+```
+
+Use `span` for the item's width in the surrounding page. Use the `columns` argument for how many tracks the grid itself should use.
+
+## Display fields clearly
+
+`displayField(fieldName, options)` reads a value from the current document and chooses a renderer for it. The `fieldName` can be a top-level field such as `title` or a dotted path such as `brand.name`.
+
+```ts
+displayField("brand.name", { label: "Brand", span: 6 });
+displayField("supportEmail", { display: "email", span: 6 });
+displayField("rating", { display: "star-rating", span: 6 });
+displayField("id", { display: "copyable", span: 6 });
+displayField("status", {
+  display: "badge",
+  span: 6,
+  badgeColors: { draft: "zinc", active: "emerald", archived: "rose" },
+});
+displayField("secondaryNotes", {
+  span: 12,
+  hideIfEmpty: true,
+  emptyText: "No internal notes provided",
+});
+displayField("sampleSnippet", { display: "code", span: 12 });
+displayField("environmentKey", { display: "code-badge", span: 6 });
+displayField("themeIcon", { display: "icon", span: 6 });
+```
+
+### String shorthand
+
+For simple layouts where fields only need default styling, you can pass field names as strings directly in the `detail` array or inside sections:
+
+```ts
+detail: [
+  "title",
+  "sku",
+  "status",
+]
+```
+
+Dyrected normalizes raw strings into standard `displayField("fieldName")` items automatically.
+
+### Empty and missing values
+
+By default, empty fields show a subtle dash (`—`). You can customize this behavior:
+- `emptyText: "Custom placeholder"`: replaces the default dash with custom text.
+- `hideIfEmpty: true`: completely hides the field row when the document value is `null`, `undefined`, or an empty string `""`.
+
+The most useful display variants fall into a few groups:
+
+| Use case                | Variants                                                 |
+| ----------------------- | -------------------------------------------------------- |
+| Status and labels       | `badge`, `badges`, `tags`, `boolean`                     |
+| Numbers and progress    | `currency`, `percent`, `progress`, `star`, `star-rating` |
+| Dates and time          | `date`, `datetime`, `time`, `relative`                   |
+| Contact and links       | `email`, `phone`, `url`, `link`, `copyable`              |
+| Media and visual values | `image`, `avatar`, `color`, `color-swatches`, `icon`     |
+| Structured values       | `key-value`, `table`, `json`, `code`, `code-badge`       |
+
+If you do not pass `display`, Dyrected falls back to the field type. For example, relationship fields render links when related documents are populated, JSON fields render formatted JSON, and upload fields render a download link when a URL is available.
+
+## Add computed values
+
+Use `displayComputed(label, expressionOrHandler, options)` when the Detail View should show a value that is derived from the document.
+
+For simple values, pass a JEXL expression:
+
+```ts
+displayComputed("Total categories", "count(doc.categories)", { span: 6 });
+displayComputed("Rounded price", "math.round(doc.price, 2)", {
+  span: 6,
+  format: "currency",
+  currency: "USD",
+});
+```
+
+
+## Show repeated data
+
+Use `displayRepeat(fieldName, items, options)` for array-like content. The nested `items` describe how each row should appear.
+
+```ts
+displayRepeat(
+  "categories",
+  [
+    displayField("key", { span: 4, display: "badge" }),
+    displayField("summary", { span: 12 }),
+    displayField("range", { span: 12, label: "Range" }),
+  ],
+  {
+    span: 12,
+    layout: "cards",
+    useAsTitle: "title",
+    icon: "Folder",
+    columns: 3,
+    emptyText: "No categories yet",
+  },
+);
+```
+
+The repeat layouts are:
+
+| Layout  | Use it when                                                               |
+| ------- | ------------------------------------------------------------------------- |
+| `table` | The repeated data is compact and comparison matters. This is the default. |
+| `cards` | Each row has enough detail to read as its own item.                       |
+| `list`  | The repeated data works best as a vertical feed or checklist.             |
+
+For card and list layouts, `useAsTitle` or `titleField` reads a field from each row and uses it as the row heading. If you pass `title` instead, Dyrected uses it as a static label and appends the row number.
+
+## Add text, dividers, and custom components
+
+Use supporting helpers when the Detail View needs explanatory callouts, visual separators, or specialized widgets alongside standard fields.
+
+### Headings, callouts, and dividers
+
+`displayText(content, options)` renders formatted typography or alert boxes, while `displayDivider(options)` adds horizontal rhythm between rows.
+
+```ts
+
+
+export const notice = [
+  displayText("Review this summary before approving the record.", {
+    variant: "warning",
+    span: 12,
+  }),
+  displayDivider({ spacing: "md" }),
+];
+```
+
+`displayText()` supports variants such as `body` (default), `heading`, `subheading`, `muted`, `caption`, `callout`, `info`, and `warning`. `displayDivider()` accepts spacing options (`none`, `sm`, `md`, `lg`).
+
+### Custom components with `displayCustom`
+
+When built-in display variants are not enough, `displayCustom(name, options)` renders a React component within your Detail View layout.
+
+To use a custom component, define your React component, register it in your collection's `admin.components` map (or globally on `<DyrectedAdmin components={{ ... }} />`), and reference it by name in `detail`:
+
+```tsx
+
+
+  defineBooleanField,
+  defineCollection,
+  defineTextField,
+  displayCustom,
+  displaySection,
+} from "@dyrected/core";
+
+// 1. Define your custom React component
+export function AuditBadge({ doc, tone = "info" }: { doc: any; tone?: string }) {
+  const isVerified = doc.verified === true;
+  return (
+    <div
+      className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}
+    >
+      <strong>Audit Status:</strong> {isVerified ? "Verified Record" : "Pending Verification"}
+    </div>
+  );
+}
+
+// 2. Register the component in collection config and reference it by name
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Order", plural: "Orders" },
+  admin: {
+    useAsTitle: "orderNumber",
+    components: {
+      AuditBadge,
+    },
+  },
+  detail: [
+    displaySection("Verification", [
+      displayCustom("AuditBadge", {
+        span: 12,
+        props: { tone: "success" },
+      }),
+    ]),
+  ],
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Order #", required: true }),
+    defineBooleanField({ name: "verified", label: "Verified", defaultValue: false }),
+  ],
+});
+```
+
+Your component receives the current `doc`, the logged-in `user`, and any custom `props` passed in `options.props`.
+
+
+`displayCustomComponent()` is available as an alias for `displayCustom()`. For a deeper guide on creating and registering admin components, see [Custom Components](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
+
+## Conditionally show items with `visible`
+
+Every detail item (sections, tabs, grids, repeats, individual fields, computed cards, text, dividers, and custom components) accepts an optional `visible` condition.
+
+`visible` can be:
+
+- A **boolean**: `visible: false` hides the item unconditionally.
+- A **JEXL expression**: evaluated against `{ doc, user }`. Supports built-in helpers like `includes()`, logical operators (`and`, `or`, `&&`, `||`), comparisons, and math.
+
+```ts
+displaySection(
+  "Internal Review",
+  [
+    displayField("publicNotes", { span: 12 }),
+    // Hide a nested field unless user has admin role
+    displayField("internalNotes", {
+      span: 12,
+      visible: "user.roles != null and includes(user.roles, 'admin')",
+    }),
+    // Hide a field unconditionally
+    displayField("legacyId", { visible: false }),
+  ],
+  {
+    span: 12,
+    // Hide the entire section if the document is still a draft
+    visible: "doc.status != 'draft'",
+  },
+);
+```
+
+Visibility rules evaluate recursively for both top-level containers and nested items inside sections, tabs, grids, and repeated rows. When a container's `visible` rule evaluates to false (or all child items inside it are hidden), it is cleanly omitted from the Detail View.
+
+## Quick reference
+
+| Helper                                                 | Purpose                                    | Common options                                                                                   |
+| ------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `displayField(fieldName, options)`                     | Show a document field or dotted path       | `label`, `hideLabel`, `span`, `display`, `format`, `currency`, `emptyText`, `visible`            |
+| `displaySection(title, items, options)`                | Group related detail items                 | `span`, `description`, `icon`, `collapsible`, `collapsedByDefault`, `visible`                    |
+| `displayTabs(tabs, options)`                           | Split complex documents into tabbed panels | `span`, `defaultTab`, `visible`                                                                  |
+| `displayTab(label, items, options)`                    | Define one tab inside `displayTabs()`      | `icon`, `badge`, `badgeColor`, `visible`                                                         |
+| `displayGrid(columns, items, options)`                 | Arrange related values in a compact grid   | `span`, `visible`                                                                                |
+| `displayRepeat(fieldName, items, options)`             | Render array-like data                     | `layout`, `emptyText`, `span`, `useAsTitle`, `titleField`, `title`, `icon`, `columns`, `visible` |
+| `displayComputed(label, expressionOrHandler, options)` | Show a derived value                       | `id`, `expression`, `handler`, `span`, `format`, `currency`, `visible`                           |
+| `displayText(content, options)`                        | Add explanatory text or a callout          | `span`, `variant`, `className`, `visible`                                                        |
+| `displayDivider(options)`                              | Add a horizontal separator                 | `span`, `spacing`, `visible`                                                                     |
+| `displayCustom(name, options)`                         | Render a registered admin component        | `span`, `props`, `render`, `visible`                                                             |
+
+## Recommended path
+
+Start with the generated Detail View and only add a custom `detail` schema when editors need a clearer read-first summary. Use sections first, add display variants for values that should scan quickly, then add computed values and repeat layouts when the document needs dashboard-style review.
+
+If the document is usually edited immediately, use `detail: false`. If the document is dense, high-impact, or reviewed more often than edited, build a Detail View and link editors to the full edit form only when they need to make a change.
+
+---
+
 ## Editor Accounts
 
 Canonical URL: https://docs.dyrected.com/docs/cloud/editor-experience/editor-accounts
@@ -2459,6 +2917,7 @@ The generated admin is a small, opinionated set of screens:
 
 - **Dashboard** — a lightweight editorial home with quick "New" actions, recent edits, and a "needs attention" panel that flags setup gaps like a missing `admin.useAsTitle` or missing media alt text.
 - **Collection list** — a sortable, searchable table, and the starting point for most editing. It also supports bulk selection, an inline spreadsheet mode, and CSV import/export. See [The Collection List](https://docs.dyrected.com/docs/cloud/editor-experience/list-view).
+- **Detail view** — a read-first summary for a collection record or global, generated from your fields or shaped with a custom `detail` layout. See [Detail Views](https://docs.dyrected.com/docs/cloud/editor-experience/detail-view).
 - **Collection edit / create** — the main form. Fields render in the order of your `fields` array. The sidebar shows the document ID, timestamps, and a publishing panel when a `status` field exists. If `admin.previewUrl` is set, a live preview pane can open beside the form.
 - **Media** — shown automatically for any `upload: true` collection: a thumbnail grid, drag-and-drop upload zone, and a file-detail dialog.
 - **Global editor** — a single full-page form for each global.
@@ -12301,6 +12760,12 @@ The admin UI is generated from your config. Editors use it to manage collections
 
 See [Admin Overview](https://docs.dyrected.com/docs/cloud/editor-experience/overview).
 
+### Detail Views
+
+Detail Views are the read-first admin screens editors see before opening a collection record or global for editing. Your schema can shape these screens with sections, field display formats, computed values, and repeated-data layouts, so editors can review the important parts of a document without scanning the full form.
+
+See [Detail Views](https://docs.dyrected.com/docs/cloud/editor-experience/detail-view).
+
 ### Workflows
 
 Workflows add editorial states and transitions, so content can move through review and publishing steps instead of going live immediately on every edit.
@@ -12466,7 +12931,7 @@ In practice, the `slug` becomes a stable identifier for API paths, admin routes,
 When you define a collection, Dyrected generates the main content surfaces around it:
 
 - list, read, create, update, and delete collection endpoints
-- a generated admin list view and edit form
+- a generated admin list view, detail view, and edit form
 - typed SDK access through `client.collection('slug')`
 - hooks and access points that run on the server
 
@@ -12505,6 +12970,12 @@ That means `slug` is part of the long-term data contract, not just display text.
 In practice, most collection design work happens here. This is where you model titles, slugs, dates, relationships, nested objects, repeated groups, and anything else that belongs to each document.
 
 For the full field system, read [Fields](https://docs.dyrected.com/docs/cloud/model-content/fields/overview).
+
+### Shape the record summary with `detail`
+
+Collections get a Detail View where editors can review a record before opening the edit form. Dyrected can generate that summary from your fields, or you can define `detail` to arrange sections, field display formats, computed values, and repeated data yourself.
+
+Use a custom Detail View when the record is easier to understand as a summary than as a full form. For the full guide, read [Detail Views](https://docs.dyrected.com/docs/cloud/editor-experience/detail-view).
 
 ### Use blocks for page sections
 
@@ -12865,6 +13336,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     urlPattern?: string;
   };
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }
 ```
 
@@ -12885,6 +13361,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
+| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 
 
 ## `admin` options
@@ -13179,7 +13656,7 @@ If a collection answers "many documents," a global answers "exactly one current 
 
 Defining a global gives you:
 
-- a generated admin edit view for that singleton
+- a generated admin detail view and edit view for that singleton
 - `GET` and `PATCH` global API operations
 - typed SDK access through `client.global('slug')`
 - global access rules and lifecycle hooks
@@ -13220,6 +13697,12 @@ That makes `slug` part of the long-term data contract, not display text. Choose 
 `fields` is where the shape of the singleton lives. This array defines what editors can update, how values are validated, and what the API returns.
 
 Because a global is one document, think of `fields` as the shape of that single record rather than a template for many. For the full field system, read [Fields](https://docs.dyrected.com/docs/cloud/model-content/fields/overview).
+
+### Shape the singleton summary with `detail`
+
+Globals can use `detail` to turn one large settings document into a readable admin summary. This works well for site settings, navigation, footer content, assessment categories, or any singleton where editors need to review nested values before editing them.
+
+For layout helpers, computed values, repeated data, and `detail: false`, read [Detail Views](https://docs.dyrected.com/docs/cloud/editor-experience/detail-view).
 
 ### Control who can edit with `access`
 
@@ -13349,6 +13832,11 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
    * found to be empty.
    */
   initialData?: Partial<TDoc>;
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }
 ```
 
@@ -13363,6 +13851,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
+| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 
 
 ## Global options in practice
@@ -27843,6 +28332,515 @@ Set `primaryColor`, `accentColor`, `logo`, and fonts in `admin.branding` first �
 
 ---
 
+## Detail Views
+
+Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view
+
+A Detail View gives editors a readable summary of a record or global before they open the full edit form. Use it when a document has important status, repeated data, computed totals, or nested settings that are easier to review as a dashboard than as one long form.
+
+By the end of this page you should know what Dyrected shows by default, how to replace that with your own layout, and which display helpers to reach for as the document gets more complex.
+
+## How Detail Views fit into the admin
+
+Collection records and globals have two jobs in the admin:
+
+- The **Detail View** is for reading and reviewing the current document.
+- The **Edit View** is for changing and saving the document.
+
+When a collection or global does not define `detail`, Dyrected generates a conservative layout from its `fields`. That default layout skips hidden fields and sensitive fields such as passwords, salts, reset tokens, API keys, and secrets. Longer content fields stay in the main area, while compact metadata such as selects, booleans, and dates can move into an overview column.
+
+If a document does not need a read-first screen, set `detail: false`. Editors will go straight to the edit form instead.
+
+```ts
+
+
+export const Pages = defineCollection({
+  slug: "pages",
+  labels: { singular: "Page", plural: "Pages" },
+  admin: {
+    useAsTitle: "title",
+  },
+  detail: false,
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
+  ],
+});
+```
+
+That is useful for content that editors almost always need to change immediately, such as page builder documents with large block fields.
+
+## Build a first custom Detail View
+
+The recommended starting point is a few sections with fields inside them. Each item can use `span` to control how much of the 12-column layout it takes.
+
+```ts
+
+  defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextareaField,
+  defineTextField,
+  displayField,
+  displaySection,
+} from "@dyrected/core";
+
+export const Products = defineCollection({
+  slug: "products",
+  labels: { singular: "Product", plural: "Products" },
+  admin: {
+    useAsTitle: "title",
+    defaultColumns: ["title", "sku", "price", "status"],
+  },
+  detail: [
+    displaySection(
+      "Product Overview",
+      [
+        displayField("title", { span: 8 }),
+        displayField("sku", { span: 4, display: "copyable" }),
+        displayField("description", { span: 12 }),
+      ],
+      { span: 8 },
+    ),
+    displaySection(
+      "Pricing",
+      [
+        displayField("price", { span: 6, display: "currency", currency: "USD" }),
+        displayField("status", { span: 6, display: "badge" }),
+      ],
+      { span: 4 },
+    ),
+  ],
+  fields: [
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "sku", label: "SKU", required: true }),
+    defineTextareaField({ name: "description", label: "Description" }),
+    defineNumberField({ name: "price", label: "Price", required: true }),
+    defineSelectField({
+      name: "status",
+      label: "Status",
+      options: ["draft", "active", "archived"],
+      defaultValue: "draft",
+    }),
+  ],
+});
+```
+
+In this example, the overview section takes eight columns and the pricing section takes four columns on wide screens. Inside each section, nested fields use the same 12-column idea for their own row.
+
+### Global Detail View (Singleton Document)
+
+Detail Views work identically for globals. Use them to create a clean overview dashboard for site settings, assessment categories, or company metadata:
+
+```ts
+
+  defineArrayField,
+  defineEmailField,
+  defineGlobal,
+  defineNumberField,
+  defineTextField,
+  defineUrlField,
+  displayComputed,
+  displayField,
+  displaySection,
+} from "@dyrected/core";
+
+export const SiteSettings = defineGlobal({
+  slug: "site-settings",
+  label: "Site Settings",
+  detail: [
+    displaySection(
+      "Identity & Contact",
+      [
+        displayField("siteName", { span: 6 }),
+        displayField("supportEmail", { span: 6, display: "copyable" }),
+        displayField("rating", { span: 6, display: "star-rating" }),
+        displayField("primaryIcon", { span: 6, display: "icon" }),
+      ],
+      { span: 8, icon: "Settings" },
+    ),
+    displaySection("Quick Stats", [displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 })], {
+      span: 4,
+    }),
+  ],
+  fields: [
+    defineTextField({ name: "siteName", label: "Site Name", required: true }),
+    defineEmailField({ name: "supportEmail", label: "Support Email", required: true }),
+    defineNumberField({ name: "rating", label: "Customer Rating", defaultValue: 5 }),
+    defineTextField({ name: "primaryIcon", label: "Primary Icon", defaultValue: "Globe" }),
+    defineArrayField({
+      name: "socialLinks",
+      label: "Social Links",
+      fields: [
+        defineTextField({ name: "platform", label: "Platform" }),
+        defineUrlField({ name: "url", label: "URL" }),
+      ],
+    }),
+  ],
+});
+```
+
+## Arrange content with layout helpers
+
+Use layout helpers when the record needs more than a flat list of fields.
+
+### Sections
+
+`displaySection(title, items, options)` groups fields and other detail items under a heading. Sections can have a description, icon, span, and collapsible behavior.
+
+```ts
+displaySection(
+  "Publishing",
+  [
+    displayField("status", { span: 6, display: "badge" }),
+    displayField("publishedAt", { span: 6, display: "relative" }),
+  ],
+  {
+    span: 12,
+    icon: "CalendarCheck",
+    description: "Review the publication state before editing.",
+    collapsible: true,
+    collapsedByDefault: false,
+  },
+);
+```
+
+Use `collapsible: true` and `collapsedByDefault: true` when a section contains secondary details or audit logs that editors rarely need to inspect immediately.
+
+Use sections for the main regions of a document: overview, publishing, pricing, SEO, technical metadata, or internal notes.
+
+### Tabs
+
+`displayTabs()` and `displayTab()` split a dense record into focused panels. A tab can include an icon and a badge expression.
+
+```ts
+displayTabs(
+  [
+    displayTab("Metadata", [
+      displayField("slug", { span: 6, display: "copyable" }),
+      displayField("seo.title", { span: 6 }),
+    ]),
+    displayTab("Links", [displayField("navigation.links", { span: 12, display: "table" })], {
+      icon: "Link",
+      badge: "count(doc.navigation.links)",
+    }),
+  ],
+  { span: 12, defaultTab: "Metadata" },
+);
+```
+
+Tabs work best when every tab answers a clear review question. If the content is only two or three fields, keep it in a section.
+
+### Grids
+
+`displayGrid(columns, items, options)` creates a compact grid inside the Detail View. Use it when several related values should scan as a group.
+
+```ts
+displayGrid(
+  3,
+  [
+    displayField("views", { display: "number" }),
+    displayField("conversionRate", { display: "percent" }),
+    displayField("featured", { display: "boolean" }),
+  ],
+  { span: 12 },
+);
+```
+
+Use `span` for the item's width in the surrounding page. Use the `columns` argument for how many tracks the grid itself should use.
+
+## Display fields clearly
+
+`displayField(fieldName, options)` reads a value from the current document and chooses a renderer for it. The `fieldName` can be a top-level field such as `title` or a dotted path such as `brand.name`.
+
+```ts
+displayField("brand.name", { label: "Brand", span: 6 });
+displayField("supportEmail", { display: "email", span: 6 });
+displayField("rating", { display: "star-rating", span: 6 });
+displayField("id", { display: "copyable", span: 6 });
+displayField("status", {
+  display: "badge",
+  span: 6,
+  badgeColors: { draft: "zinc", active: "emerald", archived: "rose" },
+});
+displayField("secondaryNotes", {
+  span: 12,
+  hideIfEmpty: true,
+  emptyText: "No internal notes provided",
+});
+displayField("sampleSnippet", { display: "code", span: 12 });
+displayField("environmentKey", { display: "code-badge", span: 6 });
+displayField("themeIcon", { display: "icon", span: 6 });
+```
+
+### String shorthand
+
+For simple layouts where fields only need default styling, you can pass field names as strings directly in the `detail` array or inside sections:
+
+```ts
+detail: [
+  "title",
+  "sku",
+  "status",
+]
+```
+
+Dyrected normalizes raw strings into standard `displayField("fieldName")` items automatically.
+
+### Empty and missing values
+
+By default, empty fields show a subtle dash (`—`). You can customize this behavior:
+- `emptyText: "Custom placeholder"`: replaces the default dash with custom text.
+- `hideIfEmpty: true`: completely hides the field row when the document value is `null`, `undefined`, or an empty string `""`.
+
+The most useful display variants fall into a few groups:
+
+| Use case                | Variants                                                 |
+| ----------------------- | -------------------------------------------------------- |
+| Status and labels       | `badge`, `badges`, `tags`, `boolean`                     |
+| Numbers and progress    | `currency`, `percent`, `progress`, `star`, `star-rating` |
+| Dates and time          | `date`, `datetime`, `time`, `relative`                   |
+| Contact and links       | `email`, `phone`, `url`, `link`, `copyable`              |
+| Media and visual values | `image`, `avatar`, `color`, `color-swatches`, `icon`     |
+| Structured values       | `key-value`, `table`, `json`, `code`, `code-badge`       |
+
+If you do not pass `display`, Dyrected falls back to the field type. For example, relationship fields render links when related documents are populated, JSON fields render formatted JSON, and upload fields render a download link when a URL is available.
+
+## Add computed values
+
+Use `displayComputed(label, expressionOrHandler, options)` when the Detail View should show a value that is derived from the document.
+
+For simple values, pass a JEXL expression:
+
+```ts
+displayComputed("Total categories", "count(doc.categories)", { span: 6 });
+displayComputed("Rounded price", "math.round(doc.price, 2)", {
+  span: 6,
+  format: "currency",
+  currency: "USD",
+});
+```### Function handlers
+
+For values that require custom logic, server-side data, or database lookups across other collections, pass a function handler. The handler runs on your self-hosted server during document fetch and receives a `{ doc, user, db }` context object:
+
+```ts
+// 1. Simple in-memory calculation with `doc`
+displayComputed(
+  "Reading time",
+  ({ doc }) => {
+    const words = String(doc.body || "")
+      .split(/\s+/)
+      .filter(Boolean).length;
+    return `${Math.ceil(words / 200)} min`;
+  },
+  { span: 6 },
+);
+
+// 2. Cross-collection database query with `db` (async)
+displayComputed(
+  "Active Orders",
+  async ({ doc, db }) => {
+    const orders = await db.find("orders", {
+      where: { customerId: { equals: doc.id }, status: { equals: "processing" } },
+    });
+    return orders.length;
+  },
+  { span: 6, format: "number" },
+);
+
+// 3. User-aware personalized or role-based summary with `user`
+displayComputed(
+  "Internal Audit",
+  ({ doc, user }) => {
+    if (user?.roles?.includes("admin")) {
+      return `Revenue: $${doc.totalRevenue} (Admin audit)`;
+    }
+    return "Standard view";
+  },
+  { span: 12 },
+);
+```
+
+| Context property | Type   | Description                                                                                           |
+| ---------------- | ------ | ----------------------------------------------------------------------------------------------------- |
+| `doc`            | `TDoc` | The full document record being viewed, with all field values.                                         |
+| `user`           | `any`  | The current authenticated user session making the request (e.g. `id`, `email`, `roles`).              |
+| `db`             | `any`  | The active database adapter instance for executing queries and aggregations across other collections. |
+
+Computed handlers are evaluated on the server when documents are retrieved via the API. Their results are attached to `doc._meta.computed`, allowing the admin UI to display complex derived stats instantly without client overhead.
+## Show repeated data
+
+Use `displayRepeat(fieldName, items, options)` for array-like content. The nested `items` describe how each row should appear.
+
+```ts
+displayRepeat(
+  "categories",
+  [
+    displayField("key", { span: 4, display: "badge" }),
+    displayField("summary", { span: 12 }),
+    displayField("range", { span: 12, label: "Range" }),
+  ],
+  {
+    span: 12,
+    layout: "cards",
+    useAsTitle: "title",
+    icon: "Folder",
+    columns: 3,
+    emptyText: "No categories yet",
+  },
+);
+```
+
+The repeat layouts are:
+
+| Layout  | Use it when                                                               |
+| ------- | ------------------------------------------------------------------------- |
+| `table` | The repeated data is compact and comparison matters. This is the default. |
+| `cards` | Each row has enough detail to read as its own item.                       |
+| `list`  | The repeated data works best as a vertical feed or checklist.             |
+
+For card and list layouts, `useAsTitle` or `titleField` reads a field from each row and uses it as the row heading. If you pass `title` instead, Dyrected uses it as a static label and appends the row number.
+
+## Add text, dividers, and custom components
+
+Use supporting helpers when the Detail View needs explanatory callouts, visual separators, or specialized widgets alongside standard fields.
+
+### Headings, callouts, and dividers
+
+`displayText(content, options)` renders formatted typography or alert boxes, while `displayDivider(options)` adds horizontal rhythm between rows.
+
+```ts
+
+
+export const notice = [
+  displayText("Review this summary before approving the record.", {
+    variant: "warning",
+    span: 12,
+  }),
+  displayDivider({ spacing: "md" }),
+];
+```
+
+`displayText()` supports variants such as `body` (default), `heading`, `subheading`, `muted`, `caption`, `callout`, `info`, and `warning`. `displayDivider()` accepts spacing options (`none`, `sm`, `md`, `lg`).
+
+### Custom components with `displayCustom`
+
+When built-in display variants are not enough, `displayCustom(name, options)` renders a React component within your Detail View layout.
+
+To use a custom component, define your React component, register it in your collection's `admin.components` map (or globally on `<DyrectedAdmin components={{ ... }} />`), and reference it by name in `detail`:
+
+```tsx
+
+
+  defineBooleanField,
+  defineCollection,
+  defineTextField,
+  displayCustom,
+  displaySection,
+} from "@dyrected/core";
+
+// 1. Define your custom React component
+export function AuditBadge({ doc, tone = "info" }: { doc: any; tone?: string }) {
+  const isVerified = doc.verified === true;
+  return (
+    <div
+      className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}
+    >
+      <strong>Audit Status:</strong> {isVerified ? "Verified Record" : "Pending Verification"}
+    </div>
+  );
+}
+
+// 2. Register the component in collection config and reference it by name
+export const Orders = defineCollection({
+  slug: "orders",
+  labels: { singular: "Order", plural: "Orders" },
+  admin: {
+    useAsTitle: "orderNumber",
+    components: {
+      AuditBadge,
+    },
+  },
+  detail: [
+    displaySection("Verification", [
+      displayCustom("AuditBadge", {
+        span: 12,
+        props: { tone: "success" },
+      }),
+    ]),
+  ],
+  fields: [
+    defineTextField({ name: "orderNumber", label: "Order #", required: true }),
+    defineBooleanField({ name: "verified", label: "Verified", defaultValue: false }),
+  ],
+});
+```
+
+Your component receives the current `doc`, the logged-in `user`, and any custom `props` passed in `options.props`.For **self-hosted, React-based projects** running the admin directly in the application runtime, you can also provide an inline `render` function:
+
+```tsx
+displayCustom("InlineAudit", {
+  span: 12,
+  render: ({ doc }) => <span className="text-xs text-muted-foreground">Last audited record ID: {doc.id}</span>,
+});
+```
+`displayCustomComponent()` is available as an alias for `displayCustom()`. For a deeper guide on creating and registering admin components, see [Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview).
+
+## Conditionally show items with `visible`
+
+Every detail item (sections, tabs, grids, repeats, individual fields, computed cards, text, dividers, and custom components) accepts an optional `visible` condition.
+
+`visible` can be:
+
+- A **boolean**: `visible: false` hides the item unconditionally.
+- A **JEXL expression**: evaluated against `{ doc, user }`. Supports built-in helpers like `includes()`, logical operators (`and`, `or`, `&&`, `||`), comparisons, and math.
+
+```ts
+displaySection(
+  "Internal Review",
+  [
+    displayField("publicNotes", { span: 12 }),
+    // Hide a nested field unless user has admin role
+    displayField("internalNotes", {
+      span: 12,
+      visible: "user.roles != null and includes(user.roles, 'admin')",
+    }),
+    // Hide a field unconditionally
+    displayField("legacyId", { visible: false }),
+  ],
+  {
+    span: 12,
+    // Hide the entire section if the document is still a draft
+    visible: "doc.status != 'draft'",
+  },
+);
+```
+
+Visibility rules evaluate recursively for both top-level containers and nested items inside sections, tabs, grids, and repeated rows. When a container's `visible` rule evaluates to false (or all child items inside it are hidden), it is cleanly omitted from the Detail View.
+
+## Quick reference
+
+| Helper                                                 | Purpose                                    | Common options                                                                                   |
+| ------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `displayField(fieldName, options)`                     | Show a document field or dotted path       | `label`, `hideLabel`, `span`, `display`, `format`, `currency`, `emptyText`, `visible`            |
+| `displaySection(title, items, options)`                | Group related detail items                 | `span`, `description`, `icon`, `collapsible`, `collapsedByDefault`, `visible`                    |
+| `displayTabs(tabs, options)`                           | Split complex documents into tabbed panels | `span`, `defaultTab`, `visible`                                                                  |
+| `displayTab(label, items, options)`                    | Define one tab inside `displayTabs()`      | `icon`, `badge`, `badgeColor`, `visible`                                                         |
+| `displayGrid(columns, items, options)`                 | Arrange related values in a compact grid   | `span`, `visible`                                                                                |
+| `displayRepeat(fieldName, items, options)`             | Render array-like data                     | `layout`, `emptyText`, `span`, `useAsTitle`, `titleField`, `title`, `icon`, `columns`, `visible` |
+| `displayComputed(label, expressionOrHandler, options)` | Show a derived value                       | `id`, `expression`, `handler`, `span`, `format`, `currency`, `visible`                           |
+| `displayText(content, options)`                        | Add explanatory text or a callout          | `span`, `variant`, `className`, `visible`                                                        |
+| `displayDivider(options)`                              | Add a horizontal separator                 | `span`, `spacing`, `visible`                                                                     |
+| `displayCustom(name, options)`                         | Render a registered admin component        | `span`, `props`, `render`, `visible`                                                             |
+
+## Recommended path
+
+Start with the generated Detail View and only add a custom `detail` schema when editors need a clearer read-first summary. Use sections first, add display variants for values that should scan quickly, then add computed values and repeat layouts when the document needs dashboard-style review.
+
+If the document is usually edited immediately, use `detail: false`. If the document is dense, high-impact, or reviewed more often than edited, build a Detail View and link editors to the full edit form only when they need to make a change.
+
+---
+
 ## Form & Field Hooks
 
 Canonical URL: https://docs.dyrected.com/docs/self-hosted/editor-experience/form-and-field-hooks
@@ -28543,6 +29541,7 @@ The generated admin is a small, opinionated set of screens:
 
 - **Dashboard** — a lightweight editorial home with quick "New" actions, recent edits, and a "needs attention" panel that flags setup gaps like a missing `admin.useAsTitle` or missing media alt text.
 - **Collection list** — a sortable, searchable table, and the starting point for most editing. It also supports bulk selection, an inline spreadsheet mode, and CSV import/export. See [The Collection List](https://docs.dyrected.com/docs/self-hosted/editor-experience/list-view).
+- **Detail view** — a read-first summary for a collection record or global, generated from your fields or shaped with a custom `detail` layout. See [Detail Views](https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view).
 - **Collection edit / create** — the main form. Fields render in the order of your `fields` array. The sidebar shows the document ID, timestamps, and a publishing panel when a `status` field exists. If `admin.previewUrl` is set, a live preview pane can open beside the form.
 - **Media** — shown automatically for any `upload: true` collection: a thumbnail grid, drag-and-drop upload zone, and a file-detail dialog.
 - **Global editor** — a single full-page form for each global.
@@ -34541,6 +35540,12 @@ The admin UI is generated from your config. Editors use it to manage collections
 
 See [Admin Overview](https://docs.dyrected.com/docs/self-hosted/editor-experience/overview).
 
+### Detail Views
+
+Detail Views are the read-first admin screens editors see before opening a collection record or global for editing. Your schema can shape these screens with sections, field display formats, computed values, and repeated-data layouts, so editors can review the important parts of a document without scanning the full form.
+
+See [Detail Views](https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view).
+
 ### Workflows
 
 Workflows add editorial states and transitions, so content can move through review and publishing steps instead of going live immediately on every edit.
@@ -34706,7 +35711,7 @@ In practice, the `slug` becomes a stable identifier for API paths, admin routes,
 When you define a collection, Dyrected generates the main content surfaces around it:
 
 - list, read, create, update, and delete collection endpoints
-- a generated admin list view and edit form
+- a generated admin list view, detail view, and edit form
 - typed SDK access through `client.collection('slug')`
 - hooks and access points that run on the server
 
@@ -34745,6 +35750,12 @@ That means `slug` is part of the long-term data contract, not just display text.
 In practice, most collection design work happens here. This is where you model titles, slugs, dates, relationships, nested objects, repeated groups, and anything else that belongs to each document.
 
 For the full field system, read [Fields](https://docs.dyrected.com/docs/self-hosted/model-content/fields/overview).
+
+### Shape the record summary with `detail`
+
+Collections get a Detail View where editors can review a record before opening the edit form. Dyrected can generate that summary from your fields, or you can define `detail` to arrange sections, field display formats, computed values, and repeated data yourself.
+
+Use a custom Detail View when the record is easier to understand as a summary than as a full form. For the full guide, read [Detail Views](https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view).
 
 ### Use blocks for page sections
 
@@ -35105,6 +36116,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     urlPattern?: string;
   };
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }
 ```
 
@@ -35125,6 +36141,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
+| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 
 
 ## `admin` options
@@ -35419,7 +36436,7 @@ If a collection answers "many documents," a global answers "exactly one current 
 
 Defining a global gives you:
 
-- a generated admin edit view for that singleton
+- a generated admin detail view and edit view for that singleton
 - `GET` and `PATCH` global API operations
 - typed SDK access through `client.global('slug')`
 - global access rules and lifecycle hooks
@@ -35460,6 +36477,12 @@ That makes `slug` part of the long-term data contract, not display text. Choose 
 `fields` is where the shape of the singleton lives. This array defines what editors can update, how values are validated, and what the API returns.
 
 Because a global is one document, think of `fields` as the shape of that single record rather than a template for many. For the full field system, read [Fields](https://docs.dyrected.com/docs/self-hosted/model-content/fields/overview).
+
+### Shape the singleton summary with `detail`
+
+Globals can use `detail` to turn one large settings document into a readable admin summary. This works well for site settings, navigation, footer content, assessment categories, or any singleton where editors need to review nested values before editing them.
+
+For layout helpers, computed values, repeated data, and `detail: false`, read [Detail Views](https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view).
 
 ### Control who can edit with `access`
 
@@ -35589,6 +36612,11 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
    * found to be empty.
    */
   initialData?: Partial<TDoc>;
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }
 ```
 
@@ -35603,6 +36631,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
+| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 
 
 ## Global options in practice

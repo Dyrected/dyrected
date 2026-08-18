@@ -575,7 +575,7 @@ export function EditEntryPage() {
 
       const doc = results.doc as { id?: string } | undefined
       if (!isEdit && doc?.id) {
-        navigate(`/collections/${slug}/edit/${doc.id}`, { replace: true })
+        navigate(`/collections/${slug}/${doc.id}/edit`, { replace: true })
       }
     },
     onError: (error: Error, variables) => {
@@ -917,8 +917,15 @@ export function EditEntryPage() {
             variant="ghost"
             size="icon"
             className="dy-h-9 dy-w-9 dy-rounded-lg hover:dy-bg-muted dy-shrink-0"
-            onClick={() => navigate(`/collections/${slug}`)}
-            title="Back to list"
+            onClick={() => {
+              const hasDetail = (schema as any)?.detail !== false
+              if (isEdit && id && hasDetail) {
+                navigate(`/collections/${slug}/${id}`)
+              } else {
+                navigate(`/collections/${slug}`)
+              }
+            }}
+            title={isEdit && (schema as any)?.detail !== false ? "Back to detail" : "Back to list"}
           >
             <ChevronLeft className="dy-h-4 dy-w-4" />
           </Button>
@@ -958,7 +965,7 @@ export function EditEntryPage() {
                                 key={sibling.id as string}
                                 value={sibling.id as string}
                                 onSelect={(val) => {
-                                  navigate(`/collections/${slug}/edit/${val}`)
+                                  navigate(`/collections/${slug}/${val}/edit`)
                                   setSwitcherOpen(false)
                                   setSearchQuery("")
                                 }}

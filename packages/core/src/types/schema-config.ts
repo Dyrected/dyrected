@@ -14,6 +14,7 @@ import type {
 } from "./hooks.js";
 import type { Field, UploadConfig } from "./schema-core.js";
 import type { WorkflowConfig } from "./workflows.js";
+import type { DetailSchema } from "./detail.js";
 
 /**
  * Configures account lockout behavior for an auth-enabled collection.
@@ -400,6 +401,11 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
      */
     urlPattern?: string;
   };
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }
 
 /**
@@ -494,4 +500,9 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
    * found to be empty.
    */
   initialData?: Partial<TDoc>;
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }

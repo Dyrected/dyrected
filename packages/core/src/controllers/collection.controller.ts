@@ -35,6 +35,7 @@ import {
   transitionWorkflow,
 } from "../workflows.js";
 import { getRequestLogger } from "../observability.js";
+import { evaluateDetailComputed } from "../detail.js";
 
 export class CollectionController {
   private collection: CollectionConfig;
@@ -56,6 +57,23 @@ export class CollectionController {
     c: Context<DyrectedContext>,
   ): HookRequestContext {
     return toHookRequestContext(c.req);
+  }
+
+  private sanitizeDoc(doc: any): any {
+    if (!doc || typeof doc !== "object") return doc;
+    if (this.collection.auth) {
+      const {
+        password: _p,
+        salt: _s,
+        resetPasswordToken: _rpt,
+        resetPasswordExpires: _rpe,
+        loginAttempts: _la,
+        lockUntil: _lu,
+        ...safeDoc
+      } = doc;
+      return safeDoc;
+    }
+    return doc;
   }
 
   private async evaluateAccess(
@@ -342,6 +360,10 @@ export class CollectionController {
       );
     }
 
+    if (this.collection.auth && result.docs && Array.isArray(result.docs)) {
+      result.docs = result.docs.map((d: any) => this.sanitizeDoc(d));
+    }
+
     return c.json(result);
   }
 
@@ -361,40 +383,57 @@ export class CollectionController {
         id,
       });
       const externalSubject = localDoc?.externalSubject || id;
-
-      let member: any = null;
       if (provider.members.get) {
-        member = await provider.members.get({ externalSubject, req: hookReq });
+        const member = await provider.members.get({
+          externalSubject,
+          req: hookReq,
+        });
+        if (member) {
+          return c.json({
+            ...member,
+            id: localDoc ? localDoc.id : member.id,
+            externalSubject: member.id,
+          });
+        }
       } else if (provider.members.list) {
         const listResult = await provider.members.list({ req: hookReq });
-        member = listResult.docs.find((m) => m.id === externalSubject) || null;
+        const matched = listResult.docs.find((m: any) => m.id === externalSubject || m.id === id);
+        if (matched) {
+          return c.json({
+            ...matched,
+            id: localDoc ? localDoc.id : matched.id,
+            externalSubject: matched.id,
+          });
+        }
       }
-
-      if (!member) return c.json({ message: "Not Found" }, 404);
-      return c.json({
-        ...member,
-        id: localDoc ? localDoc.id : member.id,
-        externalSubject: member.id,
-      });
     }
 
-    const readonlyDb = createReadonlyDb(db);
     const id = c.req.param("id");
-    // Default relationship depth is 1, matching the SDK default.
-    const depth =
-      c.req.query("depth") !== undefined ? Number(c.req.query("depth")) : 1;
+    if (!id) return c.json({ message: "Missing ID" }, 400);
+
+    const depth = Number.parseInt(c.req.query("depth") || "0", 10);
     const user = c.get("user");
 
-    if (!id) return c.json({ message: "Missing ID" }, 400);
-    let doc = await db!.findOne({ collection: this.collection.slug, id });
-    if (!doc) return c.json({ message: "Not Found" }, 404);
+    const doc = await db.findOne({
+      collection: this.collection.slug,
+      id,
+    });
 
-    if (this.collection.workflow) {
-      doc = materializeWorkflowDocument(doc, this.collection.workflow, user);
-      if (!doc) return c.json({ message: "Not Found" }, 404);
+    if (!doc) {
+      return c.json({ message: "Document not found" }, 404);
     }
 
-    const access = await this.evaluateAccess(c, "read", { id, doc });
+    let effectiveDoc: any = doc;
+    if (this.collection.workflow) {
+      effectiveDoc = materializeWorkflowDocument(
+        doc as any,
+        this.collection.workflow,
+        user,
+      );
+      if (!effectiveDoc) return c.json({ message: "Document not found" }, 404);
+    }
+
+    const access = await this.evaluateAccess(c, "read", { id, doc: effectiveDoc });
     if (!access.allowed) {
       return c.json(
         {
@@ -405,9 +444,11 @@ export class CollectionController {
       );
     }
 
-    const docWithDefaults = DefaultsService.apply(this.collection.fields, doc);
-
-    // Run afterRead hooks
+    const docWithDefaults = DefaultsService.apply(
+      this.collection.fields,
+      effectiveDoc,
+    );
+    const readonlyDb = createReadonlyDb(db);
     const docWithCollectionHooks = await runCollectionHooks(
       this.collection.hooks?.afterRead,
       {
@@ -434,18 +475,23 @@ export class CollectionController {
       docWithFieldHooks,
     );
 
+    let finalDoc = docWithFieldAccess;
+
     if (depth > 0 && docWithFieldAccess) {
       const populationService = new PopulationService(db!, config.collections);
-      const populatedDoc = await populationService.populate({
+      finalDoc = await populationService.populate({
         data: docWithFieldAccess,
         fields: this.collection.fields,
         currentDepth: 0,
         maxDepth: depth,
       });
-      return c.json(populatedDoc);
     }
 
-    return c.json(docWithFieldAccess);
+    if (finalDoc && this.collection.detail) {
+      finalDoc = await evaluateDetailComputed(this.collection.detail, finalDoc, user, readonlyDb);
+    }
+
+    return c.json(this.sanitizeDoc(finalDoc));
   }
 
   async create(c: Context<DyrectedContext>) {

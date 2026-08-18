@@ -993,6 +993,21 @@ export const docsRuntimeManifest: readonly DocsRuntimeManifestEntry[] = [
     "status": "classified"
   },
   {
+    "id": "editor-experience--detail-view",
+    "relativePath": "editor-experience/detail-view",
+    "title": "Detail Views",
+    "description": "Shape the read-first admin screen editors see before they open a collection record or global for editing.",
+    "runtime": "variant",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "editor-experience",
+    "sourceFile": "apps/docs/content/docs/editor-experience/detail-view.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/editor-experience/detail-view",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/editor-experience/detail-view",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/editor-experience/detail-view",
+    "status": "classified"
+  },
+  {
     "id": "editor-experience--editor-accounts",
     "relativePath": "editor-experience/editor-accounts",
     "title": "Editor Accounts",

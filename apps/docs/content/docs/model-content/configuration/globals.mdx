@@ -30,7 +30,7 @@ If a collection answers "many documents," a global answers "exactly one current 
 
 Defining a global gives you:
 
-- a generated admin edit view for that singleton
+- a generated admin detail view and edit view for that singleton
 - `GET` and `PATCH` global API operations
 - typed SDK access through `client.global('slug')`
 - global access rules and lifecycle hooks
@@ -71,6 +71,12 @@ That makes `slug` part of the long-term data contract, not display text. Choose 
 `fields` is where the shape of the singleton lives. This array defines what editors can update, how values are validated, and what the API returns.
 
 Because a global is one document, think of `fields` as the shape of that single record rather than a template for many. For the full field system, read [Fields](/docs/model-content/fields/overview).
+
+### Shape the singleton summary with `detail`
+
+Globals can use `detail` to turn one large settings document into a readable admin summary. This works well for site settings, navigation, footer content, assessment categories, or any singleton where editors need to review nested values before editing them.
+
+For layout helpers, computed values, repeated data, and `detail: false`, read [Detail Views](/docs/editor-experience/detail-view).
 
 ### Control who can edit with `access`
 
@@ -200,6 +206,11 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
    * found to be empty.
    */
   initialData?: Partial<TDoc>;
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }
 ```
 
@@ -214,6 +225,7 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
+| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 {/* GENERATED:REFERENCE-CONFIGURATION-GLOBALS:END */}
 
 ## Global options in practice

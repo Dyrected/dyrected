@@ -849,3 +849,4 @@ export * from "./utils/jexl-helpers.js";
 export * from "./utils/hooks.js";
 export * from "./utils/openapi.js";
 export * from "./workflows.js";
+export * from "./detail.js";

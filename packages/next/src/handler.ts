@@ -17,7 +17,7 @@ export interface DyrectedNextHandlerOptions {
  * export const { GET, POST, PATCH, DELETE } = dyrectedNextHandler(config);
  */
 export function dyrectedNextHandler(
-  config: DyrectedConfig,
+  config: DyrectedConfig | any,
   options: DyrectedNextHandlerOptions = {},
 ) {
   const basePath = normalizeBasePath(options.basePath ?? "/dyrected");

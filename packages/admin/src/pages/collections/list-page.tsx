@@ -833,8 +833,8 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
         inviteUrl: buildAdminActionUrl(),
         data: role && inviteRoleField
           ? {
-              [inviteRoleField.fieldName]: inviteRoleField.hasMany ? [role] : role,
-            }
+            [inviteRoleField.fieldName]: inviteRoleField.hasMany ? [role] : role,
+          }
           : undefined,
       })
       const inviteUrl = response.inviteUrl ?? (response.token ? buildInviteLink(response.token) : undefined)
@@ -993,10 +993,10 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
     const item = response?.docs?.find((doc: Record<string, unknown>) => String(doc.id) === id)
     const expectedValue = schema?.auth && item
       ? resolveDocumentTitle({
-          entry: item,
-          collection: schema,
-          collections: schemas?.collections,
-        })
+        entry: item,
+        collection: schema,
+        collections: schemas?.collections,
+      })
       : ""
 
     openDeleteDialog({
@@ -1109,16 +1109,31 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
     const renderLinkedCell = (item: Record<string, unknown>, cell: React.ReactNode) => {
       const canDelete = canDeleteRow(item)
       const previewUrl = getPreviewUrl(item)
+      const hasDetailView = schema?.detail !== false
+      const targetUrl = hasDetailView
+        ? `/collections/${slug}/${String(item.id)}`
+        : `/collections/${slug}/${String(item.id)}/edit`
 
       return (
         <div className="dy-flex dy-flex-col dy-gap-1 dy-min-w-[240px] dy-flex-shrink-0">
           <Link
-            to={`/collections/${slug}/edit/${String(item.id)}`}
+            to={targetUrl}
             className="dy-font-medium dy-text-foreground hover:dy-text-primary hover:dy-underline dy-underline-offset-2 dy-transition-colors dy-duration-150"
           >
             {cell}
           </Link>
           <div className="dy-flex dy-items-center dy-gap-2.5">
+            {hasDetailView && (
+              <>
+                <Link
+                  to={`/collections/${slug}/${String(item.id)}`}
+                  className="dy-text-xs dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
+                >
+                  View
+                </Link>
+                <span className="dy-text-muted-foreground/40 dy-text-xs">|</span>
+              </>
+            )}
             {previewUrl && (
               <>
                 <a
@@ -1127,13 +1142,13 @@ function CollectionListPageContent({ slug }: CollectionListPageProps) {
                   rel="noopener noreferrer"
                   className="dy-text-xs dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
                 >
-                  View
+                  Preview
                 </a>
                 <span className="dy-text-muted-foreground/40 dy-text-xs">|</span>
               </>
             )}
             <Link
-              to={`/collections/${slug}/edit/${String(item.id)}`}
+              to={`/collections/${slug}/${String(item.id)}/edit`}
               className="dy-text-xs dy-text-muted-foreground hover:dy-text-foreground dy-underline-offset-2 hover:dy-underline dy-transition-colors dy-duration-150"
             >
               Edit

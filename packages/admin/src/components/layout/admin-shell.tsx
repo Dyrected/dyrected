@@ -470,17 +470,23 @@ function SidebarInner({
           <div>
             {groupLabel("Configuration")}
             <div className="dy-space-y-0.5">
-              {globals.map((glob) => (
-                <NavItem
-                  key={glob.slug}
-                  to={`/globals/${glob.slug}`}
-                  icon={resolveAdminIcon(glob.admin?.icon, Settings)}
-                  label={glob.label ?? glob.slug}
-                  active={location.pathname === `/globals/${glob.slug}`}
-                  collapsed={collapsed}
-                  onClick={onNavigate}
-                />
-              ))}
+              {globals.map((glob) => {
+                const hasGlobalDetail = (glob as any).detail !== false
+                return (
+                  <NavItem
+                    key={glob.slug}
+                    to={hasGlobalDetail ? `/globals/${glob.slug}` : `/globals/${glob.slug}/edit`}
+                    icon={resolveAdminIcon(glob.admin?.icon, Settings)}
+                    label={glob.label ?? glob.slug}
+                    active={
+                      location.pathname === `/globals/${glob.slug}` ||
+                      location.pathname === `/globals/${glob.slug}/edit`
+                    }
+                    collapsed={collapsed}
+                    onClick={onNavigate}
+                  />
+                )
+              })}
             </div>
           </div>
         )}

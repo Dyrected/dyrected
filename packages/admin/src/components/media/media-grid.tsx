@@ -24,7 +24,7 @@ export function MediaGrid({ items, baseUrl, onDelete, slug }: MediaGridProps) {
           item={item}
           baseUrl={baseUrl}
           onDelete={onDelete}
-          editPath={`/collections/${slug}/edit/${item.id}`}
+          editPath={`/collections/${slug}/${item.id}/edit`}
         />
       ))}
     </div>

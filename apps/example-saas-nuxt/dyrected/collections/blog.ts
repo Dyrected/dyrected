@@ -1,4 +1,4 @@
-import { defineCollection } from "@dyrected/core";
+import { defineCollection, displaySection, displayField } from "@dyrected/core";
 import { Media } from "./media.js";
 import { Authors } from "./authors.js";
 import { blogSeed } from "../seed.js";
@@ -21,6 +21,29 @@ export const Blog = defineCollection({
     defaultColumns: ["title", "status", "tags", "views", "publishedDate"],
     icon: "File",
   },
+  detail: [
+    displaySection(
+      "Article Header",
+      [
+        displayField("title", { span: 8 }),
+        displayField("status", { span: 2, display: "badge" }),
+        displayField("views", { span: 2 }),
+        displayField("slug", { span: 6, display: "copyable" }),
+        displayField("publishedDate", { span: 6, display: "relative" }),
+      ],
+      { span: 8 },
+    ),
+    displaySection(
+      "Author & Taxonomy",
+      [
+        displayField("author", { span: 12 }),
+        displayField("tags", { span: 12, display: "tags" }),
+        displayField("featuredImage", { span: 12, display: "image" }),
+      ],
+      { span: 4 },
+    ),
+    displaySection("Article Content", [displayField("content", { span: 12 })], { span: 12 }),
+  ],
   fields: [
     { name: "title", type: "text", required: true },
     {

@@ -327,6 +327,48 @@ export function clamp(val: unknown, minVal: unknown, maxVal: unknown): number {
   return Math.min(Math.max(num, min), max);
 }
 
+export function ceil(val: unknown): number {
+  return Math.ceil(Number(val) || 0);
+}
+
+export function floor(val: unknown): number {
+  return Math.floor(Number(val) || 0);
+}
+
+export function abs(val: unknown): number {
+  return Math.abs(Number(val) || 0);
+}
+
+export function min(...args: unknown[]): number {
+  const nums = args.flat().map((n) => Number(n) || 0);
+  return nums.length ? Math.min(...nums) : 0;
+}
+
+export function max(...args: unknown[]): number {
+  const nums = args.flat().map((n) => Number(n) || 0);
+  return nums.length ? Math.max(...nums) : 0;
+}
+
+export function pow(base: unknown, exp: unknown): number {
+  return Math.pow(Number(base) || 0, Number(exp) || 0);
+}
+
+export function sqrt(val: unknown): number {
+  return Math.sqrt(Number(val) || 0);
+}
+
+export function sum(arr: unknown): number {
+  if (!Array.isArray(arr)) return Number(arr) || 0;
+  return arr.reduce((acc, val) => acc + (Number(val) || 0), 0);
+}
+
+export function count(val: unknown): number {
+  if (Array.isArray(val)) return val.length;
+  if (typeof val === "string") return val.length;
+  if (val !== undefined && val !== null && val !== false) return 1;
+  return 0;
+}
+
 // ── Logical & Object Utilities ──────────────────────────────────────────────
 
 /**
@@ -369,14 +411,13 @@ export function isEmpty(val: unknown): boolean {
  * @example `get(siblingData, "author.name", "Guest")` => `"John"`
  */
 export function get(obj: unknown, path: unknown, fallback: unknown = null): unknown {
-  if (!obj || typeof obj !== "object") return fallback;
-  const pathStr = String(path || "").trim();
-  if (!pathStr) return fallback;
+  if (obj === undefined || obj === null || typeof obj !== "object") return fallback;
+  if (typeof path !== "string") return fallback;
 
-  const parts = pathStr.split(".");
+  const parts = path.split(".").filter(Boolean);
   let curr: any = obj;
   for (const part of parts) {
-    if (curr === undefined || curr === null) return fallback;
+    if (curr === undefined || curr === null || typeof curr !== "object") return fallback;
     curr = curr[part];
   }
   return curr === undefined || curr === null ? fallback : curr;
@@ -420,6 +461,15 @@ export function registerJexlHelpers(jexlInstance: typeof jexl = jexl) {
     // Math
     round,
     clamp,
+    ceil,
+    floor,
+    abs,
+    min,
+    max,
+    pow,
+    sqrt,
+    sum,
+    count,
     // Objects & Logical
     default: defaultValue,
     coalesce,
@@ -433,11 +483,69 @@ export function registerJexlHelpers(jexlInstance: typeof jexl = jexl) {
     } catch {
       // Ignore if already registered
     }
+    try {
+      jexlInstance.addTransform(name, fn);
+    } catch {
+      // Ignore if already registered
+    }
+  }
+
+  try {
+    jexlInstance.addBinaryOp("and", 20, (left: any, right: any) => Boolean(left && right));
+    jexlInstance.addBinaryOp("or", 10, (left: any, right: any) => Boolean(left || right));
+  } catch {
+    // Ignore if already registered
   }
 }
 
 // Register automatically on core import
 registerJexlHelpers(jexl);
+
+/**
+ * Standard shared evaluator for JEXL expressions across server and browser.
+ * Injects math namespace and standard helpers into the context.
+ */
+export async function evaluateJexl(
+  expression: string,
+  context: Record<string, any> = {},
+): Promise<any> {
+  if (!expression || typeof expression !== "string") return undefined;
+  try {
+    const evalContext = {
+      null: null,
+      undefined: undefined,
+      ...context,
+      math: Math,
+      Math,
+    };
+    return await jexl.eval(expression, evalContext);
+  } catch (_err) {
+    return undefined;
+  }
+}
+
+/**
+ * Synchronous standard shared evaluator for JEXL expressions.
+ * Injects math namespace and standard helpers into the context.
+ */
+export function evaluateJexlSync(
+  expression: string,
+  context: Record<string, any> = {},
+): any {
+  if (!expression || typeof expression !== "string") return undefined;
+  try {
+    const evalContext = {
+      null: null,
+      undefined: undefined,
+      ...context,
+      math: Math,
+      Math,
+    };
+    return jexl.evalSync(expression, evalContext);
+  } catch (_err) {
+    return undefined;
+  }
+}
 
 /** List of all built-in Jexl helper function names for AST validation. */
 export const BUILTIN_JEXL_HELPERS = [

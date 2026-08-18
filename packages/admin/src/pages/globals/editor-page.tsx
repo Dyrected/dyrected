@@ -2,8 +2,8 @@ import * as React from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { useDyrected } from "../../providers/dyrected-context"
-import { useParams } from "react-router-dom"
-import { Globe, Save } from "lucide-react"
+import { useParams, useNavigate } from "react-router-dom"
+import { Globe, Save, ArrowLeft } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "../../components/ui/button"
 import { AdminEditorSkeleton } from "../../components/layout/admin-loading"
@@ -17,6 +17,7 @@ const FormEngine = React.lazy(async () => {
 
 export function GlobalEditorPage() {
   const { slug } = useParams()
+  const navigate = useNavigate()
   const { client } = useDyrected()
   const queryClient = useQueryClient()
   const [isDirty, setIsDirty] = useState(false)
@@ -68,7 +69,9 @@ export function GlobalEditorPage() {
     onSuccess: () => {
       setIsDirty(false)
       queryClient.invalidateQueries({ queryKey: ["global", slug] })
+      queryClient.invalidateQueries({ queryKey: ["global", slug, "detail"] })
       toast.success(`${schema.label || schema.slug} updated successfully`)
+      navigate(`/globals/${slug}`)
     },
     onError: (error: any) => {
       toast.error("Failed to update settings", {
@@ -93,12 +96,21 @@ export function GlobalEditorPage() {
     <div className="dy-space-y-8 dy-max-w-5xl dy-mx-auto">
       <div className="dy-flex dy-items-center dy-justify-between dy-gap-4 dy-border-b dy-border-border/50 dy-pb-6">
         <div className="dy-flex dy-items-center dy-gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(`/globals/${slug}`)}
+            className="dy-h-9 dy-w-9 dy-p-0 dy-text-muted-foreground hover:dy-text-foreground"
+            title="Back to Details"
+          >
+            <ArrowLeft className="dy-h-4 dy-w-4" />
+          </Button>
           <div className="dy-p-2 dy-bg-primary/10 dy-text-primary dy-rounded-lg dy-shrink-0">
             <GlobalIcon className="dy-h-5 dy-w-5" />
           </div>
           <div>
             <h1 className="dy-text-lg dy-font-serif dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
-              {schema.label || schema.slug}
+              Edit {schema.label || schema.slug}
             </h1>
             <p className="dy-text-[10px] dy-font-bold dy-uppercase dy-tracking-widest dy-text-muted-foreground/40 dy-leading-none dy-mt-1">
               Global Configuration
@@ -107,6 +119,14 @@ export function GlobalEditorPage() {
         </div>
 
         <div className="dy-flex dy-items-center dy-gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/globals/${slug}`)}
+            className="dy-h-8 dy-gap-1.5 text-xs"
+          >
+            Cancel
+          </Button>
           <Button
             size="icon"
             className="dy-h-9 dy-w-9 dy-rounded-lg dy-shadow-sm"

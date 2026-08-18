@@ -96,6 +96,82 @@ function serializeBlockForApi(block: any): any {
   };
 }
 
+function serializeDetailItemForApi(item: any): any {
+  if (!item) return item;
+  if (typeof item === "string") {
+    return { type: "field", field: item };
+  }
+  if (item.type === "section") {
+    return {
+      type: "section",
+      title: item.title,
+      items: (item.items || []).map(serializeDetailItemForApi),
+      options: item.options,
+    };
+  }
+  if (item.type === "tab") {
+    return {
+      type: "tab",
+      label: item.label,
+      items: (item.items || []).map(serializeDetailItemForApi),
+      options: item.options,
+    };
+  }
+  if (item.type === "tabs") {
+    return {
+      type: "tabs",
+      tabs: (item.tabs || []).map(serializeDetailItemForApi),
+      options: item.options,
+    };
+  }
+  if (item.type === "grid") {
+    return {
+      type: "grid",
+      columns: item.columns,
+      items: (item.items || []).map(serializeDetailItemForApi),
+      options: item.options,
+    };
+  }
+  if (item.type === "repeat") {
+    return {
+      type: "repeat",
+      field: item.field,
+      items: (item.items || []).map(serializeDetailItemForApi),
+      options: item.options,
+    };
+  }
+  if (item.type === "computed") {
+    return {
+      type: "computed",
+      id: item.id || item.label?.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+      label: item.label,
+      expression: item.expression,
+      options: {
+        id: item.id,
+        span: item.options?.span,
+        format: item.options?.format,
+        currency: item.options?.currency,
+        visible: item.options?.visible,
+      },
+    };
+  }
+  if (item.type === "field") {
+    return {
+      type: "field",
+      field: item.field,
+      options: item.options,
+    };
+  }
+  return item;
+}
+
+export function serializeDetailForApi(detail?: any): any {
+  if (detail === false) return false;
+  if (detail === true) return true;
+  if (!detail || !Array.isArray(detail)) return undefined;
+  return detail.map(serializeDetailItemForApi);
+}
+
 /**
  * Register dynamic routes based on the provided configuration.
  */
@@ -173,6 +249,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
           audit: !!col.audit,
           drafts: !!col.drafts,
           admin: col.admin,
+          detail: serializeDetailForApi(col.detail),
           workflow: col.workflow
             ? {
                 initialState: col.workflow.initialState,
@@ -227,6 +304,7 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
             })),
           ),
           admin: glb.admin,
+          detail: serializeDetailForApi(glb.detail),
         })),
     );
 

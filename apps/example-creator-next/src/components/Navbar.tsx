@@ -12,6 +12,10 @@ export default function Navbar() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   useEffect(() => {
     // Initial fetch - delayed to avoid sync render warning
     const timeoutId = setTimeout(() => {

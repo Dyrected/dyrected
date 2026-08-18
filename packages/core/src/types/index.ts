@@ -11,3 +11,4 @@ export * from "./schema-config.js";
 export * from "./schema-core.js";
 export * from "./schema-inference.js";
 export * from "./workflows.js";
+export * from "./detail.js";

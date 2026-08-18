@@ -92,7 +92,7 @@ describe("simplePublishingWorkflow template", () => {
     const wf = simplePublishingWorkflow();
     expect(wf.transitions).toHaveLength(2);
     const publish = wf.transitions.find((t) => t.name === "publish");
-    expect(publish?.from).toBe("draft");
+    expect(publish?.from).toEqual(["draft", "published"]);
     expect(publish?.to).toBe("published");
     
     const unpublish = wf.transitions.find((t) => t.name === "unpublish");

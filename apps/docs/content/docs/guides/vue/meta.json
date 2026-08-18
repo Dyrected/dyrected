@@ -4,11 +4,11 @@
   "pages": [
     "overview",
     "installing-dyrected",
-    "package-reference",
     "defining-a-schema",
     "creating-your-first-content",
     "displaying-content-in-vuejs",
     "adding-a-visual-editor-in-vuejs",
-    "building-landing-pages-for-marketing"
+    "building-landing-pages-for-marketing",
+    "package-reference"
   ]
 }

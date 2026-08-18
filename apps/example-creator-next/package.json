@@ -3,15 +3,16 @@
   "version": "0.1.26",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3007",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p 3007",
     "lint": "eslint",
     "typecheck:verbose": "tsc --noEmit --noErrorTruncation"
   },
   "dependencies": {
     "@dyrected/admin": "workspace:*",
     "@dyrected/core": "workspace:*",
+    "@dyrected/db-postgres": "workspace:*",
     "@dyrected/next": "workspace:*",
     "@dyrected/react": "workspace:*",
     "@dyrected/sdk": "workspace:*",
