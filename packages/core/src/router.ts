@@ -13,10 +13,7 @@ import { generateOpenApi } from "./utils/openapi.js";
 import { getSwaggerHtml } from "./utils/swagger.js";
 import { getPublicAdminAuthConfig } from "./utils/admin-auth.js";
 import { mergeDynamicConfig } from "./utils/block-references.js";
-import {
-  resolveBooleanAccess,
-  toHookRequestContext,
-} from "./utils/access-control.js";
+import { resolveBooleanAccess, toHookRequestContext } from "./utils/access-control.js";
 import {
   assertValidAdminConditionsInConfig,
   assertValidDeclarativeAccessInConfig,
@@ -52,10 +49,7 @@ function accessGate(
     });
 
     if (!allowed) {
-      return c.json(
-        { error: true, message: `Access denied: ${action} on ${target.slug}` },
-        403,
-      );
+      return c.json({ error: true, message: `Access denied: ${action} on ${target.slug}` }, 403);
     }
 
     await next();
@@ -77,9 +71,7 @@ function serializeFieldForApi(f: any): any {
   }
   if (
     typeof serialized.options === "function" ||
-    (serialized.options &&
-      typeof serialized.options === "object" &&
-      "resolve" in serialized.options)
+    (serialized.options && typeof serialized.options === "object" && "resolve" in serialized.options)
   ) {
     serialized.options = { _dynamic: true };
   }
@@ -107,10 +99,7 @@ function serializeBlockForApi(block: any): any {
 /**
  * Register dynamic routes based on the provided configuration.
  */
-export function registerRoutes(
-  app: Hono<DyrectedContext>,
-  config: DyrectedConfig,
-) {
+export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfig) {
   // Per-app cache for dynamic option resolvers that opt in via `cacheTTL`.
   // Scoped to this config so tests and multi-tenant setups stay isolated.
   const optionsCache = new Map<string, { expires: number; value: unknown }>();
@@ -120,9 +109,7 @@ export function registerRoutes(
   app.get("/api/schemas", optionalAuth(config), async (c) => {
     const siteId = c.req.header("X-Site-Id");
     const requestConfig =
-      siteId && config.onSchemaFetch
-        ? mergeDynamicConfig(config, await config.onSchemaFetch(siteId))
-        : config;
+      siteId && config.onSchemaFetch ? mergeDynamicConfig(config, await config.onSchemaFetch(siteId)) : config;
     assertValidDeclarativeHooksInConfig(requestConfig, "/api/schemas");
     assertValidDeclarativeAccessInConfig(requestConfig, "/api/schemas");
     assertValidAdminConditionsInConfig(requestConfig, "/api/schemas");
@@ -138,24 +125,16 @@ export function registerRoutes(
       if (typeof access === "boolean") return access;
       // Named policies: inline a string/boolean policy so the admin evaluates it
       // live against the form; resolve function policies to a static boolean.
-      if (
-        access &&
-        typeof access === "object" &&
-        typeof access.policy === "string"
-      ) {
+      if (access && typeof access === "object" && typeof access.policy === "string") {
         const policy = requestConfig.accessPolicies?.[access.policy];
-        if (typeof policy === "string" || typeof policy === "boolean")
-          return policy;
+        if (typeof policy === "string" || typeof policy === "boolean") return policy;
       }
       return resolveBooleanAccess(requestConfig, access, accessArgs);
     };
 
     const filteredCollections = await Promise.all(
       collections
-        .filter(
-          (col) =>
-            !siteId || col.shared || !col.siteId || col.siteId === siteId,
-        )
+        .filter((col) => !siteId || col.shared || !col.siteId || col.siteId === siteId)
         .map(async (col) => ({
           slug: col.slug,
           labels: col.labels,
@@ -216,10 +195,7 @@ export function registerRoutes(
 
     const filteredGlobals = await Promise.all(
       globals
-        .filter(
-          (glb) =>
-            !siteId || glb.shared || !glb.siteId || glb.siteId === siteId,
-        )
+        .filter((glb) => !siteId || glb.shared || !glb.siteId || glb.siteId === siteId)
         .map(async (glb) => ({
           slug: glb.slug,
           label: glb.label,
@@ -265,176 +241,158 @@ export function registerRoutes(
       adminHealth: {
         emailConfigured: !!requestConfig.email,
         secureAuthSecretConfigured: !!process.env.DYRECTED_JWT_SECRET,
-        authCollectionConfigured: requestConfig.collections.some(
-          (collection) => !!collection.auth,
-        ),
-        uploadCollectionConfigured: requestConfig.collections.some(
-          (collection) => !!collection.upload,
-        ),
+        authCollectionConfigured: requestConfig.collections.some((collection) => !!collection.auth),
+        uploadCollectionConfigured: requestConfig.collections.some((collection) => !!collection.upload),
       },
     });
-
   });
 
-  app.get(
-    "/api/dyrected/options/:collection/:field",
-    optionalAuth(config),
-    async (c) => {
-      const { collection: colSlug, field: fieldName } = c.req.param();
-      const siteId = c.req.header("X-Site-Id");
+  app.get("/api/dyrected/options/:collection/:field", optionalAuth(config), async (c) => {
+    const { collection: colSlug, field: fieldName } = c.req.param();
+    const siteId = c.req.header("X-Site-Id");
 
-      // Resolve collections
-      const requestConfig =
-        siteId && config.onSchemaFetch
-          ? mergeDynamicConfig(config, await config.onSchemaFetch(siteId))
-          : config;
-      let collections = [...requestConfig.collections];
+    // Resolve collections
+    const requestConfig =
+      siteId && config.onSchemaFetch ? mergeDynamicConfig(config, await config.onSchemaFetch(siteId)) : config;
+    let collections = [...requestConfig.collections];
 
-      const user = c.get("user");
-      let collection = collections.find((col) => col.slug === colSlug);
-      let field: any;
+    const user = c.get("user");
+    let collection = collections.find((col) => col.slug === colSlug);
+    let field: any;
 
-      if (collection) {
-        // Check read access on collection
-        const accessExpr = collection.access?.read;
-        if (accessExpr !== undefined && accessExpr !== null) {
-          const allowed = await resolveBooleanAccess(config, accessExpr, {
-            user,
-            req: toHookRequestContext(c.req),
-          });
-          if (!allowed) {
-            return c.json(
-              { error: true, message: `Access denied: read on ${colSlug}` },
-              403,
-            );
-          }
+    if (collection) {
+      // Check read access on collection
+      const accessExpr = collection.access?.read;
+      if (accessExpr !== undefined && accessExpr !== null) {
+        const allowed = await resolveBooleanAccess(config, accessExpr, {
+          user,
+          req: toHookRequestContext(c.req),
+        });
+        if (!allowed) {
+          return c.json({ error: true, message: `Access denied: read on ${colSlug}` }, 403);
         }
-        field = collection.fields.find((f) => f.name === fieldName);
-      } else {
-        const globals = [...requestConfig.globals];
-        const glb = globals.find((g) => g.slug === colSlug);
-        if (!glb) {
-          return c.json(
-            {
-              error: true,
-              message: `${colSlug} not found as collection or global`,
-            },
-            404,
-          );
-        }
-        // Check read access on global
-        const accessExpr = glb.access?.read;
-        if (accessExpr !== undefined && accessExpr !== null) {
-          const allowed = await resolveBooleanAccess(config, accessExpr, {
-            user,
-            req: toHookRequestContext(c.req),
-          });
-          if (!allowed) {
-            return c.json(
-              {
-                error: true,
-                message: `Access denied: read on global ${colSlug}`,
-              },
-              403,
-            );
-          }
-        }
-        field = glb.fields.find((f) => f.name === fieldName);
       }
-
-      if (!field) {
+      field = collection.fields.find((f) => f.name === fieldName);
+    } else {
+      const globals = [...requestConfig.globals];
+      const glb = globals.find((g) => g.slug === colSlug);
+      if (!glb) {
         return c.json(
           {
             error: true,
-            message: `Field ${fieldName} not found in ${colSlug}`,
+            message: `${colSlug} not found as collection or global`,
           },
           404,
         );
       }
-
-      // Get the resolver
-      let resolver: any;
-      let cacheTTL: number | undefined;
-      if (typeof field.options === "function") {
-        resolver = field.options;
-      } else if (
-        field.options &&
-        typeof field.options === "object" &&
-        "resolve" in field.options
-      ) {
-        resolver = field.options.resolve;
-        cacheTTL = (field.options as { cacheTTL?: number }).cacheTTL;
-      }
-
-      if (!resolver) {
-        return c.json(
-          {
-            error: true,
-            message: `Field ${fieldName} in ${colSlug} is not dynamic`,
-          },
-          400,
-        );
-      }
-
-      try {
-        const db = (c as any).get("db") || (config.db as any);
-        // Construct a request query helper
-        const queryParams = c.req.query();
-        const reqContext = {
-          query: queryParams,
-          headers: c.req.header(),
-          raw: c.req.raw,
-        };
-
-        // When the resolver opts into caching, key the result by the inputs that
-        // change it: the field, the query params, and the requesting user (so a
-        // user-scoped resolver never serves another user's options).
-        const shouldCache = typeof cacheTTL === "number" && cacheTTL > 0;
-        let cacheKey = "";
-        if (shouldCache) {
-          cacheKey = JSON.stringify([
-            siteId ?? "",
-            colSlug,
-            fieldName,
-            (user as { id?: unknown } | undefined)?.id ?? null,
-            queryParams,
-          ]);
-          const hit = optionsCache.get(cacheKey);
-          if (hit && hit.expires > Date.now()) {
-            return c.json(hit.value);
-          }
-        }
-
-        const result = await resolver({
-          db,
+      // Check read access on global
+      const accessExpr = glb.access?.read;
+      if (accessExpr !== undefined && accessExpr !== null) {
+        const allowed = await resolveBooleanAccess(config, accessExpr, {
           user,
-          req: reqContext,
+          req: toHookRequestContext(c.req),
         });
-
-        if (shouldCache) {
-          optionsCache.set(cacheKey, {
-            expires: Date.now() + (cacheTTL as number) * 1000,
-            value: result,
-          });
+        if (!allowed) {
+          return c.json(
+            {
+              error: true,
+              message: `Access denied: read on global ${colSlug}`,
+            },
+            403,
+          );
         }
-
-        return c.json(result);
-      } catch (err: any) {
-        getRequestLogger(c, "router").error({
-          err,
-          msg: "Failed to resolve dynamic field options",
-          fieldName,
-        });
-        return c.json(
-          {
-            error: true,
-            message: err.message || "Failed to resolve dynamic options",
-          },
-          500,
-        );
       }
-    },
-  );
+      field = glb.fields.find((f) => f.name === fieldName);
+    }
+
+    if (!field) {
+      return c.json(
+        {
+          error: true,
+          message: `Field ${fieldName} not found in ${colSlug}`,
+        },
+        404,
+      );
+    }
+
+    // Get the resolver
+    let resolver: any;
+    let cacheTTL: number | undefined;
+    if (typeof field.options === "function") {
+      resolver = field.options;
+    } else if (field.options && typeof field.options === "object" && "resolve" in field.options) {
+      resolver = field.options.resolve;
+      cacheTTL = (field.options as { cacheTTL?: number }).cacheTTL;
+    }
+
+    if (!resolver) {
+      return c.json(
+        {
+          error: true,
+          message: `Field ${fieldName} in ${colSlug} is not dynamic`,
+        },
+        400,
+      );
+    }
+
+    try {
+      const db = (c as any).get("db") || (config.db as any);
+      // Construct a request query helper
+      const queryParams = c.req.query();
+      const reqContext = {
+        query: queryParams,
+        headers: c.req.header(),
+        raw: c.req.raw,
+      };
+
+      // When the resolver opts into caching, key the result by the inputs that
+      // change it: the field, the query params, and the requesting user (so a
+      // user-scoped resolver never serves another user's options).
+      const shouldCache = typeof cacheTTL === "number" && cacheTTL > 0;
+      let cacheKey = "";
+      if (shouldCache) {
+        cacheKey = JSON.stringify([
+          siteId ?? "",
+          colSlug,
+          fieldName,
+          (user as { id?: unknown } | undefined)?.id ?? null,
+          queryParams,
+        ]);
+        const hit = optionsCache.get(cacheKey);
+        if (hit && hit.expires > Date.now()) {
+          return c.json(hit.value);
+        }
+      }
+
+      const result = await resolver({
+        db,
+        user,
+        req: reqContext,
+      });
+
+      if (shouldCache) {
+        optionsCache.set(cacheKey, {
+          expires: Date.now() + (cacheTTL as number) * 1000,
+          value: result,
+        });
+      }
+
+      return c.json(result);
+    } catch (err: any) {
+      getRequestLogger(c, "router").error({
+        err,
+        msg: "Failed to resolve dynamic field options",
+        fieldName,
+      });
+      return c.json(
+        {
+          error: true,
+          message: err.message || "Failed to resolve dynamic options",
+        },
+        500,
+      );
+    }
+  });
 
   app.get("/api/openapi.json", (c) => {
     return c.json(generateOpenApi(config));
@@ -451,13 +409,8 @@ export function registerRoutes(
     const scope = c.req.query("scope");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
-    if (!user?.collection || !user.sub)
-      return c.json({ error: true, message: "Authentication required." }, 401);
-    if (!key)
-      return c.json(
-        { error: true, message: "Preference key is required." },
-        400,
-      );
+    if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
+    if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
 
     const getGlobalPreference = async () => {
       const globalDoc = await db.findOne({
@@ -495,19 +448,13 @@ export function registerRoutes(
     const scope = c.req.query("scope");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
-    if (!user?.collection || !user.sub)
-      return c.json({ error: true, message: "Authentication required." }, 401);
-    if (!key)
-      return c.json(
-        { error: true, message: "Preference key is required." },
-        400,
-      );
+    if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
+    if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
 
     const body = await c.req.json().catch(() => ({}));
 
     if (scope === "global") {
-      const isAdminUser =
-        Array.isArray(user?.roles) && user.roles.includes("admin");
+      const isAdminUser = Array.isArray(user?.roles) && user.roles.includes("admin");
       if (!isAdminUser) {
         return c.json(
           {
@@ -563,17 +510,11 @@ export function registerRoutes(
     const scope = c.req.query("scope");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
-    if (!user?.collection || !user.sub)
-      return c.json({ error: true, message: "Authentication required." }, 401);
-    if (!key)
-      return c.json(
-        { error: true, message: "Preference key is required." },
-        400,
-      );
+    if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
+    if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
 
     if (scope === "global") {
-      const isAdminUser =
-        Array.isArray(user?.roles) && user.roles.includes("admin");
+      const isAdminUser = Array.isArray(user?.roles) && user.roles.includes("admin");
       if (!isAdminUser) {
         return c.json(
           {
@@ -626,35 +567,19 @@ export function registerRoutes(
       const mediaController = new MediaController(col.slug);
       const prefix = `/api/collections/${col.slug}`;
 
-      app.get(`${prefix}/media`, accessGate(config, col, "read"), (c) =>
-        mediaController.find(c),
-      );
-      app.get(`${prefix}/media/:filename{.+$}`, (c) =>
-        mediaController.serve(c),
-      );
-      app.post(`${prefix}/media`, accessGate(config, col, "create"), (c) =>
-        mediaController.upload(c),
-      );
-      app.delete(
-        `${prefix}/media/:id`,
-        accessGate(config, col, "delete"),
-        (c) => mediaController.delete(c),
-      );
+      app.get(`${prefix}/media`, accessGate(config, col, "read"), (c) => mediaController.find(c));
+      app.get(`${prefix}/media/:filename{.+$}`, (c) => mediaController.serve(c));
+      app.post(`${prefix}/media`, accessGate(config, col, "create"), (c) => mediaController.upload(c));
+      app.delete(`${prefix}/media/:id`, accessGate(config, col, "delete"), (c) => mediaController.delete(c));
     }
   }
 
   // 2b. Admin Auth Routes
   const adminAuthController = new AdminAuthController(config);
   app.get("/api/admin/auth/providers", (c) => adminAuthController.providers(c));
-  app.get("/api/admin/auth/:provider/start", (c) =>
-    adminAuthController.start(c),
-  );
-  app.get("/api/admin/auth/:provider/callback", (c) =>
-    adminAuthController.callback(c),
-  );
-  app.post("/api/admin/auth/:provider/exchange", (c) =>
-    adminAuthController.exchange(c),
-  );
+  app.get("/api/admin/auth/:provider/start", (c) => adminAuthController.start(c));
+  app.get("/api/admin/auth/:provider/callback", (c) => adminAuthController.callback(c));
+  app.post("/api/admin/auth/:provider/exchange", (c) => adminAuthController.exchange(c));
   app.post("/api/admin/logout", (c) => adminAuthController.logout(c));
 
   // 3. Auth Routes — for collections with auth: true
@@ -670,16 +595,10 @@ export function registerRoutes(
     app.post(`${path}/first-user`, (c) => authController.registerFirstUser(c));
     // /me and /refresh-token require a valid token
     app.get(`${path}/me`, requireAuth(config), (c) => authController.me(c));
-    app.post(`${path}/refresh-token`, requireAuth(config), (c) =>
-      authController.refreshToken(c),
-    );
-    app.post(`${path}/forgot-password`, (c) =>
-      authController.forgotPassword(c),
-    );
+    app.post(`${path}/refresh-token`, requireAuth(config), (c) => authController.refreshToken(c));
+    app.post(`${path}/forgot-password`, (c) => authController.forgotPassword(c));
     app.post(`${path}/reset-password`, (c) => authController.resetPassword(c));
-    app.post(`${path}/invite`, requireAuth(config), (c) =>
-      authController.invite(c),
-    );
+    app.post(`${path}/invite`, requireAuth(config), (c) => authController.invite(c));
     app.post(`${path}/accept-invite`, (c) => authController.acceptInvite(c));
   }
 
@@ -692,32 +611,23 @@ export function registerRoutes(
     app.get(path, (c) => controller.find(c));
     app.post(path, (c) => controller.create(c));
     app.post(`${path}/media`, (c) => controller.create(c));
-    // delete-many must be registered before /:id to avoid the wildcard swallowing it
+    // delete-many and aggregate must be registered before /:id to avoid the wildcard swallowing them
     app.delete(`${path}/delete-many`, (c) => controller.deleteMany(c));
+    app.post(`${path}/aggregate`, (c) => controller.aggregate(c));
     if (collection.audit) {
-      app.get(`${path}/__audit`, (c) =>
-        auditController.findForCollection(c, collection),
-      );
+      app.get(`${path}/__audit`, (c) => auditController.findForCollection(c, collection));
     }
     app.get(`${path}/:id`, (c) => controller.findOne(c));
     app.patch(`${path}/:id`, (c) => controller.update(c));
     app.delete(`${path}/:id`, (c) => controller.delete(c));
     // Dedicated password-change endpoint (auth collections only)
     if (collection.auth) {
-      app.post(`${path}/:id/change-password`, requireAuth(config), (c) =>
-        controller.changePassword(c),
-      );
+      app.post(`${path}/:id/change-password`, requireAuth(config), (c) => controller.changePassword(c));
     }
     // Workflow routes — only registered when the collection has a workflow configured
     if (collection.workflow) {
-      app.post(
-        `${path}/:id/transitions/:transition`,
-        requireAuth(config),
-        (c) => controller.transition(c),
-      );
-      app.get(`${path}/:id/workflow-history`, requireAuth(config), (c) =>
-        controller.workflowHistory(c),
-      );
+      app.post(`${path}/:id/transitions/:transition`, requireAuth(config), (c) => controller.transition(c));
+      app.get(`${path}/:id/workflow-history`, requireAuth(config), (c) => controller.workflowHistory(c));
     }
   }
 
@@ -737,9 +647,7 @@ export function registerRoutes(
     });
   }
   const previewController = new PreviewController();
-  app.post("/api/preview-token", requireAuth(config), (c) =>
-    previewController.createToken(c),
-  );
+  app.post("/api/preview-token", requireAuth(config), (c) => previewController.createToken(c));
   app.get("/api/preview-data", (c) => previewController.getData(c));
   app.get("/api/audit", (c) => auditController.findAll(c));
 
@@ -764,94 +672,62 @@ export function registerRoutes(
       return c.json({ message: `Collection "${slug}" not found` }, 404);
     }
 
-    const requestConfig = mergeDynamicConfig(
-      config,
-      await config.onSchemaFetch(siteId),
-    );
-    const collection = requestConfig.collections.find(
-      (col) => col.slug === slug,
-    );
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
     if (!collection?.audit) {
-      return c.json(
-        { message: `Collection "${slug}" not found or has no audit log` },
-        404,
-      );
+      return c.json({ message: `Collection "${slug}" not found or has no audit log` }, 404);
     }
 
     return auditController.findForCollection(c, collection);
   });
 
-  app.post(
-    "/api/collections/:slug/:id/transitions/:transition",
-    requireAuth(config),
-    async (c) => {
-      const slug = c.req.param("slug");
-      const siteId = c.req.header("X-Site-Id") || c.get("siteId");
-      const config = c.get("config");
+  app.post("/api/collections/:slug/:id/transitions/:transition", requireAuth(config), async (c) => {
+    const slug = c.req.param("slug");
+    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const config = c.get("config");
 
-      // Skip if static — static workflow routes are registered directly above;
-      // if this wildcard fires for a static slug it means the sub-path is unknown.
-      if (config.collections.some((col) => col.slug === slug)) {
-        return c.json({ message: "Not Found" }, 404);
-      }
+    // Skip if static — static workflow routes are registered directly above;
+    // if this wildcard fires for a static slug it means the sub-path is unknown.
+    if (config.collections.some((col) => col.slug === slug)) {
+      return c.json({ message: "Not Found" }, 404);
+    }
 
-      if (!config.onSchemaFetch || !siteId) {
-        return c.json({ message: `Collection "${slug}" not found` }, 404);
-      }
+    if (!config.onSchemaFetch || !siteId) {
+      return c.json({ message: `Collection "${slug}" not found` }, 404);
+    }
 
-      const requestConfig = mergeDynamicConfig(
-        config,
-        await config.onSchemaFetch(siteId),
-      );
-      const collection = requestConfig.collections.find(
-        (col) => col.slug === slug,
-      );
-      if (!collection?.workflow) {
-        return c.json(
-          { message: `Collection "${slug}" not found or has no workflow` },
-          404,
-        );
-      }
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection?.workflow) {
+      return c.json({ message: `Collection "${slug}" not found or has no workflow` }, 404);
+    }
 
-      const controller = new CollectionController(collection);
-      return controller.transition(c);
-    },
-  );
+    const controller = new CollectionController(collection);
+    return controller.transition(c);
+  });
 
-  app.get(
-    "/api/collections/:slug/:id/workflow-history",
-    requireAuth(config),
-    async (c) => {
-      const slug = c.req.param("slug");
-      const siteId = c.req.header("X-Site-Id") || c.get("siteId");
-      const config = c.get("config");
+  app.get("/api/collections/:slug/:id/workflow-history", requireAuth(config), async (c) => {
+    const slug = c.req.param("slug");
+    const siteId = c.req.header("X-Site-Id") || c.get("siteId");
+    const config = c.get("config");
 
-      if (config.collections.some((col) => col.slug === slug)) {
-        return c.json({ message: "Not Found" }, 404);
-      }
+    if (config.collections.some((col) => col.slug === slug)) {
+      return c.json({ message: "Not Found" }, 404);
+    }
 
-      if (!config.onSchemaFetch || !siteId) {
-        return c.json({ message: `Collection "${slug}" not found` }, 404);
-      }
+    if (!config.onSchemaFetch || !siteId) {
+      return c.json({ message: `Collection "${slug}" not found` }, 404);
+    }
 
-      const requestConfig = mergeDynamicConfig(
-        config,
-        await config.onSchemaFetch(siteId),
-      );
-      const collection = requestConfig.collections.find(
-        (col) => col.slug === slug,
-      );
-      if (!collection?.workflow) {
-        return c.json(
-          { message: `Collection "${slug}" not found or has no workflow` },
-          404,
-        );
-      }
+    const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+    const collection = requestConfig.collections.find((col) => col.slug === slug);
+    if (!collection?.workflow) {
+      return c.json({ message: `Collection "${slug}" not found or has no workflow` }, 404);
+    }
 
-      const controller = new CollectionController(collection);
-      return controller.workflowHistory(c);
-    },
-  );
+    const controller = new CollectionController(collection);
+    return controller.workflowHistory(c);
+  });
 
   // 7b. Core dynamic catch-all for tenant collections (list, create, findOne, update, delete).
   app.all("/api/collections/:slug/:id?", async (c) => {
@@ -866,13 +742,8 @@ export function registerRoutes(
     }
 
     if (config.onSchemaFetch && siteId) {
-      const requestConfig = mergeDynamicConfig(
-        config,
-        await config.onSchemaFetch(siteId),
-      );
-      let collection = requestConfig.collections.find(
-        (col) => col.slug === slug,
-      );
+      const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
+      let collection = requestConfig.collections.find((col) => col.slug === slug);
 
       if (!collection && slug === "media") {
         collection = {
@@ -888,17 +759,12 @@ export function registerRoutes(
         if (collection.auth && id) {
           const authController = new AuthController(collection);
           const method = c.req.method;
-          if (method === "POST" && id === "login")
-            return authController.login(c);
-          if (method === "POST" && id === "logout")
-            return authController.logout(c);
+          if (method === "POST" && id === "login") return authController.login(c);
+          if (method === "POST" && id === "logout") return authController.logout(c);
           if (method === "GET" && id === "me") return authController.me(c);
-          if (method === "POST" && id === "refresh-token")
-            return authController.refreshToken(c);
-          if (method === "POST" && id === "forgot-password")
-            return authController.forgotPassword(c);
-          if (method === "POST" && id === "reset-password")
-            return authController.resetPassword(c);
+          if (method === "POST" && id === "refresh-token") return authController.refreshToken(c);
+          if (method === "POST" && id === "forgot-password") return authController.forgotPassword(c);
+          if (method === "POST" && id === "reset-password") return authController.resetPassword(c);
         }
 
         const controller = new CollectionController(collection);
@@ -907,8 +773,7 @@ export function registerRoutes(
         if (id) {
           if (method === "GET") return controller.findOne(c);
           if (method === "PATCH") return controller.update(c);
-          if (method === "DELETE" && id === "delete-many")
-            return controller.deleteMany(c);
+          if (method === "DELETE" && id === "delete-many") return controller.deleteMany(c);
           if (method === "DELETE") return controller.delete(c);
           if (method === "POST" && id === "media") return controller.create(c);
         } else {
@@ -933,10 +798,7 @@ export function registerRoutes(
     }
 
     if (config.onSchemaFetch && siteId) {
-      const requestConfig = mergeDynamicConfig(
-        config,
-        await config.onSchemaFetch(siteId),
-      );
+      const requestConfig = mergeDynamicConfig(config, await config.onSchemaFetch(siteId));
       const global = requestConfig.globals.find((glb) => glb.slug === slug);
 
       if (global) {

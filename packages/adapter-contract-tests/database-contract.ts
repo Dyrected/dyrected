@@ -67,3 +67,77 @@ export function runDatabaseAdapterContract(
     });
   });
 }
+
+export function runAggregateAdapterContract(
+  name: string,
+  createAdapter: () => DatabaseAdapter | Promise<DatabaseAdapter>,
+  options: { skip?: boolean } = {},
+) {
+  const suite = options.skip ? describe.skip : describe;
+  suite(`${name} aggregate contract`, () => {
+    it("count, sum+cast, filtered count, null-on-empty, and invalid-value-as-null", async () => {
+      const db = await createAdapter();
+      const collection = `agg-contract-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "status", type: "text" },
+          { name: "yards", type: "text" }, // stored as string to test cast
+        ],
+      };
+
+      await db.sync?.([config], []);
+
+      // Seed: two "attending", one "not-attending", one with invalid yards
+      await db.create({ collection, data: { status: "attending",     yards: "3"       } });
+      await db.create({ collection, data: { status: "attending",     yards: "5"       } });
+      await db.create({ collection, data: { status: "not-attending", yards: "2"       } });
+      await db.create({ collection, data: { status: "not-attending", yards: "unknown" } });
+
+      const result = await db.aggregate({
+        collection,
+        aggregates: {
+          // count: all documents
+          total: { count: "*" },
+          // filtered count using a text field (avoids boolean/JSON interop differences across adapters)
+          attending: { count: "*", where: { status: { equals: "attending" } } },
+          // sum with cast — "unknown" becomes null and is ignored
+          totalYards: { sum: "yards", cast: "number" },
+          // min / max across the valid numeric strings
+          minYards: { min: "yards", cast: "number" },
+          maxYards: { max: "yards", cast: "number" },
+        },
+      });
+
+      expect(result.total).toBe(4);
+      expect(result.attending).toBe(2);
+      // 3 + 5 + 2 = 10  ("unknown" skipped)
+      expect(result.totalYards).toBeCloseTo(10);
+      expect(result.minYards).toBeCloseTo(2);
+      expect(result.maxYards).toBeCloseTo(5);
+    });
+
+    it("returns null for sum/avg/min/max on an empty collection", async () => {
+      const db = await createAdapter();
+      const collection = `agg-empty-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [{ name: "value", type: "text" }],
+      };
+      await db.sync?.([config], []);
+
+      const result = await db.aggregate({
+        collection,
+        aggregates: {
+          total: { count: "*" },
+          sumVal: { sum: "value", cast: "number" },
+        },
+      });
+
+      // count of an empty set is 0 (not null)
+      expect(result.total).toBe(0);
+      // sum of nothing is null
+      expect(result.sumVal).toBeNull();
+    });
+  });
+}

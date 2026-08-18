@@ -1369,4 +1369,83 @@ export class CollectionController {
       201,
     );
   }
+
+  async aggregate(c: Context<DyrectedContext>) {
+    const config = c.get("config");
+    const db = config.db;
+    if (!db) return c.json({ message: "Database not configured" }, 500);
+
+    // Gate on read access and obtain any row-level constraint.
+    const access = await this.evaluateAccess(c, "read");
+    if (!access.allowed) {
+      return c.json(
+        {
+          error: true,
+          message: `Access denied: read on ${this.collection.slug}`,
+        },
+        403,
+      );
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ message: "Invalid JSON body" }, 400);
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return c.json(
+        { message: "Aggregate request body must be a JSON object" },
+        400,
+      );
+    }
+
+    // Sanitize each per-aggregate where clause using the same sanitizer as find().
+    const { sanitizeWhereClause } = await import(
+      "../utils/where-sanitizer.js"
+    );
+
+    const sanitizedAggregates: Record<string, unknown> = {};
+    for (const [key, op] of Object.entries(body)) {
+      if (!op || typeof op !== "object" || Array.isArray(op)) {
+        return c.json(
+          {
+            message: `Aggregate operation "${key}" must be an object`,
+          },
+          400,
+        );
+      }
+      const operation = op as Record<string, unknown>;
+
+      // Merge access constraint and sanitize the per-aggregate where.
+      let opWhere: Record<string, unknown> | undefined =
+        operation.where && typeof operation.where === "object"
+          ? (operation.where as Record<string, unknown>)
+          : undefined;
+
+      if (opWhere) {
+        opWhere = sanitizeWhereClause(opWhere, this.collection.fields);
+        if (Object.keys(opWhere).length === 0) opWhere = undefined;
+      }
+
+      if (access.constraint) {
+        opWhere = opWhere
+          ? mergeWhereConstraint(opWhere, access.constraint)
+          : (access.constraint as Record<string, unknown>);
+      }
+
+      sanitizedAggregates[key] = {
+        ...operation,
+        ...(opWhere !== undefined ? { where: opWhere } : { where: undefined }),
+      };
+    }
+
+    const result = await db.aggregate({
+      collection: this.collection.slug,
+      aggregates: sanitizedAggregates as any,
+    });
+
+    return c.json(result);
+  }
 }
