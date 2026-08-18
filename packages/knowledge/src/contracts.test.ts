@@ -246,10 +246,6 @@ describe("generated knowledge contracts", () => {
       file: "deliver-content/rest-api/overview.mdx",
       region: "REFERENCE-REST-API",
     },
-    {
-      file: "deliver-content/rest-api/overview.mdx",
-      region: "REFERENCE-OPENAPI",
-    },
   ];
 
   const stripGeneratedRegions = (source: string) =>
@@ -412,9 +408,7 @@ describe("generated knowledge contracts", () => {
       path.join(newDocsRoot, "deliver-content/rest-api/overview.mdx"),
       "utf8",
     );
-    // Endpoint inventory and OpenAPI facts both live on the one REST page.
     expect(restApi).toContain("{/* GENERATED:REFERENCE-REST-API:START */}");
-    expect(restApi).toContain("{/* GENERATED:REFERENCE-OPENAPI:START */}");
     // OpenAPI is documented here rather than on a separate reference page.
     expect(
       fs.existsSync(

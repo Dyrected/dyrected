@@ -95,4 +95,30 @@ describe('DyrectedClient', () => {
     expect(url).toContain('depth=0');
     expect(url).not.toContain('depth=2');
   });
+
+  it('sends POST /api/collections/:slug/aggregate with serialized aggregate input', async () => {
+    const expectedResponse = {
+      total: 42,
+      totalScore: 150.5,
+    };
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(expectedResponse),
+    });
+
+    const result = await client.collection('posts').aggregate({
+      total: { count: '*' },
+      totalScore: { sum: 'score', cast: 'number', where: { published: { equals: true } } },
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe('http://api.test/api/collections/posts/aggregate');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({
+      total: { count: '*' },
+      totalScore: { sum: 'score', cast: 'number', where: { published: { equals: true } } },
+    });
+    expect(result).toEqual(expectedResponse);
+  });
 });

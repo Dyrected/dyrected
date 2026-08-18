@@ -1,6 +1,17 @@
 import type { BaseDocument, FileData, PaginatedResult } from "./documents.js";
 import type { CollectionConfig, GlobalConfig } from "./schema-config.js";
 import type { Field, UploadConfig } from "./schema-core.js";
+import type { AggregateArgs, AggregateResult } from "./aggregate.js";
+
+export type { AggregateArgs, AggregateResult } from "./aggregate.js";
+export type {
+  AggregateCastType,
+  AggregateOperation,
+  CountOperation,
+  NumericOperation,
+  AggregateInput,
+  InferAggregateResult,
+} from "./aggregate.js";
 
 /**
  * The interface every database adapter must implement.
@@ -35,6 +46,15 @@ export interface DatabaseAdapter {
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
 
+  /**
+   * Compute aggregate statistics across a collection without returning documents.
+   *
+   * Each named key in `args.aggregates` maps to a `count`, `sum`, `avg`, `min`,
+   * or `max` operation, with optional `where` filtering and `cast` conversion.
+   * The result is a flat object of the same named keys mapped to `number | null`.
+   */
+  aggregate(args: AggregateArgs): Promise<AggregateResult>;
+
   /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */
   getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 
@@ -63,13 +83,13 @@ export interface DatabaseAdapter {
 
 /**
  * Read-only view of the database adapter. Exposes only `find`, `findOne`,
- * and `getGlobal` — no write operations.
+ * `getGlobal`, and `aggregate` — no write operations.
  *
  * Passed to `beforeChange`, `beforeDelete`, `beforeRead`, `afterRead`,
  * and field-level hooks. Write operations are available in `afterChange`
  * and `afterDelete` hooks where the full {@link DatabaseAdapter} is provided.
  */
-export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal">;
+export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal" | "aggregate">;
 
 /**
  * The interface every storage adapter must implement.

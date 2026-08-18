@@ -87,6 +87,15 @@ export interface DatabaseAdapter {
   /** Delete a document by ID. Return value is intentionally untyped — callers do not use it. */
   delete(args: { collection: string; id: string }): Promise<unknown>;
 
+  /**
+   * Compute aggregate statistics across a collection without returning documents.
+   *
+   * Each named key in `args.aggregates` maps to a `count`, `sum`, `avg`, `min`,
+   * or `max` operation, with optional `where` filtering and `cast` conversion.
+   * The result is a flat object of the same named keys mapped to `number | null`.
+   */
+  aggregate(args: AggregateArgs): Promise<AggregateResult>;
+
   /** Fetch the singleton document for a global. Returns an empty object if not yet initialised. */
   getGlobal(args: { slug: string }): Promise<Record<string, unknown>>;
 
@@ -121,6 +130,7 @@ export interface DatabaseAdapter {
 | <code>create</code> (required) | Insert a new document and return it with its generated &#96;id&#96;. |
 | <code>update</code> (required) | Update a document by ID and return the updated document. |
 | <code>delete</code> (required) | Delete a document by ID. Return value is intentionally untyped — callers do not use it. |
+| <code>aggregate</code> (required) | Compute aggregate statistics across a collection without returning documents.  Each named key in &#96;args.aggregates&#96; maps to a &#96;count&#96;, &#96;sum&#96;, &#96;avg&#96;, &#96;min&#96;, or &#96;max&#96; operation, with optional &#96;where&#96; filtering and &#96;cast&#96; conversion. The result is a flat object of the same named keys mapped to &#96;number &#124; null&#96;. |
 | <code>getGlobal</code> (required) | Fetch the singleton document for a global. Returns an empty object if not yet initialised. |
 | <code>updateGlobal</code> (required) | Create or replace the singleton document for a global. |
 | <code>sync</code> (required) | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
@@ -167,6 +177,6 @@ export interface PaginatedResult<T = Record<string, any>> {
 Exported type from @dyrected/core.
 
 ```ts
-export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal">;
+export type ReadonlyDatabaseAdapter = Pick<DatabaseAdapter, "find" | "findOne" | "getGlobal" | "aggregate">;
 ```
 {/* GENERATED:REFERENCE-DATABASE-ADAPTERS:END */}

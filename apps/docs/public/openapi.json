@@ -762,6 +762,88 @@
         }
       }
     },
+    "/api/collections/users/aggregate": {
+      "post": {
+        "tags": [
+          "Collection: Users"
+        ],
+        "summary": "Aggregate Users",
+        "description": "Compute statistical aggregations (count, sum, avg, min, max) across Users.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "string",
+                      "example": "*"
+                    },
+                    "sum": {
+                      "type": "string",
+                      "description": "Field to sum"
+                    },
+                    "avg": {
+                      "type": "string",
+                      "description": "Field to average"
+                    },
+                    "min": {
+                      "type": "string",
+                      "description": "Field for minimum"
+                    },
+                    "max": {
+                      "type": "string",
+                      "description": "Field for maximum"
+                    },
+                    "cast": {
+                      "type": "string",
+                      "enum": [
+                        "number",
+                        "integer",
+                        "float",
+                        "boolean",
+                        "date",
+                        "string"
+                      ]
+                    },
+                    "where": {
+                      "type": "object",
+                      "description": "Per-aggregate filter condition",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid aggregate input"
+          },
+          "403": {
+            "description": "Forbidden - Access denied by read rule"
+          }
+        }
+      }
+    },
     "/api/collections/users/login": {
       "post": {
         "tags": [
@@ -1238,6 +1320,88 @@
         }
       }
     },
+    "/api/collections/media/aggregate": {
+      "post": {
+        "tags": [
+          "Collection: Media"
+        ],
+        "summary": "Aggregate Media",
+        "description": "Compute statistical aggregations (count, sum, avg, min, max) across Media.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "string",
+                      "example": "*"
+                    },
+                    "sum": {
+                      "type": "string",
+                      "description": "Field to sum"
+                    },
+                    "avg": {
+                      "type": "string",
+                      "description": "Field to average"
+                    },
+                    "min": {
+                      "type": "string",
+                      "description": "Field for minimum"
+                    },
+                    "max": {
+                      "type": "string",
+                      "description": "Field for maximum"
+                    },
+                    "cast": {
+                      "type": "string",
+                      "enum": [
+                        "number",
+                        "integer",
+                        "float",
+                        "boolean",
+                        "date",
+                        "string"
+                      ]
+                    },
+                    "where": {
+                      "type": "object",
+                      "description": "Per-aggregate filter condition",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid aggregate input"
+          },
+          "403": {
+            "description": "Forbidden - Access denied by read rule"
+          }
+        }
+      }
+    },
     "/api/collections/media/media": {
       "get": {
         "tags": [
@@ -1534,6 +1698,88 @@
         "responses": {
           "200": {
             "description": "Deleted and failed document IDs"
+          }
+        }
+      }
+    },
+    "/api/collections/posts/aggregate": {
+      "post": {
+        "tags": [
+          "Collection: Posts"
+        ],
+        "summary": "Aggregate Posts",
+        "description": "Compute statistical aggregations (count, sum, avg, min, max) across Posts.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "string",
+                      "example": "*"
+                    },
+                    "sum": {
+                      "type": "string",
+                      "description": "Field to sum"
+                    },
+                    "avg": {
+                      "type": "string",
+                      "description": "Field to average"
+                    },
+                    "min": {
+                      "type": "string",
+                      "description": "Field for minimum"
+                    },
+                    "max": {
+                      "type": "string",
+                      "description": "Field for maximum"
+                    },
+                    "cast": {
+                      "type": "string",
+                      "enum": [
+                        "number",
+                        "integer",
+                        "float",
+                        "boolean",
+                        "date",
+                        "string"
+                      ]
+                    },
+                    "where": {
+                      "type": "object",
+                      "description": "Per-aggregate filter condition",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid aggregate input"
+          },
+          "403": {
+            "description": "Forbidden - Access denied by read rule"
           }
         }
       }

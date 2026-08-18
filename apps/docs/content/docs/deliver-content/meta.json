@@ -3,7 +3,7 @@
   "runtimeDefault": "shared",
   "pages": [
     "sdk-api",
-    "displaying-content",
-    "rest-api"
+    "rest-api",
+    "displaying-content"
   ]
 }

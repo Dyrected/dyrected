@@ -70,6 +70,62 @@
     "validation": "Command example; package and CLI names are inventoried"
   },
   {
+    "id": "/deliver-content/rest-api/overview#example-5",
+    "page": "/deliver-content/rest-api/overview",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/rest-api/overview#example-6",
+    "page": "/deliver-content/rest-api/overview",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/sdk-api/aggregate#example-1",
+    "page": "/deliver-content/sdk-api/aggregate",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/aggregate#example-2",
+    "page": "/deliver-content/sdk-api/aggregate",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/aggregate#example-3",
+    "page": "/deliver-content/sdk-api/aggregate",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/aggregate#example-4",
+    "page": "/deliver-content/sdk-api/aggregate",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/deliver-content/sdk-api/aggregate#example-5",
+    "page": "/deliver-content/sdk-api/aggregate",
+    "language": "bash",
+    "classification": "command",
+    "validation": "Command example; package and CLI names are inventoried"
+  },
+  {
+    "id": "/deliver-content/sdk-api/aggregate#example-6",
+    "page": "/deliver-content/sdk-api/aggregate",
+    "language": "json",
+    "classification": "parsed",
+    "validation": "Parsed as JSON"
+  },
+  {
     "id": "/deliver-content/sdk-api/depth#example-1",
     "page": "/deliver-content/sdk-api/depth",
     "language": "ts",

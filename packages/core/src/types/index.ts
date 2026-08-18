@@ -1,5 +1,6 @@
 export * from "./access.js";
 export * from "./adapters.js";
+export * from "./aggregate.js";
 export * from "./admin.js";
 export * from "./admin-auth.js";
 export * from "./app-config.js";

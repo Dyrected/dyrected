@@ -215,8 +215,11 @@ export class PostgresAdapter implements DatabaseAdapter {
         if (field.type === "number") sqlType = "NUMERIC";
         if (field.type === "boolean") sqlType = "BOOLEAN";
 
+        const targetTable = slug.includes(".")
+          ? slug
+          : `"${`collection_${slug}`.replace(/"/g, '""')}"`;
         await this.sql.unsafe(
-          `ALTER TABLE ${slug.includes(".") ? slug : `collection_${slug}`} ADD COLUMN "${field.name}" ${sqlType}`,
+          `ALTER TABLE ${targetTable} ADD COLUMN "${field.name.replace(/"/g, '""')}" ${sqlType}`,
         );
       }
     }
@@ -450,6 +453,103 @@ export class PostgresAdapter implements DatabaseAdapter {
       );
       return false;
     }
+  }
+
+  async aggregate(args: {
+    collection: string;
+    aggregates: Record<string, any>;
+  }): Promise<Record<string, number | null>> {
+    if (Object.keys(args.aggregates).length === 0) {
+      return {};
+    }
+
+    await this.ensureInitialized();
+    await this.ensureTable(args.collection);
+
+    const tableName = args.collection.includes(".")
+      ? args.collection
+      : `"${args.collection.startsWith("collection_") ? args.collection : `collection_${args.collection}`}"`;
+
+    // Inspect columns so we can resolve promoted fields vs JSON paths.
+    const cols = await this.sql`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = ${`collection_${args.collection}`}
+    `;
+    const existingCols = cols.map((c) => c.column_name);
+
+    const toFieldExpr = (field: string) => {
+      if (field === "createdAt") return '"created_at"';
+      if (field === "updatedAt") return '"updated_at"';
+      if (existingCols.includes(field) && !["id", "data"].includes(field)) {
+        return `"${field}"`;
+      }
+      return `data->>'${field.replace(/'/g, "''")}'`;
+    };
+
+    /**
+     * Wraps a field expression with a safe numeric cast.
+     * Invalid non-numeric strings become NULL, which sum/avg/min/max skip.
+     */
+    const toCastExpr = (rawField: string, cast: string | undefined): string => {
+      const base = toFieldExpr(rawField);
+      if (cast === "string") return base;
+      if (cast === "boolean") return `(${base})::boolean`;
+      if (cast === "date") return `(${base})::timestamptz`;
+      // By default for numeric operations (or number / integer / float), safe numeric cast is required.
+      // We cast base to text before regex check so it works on both json text extraction and promoted numeric columns.
+      const pgType = cast === "integer" ? "bigint" : "double precision";
+      return `CASE WHEN (${base})::text ~ '^-?[0-9]+(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN (${base})::${pgType} ELSE NULL END`;
+    };
+
+    // Build SELECT expressions and accumulate all params.
+    // Each WHERE block's $N params are re-indexed relative to the running offset.
+    const selectParts: string[] = [];
+    const allParams: any[] = [];
+
+    for (const [name, op] of Object.entries(args.aggregates)) {
+      let filterClause = "";
+      if (op.where && Object.keys(op.where).length > 0) {
+        const parsed = parseSqlWhere(op.where, toFieldExpr, "pg");
+        const offset = allParams.length;
+        const reindexedSql = parsed.sql.replace(
+          /\$(\d+)/g,
+          (_, n) => `$${Number(n) + offset}`,
+        );
+        filterClause = `FILTER (WHERE ${reindexedSql})`;
+        allParams.push(...parsed.params);
+      }
+
+      let aggExpr: string;
+      if ("count" in op) {
+        aggExpr = `COUNT(*) ${filterClause}`;
+      } else if (op.sum) {
+        aggExpr = `SUM(${toCastExpr(op.sum, op.cast)}) ${filterClause}`;
+      } else if (op.avg) {
+        aggExpr = `AVG(${toCastExpr(op.avg, op.cast)}) ${filterClause}`;
+      } else if (op.min) {
+        aggExpr = `MIN(${toCastExpr(op.min, op.cast)}) ${filterClause}`;
+      } else if (op.max) {
+        aggExpr = `MAX(${toCastExpr(op.max, op.cast)}) ${filterClause}`;
+      } else {
+        aggExpr = `COUNT(*) ${filterClause}`;
+      }
+
+      selectParts.push(
+        `${aggExpr} AS "${name.replace(/"/g, '""')}"`,
+      );
+    }
+
+    const query = `SELECT ${selectParts.join(", ")} FROM ${tableName}`;
+    const rows = await this.sql.unsafe(query, allParams);
+    const row = rows[0] ?? {};
+
+    const result: Record<string, number | null> = {};
+    for (const name of Object.keys(args.aggregates)) {
+      const raw = row[name];
+      result[name] = raw === null || raw === undefined ? null : Number(raw);
+    }
+    return result;
   }
 }
 

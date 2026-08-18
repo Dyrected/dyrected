@@ -998,17 +998,11 @@ const endpointRows = endpoints
   )
   .join("\n");
 const restInventory = `| Method | Path | Summary | Authentication |\n| --- | --- | --- | --- |\n${endpointRows}`;
-// The REST inventory and OpenAPI/codegen guidance share the canonical REST API
-// page, so both regions live in deliver-content/rest-api/overview.mdx.
+// The REST inventory lives in deliver-content/rest-api/overview.mdx.
 outputGeneratedRegion(
   path.join(newDocsRoot, "deliver-content/rest-api/overview.mdx"),
   "REFERENCE-REST-API",
   restInventory,
-);
-outputGeneratedRegion(
-  path.join(newDocsRoot, "deliver-content/rest-api/overview.mdx"),
-  "REFERENCE-OPENAPI",
-  `The representative document currently contains **${endpoints.length} operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.`,
 );
 outputFile(
   path.join(docsPublicRoot, "openapi.json"),

@@ -390,6 +390,91 @@ FIX INSTRUCTIONS:
       await this.pool.end();
     }
   }
+
+  async aggregate(args: {
+    collection: string;
+    aggregates: Record<string, any>;
+  }): Promise<Record<string, number | null>> {
+    if (Object.keys(args.aggregates).length === 0) {
+      return {};
+    }
+
+    const tableName = this.getTableName(args.collection);
+    if (!this.inTransaction) await this.ensureTable(args.collection);
+
+    // Inspect promoted columns.
+    const [cols] = await this.query(`SHOW COLUMNS FROM \`${tableName}\``);
+    const existingCols = cols.map((c: any) => c.Field);
+
+    const toFieldExpr = (field: string): string => {
+      if (field === "createdAt") return "`created_at`";
+      if (field === "updatedAt") return "`updated_at`";
+      if (existingCols.includes(field) && !["id", "data"].includes(field)) {
+        return `\`${field}\``;
+      }
+      return `JSON_UNQUOTE(JSON_EXTRACT(data, '$.${field}'))`;
+    };
+
+    /**
+     * Safe cast: invalid values become NULL.
+     * MySQL REGEXP check ensures only numeric-looking strings are cast.
+     */
+    const toCastExpr = (rawField: string, cast: string | undefined): string => {
+      const base = toFieldExpr(rawField);
+      if (cast === "string") return base;
+      if (cast === "boolean") return `IF(${base} IS NOT NULL, IF(${base} IN ('true','1'), 1, 0), NULL)`;
+      if (cast === "date") return `CAST(${base} AS DATETIME)`;
+      // number / integer / float — safe NULL on invalid input
+      const sqlType = cast === "integer" ? "SIGNED" : "DECIMAL(20,6)";
+      return `IF(${base} REGEXP '^-?[0-9]+(\\\\.[0-9]+)?([eE][+-]?[0-9]+)?$', CAST(${base} AS ${sqlType}), NULL)`;
+    };
+
+    const selectParts: string[] = [];
+    const allParams: any[] = [];
+
+    for (const [name, op] of Object.entries(args.aggregates)) {
+      let whereSql: string | null = null;
+      if (op.where && Object.keys(op.where).length > 0) {
+        const parsed = parseSqlWhere(op.where, toFieldExpr, "?");
+        whereSql = parsed.sql;
+        allParams.push(...parsed.params);
+      }
+
+      let aggExpr: string;
+      if ("count" in op) {
+        aggExpr = whereSql ? `COUNT(IF(${whereSql}, 1, NULL))` : `COUNT(*)`;
+      } else if (op.sum) {
+        const val = toCastExpr(op.sum, op.cast);
+        aggExpr = whereSql ? `SUM(IF(${whereSql}, ${val}, NULL))` : `SUM(${val})`;
+      } else if (op.avg) {
+        const val = toCastExpr(op.avg, op.cast);
+        aggExpr = whereSql ? `AVG(IF(${whereSql}, ${val}, NULL))` : `AVG(${val})`;
+      } else if (op.min) {
+        const val = toCastExpr(op.min, op.cast);
+        aggExpr = whereSql ? `MIN(IF(${whereSql}, ${val}, NULL))` : `MIN(${val})`;
+      } else if (op.max) {
+        const val = toCastExpr(op.max, op.cast);
+        aggExpr = whereSql ? `MAX(IF(${whereSql}, ${val}, NULL))` : `MAX(${val})`;
+      } else {
+        aggExpr = whereSql ? `COUNT(IF(${whereSql}, 1, NULL))` : `COUNT(*)`;
+      }
+
+      selectParts.push(
+        `${aggExpr} AS \`${name.replace(/`/g, "``")}\``,
+      );
+    }
+
+    const query = `SELECT ${selectParts.join(", ")} FROM \`${tableName}\``;
+    const [rows] = await this.query(query, allParams);
+    const row = rows[0] ?? {};
+
+    const result: Record<string, number | null> = {};
+    for (const name of Object.keys(args.aggregates)) {
+      const raw = row[name];
+      result[name] = raw === null || raw === undefined ? null : Number(raw);
+    }
+    return result;
+  }
 }
 
 export const mysqlAdapter = (config: MysqlAdapterConfig) => new MysqlAdapter(config);

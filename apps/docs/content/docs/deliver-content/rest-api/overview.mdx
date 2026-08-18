@@ -49,6 +49,29 @@ const response = await fetch(`/api/collections/posts?${query}`)
 
 Operators include `equals`, `not_equals`, `contains`, `starts_with`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, and `exists`. List responses use a shared pagination envelope with `docs`, `total`, `limit`, `page`, `totalPages`, `hasNextPage`, and `hasPrevPage`. Note that the `limit` parameter is capped at `100` for list operations to ensure performance and reliability.
 
+## Collection aggregations
+
+Compute statistical totals, averages, counts, minimums, and maximums across a collection in a single request without loading documents:
+
+```bash
+POST /api/collections/:slug/aggregate
+```
+
+Send a JSON object where each key maps to an aggregation operation:
+
+```bash
+curl -X POST https://example.com/api/collections/orders/aggregate \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-api-key" \
+  -d '{
+    "totalOrders": { "count": "*" },
+    "totalRevenue": { "sum": "totalAmount" },
+    "avgPaid": { "avg": "totalAmount", "where": { "status": { "equals": "paid" } } }
+  }'
+```
+
+Aggregations enforce collection `access.read` gates and inject any row-level tenant constraints automatically. For detailed syntax and type casting, see [Aggregating Statistics](/docs/deliver-content/sdk-api/aggregate).
+
 ## Error responses
 
 Use HTTP status codes as the primary error category: invalid input (`400`), missing credentials (`401`), denied access (`403`), missing resources (`404`), conflicts (`409`), oversized uploads (`413`), and unexpected failures (`500`). Do not blindly retry validation or authorization failures.
@@ -88,6 +111,7 @@ The table below is generated from a representative maximal configuration so it c
 | DELETE | `/api/collections/media/{id}` | Delete Media item | Required |
 | GET | `/api/collections/media/{id}` | Get a single Media item | Required |
 | PATCH | `/api/collections/media/{id}` | Update Media item | Required |
+| POST | `/api/collections/media/aggregate` | Aggregate Media | Required |
 | DELETE | `/api/collections/media/delete-many` | Delete multiple Media | Required |
 | GET | `/api/collections/media/media` | List Media | Required |
 | POST | `/api/collections/media/media` | Upload Media item | Required |
@@ -100,6 +124,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/posts/{id}` | Update Post | Required |
 | POST | `/api/collections/posts/{id}/transitions/{transition}` | Transition Post workflow | Required |
 | GET | `/api/collections/posts/{id}/workflow-history` | Get Post workflow history | Required |
+| POST | `/api/collections/posts/aggregate` | Aggregate Posts | Required |
 | DELETE | `/api/collections/posts/delete-many` | Delete multiple Posts | Required |
 | GET | `/api/collections/users` | Find Users | Required |
 | POST | `/api/collections/users` | Create User | Required |
@@ -108,6 +133,7 @@ The table below is generated from a representative maximal configuration so it c
 | PATCH | `/api/collections/users/{id}` | Update User | Required |
 | POST | `/api/collections/users/{id}/change-password` | Change a User password | Required |
 | POST | `/api/collections/users/accept-invite` | Accept an invitation | Public |
+| POST | `/api/collections/users/aggregate` | Aggregate Users | Required |
 | DELETE | `/api/collections/users/delete-many` | Delete multiple Users | Required |
 | POST | `/api/collections/users/first-user` | Register the first User | Public |
 | POST | `/api/collections/users/forgot-password` | Request a password reset | Public |
@@ -130,9 +156,3 @@ The table below is generated from a representative maximal configuration so it c
 | POST | `/api/preview-token` | Create a preview token | Required |
 | GET | `/api/schemas` | Get the serialized Dyrected schema | Public |
 {/* GENERATED:REFERENCE-REST-API:END */}
-
-## Representative facts
-
-{/* GENERATED:REFERENCE-OPENAPI:START */}
-The representative document currently contains **47 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
-{/* GENERATED:REFERENCE-OPENAPI:END */}

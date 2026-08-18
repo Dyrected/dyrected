@@ -19,6 +19,8 @@ import type {
   AdminIconName,
   WorkflowMetadata,
   LifecycleEvent,
+  AggregateInput,
+  InferAggregateResult,
 } from "@dyrected/core";
 import { QueryBuilder, type QueryArgs } from "./query-builder.js";
 
@@ -630,6 +632,34 @@ export class DyrectedClient<TSchema extends SchemaShape = RegisteredSchema> {
        */
       audit: (args: QueryArgs<AuditEntry> = {}) =>
         this.collectionAudit(slug, args),
+      /**
+       * Compute aggregate statistics across this collection without returning documents.
+       *
+       * Each named key maps to a `count`, `sum`, `avg`, `min`, or `max` operation.
+       * Per-aggregate `where` filtering and `cast` type conversion are both supported.
+       *
+       * Sends `POST /api/collections/:collection/aggregate`.
+       *
+       * @example
+       * ```ts
+       * const result = await client.collection('rsvp_records').aggregate({
+       *   totalSubmitted: { count: '*' },
+       *   totalAttending: { count: '*', where: { attending: { equals: true } } },
+       *   totalYards: { sum: 'asoebiYards', cast: 'number' },
+       * });
+       * // result.totalSubmitted: number | null
+       * // result.totalAttending: number | null
+       * // result.totalYards:     number | null
+       * ```
+       */
+      aggregate: <TInput extends AggregateInput>(input: TInput) =>
+        this.request<InferAggregateResult<TInput>>(
+          `/api/collections/${slug}/aggregate`,
+          {
+            method: "POST",
+            body: JSON.stringify(input),
+          },
+        ),
     };
   }
 

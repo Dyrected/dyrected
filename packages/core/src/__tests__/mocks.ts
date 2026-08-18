@@ -123,6 +123,62 @@ export class InMemoryAdapter implements DatabaseAdapter {
     return params.data;
   }
 
+  async aggregate(args: { collection: string; aggregates: Record<string, any> }) {
+    const col = this.getCollection(args.collection);
+    const allDocs = Object.values(col);
+    const result: Record<string, number | null> = {};
+
+    for (const [name, op] of Object.entries(args.aggregates)) {
+      const filtered = op.where
+        ? allDocs.filter((doc) => this.matchesWhere(doc, op.where))
+        : allDocs;
+
+      if ("count" in op) {
+        result[name] = filtered.length;
+        continue;
+      }
+
+      const field = op.sum || op.avg || op.min || op.max;
+      const values: number[] = [];
+
+      for (const doc of filtered) {
+        const raw = this.getValue(doc, field);
+        if (raw === null || raw === undefined) continue;
+        if (typeof raw === "number" && !isNaN(raw)) {
+          values.push(raw);
+        } else if (
+          op.cast === "number" ||
+          op.cast === "integer" ||
+          op.cast === "float"
+        ) {
+          const num = Number(raw);
+          if (!isNaN(num) && typeof raw !== "boolean") {
+            values.push(num);
+          }
+        }
+      }
+
+      if (values.length === 0) {
+        result[name] = null;
+        continue;
+      }
+
+      if (op.sum) {
+        result[name] = values.reduce((acc, v) => acc + v, 0);
+      } else if (op.avg) {
+        result[name] = values.reduce((acc, v) => acc + v, 0) / values.length;
+      } else if (op.min) {
+        result[name] = Math.min(...values);
+      } else if (op.max) {
+        result[name] = Math.max(...values);
+      } else {
+        result[name] = filtered.length;
+      }
+    }
+
+    return result;
+  }
+
   /**
    * In-memory transaction: just runs the callback with `this` as the adapter.
    * The in-memory store is synchronous so there is nothing to roll back, but
@@ -145,4 +201,5 @@ export class MockDatabaseAdapter implements DatabaseAdapter {
   async delete() { return { id: '1' }; }
   async getGlobal() { return {}; }
   async updateGlobal({ data }: { data: any }) { return data; }
+  async aggregate() { return {}; }
 }

@@ -1409,6 +1409,11 @@
       "summary": "Update Media item"
     },
     {
+      "method": "POST",
+      "path": "/api/collections/media/aggregate",
+      "summary": "Aggregate Media"
+    },
+    {
       "method": "DELETE",
       "path": "/api/collections/media/delete-many",
       "summary": "Delete multiple Media"
@@ -1469,6 +1474,11 @@
       "summary": "Get Post workflow history"
     },
     {
+      "method": "POST",
+      "path": "/api/collections/posts/aggregate",
+      "summary": "Aggregate Posts"
+    },
+    {
       "method": "DELETE",
       "path": "/api/collections/posts/delete-many",
       "summary": "Delete multiple Posts"
@@ -1507,6 +1517,11 @@
       "method": "POST",
       "path": "/api/collections/users/accept-invite",
       "summary": "Accept an invitation"
+    },
+    {
+      "method": "POST",
+      "path": "/api/collections/users/aggregate",
+      "summary": "Aggregate Users"
     },
     {
       "method": "DELETE",
