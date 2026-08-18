@@ -1997,10 +1997,13 @@ export const notice = [
 
 When built-in display variants are not enough, `displayCustom(name, options)` renders a React component within your Detail View layout.
 
-To use a custom component, define your React component, register it in your collection's `admin.components` map (or globally on `<DyrectedAdmin components={{ ... }} />`), and reference it by name in `detail`:
+To use a custom component, declare it by string name in your schema with `displayCustom(name, options)`, then provide the matching component when mounting the admin:
 
-```tsx
+<Steps>
+<Step>
+### Reference the component by name in your collection schema
 
+```ts
 
   defineBooleanField,
   defineCollection,
@@ -2009,27 +2012,11 @@ To use a custom component, define your React component, register it in your coll
   displaySection,
 } from "@dyrected/core";
 
-// 1. Define your custom React component
-export function AuditBadge({ doc, tone = "info" }: { doc: any; tone?: string }) {
-  const isVerified = doc.verified === true;
-  return (
-    <div
-      className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}
-    >
-      <strong>Audit Status:</strong> {isVerified ? "Verified Record" : "Pending Verification"}
-    </div>
-  );
-}
-
-// 2. Register the component in collection config and reference it by name
 export const Orders = defineCollection({
   slug: "orders",
   labels: { singular: "Order", plural: "Orders" },
   admin: {
     useAsTitle: "orderNumber",
-    components: {
-      AuditBadge,
-    },
   },
   detail: [
     displaySection("Verification", [
@@ -2045,6 +2032,97 @@ export const Orders = defineCollection({
   ],
 });
 ```
+
+</Step>
+<Step>
+### Provide the component to `<DyrectedAdmin />`
+
+<Tabs items={['Next.js / React', 'Nuxt / Vue']}>
+<Tab value="Next.js / React">
+
+```tsx
+// 1. Define your React component (components/AuditBadge.tsx)
+
+
+export function AuditBadge({ doc, tone = "info" }: { doc: any; tone?: string }) {
+  const isVerified = doc.verified === true;
+  return (
+    <div
+      className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}
+    >
+      <strong>Audit Status:</strong> {isVerified ? "Verified Record" : "Pending Verification"}
+    </div>
+  );
+}
+
+// 2. Pass it to DyrectedAdmin (app/admin/[[...admin]]/page.tsx)
+
+
+
+export default function AdminPage() {
+  return (
+    <DyrectedAdmin
+      components={{
+        AuditBadge,
+      }}
+    />
+  );
+}
+```
+
+</Tab>
+<Tab value="Nuxt / Vue">
+
+```vue
+<!-- 1. Define your Vue component (components/AuditBadge.vue) -->
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{
+    doc: Record<string, any>;
+    tone?: string;
+  }>(),
+  {
+    tone: "info",
+  },
+);
+</script>
+
+<template>
+  <div
+    :class="[
+      'p-3 rounded border text-sm',
+      props.tone === 'success'
+        ? 'bg-green-50 text-green-800 border-green-200'
+        : 'bg-blue-50 text-blue-800 border-blue-200',
+    ]"
+  >
+    <strong>Audit Status:</strong>
+    {{ props.doc.verified ? "Verified Record" : "Pending Verification" }}
+  </div>
+</template>
+```
+
+```vue
+<!-- 2. Pass it to DyrectedAdmin (pages/admin/[...admin].vue) -->
+<script setup lang="ts">
+
+
+
+const customComponents = {
+  AuditBadge,
+};
+</script>
+
+<template>
+  <DyrectedAdmin :components="customComponents" />
+</template>
+```
+
+</Tab>
+</Tabs>
+
+</Step>
+</Steps>
 
 Your component receives the current `doc`, the logged-in `user`, and any custom `props` passed in `options.props`.
 

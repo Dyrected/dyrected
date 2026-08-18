@@ -1626,7 +1626,7 @@
   {
     "id": "/editor-experience/detail-view#example-13",
     "page": "/editor-experience/detail-view",
-    "language": "tsx",
+    "language": "ts",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
@@ -1634,11 +1634,32 @@
     "id": "/editor-experience/detail-view#example-14",
     "page": "/editor-experience/detail-view",
     "language": "tsx",
+    "classification": "illustrative",
+    "validation": "Contains placeholders or intentionally partial source"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-15",
+    "page": "/editor-experience/detail-view",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-16",
+    "page": "/editor-experience/detail-view",
+    "language": "vue",
+    "classification": "syntax-checked",
+    "validation": "Inventoried vue example"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-17",
+    "page": "/editor-experience/detail-view",
+    "language": "tsx",
     "classification": "syntax-checked",
     "validation": "Parsed by the TypeScript compiler"
   },
   {
-    "id": "/editor-experience/detail-view#example-15",
+    "id": "/editor-experience/detail-view#example-18",
     "page": "/editor-experience/detail-view",
     "language": "ts",
     "classification": "syntax-checked",

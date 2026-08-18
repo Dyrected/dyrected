@@ -56,7 +56,13 @@ type PageItem = {
   page: TreePageNode
 }
 
-type GroupItem = Topic | PageItem
+type SeparatorItem = {
+  type: 'separator'
+  key: string
+  title?: ReactNode
+}
+
+type GroupItem = Topic | PageItem | SeparatorItem
 
 type Group = {
   key: string
@@ -70,6 +76,10 @@ function isFolderNode(node: TreeNode): node is TreeFolderNode {
 
 function isPageNode(node: TreeNode): node is TreePageNode {
   return node.type === 'page'
+}
+
+function isSeparatorNode(node: TreeNode): node is TreeSeparatorNode {
+  return node.type === 'separator'
 }
 
 function buildGroups(tree: TreeRootNode): Group[] {
@@ -93,6 +103,14 @@ function buildGroups(tree: TreeRootNode): Group[] {
             type: 'page',
             key: `group-${groupIndex}-page-${childIndex}`,
             page: child,
+          }
+        }
+
+        if (isSeparatorNode(child)) {
+          return {
+            type: 'separator',
+            key: `group-${groupIndex}-separator-${childIndex}`,
+            title: child.name,
           }
         }
 
@@ -121,9 +139,10 @@ function getActiveTopicKeys(groups: Group[], pathname: string): Record<string, s
   const out: Record<string, string | null> = {}
 
   for (const group of groups) {
-    const activeTopic = group.items.find((item) =>
-      item.type === 'topic' &&
-      item.pages.some((page) => isPageActive(pathname, page.url)),
+    const activeTopic = group.items.find(
+      (item): item is Topic =>
+        item.type === 'topic' &&
+        item.pages.some((page) => isPageActive(pathname, page.url)),
     )
     out[group.key] = activeTopic?.key ?? null
   }
@@ -151,6 +170,20 @@ function GroupsNav({
           </h2>
           <div className="flex flex-col gap-0.5">
             {group.items.map((item) => {
+              if (item.type === 'separator') {
+                return (
+                  <div key={item.key} className="pt-3 pb-1 first:pt-0">
+                    {item.title ? (
+                      <span className="px-2 text-[11px] font-medium text-fd-muted-foreground/80">
+                        {item.title}
+                      </span>
+                    ) : (
+                      <div className="my-1 border-t border-fd-border/50" />
+                    )}
+                  </div>
+                )
+              }
+
               if (item.type === 'page') {
                 const active = isPageActive(pathname, item.page.url)
 
