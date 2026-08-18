@@ -429,26 +429,30 @@ FIX INSTRUCTIONS:
     const allParams: any[] = [];
 
     for (const [name, op] of Object.entries(args.aggregates)) {
-      let filterClause = "";
+      let whereSql: string | null = null;
       if (op.where && Object.keys(op.where).length > 0) {
         const parsed = parseSqlWhere(op.where, toFieldExpr, "?");
-        filterClause = `FILTER (WHERE ${parsed.sql})`;
+        whereSql = parsed.sql;
         allParams.push(...parsed.params);
       }
 
       let aggExpr: string;
       if ("count" in op) {
-        aggExpr = `COUNT(*) ${filterClause}`;
+        aggExpr = whereSql ? `COUNT(IF(${whereSql}, 1, NULL))` : `COUNT(*)`;
       } else if (op.sum) {
-        aggExpr = `SUM(${toCastExpr(op.sum, op.cast)}) ${filterClause}`;
+        const val = toCastExpr(op.sum, op.cast);
+        aggExpr = whereSql ? `SUM(IF(${whereSql}, ${val}, NULL))` : `SUM(${val})`;
       } else if (op.avg) {
-        aggExpr = `AVG(${toCastExpr(op.avg, op.cast)}) ${filterClause}`;
+        const val = toCastExpr(op.avg, op.cast);
+        aggExpr = whereSql ? `AVG(IF(${whereSql}, ${val}, NULL))` : `AVG(${val})`;
       } else if (op.min) {
-        aggExpr = `MIN(${toCastExpr(op.min, op.cast)}) ${filterClause}`;
+        const val = toCastExpr(op.min, op.cast);
+        aggExpr = whereSql ? `MIN(IF(${whereSql}, ${val}, NULL))` : `MIN(${val})`;
       } else if (op.max) {
-        aggExpr = `MAX(${toCastExpr(op.max, op.cast)}) ${filterClause}`;
+        const val = toCastExpr(op.max, op.cast);
+        aggExpr = whereSql ? `MAX(IF(${whereSql}, ${val}, NULL))` : `MAX(${val})`;
       } else {
-        aggExpr = `COUNT(*) ${filterClause}`;
+        aggExpr = whereSql ? `COUNT(IF(${whereSql}, 1, NULL))` : `COUNT(*)`;
       }
 
       selectParts.push(
