@@ -258,12 +258,6 @@ The table below is generated from a representative maximal configuration so it c
 | POST | `/api/preview-token` | Create a preview token | Required |
 | GET | `/api/schemas` | Get the serialized Dyrected schema | Public |
 
-
-## Representative facts
-
-
-The representative document currently contains **50 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
-
 ---
 
 ## Aggregating Statistics
@@ -21583,12 +21577,6 @@ The table below is generated from a representative maximal configuration so it c
 | GET | `/api/preview-data` | Resolve preview data from a token | Public |
 | POST | `/api/preview-token` | Create a preview token | Required |
 | GET | `/api/schemas` | Get the serialized Dyrected schema | Public |
-
-
-## Representative facts
-
-
-The representative document currently contains **50 operations**. Use the runtime document for client generation because its schemas reflect your own collections and globals.
 
 ---
 
