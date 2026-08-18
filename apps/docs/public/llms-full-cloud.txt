@@ -12691,11 +12691,9 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
   };
 
   /**
-   * Presentation schema defining the layout and fields displayed in the Record Detail View.
-   *
-   * @see {@link https://dyrected.com/docs/admin/detail-views Detail Views overview}
+   * Custom detail view layout configuration for the Admin UI.
    */
-  detail?: DetailSchema<TDoc>;
+  detail?: DetailSchema<TDoc> | false;
 }
 ```
 
@@ -12716,7 +12714,7 @@ export interface CollectionConfig<TDoc extends object = Record<string, unknown>>
 | <code>access</code> (optional) | Collection-level access control.  Each key is an operation; the value can be a function, a Jexl string, a boolean, or a named policy reference. Returning &#96;true&#96; allows access and &#96;false&#96; denies it. Returning a &#96;where&#96;-style object grants access only to matching documents.  See: [Access control overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/access-control/overview) |
 | <code>hooks</code> (optional) | Collection-level lifecycle hooks.  Hooks run in the order they appear in the array. The return value of each hook is passed as the input to the next. Throwing inside any hook aborts the operation and returns a &#96;500&#96; error.  See the Hooks reference for the full lifecycle diagram.  See: [Hooks overview](https://docs.dyrected.com/docs/self-hosted/model-content/content-rules/hooks), [Collection hooks](https://docs.dyrected.com/docs/self-hosted/deployment-and-operations/server-runtime/hooks/collections) |
 | <code>admin</code> (optional) | Admin UI configuration for this collection.  See: [Admin options](https://dyrected.com/docs/model-content/configuration/collections#admin-options) |
-| <code>detail</code> (optional) | Presentation schema defining the layout and fields displayed in the Record Detail View.  See: [Detail Views overview](https://dyrected.com/docs/admin/detail-views) |
+| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 
 
 ## `admin` options
@@ -13177,17 +13175,15 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
   };
 
   /**
-   * Presentation schema defining the layout and fields displayed in the Global Detail View.
-   *
-   * @see {@link https://dyrected.com/docs/admin/detail-views Detail Views overview}
-   */
-  detail?: DetailSchema<TDoc>;
-
-  /**
    * Initial data to seed this global with the first time it is fetched and
    * found to be empty.
    */
   initialData?: Partial<TDoc>;
+
+  /**
+   * Custom detail view layout configuration for the Admin UI.
+   */
+  detail?: DetailSchema<TDoc> | false;
 }
 ```
 
@@ -13201,8 +13197,8 @@ export interface GlobalConfig<TDoc extends object = Record<string, unknown>> {
 | <code>access</code> (optional) | Access control for reading and updating this global. |
 | <code>hooks</code> (optional) | Global-level lifecycle hooks. Globals support &#96;beforeRead&#96;, &#96;afterRead&#96;, &#96;beforeChange&#96;, and &#96;afterChange&#96;. There are no delete hooks since globals cannot be deleted. |
 | <code>admin</code> (optional) | Admin UI configuration for this global. |
-| <code>detail</code> (optional) | Presentation schema defining the layout and fields displayed in the Global Detail View.  See: [Detail Views overview](https://dyrected.com/docs/admin/detail-views) |
 | <code>initialData</code> (optional) | Initial data to seed this global with the first time it is fetched and found to be empty. |
+| <code>detail</code> (optional) | Custom detail view layout configuration for the Admin UI. |
 
 
 ## Global options in practice
