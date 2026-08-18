@@ -1506,8 +1506,8 @@ export const Pages = defineCollection({
   },
   detail: false,
   fields: [
-    { name: "title", label: "Title", type: "text", required: true },
-    { name: "slug", label: "Slug", type: "text", required: true, unique: true },
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
 ```
@@ -1521,6 +1521,10 @@ The recommended starting point is a few sections with fields inside them. Each i
 ```ts
 
   defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextareaField,
+  defineTextField,
   displayField,
   displaySection,
 } from "@dyrected/core";
@@ -1552,17 +1556,16 @@ export const Products = defineCollection({
     ),
   ],
   fields: [
-    { name: "title", label: "Title", type: "text", required: true },
-    { name: "sku", label: "SKU", type: "text", required: true },
-    { name: "description", label: "Description", type: "textarea" },
-    { name: "price", label: "Price", type: "number", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "sku", label: "SKU", required: true }),
+    defineTextareaField({ name: "description", label: "Description" }),
+    defineNumberField({ name: "price", label: "Price", required: true }),
+    defineSelectField({
       name: "status",
       label: "Status",
-      type: "select",
       options: ["draft", "active", "archived"],
       defaultValue: "draft",
-    },
+    }),
   ],
 });
 ```
@@ -1575,7 +1578,12 @@ Detail Views work identically for globals. Use them to create a clean overview d
 
 ```ts
 
+  defineArrayField,
+  defineEmailField,
   defineGlobal,
+  defineNumberField,
+  defineTextField,
+  defineUrlField,
   displayComputed,
   displayField,
   displaySection,
@@ -1585,29 +1593,36 @@ export const SiteSettings = defineGlobal({
   slug: "site-settings",
   label: "Site Settings",
   detail: [
-    displaySection("Identity & Contact", [
-      displayField("siteName", { span: 6 }),
-      displayField("supportEmail", { span: 6, display: "copyable" }),
-      displayField("rating", { span: 6, display: "star-rating" }),
-      displayField("primaryIcon", { span: 6, display: "icon" }),
-    ], { span: 8, icon: "Settings" }),
-    displaySection("Quick Stats", [
-      displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 }),
-    ], { span: 4 }),
+    displaySection(
+      "Identity & Contact",
+      [
+        displayField("siteName", { span: 6 }),
+        displayField("supportEmail", { span: 6, display: "copyable" }),
+        displayField("rating", { span: 6, display: "star-rating" }),
+        displayField("primaryIcon", { span: 6, display: "icon" }),
+      ],
+      { span: 8, icon: "Settings" },
+    ),
+    displaySection("Quick Stats", [displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 })], {
+      span: 4,
+    }),
   ],
   fields: [
-    { name: "siteName", label: "Site Name", type: "text", required: true },
-    { name: "supportEmail", label: "Support Email", type: "email", required: true },
-    { name: "rating", label: "Customer Rating", type: "number", defaultValue: 5 },
-    { name: "primaryIcon", label: "Primary Icon", type: "text", defaultValue: "Globe" },
-    { name: "socialLinks", label: "Social Links", type: "array", fields: [
-      { name: "platform", label: "Platform", type: "text" },
-      { name: "url", label: "URL", type: "url" },
-    ]},
+    defineTextField({ name: "siteName", label: "Site Name", required: true }),
+    defineEmailField({ name: "supportEmail", label: "Support Email", required: true }),
+    defineNumberField({ name: "rating", label: "Customer Rating", defaultValue: 5 }),
+    defineTextField({ name: "primaryIcon", label: "Primary Icon", defaultValue: "Globe" }),
+    defineArrayField({
+      name: "socialLinks",
+      label: "Social Links",
+      fields: [
+        defineTextField({ name: "platform", label: "Platform" }),
+        defineUrlField({ name: "url", label: "URL" }),
+      ],
+    }),
   ],
 });
 ```
-
 
 ## Arrange content with layout helpers
 
@@ -1629,9 +1644,12 @@ displaySection(
     icon: "CalendarCheck",
     description: "Review the publication state before editing.",
     collapsible: true,
+    collapsedByDefault: false,
   },
 );
 ```
+
+Use `collapsible: true` and `collapsedByDefault: true` when a section contains secondary details or audit logs that editors rarely need to inspect immediately.
 
 Use sections for the main regions of a document: overview, publishing, pricing, SEO, technical metadata, or internal notes.
 
@@ -1646,13 +1664,10 @@ displayTabs(
       displayField("slug", { span: 6, display: "copyable" }),
       displayField("seo.title", { span: 6 }),
     ]),
-    displayTab(
-      "Links",
-      [
-        displayField("navigation.links", { span: 12, display: "table" }),
-      ],
-      { icon: "Link", badge: "count(doc.navigation.links)" },
-    ),
+    displayTab("Links", [displayField("navigation.links", { span: 12, display: "table" })], {
+      icon: "Link",
+      badge: "count(doc.navigation.links)",
+    }),
   ],
   { span: 12, defaultTab: "Metadata" },
 );
@@ -1687,22 +1702,51 @@ displayField("brand.name", { label: "Brand", span: 6 });
 displayField("supportEmail", { display: "email", span: 6 });
 displayField("rating", { display: "star-rating", span: 6 });
 displayField("id", { display: "copyable", span: 6 });
-displayField("status", { display: "badge", span: 6 });
+displayField("status", {
+  display: "badge",
+  span: 6,
+  badgeColors: { draft: "zinc", active: "emerald", archived: "rose" },
+});
+displayField("secondaryNotes", {
+  span: 12,
+  hideIfEmpty: true,
+  emptyText: "No internal notes provided",
+});
 displayField("sampleSnippet", { display: "code", span: 12 });
 displayField("environmentKey", { display: "code-badge", span: 6 });
 displayField("themeIcon", { display: "icon", span: 6 });
 ```
 
+### String shorthand
+
+For simple layouts where fields only need default styling, you can pass field names as strings directly in the `detail` array or inside sections:
+
+```ts
+detail: [
+  "title",
+  "sku",
+  "status",
+]
+```
+
+Dyrected normalizes raw strings into standard `displayField("fieldName")` items automatically.
+
+### Empty and missing values
+
+By default, empty fields show a subtle dash (`—`). You can customize this behavior:
+- `emptyText: "Custom placeholder"`: replaces the default dash with custom text.
+- `hideIfEmpty: true`: completely hides the field row when the document value is `null`, `undefined`, or an empty string `""`.
+
 The most useful display variants fall into a few groups:
 
-| Use case | Variants |
-| --- | --- |
-| Status and labels | `badge`, `badges`, `tags`, `boolean` |
-| Numbers and progress | `currency`, `percent`, `progress`, `star`, `star-rating` |
-| Dates and time | `date`, `datetime`, `time`, `relative` |
-| Contact and links | `email`, `phone`, `url`, `link`, `copyable` |
-| Media and visual values | `image`, `avatar`, `color`, `color-swatches`, `icon` |
-| Structured values | `key-value`, `table`, `json`, `code`, `code-badge` |
+| Use case                | Variants                                                 |
+| ----------------------- | -------------------------------------------------------- |
+| Status and labels       | `badge`, `badges`, `tags`, `boolean`                     |
+| Numbers and progress    | `currency`, `percent`, `progress`, `star`, `star-rating` |
+| Dates and time          | `date`, `datetime`, `time`, `relative`                   |
+| Contact and links       | `email`, `phone`, `url`, `link`, `copyable`              |
+| Media and visual values | `image`, `avatar`, `color`, `color-swatches`, `icon`     |
+| Structured values       | `key-value`, `table`, `json`, `code`, `code-badge`       |
 
 If you do not pass `display`, Dyrected falls back to the field type. For example, relationship fields render links when related documents are populated, JSON fields render formatted JSON, and upload fields render a download link when a URL is available.
 
@@ -1721,16 +1765,6 @@ displayComputed("Rounded price", "math.round(doc.price, 2)", {
 });
 ```
 
-For values that need backend data or custom logic, pass a handler:
-
-```ts
-displayComputed("Reading time", ({ doc }) => {
-  const words = String(doc.body || "").split(/\s+/).filter(Boolean).length;
-  return `${Math.ceil(words / 200)} min`;
-});
-```
-
-Computed handlers are evaluated during document fetch on the server. Their results are attached to `doc._meta.computed`, and the admin reads from that metadata when it renders the card. Expression-based values can also be evaluated by the admin if the server value is not already present.
 
 ## Show repeated data
 
@@ -1757,11 +1791,11 @@ displayRepeat(
 
 The repeat layouts are:
 
-| Layout | Use it when |
-| --- | --- |
+| Layout  | Use it when                                                               |
+| ------- | ------------------------------------------------------------------------- |
 | `table` | The repeated data is compact and comparison matters. This is the default. |
-| `cards` | Each row has enough detail to read as its own item. |
-| `list` | The repeated data works best as a vertical feed or checklist. |
+| `cards` | Each row has enough detail to read as its own item.                       |
+| `list`  | The repeated data works best as a vertical feed or checklist.             |
 
 For card and list layouts, `useAsTitle` or `titleField` reads a field from each row and uses it as the row heading. If you pass `title` instead, Dyrected uses it as a static label and appends the row number.
 
@@ -1796,12 +1830,20 @@ To use a custom component, define your React component, register it in your coll
 ```tsx
 
 
+  defineBooleanField,
+  defineCollection,
+  defineTextField,
+  displayCustom,
+  displaySection,
+} from "@dyrected/core";
 
 // 1. Define your custom React component
 export function AuditBadge({ doc, tone = "info" }: { doc: any; tone?: string }) {
   const isVerified = doc.verified === true;
   return (
-    <div className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}>
+    <div
+      className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}
+    >
       <strong>Audit Status:</strong> {isVerified ? "Verified Record" : "Pending Verification"}
     </div>
   );
@@ -1826,38 +1868,23 @@ export const Orders = defineCollection({
     ]),
   ],
   fields: [
-    { name: "orderNumber", label: "Order #", type: "text", required: true },
-    { name: "verified", label: "Verified", type: "boolean", defaultValue: false },
+    defineTextField({ name: "orderNumber", label: "Order #", required: true }),
+    defineBooleanField({ name: "verified", label: "Verified", defaultValue: false }),
   ],
 });
 ```
 
 Your component receives the current `doc`, the logged-in `user`, and any custom `props` passed in `options.props`.
 
-For **self-hosted, React-based projects** running the admin directly in the application runtime, you can also provide an inline `render` function:
-
-```tsx
-displayCustom("InlineAudit", {
-  span: 12,
-  render: ({ doc }) => (
-    <span className="text-xs text-muted-foreground">
-      Last audited record ID: {doc.id}
-    </span>
-  ),
-})
-```
-
-> [!NOTE]
-> Inline `render` functions only execute in self-hosted React setups where the schema stays within your local JavaScript runtime. If you are using Dyrected Cloud or a remote admin API, schemas are serialized over JSON—register named custom components instead.
 
 `displayCustomComponent()` is available as an alias for `displayCustom()`. For a deeper guide on creating and registering admin components, see [Custom Components](https://docs.dyrected.com/docs/cloud/start-here/what-is-dyrected).
-
 
 ## Conditionally show items with `visible`
 
 Every detail item (sections, tabs, grids, repeats, individual fields, computed cards, text, dividers, and custom components) accepts an optional `visible` condition.
 
 `visible` can be:
+
 - A **boolean**: `visible: false` hides the item unconditionally.
 - A **JEXL expression**: evaluated against `{ doc, user }`. Supports built-in helpers like `includes()`, logical operators (`and`, `or`, `&&`, `||`), comparisons, and math.
 
@@ -1886,18 +1913,18 @@ Visibility rules evaluate recursively for both top-level containers and nested i
 
 ## Quick reference
 
-| Helper | Purpose | Common options |
-| --- | --- | --- |
-| `displayField(fieldName, options)` | Show a document field or dotted path | `label`, `hideLabel`, `span`, `display`, `format`, `currency`, `emptyText`, `visible` |
-| `displaySection(title, items, options)` | Group related detail items | `span`, `description`, `icon`, `collapsible`, `collapsedByDefault`, `visible` |
-| `displayTabs(tabs, options)` | Split complex documents into tabbed panels | `span`, `defaultTab`, `visible` |
-| `displayTab(label, items, options)` | Define one tab inside `displayTabs()` | `icon`, `badge`, `badgeColor`, `visible` |
-| `displayGrid(columns, items, options)` | Arrange related values in a compact grid | `span`, `visible` |
-| `displayRepeat(fieldName, items, options)` | Render array-like data | `layout`, `emptyText`, `span`, `useAsTitle`, `titleField`, `title`, `icon`, `columns`, `visible` |
-| `displayComputed(label, expressionOrHandler, options)` | Show a derived value | `id`, `expression`, `handler`, `span`, `format`, `currency`, `visible` |
-| `displayText(content, options)` | Add explanatory text or a callout | `span`, `variant`, `className`, `visible` |
-| `displayDivider(options)` | Add a horizontal separator | `span`, `spacing`, `visible` |
-| `displayCustom(name, options)` | Render a registered admin component | `span`, `props`, `render`, `visible` |
+| Helper                                                 | Purpose                                    | Common options                                                                                   |
+| ------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `displayField(fieldName, options)`                     | Show a document field or dotted path       | `label`, `hideLabel`, `span`, `display`, `format`, `currency`, `emptyText`, `visible`            |
+| `displaySection(title, items, options)`                | Group related detail items                 | `span`, `description`, `icon`, `collapsible`, `collapsedByDefault`, `visible`                    |
+| `displayTabs(tabs, options)`                           | Split complex documents into tabbed panels | `span`, `defaultTab`, `visible`                                                                  |
+| `displayTab(label, items, options)`                    | Define one tab inside `displayTabs()`      | `icon`, `badge`, `badgeColor`, `visible`                                                         |
+| `displayGrid(columns, items, options)`                 | Arrange related values in a compact grid   | `span`, `visible`                                                                                |
+| `displayRepeat(fieldName, items, options)`             | Render array-like data                     | `layout`, `emptyText`, `span`, `useAsTitle`, `titleField`, `title`, `icon`, `columns`, `visible` |
+| `displayComputed(label, expressionOrHandler, options)` | Show a derived value                       | `id`, `expression`, `handler`, `span`, `format`, `currency`, `visible`                           |
+| `displayText(content, options)`                        | Add explanatory text or a callout          | `span`, `variant`, `className`, `visible`                                                        |
+| `displayDivider(options)`                              | Add a horizontal separator                 | `span`, `spacing`, `visible`                                                                     |
+| `displayCustom(name, options)`                         | Render a registered admin component        | `span`, `props`, `render`, `visible`                                                             |
 
 ## Recommended path
 
@@ -27977,8 +28004,8 @@ export const Pages = defineCollection({
   },
   detail: false,
   fields: [
-    { name: "title", label: "Title", type: "text", required: true },
-    { name: "slug", label: "Slug", type: "text", required: true, unique: true },
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "slug", label: "Slug", required: true, unique: true }),
   ],
 });
 ```
@@ -27992,6 +28019,10 @@ The recommended starting point is a few sections with fields inside them. Each i
 ```ts
 
   defineCollection,
+  defineNumberField,
+  defineSelectField,
+  defineTextareaField,
+  defineTextField,
   displayField,
   displaySection,
 } from "@dyrected/core";
@@ -28023,17 +28054,16 @@ export const Products = defineCollection({
     ),
   ],
   fields: [
-    { name: "title", label: "Title", type: "text", required: true },
-    { name: "sku", label: "SKU", type: "text", required: true },
-    { name: "description", label: "Description", type: "textarea" },
-    { name: "price", label: "Price", type: "number", required: true },
-    {
+    defineTextField({ name: "title", label: "Title", required: true }),
+    defineTextField({ name: "sku", label: "SKU", required: true }),
+    defineTextareaField({ name: "description", label: "Description" }),
+    defineNumberField({ name: "price", label: "Price", required: true }),
+    defineSelectField({
       name: "status",
       label: "Status",
-      type: "select",
       options: ["draft", "active", "archived"],
       defaultValue: "draft",
-    },
+    }),
   ],
 });
 ```
@@ -28046,7 +28076,12 @@ Detail Views work identically for globals. Use them to create a clean overview d
 
 ```ts
 
+  defineArrayField,
+  defineEmailField,
   defineGlobal,
+  defineNumberField,
+  defineTextField,
+  defineUrlField,
   displayComputed,
   displayField,
   displaySection,
@@ -28056,29 +28091,36 @@ export const SiteSettings = defineGlobal({
   slug: "site-settings",
   label: "Site Settings",
   detail: [
-    displaySection("Identity & Contact", [
-      displayField("siteName", { span: 6 }),
-      displayField("supportEmail", { span: 6, display: "copyable" }),
-      displayField("rating", { span: 6, display: "star-rating" }),
-      displayField("primaryIcon", { span: 6, display: "icon" }),
-    ], { span: 8, icon: "Settings" }),
-    displaySection("Quick Stats", [
-      displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 }),
-    ], { span: 4 }),
+    displaySection(
+      "Identity & Contact",
+      [
+        displayField("siteName", { span: 6 }),
+        displayField("supportEmail", { span: 6, display: "copyable" }),
+        displayField("rating", { span: 6, display: "star-rating" }),
+        displayField("primaryIcon", { span: 6, display: "icon" }),
+      ],
+      { span: 8, icon: "Settings" },
+    ),
+    displaySection("Quick Stats", [displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 })], {
+      span: 4,
+    }),
   ],
   fields: [
-    { name: "siteName", label: "Site Name", type: "text", required: true },
-    { name: "supportEmail", label: "Support Email", type: "email", required: true },
-    { name: "rating", label: "Customer Rating", type: "number", defaultValue: 5 },
-    { name: "primaryIcon", label: "Primary Icon", type: "text", defaultValue: "Globe" },
-    { name: "socialLinks", label: "Social Links", type: "array", fields: [
-      { name: "platform", label: "Platform", type: "text" },
-      { name: "url", label: "URL", type: "url" },
-    ]},
+    defineTextField({ name: "siteName", label: "Site Name", required: true }),
+    defineEmailField({ name: "supportEmail", label: "Support Email", required: true }),
+    defineNumberField({ name: "rating", label: "Customer Rating", defaultValue: 5 }),
+    defineTextField({ name: "primaryIcon", label: "Primary Icon", defaultValue: "Globe" }),
+    defineArrayField({
+      name: "socialLinks",
+      label: "Social Links",
+      fields: [
+        defineTextField({ name: "platform", label: "Platform" }),
+        defineUrlField({ name: "url", label: "URL" }),
+      ],
+    }),
   ],
 });
 ```
-
 
 ## Arrange content with layout helpers
 
@@ -28100,9 +28142,12 @@ displaySection(
     icon: "CalendarCheck",
     description: "Review the publication state before editing.",
     collapsible: true,
+    collapsedByDefault: false,
   },
 );
 ```
+
+Use `collapsible: true` and `collapsedByDefault: true` when a section contains secondary details or audit logs that editors rarely need to inspect immediately.
 
 Use sections for the main regions of a document: overview, publishing, pricing, SEO, technical metadata, or internal notes.
 
@@ -28117,13 +28162,10 @@ displayTabs(
       displayField("slug", { span: 6, display: "copyable" }),
       displayField("seo.title", { span: 6 }),
     ]),
-    displayTab(
-      "Links",
-      [
-        displayField("navigation.links", { span: 12, display: "table" }),
-      ],
-      { icon: "Link", badge: "count(doc.navigation.links)" },
-    ),
+    displayTab("Links", [displayField("navigation.links", { span: 12, display: "table" })], {
+      icon: "Link",
+      badge: "count(doc.navigation.links)",
+    }),
   ],
   { span: 12, defaultTab: "Metadata" },
 );
@@ -28158,22 +28200,51 @@ displayField("brand.name", { label: "Brand", span: 6 });
 displayField("supportEmail", { display: "email", span: 6 });
 displayField("rating", { display: "star-rating", span: 6 });
 displayField("id", { display: "copyable", span: 6 });
-displayField("status", { display: "badge", span: 6 });
+displayField("status", {
+  display: "badge",
+  span: 6,
+  badgeColors: { draft: "zinc", active: "emerald", archived: "rose" },
+});
+displayField("secondaryNotes", {
+  span: 12,
+  hideIfEmpty: true,
+  emptyText: "No internal notes provided",
+});
 displayField("sampleSnippet", { display: "code", span: 12 });
 displayField("environmentKey", { display: "code-badge", span: 6 });
 displayField("themeIcon", { display: "icon", span: 6 });
 ```
 
+### String shorthand
+
+For simple layouts where fields only need default styling, you can pass field names as strings directly in the `detail` array or inside sections:
+
+```ts
+detail: [
+  "title",
+  "sku",
+  "status",
+]
+```
+
+Dyrected normalizes raw strings into standard `displayField("fieldName")` items automatically.
+
+### Empty and missing values
+
+By default, empty fields show a subtle dash (`—`). You can customize this behavior:
+- `emptyText: "Custom placeholder"`: replaces the default dash with custom text.
+- `hideIfEmpty: true`: completely hides the field row when the document value is `null`, `undefined`, or an empty string `""`.
+
 The most useful display variants fall into a few groups:
 
-| Use case | Variants |
-| --- | --- |
-| Status and labels | `badge`, `badges`, `tags`, `boolean` |
-| Numbers and progress | `currency`, `percent`, `progress`, `star`, `star-rating` |
-| Dates and time | `date`, `datetime`, `time`, `relative` |
-| Contact and links | `email`, `phone`, `url`, `link`, `copyable` |
-| Media and visual values | `image`, `avatar`, `color`, `color-swatches`, `icon` |
-| Structured values | `key-value`, `table`, `json`, `code`, `code-badge` |
+| Use case                | Variants                                                 |
+| ----------------------- | -------------------------------------------------------- |
+| Status and labels       | `badge`, `badges`, `tags`, `boolean`                     |
+| Numbers and progress    | `currency`, `percent`, `progress`, `star`, `star-rating` |
+| Dates and time          | `date`, `datetime`, `time`, `relative`                   |
+| Contact and links       | `email`, `phone`, `url`, `link`, `copyable`              |
+| Media and visual values | `image`, `avatar`, `color`, `color-swatches`, `icon`     |
+| Structured values       | `key-value`, `table`, `json`, `code`, `code-badge`       |
 
 If you do not pass `display`, Dyrected falls back to the field type. For example, relationship fields render links when related documents are populated, JSON fields render formatted JSON, and upload fields render a download link when a URL is available.
 
@@ -28190,19 +28261,55 @@ displayComputed("Rounded price", "math.round(doc.price, 2)", {
   format: "currency",
   currency: "USD",
 });
-```
+```### Function handlers
 
-For values that need backend data or custom logic, pass a handler:
+For values that require custom logic, server-side data, or database lookups across other collections, pass a function handler. The handler runs on your self-hosted server during document fetch and receives a `{ doc, user, db }` context object:
 
 ```ts
-displayComputed("Reading time", ({ doc }) => {
-  const words = String(doc.body || "").split(/\s+/).filter(Boolean).length;
-  return `${Math.ceil(words / 200)} min`;
-});
+// 1. Simple in-memory calculation with `doc`
+displayComputed(
+  "Reading time",
+  ({ doc }) => {
+    const words = String(doc.body || "")
+      .split(/\s+/)
+      .filter(Boolean).length;
+    return `${Math.ceil(words / 200)} min`;
+  },
+  { span: 6 },
+);
+
+// 2. Cross-collection database query with `db` (async)
+displayComputed(
+  "Active Orders",
+  async ({ doc, db }) => {
+    const orders = await db.find("orders", {
+      where: { customerId: { equals: doc.id }, status: { equals: "processing" } },
+    });
+    return orders.length;
+  },
+  { span: 6, format: "number" },
+);
+
+// 3. User-aware personalized or role-based summary with `user`
+displayComputed(
+  "Internal Audit",
+  ({ doc, user }) => {
+    if (user?.roles?.includes("admin")) {
+      return `Revenue: $${doc.totalRevenue} (Admin audit)`;
+    }
+    return "Standard view";
+  },
+  { span: 12 },
+);
 ```
 
-Computed handlers are evaluated during document fetch on the server. Their results are attached to `doc._meta.computed`, and the admin reads from that metadata when it renders the card. Expression-based values can also be evaluated by the admin if the server value is not already present.
+| Context property | Type   | Description                                                                                           |
+| ---------------- | ------ | ----------------------------------------------------------------------------------------------------- |
+| `doc`            | `TDoc` | The full document record being viewed, with all field values.                                         |
+| `user`           | `any`  | The current authenticated user session making the request (e.g. `id`, `email`, `roles`).              |
+| `db`             | `any`  | The active database adapter instance for executing queries and aggregations across other collections. |
 
+Computed handlers are evaluated on the server when documents are retrieved via the API. Their results are attached to `doc._meta.computed`, allowing the admin UI to display complex derived stats instantly without client overhead.
 ## Show repeated data
 
 Use `displayRepeat(fieldName, items, options)` for array-like content. The nested `items` describe how each row should appear.
@@ -28228,11 +28335,11 @@ displayRepeat(
 
 The repeat layouts are:
 
-| Layout | Use it when |
-| --- | --- |
+| Layout  | Use it when                                                               |
+| ------- | ------------------------------------------------------------------------- |
 | `table` | The repeated data is compact and comparison matters. This is the default. |
-| `cards` | Each row has enough detail to read as its own item. |
-| `list` | The repeated data works best as a vertical feed or checklist. |
+| `cards` | Each row has enough detail to read as its own item.                       |
+| `list`  | The repeated data works best as a vertical feed or checklist.             |
 
 For card and list layouts, `useAsTitle` or `titleField` reads a field from each row and uses it as the row heading. If you pass `title` instead, Dyrected uses it as a static label and appends the row number.
 
@@ -28267,12 +28374,20 @@ To use a custom component, define your React component, register it in your coll
 ```tsx
 
 
+  defineBooleanField,
+  defineCollection,
+  defineTextField,
+  displayCustom,
+  displaySection,
+} from "@dyrected/core";
 
 // 1. Define your custom React component
 export function AuditBadge({ doc, tone = "info" }: { doc: any; tone?: string }) {
   const isVerified = doc.verified === true;
   return (
-    <div className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}>
+    <div
+      className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}
+    >
       <strong>Audit Status:</strong> {isVerified ? "Verified Record" : "Pending Verification"}
     </div>
   );
@@ -28297,38 +28412,28 @@ export const Orders = defineCollection({
     ]),
   ],
   fields: [
-    { name: "orderNumber", label: "Order #", type: "text", required: true },
-    { name: "verified", label: "Verified", type: "boolean", defaultValue: false },
+    defineTextField({ name: "orderNumber", label: "Order #", required: true }),
+    defineBooleanField({ name: "verified", label: "Verified", defaultValue: false }),
   ],
 });
 ```
 
-Your component receives the current `doc`, the logged-in `user`, and any custom `props` passed in `options.props`.
-
-For **self-hosted, React-based projects** running the admin directly in the application runtime, you can also provide an inline `render` function:
+Your component receives the current `doc`, the logged-in `user`, and any custom `props` passed in `options.props`.For **self-hosted, React-based projects** running the admin directly in the application runtime, you can also provide an inline `render` function:
 
 ```tsx
 displayCustom("InlineAudit", {
   span: 12,
-  render: ({ doc }) => (
-    <span className="text-xs text-muted-foreground">
-      Last audited record ID: {doc.id}
-    </span>
-  ),
-})
+  render: ({ doc }) => <span className="text-xs text-muted-foreground">Last audited record ID: {doc.id}</span>,
+});
 ```
-
-> [!NOTE]
-> Inline `render` functions only execute in self-hosted React setups where the schema stays within your local JavaScript runtime. If you are using Dyrected Cloud or a remote admin API, schemas are serialized over JSON—register named custom components instead.
-
 `displayCustomComponent()` is available as an alias for `displayCustom()`. For a deeper guide on creating and registering admin components, see [Custom Components](https://docs.dyrected.com/docs/self-hosted/editor-experience/custom-components/overview).
-
 
 ## Conditionally show items with `visible`
 
 Every detail item (sections, tabs, grids, repeats, individual fields, computed cards, text, dividers, and custom components) accepts an optional `visible` condition.
 
 `visible` can be:
+
 - A **boolean**: `visible: false` hides the item unconditionally.
 - A **JEXL expression**: evaluated against `{ doc, user }`. Supports built-in helpers like `includes()`, logical operators (`and`, `or`, `&&`, `||`), comparisons, and math.
 
@@ -28357,18 +28462,18 @@ Visibility rules evaluate recursively for both top-level containers and nested i
 
 ## Quick reference
 
-| Helper | Purpose | Common options |
-| --- | --- | --- |
-| `displayField(fieldName, options)` | Show a document field or dotted path | `label`, `hideLabel`, `span`, `display`, `format`, `currency`, `emptyText`, `visible` |
-| `displaySection(title, items, options)` | Group related detail items | `span`, `description`, `icon`, `collapsible`, `collapsedByDefault`, `visible` |
-| `displayTabs(tabs, options)` | Split complex documents into tabbed panels | `span`, `defaultTab`, `visible` |
-| `displayTab(label, items, options)` | Define one tab inside `displayTabs()` | `icon`, `badge`, `badgeColor`, `visible` |
-| `displayGrid(columns, items, options)` | Arrange related values in a compact grid | `span`, `visible` |
-| `displayRepeat(fieldName, items, options)` | Render array-like data | `layout`, `emptyText`, `span`, `useAsTitle`, `titleField`, `title`, `icon`, `columns`, `visible` |
-| `displayComputed(label, expressionOrHandler, options)` | Show a derived value | `id`, `expression`, `handler`, `span`, `format`, `currency`, `visible` |
-| `displayText(content, options)` | Add explanatory text or a callout | `span`, `variant`, `className`, `visible` |
-| `displayDivider(options)` | Add a horizontal separator | `span`, `spacing`, `visible` |
-| `displayCustom(name, options)` | Render a registered admin component | `span`, `props`, `render`, `visible` |
+| Helper                                                 | Purpose                                    | Common options                                                                                   |
+| ------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `displayField(fieldName, options)`                     | Show a document field or dotted path       | `label`, `hideLabel`, `span`, `display`, `format`, `currency`, `emptyText`, `visible`            |
+| `displaySection(title, items, options)`                | Group related detail items                 | `span`, `description`, `icon`, `collapsible`, `collapsedByDefault`, `visible`                    |
+| `displayTabs(tabs, options)`                           | Split complex documents into tabbed panels | `span`, `defaultTab`, `visible`                                                                  |
+| `displayTab(label, items, options)`                    | Define one tab inside `displayTabs()`      | `icon`, `badge`, `badgeColor`, `visible`                                                         |
+| `displayGrid(columns, items, options)`                 | Arrange related values in a compact grid   | `span`, `visible`                                                                                |
+| `displayRepeat(fieldName, items, options)`             | Render array-like data                     | `layout`, `emptyText`, `span`, `useAsTitle`, `titleField`, `title`, `icon`, `columns`, `visible` |
+| `displayComputed(label, expressionOrHandler, options)` | Show a derived value                       | `id`, `expression`, `handler`, `span`, `format`, `currency`, `visible`                           |
+| `displayText(content, options)`                        | Add explanatory text or a callout          | `span`, `variant`, `className`, `visible`                                                        |
+| `displayDivider(options)`                              | Add a horizontal separator                 | `span`, `spacing`, `visible`                                                                     |
+| `displayCustom(name, options)`                         | Render a registered admin component        | `span`, `props`, `render`, `visible`                                                             |
 
 ## Recommended path
 
