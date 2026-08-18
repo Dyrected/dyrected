@@ -486,10 +486,11 @@ export class PostgresAdapter implements DatabaseAdapter {
      */
     const toCastExpr = (rawField: string, cast: string | undefined): string => {
       const base = toFieldExpr(rawField);
-      if (!cast || cast === "string") return base;
+      if (cast === "string") return base;
       if (cast === "boolean") return `(${base})::boolean`;
       if (cast === "date") return `(${base})::timestamptz`;
-      // number / integer / float — safe: NULL on failure via regex guard
+      // By default for numeric operations (or number / integer / float), safe numeric cast is required
+      // because data->>'field' extraction yields text in Postgres
       const pgType = cast === "integer" ? "bigint" : "double precision";
       return `CASE WHEN ${base} ~ '^-?[0-9]+(\\.[0-9]+)?$' THEN (${base})::${pgType} ELSE NULL END`;
     };

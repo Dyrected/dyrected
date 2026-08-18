@@ -75,7 +75,7 @@ export function runAggregateAdapterContract(
 ) {
   const suite = options.skip ? describe.skip : describe;
   suite(`${name} aggregate contract`, () => {
-    it("count, sum+cast, filtered count, null-on-empty, and invalid-value-as-null", async () => {
+    it("count, sum+cast, avg+cast, filtered count, min, max, null-on-empty, and invalid-value-as-null", async () => {
       const db = await createAdapter();
       const collection = `agg-contract-${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const config: CollectionConfig = {
@@ -99,10 +99,12 @@ export function runAggregateAdapterContract(
         aggregates: {
           // count: all documents
           total: { count: "*" },
-          // filtered count using a text field (avoids boolean/JSON interop differences across adapters)
+          // filtered count using a text field
           attending: { count: "*", where: { status: { equals: "attending" } } },
-          // sum with cast — "unknown" becomes null and is ignored
+          // sum with cast — "unknown" becomes null and is ignored (3 + 5 + 2 = 10)
           totalYards: { sum: "yards", cast: "number" },
+          // avg with cast — (3 + 5 + 2) / 3 = 3.3333...
+          avgYards: { avg: "yards", cast: "number" },
           // min / max across the valid numeric strings
           minYards: { min: "yards", cast: "number" },
           maxYards: { max: "yards", cast: "number" },
@@ -111,10 +113,95 @@ export function runAggregateAdapterContract(
 
       expect(result.total).toBe(4);
       expect(result.attending).toBe(2);
-      // 3 + 5 + 2 = 10  ("unknown" skipped)
       expect(result.totalYards).toBeCloseTo(10);
+      expect(result.avgYards).toBeCloseTo(10 / 3);
       expect(result.minYards).toBeCloseTo(2);
       expect(result.maxYards).toBeCloseTo(5);
+    });
+
+    it("handles native numeric fields, avg calculations, and complex where operators", async () => {
+      const db = await createAdapter();
+      const collection = `agg-native-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "category", type: "text" },
+          { name: "score", type: "number" },
+        ],
+      };
+
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { category: "A", score: 10 } });
+      await db.create({ collection, data: { category: "A", score: 20 } });
+      await db.create({ collection, data: { category: "B", score: 30 } });
+      await db.create({ collection, data: { category: "C", score: 40 } });
+
+      const result = await db.aggregate({
+        collection,
+        aggregates: {
+          totalScore: { sum: "score" },
+          avgScore: { avg: "score" },
+          minScore: { min: "score" },
+          maxScore: { max: "score" },
+          highScoresCount: { count: "*", where: { score: { gt: 15 } } },
+          categoryAorBCount: {
+            count: "*",
+            where: {
+              OR: [
+                { category: { equals: "A" } },
+                { category: { equals: "B" } },
+              ],
+            },
+          },
+          categoryAAvgScore: {
+            avg: "score",
+            where: { category: { equals: "A" } },
+          },
+        },
+      });
+
+      expect(result.totalScore).toBeCloseTo(100);
+      expect(result.avgScore).toBeCloseTo(25);
+      expect(result.minScore).toBeCloseTo(10);
+      expect(result.maxScore).toBeCloseTo(40);
+      expect(result.highScoresCount).toBe(3); // 20, 30, 40
+      expect(result.categoryAorBCount).toBe(3); // 2 of A, 1 of B
+      expect(result.categoryAAvgScore).toBeCloseTo(15); // (10 + 20) / 2
+    });
+
+    it("returns null for metrics when matching documents contain all nulls for target field", async () => {
+      const db = await createAdapter();
+      const collection = `agg-nulls-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "tag", type: "text" },
+          { name: "missingField", type: "text" },
+        ],
+      };
+
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { tag: "active", missingField: null } });
+      await db.create({ collection, data: { tag: "active", missingField: "invalid" } });
+
+      const result = await db.aggregate({
+        collection,
+        aggregates: {
+          matchedDocs: { count: "*", where: { tag: { equals: "active" } } },
+          sumMissing: { sum: "missingField", cast: "number", where: { tag: { equals: "active" } } },
+          avgMissing: { avg: "missingField", cast: "number", where: { tag: { equals: "active" } } },
+          minMissing: { min: "missingField", cast: "number", where: { tag: { equals: "active" } } },
+          maxMissing: { max: "missingField", cast: "number", where: { tag: { equals: "active" } } },
+        },
+      });
+
+      expect(result.matchedDocs).toBe(2);
+      expect(result.sumMissing).toBeNull();
+      expect(result.avgMissing).toBeNull();
+      expect(result.minMissing).toBeNull();
+      expect(result.maxMissing).toBeNull();
     });
 
     it("returns null for sum/avg/min/max on an empty collection", async () => {
@@ -131,13 +218,20 @@ export function runAggregateAdapterContract(
         aggregates: {
           total: { count: "*" },
           sumVal: { sum: "value", cast: "number" },
+          avgVal: { avg: "value", cast: "number" },
+          minVal: { min: "value", cast: "number" },
+          maxVal: { max: "value", cast: "number" },
         },
       });
 
       // count of an empty set is 0 (not null)
       expect(result.total).toBe(0);
-      // sum of nothing is null
+      // sum/avg/min/max of nothing is null
       expect(result.sumVal).toBeNull();
+      expect(result.avgVal).toBeNull();
+      expect(result.minVal).toBeNull();
+      expect(result.maxVal).toBeNull();
     });
   });
 }
+

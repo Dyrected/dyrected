@@ -210,7 +210,7 @@ export class MongoAdapter implements DatabaseAdapter {
     };
 
     /** Build the $group accumulator expression for one named aggregate. */
-    const buildAccumulator = (op: Record<string, any>) => {
+    const buildGroupAccumulator = (op: Record<string, any>) => {
       const castType = op.cast ? castToMongoType[op.cast] : null;
 
       const wrapCast = (fieldExpr: string) => {
@@ -225,12 +225,22 @@ export class MongoAdapter implements DatabaseAdapter {
         };
       };
 
-      if ("count" in op) return { $sum: 1 };
-      if (op.sum) return { $sum: wrapCast(op.sum) };
-      if (op.avg) return { $avg: wrapCast(op.avg) };
-      if (op.min) return { $min: wrapCast(op.min) };
-      if (op.max) return { $max: wrapCast(op.max) };
-      return { $sum: 1 };
+      if ("count" in op) return { result: { $sum: 1 } };
+      if (op.sum) {
+        const val = wrapCast(op.sum);
+        return {
+          result: { $sum: val },
+          hasValid: {
+            $sum: {
+              $cond: [{ $isNumber: val }, 1, 0],
+            },
+          },
+        };
+      }
+      if (op.avg) return { result: { $avg: wrapCast(op.avg) } };
+      if (op.min) return { result: { $min: wrapCast(op.min) } };
+      if (op.max) return { result: { $max: wrapCast(op.max) } };
+      return { result: { $sum: 1 } };
     };
 
     // Build a $facet stage where every named aggregate runs in its own sub-pipeline.
@@ -243,7 +253,7 @@ export class MongoAdapter implements DatabaseAdapter {
 
       facets[name] = [
         ...matchStage,
-        { $group: { _id: null, result: buildAccumulator(op) } },
+        { $group: { _id: null, ...buildGroupAccumulator(op) } },
       ];
     }
 
@@ -252,13 +262,18 @@ export class MongoAdapter implements DatabaseAdapter {
       { session: this.session },
     ).toArray();
 
-    // Flatten: $facet returns { name: [{ _id: null, result: value }] | [] }
+    // Flatten: $facet returns { name: [{ _id: null, result: value, hasValid?: number }] | [] }
     const result: Record<string, number | null> = {};
     for (const [name, op] of Object.entries(args.aggregates)) {
       const facetDocs: any[] = raw?.[name] ?? [];
-      const defaultValue = "count" in op ? 0 : null;
-      result[name] =
-        facetDocs.length > 0 ? (facetDocs[0].result ?? defaultValue) : defaultValue;
+      const doc = facetDocs[0];
+      if (!doc) {
+        result[name] = "count" in op ? 0 : null;
+      } else if (op.sum && doc.hasValid === 0) {
+        result[name] = null;
+      } else {
+        result[name] = doc.result ?? ("count" in op ? 0 : null);
+      }
     }
 
     return result;
