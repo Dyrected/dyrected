@@ -1561,6 +1561,27 @@
     "validation": "Parsed by the TypeScript compiler"
   },
   {
+    "id": "/editor-experience/detail-view#example-12",
+    "page": "/editor-experience/detail-view",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-13",
+    "page": "/editor-experience/detail-view",
+    "language": "tsx",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
+    "id": "/editor-experience/detail-view#example-14",
+    "page": "/editor-experience/detail-view",
+    "language": "ts",
+    "classification": "syntax-checked",
+    "validation": "Parsed by the TypeScript compiler"
+  },
+  {
     "id": "/editor-experience/editor-accounts#example-1",
     "page": "/editor-experience/editor-accounts",
     "language": "ts",

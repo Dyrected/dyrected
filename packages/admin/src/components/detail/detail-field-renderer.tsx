@@ -125,7 +125,26 @@ export function DetailFieldRenderer({
       )
     }
 
-    if (displayVariant === "star") {
+    if (displayVariant === "code") {
+      if (value == null || value === "") return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+      const text = typeof value === "object" ? JSON.stringify(value, null, 2) : String(value)
+      return (
+        <pre className="dy-bg-muted/40 dy-p-3 dy-rounded-xl dy-text-xs dy-font-mono dy-text-foreground dy-overflow-x-auto dy-border dy-border-border/60">
+          <code>{text}</code>
+        </pre>
+      )
+    }
+
+    if (displayVariant === "code-badge") {
+      if (value == null || value === "") return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+      return (
+        <code className="dy-inline-block dy-px-2 dy-py-0.5 dy-rounded-md dy-bg-muted/60 dy-font-mono dy-text-xs dy-text-foreground dy-border dy-border-border/60">
+          {String(value)}
+        </code>
+      )
+    }
+
+    if (displayVariant === "star" || displayVariant === "star-rating") {
       const num = Number(value) || 0
       const ratingSpec = getRatingSpec(num, { type: "rating", max: (options as any)?.max || 5 } as any)
       if (!ratingSpec) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
@@ -184,7 +203,7 @@ export function DetailFieldRenderer({
       return <span className="dy-text-sm dy-text-foreground">{formatted || placeholder}</span>
     }
 
-    if (displayVariant === "url") {
+    if (displayVariant === "url" || displayVariant === "link") {
       if (!value) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
       return (
         <a
@@ -196,6 +215,19 @@ export function DetailFieldRenderer({
           <span className="dy-truncate dy-max-w-xs">{String(value)}</span>
           <ExternalLink className="dy-h-3.5 dy-w-3.5" />
         </a>
+      )
+    }
+
+    if (displayVariant === "icon") {
+      if (!value) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+      const IconComp = resolveAdminIcon(String(value), Folder)
+      return (
+        <div className="dy-flex dy-items-center dy-gap-2">
+          <div className="dy-p-1.5 dy-rounded-md dy-bg-primary/10 dy-text-primary">
+            <IconComp className="dy-h-4 dy-w-4" />
+          </div>
+          <span className="dy-font-mono dy-text-xs dy-text-muted-foreground">{String(value)}</span>
+        </div>
       )
     }
 

@@ -300,4 +300,93 @@ describe("Admin Detail View Components", () => {
     expect(screen.getByTestId("audit-badge")).toBeDefined()
     expect(screen.getByText("Audit Verified: true")).toBeDefined()
   })
+
+  it("renders DetailFieldRenderer with code, code-badge, star-rating, and icon variants", () => {
+    const { rerender } = render(
+      <DetailFieldRenderer
+        fieldDef={{ name: "snippet", type: "text" }}
+        value="const x = 42;"
+        doc={{}}
+        options={{ display: "code" }}
+      />,
+    )
+    expect(screen.getByText("const x = 42;")).toBeDefined()
+
+    rerender(
+      <DetailFieldRenderer
+        fieldDef={{ name: "envVar", type: "text" }}
+        value="NODE_ENV"
+        doc={{}}
+        options={{ display: "code-badge" }}
+      />,
+    )
+    expect(screen.getByText("NODE_ENV")).toBeDefined()
+
+    rerender(
+      <DetailFieldRenderer
+        fieldDef={{ name: "rating", type: "number" }}
+        value={4}
+        doc={{}}
+        options={{ display: "star-rating" }}
+      />,
+    )
+    expect(screen.getByText("4/5")).toBeDefined()
+
+    rerender(
+      <DetailFieldRenderer
+        fieldDef={{ name: "iconName", type: "text" }}
+        value="Folder"
+        doc={{}}
+        options={{ display: "icon" }}
+      />,
+    )
+    expect(screen.getByText("Folder")).toBeDefined()
+  })
+
+  it("evaluates boolean and JEXL visible options for top-level and nested detail items", () => {
+    const doc = {
+      status: "draft",
+      internalNotes: "Secret admin notes",
+      publicNotes: "Public visible notes",
+      publishedDate: "2026-08-18",
+    }
+    const user = { roles: ["editor"] }
+
+    const schema = [
+      displaySection("Public Info", [
+        displayField("publicNotes"),
+        displayField("internalNotes", { visible: "user.roles != null and includes(user.roles, 'admin')" }),
+        displayField("publishedDate", { visible: false }),
+      ]),
+      displaySection("Admin Only Section", [
+        displayField("internalNotes"),
+      ], { visible: "user.roles != null and includes(user.roles, 'admin')" }),
+      displaySection("Hidden Section", [
+        displayField("publicNotes"),
+      ], { visible: false }),
+    ]
+
+    render(
+      <MemoryRouter>
+        <DetailRenderer
+          items={schema}
+          doc={doc}
+          user={user}
+          collection={{ slug: "posts", fields: [] }}
+        />
+      </MemoryRouter>,
+    )
+
+    // Public Info section and field should be visible
+    expect(screen.getByText("Public Info")).toBeDefined()
+    expect(screen.getByText("Public visible notes")).toBeDefined()
+
+    // Nested visible: false and visible: JEXL evaluated to false should NOT be rendered
+    expect(screen.queryByText("Secret admin notes")).toBeNull()
+    expect(screen.queryByText("2026-08-18")).toBeNull()
+
+    // Top level visible: false and admin-only sections should NOT be rendered
+    expect(screen.queryByText("Admin Only Section")).toBeNull()
+    expect(screen.queryByText("Hidden Section")).toBeNull()
+  })
 })

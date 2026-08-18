@@ -10,6 +10,7 @@ import {
   generateDefaultDetailSchema,
   normalizeDetailItem,
   evaluateJexl,
+  isDetailItemVisible,
   defineCollection,
   defineConfig,
 } from "../index.js";
@@ -310,5 +311,47 @@ describe("Schema Projection & Computed Pipeline Integration", () => {
     expect(doc._meta?.computed).toBeDefined();
     expect(doc._meta.computed.configuredaccounts).toBe(2);
     expect(doc._meta.computed.sitesummary).toBe("Site: Dyrected CMS");
+  });
+
+  it("evaluates isDetailItemVisible for boolean and JEXL expressions against doc and user", () => {
+    const doc = { status: "published", price: 100 };
+    const user = { roles: ["admin"] };
+
+    // Default (no visible option)
+    expect(isDetailItemVisible(displayField("title"), doc, user)).toBe(true);
+
+    // Boolean visible
+    expect(isDetailItemVisible(displayField("title", { visible: true }), doc, user)).toBe(true);
+    expect(isDetailItemVisible(displayField("title", { visible: false }), doc, user)).toBe(false);
+
+    // JEXL visible expression
+    expect(
+      isDetailItemVisible(
+        displayField("price", { visible: "doc.status == 'published'" }),
+        doc,
+        user,
+      ),
+    ).toBe(true);
+    expect(
+      isDetailItemVisible(
+        displayField("price", { visible: "doc.status == 'draft'" }),
+        doc,
+        user,
+      ),
+    ).toBe(false);
+    expect(
+      isDetailItemVisible(
+        displayField("adminNotes", { visible: "user.roles != null and includes(user.roles, 'admin')" }),
+        doc,
+        user,
+      ),
+    ).toBe(true);
+    expect(
+      isDetailItemVisible(
+        displayField("editorNotes", { visible: "user.roles != null and includes(user.roles, 'editor')" }),
+        doc,
+        user,
+      ),
+    ).toBe(false);
   });
 });

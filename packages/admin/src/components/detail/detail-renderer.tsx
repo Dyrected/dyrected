@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react"
-import { normalizeDetailItem, evaluateJexl } from "@dyrected/core"
+import React from "react"
+import { normalizeDetailItem, isDetailItemVisible } from "@dyrected/core"
 import { DetailSectionComponent } from "./detail-section"
 import { DetailTabsComponent } from "./detail-tabs"
 import { DetailGridComponent } from "./detail-grid"
@@ -73,39 +73,6 @@ export function DetailRenderer({
   client,
   schemas,
 }: DetailRendererProps) {
-  const [visibilityMap, setVisibilityMap] = useState<Record<number, boolean>>({})
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function checkVisibility() {
-      const map: Record<number, boolean> = {}
-      for (let i = 0; i < items.length; i++) {
-        const raw = items[i]
-        const it = normalizeDetailItem(raw)
-        const visibleExpr = (it as any).options?.visible
-        if (typeof visibleExpr === "string" && visibleExpr.trim().length > 0) {
-          try {
-            const isVisible = await evaluateJexl(visibleExpr, { doc, user })
-            map[i] = Boolean(isVisible)
-          } catch (_err) {
-            map[i] = true
-          }
-        } else {
-          map[i] = true
-        }
-      }
-      if (!cancelled) {
-        setVisibilityMap(map)
-      }
-    }
-
-    checkVisibility()
-    return () => {
-      cancelled = true
-    }
-  }, [items, doc, user])
-
   function getNestedValue(obj: any, path: string): any {
     if (!obj || !path) return undefined
     if (path in obj) return obj[path]
@@ -140,12 +107,16 @@ export function DetailRenderer({
     currentDoc: any = doc,
     scopedFields: any[] | undefined = collection?.fields,
   ): React.ReactNode => {
+    if (!isDetailItemVisible(rawItem, currentDoc, user)) {
+      return null
+    }
     const item = normalizeDetailItem(rawItem)
 
     if (item.type === "section") {
+      const visibleSubItems = item.items.filter((subItem) => isDetailItemVisible(subItem, currentDoc, user))
       return (
         <DetailSectionComponent title={item.title} options={item.options}>
-          {item.items.map((subItem, idx) => (
+          {visibleSubItems.map((subItem, idx) => (
             <div key={idx} className={innerSpanClasses[getItemSpan(subItem)] || "dy-col-span-12"}>
               {renderSingleItem(subItem, currentDoc, scopedFields)}
             </div>
@@ -155,27 +126,33 @@ export function DetailRenderer({
     }
 
     if (item.type === "tabs") {
+      const visibleTabs = item.tabs.filter((tab) => isDetailItemVisible({ type: "tab", label: tab.label, items: tab.items, options: tab.options } as any, currentDoc, user))
+      if (visibleTabs.length === 0) return null
+
       return (
         <DetailTabsComponent
-          tabs={item.tabs}
+          tabs={visibleTabs}
           options={item.options}
           doc={currentDoc}
           user={user}
           renderItems={(tabItems) =>
-            tabItems.map((subItem, idx) => (
-              <div key={idx} className={innerSpanClasses[getItemSpan(subItem)] || "dy-col-span-12"}>
-                {renderSingleItem(subItem, currentDoc, scopedFields)}
-              </div>
-            ))
+            tabItems
+              .filter((subItem) => isDetailItemVisible(subItem, currentDoc, user))
+              .map((subItem, idx) => (
+                <div key={idx} className={innerSpanClasses[getItemSpan(subItem)] || "dy-col-span-12"}>
+                  {renderSingleItem(subItem, currentDoc, scopedFields)}
+                </div>
+              ))
           }
         />
       )
     }
 
     if (item.type === "grid") {
+      const visibleSubItems = item.items.filter((subItem) => isDetailItemVisible(subItem, currentDoc, user))
       return (
         <DetailGridComponent columns={item.columns}>
-          {item.items.map((subItem, idx) => (
+          {visibleSubItems.map((subItem, idx) => (
             <div key={idx}>{renderSingleItem(subItem, currentDoc, scopedFields)}</div>
           ))}
         </DetailGridComponent>
@@ -186,10 +163,11 @@ export function DetailRenderer({
       const parentFieldDef = findNestedFieldDef(scopedFields, item.field)
       const childFields = parentFieldDef?.fields || scopedFields
       const repeatData = getNestedValue(currentDoc, item.field) || []
+      const visibleRepeatItems = item.items.filter((subItem) => isDetailItemVisible(subItem, currentDoc, user))
       return (
         <DetailRepeatComponent
           field={item.field}
-          items={item.items}
+          items={visibleRepeatItems}
           options={item.options}
           data={repeatData}
           renderItemContent={(subItem, rowData) => renderSingleItem(subItem, rowData, childFields)}
@@ -307,18 +285,19 @@ export function DetailRenderer({
 
   return (
     <div className="dy-grid dy-grid-cols-12 dy-gap-6">
-      {items.map((rawItem, idx) => {
-        if (visibilityMap[idx] === false) return null
-        const item = normalizeDetailItem(rawItem)
-        const span = getItemSpan(item)
-        const spanClass = topLevelSpanClasses[span] || "dy-col-span-12"
+      {items
+        .filter((rawItem) => isDetailItemVisible(rawItem, doc, user))
+        .map((rawItem, idx) => {
+          const item = normalizeDetailItem(rawItem)
+          const span = getItemSpan(item)
+          const spanClass = topLevelSpanClasses[span] || "dy-col-span-12"
 
-        return (
-          <div key={idx} className={cn(spanClass, "dy-min-w-0")}>
-            {renderSingleItem(item, doc)}
-          </div>
-        )
-      })}
+          return (
+            <div key={idx} className={cn(spanClass, "dy-min-w-0")}>
+              {renderSingleItem(item, doc)}
+            </div>
+          )
+        })}
     </div>
   )
 }

@@ -45,7 +45,15 @@ export interface DisplayFieldOptions {
   valueLabel?: string;
   emptyText?: string;
   hideIfEmpty?: boolean;
-  visible?: string;
+  /**
+   * Visibility condition for this field item.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   * When false or evaluating to falsy, this item is hidden in the Detail View.
+   *
+   * @example `visible: "doc.status == 'published'"`
+   * @example `visible: false`
+   */
+  visible?: string | boolean;
 }
 
 export interface DetailField {
@@ -61,7 +69,13 @@ export interface DetailSectionOptions {
   columns?: number;
   collapsible?: boolean;
   collapsedByDefault?: boolean;
-  visible?: string;
+  /**
+   * Visibility condition for this section.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   *
+   * @example `visible: "user.roles != null and 'admin' in user.roles"`
+   */
+  visible?: string | boolean;
 }
 
 export interface DetailSection {
@@ -75,7 +89,11 @@ export interface DetailTabOptions {
   icon?: string;
   badge?: string;
   badgeColor?: string;
-  visible?: string;
+  /**
+   * Visibility condition for this individual tab.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
 }
 
 export interface DetailTab {
@@ -88,7 +106,11 @@ export interface DetailTab {
 export interface DetailTabsOptions {
   span?: DetailSpan;
   defaultTab?: string;
-  visible?: string;
+  /**
+   * Visibility condition for this tab container.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
 }
 
 export interface DetailTabs {
@@ -99,7 +121,11 @@ export interface DetailTabs {
 
 export interface DetailGridOptions {
   span?: DetailSpan;
-  visible?: string;
+  /**
+   * Visibility condition for this grid container.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
 }
 
 export interface DetailGrid {
@@ -113,7 +139,11 @@ export interface DetailRepeatOptions {
   layout?: "table" | "cards" | "list";
   emptyText?: string;
   span?: DetailSpan;
-  visible?: string;
+  /**
+   * Visibility condition for this repeat container.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
   /** Field name in each row to use as the card header title (e.g. 'title', 'key', 'name') */
   useAsTitle?: string;
   /** Field name in each row to use as the card header title (alias for useAsTitle) */
@@ -142,7 +172,11 @@ export interface DetailComputedOptions<TDoc = any> {
   span?: DetailSpan;
   format?: string;
   currency?: string;
-  visible?: string;
+  /**
+   * Visibility condition for this computed card.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
 }
 
 export interface DetailComputed<TDoc = any> {
@@ -156,7 +190,11 @@ export interface DetailComputed<TDoc = any> {
 
 export interface DetailDividerOptions {
   span?: DetailSpan;
-  visible?: string;
+  /**
+   * Visibility condition for this divider.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
   spacing?: "sm" | "md" | "lg" | "none";
 }
 
@@ -167,7 +205,11 @@ export interface DetailDivider {
 
 export interface DetailTextOptions {
   span?: DetailSpan;
-  visible?: string;
+  /**
+   * Visibility condition for this text block.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
   variant?:
     | "body"
     | "heading"
@@ -188,7 +230,11 @@ export interface DetailText {
 
 export interface DetailCustomOptions<TDoc = any> {
   span?: DetailSpan;
-  visible?: string;
+  /**
+   * Visibility condition for this custom component.
+   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
+   */
+  visible?: string | boolean;
   props?: Record<string, any>;
   render?: (context: { doc: TDoc; user?: any; [key: string]: any }) => any;
 }

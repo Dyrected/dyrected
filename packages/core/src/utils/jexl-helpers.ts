@@ -483,6 +483,18 @@ export function registerJexlHelpers(jexlInstance: typeof jexl = jexl) {
     } catch {
       // Ignore if already registered
     }
+    try {
+      jexlInstance.addTransform(name, fn);
+    } catch {
+      // Ignore if already registered
+    }
+  }
+
+  try {
+    jexlInstance.addBinaryOp("and", 20, (left: any, right: any) => Boolean(left && right));
+    jexlInstance.addBinaryOp("or", 10, (left: any, right: any) => Boolean(left || right));
+  } catch {
+    // Ignore if already registered
   }
 }
 
@@ -500,11 +512,36 @@ export async function evaluateJexl(
   if (!expression || typeof expression !== "string") return undefined;
   try {
     const evalContext = {
+      null: null,
+      undefined: undefined,
       ...context,
       math: Math,
       Math,
     };
     return await jexl.eval(expression, evalContext);
+  } catch (_err) {
+    return undefined;
+  }
+}
+
+/**
+ * Synchronous standard shared evaluator for JEXL expressions.
+ * Injects math namespace and standard helpers into the context.
+ */
+export function evaluateJexlSync(
+  expression: string,
+  context: Record<string, any> = {},
+): any {
+  if (!expression || typeof expression !== "string") return undefined;
+  try {
+    const evalContext = {
+      null: null,
+      undefined: undefined,
+      ...context,
+      math: Math,
+      Math,
+    };
+    return jexl.evalSync(expression, evalContext);
   } catch (_err) {
     return undefined;
   }

@@ -24,7 +24,7 @@ import type {
   DisplayFieldOptions,
 } from "./types/detail.js";
 import type { Field } from "./types/index.js";
-import { evaluateJexl } from "./utils/jexl-helpers.js";
+import { evaluateJexl, evaluateJexlSync } from "./utils/jexl-helpers.js";
 
 /**
  * Normalizes a DetailItem (which may be a shorthand string) into a standard DetailItem object.
@@ -468,3 +468,36 @@ export function generateDefaultDetailSchema(
 
   return sections;
 }
+
+/**
+ * Evaluates whether a detail item should be visible based on its `options.visible` rule.
+ * Supports boolean values or JEXL expressions evaluated against `{ doc, user }`.
+ * Works consistently for top-level and nested detail items.
+ *
+ * @example
+ * ```ts
+ * isDetailItemVisible(displayField('secret', { visible: false }), doc, user) // false
+ * isDetailItemVisible(displayField('publishedAt', { visible: "doc.status == 'published'" }), doc, user)
+ * ```
+ */
+export function isDetailItemVisible(
+  item: DetailItem,
+  doc: any,
+  user?: any,
+): boolean {
+  if (!item) return true;
+  const it = normalizeDetailItem(item);
+  const visible = (it as any).options?.visible;
+  if (visible === undefined || visible === null) return true;
+  if (typeof visible === "boolean") return visible;
+  if (typeof visible === "string") {
+    if (visible.trim().length === 0) return true;
+    try {
+      return Boolean(evaluateJexlSync(visible, { doc, user }));
+    } catch {
+      return true;
+    }
+  }
+  return true;
+}
+
