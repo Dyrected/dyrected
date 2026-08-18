@@ -249,6 +249,47 @@ export function runAggregateAdapterContract(
       expect(result.mixedCount).toBe(3);
     });
 
+    it("supports range filters, not_in operators, and special characters in alias names", async () => {
+      const db = await createAdapter();
+      const collection = `agg-ranges-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const config: CollectionConfig = {
+        slug: collection,
+        fields: [
+          { name: "tier", type: "text" },
+          { name: "age", type: "number" },
+        ],
+      };
+      await db.sync?.([config], []);
+
+      await db.create({ collection, data: { tier: "bronze", age: 15 } });
+      await db.create({ collection, data: { tier: "silver", age: 25 } });
+      await db.create({ collection, data: { tier: "gold", age: 35 } });
+      await db.create({ collection, data: { tier: "platinum", age: 45 } });
+
+      const result = await db.aggregate({
+        collection,
+        aggregates: {
+          "Total Members (Count)": { count: "*" },
+          "middle_age_group:avg": {
+            avg: "age",
+            where: {
+              age: { gte: 20, lte: 40 }, // Range: 25 and 35
+            },
+          },
+          "non_bronze_count": {
+            count: "*",
+            where: {
+              tier: { not_in: ["bronze"] }, // silver, gold, platinum
+            },
+          },
+        },
+      });
+
+      expect(result["Total Members (Count)"]).toBe(4);
+      expect(result["middle_age_group:avg"]).toBeCloseTo(30); // (25 + 35) / 2
+      expect(result["non_bronze_count"]).toBe(3);
+    });
+
     it("returns null for sum/avg/min/max on an empty collection", async () => {
       const db = await createAdapter();
       const collection = `agg-empty-${Date.now()}-${Math.random().toString(36).slice(2)}`;
