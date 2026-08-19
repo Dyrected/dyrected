@@ -57,12 +57,6 @@ export class PostgresAdapter implements DatabaseAdapter {
 
   constructor(config: PostgresAdapterConfig) {
     this.config = config;
-    this.ensureInitialized().catch((err) => {
-      console.error(
-        "[dyrected/db-postgres] Initialization promise failed:",
-        err,
-      );
-    });
   }
 
   private async ensureInitialized() {
@@ -550,6 +544,38 @@ export class PostgresAdapter implements DatabaseAdapter {
       result[name] = raw === null || raw === undefined ? null : Number(raw);
     }
     return result;
+  }
+
+  async disconnect(): Promise<void> {
+    const cache = getSharedPostgresClientCache();
+    cache.delete(this.config.url);
+    if (this.initPromise) {
+      try {
+        await this.initPromise;
+      } catch {
+        // Ignore initialization failure during disconnect
+      }
+    }
+    if (this.sql && typeof this.sql.end === "function") {
+      await this.sql.end({ timeout: 0 }).catch(() => {});
+    }
+    this.initPromise = null;
+  }
+}
+
+export async function closeAllPostgresClients(): Promise<void> {
+  const cache = getSharedPostgresClientCache();
+  const entries = Array.from(cache.values());
+  cache.clear();
+  for (const entry of entries) {
+    try {
+      const client = entry.sql || (await entry.initPromise);
+      if (client && typeof client.end === "function") {
+        await client.end({ timeout: 0 }).catch(() => {});
+      }
+    } catch {
+      // Ignore errors during client teardown
+    }
   }
 }
 

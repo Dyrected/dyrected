@@ -32,11 +32,12 @@ export class MongoAdapter implements DatabaseAdapter {
   private client: MongoClient;
   private db!: Db;
   private session?: ClientSession;
-  private initPromise: Promise<void>;
+  private initPromise: Promise<void> | null = null;
+  private config: MongoAdapterConfig;
 
   constructor(config: MongoAdapterConfig) {
+    this.config = config;
     this.client = new MongoClient(config.url);
-    this.initPromise = this.init(config.dbName);
   }
 
   private async init(dbName: string) {
@@ -45,6 +46,9 @@ export class MongoAdapter implements DatabaseAdapter {
   }
 
   private async ensureInitialized() {
+    if (!this.initPromise) {
+      this.initPromise = this.init(this.config.dbName);
+    }
     await this.initPromise;
   }
 
@@ -268,7 +272,8 @@ export class MongoAdapter implements DatabaseAdapter {
 
     // Flatten: $facet returns { name: [{ _id: null, result: value, hasValid?: number }] | [] }
     const result: Record<string, number | null> = {};
-    for (const [name, op] of Object.entries(args.aggregates)) {
+    for (const name of Object.keys(args.aggregates)) {
+      const op = args.aggregates[name];
       const facetDocs: any[] = raw?.[name] ?? [];
       const doc = facetDocs[0];
       if (!doc) {
@@ -281,6 +286,20 @@ export class MongoAdapter implements DatabaseAdapter {
     }
 
     return result;
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.initPromise) {
+      try {
+        await this.initPromise;
+      } catch {
+        // Ignore initialization failure during disconnect
+      }
+    }
+    if (this.client) {
+      await this.client.close().catch(() => {});
+    }
+    this.initPromise = null;
   }
 }
 

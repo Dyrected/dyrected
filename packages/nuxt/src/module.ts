@@ -303,6 +303,36 @@ export default defineNitroPlugin(async (nitroApp) => {
       console.log(`  ➜  Dyrected API:    ${apiUrl}\n`);
     });
 
+    // Teardown database adapters & connection pools when Nuxt closes (e.g. after build or shutdown)
+    nuxt.hook("close", async () => {
+      try {
+        if (options?.db && typeof (options.db as any).disconnect === "function") {
+          await (options.db as any).disconnect().catch(() => {});
+        }
+        const globalDb = (globalThis as any).__dyrected_db;
+        if (globalDb && typeof globalDb.disconnect === "function") {
+          await globalDb.disconnect().catch(() => {});
+        }
+
+        const pgCache = (globalThis as any).__dyrectedPostgresClientCache;
+        if (pgCache && typeof pgCache.values === "function") {
+          for (const entry of Array.from(pgCache.values())) {
+            try {
+              const client = (entry as any)?.sql || ((entry as any)?.initPromise ? await (entry as any).initPromise : null);
+              if (client && typeof client.end === "function") {
+                await client.end({ timeout: 0 }).catch(() => {});
+              }
+            } catch {
+              // Ignore teardown errors
+            }
+          }
+          pgCache.clear();
+        }
+      } catch {
+        // Ignore teardown errors
+      }
+    });
+
     // Ensure 'db' is attached but non-enumerable to avoid serialization crashes in DevTools.
     // The Nitro plugin will re-attach it on the server if it's lost.
     if ((options as any).db) {

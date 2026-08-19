@@ -158,3 +158,28 @@ describe("PostgresAdapter initInternalTables", () => {
     ]);
   });
 });
+
+describe("PostgresAdapter lazy initialization and disconnect", () => {
+  it("does not eagerly initialize connection in constructor", () => {
+    const adapter = new PostgresAdapter({ url: "postgres://user:pass@localhost:5432/test_db" });
+    expect((adapter as any).initPromise).toBeNull();
+  });
+
+  it("disconnects and closes sql client if initialized", async () => {
+    const endFn = vi.fn().mockResolvedValue(undefined);
+    const adapter = new PostgresAdapter({ url: "postgres://user:pass@localhost:5432/test_disconnect_db" });
+    (adapter as any).sql = { end: endFn };
+    (adapter as any).initPromise = Promise.resolve();
+
+    const cacheKey = "__dyrectedPostgresClientCache";
+    const cache = (globalThis as any)[cacheKey] || new Map();
+    (globalThis as any)[cacheKey] = cache;
+    cache.set("postgres://user:pass@localhost:5432/test_disconnect_db", { sql: (adapter as any).sql });
+
+    await adapter.disconnect();
+
+    expect(endFn).toHaveBeenCalledWith({ timeout: 0 });
+    expect(cache.has("postgres://user:pass@localhost:5432/test_disconnect_db")).toBe(false);
+    expect((adapter as any).initPromise).toBeNull();
+  });
+});

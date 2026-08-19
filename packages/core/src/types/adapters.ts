@@ -79,6 +79,12 @@ export interface DatabaseAdapter {
    * Shipped adapters implement this; workflow transitions require it.
    */
   transaction?<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T>;
+
+  /**
+   * Close any open connection pools, sockets, or background timers.
+   * Called during server teardown or build lifecycle cleanup.
+   */
+  disconnect?(): Promise<void>;
 }
 
 /**

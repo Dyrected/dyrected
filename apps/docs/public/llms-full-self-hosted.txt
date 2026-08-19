@@ -2733,6 +2733,12 @@ export interface DatabaseAdapter {
    * Shipped adapters implement this; workflow transitions require it.
    */
   transaction?<T>(callback: (db: DatabaseAdapter) => Promise<T>): Promise<T>;
+
+  /**
+   * Close any open connection pools, sockets, or background timers.
+   * Called during server teardown or build lifecycle cleanup.
+   */
+  disconnect?(): Promise<void>;
 }
 ```
 
@@ -2749,6 +2755,7 @@ export interface DatabaseAdapter {
 | <code>sync</code> (required) | Sync the database schema with the current collection and global configs. Called on startup to create tables/collections that don't exist yet. Not all adapters implement this (e.g. MongoDB is schema-less). |
 | <code>execute</code> (optional) | Execute a raw SQL query or database command. Optional — not all adapters support raw access. |
 | <code>transaction</code> (required) | Run all adapter operations in &#96;callback&#96; as one atomic transaction. Shipped adapters implement this; workflow transitions require it. |
+| <code>disconnect</code> (required) | Close any open connection pools, sockets, or background timers. Called during server teardown or build lifecycle cleanup. |
 
 
 ## PaginatedResult

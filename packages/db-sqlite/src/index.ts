@@ -357,6 +357,14 @@ export class SqliteAdapter implements DatabaseAdapter {
     }
     return result;
   }
+
+  async disconnect(): Promise<void> {
+    try {
+      this.sqlite.close();
+    } catch {
+      // Ignore errors if already closed
+    }
+  }
 }
 
 export const sqliteAdapter = (config: SqliteAdapterConfig) => new SqliteAdapter(config);

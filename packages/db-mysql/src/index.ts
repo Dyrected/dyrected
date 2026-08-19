@@ -38,11 +38,6 @@ export class MysqlAdapter implements DatabaseAdapter {
 
   constructor(config: MysqlAdapterConfig) {
     this.config = config;
-    this.ensureInitialized().catch((err) => {
-      if (err.code === "EADDRNOTAVAIL" || err.message?.includes("EADDRNOTAVAIL")) {
-        this.handleConnectionError(err);
-      }
-    });
   }
 
   private handleConnectionError(err: any): never {
@@ -474,6 +469,21 @@ FIX INSTRUCTIONS:
       result[name] = raw === null || raw === undefined ? null : Number(raw);
     }
     return result;
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.initPromise) {
+      try {
+        await this.initPromise;
+      } catch {
+        // Ignore initialization failure during disconnect
+      }
+    }
+    if (this.pool && typeof this.pool.end === "function") {
+      await this.pool.end().catch(() => {});
+    }
+    this.initPromise = null;
+    this.pool = null;
   }
 }
 
