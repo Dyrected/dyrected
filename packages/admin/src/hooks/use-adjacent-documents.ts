@@ -97,9 +97,9 @@ export function useAdjacentDocuments({
       if (isInput) return
 
       if ((e.key === "j" || e.key === "J") && nextDoc?.id) {
-        navigate(`/collections/${slug}/${nextDoc.id}/detail`)
+        navigate(`/collections/${slug}/${nextDoc.id}`)
       } else if ((e.key === "k" || e.key === "K") && prevDoc?.id) {
-        navigate(`/collections/${slug}/${prevDoc.id}/detail`)
+        navigate(`/collections/${slug}/${prevDoc.id}`)
       }
     }
 

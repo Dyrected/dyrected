@@ -72,49 +72,24 @@ export function DetailHeader({
   return (
     <div className="dy-space-y-4 dy-pb-6 dy-border-b dy-border-border/60">
       {/* Top breadcrumb navigation */}
-      <div className="dy-flex dy-items-center dy-justify-between">
-        <div className="dy-flex dy-items-center dy-gap-2 dy-text-sm dy-text-muted-foreground">
+      <div className="dy-flex dy-items-center dy-justify-between dy-gap-3">
+        <div className="dy-flex dy-items-center dy-gap-2 dy-text-sm dy-text-muted-foreground dy-min-w-0">
           <Button
-            variant="ghost"
+            variant="link"
             size="sm"
             onClick={() => navigate(`/collections/${collection.slug}`)}
-            className="dy-h-8 dy-px-2 dy-gap-1 dy-text-muted-foreground hover:dy-text-foreground"
+            className="dy-h-8 dy-px-2 dy-gap-1 dy-text-muted-foreground hover:dy-text-foreground dy-shrink-0"
           >
             <ChevronLeft className="dy-h-4 dy-w-4" />
-            <span>{collectionLabel}</span>
+            <span className="dy-truncate dy-max-w-[120px] sm:dy-max-w-none">{collectionLabel}</span>
           </Button>
-          <span>/</span>
-          <span className="dy-font-medium dy-text-foreground dy-truncate dy-max-w-xs sm:dy-max-w-md">
+          <span className="dy-text-muted-foreground/60">/</span>
+          <span className="dy-font-medium dy-text-foreground dy-truncate dy-max-w-[140px] xs:dy-max-w-[200px] sm:dy-max-w-md">
             {docTitle}
           </span>
         </div>
 
-        <div className="dy-flex dy-items-center dy-gap-2">
-          {(prevDoc || nextDoc) && (
-            <div className="dy-flex dy-items-center dy-gap-0.5 dy-border dy-border-border/60 dy-rounded-lg dy-p-0.5 dy-bg-muted/30">
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={!prevDoc}
-                onClick={() => navigate(`/collections/${collection.slug}/${prevDoc.id}/detail`)}
-                className="dy-h-7 dy-w-7 dy-rounded-md dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
-                title={prevTitle ? `Previous: ${prevTitle} (K)` : "No previous record"}
-              >
-                <ChevronLeft className="dy-h-3.5 dy-w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                disabled={!nextDoc}
-                onClick={() => navigate(`/collections/${collection.slug}/${nextDoc.id}/detail`)}
-                className="dy-h-7 dy-w-7 dy-rounded-md dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-30"
-                title={nextTitle ? `Next: ${nextTitle} (J)` : "No next record"}
-              >
-                <ChevronRight className="dy-h-3.5 dy-w-3.5" />
-              </Button>
-            </div>
-          )}
-
+        <div className="dy-flex dy-items-center dy-gap-2 dy-shrink-0">
           {previewUrl && (
             <Button
               variant="outline"
@@ -141,11 +116,11 @@ export function DetailHeader({
         </div>
       </div>
 
-      {/* Main Title, ID and Status Header */}
-      <div className="dy-flex dy-flex-col sm:dy-flex-row sm:dy-items-center sm:dy-justify-between dy-gap-4">
-        <div className="dy-space-y-1">
-          <div className="dy-flex dy-items-center dy-gap-3">
-            <h1 className="dy-text-xl sm:dy-text-2xl dy-font-bold dy-tracking-tight dy-text-foreground">
+      {/* Main Title, ID, Status and Stepper Header */}
+      <div className="dy-flex dy-items-center dy-justify-between dy-gap-4">
+        <div className="dy-space-y-1.5 dy-min-w-0 dy-flex-1">
+          <div className="dy-flex dy-items-center dy-gap-3 dy-flex-wrap">
+            <h1 className="dy-text-xl sm:dy-text-2xl dy-font-bold dy-tracking-tight dy-text-foreground dy-truncate">
               {docTitle}
             </h1>
             {workflowPresentation && workflowState && (
@@ -179,6 +154,31 @@ export function DetailHeader({
             </button>
           </div>
         </div>
+
+        {(prevDoc || nextDoc) && (
+          <div className="dy-flex dy-items-center dy-gap-0.5 dy-border dy-border-border/60 dy-rounded-xl dy-p-1 dy-bg-muted/20 dy-shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!prevDoc}
+              onClick={() => navigate(`/collections/${collection.slug}/${prevDoc.id}`)}
+              className="dy-h-7 dy-w-7 dy-rounded-lg dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-25"
+              title={prevTitle ? `Previous: ${prevTitle} (K)` : "No previous record"}
+            >
+              <ChevronLeft className="dy-h-4 dy-w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!nextDoc}
+              onClick={() => navigate(`/collections/${collection.slug}/${nextDoc.id}`)}
+              className="dy-h-7 dy-w-7 dy-rounded-lg dy-text-muted-foreground hover:dy-text-foreground disabled:dy-opacity-25"
+              title={nextTitle ? `Next: ${nextTitle} (J)` : "No next record"}
+            >
+              <ChevronRight className="dy-h-4 dy-w-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
