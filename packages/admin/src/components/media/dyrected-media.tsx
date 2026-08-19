@@ -1,0 +1,344 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React from "react"
+import { ExternalLink, FileText, Download } from "lucide-react"
+import { cn, getMediaUrl } from "../../lib/utils"
+import { getMediaPreviewUrl, getVideoEmbedUrl } from "../../lib/external-media"
+
+export type MediaKind = "avatar" | "image" | "video" | "audio" | "file"
+
+export interface DyrectedMediaProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "children"> {
+  media: any
+  baseUrl?: string
+  alt?: string
+  variant?: "auto" | "avatar" | "image" | "video" | "audio" | "card" | "thumbnail" | "file"
+  imgClassName?: string
+  fallback?: React.ReactNode
+  showDetails?: boolean
+  width?: number | string
+  height?: number | string
+  fieldDef?: any
+}
+
+/**
+ * Checks whether a given value or field definition represents a media / upload asset.
+ */
+export function isMediaValue(val: any, fieldDef?: any, schemas?: any): boolean {
+  if (!val) return false
+  if (fieldDef?.type === "upload" || fieldDef?.type === "image" || fieldDef?.type === "media") return true
+
+  // Check if relationTo points to an upload collection
+  if (fieldDef?.type === "relationship" && fieldDef?.relationTo) {
+    const targetCol = schemas?.collections?.find((c: any) => c.slug === fieldDef.relationTo)
+    if (targetCol?.upload || targetCol?.slug === "media" || targetCol?.slug === "uploads" || targetCol?.slug === "images") {
+      return true
+    }
+  }
+
+  // Check heuristic field names
+  const name = String(fieldDef?.name || "").toLowerCase()
+  if (
+    name.includes("avatar") ||
+    name.includes("image") ||
+    name.includes("photo") ||
+    name.includes("thumbnail") ||
+    name.includes("logo") ||
+    name.includes("banner") ||
+    name.includes("media") ||
+    name.includes("attachment") ||
+    name.includes("file") ||
+    name.includes("upload")
+  ) {
+    if (typeof val === "object" || (typeof val === "string" && val.length > 0)) {
+      return true
+    }
+  }
+
+  // Check value properties
+  if (typeof val === "object") {
+    if (
+      val.mimeType ||
+      val.contentType ||
+      val.format ||
+      (typeof val.url === "string" && val.url.length > 0) ||
+      (typeof val.filename === "string" && val.filename.length > 0) ||
+      val.src ||
+      val.width ||
+      val.height ||
+      val.filesize ||
+      val.size
+    ) {
+      return true
+    }
+  } else if (typeof val === "string") {
+    if (val.match(/\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff|mp4|webm|ogg|mov|m4v|mp3|wav|pdf|docx?|xlsx?|zip|csv)(\?.*)?$/i)) {
+      return true
+    }
+    if (val.startsWith("/uploads/") || val.startsWith("/api/media/") || val.startsWith("/media/")) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * Resolves the kind of media asset from its properties and context.
+ */
+export function resolveMediaKind(media: any, fieldDef?: any, forcedVariant?: string): MediaKind {
+  if (forcedVariant && forcedVariant !== "auto") {
+    if (forcedVariant === "avatar") return "avatar"
+    if (forcedVariant === "image" || forcedVariant === "thumbnail" || forcedVariant === "card") return "image"
+    if (forcedVariant === "video") return "video"
+    if (forcedVariant === "audio") return "audio"
+    if (forcedVariant === "file") return "file"
+  }
+
+  const rawUrl = typeof media === "string" ? media : media?.url || media?.src || media?.path || media?.filename || ""
+  const filename = typeof media === "object" ? media?.filename || media?.name || media?.title || media?.alt || "" : (typeof media === "string" ? media.split("/").pop()?.split("?")[0] || "" : "")
+  const mimeType = typeof media === "object" ? media?.mimeType || media?.contentType || media?.type || "" : ""
+  const fieldName = String(fieldDef?.name || "").toLowerCase()
+
+  // 1. Avatar heuristics
+  if (fieldName.includes("avatar") || forcedVariant === "avatar") {
+    return "avatar"
+  }
+
+  // 2. Video heuristics (YouTube, Vimeo, video/* mimeType, video extensions)
+  if (
+    mimeType.startsWith("video/") ||
+    mimeType === "video" ||
+    mimeType === "video/youtube" ||
+    mimeType === "video/vimeo" ||
+    mimeType === "video/external" ||
+    fieldDef?.type === "video" ||
+    fieldName.includes("video") ||
+    /\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(rawUrl) ||
+    /\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(filename) ||
+    Boolean(getVideoEmbedUrl(media))
+  ) {
+    return "video"
+  }
+
+  // 3. Audio heuristics
+  if (
+    mimeType.startsWith("audio/") ||
+    mimeType === "audio" ||
+    fieldDef?.type === "audio" ||
+    fieldName.includes("audio") ||
+    /\.(mp3|wav|ogg|aac|flac|m4a)(\?.*)?$/i.test(rawUrl) ||
+    /\.(mp3|wav|ogg|aac|flac|m4a)(\?.*)?$/i.test(filename)
+  ) {
+    return "audio"
+  }
+
+  // 4. Image heuristics (image/* mimeType, image extensions, or image field name)
+  if (
+    mimeType.startsWith("image/") ||
+    mimeType === "image" ||
+    mimeType === "image/external" ||
+    fieldDef?.type === "image" ||
+    fieldName.includes("image") ||
+    fieldName.includes("photo") ||
+    fieldName.includes("thumbnail") ||
+    fieldName.includes("logo") ||
+    fieldName.includes("banner") ||
+    fieldName.includes("cover") ||
+    fieldName.includes("picture") ||
+    /\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff)(\?.*)?$/i.test(rawUrl) ||
+    /\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff)(\?.*)?$/i.test(filename)
+  ) {
+    return "image"
+  }
+
+  // 5. Default fallback to downloadable file
+  return "file"
+}
+
+/**
+ * Universal media component for Dyrected Admin.
+ * Handles images, avatars, HTML5 / YouTube / Vimeo videos, audio, and downloadable documents.
+ */
+export function DyrectedMedia({
+  media,
+  baseUrl = "",
+  alt,
+  variant = "auto",
+  className,
+  imgClassName,
+  fallback,
+  showDetails = true,
+  fieldDef,
+  ...props
+}: DyrectedMediaProps) {
+  if (!media) return fallback ? <>{fallback}</> : null
+
+  const rawUrl = typeof media === "string" ? media : media?.url || media?.src || media?.path || media?.filename || ""
+  const filename = typeof media === "object" ? media?.filename || media?.name || media?.title || media?.alt || "" : (typeof media === "string" ? media.split("/").pop()?.split("?")[0] || "" : "")
+  const mimeType = typeof media === "object" ? media?.mimeType || media?.contentType || media?.type || "" : ""
+
+  const previewUrl = getMediaPreviewUrl(media, baseUrl) || getMediaUrl(media, baseUrl) || (rawUrl.startsWith("http") || rawUrl.startsWith("/") ? rawUrl : (baseUrl && rawUrl ? `${baseUrl.replace(/\/$/, "")}/api/media/${rawUrl}` : rawUrl))
+  const embedUrl = getVideoEmbedUrl(media)
+
+  const kind = resolveMediaKind(media, fieldDef, variant)
+  const displayAlt = alt || filename || "Media asset"
+
+  // 1. Avatar display
+  if (kind === "avatar") {
+    return (
+      <div
+        className={cn(
+          "dy-relative dy-h-16 dy-w-16 dy-rounded-full dy-overflow-hidden dy-border-2 dy-border-border/80 dy-bg-muted/40 dy-shadow-sm dy-shrink-0 dy-group/avatar",
+          className
+        )}
+        {...props}
+      >
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={displayAlt}
+            className={cn(
+              "dy-h-full dy-w-full dy-object-cover dy-transition-transform group-hover/avatar:dy-scale-105",
+              imgClassName
+            )}
+          />
+        ) : (
+          <div className="dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground dy-text-sm dy-font-semibold">
+            {(filename || alt || "A").charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // 2. Video display (Embed or HTML5 Video)
+  if (kind === "video") {
+    if (embedUrl) {
+      return (
+        <div className={cn("dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
+          <div className="dy-relative dy-w-full dy-pt-[56.25%] dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/60 dy-bg-black">
+            <iframe
+              src={embedUrl}
+              title={filename || "Video player"}
+              className="dy-absolute dy-top-0 dy-left-0 dy-h-full dy-w-full dy-border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+          {showDetails && filename && <p className="dy-text-xs dy-text-muted-foreground dy-truncate">{filename}</p>}
+        </div>
+      )
+    }
+
+    return (
+      <div className={cn("dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
+        <video
+          src={previewUrl}
+          controls
+          className={cn("dy-w-full dy-rounded-xl dy-border dy-border-border/60 dy-bg-black/90", imgClassName)}
+        />
+        {showDetails && filename && <p className="dy-text-xs dy-text-muted-foreground dy-truncate">{filename}</p>}
+      </div>
+    )
+  }
+
+  // 3. Audio display
+  if (kind === "audio") {
+    return (
+      <div className={cn("dy-space-y-1.5 dy-w-full dy-max-w-md", className)} {...props}>
+        <audio src={previewUrl} controls className="dy-w-full" />
+        {showDetails && filename && <p className="dy-text-xs dy-text-muted-foreground dy-truncate">{filename}</p>}
+      </div>
+    )
+  }
+
+  // 4. Image display
+  if (kind === "image") {
+    if (variant === "thumbnail") {
+      return (
+        <div
+          className={cn(
+            "dy-relative dy-h-12 dy-w-12 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0",
+            className
+          )}
+          {...props}
+        >
+          {previewUrl ? (
+            <img src={previewUrl} alt={displayAlt} className={cn("dy-h-full dy-w-full dy-object-cover", imgClassName)} />
+          ) : (
+            <div className="dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground">
+              <FileText className="dy-h-4 dy-w-4" />
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <div
+        className={cn(
+          "dy-flex dy-items-start dy-gap-3.5 dy-p-3 dy-bg-muted/20 dy-border dy-border-border/60 dy-rounded-xl dy-max-w-md dy-transition-all hover:dy-border-border hover:dy-bg-muted/30",
+          className
+        )}
+        {...props}
+      >
+        <a
+          href={previewUrl || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="dy-relative dy-h-20 dy-w-20 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0 dy-group/media"
+          title="Click to view full image"
+        >
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt={displayAlt}
+              className={cn(
+                "dy-h-full dy-w-full dy-object-cover dy-transition-transform group-hover/media:dy-scale-105",
+                imgClassName
+              )}
+            />
+          ) : (
+            <div className="dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground">
+              <FileText className="dy-h-6 dy-w-6" />
+            </div>
+          )}
+        </a>
+        {showDetails && (
+          <div className="dy-flex-1 dy-min-w-0 dy-space-y-1">
+            <p className="dy-text-xs dy-font-semibold dy-text-foreground dy-truncate">{filename || "Image asset"}</p>
+            {mimeType && <p className="dy-text-[11px] dy-text-muted-foreground">{mimeType}</p>}
+            {previewUrl && (
+              <div className="dy-flex dy-items-center dy-gap-2 dy-pt-1">
+                <a
+                  href={previewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dy-inline-flex dy-items-center dy-gap-1 dy-text-xs dy-font-medium dy-text-primary hover:dy-underline"
+                >
+                  <span>Open image</span>
+                  <ExternalLink className="dy-h-3 dy-w-3" />
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // 5. Generic downloadable file
+  return (
+    <div className={cn("dy-inline-flex", className)} {...props}>
+      <a
+        href={previewUrl || "#"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="dy-inline-flex dy-items-center dy-gap-2.5 dy-px-3.5 dy-py-2.5 dy-rounded-xl dy-bg-muted/30 hover:dy-bg-muted/60 dy-border dy-border-border/60 dy-text-xs dy-font-medium dy-text-foreground dy-transition-colors"
+      >
+        <FileText className="dy-h-4 dy-w-4 dy-text-primary" />
+        <span className="dy-truncate dy-max-w-[220px]">{filename || "Download File"}</span>
+        <Download className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+      </a>
+    </div>
+  )
+}

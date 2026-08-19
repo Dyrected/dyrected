@@ -102,6 +102,13 @@ export {
   resolveActiveMediaCollection,
 } from "./lib/media-utils";
 export {
+  DyrectedMedia,
+  isMediaValue,
+  resolveMediaKind,
+  type DyrectedMediaProps,
+  type MediaKind,
+} from "./components/media/dyrected-media";
+export {
   buildDefaultValues,
   buildSchemaShape,
   formatPath,

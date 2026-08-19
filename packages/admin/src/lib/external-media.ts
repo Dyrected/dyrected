@@ -101,14 +101,14 @@ export function getMediaPreviewUrl(item: unknown, baseUrl: string): string {
 
   const obj = typeof item === "object" && item !== null ? (item as Record<string, unknown>) : null;
   const mimeType = obj ? (obj.mimeType as string | undefined) : undefined;
-  const url = obj ? (obj.url as string | undefined) : undefined;
+  const url = typeof item === "string" ? item : (obj ? (obj.url as string | undefined) : undefined);
 
-  if (mimeType === "video/youtube") {
+  if (mimeType === "video/youtube" || (url && YOUTUBE_RE.test(url))) {
     const match = url?.match(YOUTUBE_RE);
     const videoId = match && match[1];
     return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : "";
   }
-  if (mimeType === "video/vimeo") {
+  if (mimeType === "video/vimeo" || (url && VIMEO_RE.test(url))) {
     return "https://vimeo.com/assets/images/logo_vimeo_blue.png";
   }
   if (mimeType === "image/external") {
@@ -124,17 +124,16 @@ export function getMediaPreviewUrl(item: unknown, baseUrl: string): string {
  * iframe player instead of a static thumbnail.
  */
 export function getVideoEmbedUrl(item: unknown): string | null {
+  if (!item) return null;
   const obj = typeof item === "object" && item !== null ? (item as Record<string, unknown>) : null;
-  if (!obj) return null;
+  const mimeType = obj ? (obj.mimeType as string | undefined) : undefined;
+  const url = typeof item === "string" ? item : ((obj?.url as string | undefined) || "");
 
-  const mimeType = obj.mimeType as string | undefined;
-  const url = (obj.url as string | undefined) || "";
-
-  if (mimeType === "video/youtube") {
+  if (mimeType === "video/youtube" || YOUTUBE_RE.test(url)) {
     const m = url.match(YOUTUBE_RE);
     return m && m[1] ? `https://www.youtube.com/embed/${m[1]}` : null;
   }
-  if (mimeType === "video/vimeo") {
+  if (mimeType === "video/vimeo" || VIMEO_RE.test(url)) {
     const m = url.match(VIMEO_RE);
     return m && m[1] ? `https://player.vimeo.com/video/${m[1]}` : null;
   }

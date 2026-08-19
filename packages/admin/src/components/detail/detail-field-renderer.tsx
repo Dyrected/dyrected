@@ -10,11 +10,9 @@ import {
   Phone,
   Check,
   Star,
-  Download,
   Layers,
   Pencil,
   Loader2,
-  FileText,
 } from "lucide-react"
 import { Badge } from "../ui/badge"
 import { resolveAdminIcon } from "../../lib/admin-icons"
@@ -26,6 +24,7 @@ import {
 import { resolveDocumentTitle } from "../../lib/document-title"
 import { cn } from "../../lib/utils"
 import { resolveBadgePresentation } from "../../lib/badge-colors"
+import { DyrectedMedia, isMediaValue } from "../media/dyrected-media"
 import type { DisplayFieldOptions, DisplayVariant } from "@dyrected/core"
 
 export interface DetailFieldRendererProps {
@@ -69,29 +68,6 @@ function resolveOptionLabel(val: any, options?: any[]): string {
     return val.label ?? val.name ?? val.title ?? val.value ?? val.id ?? JSON.stringify(val)
   }
   return String(val)
-}
-
-/**
- * Checks if a value or relationship target represents an upload / media asset.
- */
-function isMediaValue(val: any, fieldDef?: any, schemas?: any): boolean {
-  if (!val) return false
-  if (fieldDef?.type === "upload") return true
-
-  // Check if relationTo points to an upload collection
-  if (fieldDef?.type === "relationship" && fieldDef?.relationTo) {
-    const targetCol = schemas?.collections?.find((c: any) => c.slug === fieldDef.relationTo)
-    if (targetCol?.upload) return true
-  }
-
-  // Check value properties
-  if (typeof val === "object") {
-    if (val.mimeType || (typeof val.url === "string" && val.url.length > 0)) return true
-  } else if (typeof val === "string") {
-    if (val.match(/\.(jpg|jpeg|png|gif|webp|avif|svg|mp4|webm|pdf)(\?.*)?$/i)) return true
-  }
-
-  return false
 }
 
 export function DetailFieldRenderer({
@@ -269,76 +245,16 @@ export function DetailFieldRenderer({
   }
 
   const renderSingleMediaItem = (item: any, keyIdx?: number) => {
-    const url = typeof item === "string" ? item : item?.url
-    if (!url) return null
-    const filename = typeof item === "object" ? item?.filename || item?.name || item?.title : ""
-    const mimeType = typeof item === "object" ? item?.mimeType : ""
-    const isImage = mimeType?.startsWith("image/") || url.match(/\.(jpg|jpeg|png|gif|webp|avif|svg)(\?.*)?$/i)
-    const isVideo = mimeType?.startsWith("video/") || url.match(/\.(mp4|webm|ogg)(\?.*)?$/i)
-
-    if (isImage) {
-      return (
-        <div
-          key={keyIdx}
-          className="dy-flex dy-items-start dy-gap-3.5 dy-p-3 dy-bg-muted/20 dy-border dy-border-border/60 dy-rounded-xl dy-max-w-md dy-transition-all hover:dy-border-border hover:dy-bg-muted/30"
-        >
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="dy-relative dy-h-20 dy-w-20 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0 dy-group/media"
-            title="Click to view full image"
-          >
-            <img
-              src={url}
-              alt={filename || label || "Media asset"}
-              className="dy-h-full dy-w-full dy-object-cover dy-transition-transform group-hover/media:dy-scale-105"
-            />
-          </a>
-          <div className="dy-flex-1 dy-min-w-0 dy-space-y-1">
-            <p className="dy-text-xs dy-font-semibold dy-text-foreground dy-truncate">{filename || "Image asset"}</p>
-            {mimeType && <p className="dy-text-[11px] dy-text-muted-foreground">{mimeType}</p>}
-            <div className="dy-flex dy-items-center dy-gap-2 dy-pt-1">
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="dy-inline-flex dy-items-center dy-gap-1 dy-text-xs dy-font-medium dy-text-primary hover:dy-underline"
-              >
-                <span>Open image</span>
-                <ExternalLink className="dy-h-3 dy-w-3" />
-              </a>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (isVideo) {
-      return (
-        <div key={keyIdx} className="dy-space-y-2 dy-max-w-md">
-          <video
-            src={url}
-            controls
-            className="dy-w-full dy-rounded-xl dy-border dy-border-border/60 dy-bg-black"
-          />
-          {filename && <p className="dy-text-xs dy-text-muted-foreground dy-truncate">{filename}</p>}
-        </div>
-      )
-    }
-
+    if (!item) return null
     return (
-      <a
+      <DyrectedMedia
         key={keyIdx}
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="dy-inline-flex dy-items-center dy-gap-2.5 dy-px-3.5 dy-py-2.5 dy-rounded-xl dy-bg-muted/30 hover:dy-bg-muted/60 dy-border dy-border-border/60 dy-text-xs dy-font-medium dy-text-foreground dy-transition-colors"
-      >
-        <FileText className="dy-h-4 dy-w-4 dy-text-primary" />
-        <span className="dy-truncate dy-max-w-[220px]">{filename || "Download File"}</span>
-        <Download className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
-      </a>
+        media={item}
+        baseUrl={client?.getBaseUrl() || ""}
+        fieldDef={fieldDef}
+        alt={label || undefined}
+        variant={displayVariant === "avatar" || displayVariant === "image" ? displayVariant : "auto"}
+      />
     )
   }
 
@@ -565,23 +481,15 @@ export function DetailFieldRenderer({
     }
 
     if (displayVariant === "image" || displayVariant === "avatar") {
-      const src = typeof val === "object" ? val?.url || val?.src : val
-      if (!src) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
       return (
-        <div
-          className={cn(
-            "dy-overflow-hidden dy-bg-muted/30 dy-border dy-border-border/60",
-            displayVariant === "avatar"
-              ? "dy-h-12 dy-w-12 dy-rounded-full"
-              : "dy-h-24 dy-w-36 dy-rounded-xl",
-          )}
-        >
-          <img
-            src={src}
-            alt={label || "Image"}
-            className="dy-h-full dy-w-full dy-object-cover"
-          />
-        </div>
+        <DyrectedMedia
+          media={val}
+          baseUrl={client?.getBaseUrl() || ""}
+          fieldDef={fieldDef}
+          variant={displayVariant}
+          alt={label || undefined}
+          fallback={<span className="dy-text-muted-foreground/60">{placeholder}</span>}
+        />
       )
     }
 
@@ -838,7 +746,7 @@ export function DetailFieldRenderer({
                       const fieldLabel = fieldSchema?.label || key
 
                       let renderedVal = ""
-                      if (typeof itemVal === "object") {
+                      if (itemVal && typeof itemVal === "object") {
                         if (Array.isArray(itemVal)) {
                           renderedVal = `${itemVal.length} item${itemVal.length === 1 ? "" : "s"}`
                         } else {
@@ -847,6 +755,8 @@ export function DetailFieldRenderer({
                               .filter((v) => typeof v === "string" || typeof v === "number")
                               .join(" - ") || JSON.stringify(itemVal)
                         }
+                      } else if (itemVal == null) {
+                        renderedVal = "-"
                       } else {
                         renderedVal = String(itemVal)
                       }
