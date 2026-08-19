@@ -3,7 +3,7 @@ import { createClient, DyrectedClient, DyrectedError } from "@dyrected/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AdminSchemas } from "../types/admin-components";
 import type { Block, Field } from "@dyrected/core";
-import { getAdminCollectionSlug, type AdminUser } from "./admin-auth";
+import { decodeTokenPayload, getAdminCollectionSlug, type AdminUser } from "./admin-auth";
 import { DyrectedContext, type DyrectedContextType } from "./dyrected-context";
 
 function resolveBlock(block: Block, registry: Map<string, Block>): Block {
@@ -66,6 +66,23 @@ export interface DyrectedProviderProps {
   components?: DyrectedContextType["components"];
 }
 
+function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  const local = localStorage.getItem("dyrected_token");
+  if (local) return local;
+
+  try {
+    const match = document.cookie.match(
+      /(?:^|;\s*)(?:__dyrected_token|dyrected_token)=([^;]+)/,
+    );
+    if (match) return decodeURIComponent(match[1]);
+  } catch {
+    // Ignore cookie read errors
+  }
+
+  return null;
+}
+
 export function DyrectedProvider({
   children,
   apiKey: initialApiKey,
@@ -100,9 +117,13 @@ export function DyrectedProvider({
       undefined,
   );
   const [isResolvingStoredSession, setIsResolvingStoredSession] = useState(false);
+  const storedToken = useMemo(() => getStoredToken(), []);
   const initialTokenUser = useMemo(
-    () => (initialToken ? decodeTokenPayload(initialToken) : null),
-    [initialToken],
+    () => {
+      const tok = initialToken || storedToken;
+      return tok ? decodeTokenPayload(tok) : null;
+    },
+    [initialToken, storedToken],
   );
   const [user, setUser] = useState<AdminUser | null>(() => initialTokenUser);
   const [authCollectionSlug, setAuthCollectionSlug] = useState<string | null>(
@@ -150,6 +171,12 @@ export function DyrectedProvider({
     (nextClient?: DyrectedClient | null) => {
       localStorage.removeItem("dyrected_token");
       localStorage.removeItem("dyrected_admin_auth_collection");
+      try {
+        document.cookie = "__dyrected_token=; path=/; max-age=0; SameSite=Lax";
+        document.cookie = "dyrected_token=; path=/; max-age=0; SameSite=Lax";
+      } catch {
+        // Ignore cookie write errors
+      }
       (nextClient ?? client)?.clearToken();
       setAuthCollectionSlug(null);
       setUser(null);
@@ -198,6 +225,17 @@ export function DyrectedProvider({
       const resolvedCollectionSlug =
         collectionSlug || authCollectionSlug || getAdminCollectionSlug(schemas);
       localStorage.setItem("dyrected_token", token);
+      try {
+        document.cookie = `__dyrected_token=${encodeURIComponent(token)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      } catch {
+        // Ignore cookie write errors
+      }
+
+      const optimisticUser = decodeTokenPayload(token);
+      if (optimisticUser) {
+        setUser(optimisticUser);
+      }
+
       if (resolvedCollectionSlug) {
         localStorage.setItem(
           "dyrected_admin_auth_collection",
@@ -220,7 +258,9 @@ export function DyrectedProvider({
                   clearPersistedAuthState(client);
                   return;
                 }
-                setUser(null);
+                if (!optimisticUser) {
+                  setUser(null);
+                }
               },
             );
         }
@@ -230,13 +270,13 @@ export function DyrectedProvider({
   );
 
   useEffect(() => {
-    if (initialToken || !client || !schemas || activeUser) {
+    if (initialToken || !client || !schemas) {
       queueMicrotask(() => {
         setIsResolvingStoredSession(false);
       });
       return;
     }
-    const token = localStorage.getItem("dyrected_token");
+    const token = getStoredToken();
     const resolvedCollectionSlug =
       authCollectionSlug || getAdminCollectionSlug(schemas);
 
@@ -266,7 +306,9 @@ export function DyrectedProvider({
             clearPersistedAuthState(client);
             return;
           }
-          setUser(null);
+          if (!activeUser) {
+            setUser(null);
+          }
         },
       )
       .finally(() => {
@@ -324,41 +366,3 @@ export function DyrectedProvider({
   );
 }
 
-function decodeTokenPayload(token: string): AdminUser | null {
-  const payload = token.split(".")[1];
-  if (!payload) return null;
-
-  try {
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const json = decodeURIComponent(
-      atob(padded)
-        .split("")
-        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
-        .join(""),
-    );
-    const parsed = JSON.parse(json);
-    if (!parsed || typeof parsed !== "object") return null;
-
-    const user = parsed as AdminUser;
-    const roles = Array.isArray(user.roles)
-      ? user.roles
-          .filter((role): role is string => typeof role === "string")
-          .map(normalizeCloudRole)
-      : [];
-    const role =
-      typeof user.role === "string" ? normalizeCloudRole(user.role) : undefined;
-
-    return {
-      ...user,
-      ...(role ? { role } : {}),
-      roles: roles.length > 0 ? roles : role ? [role] : roles,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function normalizeCloudRole(role: string) {
-  return role === "owner" ? "admin" : role;
-}

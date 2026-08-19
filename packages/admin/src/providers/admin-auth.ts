@@ -19,3 +19,43 @@ function findCollection(
 ) {
   return collections.find(predicate);
 }
+
+export function decodeTokenPayload(token: string): AdminUser | null {
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const json = decodeURIComponent(
+      atob(padded)
+        .split("")
+        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+        .join(""),
+    );
+    const parsed = JSON.parse(json);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const user = parsed as AdminUser;
+    const roles = Array.isArray(user.roles)
+      ? user.roles
+          .filter((role): role is string => typeof role === "string")
+          .map(normalizeCloudRole)
+      : [];
+    const role =
+      typeof user.role === "string" ? normalizeCloudRole(user.role) : undefined;
+
+    return {
+      ...user,
+      ...(role ? { role } : {}),
+      roles: roles.length > 0 ? roles : role ? [role] : roles,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCloudRole(role: string) {
+  return role === "owner" ? "admin" : role;
+}
+

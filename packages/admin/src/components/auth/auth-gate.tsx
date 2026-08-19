@@ -5,6 +5,7 @@ import { LoginPage } from "../../pages/auth/login-page";
 import { FirstUserPage } from "../../pages/auth/first-user-page";
 import { ExternalLoginPage } from "../../pages/auth/external-login-page";
 import { AdminSplash } from "../layout/admin-splash";
+import { decodeTokenPayload } from "../../providers/admin-auth";
 import type { CollectionConfig } from "@dyrected/core";
 
 /**
@@ -26,7 +27,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const isExternalAdminAuth = adminAuth?.mode === "external" && (adminAuth.providers?.length ?? 0) > 0;
   const externalParams = useMemo(() => {
     if (typeof window === "undefined") {
-      return { token: null, error: null };
+      return { token: null, provider: null, collection: null, error: null };
     }
     const params = new URLSearchParams(window.location.search);
     return {
@@ -61,51 +62,68 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (
-      !isExternalAdminAuth ||
       !externalParams.token ||
-      handledExternalTokenRef.current === externalParams.token ||
-      (externalParams.provider && !client)
+      handledExternalTokenRef.current === externalParams.token
     ) {
+      if (pendingExternalToken && !externalParams.token) {
+        setPendingExternalToken(false);
+      }
       return;
     }
 
     handledExternalTokenRef.current = externalParams.token;
     let cancelled = false;
 
-    if (!externalParams.provider) {
-      setToken(externalParams.token, externalParams.collection);
-      queueMicrotask(() => {
-        clearExternalAuthParams();
-      });
+    if (isExternalAdminAuth && externalParams.provider && client) {
+      exchangeExternalAuthMutation.mutate(
+        { provider: externalParams.provider, token: externalParams.token },
+        {
+          onSuccess: (exchanged) => {
+            if (cancelled) return;
+            setExternalExchangeError(null);
+            setToken(exchanged.token, exchanged.collectionSlug);
+          },
+          onError: (error) => {
+            if (cancelled) return;
+            const decoded = decodeTokenPayload(externalParams.token!);
+            if (decoded && (decoded.email || decoded.sub || decoded.id || decoded.roles)) {
+              setExternalExchangeError(null);
+              setToken(externalParams.token!, externalParams.collection);
+            } else {
+              handledExternalTokenRef.current = null;
+              setExternalExchangeError(
+                error instanceof Error ? error.message : "External authentication failed.",
+              );
+            }
+          },
+          onSettled: () => {
+            if (cancelled) return;
+            clearExternalAuthParams();
+          },
+        },
+      );
       return;
     }
 
-    exchangeExternalAuthMutation.mutate(
-      { provider: externalParams.provider, token: externalParams.token },
-      {
-        onSuccess: (exchanged) => {
-          if (cancelled) return;
-          setExternalExchangeError(null);
-          setToken(exchanged.token, exchanged.collectionSlug);
-        },
-        onError: (error) => {
-          if (cancelled) return;
-          handledExternalTokenRef.current = null;
-          setExternalExchangeError(
-            error instanceof Error ? error.message : "External authentication failed.",
-          );
-        },
-        onSettled: () => {
-          if (cancelled) return;
-          clearExternalAuthParams();
-        },
-      },
-    );
+    setToken(externalParams.token, externalParams.collection);
+    queueMicrotask(() => {
+      clearExternalAuthParams();
+    });
 
     return () => {
       cancelled = true;
-    }
-  }, [clearExternalAuthParams, client, exchangeExternalAuthMutation, externalParams.collection, externalParams.provider, externalParams.token, isExternalAdminAuth, setToken]);
+    };
+  }, [
+    clearExternalAuthParams,
+    client,
+    exchangeExternalAuthMutation,
+    externalParams.collection,
+    externalParams.provider,
+    externalParams.token,
+    isExternalAdminAuth,
+    pendingExternalToken,
+    setToken,
+  ]);
 
   useEffect(() => {
     if (!isExternalAdminAuth || user || !client) return;
@@ -119,7 +137,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: initData, isLoading: isLoadingInit } = useQuery({
     queryKey: ["auth-init", authCollection?.slug],
     queryFn: () => client!.collection(authCollection!.slug).isInitialized(),
-    enabled: !!client && !!authCollection && !isExternalAdminAuth,
+    enabled: !!client && !!authCollection && !isExternalAdminAuth && !user,
   });
 
   const isLoading =
@@ -127,7 +145,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     isResolvingStoredSession ||
     exchangeExternalAuthMutation.isPending ||
     pendingExternalToken ||
-    (!isExternalAdminAuth && authCollection && isLoadingInit);
+    (!isExternalAdminAuth && authCollection && !user && isLoadingInit);
 
   // Cloud-managed: host application has already authenticated the user.
   // Skip setup and login flow — render the admin shell directly.
@@ -135,6 +153,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return <AdminSplash />;
+  }
+
+  // If already authenticated with active user, render immediately
+  if (user) {
+    return <>{children}</>;
   }
 
   // If no auth collection exists, the app is open

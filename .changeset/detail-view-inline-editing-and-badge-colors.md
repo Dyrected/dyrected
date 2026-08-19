@@ -1,0 +1,14 @@
+---
+"@dyrected/core": minor
+"@dyrected/admin": minor
+"@dyrected/knowledge": patch
+---
+
+- **Detail View Inline Editing (`editable: true`)**: Added interactive inline editing directly within the Detail View screen. Editors can toggle simple fields (such as internal notes, tags, status choices, quantities, and dates) into editable form inputs with single-click save and cancel controls, updating records immediately via the client SDK without navigating away from the detail screen.
+- **Dynamic Badge & Tag Color Palettes (`badgeColors`)**: Introduced the `badgeColors` resolution engine in Admin Detail Views. Supports 20+ named color palettes (`emerald`, `amber`, `rose`, `sky`, `indigo`, `purple`, `violet`, `zinc`, etc.), custom hex codes with automated background tints, raw Tailwind classes, and wildcard (`*`) fallback mappings.
+- **Section Badges and Palette Styling**: Added `badge` and `badgeColor` configuration options to `displaySection()`, allowing section headers to display contextual status or count badges.
+- **Human-Readable Option Resolution**: Enhanced select and radio field presentation in Detail Views to resolve raw value identifiers to their human-readable schema option labels.
+- **Rich Media & Thumbnail Previews**: Upload fields and media relationship documents in Detail Views now render responsive image cards, video players, and file download links instead of raw relationship identifiers.
+- **Star Rating & Color Swatch Displays**: Added visual star rating scales and interactive color swatch previews with hex copy utilities to Detail Views.
+- **Auth Bootstrap & External Token Resolution**: Fixed an issue where incoming redirect tokens (`dyrectedExternalToken`) caused the admin loading splash to hang indefinitely when external auth was not explicitly configured in the schema. Added cookie session support (`__dyrected_token` / `dyrected_token`) and optimistic JWT payload decoding so authenticated dashboards mount instantly without redundant roundtrips.
+- **Comprehensive Detail Reference & Type Definitions**: Added complete JSDoc annotations and automated contract generation in `@dyrected/knowledge` for all 9 Detail View helper functions (`displayField`, `displaySection`, `displayTabs`, `displayTab`, `displayGrid`, `displayRepeat`, `displayComputed`, `displayText`, `displayDivider`, `displayCustom`) and their configuration options.
