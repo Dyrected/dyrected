@@ -1,7 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useContext } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ExternalLink, FileText, Download } from "lucide-react"
+import {
+  ExternalLink,
+  FileText,
+  Download,
+  FileSpreadsheet,
+  FileArchive,
+  FileCode,
+} from "lucide-react"
 import { cn, getMediaUrl } from "../../lib/utils"
 import { getMediaPreviewUrl, getVideoEmbedUrl } from "../../lib/external-media"
 import { DyrectedContext } from "../../providers/dyrected-context"
@@ -90,6 +97,102 @@ export function isMediaValue(val: any, fieldDef?: any, schemas?: any): boolean {
   return false
 }
 
+export function getFileTypeInfo(filenameOrUrl: string, mimeType?: string) {
+  const clean = (filenameOrUrl || "").split("?")[0].toLowerCase()
+  const ext = clean.split(".").pop() || ""
+  const mime = (mimeType || "").toLowerCase()
+
+  if (
+    ext === "xlsx" ||
+    ext === "xls" ||
+    ext === "csv" ||
+    ext === "tsv" ||
+    ext === "ods" ||
+    mime.includes("spreadsheet") ||
+    mime.includes("excel") ||
+    mime === "text/csv"
+  ) {
+    return {
+      type: "spreadsheet",
+      label: ext.toUpperCase() || "Spreadsheet",
+      badgeClass: "dy-bg-emerald-500/10 dy-text-emerald-600 dark:dy-text-emerald-400 dy-border-emerald-500/20",
+      iconClass: "dy-text-emerald-600 dark:dy-text-emerald-400",
+      Icon: FileSpreadsheet,
+    }
+  }
+
+  if (ext === "pdf" || mime === "application/pdf") {
+    return {
+      type: "pdf",
+      label: "PDF",
+      badgeClass: "dy-bg-red-500/10 dy-text-red-600 dark:dy-text-red-400 dy-border-red-500/20",
+      iconClass: "dy-text-red-600 dark:dy-text-red-400",
+      Icon: FileText,
+    }
+  }
+
+  if (
+    ext === "docx" ||
+    ext === "doc" ||
+    ext === "rtf" ||
+    ext === "odt" ||
+    mime.includes("wordprocessingml") ||
+    mime.includes("msword")
+  ) {
+    return {
+      type: "document",
+      label: ext.toUpperCase() || "Document",
+      badgeClass: "dy-bg-blue-500/10 dy-text-blue-600 dark:dy-text-blue-400 dy-border-blue-500/20",
+      iconClass: "dy-text-blue-600 dark:dy-text-blue-400",
+      Icon: FileText,
+    }
+  }
+
+  if (
+    ext === "zip" ||
+    ext === "tar" ||
+    ext === "gz" ||
+    ext === "rar" ||
+    ext === "7z" ||
+    mime.includes("zip") ||
+    mime.includes("compressed") ||
+    mime.includes("tar")
+  ) {
+    return {
+      type: "archive",
+      label: ext.toUpperCase() || "Archive",
+      badgeClass: "dy-bg-amber-500/10 dy-text-amber-600 dark:dy-text-amber-400 dy-border-amber-500/20",
+      iconClass: "dy-text-amber-600 dark:dy-text-amber-400",
+      Icon: FileArchive,
+    }
+  }
+
+  if (
+    ext === "json" ||
+    ext === "xml" ||
+    ext === "sql" ||
+    ext === "js" ||
+    ext === "ts" ||
+    mime === "application/json"
+  ) {
+    return {
+      type: "code",
+      label: ext.toUpperCase() || "Data",
+      badgeClass: "dy-bg-purple-500/10 dy-text-purple-600 dark:dy-text-purple-400 dy-border-purple-500/20",
+      iconClass: "dy-text-purple-600 dark:dy-text-purple-400",
+      Icon: FileCode,
+    }
+  }
+
+  return {
+    type: "file",
+    label: ext.toUpperCase() || "File",
+    badgeClass: "dy-bg-muted dy-text-muted-foreground dy-border-border",
+    iconClass: "dy-text-primary",
+    Icon: FileText,
+  }
+}
+
 /**
  * Classifies media into its visual representation kind.
  */
@@ -98,23 +201,31 @@ export function resolveMediaKind(
   fieldDef?: any,
   forcedVariant?: "auto" | "avatar" | "image" | "video" | "audio" | "card" | "thumbnail" | "file"
 ): MediaKind {
+  const rawUrl = typeof media === "string" ? media : media?.url || media?.src || media?.path || media?.filename || ""
+  const filename = typeof media === "object" ? media?.filename || media?.name || media?.title || media?.alt || "" : (typeof media === "string" ? media.split("/").pop()?.split("?")[0] || "" : "")
+  const mimeType = typeof media === "object" ? String(media?.mimeType || media?.contentType || "").toLowerCase() : ""
+  const cleanUrl = rawUrl.split("?")[0].toLowerCase()
+  const cleanFilename = filename.split("?")[0].toLowerCase()
+
+  // 1. Explicit document / spreadsheet / archive / code check
+  // Non-image document files MUST ALWAYS resolve to "file", even if the field or variant says "image"!
+  const isDocumentOrFile =
+    mimeType.startsWith("application/") ||
+    (mimeType.startsWith("text/") && !mimeType.includes("html") && !mimeType.includes("xml")) ||
+    /\.(xlsx?|csv|tsv|ods|pdf|docx?|doc|pptx?|txt|rtf|zip|tar|gz|7z|rar|json|xml|sql)$/i.test(cleanUrl) ||
+    /\.(xlsx?|csv|tsv|ods|pdf|docx?|doc|pptx?|txt|rtf|zip|tar|gz|7z|rar|json|xml|sql)$/i.test(cleanFilename)
+
+  const isSvg = mimeType.includes("svg") || cleanUrl.endsWith(".svg") || cleanFilename.endsWith(".svg")
+
+  if (isDocumentOrFile && !isSvg) {
+    return "file"
+  }
+
   if (forcedVariant && forcedVariant !== "auto" && forcedVariant !== "card" && forcedVariant !== "thumbnail") {
     return forcedVariant
   }
 
-  const rawUrl = typeof media === "string" ? media : media?.url || media?.src || media?.path || media?.filename || ""
-  const filename = typeof media === "object" ? media?.filename || media?.name || media?.title || media?.alt || "" : rawUrl
-  const mimeType = typeof media === "object" ? String(media?.mimeType || media?.contentType || "").toLowerCase() : ""
   const fieldName = String(fieldDef?.name || "").toLowerCase()
-
-  // 1. Avatar heuristics
-  if (
-    fieldDef?.display === "avatar" ||
-    fieldName.includes("avatar") ||
-    (fieldName === "photo" && !rawUrl.includes("banner") && !rawUrl.includes("cover"))
-  ) {
-    return "avatar"
-  }
 
   // 2. Video heuristics (mimeType video/*, youtube/vimeo regex, or .mp4/.webm/.mov)
   if (
@@ -123,8 +234,8 @@ export function resolveMediaKind(
     mimeType === "video/vimeo" ||
     fieldDef?.type === "video" ||
     getVideoEmbedUrl(media) !== null ||
-    /\.(mp4|webm|mov|ogv|m4v)(\?.*)?$/i.test(rawUrl) ||
-    /\.(mp4|webm|mov|ogv|m4v)(\?.*)?$/i.test(filename)
+    /\.(mp4|webm|mov|ogv|m4v)$/i.test(cleanUrl) ||
+    /\.(mp4|webm|mov|ogv|m4v)$/i.test(cleanFilename)
   ) {
     return "video"
   }
@@ -133,13 +244,22 @@ export function resolveMediaKind(
   if (
     mimeType.startsWith("audio/") ||
     fieldDef?.type === "audio" ||
-    /\.(mp3|wav|ogg|aac|m4a|flac)(\?.*)?$/i.test(rawUrl) ||
-    /\.(mp3|wav|ogg|aac|m4a|flac)(\?.*)?$/i.test(filename)
+    /\.(mp3|wav|ogg|aac|m4a|flac)$/i.test(cleanUrl) ||
+    /\.(mp3|wav|ogg|aac|m4a|flac)$/i.test(cleanFilename)
   ) {
     return "audio"
   }
 
-  // 4. Image heuristics (image/* mimeType, image extensions, or image field name)
+  // 4. Avatar heuristics
+  if (
+    fieldDef?.display === "avatar" ||
+    fieldName.includes("avatar") ||
+    (fieldName === "photo" && !rawUrl.includes("banner") && !rawUrl.includes("cover"))
+  ) {
+    return "avatar"
+  }
+
+  // 5. Image heuristics (image/* mimeType, image extensions, or image field name)
   if (
     mimeType.startsWith("image/") ||
     mimeType === "image" ||
@@ -152,13 +272,13 @@ export function resolveMediaKind(
     fieldName.includes("banner") ||
     fieldName.includes("cover") ||
     fieldName.includes("picture") ||
-    /\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff)(\?.*)?$/i.test(rawUrl) ||
-    /\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff)(\?.*)?$/i.test(filename)
+    /\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff)$/i.test(cleanUrl) ||
+    /\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff)$/i.test(cleanFilename)
   ) {
     return "image"
   }
 
-  // 5. Default fallback to downloadable file
+  // 6. Default fallback to downloadable file
   return "file"
 }
 
@@ -424,12 +544,27 @@ export const DyrectedMedia = React.forwardRef<HTMLDivElement, DyrectedMediaProps
     )
   }
 
-  // 5. Generic downloadable file
+  // 5. Downloadable Document / Spreadsheet / File Card
+  const fileInfo = getFileTypeInfo(rawUrl || filename, mimeType)
+  const FileIconComponent = fileInfo.Icon
+  const formattedSize = typeof currentMedia === "object" && currentMedia?.filesize ? (
+    typeof currentMedia.filesize === "number"
+      ? `${(currentMedia.filesize / 1024).toFixed(1)} KB`
+      : String(currentMedia.filesize)
+  ) : null
+
   if (unstyled) {
     return (
       <div ref={ref} className={cn("dy-inline-flex", align === "center" ? "dy-mx-auto" : align === "right" ? "dy-ml-auto" : "", className)} {...props}>
-        <a href={previewUrl || "#"} target="_blank" rel="noopener noreferrer">
-          {filename || "Download File"}
+        <a
+          href={previewUrl || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="dy-inline-flex dy-items-center dy-gap-2 dy-text-sm dy-font-medium dy-text-primary hover:dy-underline"
+        >
+          <FileIconComponent className={cn("dy-h-4 dy-w-4", fileInfo.iconClass)} />
+          <span>{filename || "Download File"}</span>
+          <Download className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
         </a>
       </div>
     )
@@ -441,11 +576,28 @@ export const DyrectedMedia = React.forwardRef<HTMLDivElement, DyrectedMediaProps
         href={previewUrl || "#"}
         target="_blank"
         rel="noopener noreferrer"
-        className="dy-inline-flex dy-items-center dy-gap-2.5 dy-px-3.5 dy-py-2.5 dy-rounded-xl dy-bg-muted/30 hover:dy-bg-muted/60 dy-border dy-border-border/60 dy-text-xs dy-font-medium dy-text-foreground dy-transition-colors"
+        className="dy-group dy-flex dy-items-center dy-gap-3.5 dy-p-3 dy-rounded-xl dy-bg-card hover:dy-bg-muted/40 dy-border dy-border-border/60 dy-shadow-xs dy-transition-all hover:dy-border-primary/40"
       >
-        <FileText className="dy-h-4 dy-w-4 dy-text-primary" />
-        <span className="dy-truncate dy-max-w-[220px]">{filename || "Download File"}</span>
-        <Download className="dy-h-3.5 dy-w-3.5 dy-text-muted-foreground" />
+        <div className={cn("dy-p-2.5 dy-rounded-lg dy-border", fileInfo.badgeClass)}>
+          <FileIconComponent className="dy-h-5 dy-w-5" />
+        </div>
+        <div className="dy-flex-1 dy-min-w-0 dy-pr-2">
+          <div className="dy-text-sm dy-font-semibold dy-text-foreground dy-truncate dy-max-w-[240px]">
+            {filename || "Download File"}
+          </div>
+          <div className="dy-flex dy-items-center dy-gap-2 dy-mt-0.5 dy-text-xs dy-text-muted-foreground">
+            <span className="dy-font-medium dy-uppercase">{fileInfo.label}</span>
+            {formattedSize && (
+              <>
+                <span>•</span>
+                <span>{formattedSize}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="dy-p-2 dy-rounded-lg dy-bg-muted/50 group-hover:dy-bg-primary/10 group-hover:dy-text-primary dy-text-muted-foreground dy-transition-colors">
+          <Download className="dy-h-4 dy-w-4" />
+        </div>
       </a>
     </div>
   )

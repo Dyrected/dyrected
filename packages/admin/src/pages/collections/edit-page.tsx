@@ -470,7 +470,7 @@ export function EditEntryPage() {
 
   // Fetch entry data if in edit mode
   const { data: entry, isLoading: isEntryLoading } = useQuery({
-    queryKey: ["entry", slug, id],
+    queryKey: ["collections", slug, "entry", id],
     queryFn: () => client!.collection(slug!).findOne(id!) as Promise<Record<string, any> | null>,
     enabled: !!client && isEdit,
   })
@@ -558,10 +558,8 @@ export function EditEntryPage() {
     },
     onSuccess: (results, variables) => {
       setIsDirty(false)
+      queryClient.invalidateQueries({ queryKey: ["collections", slug] })
       queryClient.invalidateQueries({ queryKey: ["collection", slug] })
-      if (isEdit) {
-        queryClient.invalidateQueries({ queryKey: ["entry", slug, id] })
-      }
 
       if (variables.mode === "manual") {
         toast.success(isEdit ? "Entry updated successfully" : "Entry created successfully", {
