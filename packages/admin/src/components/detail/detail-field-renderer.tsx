@@ -759,15 +759,49 @@ export function DetailFieldRenderer({
     }
 
     if (fieldType === "join") {
-      const docs = Array.isArray(val) ? val : val?.docs || []
-      if (docs.length === 0) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+      const rawDocs = Array.isArray(val) ? val : val?.docs || []
+      const totalDocs = typeof val === "object" && val?.totalDocs !== undefined ? val.totalDocs : rawDocs.length
+      const targetCol = fieldDef?.collection || fieldDef?.relationTo
+      const onField = fieldDef?.on
+
+      if (rawDocs.length === 0) {
+        if (totalDocs > 0 && targetCol && onField && doc?.id) {
+          return (
+            <a
+              href={`#/collections/${targetCol}?where[${onField}][equals]=${doc.id}`}
+              className="dy-inline-flex dy-items-center dy-gap-1.5 dy-px-2.5 dy-py-1 dy-rounded-lg dy-bg-primary/10 hover:dy-bg-primary/20 dy-border dy-border-primary/20 dy-text-xs dy-font-semibold dy-text-primary dy-transition-colors"
+            >
+              <span>{totalDocs} {totalDocs === 1 ? "Record" : "Records"}</span>
+              <ExternalLink className="dy-h-3 dy-w-3" />
+            </a>
+          )
+        }
+        return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+      }
+
       return (
-        <div className="dy-space-y-1.5">
-          {docs.map((d: any, idx: number) => (
-            <div key={idx} className="dy-text-sm dy-text-foreground">
-              {d.title || d.name || d.id || JSON.stringify(d)}
-            </div>
-          ))}
+        <div className="dy-flex dy-flex-wrap dy-gap-1.5">
+          {rawDocs.map((d: any, idx: number) => {
+            const itemTitle = resolveDocumentTitle(d, d.title || d.name || d.id || "Item")
+            const itemUrl = targetCol && d?.id ? `#/collections/${targetCol}/${d.id}` : undefined
+            if (itemUrl) {
+              return (
+                <a
+                  key={idx}
+                  href={itemUrl}
+                  className="dy-inline-flex dy-items-center dy-gap-1.5 dy-px-2.5 dy-py-1 dy-rounded-lg dy-bg-muted/40 hover:dy-bg-muted/80 dy-border dy-border-border/60 dy-text-xs dy-font-medium dy-text-foreground dy-transition-colors"
+                >
+                  <span>{itemTitle}</span>
+                  <ExternalLink className="dy-h-3 dy-w-3 dy-text-muted-foreground" />
+                </a>
+              )
+            }
+            return (
+              <div key={idx} className="dy-text-sm dy-text-foreground">
+                {itemTitle}
+              </div>
+            )
+          })}
         </div>
       )
     }

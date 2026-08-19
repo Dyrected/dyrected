@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react"
+import { useQuery } from "@tanstack/react-query"
 import { normalizeDetailItem } from "@dyrected/core"
 import { resolveAdminIcon } from "../../lib/admin-icons"
 import { Layers } from "lucide-react"
@@ -8,6 +9,9 @@ import type { DetailItem, DetailRepeatOptions } from "@dyrected/core"
 
 export interface DetailRepeatComponentProps {
   field: string
+  fieldDef?: any
+  doc?: any
+  client?: any
   items: DetailItem[]
   options?: DetailRepeatOptions
   data: any[]
@@ -43,6 +47,9 @@ function getNestedValue(obj: any, path: string): any {
 
 export function DetailRepeatComponent({
   field: _field,
+  fieldDef,
+  doc,
+  client,
   items,
   options,
   data,
@@ -51,7 +58,46 @@ export function DetailRepeatComponent({
   const layout = options?.layout || "table"
   const emptyText = options?.emptyText || "No items recorded"
 
-  if (!Array.isArray(data) || data.length === 0) {
+  const isJoinField = Boolean(
+    (fieldDef?.type === "join" || fieldDef?.collection) &&
+    (fieldDef?.collection || fieldDef?.relationTo) &&
+    fieldDef?.on &&
+    doc?.id &&
+    client
+  )
+
+  const targetCol = fieldDef?.collection || fieldDef?.relationTo
+  const onField = fieldDef?.on
+
+  const { data: fallbackJoinData, isLoading: isJoinLoading } = useQuery({
+    queryKey: ["join", targetCol, onField, doc?.id],
+    queryFn: async () => {
+      if (!client || !targetCol || !onField || !doc?.id) return []
+      const res = await client.collection(targetCol).find({
+        where: { [onField]: { equals: doc.id } },
+        depth: 1,
+        limit: 50,
+      }).exec()
+      return Array.isArray(res) ? res : (res?.docs || [])
+    },
+    enabled: Boolean(isJoinField && (!Array.isArray(data) || data.length === 0)),
+  })
+
+  const effectiveData = (Array.isArray(data) && data.length > 0)
+    ? data
+    : (fallbackJoinData || [])
+
+  if (isJoinLoading) {
+    return (
+      <div className="dy-p-6 dy-space-y-3 dy-bg-muted/10 dy-border dy-border-border/40 dy-rounded-xl dy-animate-pulse">
+        <div className="dy-h-4 dy-w-1/4 dy-bg-muted/60 dy-rounded" />
+        <div className="dy-h-8 dy-w-full dy-bg-muted/40 dy-rounded" />
+        <div className="dy-h-8 dy-w-full dy-bg-muted/30 dy-rounded" />
+      </div>
+    )
+  }
+
+  if (!Array.isArray(effectiveData) || effectiveData.length === 0) {
     return (
       <div className="dy-p-6 dy-text-center dy-text-sm dy-text-muted-foreground/70 dy-bg-muted/20 dy-border dy-border-dashed dy-border-border dy-rounded-xl">
         {emptyText}

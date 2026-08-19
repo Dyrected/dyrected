@@ -178,6 +178,9 @@ export function DetailRenderer({
       return (
         <DetailRepeatComponent
           field={item.field}
+          fieldDef={parentFieldDef}
+          doc={currentDoc}
+          client={client}
           items={visibleRepeatItems}
           options={item.options}
           data={repeatData}
