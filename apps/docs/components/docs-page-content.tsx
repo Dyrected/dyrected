@@ -80,7 +80,7 @@ export async function DocsPageContent({
         url: typeof item.url === "string" ? item.url : String(item.url ?? ""),
         depth: typeof item.depth === "number" ? item.depth : 2,
       }))
-    : page.data?.toc;
+    : [];
 
   return (
     <DocsPage

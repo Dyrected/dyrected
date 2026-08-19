@@ -1,5 +1,12 @@
 # @dyrected/db-sqlite
 
+## 2.8.1
+
+### Patch Changes
+
+- Updated dependencies [38548a4]
+  - @dyrected/core@2.8.1
+
 ## 2.8.0
 
 ### Minor Changes

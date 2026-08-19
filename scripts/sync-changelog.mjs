@@ -207,7 +207,6 @@ function buildDocsChangelog(body) {
 title: Changelog
 description: Release notes and version history for the Dyrected platform.
 runtime: shared
-toc: false
 ---
 
 Release notes and version history across all Dyrected packages.
