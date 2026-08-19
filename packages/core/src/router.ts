@@ -332,10 +332,10 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     // Resolve collections
     const requestConfig =
       siteId && config.onSchemaFetch ? mergeDynamicConfig(config, await config.onSchemaFetch(siteId)) : config;
-    let collections = [...requestConfig.collections];
+    const collections = [...requestConfig.collections];
 
     const user = c.get("user");
-    let collection = collections.find((col) => col.slug === colSlug);
+    const collection = collections.find((col) => col.slug === colSlug);
     let field: any;
 
     if (collection) {
@@ -480,14 +480,13 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
     return c.html(getSwaggerHtml());
   });
 
-  app.get("/api/preferences/:key", requireAuth(config), async (c) => {
+  app.get("/api/preferences/:key", optionalAuth(config), async (c) => {
     const db = config.db;
     const user = c.get("user");
     const key = c.req.param("key");
     const scope = c.req.query("scope");
 
     if (!db) return c.json({ message: "Database not configured" }, 500);
-    if (!user?.collection || !user.sub) return c.json({ error: true, message: "Authentication required." }, 401);
     if (!key) return c.json({ error: true, message: "Preference key is required." }, 400);
 
     const getGlobalPreference = async () => {
@@ -498,13 +497,16 @@ export function registerRoutes(app: Hono<DyrectedContext>, config: DyrectedConfi
       return globalDoc ? globalDoc.value : null;
     };
 
-    if (scope === "global") {
+    if (scope === "global" || !user?.collection || !user.sub) {
       const globalValue = await getGlobalPreference();
       return c.json({ key, value: globalValue });
     }
 
     const doc = await db.findOne({ collection: user.collection, id: user.sub });
-    if (!doc) return c.json({ error: true, message: "User not found." }, 404);
+    if (!doc) {
+      const globalValue = await getGlobalPreference();
+      return c.json({ key, value: globalValue });
+    }
 
     const preferences =
       typeof doc.__preferences === "object" && doc.__preferences !== null

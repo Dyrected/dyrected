@@ -68,6 +68,44 @@ describe("Preferences API Scopes", async () => {
     expect(data.value).toBeNull();
   });
 
+  it("should allow unauthenticated users to read preferences returning global value or null", async () => {
+    // 1. Unauthenticated with no preference set
+    const res1 = await app.request("/api/preferences/theme");
+    expect(res1.status).toBe(200);
+    const data1 = await res1.json();
+    expect(data1).toEqual({ key: "theme", value: null });
+
+    // 2. Set global preference as admin
+    await app.request("/api/preferences/theme?scope=global", {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ value: "dark" }),
+    });
+
+    // 3. Unauthenticated request should now receive global value
+    const res2 = await app.request("/api/preferences/theme");
+    expect(res2.status).toBe(200);
+    const data2 = await res2.json();
+    expect(data2).toEqual({ key: "theme", value: "dark" });
+  });
+
+  it("should still require authentication for PUT and DELETE", async () => {
+    const putRes = await app.request("/api/preferences/theme", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: "light" }),
+    });
+    expect(putRes.status).toBe(401);
+
+    const delRes = await app.request("/api/preferences/theme", {
+      method: "DELETE",
+    });
+    expect(delRes.status).toBe(401);
+  });
+
   it("should set and get personal preference successfully", async () => {
     const putRes = await app.request("/api/preferences/test-key?scope=personal", {
       method: "PUT",

@@ -19,10 +19,17 @@ export type WhereOperatorName =
   | 'in'
   | 'not_in'
   | 'gt'
+  | 'greater_than'
   | 'gte'
+  | 'greater_than_equal'
+  | 'greater_than_or_equal'
   | 'lt'
+  | 'less_than'
   | 'lte'
+  | 'less_than_equal'
+  | 'less_than_or_equal'
   | 'contains'
+  | 'like'
   | 'starts_with'
   | 'exists';
 
@@ -32,10 +39,17 @@ export type WhereOperator =
   | { in: any[] }
   | { not_in: any[] }
   | { gt: any }
+  | { greater_than: any }
   | { gte: any }
+  | { greater_than_equal: any }
+  | { greater_than_or_equal: any }
   | { lt: any }
+  | { less_than: any }
   | { lte: any }
+  | { less_than_equal: any }
+  | { less_than_or_equal: any }
   | { contains: string }
+  | { like: string }
   | { starts_with: string }
   | { exists: boolean };
 
@@ -137,22 +151,29 @@ export function parseSqlWhere(
       }
 
       case 'gt':
+      case 'greater_than':
         params.push(operand);
         return `${c} > ${next()}`;
 
       case 'gte':
+      case 'greater_than_equal':
+      case 'greater_than_or_equal':
         params.push(operand);
         return `${c} >= ${next()}`;
 
       case 'lt':
+      case 'less_than':
         params.push(operand);
         return `${c} < ${next()}`;
 
       case 'lte':
+      case 'less_than_equal':
+      case 'less_than_or_equal':
         params.push(operand);
         return `${c} <= ${next()}`;
 
       case 'contains':
+      case 'like':
         params.push(`%${operand}%`);
         return `${c} ${likeOperator} ${next()}`;
 
@@ -233,18 +254,25 @@ export function parseMongoWhere(where: WhereClause): Record<string, any> {
         return { [field]: { $nin: Array.isArray(operand) ? operand : [operand] } };
 
       case 'gt':
+      case 'greater_than':
         return { [field]: { $gt: operand } };
 
       case 'gte':
+      case 'greater_than_equal':
+      case 'greater_than_or_equal':
         return { [field]: { $gte: operand } };
 
       case 'lt':
+      case 'less_than':
         return { [field]: { $lt: operand } };
 
       case 'lte':
+      case 'less_than_equal':
+      case 'less_than_or_equal':
         return { [field]: { $lte: operand } };
 
       case 'contains':
+      case 'like':
         return { [field]: { $regex: operand, $options: 'i' } };
 
       case 'starts_with':

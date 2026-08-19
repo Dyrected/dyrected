@@ -40,6 +40,7 @@ import { useMediaURL } from "../../hooks/use-media-url"
 import { useMediaUpload } from "../../hooks/use-media-upload"
 import { useDropzone } from "react-dropzone"
 import { Progress } from "../ui/progress"
+import { toast } from "sonner"
 import type { Media } from "@dyrected/sdk"
 
 
@@ -158,6 +159,8 @@ export function MediaLibraryDialog({
     onCompletedItem: async (result) => {
       await (searchQuery ? search(searchQuery) : load())
       onSelect(result.id, result)
+      setSelectedItem(result)
+      toast.success("Media uploaded successfully!")
     },
   })
 
@@ -165,15 +168,64 @@ export function MediaLibraryDialog({
     return isStorageNotConfiguredError(mediaQueryError) || queue.some(item => isStorageNotConfiguredError(item.error))
   }, [mediaQueryError, queue])
 
-
   const onDrop = React.useCallback(
     (acceptedFiles: File[]) => {
       if (acceptedFiles.length > 0) {
         uploadFiles(acceptedFiles)
+        setActiveTab("upload")
       }
     },
     [uploadFiles]
   )
+
+  const handlePaste = React.useCallback(
+    (e: React.ClipboardEvent | ClipboardEvent) => {
+      const items = (e as React.ClipboardEvent).clipboardData?.items || (e as ClipboardEvent).clipboardData?.items
+      if (!items) return
+
+      const filesToUpload: File[] = []
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === "file") {
+          const file = items[i].getAsFile()
+          if (file) {
+            filesToUpload.push(file)
+          }
+        }
+      }
+
+      if (filesToUpload.length > 0) {
+        e.preventDefault()
+        uploadFiles(filesToUpload)
+        setActiveTab("upload")
+        toast.info(
+          `Uploading ${filesToUpload.length} file${filesToUpload.length > 1 ? "s" : ""} from clipboard...`
+        )
+      }
+    },
+    [uploadFiles]
+  )
+
+  React.useEffect(() => {
+    if (!isOpen) return
+
+    const onWindowPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      let hasFile = false
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === "file") {
+          hasFile = true
+          break
+        }
+      }
+      if (hasFile) {
+        handlePaste(e)
+      }
+    }
+
+    window.addEventListener("paste", onWindowPaste)
+    return () => window.removeEventListener("paste", onWindowPaste)
+  }, [isOpen, handlePaste])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -212,7 +264,7 @@ export function MediaLibraryDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="dy-h-[92dvh] dy-w-[calc(100vw-1rem)] dy-max-w-none dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-[95vw] sm:dy-max-w-[900px]">
+      <DialogContent onPaste={handlePaste} className="dy-h-[92dvh] dy-w-[calc(100vw-1rem)] dy-max-w-none dy-gap-0 dy-overflow-hidden dy-border-none dy-bg-background dy-p-0 dy-shadow-2xl sm:dy-w-[95vw] sm:dy-max-w-[900px]">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="dy-flex dy-h-full dy-flex-col">
           <div className="dy-flex dy-flex-col dy-gap-4 dy-border-b dy-bg-muted/20 dy-px-4 dy-py-4 sm:dy-flex-row sm:dy-items-center sm:dy-justify-between sm:dy-px-6">
             <div className="dy-flex dy-min-w-0 dy-items-center dy-gap-3 sm:dy-gap-4">
@@ -265,6 +317,10 @@ export function MediaLibraryDialog({
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
+                    <span className="dy-hidden md:dy-inline-flex dy-items-center dy-gap-1.5 dy-text-[11px] dy-text-muted-foreground/70 dy-font-medium dy-px-3 dy-py-2 dy-bg-muted/40 dy-rounded-lg dy-border dy-border-border/30 dy-flex-shrink-0">
+                      <kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-background dy-px-1.5 dy-py-0.5 dy-rounded dy-shadow-xs">⌘V</kbd>
+                      <span>Paste image to upload</span>
+                    </span>
                     {multiple && (
                       <div className="dy-grid dy-grid-cols-2 dy-items-center dy-gap-1 dy-rounded-lg dy-bg-muted/30 dy-p-1 sm:dy-flex">
                         <Button
@@ -370,6 +426,19 @@ export function MediaLibraryDialog({
                           </button>
                         )
                       })}
+                      {media?.length === 0 && !isFetchingMedia && (
+                        <div className="dy-col-span-full dy-flex dy-flex-col dy-items-center dy-justify-center dy-text-center dy-py-16 dy-text-muted-foreground/40 dy-space-y-4">
+                          <div className="dy-p-4 dy-bg-muted/10 dy-rounded-full dy-border dy-border-muted/20">
+                            <ImageIcon className="dy-h-8 dy-w-8" />
+                          </div>
+                          <div className="dy-space-y-1">
+                            <p className="dy-text-sm dy-font-bold dy-text-muted-foreground/70">No media found</p>
+                            <p className="dy-text-xs dy-text-muted-foreground/50">
+                              Drop files or press <kbd className="dy-font-sans dy-font-bold dy-bg-muted/40 dy-px-1 dy-py-0.5 dy-rounded">⌘V</kbd> anywhere to paste and upload
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {/* Sentinel for infinite scroll */}
                       <div ref={sentinelRef} className="dy-w-full dy-col-span-full dy-flex dy-justify-center dy-py-4">
                         {isFetchingMedia && (
@@ -496,7 +565,7 @@ export function MediaLibraryDialog({
                   <div className="dy-space-y-1.5">
                     <p className="dy-font-serif dy-font-bold dy-text-xl sm:dy-text-2xl">Upload media assets</p>
                     <p className="dy-text-xs dy-text-muted-foreground/70 dy-font-medium sm:dy-text-sm">
-                      Drag & drop images, videos, or documents here, or click to browse
+                      Drag & drop files here, browse, or <span className="dy-text-foreground dy-font-semibold">paste from clipboard (<kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-muted/60 dy-px-1 dy-py-0.5 dy-rounded">⌘V</kbd> / <kbd className="dy-font-sans dy-text-[10px] dy-font-bold dy-bg-muted/60 dy-px-1 dy-py-0.5 dy-rounded">Ctrl+V</kbd>)</span>
                     </p>
                     <p className="dy-text-[10px] dy-text-muted-foreground/50">Supports JPEG, PNG, WebP, GIF, MP4, WebM, PDF. Images are automatically compressed.</p>
                   </div>
