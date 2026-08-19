@@ -6,6 +6,27 @@ runtime: shared
 
 Release notes and version history across all Dyrected packages.
 
+## v2.8.3
+
+- - **Lazy Database Connections**: Removed eager initialization in constructors for `@dyrected/db-postgres`, `@dyrected/db-mysql`, and `@dyrected/db-mongodb`. Network sockets, connection pools, and database creation queries are now deferred until the first actual query or explicit lifecycle call, preventing hanging sockets and timers when loading `dyrected.config.ts` during static builds (`nuxt build`, `next build`, type-generation, or CI pipelines).
+  - **Graceful Disconnect & Teardown**: Added `disconnect(): Promise<void>` to `DatabaseAdapter` interface across all database adapters (`@dyrected/db-postgres`, `@dyrected/db-mysql`, `@dyrected/db-mongodb`, `@dyrected/db-sqlite`) and exported `closeAllPostgresClients()` from `@dyrected/db-postgres`.
+  - **Nuxt Lifecycle Teardown**: Added a `close` hook in `@dyrected/nuxt` to automatically call `disconnect()` on active database adapters and flush cached client connection pools when Nuxt finishes building or shuts down.
+
+---
+
+## v2.8.2
+
+- Enhance Detail Views with inline editing, custom component resolution, and dynamic presentation options:
+
+  - **Custom Component Resolution**: Resolve custom Detail View components directly from runtime `DyrectedContext` and `<DyrectedAdmin :components="..." />` in Vue/Nuxt and React/Next.js.
+  - **Inline Field Editing**: Support `editable: true` on `displayField()` with interactive inputs, immediate SDK mutations, and save/cancel micro-interactions.
+  - **Dynamic Badge Presentation**: Support `badgeColors` with named palettes, hex codes, Tailwind classes, and wildcards on `displayField` and `displaySection`.
+  - **Media Previews**: Render uploads and media relationships seamlessly in Detail Views using `DyrectedMedia` with aspect ratio, alignment, and object-fit constraints.
+  - **Adjacent Record Stepper**: Add header and footer stepper controls to navigate smoothly between previous and next records in the active collection.
+  - **JEXL Visibility Context**: Pass full document properties to visibility evaluation context for robust conditional rendering. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/nuxt`, `@dyrected/vue`)
+
+---
+
 ## v2.8.1
 
 - - **Detail View Inline Editing (`editable: true`)**: Added interactive inline editing directly within the Detail View screen. Editors can toggle simple fields (such as internal notes, tags, status choices, quantities, and dates) into editable form inputs with single-click save and cancel controls, updating records immediately via the client SDK without navigating away from the detail screen.
@@ -739,50 +760,6 @@ Release notes and version history across all Dyrected packages.
 - @dyrected/sdk@2.5.42 (`@dyrected/react`, `@dyrected/vue`)
 
 - @dyrected/admin@2.5.42 (`@dyrected/react`, `@dyrected/vue`)
-
----
-
-## v2.5.41
-
-- feat(admin): fix admin panel type safety, lint warnings, and external auth flow integration
-
-  Refactored the admin panel and core SDK interfaces to eliminate compiler errors and ESLint warnings (such as `any` usage, index signature mismatches, and regex escapes). This ensures full compatibility with the updated schema and SDK type definitions, allowing all 20 monorepo packages to build successfully.
-
-  Detailed Changes:
-  1. `@dyrected/admin` TypeScript & ESLint Fixes
-     - components/media/media-library-dialog.tsx:
-       - Replaced `any` in `MediaLibraryDialogProps` (`selectedValues`, `onSelect`, `onConfirm`) with proper typed interfaces (`string | Record<string, unknown>`).
-       - Imported `Media` type from `@dyrected/sdk` and typed `selectedItem` state as `(Media & { id?: string }) | null` to resolve missing property compilation errors.
-       - Cleaned up regex useless-escape warnings (`no-useless-escape`) in YouTube link detection pattern by removing backslashes on `&` and `?`.
-       - Added type assertion to `client.collection(collection).upload(...)` returns and mapped list item elements in loop to define `mimeType?: string`.
-       - Restored the original select-to-confirm highlight click logic in single-select mode.
-     - pages/collections/edit-page.tsx:
-       - Cast `client!.collection(slug!).findOne(id!)` return values to `Promise<Record<string, any> | null>` to resolve property accesses on `unknown`.
-       - Replaced `schema.label` fallback checks with the new `schema.labels?.singular` / `schema.labels?.plural` structures.
-       - Replaced generic `any` usage in collection schema iteration callbacks with `{ name?: string }` maps.
-     - components/forms/field-renderer.tsx:
-       - Cast `schema.admin` to resolve union-field layout property checking.
-       - Renamed imported type `UrlField` to `UrlFieldSchema` to resolve naming collisions with `UrlFieldComponent`.
-     - components/forms/fields/radio-field.tsx:
-       - Correctly typed `RadioFieldProps` and cast the `RadioGroup` value to a string.
-     - components/forms/fields/media-picker.tsx:
-       - Added clean casting of file upload responses to `CachedMedia` type to satisfy the state updater.
-  2. Auth, Core, and Router Integration
-     - specs/external-admin-auth-door.md & specs/admin-auth.test.ts:
-       - Outlined, specified, and integrated the OIDC/Cloud provider handoff, callback, and JIT provisioning authorization contract.
-     - packages/core/src/types/admin-auth.ts & packages/core/src/types/documents.ts:
-       - Defined schema shapes, request parameters, and controllers for JWT-scoped identity handoff.
-     - packages/admin/src/providers/dyrected-context.ts:
-       - Extracted provider states into a centralized context to decouple core workspace bindings.
-  3. Documentation & Schema Sync
-     - Updated MDX docs (`apps/docs/content/docs/*`) to reflect database, storage, and field-rendering layouts.
-     - Synchronized knowledge base inventories (`packages/knowledge/generated/*`) and LLM mappings to index new API parameters. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/sdk`)
-
----
-
-## v2.5.40
-
-- fix docs and global seeding (`@dyrected/core`, `@dyrected/sdk`)
 
 ---
 

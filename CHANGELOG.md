@@ -2,6 +2,27 @@
 
 All notable changes to the Dyrected platform are documented in this file.
 
+## v2.8.3
+
+- - **Lazy Database Connections**: Removed eager initialization in constructors for `@dyrected/db-postgres`, `@dyrected/db-mysql`, and `@dyrected/db-mongodb`. Network sockets, connection pools, and database creation queries are now deferred until the first actual query or explicit lifecycle call, preventing hanging sockets and timers when loading `dyrected.config.ts` during static builds (`nuxt build`, `next build`, type-generation, or CI pipelines).
+  - **Graceful Disconnect & Teardown**: Added `disconnect(): Promise<void>` to `DatabaseAdapter` interface across all database adapters (`@dyrected/db-postgres`, `@dyrected/db-mysql`, `@dyrected/db-mongodb`, `@dyrected/db-sqlite`) and exported `closeAllPostgresClients()` from `@dyrected/db-postgres`.
+  - **Nuxt Lifecycle Teardown**: Added a `close` hook in `@dyrected/nuxt` to automatically call `disconnect()` on active database adapters and flush cached client connection pools when Nuxt finishes building or shuts down.
+
+---
+
+## v2.8.2
+
+- Enhance Detail Views with inline editing, custom component resolution, and dynamic presentation options:
+
+  - **Custom Component Resolution**: Resolve custom Detail View components directly from runtime `DyrectedContext` and `<DyrectedAdmin :components="..." />` in Vue/Nuxt and React/Next.js.
+  - **Inline Field Editing**: Support `editable: true` on `displayField()` with interactive inputs, immediate SDK mutations, and save/cancel micro-interactions.
+  - **Dynamic Badge Presentation**: Support `badgeColors` with named palettes, hex codes, Tailwind classes, and wildcards on `displayField` and `displaySection`.
+  - **Media Previews**: Render uploads and media relationships seamlessly in Detail Views using `DyrectedMedia` with aspect ratio, alignment, and object-fit constraints.
+  - **Adjacent Record Stepper**: Add header and footer stepper controls to navigate smoothly between previous and next records in the active collection.
+  - **JEXL Visibility Context**: Pass full document properties to visibility evaluation context for robust conditional rendering. (`@dyrected/admin`, `@dyrected/core`, `@dyrected/nuxt`, `@dyrected/vue`)
+
+---
+
 ## v2.8.1
 
 - - **Detail View Inline Editing (`editable: true`)**: Added interactive inline editing directly within the Detail View screen. Editors can toggle simple fields (such as internal notes, tags, status choices, quantities, and dates) into editable form inputs with single-click save and cancel controls, updating records immediately via the client SDK without navigating away from the detail screen.
