@@ -1,7 +1,16 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { DetailRenderer } from "../detail-renderer"
+
+vi.mock("../../providers/dyrected-context", () => ({
+  useDyrected: () => ({
+    client: {},
+    user: { id: "user-1", email: "admin@dyrected.com" },
+    schemas: { collections: [] },
+    components: {},
+  }),
+}))
 import { DetailHeader } from "../detail-header"
 import { DetailFieldRenderer } from "../detail-field-renderer"
 import { DetailSectionComponent } from "../detail-section"
@@ -85,10 +94,15 @@ describe("Admin Detail View Components", () => {
         fieldDef={{ name: "status", type: "select" }}
         value="In Stock"
         doc={{}}
-        options={{ display: "badge" }}
+        options={{
+          display: "badge",
+          badgeColors: { "In Stock": "emerald", draft: "zinc" },
+        }}
       />,
     )
-    expect(screen.getByText("In Stock")).toBeDefined()
+    const badgeEl = screen.getByText("In Stock")
+    expect(badgeEl).toBeDefined()
+    expect(badgeEl.className).toContain("dy-text-emerald-600")
   })
 
   it("renders DetailSectionComponent with collapsible behavior", () => {
@@ -343,6 +357,110 @@ describe("Admin Detail View Components", () => {
     expect(screen.getByText("Folder")).toBeDefined()
   })
 
+  it("renders select option labels instead of raw values", () => {
+    const { rerender } = render(
+      <DetailFieldRenderer
+        fieldDef={{
+          name: "status",
+          type: "select",
+          options: [
+            { label: "In Production", value: "in_prod" },
+            { label: "Archived Item", value: "archived" },
+          ],
+        }}
+        value="in_prod"
+        doc={{}}
+      />,
+    )
+    expect(screen.getByText("In Production")).toBeDefined()
+
+    rerender(
+      <DetailFieldRenderer
+        fieldDef={{
+          name: "priority",
+          type: "radio",
+          options: [
+            { label: "High Priority", value: "high" },
+            { label: "Low Priority", value: "low" },
+          ],
+        }}
+        value="high"
+        doc={{}}
+      />,
+    )
+    expect(screen.getByText("High Priority")).toBeDefined()
+  })
+
+  it("renders rich media and image previews for upload fields and media values", () => {
+    const imageDoc = {
+      id: "media-1",
+      url: "https://example.com/assets/chair.png",
+      filename: "ergonomic-chair.png",
+      mimeType: "image/png",
+    }
+
+    render(
+      <DetailFieldRenderer
+        fieldDef={{ name: "heroImage", type: "upload" }}
+        value={imageDoc}
+        doc={{}}
+      />,
+    )
+
+    expect(screen.getByText("ergonomic-chair.png")).toBeDefined()
+    expect(screen.getByText("image/png")).toBeDefined()
+    expect(screen.getByText("Open image")).toBeDefined()
+  })
+
+  it("supports inline editable mode with toggle and update", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <DetailFieldRenderer
+        fieldDef={{ name: "notes", type: "text", label: "Internal Notes" }}
+        value="Initial note"
+        doc={{ id: "doc-1" }}
+        options={{ editable: true }}
+        onUpdate={onUpdate}
+      />,
+    )
+
+    expect(screen.getByText("Initial note")).toBeDefined()
+
+    // Find and click the edit toggle button
+    const editBtn = screen.getByTitle("Edit Internal Notes")
+    fireEvent.click(editBtn)
+
+    // The input should appear with the initial value
+    const input = screen.getByDisplayValue("Initial note")
+    expect(input).toBeDefined()
+
+    // Change input value
+    fireEvent.change(input, { target: { value: "Updated note" } })
+
+    // Click save
+    const saveBtn = screen.getByText("Save")
+    fireEvent.click(saveBtn)
+
+    expect(onUpdate).toHaveBeenCalledWith("notes", "Updated note")
+  })
+
+  it("renders DetailSectionComponent with badge and badgeColor", () => {
+    render(
+      <DetailSectionComponent
+        title="Inventory"
+        options={{ badge: "Verified", badgeColor: "emerald" }}
+      >
+        <div data-testid="inv-content">In Stock</div>
+      </DetailSectionComponent>,
+    )
+
+    expect(screen.getByText("Inventory")).toBeDefined()
+    const badgeEl = screen.getByText("Verified")
+    expect(badgeEl).toBeDefined()
+    expect(badgeEl.className).toContain("dy-text-emerald-600")
+  })
+
   it("evaluates boolean and JEXL visible options for top-level and nested detail items", () => {
     const doc = {
       status: "draft",
@@ -388,5 +506,95 @@ describe("Admin Detail View Components", () => {
     // Top level visible: false and admin-only sections should NOT be rendered
     expect(screen.queryByText("Admin Only Section")).toBeNull()
     expect(screen.queryByText("Hidden Section")).toBeNull()
+  })
+
+  it("renders star rating with custom max scale and empty state", () => {
+    const { rerender } = render(
+      <DetailFieldRenderer
+        fieldDef={{ name: "rating", type: "number", label: "Review Rating" }}
+        value={4.5}
+        doc={{}}
+        options={{ display: "star-rating" }}
+      />,
+    )
+    expect(screen.getByText("4.5/5")).toBeDefined()
+
+    // With custom max scale
+    rerender(
+      <DetailFieldRenderer
+        fieldDef={{ name: "score", type: "number", label: "Score" }}
+        value={8}
+        doc={{}}
+        options={{ display: "star", max: 10 } as any}
+      />,
+    )
+    expect(screen.getByText("8/10")).toBeDefined()
+
+    // With 0 value
+    rerender(
+      <DetailFieldRenderer
+        fieldDef={{ name: "score", type: "number", label: "Score" }}
+        value={0}
+        doc={{}}
+        options={{ display: "star-rating" }}
+      />,
+    )
+    expect(screen.getByText("0/5")).toBeDefined()
+  })
+
+  it("renders color swatch and color swatches list in DetailFieldRenderer", () => {
+    const { rerender } = render(
+      <DetailFieldRenderer
+        fieldDef={{ name: "brandColor", type: "text", label: "Brand Color" }}
+        value="#3b82f6"
+        doc={{}}
+        options={{ display: "color" }}
+      />,
+    )
+
+    expect(screen.getByText("#3b82f6")).toBeDefined()
+
+    // Array of color swatches
+    rerender(
+      <DetailFieldRenderer
+        fieldDef={{ name: "palette", type: "json", label: "Palette" }}
+        value={["#ef4444", "#10b981", "#3b82f6"]}
+        doc={{}}
+        options={{ display: "color-swatches" }}
+      />,
+    )
+
+    const swatches = document.querySelectorAll("[title='#ef4444'], [title='#10b981'], [title='#3b82f6']")
+    expect(swatches.length).toBe(3)
+  })
+
+  it("supports inline editing for color field", async () => {
+    const onUpdate = vi.fn().mockResolvedValue(undefined)
+
+    render(
+      <DetailFieldRenderer
+        fieldDef={{ name: "accentColor", type: "text", label: "Accent Color" }}
+        value="#10b981"
+        doc={{ id: "doc-color-1" }}
+        options={{ display: "color", editable: true }}
+        onUpdate={onUpdate}
+      />,
+    )
+
+    expect(screen.getByText("#10b981")).toBeDefined()
+
+    // Toggle edit mode
+    const editBtn = screen.getByTitle("Edit Accent Color")
+    fireEvent.click(editBtn)
+
+    // Edit color hex text input
+    const textInput = screen.getByPlaceholderText("#000000")
+    fireEvent.change(textInput, { target: { value: "#6366f1" } })
+
+    // Save
+    const saveBtn = screen.getByText("Save")
+    fireEvent.click(saveBtn)
+
+    expect(onUpdate).toHaveBeenCalledWith("accentColor", "#6366f1")
   })
 })

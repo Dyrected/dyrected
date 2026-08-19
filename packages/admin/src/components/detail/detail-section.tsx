@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react"
 import { ChevronDown, ChevronRight, Folder } from "lucide-react"
+import { Badge } from "../ui/badge"
+import { resolveBadgePresentation } from "../../lib/badge-colors"
 import { resolveAdminIcon } from "../../lib/admin-icons"
 import { cn } from "../../lib/utils"
 import type { DetailSectionOptions } from "@dyrected/core"
@@ -22,6 +24,17 @@ export function DetailSectionComponent({
 
   const Icon = options?.icon ? resolveAdminIcon(options.icon, Folder) : null
 
+  const badgePresentation = options?.badge
+    ? resolveBadgePresentation({
+        value: options.badge,
+        badgeColors: options.badgeColor
+          ? { [options.badge]: options.badgeColor, "*": options.badgeColor }
+          : undefined,
+        defaultVariant: "secondary",
+        baseClassName: "dy-text-xs dy-font-medium",
+      })
+    : null
+
   return (
     <div className="dy-bg-card dy-border dy-border-border/60 dy-rounded-2xl dy-shadow-sm dy-overflow-hidden dy-transition-all">
       <div
@@ -38,9 +51,20 @@ export function DetailSectionComponent({
             </div>
           )}
           <div>
-            <h3 className="dy-text-base dy-font-semibold dy-text-foreground dy-tracking-tight">
-              {title}
-            </h3>
+            <div className="dy-flex dy-items-center dy-gap-2">
+              <h3 className="dy-text-base dy-font-semibold dy-text-foreground dy-tracking-tight">
+                {title}
+              </h3>
+              {options?.badge && badgePresentation && (
+                <Badge
+                  variant={badgePresentation.variant}
+                  className={badgePresentation.className}
+                  style={badgePresentation.style}
+                >
+                  {options.badge}
+                </Badge>
+              )}
+            </div>
             {options?.description && (
               <p className="dy-text-xs dy-text-muted-foreground dy-mt-0.5">
                 {options.description}

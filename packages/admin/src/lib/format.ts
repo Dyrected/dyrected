@@ -1,3 +1,4 @@
+export type { DisplayTone } from "@dyrected/core"
 import type {
   BooleanFormat,
   DateFormat,

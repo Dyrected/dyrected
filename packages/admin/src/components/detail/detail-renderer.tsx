@@ -74,7 +74,13 @@ export function DetailRenderer({
   client,
   schemas,
 }: DetailRendererProps) {
-  const { components } = useDyrected()
+  let components: any = {}
+  try {
+    const ctx = useDyrected()
+    components = ctx?.components ?? {}
+  } catch {
+    components = {}
+  }
   function getNestedValue(obj: any, path: string): any {
     if (!obj || !path) return undefined
     if (path in obj) return obj[path]
@@ -199,7 +205,7 @@ export function DetailRenderer({
             : item.options?.spacing === "none"
               ? "dy-my-0"
               : "dy-my-4"
-      return <hr className={cn("dy-border-border/60 dy-w-full", spacingClass)} />
+      return <hr className={cn("dy-border-border/60 border-[0.5px] dy-w-full", spacingClass)} />
     }
 
     if (item.type === "text") {
@@ -280,6 +286,7 @@ export function DetailRenderer({
           fieldDef={fieldDef}
           value={value}
           doc={currentDoc}
+          collection={collection}
           options={item.options}
           client={client}
           schemas={schemas}

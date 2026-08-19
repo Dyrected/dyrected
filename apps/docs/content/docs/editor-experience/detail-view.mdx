@@ -5,18 +5,18 @@ description: Shape the read-first admin screen editors see before they open a co
 
 A Detail View gives editors a readable summary of a record or global before they open the full edit form. Use it when a document has important status, repeated data, computed totals, or nested settings that are easier to review as a dashboard than as one long form.
 
-By the end of this page you should know what Dyrected shows by default, how to replace that with your own layout, and which display helpers to reach for as the document gets more complex.
+By the end of this page you will understand what Dyrected renders by default, how to build a tailored layout using display helpers, how to enable quick inline edits, and every option available across each helper function.
 
 ## How Detail Views fit into the admin
 
-Collection records and globals have two jobs in the admin:
+Collection records and globals have two complementary modes in the admin:
 
-- The **Detail View** is for reading and reviewing the current document.
-- The **Edit View** is for changing and saving the document.
+- The **Detail View** is for reading, reviewing, and making quick inline adjustments to the current document.
+- The **Edit View** is for deep editing and modifying the complete form.
 
-When a collection or global does not define `detail`, Dyrected generates a conservative layout from its `fields`. That default layout skips hidden fields and sensitive fields such as passwords, salts, reset tokens, API keys, and secrets. Longer content fields stay in the main area, while compact metadata such as selects, booleans, and dates can move into an overview column.
+When a collection or global does not define `detail`, Dyrected automatically generates a sensible layout from its `fields`. That default layout skips sensitive credentials (passwords, salts, reset tokens, API keys) and positions metadata (statuses, booleans, dates) into a tidy summary.
 
-If a document does not need a read-first screen, set `detail: false`. Editors will go straight to the edit form instead.
+If a document does not need a read-first screen, set `detail: false`. Editors will navigate straight to the edit form instead.
 
 ```ts
 import { defineCollection, defineTextField } from "@dyrected/core";
@@ -35,11 +35,13 @@ export const Pages = defineCollection({
 });
 ```
 
-That is useful for content that editors almost always need to change immediately, such as page builder documents with large block fields.
+That is useful for content that editors almost always need to modify immediately, such as page builder documents with large block fields.
+
+---
 
 ## Build a first custom Detail View
 
-The recommended starting point is a few sections with fields inside them. Each item can use `span` to control how much of the 12-column layout it takes.
+The recommended starting point is a few sections with fields inside them. Each item can use `span` (out of 12 columns) to control how much width it occupies.
 
 ```ts
 import {
@@ -67,15 +69,20 @@ export const Products = defineCollection({
         displayField("sku", { span: 4, display: "copyable" }),
         displayField("description", { span: 12 }),
       ],
-      { span: 8 },
+      { span: 8, icon: "Package" },
     ),
     displaySection(
-      "Pricing",
+      "Pricing & Status",
       [
-        displayField("price", { span: 6, display: "currency", currency: "USD" }),
-        displayField("status", { span: 6, display: "badge" }),
+        displayField("price", { span: 6, display: "currency", currency: "USD", editable: true }),
+        displayField("status", {
+          span: 6,
+          display: "badge",
+          badgeColors: { active: "emerald", draft: "zinc", archived: "rose" },
+          editable: true,
+        }),
       ],
-      { span: 4 },
+      { span: 4, badge: "Live", badgeColor: "emerald" },
     ),
   ],
   fields: [
@@ -86,18 +93,22 @@ export const Products = defineCollection({
     defineSelectField({
       name: "status",
       label: "Status",
-      options: ["draft", "active", "archived"],
+      options: [
+        { label: "Active", value: "active" },
+        { label: "Draft", value: "draft" },
+        { label: "Archived", value: "archived" },
+      ],
       defaultValue: "draft",
     }),
   ],
 });
 ```
 
-In this example, the overview section takes eight columns and the pricing section takes four columns on wide screens. Inside each section, nested fields use the same 12-column idea for their own row.
+In this example, the overview section occupies eight columns and the pricing section occupies four columns on desktop screens. Inside each section, fields use the same 12-column grid.
 
 ### Global Detail View (Singleton Document)
 
-Detail Views work identically for globals. Use them to create a clean overview dashboard for site settings, assessment categories, or company metadata:
+Detail Views work identically for globals. Use them to create a clean overview dashboard for site settings, company metadata, or theme configuration:
 
 ```ts
 import {
@@ -119,16 +130,18 @@ export const SiteSettings = defineGlobal({
     displaySection(
       "Identity & Contact",
       [
-        displayField("siteName", { span: 6 }),
-        displayField("supportEmail", { span: 6, display: "copyable" }),
+        displayField("siteName", { span: 6, editable: true }),
+        displayField("supportEmail", { span: 6, display: "email", editable: true }),
         displayField("rating", { span: 6, display: "star-rating" }),
         displayField("primaryIcon", { span: 6, display: "icon" }),
       ],
       { span: 8, icon: "Settings" },
     ),
-    displaySection("Quick Stats", [displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 })], {
-      span: 4,
-    }),
+    displaySection(
+      "Quick Stats",
+      [displayComputed("Total Social Links", "count(doc.socialLinks)", { span: 12 })],
+      { span: 4 },
+    ),
   ],
   fields: [
     defineTextField({ name: "siteName", label: "Site Name", required: true }),
@@ -147,17 +160,78 @@ export const SiteSettings = defineGlobal({
 });
 ```
 
+---
+
+## Inline editing with `editable`
+
+When an editor only needs to tweak a minor note, toggle a status, or update a price, opening the full edit page can feel heavy. Set `editable: true` on any `displayField()` to enable an inline edit toggle directly on the Detail View.
+
+```ts
+displayField("internalNotes", {
+  label: "Internal Reviewer Notes",
+  span: 12,
+  editable: true,
+})
+displayField("stock", {
+  label: "Available Units",
+  span: 6,
+  editable: true,
+})
+displayField("accentColor", {
+  label: "Theme Accent",
+  span: 6,
+  display: "color",
+  editable: true,
+})
+```
+
+When `editable: true` is set:
+1. Hovering or focusing on the field reveals a subtle pencil edit button.
+2. Clicking the pencil opens the dedicated interactive input (e.g. text input, multiline textarea, select dropdown, checkbox, date picker, or color swatch).
+3. Clicking **Save** (✓) triggers an immediate document update via the Dyrected Client SDK and displays a confirmation toast without leaving the screen.
+4. Clicking **Cancel** (✕) reverts to the existing value without making network calls.
+
+Supported inline editable field types include text, textareas, numbers, currencies, percentages, selects, radio buttons, booleans, dates, datetimes, colors, and tag lists.
+
+---
+
+## Custom badge colors with `badgeColors`
+
+When displaying statuses, priority levels, or tags using `display: "badge"`, `display: "badges"`, or `display: "tags"`, you can map raw document values to distinct color tones with `badgeColors`.
+
+```ts
+displayField("orderStatus", {
+  display: "badge",
+  badgeColors: {
+    delivered: "emerald",
+    processing: "sky",
+    pending: "amber",
+    cancelled: "rose",
+    "*": "zinc", // Fallback color for any other value
+  },
+})
+```
+
+### Supported color palettes
+
+`badgeColors` accepts:
+
+- **Named color palettes**: `emerald`, `green`, `success`, `amber`, `yellow`, `warning`, `rose`, `red`, `danger`, `destructive`, `blue`, `sky`, `cyan`, `info`, `indigo`, `violet`, `purple`, `fuchsia`, `pink`, `teal`, `orange`, `zinc`, `gray`, `slate`, `neutral`, `primary`, `secondary`.
+- **Custom CSS / Hex colors**: e.g. `badgeColors: { VIP: "#8b5cf6", Enterprise: "#0ea5e9" }`.
+- **Tailwind class strings**: e.g. `badgeColors: { custom: "dy-bg-indigo-500/15 dy-text-indigo-600" }`.
+- **Wildcard fallback (`*` or `default`)**: applies a consistent fallback palette whenever the document contains an unmapped value.
+
+---
+
 ## Arrange content with layout helpers
 
-Use layout helpers when the record needs more than a flat list of fields.
+### Sections with `displaySection`
 
-### Sections
-
-`displaySection(title, items, options)` groups fields and other detail items under a heading. Sections can have a description, icon, span, and collapsible behavior.
+`displaySection(title, items, options)` groups fields and other detail items under a titled card. Sections can have an icon, a badge, a subtitle description, a grid span, and collapsible behavior.
 
 ```ts
 displaySection(
-  "Publishing",
+  "Publishing Status",
   [
     displayField("status", { span: 6, display: "badge" }),
     displayField("publishedAt", { span: 6, display: "relative" }),
@@ -165,42 +239,46 @@ displaySection(
   {
     span: 12,
     icon: "CalendarCheck",
-    description: "Review the publication state before editing.",
+    badge: "Verified",
+    badgeColor: "emerald",
+    description: "Review publication state before scheduling social campaigns.",
     collapsible: true,
     collapsedByDefault: false,
   },
 );
 ```
 
-Use `collapsible: true` and `collapsedByDefault: true` when a section contains secondary details or audit logs that editors rarely need to inspect immediately.
+### Tabs with `displayTabs` and `displayTab`
 
-Use sections for the main regions of a document: overview, publishing, pricing, SEO, technical metadata, or internal notes.
-
-### Tabs
-
-`displayTabs()` and `displayTab()` split a dense record into focused panels. A tab can include an icon and a badge expression.
+`displayTabs()` and `displayTab()` split large records into focused tabs. Individual tabs can display icons and notification badges.
 
 ```ts
 displayTabs(
   [
-    displayTab("Metadata", [
-      displayField("slug", { span: 6, display: "copyable" }),
-      displayField("seo.title", { span: 6 }),
-    ]),
-    displayTab("Links", [displayField("navigation.links", { span: 12, display: "table" })], {
-      icon: "Link",
-      badge: "count(doc.navigation.links)",
+    displayTab("Specifications", [
+      displayField("dimensions", { span: 6 }),
+      displayField("weight", { span: 6 }),
+    ], { icon: "Cpu" }),
+
+    displayTab("Reviews", [
+      displayRepeat("reviews", [
+        displayField("reviewer", { span: 6 }),
+        displayField("rating", { span: 6, display: "star-rating" }),
+        displayField("comment", { span: 12 }),
+      ], { layout: "cards" }),
+    ], {
+      icon: "Star",
+      badge: "count(doc.reviews)",
+      badgeColor: "amber",
     }),
   ],
-  { span: 12, defaultTab: "Metadata" },
+  { span: 12, defaultTab: "Specifications" },
 );
 ```
 
-Tabs work best when every tab answers a clear review question. If the content is only two or three fields, keep it in a section.
+### Grids with `displayGrid`
 
-### Grids
-
-`displayGrid(columns, items, options)` creates a compact grid inside the Detail View. Use it when several related values should scan as a group.
+`displayGrid(columns, items, options)` creates a balanced multi-column grid inside sections or tabs.
 
 ```ts
 displayGrid(
@@ -214,74 +292,49 @@ displayGrid(
 );
 ```
 
-Use `span` for the item's width in the surrounding page. Use the `columns` argument for how many tracks the grid itself should use.
+---
 
-## Display fields clearly
+## Display fields and visual variants
 
-`displayField(fieldName, options)` reads a value from the current document and chooses a renderer for it. The `fieldName` can be a top-level field such as `title` or a dotted path such as `brand.name`.
+`displayField(fieldName, options)` chooses how to present a specific property. The `fieldName` can point to a top-level field or a nested dotted path (`user.profile.avatar`).
 
 ```ts
-displayField("brand.name", { label: "Brand", span: 6 });
-displayField("supportEmail", { display: "email", span: 6 });
+displayField("author.name", { label: "Author", span: 6 });
+displayField("price", { display: "currency", currency: "USD", span: 6 });
 displayField("rating", { display: "star-rating", span: 6 });
-displayField("id", { display: "copyable", span: 6 });
-displayField("status", {
-  display: "badge",
-  span: 6,
-  badgeColors: { draft: "zinc", active: "emerald", archived: "rose" },
-});
-displayField("secondaryNotes", {
-  span: 12,
-  hideIfEmpty: true,
-  emptyText: "No internal notes provided",
-});
-displayField("sampleSnippet", { display: "code", span: 12 });
-displayField("environmentKey", { display: "code-badge", span: 6 });
-displayField("themeIcon", { display: "icon", span: 6 });
+displayField("brandColor", { display: "color", span: 6 });
+displayField("palette", { display: "color-swatches", span: 12 });
+displayField("apiSecret", { display: "copyable", span: 6 });
 ```
 
-### String shorthand
+### Display variants overview
 
-For simple layouts where fields only need default styling, you can pass field names as strings directly in the `detail` array or inside sections:
+| Category | Variants | What it renders |
+| :--- | :--- | :--- |
+| **Status & Badges** | `badge`, `badges`, `tags`, `boolean` | Colored status pills and boolean check indicators. |
+| **Numbers & Metrics** | `currency`, `percent`, `progress`, `star`, `star-rating` | Formatted money, percentage bars, and star ratings. |
+| **Dates & Times** | `date`, `datetime`, `time`, `relative` | Localized dates, timestamps, and relative time ("2 hours ago"). |
+| **Links & Contact** | `email`, `phone`, `url`, `link`, `copyable` | Clickable `mailto:`, `tel:`, external links, and copyable text with a one-click clipboard button. |
+| **Media & Colors** | `image`, `avatar`, `color`, `color-swatches`, `icon` | Image thumbnails with full-preview links, circular avatars, color swatch preview boxes, and Lucide icons. |
+| **Structured Data** | `key-value`, `table`, `json`, `code`, `code-badge` | 2-column key-value tables, syntax-highlighted code blocks, and monospace badges. |
 
-```ts
-detail: [
-  "title",
-  "sku",
-  "status",
-]
-```
+### Empty value handling
 
-Dyrected normalizes raw strings into standard `displayField("fieldName")` items automatically.
+By default, missing or empty values display a clean dash (`—`). You can customize this per field:
+- `emptyText: "Not assigned"`: replaces the default dash with custom descriptive text.
+- `hideIfEmpty: true`: completely omits the field row when the value is null, undefined, or empty.
 
-### Empty and missing values
+---
 
-By default, empty fields show a subtle dash (`—`). You can customize this behavior:
-- `emptyText: "Custom placeholder"`: replaces the default dash with custom text.
-- `hideIfEmpty: true`: completely hides the field row when the document value is `null`, `undefined`, or an empty string `""`.
+## Add computed totals with `displayComputed`
 
-The most useful display variants fall into a few groups:
+Use `displayComputed(label, expressionOrHandler, options)` to display metrics derived from document values or relationships.
 
-| Use case                | Variants                                                 |
-| ----------------------- | -------------------------------------------------------- |
-| Status and labels       | `badge`, `badges`, `tags`, `boolean`                     |
-| Numbers and progress    | `currency`, `percent`, `progress`, `star`, `star-rating` |
-| Dates and time          | `date`, `datetime`, `time`, `relative`                   |
-| Contact and links       | `email`, `phone`, `url`, `link`, `copyable`              |
-| Media and visual values | `image`, `avatar`, `color`, `color-swatches`, `icon`     |
-| Structured values       | `key-value`, `table`, `json`, `code`, `code-badge`       |
-
-If you do not pass `display`, Dyrected falls back to the field type. For example, relationship fields render links when related documents are populated, JSON fields render formatted JSON, and upload fields render a download link when a URL is available.
-
-## Add computed values
-
-Use `displayComputed(label, expressionOrHandler, options)` when the Detail View should show a value that is derived from the document.
-
-For simple values, pass a JEXL expression:
+Pass a JEXL expression for calculated stats:
 
 ```ts
-displayComputed("Total categories", "count(doc.categories)", { span: 6 });
-displayComputed("Rounded price", "math.round(doc.price, 2)", {
+displayComputed("Total Categories", "count(doc.categories)", { span: 6 });
+displayComputed("Estimated Profit", "doc.price - doc.cost", {
   span: 6,
   format: "currency",
   currency: "USD",
@@ -290,26 +343,13 @@ displayComputed("Rounded price", "math.round(doc.price, 2)", {
 
 <SelfHostedOnly>
 
-### Function handlers
+### Function handlers for self-hosted backends
 
-For values that require custom logic, server-side data, or database lookups across other collections, pass a function handler. The handler runs on your self-hosted server during document fetch and receives a `{ doc, user, db }` context object:
+For calculations requiring database aggregations across collections, pass a function handler:
 
 ```ts
-// 1. Simple in-memory calculation with `doc`
 displayComputed(
-  "Reading time",
-  ({ doc }) => {
-    const words = String(doc.body || "")
-      .split(/\s+/)
-      .filter(Boolean).length;
-    return `${Math.ceil(words / 200)} min`;
-  },
-  { span: 6 },
-);
-
-// 2. Cross-collection database query with `db` (async)
-displayComputed(
-  "Active Orders",
+  "Active Customer Orders",
   async ({ doc, db }) => {
     const orders = await db.find("orders", {
       where: { customerId: { equals: doc.id }, status: { equals: "processing" } },
@@ -318,76 +358,49 @@ displayComputed(
   },
   { span: 6, format: "number" },
 );
-
-// 3. User-aware personalized or role-based summary with `user`
-displayComputed(
-  "Internal Audit",
-  ({ doc, user }) => {
-    if (user?.roles?.includes("admin")) {
-      return `Revenue: $${doc.totalRevenue} (Admin audit)`;
-    }
-    return "Standard view";
-  },
-  { span: 12 },
-);
 ```
-
-| Context property | Type   | Description                                                                                           |
-| ---------------- | ------ | ----------------------------------------------------------------------------------------------------- |
-| `doc`            | `TDoc` | The full document record being viewed, with all field values.                                         |
-| `user`           | `any`  | The current authenticated user session making the request (e.g. `id`, `email`, `roles`).              |
-| `db`             | `any`  | The active database adapter instance for executing queries and aggregations across other collections. |
-
-Computed handlers are evaluated on the server when documents are retrieved via the API. Their results are attached to `doc._meta.computed`, allowing the admin UI to display complex derived stats instantly without client overhead.
 
 </SelfHostedOnly>
 
-## Show repeated data
+---
 
-Use `displayRepeat(fieldName, items, options)` for array-like content. The nested `items` describe how each row should appear.
+## Show repeated line items with `displayRepeat`
+
+Use `displayRepeat(fieldName, items, options)` to render array fields, order line items, or sub-documents.
 
 ```ts
 displayRepeat(
-  "categories",
+  "orderItems",
   [
-    displayField("key", { span: 4, display: "badge" }),
-    displayField("summary", { span: 12 }),
-    displayField("range", { span: 12, label: "Range" }),
+    displayField("productName", { span: 6 }),
+    displayField("quantity", { span: 3 }),
+    displayField("price", { span: 3, display: "currency" }),
   ],
   {
-    span: 12,
     layout: "cards",
-    useAsTitle: "title",
-    icon: "Folder",
     columns: 3,
-    emptyText: "No categories yet",
+    useAsTitle: "productName",
+    emptyText: "No line items in this order",
   },
 );
 ```
 
-The repeat layouts are:
+Repeat layouts include:
+- `table`: compact table with column headers (default).
+- `cards`: individual grid cards with titles and icons.
+- `list`: vertical feed of line items.
 
-| Layout  | Use it when                                                               |
-| ------- | ------------------------------------------------------------------------- |
-| `table` | The repeated data is compact and comparison matters. This is the default. |
-| `cards` | Each row has enough detail to read as its own item.                       |
-| `list`  | The repeated data works best as a vertical feed or checklist.             |
+---
 
-For card and list layouts, `useAsTitle` or `titleField` reads a field from each row and uses it as the row heading. If you pass `title` instead, Dyrected uses it as a static label and appends the row number.
+## Add notices, dividers, and custom components
 
-## Add text, dividers, and custom components
-
-Use supporting helpers when the Detail View needs explanatory callouts, visual separators, or specialized widgets alongside standard fields.
-
-### Headings, callouts, and dividers
-
-`displayText(content, options)` renders formatted typography or alert boxes, while `displayDivider(options)` adds horizontal rhythm between rows.
+### `displayText` and `displayDivider`
 
 ```ts
 import { displayDivider, displayText } from "@dyrected/core";
 
-export const notice = [
-  displayText("Review this summary before approving the record.", {
+export const reviewNotice = [
+  displayText("Verify shipping addresses before changing order status to Shipped.", {
     variant: "warning",
     span: 12,
   }),
@@ -395,205 +408,327 @@ export const notice = [
 ];
 ```
 
-`displayText()` supports variants such as `body` (default), `heading`, `subheading`, `muted`, `caption`, `callout`, `info`, and `warning`. `displayDivider()` accepts spacing options (`none`, `sm`, `md`, `lg`).
+`displayText()` supports `body` (default), `heading`, `subheading`, `muted`, `caption`, `callout`, `info`, and `warning`. `displayDivider()` accepts `spacing: "none" | "sm" | "md" | "lg"`.
 
-### Custom components with `displayCustom`
+### `displayCustom`
 
-When built-in display variants are not enough, `displayCustom(name, options)` renders a React component within your Detail View layout.
-
-To use a custom component, declare it by string name in your schema with `displayCustom(name, options)`, then provide the matching component when mounting the admin:
-
-<Steps>
-<Step>
-### Reference the component by name in your collection schema
+Mount custom React components registered into the admin:
 
 ```ts
-import {
-  defineBooleanField,
-  defineCollection,
-  defineTextField,
-  displayCustom,
-  displaySection,
-} from "@dyrected/core";
-
-export const Orders = defineCollection({
-  slug: "orders",
-  labels: { singular: "Order", plural: "Orders" },
-  admin: {
-    useAsTitle: "orderNumber",
-  },
-  detail: [
-    displaySection("Verification", [
-      displayCustom("AuditBadge", {
-        span: 12,
-        props: { tone: "success" },
-      }),
-    ]),
-  ],
-  fields: [
-    defineTextField({ name: "orderNumber", label: "Order #", required: true }),
-    defineBooleanField({ name: "verified", label: "Verified", defaultValue: false }),
-  ],
-});
-```
-
-</Step>
-<Step>
-### Provide the component to `<DyrectedAdmin />`
-
-<Tabs items={['Next.js / React', 'Nuxt / Vue']}>
-<Tab value="Next.js / React">
-
-```tsx
-// 1. Define your React component (components/AuditBadge.tsx)
-import React from "react";
-
-export function AuditBadge({ doc, tone = "info" }: { doc: any; tone?: string }) {
-  const isVerified = doc.verified === true;
-  return (
-    <div
-      className={`p-3 rounded border text-sm ${tone === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-blue-50 text-blue-800 border-blue-200"}`}
-    >
-      <strong>Audit Status:</strong> {isVerified ? "Verified Record" : "Pending Verification"}
-    </div>
-  );
-}
-
-// 2. Pass it to DyrectedAdmin (app/admin/[[...admin]]/page.tsx)
-import { DyrectedAdmin } from "@dyrected/next/admin";
-import { AuditBadge } from "@/components/AuditBadge";
-
-export default function AdminPage() {
-  return (
-    <DyrectedAdmin
-      components={{
-        AuditBadge,
-      }}
-    />
-  );
-}
-```
-
-</Tab>
-<Tab value="Nuxt / Vue">
-
-```vue
-<!-- 1. Define your Vue component (components/AuditBadge.vue) -->
-<script setup lang="ts">
-const props = withDefaults(
-  defineProps<{
-    doc: Record<string, any>;
-    tone?: string;
-  }>(),
-  {
-    tone: "info",
-  },
-);
-</script>
-
-<template>
-  <div
-    :class="[
-      'p-3 rounded border text-sm',
-      props.tone === 'success'
-        ? 'bg-green-50 text-green-800 border-green-200'
-        : 'bg-blue-50 text-blue-800 border-blue-200',
-    ]"
-  >
-    <strong>Audit Status:</strong>
-    {{ props.doc.verified ? "Verified Record" : "Pending Verification" }}
-  </div>
-</template>
-```
-
-```vue
-<!-- 2. Pass it to DyrectedAdmin (pages/admin/[...admin].vue) -->
-<script setup lang="ts">
-import "@dyrected/admin/styles";
-import AuditBadge from "~/components/AuditBadge.vue";
-
-const customComponents = {
-  AuditBadge,
-};
-</script>
-
-<template>
-  <DyrectedAdmin :components="customComponents" />
-</template>
-```
-
-</Tab>
-</Tabs>
-
-</Step>
-</Steps>
-
-Your component receives the current `doc`, the logged-in `user`, and any custom `props` passed in `options.props`.
-
-<SelfHostedOnly>
-
-For **self-hosted, React-based projects** running the admin directly in the application runtime, you can also provide an inline `render` function:
-
-```tsx
-displayCustom("InlineAudit", {
+displayCustom("CustomerAnalyticsChart", {
   span: 12,
-  render: ({ doc }) => <span className="text-xs text-muted-foreground">Last audited record ID: {doc.id}</span>,
-});
+  props: { period: "30d" },
+})
 ```
 
-</SelfHostedOnly>
-
-`displayCustomComponent()` is available as an alias for `displayCustom()`. For a deeper guide on creating and registering admin components, see [Custom Components](/docs/editor-experience/custom-components/overview).
+---
 
 ## Conditionally show items with `visible`
 
-Every detail item (sections, tabs, grids, repeats, individual fields, computed cards, text, dividers, and custom components) accepts an optional `visible` condition.
-
-`visible` can be:
-
-- A **boolean**: `visible: false` hides the item unconditionally.
-- A **JEXL expression**: evaluated against `{ doc, user }`. Supports built-in helpers like `includes()`, logical operators (`and`, `or`, `&&`, `||`), comparisons, and math.
+Every detail item supports a `visible` condition, which can be a boolean or a JEXL expression evaluated against `{ doc, user }`:
 
 ```ts
 displaySection(
-  "Internal Review",
+  "Financial Summary",
   [
-    displayField("publicNotes", { span: 12 }),
-    // Hide a nested field unless user has admin role
-    displayField("internalNotes", {
-      span: 12,
+    displayField("totalRevenue", { span: 6, display: "currency" }),
+    displayField("auditNotes", {
+      span: 6,
       visible: "user.roles != null and includes(user.roles, 'admin')",
     }),
-    // Hide a field unconditionally
-    displayField("legacyId", { visible: false }),
   ],
   {
     span: 12,
-    // Hide the entire section if the document is still a draft
-    visible: "doc.status != 'draft'",
+    visible: "doc.status == 'published'",
   },
 );
 ```
 
-Visibility rules evaluate recursively for both top-level containers and nested items inside sections, tabs, grids, and repeated rows. When a container's `visible` rule evaluates to false (or all child items inside it are hidden), it is cleanly omitted from the Detail View.
+---
 
-## Quick reference
+## Complete Helper & Options Reference
 
-| Helper                                                 | Purpose                                    | Common options                                                                                   |
-| ------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `displayField(fieldName, options)`                     | Show a document field or dotted path       | `label`, `hideLabel`, `span`, `display`, `format`, `currency`, `emptyText`, `visible`            |
-| `displaySection(title, items, options)`                | Group related detail items                 | `span`, `description`, `icon`, `collapsible`, `collapsedByDefault`, `visible`                    |
-| `displayTabs(tabs, options)`                           | Split complex documents into tabbed panels | `span`, `defaultTab`, `visible`                                                                  |
-| `displayTab(label, items, options)`                    | Define one tab inside `displayTabs()`      | `icon`, `badge`, `badgeColor`, `visible`                                                         |
-| `displayGrid(columns, items, options)`                 | Arrange related values in a compact grid   | `span`, `visible`                                                                                |
-| `displayRepeat(fieldName, items, options)`             | Render array-like data                     | `layout`, `emptyText`, `span`, `useAsTitle`, `titleField`, `title`, `icon`, `columns`, `visible` |
-| `displayComputed(label, expressionOrHandler, options)` | Show a derived value                       | `id`, `expression`, `handler`, `span`, `format`, `currency`, `visible`                           |
-| `displayText(content, options)`                        | Add explanatory text or a callout          | `span`, `variant`, `className`, `visible`                                                        |
-| `displayDivider(options)`                              | Add a horizontal separator                 | `span`, `spacing`, `visible`                                                                     |
-| `displayCustom(name, options)`                         | Render a registered admin component        | `span`, `props`, `render`, `visible`                                                             |
+### 1. `displayField(fieldName, options?)`
 
-## Recommended path
+Declares an individual field to render in the Detail View. It supports raw fields, nested dotted paths (e.g. `'author.name'`), and virtual/computed fields.
 
-Start with the generated Detail View and only add a custom `detail` schema when editors need a clearer read-first summary. Use sections first, add display variants for values that should scan quickly, then add computed values and repeat layouts when the document needs dashboard-style review.
+```ts
+import { displayField } from "@dyrected/core";
 
-If the document is usually edited immediately, use `detail: false`. If the document is dense, high-impact, or reviewed more often than edited, build a Detail View and link editors to the full edit form only when they need to make a change.
+displayField("status", {
+  label: "Publication Status",
+  display: "badge",
+  badgeColors: {
+    published: "emerald",
+    draft: "zinc",
+    archived: "rose",
+  },
+  editable: true,
+});
+```
+
+#### `DisplayFieldOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `label` | `string` | Schema field label | Custom label overriding the field's schema label. |
+| `hideLabel` | `boolean` | `false` | When `true`, hides the field label entirely and renders only the value. |
+| `tooltip` | `string` | `undefined` | Informational tooltip shown next to the label. |
+| `span` | `1–12` | Row fraction | Grid column span across the 12-column grid. |
+| `display` | `DisplayVariant` | Field type fallback | Specific visual representation (see Display Variants below). |
+| `format` | `string` | `undefined` | Preset format: `'currency'`, `'date'`, `'datetime'`, `'relative'`, `'number'`, `'percent'`. |
+| `currency` | `string` | `'USD'` | ISO currency code (e.g., `'USD'`, `'EUR'`, `'GBP'`) when `display: 'currency'`. |
+| `badgeColors` | `Record<string, string>` | `undefined` | Color mapping for badge values. Supports named palettes (`emerald`, `amber`, `rose`, `blue`, etc.), hex codes (`#10b981`), Tailwind classes, and wildcards (`*`). |
+| `editable` | `boolean` | `false` | When `true`, enables an inline edit button directly in the detail view with save/cancel controls. |
+| `keyLabel` | `string` | `'Key'` | Column header for object keys when `display: 'key-value'`. |
+| `valueLabel` | `string` | `'Value'` | Column header for object values when `display: 'key-value'`. |
+| `emptyText` | `string` | `'-'` | Custom placeholder text when the field value is null, undefined, or empty. |
+| `hideIfEmpty` | `boolean` | `false` | When `true`, hides this entire field item if the value is null, empty string, or empty array. |
+| `visible` | `boolean \| string` | `true` | Visibility condition. Can be a boolean or a JEXL expression evaluated against `{ doc, user }`. |
+
+#### Supported `display` Variants:
+
+* **Text & Code**: `'text'`, `'copyable'` (adds one-click copy button), `'code'` (fenced syntax block), `'code-badge'` (inline monospace pill).
+* **Badges & Tags**: `'badge'` (colored status badge), `'badges'` / `'tags'` (array of badge pills).
+* **Numbers & Metrics**: `'currency'`, `'percent'`, `'progress'` (visual percentage bar), `'star'` / `'star-rating'` (visual rating stars).
+* **Dates & Times**: `'date'`, `'datetime'`, `'time'`, `'relative'` (e.g. "3 days ago").
+* **Links & Communication**: `'link'` / `'url'` (clickable external link), `'email'` (`mailto:` link), `'phone'` (`tel:` link).
+* **Media & Colors**: `'image'`, `'avatar'` (circular photo), `'color'` (swatch + hex), `'color-swatches'` (palette array), `'icon'` (Lucide icon).
+* **Structured Data**: `'key-value'` (2-column table for JSON/key-value objects), `'json'` (syntax formatted object preview).
+
+---
+
+### 2. `displaySection(title, items, options?)`
+
+Groups fields and sub-components into a structured card container with a header, icon, and optional badge.
+
+```ts
+import { displaySection, displayField } from "@dyrected/core";
+
+displaySection("Inventory & Pricing", [
+  displayField("sku", { span: 4, display: "copyable" }),
+  displayField("price", { span: 4, display: "currency" }),
+  displayField("stock", { span: 4, editable: true }),
+], {
+  icon: "Package",
+  badge: "In Stock",
+  badgeColor: "emerald",
+  collapsible: true,
+  columns: 12,
+});
+```
+
+#### `DetailSectionOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `icon` | `string` | `undefined` | Lucide icon name displayed in the section header (e.g. `'Package'`, `'User'`, `'Settings'`). |
+| `badge` | `string` | `undefined` | Text badge displayed beside the section title. |
+| `badgeColor` | `string` | `undefined` | Color palette name or hex code for the section badge. |
+| `description` | `string` | `undefined` | Subtitle description displayed beneath the section title. |
+| `span` | `1–12` | `12` | Grid width on the main layout. |
+| `columns` | `number` | `12` | Internal grid column count for child items. |
+| `collapsible` | `boolean` | `false` | When `true`, allows users to collapse and expand the section. |
+| `collapsedByDefault` | `boolean` | `false` | Starts the section in collapsed state when `collapsible` is enabled. |
+| `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
+
+---
+
+### 3. `displayTabs(tabs, options?)` & `displayTab(label, items, options?)`
+
+Creates a tabbed navigation container to organize deep or multi-faceted records without cluttering the screen.
+
+```ts
+import { displayTabs, displayTab, displayField, displayRepeat } from "@dyrected/core";
+
+displayTabs([
+  displayTab("Overview", [
+    displayField("description"),
+    displayField("features"),
+  ], { icon: "FileText" }),
+
+  displayTab("Orders", [
+    displayRepeat("orders", [
+      displayField("orderNumber"),
+      displayField("total", { display: "currency" }),
+    ], { layout: "table" }),
+  ], { icon: "ShoppingCart", badge: "12", badgeColor: "blue" }),
+], { span: 12, defaultTab: "Overview" });
+```
+
+#### `DetailTabsOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `span` | `1–12` | `12` | Width of the tabs container. |
+| `defaultTab` | `string` | First tab label | Label of the tab that should be active on initial render. |
+| `visible` | `boolean \| string` | `true` | Visibility condition for the entire tabs container. |
+
+#### `DetailTabOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `icon` | `string` | `undefined` | Lucide icon name displayed inside the tab trigger. |
+| `badge` | `string` | `undefined` | Counter or status badge rendered next to the tab label (e.g., `'5'` or `'New'`). |
+| `badgeColor` | `string` | `undefined` | Color palette name or hex code for the tab badge. |
+| `visible` | `boolean \| string` | `true` | Visibility condition for this specific tab. |
+
+---
+
+### 4. `displayGrid(columns, items, options?)`
+
+Creates a balanced multi-column sub-grid inside sections or tabs.
+
+```ts
+import { displayGrid, displayField } from "@dyrected/core";
+
+displayGrid(3, [
+  displayField("city"),
+  displayField("state"),
+  displayField("postalCode"),
+], { span: 12 });
+```
+
+#### `DetailGridOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `span` | `1–12` | `12` | Grid width of the sub-grid container in the surrounding layout. |
+| `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
+
+---
+
+### 5. `displayRepeat(fieldName, items, options?)`
+
+Renders array fields, line items, or sub-documents using `'table'`, `'cards'`, or `'list'` layouts.
+
+```ts
+import { displayRepeat, displayField } from "@dyrected/core";
+
+displayRepeat("orderItems", [
+  displayField("productName", { span: 6 }),
+  displayField("quantity", { span: 3 }),
+  displayField("unitPrice", { span: 3, display: "currency" }),
+], {
+  layout: "cards",
+  columns: 3,
+  useAsTitle: "productName",
+  emptyText: "No items in this order",
+});
+```
+
+#### `DetailRepeatOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `layout` | `'table' \| 'cards' \| 'list'` | `'table'` | Layout style: compact table, grid cards, or vertical list. |
+| `columns` | `1 \| 2 \| 3 \| 4` | `3` | Column count when `layout: 'cards'`. |
+| `useAsTitle` / `titleField` | `string` | `undefined` | Field name in each row to use as the card header title (e.g. `'productName'`). |
+| `title` | `string` | `undefined` | Static prefix or template for card headers (e.g. `'Item #{index}'`). |
+| `icon` | `string` | `undefined` | Icon displayed in repeated card headers. |
+| `emptyText` | `string` | `'-'` | Message shown when the array is empty. |
+| `span` | `1–12` | `12` | Width of the repeated container. |
+| `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
+
+---
+
+### 6. `displayComputed(label, expressionOrHandler, options?)`
+
+Calculates live metrics, summaries, or KPI cards derived from `{ doc, user, db }` using JEXL expressions or async functions.
+
+```ts
+import { displayComputed } from "@dyrected/core";
+
+// JEXL string expression
+displayComputed("Estimated Reading Time", 'math.ceil(doc.wordCount / 200) + " min"', {
+  span: 4,
+});
+
+// Function handler with currency formatting
+displayComputed("Grand Total", ({ doc }) => doc.subtotal + doc.tax, {
+  span: 4,
+  format: "currency",
+  currency: "USD",
+});
+```
+
+#### `DetailComputedOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `string` | Slugified label | Unique identifier for the computed property. |
+| `expression` | `string` | `undefined` | JEXL evaluation string (e.g. `'doc.price * doc.quantity'`). |
+| `handler` | `ComputedHandler` | `undefined` | Function receiving `{ doc, user, db }` returning a value or Promise. |
+| `format` | `string` | `undefined` | Formatting preset (`'currency'`, `'percent'`, `'number'`, `'date'`). |
+| `currency` | `string` | `'USD'` | Currency code when `format: 'currency'`. |
+| `span` | `1–12` | `12` | Grid width for the KPI card. |
+| `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
+
+---
+
+### 7. `displayText(content, options?)`
+
+Renders descriptive copy, instructions, section headings, or warning callouts.
+
+```ts
+import { displayText } from "@dyrected/core";
+
+displayText("Changes to this customer tier will affect monthly billing immediately.", {
+  variant: "warning",
+  span: 12,
+});
+```
+
+#### `DetailTextOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `variant` | `string` | `'body'` | Typography and alert styling variant (`'body'`, `'heading'`, `'subheading'`, `'muted'`, `'caption'`, `'callout'`, `'info'`, `'warning'`). |
+| `className` | `string` | `undefined` | Custom CSS / Tailwind classes applied to the text wrapper. |
+| `span` | `1–12` | `12` | Grid width in the 12-column layout. |
+| `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
+
+---
+
+### 8. `displayDivider(options?)`
+
+Adds horizontal divider lines to visually separate content blocks.
+
+```ts
+import { displayDivider } from "@dyrected/core";
+
+displayDivider({ spacing: "lg" });
+```
+
+#### `DetailDividerOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `spacing` | `'none' \| 'sm' \| 'md' \| 'lg'` | `'md'` | Vertical margin spacing around the divider line. |
+| `span` | `1–12` | `12` | Grid span in the surrounding layout. |
+| `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
+
+---
+
+### 9. `displayCustom(name, options?)` / `displayCustomComponent(name, options?)`
+
+Mounts a custom React component registered into the Admin UI via component slots.
+
+```ts
+import { displayCustom } from "@dyrected/core";
+
+displayCustom("RevenueChart", {
+  props: { timeframe: "30d", showLegend: true },
+  span: 12,
+});
+```
+
+#### `DetailCustomOptions`
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `props` | `Record<string, any>` | `undefined` | Static or initial props passed into the custom component. |
+| `render` | `(ctx) => ReactNode` | `undefined` | Inline render function receiving `{ doc, user }` (Self-hosted React runtimes). |
+| `span` | `1–12` | `12` | Grid span in the 12-column layout. |
+| `visible` | `boolean \| string` | `true` | Visibility condition (boolean or JEXL expression). |
+

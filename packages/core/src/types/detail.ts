@@ -46,6 +46,11 @@ export interface DisplayFieldOptions {
   emptyText?: string;
   hideIfEmpty?: boolean;
   /**
+   * When true, allows inline editing of this field in the Detail View
+   * via an interactive toggle.
+   */
+  editable?: boolean;
+  /**
    * Visibility condition for this field item.
    * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.
    * When false or evaluating to falsy, this item is hidden in the Detail View.
@@ -64,6 +69,8 @@ export interface DetailField {
 
 export interface DetailSectionOptions {
   icon?: string;
+  badge?: string;
+  badgeColor?: string;
   description?: string;
   span?: DetailSpan;
   columns?: number;

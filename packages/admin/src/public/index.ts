@@ -119,3 +119,11 @@ export { useMediaLibrary } from "../hooks/use-media-library";
 export { useMediaUpload } from "../hooks/use-media-upload";
 export { useMediaURL } from "../hooks/use-media-url";
 export { useAddMediaFromUrl } from "../hooks/use-add-media-from-url";
+export {
+  resolveBadgePresentation,
+  BADGE_COLOR_PALETTES,
+} from "../lib/badge-colors";
+export type {
+  BadgePresentation,
+  ResolveBadgePresentationOptions,
+} from "../lib/badge-colors";
