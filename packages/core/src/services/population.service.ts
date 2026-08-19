@@ -94,15 +94,22 @@ export class PopulationService {
       if (!field.name) continue;
       const value = populatedDoc[field.name];
 
-      // Handle Relationship Fields
-      if (field.type === "relationship" && field.relationTo && value) {
+      // Handle Relationship & Upload Fields
+      const fieldType = field.type as string;
+      const isRelationship = fieldType === "relationship";
+      const isUpload = fieldType === "upload" || fieldType === "image" || fieldType === "media";
+      const targetRelationTo =
+        field.relationTo ||
+        (isUpload ? this.collections.find((c) => c.upload)?.slug || "media" : undefined);
+
+      if ((isRelationship || isUpload) && targetRelationTo && value) {
         const relatedCollection = this.collections.find(
-          (c) => c.slug === field.relationTo,
+          (c) => c.slug === targetRelationTo,
         );
         if (!relatedCollection) continue;
 
         if (Array.isArray(value)) {
-          // Multi-relationship
+          // Multi-relationship / Multi-upload
           populatedDoc[field.name] = await Promise.all(
             value.map(async (id: any) => {
               if (!id) return id;
@@ -110,7 +117,7 @@ export class PopulationService {
               let doc = id;
               if (typeof id === "string") {
                 doc = await this.db.findOne({
-                  collection: field.relationTo!,
+                  collection: targetRelationTo!,
                   id,
                 });
               }
@@ -130,11 +137,11 @@ export class PopulationService {
             }),
           );
         } else if (value) {
-          // Single relationship
+          // Single relationship / Single upload
           let doc = value;
           if (typeof value === "string") {
             doc = await this.db.findOne({
-              collection: field.relationTo,
+              collection: targetRelationTo,
               id: value,
             });
           }

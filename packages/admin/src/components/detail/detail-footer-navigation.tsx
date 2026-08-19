@@ -31,7 +31,7 @@ export function DetailFooterNavigation({
       {prevDoc ? (
         <button
           type="button"
-          onClick={() => navigate(`/collections/${slug}/${prevDoc.id}/detail`)}
+          onClick={() => navigate(`/collections/${slug}/${prevDoc.id}`)}
           className="dy-group dy-flex dy-flex-col dy-items-start dy-gap-1 dy-p-4 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-card hover:dy-bg-muted/30 hover:dy-border-border/90 dy-transition-all dy-text-left dy-shadow-xs"
         >
           <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-[11px] dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground group-hover:dy-text-primary dy-transition-colors">
@@ -50,7 +50,7 @@ export function DetailFooterNavigation({
       {nextDoc ? (
         <button
           type="button"
-          onClick={() => navigate(`/collections/${slug}/${nextDoc.id}/detail`)}
+          onClick={() => navigate(`/collections/${slug}/${nextDoc.id}`)}
           className="dy-group dy-flex dy-flex-col dy-items-end dy-gap-1 dy-p-4 dy-rounded-2xl dy-border dy-border-border/60 dy-bg-card hover:dy-bg-muted/30 hover:dy-border-border/90 dy-transition-all dy-text-right dy-shadow-xs sm:dy-ml-auto dy-w-full"
         >
           <div className="dy-flex dy-items-center dy-gap-1.5 dy-text-[11px] dy-font-semibold dy-uppercase dy-tracking-wider dy-text-muted-foreground group-hover:dy-text-primary dy-transition-colors">

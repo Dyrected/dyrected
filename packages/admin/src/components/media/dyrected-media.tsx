@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from "react"
+import React, { useContext } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { ExternalLink, FileText, Download } from "lucide-react"
 import { cn, getMediaUrl } from "../../lib/utils"
 import { getMediaPreviewUrl, getVideoEmbedUrl } from "../../lib/external-media"
+import { DyrectedContext } from "../../providers/dyrected-context"
 
 export type MediaKind = "avatar" | "image" | "video" | "audio" | "file"
 
@@ -69,64 +71,64 @@ export function isMediaValue(val: any, fieldDef?: any, schemas?: any): boolean {
     ) {
       return true
     }
-  } else if (typeof val === "string") {
-    if (val.match(/\.(jpg|jpeg|png|gif|webp|avif|svg|bmp|ico|heic|tiff|mp4|webm|ogg|mov|m4v|mp3|wav|pdf|docx?|xlsx?|zip|csv)(\?.*)?$/i)) {
-      return true
-    }
-    if (val.startsWith("/uploads/") || val.startsWith("/api/media/") || val.startsWith("/media/")) {
-      return true
-    }
+  }
+
+  // Check file extension on string
+  if (typeof val === "string") {
+    const clean = val.split("?")[0].toLowerCase()
+    return /\.(jpg|jpeg|png|gif|webp|avif|svg|mp4|webm|mov|ogg|mp3|wav|pdf|docx?|xlsx?|csv|zip|tar|gz)$/.test(
+      clean
+    )
   }
 
   return false
 }
 
 /**
- * Resolves the kind of media asset from its properties and context.
+ * Classifies media into its visual representation kind.
  */
-export function resolveMediaKind(media: any, fieldDef?: any, forcedVariant?: string): MediaKind {
-  if (forcedVariant && forcedVariant !== "auto") {
-    if (forcedVariant === "avatar") return "avatar"
-    if (forcedVariant === "image" || forcedVariant === "thumbnail" || forcedVariant === "card") return "image"
-    if (forcedVariant === "video") return "video"
-    if (forcedVariant === "audio") return "audio"
-    if (forcedVariant === "file") return "file"
+export function resolveMediaKind(
+  media: any,
+  fieldDef?: any,
+  forcedVariant?: "auto" | "avatar" | "image" | "video" | "audio" | "card" | "thumbnail" | "file"
+): MediaKind {
+  if (forcedVariant && forcedVariant !== "auto" && forcedVariant !== "card" && forcedVariant !== "thumbnail") {
+    return forcedVariant
   }
 
   const rawUrl = typeof media === "string" ? media : media?.url || media?.src || media?.path || media?.filename || ""
-  const filename = typeof media === "object" ? media?.filename || media?.name || media?.title || media?.alt || "" : (typeof media === "string" ? media.split("/").pop()?.split("?")[0] || "" : "")
-  const mimeType = typeof media === "object" ? media?.mimeType || media?.contentType || media?.type || "" : ""
+  const filename = typeof media === "object" ? media?.filename || media?.name || media?.title || media?.alt || "" : rawUrl
+  const mimeType = typeof media === "object" ? String(media?.mimeType || media?.contentType || "").toLowerCase() : ""
   const fieldName = String(fieldDef?.name || "").toLowerCase()
 
   // 1. Avatar heuristics
-  if (fieldName.includes("avatar") || forcedVariant === "avatar") {
+  if (
+    fieldDef?.display === "avatar" ||
+    fieldName.includes("avatar") ||
+    (fieldName === "photo" && !rawUrl.includes("banner") && !rawUrl.includes("cover"))
+  ) {
     return "avatar"
   }
 
-  // 2. Video heuristics (YouTube, Vimeo, video/* mimeType, video extensions)
+  // 2. Video heuristics (mimeType video/*, youtube/vimeo regex, or .mp4/.webm/.mov)
   if (
     mimeType.startsWith("video/") ||
-    mimeType === "video" ||
     mimeType === "video/youtube" ||
     mimeType === "video/vimeo" ||
-    mimeType === "video/external" ||
     fieldDef?.type === "video" ||
-    fieldName.includes("video") ||
-    /\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(rawUrl) ||
-    /\.(mp4|webm|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(filename) ||
-    Boolean(getVideoEmbedUrl(media))
+    getVideoEmbedUrl(media) !== null ||
+    /\.(mp4|webm|mov|ogv|m4v)(\?.*)?$/i.test(rawUrl) ||
+    /\.(mp4|webm|mov|ogv|m4v)(\?.*)?$/i.test(filename)
   ) {
     return "video"
   }
 
-  // 3. Audio heuristics
+  // 3. Audio heuristics (mimeType audio/* or .mp3/.wav/.ogg)
   if (
     mimeType.startsWith("audio/") ||
-    mimeType === "audio" ||
     fieldDef?.type === "audio" ||
-    fieldName.includes("audio") ||
-    /\.(mp3|wav|ogg|aac|flac|m4a)(\?.*)?$/i.test(rawUrl) ||
-    /\.(mp3|wav|ogg|aac|flac|m4a)(\?.*)?$/i.test(filename)
+    /\.(mp3|wav|ogg|aac|m4a|flac)(\?.*)?$/i.test(rawUrl) ||
+    /\.(mp3|wav|ogg|aac|m4a|flac)(\?.*)?$/i.test(filename)
   ) {
     return "audio"
   }
@@ -170,16 +172,46 @@ export function DyrectedMedia({
   fieldDef,
   ...props
 }: DyrectedMediaProps) {
-  if (!media) return fallback ? <>{fallback}</> : null
+  const dyContext = useContext(DyrectedContext)
+  const effectiveBaseUrl = baseUrl || dyContext?.client?.getBaseUrl?.() || ""
 
-  const rawUrl = typeof media === "string" ? media : media?.url || media?.src || media?.path || media?.filename || ""
-  const filename = typeof media === "object" ? media?.filename || media?.name || media?.title || media?.alt || "" : (typeof media === "string" ? media.split("/").pop()?.split("?")[0] || "" : "")
-  const mimeType = typeof media === "object" ? media?.mimeType || media?.contentType || media?.type || "" : ""
+  const isBareId =
+    typeof media === "string" &&
+    !media.includes("/") &&
+    !/\.[a-z0-9]+($|\?)/i.test(media) &&
+    media.trim().length > 0 &&
+    !media.startsWith("http") &&
+    !media.startsWith("blob:") &&
+    !media.startsWith("data:")
 
-  const previewUrl = getMediaPreviewUrl(media, baseUrl) || getMediaUrl(media, baseUrl) || (rawUrl.startsWith("http") || rawUrl.startsWith("/") ? rawUrl : (baseUrl && rawUrl ? `${baseUrl.replace(/\/$/, "")}/api/media/${rawUrl}` : rawUrl))
-  const embedUrl = getVideoEmbedUrl(media)
+  const targetColSlug = fieldDef?.relationTo || "media"
 
-  const kind = resolveMediaKind(media, fieldDef, variant)
+  const { data: fetchedMedia } = useQuery({
+    queryKey: ["media-item", targetColSlug, media],
+    queryFn: async () => {
+      if (!isBareId || !dyContext?.client) return null
+      try {
+        const item = await dyContext.client.collection(targetColSlug).findOne(media)
+        return item
+      } catch {
+        return null
+      }
+    },
+    enabled: Boolean(isBareId && dyContext?.client),
+    staleTime: 60_000,
+  })
+
+  const currentMedia = isBareId && fetchedMedia ? fetchedMedia : media
+  if (!currentMedia) return fallback ? <>{fallback}</> : null
+
+  const rawUrl = typeof currentMedia === "string" ? currentMedia : currentMedia?.url || currentMedia?.src || currentMedia?.path || currentMedia?.filename || ""
+  const filename = typeof currentMedia === "object" ? currentMedia?.filename || currentMedia?.name || currentMedia?.title || currentMedia?.alt || "" : (typeof currentMedia === "string" ? currentMedia.split("/").pop()?.split("?")[0] || "" : "")
+  const mimeType = typeof currentMedia === "object" ? currentMedia?.mimeType || currentMedia?.contentType || currentMedia?.type || "" : ""
+
+  const previewUrl = getMediaPreviewUrl(currentMedia, effectiveBaseUrl) || getMediaUrl(currentMedia, effectiveBaseUrl) || (rawUrl.startsWith("http") || rawUrl.startsWith("/") ? rawUrl : (effectiveBaseUrl && rawUrl ? `${effectiveBaseUrl.replace(/\/$/, "")}/api/media/${rawUrl}` : rawUrl))
+  const embedUrl = getVideoEmbedUrl(currentMedia)
+
+  const kind = resolveMediaKind(currentMedia, fieldDef, variant)
   const displayAlt = alt || filename || "Media asset"
 
   // 1. Avatar display
