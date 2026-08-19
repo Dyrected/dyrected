@@ -782,7 +782,7 @@ export function DetailFieldRenderer({
       return (
         <div className="dy-flex dy-flex-wrap dy-gap-1.5">
           {rawDocs.map((d: any, idx: number) => {
-            const itemTitle = resolveDocumentTitle(d, d.title || d.name || d.id || "Item")
+            const itemTitle = d?.title || d?.name || d?.label || d?.id || "Item"
             const itemUrl = targetCol && d?.id ? `#/collections/${targetCol}/${d.id}` : undefined
             if (itemUrl) {
               return (
