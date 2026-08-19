@@ -15,6 +15,21 @@
     "status": "classified"
   },
   {
+    "id": "deliver-content--displaying-content--rendering-media",
+    "relativePath": "deliver-content/displaying-content/rendering-media",
+    "title": "Rendering Media",
+    "description": "Display images, videos, audio, and files easily on your public website.",
+    "runtime": "shared",
+    "runtimeGroup": "",
+    "runtimeNotes": "",
+    "sectionPath": "deliver-content/displaying-content",
+    "sourceFile": "apps/docs/content/docs/deliver-content/displaying-content/rendering-media.mdx",
+    "urlCurrent": "https://docs.dyrected.com/docs/deliver-content/displaying-content/rendering-media",
+    "urlCloud": "https://docs.dyrected.com/docs/cloud/deliver-content/displaying-content/rendering-media",
+    "urlSelfHosted": "https://docs.dyrected.com/docs/self-hosted/deliver-content/displaying-content/rendering-media",
+    "status": "classified"
+  },
+  {
     "id": "deliver-content--rest-api--overview",
     "relativePath": "deliver-content/rest-api/overview",
     "title": "Overview",

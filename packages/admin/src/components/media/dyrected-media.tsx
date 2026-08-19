@@ -20,6 +20,11 @@ export interface DyrectedMediaProps extends Omit<React.HTMLAttributes<HTMLDivEle
   height?: number | string
   fieldDef?: any
   unstyled?: boolean
+  imageComponent?: React.ElementType
+  loading?: "lazy" | "eager"
+  aspectRatio?: string
+  objectFit?: "cover" | "contain" | "fill" | "scale-down"
+  align?: "left" | "center" | "right"
 }
 
 /**
@@ -171,7 +176,7 @@ export function resolveMediaKind(
  *   paddings, or forced background colors) must be strictly avoided or made opt-in so they 
  *   never break or conflict with the design system of the public website importing it.
  */
-export function DyrectedMedia({
+export const DyrectedMedia = React.forwardRef<HTMLDivElement, DyrectedMediaProps>(({
   media,
   baseUrl = "",
   alt,
@@ -182,10 +187,25 @@ export function DyrectedMedia({
   showDetails = true,
   fieldDef,
   unstyled = true,
+  imageComponent: ImageComponent,
+  loading = "lazy",
+  aspectRatio,
+  objectFit,
+  align,
+  width,
+  height,
   ...props
-}: DyrectedMediaProps) {
+}, ref) => {
   const dyContext = useContext(DyrectedContext)
   const effectiveBaseUrl = baseUrl || dyContext?.client?.getBaseUrl?.() || ""
+
+  const ImgOrCustom = ImageComponent || "img"
+  const mediaStyle: React.CSSProperties = {
+    ...(aspectRatio ? { aspectRatio } : {}),
+    ...(objectFit ? { objectFit } : {}),
+    ...(width ? { width } : {}),
+    ...(height ? { height } : {}),
+  }
 
   const isBareId =
     typeof media === "string" &&
@@ -237,18 +257,22 @@ export function DyrectedMedia({
   if (kind === "avatar") {
     return (
       <div
+        ref={ref}
         className={cn(
           unstyled
             ? "dy-relative"
             : "dy-relative dy-h-16 dy-w-16 dy-rounded-full dy-overflow-hidden dy-border-2 dy-border-border/80 dy-bg-muted/40 dy-shadow-sm dy-shrink-0 dy-group/avatar",
+          align === "center" ? "dy-mx-auto" : align === "right" ? "dy-ml-auto" : "",
           className
         )}
         {...props}
       >
         {previewUrl ? (
-          <img
+          <ImgOrCustom
             src={previewUrl}
             alt={displayAlt}
+            loading={loading}
+            style={mediaStyle}
             className={cn(
               unstyled
                 ? "dy-w-full dy-h-full dy-object-cover"
@@ -269,12 +293,14 @@ export function DyrectedMedia({
   if (kind === "video") {
     if (embedUrl) {
       return (
-        <div className={cn(unstyled ? "" : "dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
+        <div ref={ref} className={cn(unstyled ? "" : "dy-space-y-2 dy-w-full dy-max-w-md", align === "center" ? "dy-mx-auto dy-flex dy-flex-col dy-items-center" : align === "right" ? "dy-ml-auto dy-flex dy-flex-col dy-items-end" : "", className)} {...props}>
           <div className={cn(unstyled ? "dy-relative dy-w-full dy-pt-[56.25%]" : "dy-relative dy-w-full dy-pt-[56.25%] dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/60 dy-bg-black")}>
             <iframe
               src={embedUrl}
               title={filename || "Video player"}
               className="dy-absolute dy-top-0 dy-left-0 dy-h-full dy-w-full dy-border-0"
+              style={mediaStyle}
+              loading={loading}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
@@ -285,10 +311,11 @@ export function DyrectedMedia({
     }
 
     return (
-      <div className={cn(unstyled ? "" : "dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
+      <div ref={ref} className={cn(unstyled ? "" : "dy-space-y-2 dy-w-full dy-max-w-md", align === "center" ? "dy-mx-auto dy-flex dy-flex-col dy-items-center" : align === "right" ? "dy-ml-auto dy-flex dy-flex-col dy-items-end" : "", className)} {...props}>
         <video
           src={previewUrl}
           controls
+          style={mediaStyle}
           className={cn(unstyled ? "dy-max-w-full dy-h-auto" : "dy-w-full dy-rounded-xl dy-border dy-border-border/60 dy-bg-black/90", imgClassName)}
         />
         {showDetails && filename && <p className={cn(unstyled ? "" : "dy-text-xs dy-text-muted-foreground dy-truncate")}>{filename}</p>}
@@ -299,8 +326,8 @@ export function DyrectedMedia({
   // 3. Audio display
   if (kind === "audio") {
     return (
-      <div className={cn(unstyled ? "" : "dy-space-y-1.5 dy-w-full dy-max-w-md", className)} {...props}>
-        <audio src={previewUrl} controls className={cn(unstyled ? "" : "dy-w-full")} />
+      <div ref={ref} className={cn(unstyled ? "" : "dy-space-y-1.5 dy-w-full dy-max-w-md", align === "center" ? "dy-mx-auto dy-flex dy-flex-col dy-items-center" : align === "right" ? "dy-ml-auto dy-flex dy-flex-col dy-items-end" : "", className)} {...props}>
+        <audio src={previewUrl} controls className={cn(unstyled ? "" : "dy-w-full")} style={{ width }} />
         {showDetails && filename && <p className={cn(unstyled ? "" : "dy-text-xs dy-text-muted-foreground dy-truncate")}>{filename}</p>}
       </div>
     )
@@ -311,16 +338,18 @@ export function DyrectedMedia({
     if (variant === "thumbnail") {
       return (
         <div
+          ref={ref}
           className={cn(
             unstyled
               ? ""
               : "dy-relative dy-h-12 dy-w-12 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0",
+            align === "center" ? "dy-mx-auto" : align === "right" ? "dy-ml-auto" : "",
             className
           )}
           {...props}
         >
           {previewUrl ? (
-            <img src={previewUrl} alt={displayAlt} className={cn(unstyled ? "dy-max-w-full dy-h-auto" : "dy-h-full dy-w-full dy-object-cover", imgClassName)} />
+            <ImgOrCustom src={previewUrl} alt={displayAlt} loading={loading} style={mediaStyle} className={cn(unstyled ? "dy-max-w-full dy-h-auto" : "dy-h-full dy-w-full dy-object-cover", imgClassName)} />
           ) : (
             <div className={cn(unstyled ? "" : "dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground")}>
               <FileText className={cn(unstyled ? "" : "dy-h-4 dy-w-4")} />
@@ -332,10 +361,12 @@ export function DyrectedMedia({
 
     return (
       <div
+        ref={ref}
         className={cn(
           unstyled
             ? "dy-flex dy-flex-col dy-gap-2"
             : "dy-flex dy-items-start dy-gap-3.5 dy-p-3 dy-bg-muted/20 dy-border dy-border-border/60 dy-rounded-xl dy-max-w-md dy-transition-all hover:dy-border-border hover:dy-bg-muted/30",
+          align === "center" ? "dy-mx-auto" : align === "right" ? "dy-ml-auto" : "",
           className
         )}
         {...props}
@@ -352,9 +383,11 @@ export function DyrectedMedia({
           title="Click to view full image"
         >
           {previewUrl ? (
-            <img
+            <ImgOrCustom
               src={previewUrl}
               alt={displayAlt}
+              loading={loading}
+              style={mediaStyle}
               className={cn(
                 unstyled
                   ? "dy-max-w-full dy-h-auto"
@@ -394,7 +427,7 @@ export function DyrectedMedia({
   // 5. Generic downloadable file
   if (unstyled) {
     return (
-      <div className={cn("dy-inline-flex", className)} {...props}>
+      <div ref={ref} className={cn("dy-inline-flex", align === "center" ? "dy-mx-auto" : align === "right" ? "dy-ml-auto" : "", className)} {...props}>
         <a href={previewUrl || "#"} target="_blank" rel="noopener noreferrer">
           {filename || "Download File"}
         </a>
@@ -403,7 +436,7 @@ export function DyrectedMedia({
   }
 
   return (
-    <div className={cn("dy-inline-flex", className)} {...props}>
+    <div ref={ref} className={cn("dy-inline-flex", align === "center" ? "dy-mx-auto" : align === "right" ? "dy-ml-auto" : "", className)} {...props}>
       <a
         href={previewUrl || "#"}
         target="_blank"
@@ -416,4 +449,4 @@ export function DyrectedMedia({
       </a>
     </div>
   )
-}
+})

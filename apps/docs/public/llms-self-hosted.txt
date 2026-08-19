@@ -13,6 +13,7 @@ This runtime framing is derived from the July 29, 2026 product-boundary and docs
 ## Documentation
 
 - [Overview](https://docs.dyrected.com/docs/self-hosted/deliver-content/displaying-content/overview): Render the content you fetch with Dyrected's framework components for React, Vue, Next, and Nuxt.
+- [Rendering Media](https://docs.dyrected.com/docs/self-hosted/deliver-content/displaying-content/rendering-media): Display images, videos, audio, and files easily on your public website.
 - [Overview](https://docs.dyrected.com/docs/self-hosted/deliver-content/rest-api/overview): Endpoint behavior, authentication, filtering, errors, OpenAPI access, and client code generation.
 - [Aggregating Statistics](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/aggregate): Compute counts, sums, averages, minimums, and maximums across a collection in a single database query without loading documents.
 - [Depth](https://docs.dyrected.com/docs/self-hosted/deliver-content/sdk-api/depth): Control how far Dyrected follows relationships and returns related documents instead of bare IDs.

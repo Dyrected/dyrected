@@ -59,7 +59,7 @@ function parseListItems(val: any): any[] {
       try {
         const parsed = JSON.parse(trimmed)
         if (Array.isArray(parsed)) return parsed
-      } catch { }
+      } catch { /* empty */ }
     }
     if (trimmed.includes(",") && !trimmed.startsWith("http") && !trimmed.startsWith("/")) {
       return trimmed.split(",").map((s) => s.trim()).filter(Boolean)
@@ -109,10 +109,10 @@ export function DetailRelationshipLink({
 
   const docTitle = targetDoc
     ? resolveDocumentTitle({
-        entry: targetDoc,
-        collection: targetCollection,
-        collections: schemas?.collections,
-      }) || targetDoc.title || targetDoc.name || targetDoc.email || String(targetDoc.id || id)
+      entry: targetDoc,
+      collection: targetCollection,
+      collections: schemas?.collections,
+    }) || targetDoc.title || targetDoc.name || targetDoc.email || String(targetDoc.id || id)
     : id
 
   const avatarVal = targetDoc
@@ -590,6 +590,11 @@ export function DetailFieldRenderer({
           variant={displayVariant}
           alt={label || undefined}
           fallback={<span className="dy-text-muted-foreground/60">{placeholder}</span>}
+          aspectRatio={options?.aspectRatio}
+          objectFit={options?.objectFit}
+          align={options?.align}
+          width={options?.width}
+          height={options?.height}
         />
       )
     }

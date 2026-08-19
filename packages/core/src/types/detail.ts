@@ -79,6 +79,16 @@ export interface DisplayFieldOptions {
    * @example `visible: false`
    */
   visible?: string | boolean;
+  /** Specific aspect ratio constraint for media (e.g., "16/9", "4/3", "1/1", "auto"). */
+  aspectRatio?: string;
+  /** CSS object-fit behavior for media ('cover', 'contain', 'fill', 'scale-down'). */
+  objectFit?: "cover" | "contain" | "fill" | "scale-down";
+  /** Media alignment ('left', 'center', 'right'). */
+  align?: "left" | "center" | "right";
+  /** Fixed pixel width or CSS dimension for media preview. */
+  width?: string | number;
+  /** Fixed pixel height or CSS dimension for media preview. */
+  height?: string | number;
 }
 
 /**

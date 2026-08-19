@@ -305,6 +305,7 @@ displayField("rating", { display: "star-rating", span: 6 });
 displayField("brandColor", { display: "color", span: 6 });
 displayField("palette", { display: "color-swatches", span: 12 });
 displayField("apiSecret", { display: "copyable", span: 6 });
+displayField("coverImage", { display: "image", aspectRatio: "16/9", objectFit: "cover", align: "center", span: 12 });
 ```
 
 ### Display variants overview
@@ -485,6 +486,11 @@ displayField("status", {
 | `emptyText` | `string` | `'-'` | Custom placeholder text when the field value is null, undefined, or empty. |
 | `hideIfEmpty` | `boolean` | `false` | When `true`, hides this entire field item if the value is null, empty string, or empty array. |
 | `visible` | `boolean \| string` | `true` | Visibility condition. Can be a boolean or a JEXL expression evaluated against `{ doc, user }`. |
+| `aspectRatio` | `string` | `undefined` | Aspect ratio constraint for media fields (`'16/9'`, `'4/3'`, `'1/1'`). |
+| `objectFit` | `string` | `undefined` | CSS object-fit behavior for media fields (`'cover'`, `'contain'`, `'fill'`, `'scale-down'`). |
+| `align` | `'left' \| 'center' \| 'right'` | `'left'` | Alignment of media or value within the container. |
+| `width` | `number \| string` | `undefined` | Fixed width for media preview. |
+| `height` | `number \| string` | `undefined` | Fixed height for media preview. |
 
 #### Supported `display` Variants:
 
@@ -1400,6 +1406,16 @@ export interface DisplayFieldOptions {
    * @example `visible: false`
    */
   visible?: string | boolean;
+  /** Specific aspect ratio constraint for media (e.g., "16/9", "4/3", "1/1", "auto"). */
+  aspectRatio?: string;
+  /** CSS object-fit behavior for media ('cover', 'contain', 'fill', 'scale-down'). */
+  objectFit?: "cover" | "contain" | "fill" | "scale-down";
+  /** Media alignment ('left', 'center', 'right'). */
+  align?: "left" | "center" | "right";
+  /** Fixed pixel width or CSS dimension for media preview. */
+  width?: string | number;
+  /** Fixed pixel height or CSS dimension for media preview. */
+  height?: string | number;
 }
 ```
 
@@ -1419,6 +1435,11 @@ export interface DisplayFieldOptions {
 | <code>hideIfEmpty</code> (optional) | When true, hides this entire field item if the value is null or empty. |
 | <code>editable</code> (optional) | When true, allows inline editing of this field in the Detail View via an interactive toggle. |
 | <code>visible</code> (optional) | Visibility condition for this field item. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. When false or evaluating to falsy, this item is hidden in the Detail View. |
+| <code>aspectRatio</code> (optional) | Specific aspect ratio constraint for media (e.g., "16/9", "4/3", "1/1", "auto"). |
+| <code>objectFit</code> (optional) | CSS object-fit behavior for media ('cover', 'contain', 'fill', 'scale-down'). |
+| <code>align</code> (optional) | Media alignment ('left', 'center', 'right'). |
+| <code>width</code> (optional) | Fixed pixel width or CSS dimension for media preview. |
+| <code>height</code> (optional) | Fixed pixel height or CSS dimension for media preview. |
 
 
 ## displayGrid

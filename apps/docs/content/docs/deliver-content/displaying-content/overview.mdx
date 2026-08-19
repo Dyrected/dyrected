@@ -17,7 +17,7 @@ import { DyrectedImage } from "@dyrected/react"; // or '@dyrected/next'
 <DyrectedImage media={post.coverImage} alt="Cover image" />;
 ```
 
-When the file might be something other than an image — a video, a YouTube link, or a downloadable document — reach for `DyrectedMedia`, which inspects the `mimeType` and renders the right element:
+When the file might be something other than an image — a video, a YouTube link, or a downloadable document — reach for `DyrectedMedia`, which inspects the `mimeType` and renders the right element. By default, it renders raw, unstyled HTML (`<img>`, `<video>`, `<audio>`, `<a>`) so it never conflicts with your own CSS or Tailwind setup:
 
 ```tsx
 import { DyrectedMedia } from "@dyrected/react";
@@ -26,6 +26,14 @@ import { DyrectedMedia } from "@dyrected/react";
 ```
 
 Both accept either the hydrated upload document or a plain URL string, so a bare `url` works too.
+
+If you pass a bare ID string instead of a populated document, `DyrectedMedia` will seamlessly fetch the media details from your Dyrected backend to render it correctly.
+
+If you are prototyping and want the opinionated, structured styling of the Dyrected Admin dashboard (such as borders, muted backgrounds, and hover effects), you can set the `unstyled` prop to `false`:
+
+```tsx
+<DyrectedMedia media={post.attachment} unstyled={false} />
+```
 
 ## Icons
 

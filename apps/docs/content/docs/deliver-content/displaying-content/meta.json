@@ -2,6 +2,7 @@
   "title": "Displaying Content",
   "runtimeDefault": "shared",
   "pages": [
-    "overview"
+    "overview",
+    "rendering-media"
   ]
 }

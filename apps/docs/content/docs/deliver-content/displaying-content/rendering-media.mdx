@@ -1,0 +1,88 @@
+---
+title: Rendering Media
+description: Display images, videos, audio, and files easily on your public website.
+---
+
+When building your public website or application, you need a reliable way to render assets uploaded to your Dyrected backend. 
+
+The `<DyrectedMedia />` component is a universal media renderer built specifically for this. It handles everything from images and avatars to YouTube embeds, audio files, and downloadable documents. 
+
+By default, the component is completely unstyled, ensuring it never conflicts with your own design system or Tailwind setup.
+
+## Basic Usage
+
+To display an asset, import the component and pass the media object or ID directly to the `media` prop. 
+
+```tsx
+import { DyrectedMedia } from '@dyrected/admin/components'
+
+export default function AuthorProfile({ author }) {
+  return (
+    <div className="author-card">
+      {/* Renders the uploaded avatar cleanly without opinionated borders */}
+      <DyrectedMedia media={author.avatar} variant="avatar" className="w-16 h-16 rounded-full" />
+      
+      <h2>{author.name}</h2>
+    </div>
+  )
+}
+```
+
+## How It Works
+
+When you pass a value to the `media` prop, the component automatically determines how to render it:
+
+1. **Populated Objects:** If you pass a fully populated media object, it reads the URL, mime-type, and filename to render the correct HTML tag (`<img>`, `<video>`, `<audio>`, etc.).
+2. **Unpopulated IDs:** If you pass a raw string ID, the component will seamlessly communicate with your Dyrected backend to fetch the media details automatically.
+
+## Component Props
+
+You can configure the component using the following props:
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `media` | `string \| object` | Required | The media ID or populated object. |
+| `variant` | `string` | `"auto"` | Forces a specific rendering style. Options: `"auto"`, `"avatar"`, `"image"`, `"video"`, `"audio"`, `"thumbnail"`, `"file"`. |
+| `unstyled` | `boolean` | `true` | When true, renders raw semantic HTML (`<img>`, `<video>`) without opinionated styles. |
+| `className` | `string` | | Classes applied to the outer wrapper element. |
+| `imgClassName` | `string` | | Classes applied directly to the internal media element (e.g., the `<img>` or `<video>` tag). |
+| `imageComponent` | `React.ElementType` | | Custom image component (e.g. `Image` from `next/image`). |
+| `loading` | `"lazy" \| "eager"` | `"lazy"` | Native image and iframe loading behavior. |
+| `aspectRatio` | `string` | | Aspect ratio constraint applied to the media (e.g. `"16/9"`, `"1/1"`, `"4/3"`). |
+| `objectFit` | `string` | | Object-fit CSS behavior (`"cover"`, `"contain"`, `"fill"`, `"scale-down"`). |
+| `align` | `"left" \| "center" \| "right"` | | Alignment within the container (`"left"`, `"center"`, `"right"`). |
+| `width` | `number \| string` | | Fixed width constraint for the media. |
+| `height` | `number \| string` | | Fixed height constraint for the media. |
+| `fallback` | `React.ReactNode` | | Custom fallback element if media fails to resolve or is empty. |
+| `showDetails` | `boolean` | `true` | When false, suppresses filename and metadata text. |
+
+## Framework Image Optimization
+
+You can pass framework-specific image components like Next.js `next/image` to the `imageComponent` prop for automatic WebP conversion and responsive resizing:
+
+```tsx
+import Image from "next/image"
+import { DyrectedMedia } from "@dyrected/admin/components"
+
+<DyrectedMedia 
+  media={post.cover} 
+  imageComponent={Image}
+  width={800}
+  height={450}
+  aspectRatio="16/9"
+  objectFit="cover"
+/>
+```
+
+## Using Admin Styles
+
+While `<DyrectedMedia />` defaults to an unstyled state for consumer sites, it is the exact same component powering the Dyrected Admin dashboard. 
+
+If you want to quickly prototype and want the structured, opinionated styling of the Dyrected Admin interface (such as borders, muted backgrounds, and hover effects), you can set `unstyled={false}`.
+
+```tsx
+<DyrectedMedia 
+  media={heroImage} 
+  unstyled={false} 
+/>
+```

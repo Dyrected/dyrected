@@ -28,7 +28,7 @@ An [upload](https://docs.dyrected.com/docs/cloud/model-content/fields/image) fie
 <DyrectedImage media={post.coverImage} alt="Cover image" />;
 ```
 
-When the file might be something other than an image — a video, a YouTube link, or a downloadable document — reach for `DyrectedMedia`, which inspects the `mimeType` and renders the right element:
+When the file might be something other than an image — a video, a YouTube link, or a downloadable document — reach for `DyrectedMedia`, which inspects the `mimeType` and renders the right element. By default, it renders raw, unstyled HTML (`<img>`, `<video>`, `<audio>`, `<a>`) so it never conflicts with your own CSS or Tailwind setup:
 
 ```tsx
 
@@ -37,6 +37,14 @@ When the file might be something other than an image — a video, a YouTube link
 ```
 
 Both accept either the hydrated upload document or a plain URL string, so a bare `url` works too.
+
+If you pass a bare ID string instead of a populated document, `DyrectedMedia` will seamlessly fetch the media details from your Dyrected backend to render it correctly.
+
+If you are prototyping and want the opinionated, structured styling of the Dyrected Admin dashboard (such as borders, muted backgrounds, and hover effects), you can set the `unstyled` prop to `false`:
+
+```tsx
+<DyrectedMedia media={post.attachment} unstyled={false} />
+```
 
 ## Icons
 
@@ -95,6 +103,96 @@ In Vue you import from `@dyrected/vue`. In Nuxt, these are all auto-imported (wi
   <DyrectedRichText :content="post.body" />
   <DyrectedBlocks :items="page.body" :components="{ hero: Hero }" />
 </template>
+```
+
+---
+
+## Rendering Media
+
+Canonical URL: https://docs.dyrected.com/docs/cloud/deliver-content/displaying-content/rendering-media
+
+When building your public website or application, you need a reliable way to render assets uploaded to your Dyrected backend. 
+
+The `<DyrectedMedia />` component is a universal media renderer built specifically for this. It handles everything from images and avatars to YouTube embeds, audio files, and downloadable documents. 
+
+By default, the component is completely unstyled, ensuring it never conflicts with your own design system or Tailwind setup.
+
+## Basic Usage
+
+To display an asset, import the component and pass the media object or ID directly to the `media` prop. 
+
+```tsx
+
+
+export default function AuthorProfile({ author }) {
+  return (
+    <div className="author-card">
+      
+      <DyrectedMedia media={author.avatar} variant="avatar" className="w-16 h-16 rounded-full" />
+      
+      <h2>{author.name}</h2>
+    </div>
+  )
+}
+```
+
+## How It Works
+
+When you pass a value to the `media` prop, the component automatically determines how to render it:
+
+1. **Populated Objects:** If you pass a fully populated media object, it reads the URL, mime-type, and filename to render the correct HTML tag (`<img>`, `<video>`, `<audio>`, etc.).
+2. **Unpopulated IDs:** If you pass a raw string ID, the component will seamlessly communicate with your Dyrected backend to fetch the media details automatically.
+
+## Component Props
+
+You can configure the component using the following props:
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `media` | `string \| object` | Required | The media ID or populated object. |
+| `variant` | `string` | `"auto"` | Forces a specific rendering style. Options: `"auto"`, `"avatar"`, `"image"`, `"video"`, `"audio"`, `"thumbnail"`, `"file"`. |
+| `unstyled` | `boolean` | `true` | When true, renders raw semantic HTML (`<img>`, `<video>`) without opinionated styles. |
+| `className` | `string` | | Classes applied to the outer wrapper element. |
+| `imgClassName` | `string` | | Classes applied directly to the internal media element (e.g., the `<img>` or `<video>` tag). |
+| `imageComponent` | `React.ElementType` | | Custom image component (e.g. `Image` from `next/image`). |
+| `loading` | `"lazy" \| "eager"` | `"lazy"` | Native image and iframe loading behavior. |
+| `aspectRatio` | `string` | | Aspect ratio constraint applied to the media (e.g. `"16/9"`, `"1/1"`, `"4/3"`). |
+| `objectFit` | `string` | | Object-fit CSS behavior (`"cover"`, `"contain"`, `"fill"`, `"scale-down"`). |
+| `align` | `"left" \| "center" \| "right"` | | Alignment within the container (`"left"`, `"center"`, `"right"`). |
+| `width` | `number \| string` | | Fixed width constraint for the media. |
+| `height` | `number \| string` | | Fixed height constraint for the media. |
+| `fallback` | `React.ReactNode` | | Custom fallback element if media fails to resolve or is empty. |
+| `showDetails` | `boolean` | `true` | When false, suppresses filename and metadata text. |
+
+## Framework Image Optimization
+
+You can pass framework-specific image components like Next.js `next/image` to the `imageComponent` prop for automatic WebP conversion and responsive resizing:
+
+```tsx
+
+
+
+<DyrectedMedia 
+  media={post.cover} 
+  imageComponent={Image}
+  width={800}
+  height={450}
+  aspectRatio="16/9"
+  objectFit="cover"
+/>
+```
+
+## Using Admin Styles
+
+While `<DyrectedMedia />` defaults to an unstyled state for consumer sites, it is the exact same component powering the Dyrected Admin dashboard. 
+
+If you want to quickly prototype and want the structured, opinionated styling of the Dyrected Admin interface (such as borders, muted backgrounds, and hover effects), you can set `unstyled={false}`.
+
+```tsx
+<DyrectedMedia 
+  media={heroImage} 
+  unstyled={false} 
+/>
 ```
 
 ---
@@ -1954,6 +2052,7 @@ displayField("rating", { display: "star-rating", span: 6 });
 displayField("brandColor", { display: "color", span: 6 });
 displayField("palette", { display: "color-swatches", span: 12 });
 displayField("apiSecret", { display: "copyable", span: 6 });
+displayField("coverImage", { display: "image", aspectRatio: "16/9", objectFit: "cover", align: "center", span: 12 });
 ```
 
 ### Display variants overview
@@ -2114,6 +2213,11 @@ displayField("status", {
 | `emptyText` | `string` | `'-'` | Custom placeholder text when the field value is null, undefined, or empty. |
 | `hideIfEmpty` | `boolean` | `false` | When `true`, hides this entire field item if the value is null, empty string, or empty array. |
 | `visible` | `boolean \| string` | `true` | Visibility condition. Can be a boolean or a JEXL expression evaluated against `{ doc, user }`. |
+| `aspectRatio` | `string` | `undefined` | Aspect ratio constraint for media fields (`'16/9'`, `'4/3'`, `'1/1'`). |
+| `objectFit` | `string` | `undefined` | CSS object-fit behavior for media fields (`'cover'`, `'contain'`, `'fill'`, `'scale-down'`). |
+| `align` | `'left' \| 'center' \| 'right'` | `'left'` | Alignment of media or value within the container. |
+| `width` | `number \| string` | `undefined` | Fixed width for media preview. |
+| `height` | `number \| string` | `undefined` | Fixed height for media preview. |
 
 #### Supported `display` Variants:
 
@@ -3029,6 +3133,16 @@ export interface DisplayFieldOptions {
    * @example `visible: false`
    */
   visible?: string | boolean;
+  /** Specific aspect ratio constraint for media (e.g., "16/9", "4/3", "1/1", "auto"). */
+  aspectRatio?: string;
+  /** CSS object-fit behavior for media ('cover', 'contain', 'fill', 'scale-down'). */
+  objectFit?: "cover" | "contain" | "fill" | "scale-down";
+  /** Media alignment ('left', 'center', 'right'). */
+  align?: "left" | "center" | "right";
+  /** Fixed pixel width or CSS dimension for media preview. */
+  width?: string | number;
+  /** Fixed pixel height or CSS dimension for media preview. */
+  height?: string | number;
 }
 ```
 
@@ -3048,6 +3162,11 @@ export interface DisplayFieldOptions {
 | <code>hideIfEmpty</code> (optional) | When true, hides this entire field item if the value is null or empty. |
 | <code>editable</code> (optional) | When true, allows inline editing of this field in the Detail View via an interactive toggle. |
 | <code>visible</code> (optional) | Visibility condition for this field item. Can be a boolean or a JEXL expression evaluated against &#96;&#123; doc, user &#125;&#96;. When false or evaluating to falsy, this item is hidden in the Detail View. |
+| <code>aspectRatio</code> (optional) | Specific aspect ratio constraint for media (e.g., "16/9", "4/3", "1/1", "auto"). |
+| <code>objectFit</code> (optional) | CSS object-fit behavior for media ('cover', 'contain', 'fill', 'scale-down'). |
+| <code>align</code> (optional) | Media alignment ('left', 'center', 'right'). |
+| <code>width</code> (optional) | Fixed pixel width or CSS dimension for media preview. |
+| <code>height</code> (optional) | Fixed pixel height or CSS dimension for media preview. |
 
 
 ## displayGrid

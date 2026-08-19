@@ -1363,7 +1363,7 @@
     "category": "detail",
     "sourcePackage": "@dyrected/core",
     "description": "Configuration options for rendering a field in a Detail View.",
-    "signature": "export interface DisplayFieldOptions {\n  /** Custom label overriding the field's schema label. */\n  label?: string;\n  /** When true, hides the field label entirely and renders only the value. */\n  hideLabel?: boolean;\n  /** Informational tooltip shown next to the label. */\n  tooltip?: string;\n  /** Grid column span across the 12-column grid. */\n  span?: DetailSpan;\n  /** Specific visual representation variant (e.g. 'badge', 'currency', 'star', 'copyable'). */\n  display?: DisplayVariant;\n  /** Preset format for numbers, dates, and currencies ('currency', 'date', 'datetime', 'relative', 'number', 'percent'). */\n  format?: \"currency\" | \"date\" | \"datetime\" | \"relative\" | \"number\" | \"percent\" | string;\n  /** ISO currency code (e.g. 'USD', 'EUR') when display or format is 'currency'. */\n  currency?: string;\n  /** Color mapping for badge and tag values (named palette, hex color, Tailwind class, or wildcard). */\n  badgeColors?: Record<string, string>;\n  /** Column header for object keys when display is 'key-value'. */\n  keyLabel?: string;\n  /** Column header for object values when display is 'key-value'. */\n  valueLabel?: string;\n  /** Custom placeholder text when the field value is null, undefined, or empty. */\n  emptyText?: string;\n  /** When true, hides this entire field item if the value is null or empty. */\n  hideIfEmpty?: boolean;\n  /**\n   * When true, allows inline editing of this field in the Detail View\n   * via an interactive toggle.\n   */\n  editable?: boolean;\n  /**\n   * Visibility condition for this field item.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   * When false or evaluating to falsy, this item is hidden in the Detail View.\n   *\n   * @example `visible: \"doc.status == 'published'\"`\n   * @example `visible: false`\n   */\n  visible?: string | boolean;\n}",
+    "signature": "export interface DisplayFieldOptions {\n  /** Custom label overriding the field's schema label. */\n  label?: string;\n  /** When true, hides the field label entirely and renders only the value. */\n  hideLabel?: boolean;\n  /** Informational tooltip shown next to the label. */\n  tooltip?: string;\n  /** Grid column span across the 12-column grid. */\n  span?: DetailSpan;\n  /** Specific visual representation variant (e.g. 'badge', 'currency', 'star', 'copyable'). */\n  display?: DisplayVariant;\n  /** Preset format for numbers, dates, and currencies ('currency', 'date', 'datetime', 'relative', 'number', 'percent'). */\n  format?: \"currency\" | \"date\" | \"datetime\" | \"relative\" | \"number\" | \"percent\" | string;\n  /** ISO currency code (e.g. 'USD', 'EUR') when display or format is 'currency'. */\n  currency?: string;\n  /** Color mapping for badge and tag values (named palette, hex color, Tailwind class, or wildcard). */\n  badgeColors?: Record<string, string>;\n  /** Column header for object keys when display is 'key-value'. */\n  keyLabel?: string;\n  /** Column header for object values when display is 'key-value'. */\n  valueLabel?: string;\n  /** Custom placeholder text when the field value is null, undefined, or empty. */\n  emptyText?: string;\n  /** When true, hides this entire field item if the value is null or empty. */\n  hideIfEmpty?: boolean;\n  /**\n   * When true, allows inline editing of this field in the Detail View\n   * via an interactive toggle.\n   */\n  editable?: boolean;\n  /**\n   * Visibility condition for this field item.\n   * Can be a boolean or a JEXL expression evaluated against `{ doc, user }`.\n   * When false or evaluating to falsy, this item is hidden in the Detail View.\n   *\n   * @example `visible: \"doc.status == 'published'\"`\n   * @example `visible: false`\n   */\n  visible?: string | boolean;\n  /** Specific aspect ratio constraint for media (e.g., \"16/9\", \"4/3\", \"1/1\", \"auto\"). */\n  aspectRatio?: string;\n  /** CSS object-fit behavior for media ('cover', 'contain', 'fill', 'scale-down'). */\n  objectFit?: \"cover\" | \"contain\" | \"fill\" | \"scale-down\";\n  /** Media alignment ('left', 'center', 'right'). */\n  align?: \"left\" | \"center\" | \"right\";\n  /** Fixed pixel width or CSS dimension for media preview. */\n  width?: string | number;\n  /** Fixed pixel height or CSS dimension for media preview. */\n  height?: string | number;\n}",
     "members": [
       {
         "name": "label",
@@ -1434,6 +1434,31 @@
         "name": "visible",
         "signature": "visible?: string | boolean",
         "description": "Visibility condition for this field item.\nCan be a boolean or a JEXL expression evaluated against `{ doc, user }`.\nWhen false or evaluating to falsy, this item is hidden in the Detail View."
+      },
+      {
+        "name": "aspectRatio",
+        "signature": "aspectRatio?: string",
+        "description": "Specific aspect ratio constraint for media (e.g., \"16/9\", \"4/3\", \"1/1\", \"auto\")."
+      },
+      {
+        "name": "objectFit",
+        "signature": "objectFit?: \"cover\" | \"contain\" | \"fill\" | \"scale-down\"",
+        "description": "CSS object-fit behavior for media ('cover', 'contain', 'fill', 'scale-down')."
+      },
+      {
+        "name": "align",
+        "signature": "align?: \"left\" | \"center\" | \"right\"",
+        "description": "Media alignment ('left', 'center', 'right')."
+      },
+      {
+        "name": "width",
+        "signature": "width?: string | number",
+        "description": "Fixed pixel width or CSS dimension for media preview."
+      },
+      {
+        "name": "height",
+        "signature": "height?: string | number",
+        "description": "Fixed pixel height or CSS dimension for media preview."
       }
     ]
   },
