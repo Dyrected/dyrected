@@ -49,12 +49,41 @@ function humanizeLabel(fieldName: string): string {
 }
 
 /**
- * Parses JSON arrays or comma-delimited strings into a clean list of items.
+ * Parses JSON arrays, comma-delimited strings, or arrays containing stringified JSON into a clean list of items.
  */
 function parseListItems(val: any): any[] {
-  if (Array.isArray(val)) return val
+  if (val == null || val === "") return []
+
+  if (Array.isArray(val)) {
+    const result: any[] = []
+    for (const item of val) {
+      if (typeof item === "string") {
+        const trimmed = item.trim()
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          try {
+            const parsed = JSON.parse(trimmed)
+            if (Array.isArray(parsed)) {
+              result.push(...parsed)
+              continue
+            }
+          } catch { /* empty */ }
+        }
+      }
+      result.push(item)
+    }
+    return result
+  }
+
   if (typeof val === "string") {
-    const trimmed = val.trim()
+    let trimmed = val.trim()
+    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      try {
+        const unquoted = JSON.parse(trimmed)
+        if (typeof unquoted === "string") {
+          trimmed = unquoted.trim()
+        }
+      } catch { /* empty */ }
+    }
     if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
       try {
         const parsed = JSON.parse(trimmed)
@@ -62,10 +91,12 @@ function parseListItems(val: any): any[] {
       } catch { /* empty */ }
     }
     if (trimmed.includes(",") && !trimmed.startsWith("http") && !trimmed.startsWith("/")) {
-      return trimmed.split(",").map((s) => s.trim()).filter(Boolean)
+      return trimmed.split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean)
     }
+    return [trimmed]
   }
-  return val != null && val !== "" ? [val] : []
+
+  return [val]
 }
 
 /**
@@ -877,12 +908,12 @@ export function DetailFieldRenderer({
       return <span className="dy-text-muted-foreground/60">{placeholder}</span>
     }
 
-    const parsedList = parseListItems(val)
     if (
       fieldType === "multiSelect" ||
-      fieldName?.toLowerCase().includes("tag") ||
-      (parsedList.length > 0 && parsedList.every((item) => typeof item === "string" || typeof item === "number"))
+      (fieldName?.toLowerCase().includes("tag") && (Array.isArray(val) || (typeof val === "string" && (val.includes(",") || val.trim().startsWith("["))))) ||
+      options?.badgeColors
     ) {
+      const parsedList = parseListItems(val)
       if (parsedList.length === 0) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
       return (
         <div className="dy-flex dy-flex-wrap dy-gap-1.5">

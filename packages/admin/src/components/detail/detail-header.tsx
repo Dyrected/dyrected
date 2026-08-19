@@ -15,6 +15,7 @@ import { resolveDocumentTitle } from "../../lib/document-title"
 import { resolvePublishingStatus, resolveWorkflowState } from "../../lib/workflow-ui"
 import { getWorkflowBadgePresentation } from "../../lib/workflow-badge"
 import { resolvePreviewUrl } from "../../lib/preview-url"
+import { getSiteUrl } from "../../lib/utils"
 
 export interface DetailHeaderProps {
   collection: any
@@ -63,10 +64,11 @@ export function DetailHeader({
     ? getWorkflowBadgePresentation(workflowState.color)
     : null
 
+  const siteUrl = getSiteUrl(schemas?.admin?.siteUrl)
   const previewUrl = resolvePreviewUrl(
     collection?.admin?.previewUrl,
     doc,
-    schemas?.admin?.siteUrl || "",
+    siteUrl,
   )
 
   return (

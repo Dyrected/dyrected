@@ -1,6 +1,6 @@
 ---
-"@dyrected/core": minor
-"@dyrected/admin": minor
+"@dyrected/core": patch
+"@dyrected/admin": patch
 "@dyrected/knowledge": patch
 ---
 
