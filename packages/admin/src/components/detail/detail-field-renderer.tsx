@@ -2,6 +2,7 @@
 import * as React from "react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
   Copy,
@@ -45,6 +46,103 @@ function humanizeLabel(fieldName: string): string {
     .replace(/[-_.]/g, " ")
     .trim()
     .replace(/^./, (str) => str.toUpperCase())
+}
+
+/**
+ * Parses JSON arrays or comma-delimited strings into a clean list of items.
+ */
+function parseListItems(val: any): any[] {
+  if (Array.isArray(val)) return val
+  if (typeof val === "string") {
+    const trimmed = val.trim()
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        if (Array.isArray(parsed)) return parsed
+      } catch {}
+    }
+    if (trimmed.includes(",") && !trimmed.startsWith("http") && !trimmed.startsWith("/")) {
+      return trimmed.split(",").map((s) => s.trim()).filter(Boolean)
+    }
+  }
+  return val != null && val !== "" ? [val] : []
+}
+
+/**
+ * Interactive relationship link badge supporting populated objects and unpopulated string IDs.
+ */
+export function DetailRelationshipLink({
+  value,
+  relationTo,
+  client,
+  schemas,
+}: {
+  value: any
+  relationTo?: string
+  client?: any
+  schemas?: any
+}) {
+  const isObject = typeof value === "object" && value !== null
+  const id = isObject ? (value.id || value._id) : String(value || "")
+  const targetRelationTo =
+    relationTo ||
+    (isObject ? value._meta?.collection : undefined) ||
+    (id.startsWith("author-") ? "authors" : undefined)
+
+  const shouldFetch = !isObject && Boolean(client && id && targetRelationTo)
+  const { data: fetchedDoc } = useQuery({
+    queryKey: ["collections", targetRelationTo, "relationship-item", id],
+    queryFn: async () => {
+      if (!client || !targetRelationTo || !id) return null
+      try {
+        const item = await client.collection(targetRelationTo).findOne(id)
+        return item
+      } catch {
+        return null
+      }
+    },
+    enabled: shouldFetch,
+    staleTime: 60_000,
+  })
+
+  const targetDoc = isObject ? value : (fetchedDoc || null)
+  const targetCollection = schemas?.collections?.find((c: any) => c.slug === targetRelationTo)
+
+  const docTitle = targetDoc
+    ? resolveDocumentTitle({
+        entry: targetDoc,
+        collection: targetCollection,
+        collections: schemas?.collections,
+      }) || targetDoc.title || targetDoc.name || targetDoc.email || String(targetDoc.id || id)
+    : (id.startsWith("author-")
+        ? id.slice(7).split("-").map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(" ")
+        : (id.includes("-") ? id.split("-").map((s: string) => s.charAt(0).toUpperCase() + s.slice(1)).join(" ") : id))
+
+  const avatarVal = targetDoc?.avatar || targetDoc?.image || targetDoc?.photo
+  const targetUrl = targetRelationTo ? `/collections/${targetRelationTo}/${id}` : `/collections/${id}`
+
+  return (
+    <Link
+      to={targetUrl}
+      className="dy-inline-flex dy-items-center dy-gap-2 dy-px-3 dy-py-1.5 dy-rounded-xl dy-bg-muted/40 hover:dy-bg-muted/70 dy-border dy-border-border/60 dy-text-xs dy-font-semibold dy-text-foreground dy-transition-all hover:dy-shadow-xs dy-group"
+    >
+      {avatarVal ? (
+        <DyrectedMedia
+          media={avatarVal}
+          variant="avatar"
+          className="dy-h-5 dy-w-5 dy-shrink-0"
+          fieldDef={{ name: "avatar" }}
+          baseUrl={client?.getBaseUrl?.() || ""}
+        />
+      ) : (
+        <div className="dy-h-5 dy-w-5 dy-rounded-full dy-bg-primary/10 dy-text-primary dy-flex dy-items-center dy-justify-center dy-text-[10px] dy-font-bold dy-shrink-0">
+          {docTitle.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <span className="dy-truncate dy-max-w-[200px]">{docTitle}</span>
+      <ExternalLink className="dy-h-3 dy-w-3 dy-text-muted-foreground group-hover:dy-text-primary dy-transition-colors dy-shrink-0" />
+    </Link>
+  )
 }
 
 /**
@@ -302,32 +400,33 @@ export function DetailFieldRenderer({
       )
     }
 
-    if (displayVariant === "badge") {
-      if (val == null || val === "") return <span className="dy-text-muted-foreground/60">{placeholder}</span>
-      const resolvedLabel = resolveOptionLabel(val, fieldDef?.options)
-      const badgeText = resolvedLabel || (typeof val === "object" ? resolveDocumentTitle({ entry: val, collection: fieldDef }) : String(val))
-      const presentation = resolveBadgePresentation({
-        value: val,
-        badgeText,
-        badgeColors: options?.badgeColors,
-        fieldDef,
-        defaultVariant: "secondary",
-        baseClassName: "dy-font-medium dy-text-xs",
-      })
-      return (
-        <Badge
-          variant={presentation.variant}
-          className={presentation.className}
-          style={presentation.style}
-        >
-          {badgeText}
-        </Badge>
-      )
-    }
-
-    if (displayVariant === "badges" || displayVariant === "tags") {
-      const list = Array.isArray(val) ? val : val ? [val] : []
+    if (displayVariant === "badge" || displayVariant === "badges" || displayVariant === "tags") {
+      const list = parseListItems(val)
       if (list.length === 0) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+
+      if (list.length === 1 && displayVariant === "badge") {
+        const singleItem = list[0]
+        const resolvedLabel = resolveOptionLabel(singleItem, fieldDef?.options)
+        const badgeText = resolvedLabel || (typeof singleItem === "object" ? resolveDocumentTitle({ entry: singleItem, collection: fieldDef }) : String(singleItem))
+        const presentation = resolveBadgePresentation({
+          value: singleItem,
+          badgeText,
+          badgeColors: options?.badgeColors,
+          fieldDef,
+          defaultVariant: "secondary",
+          baseClassName: "dy-font-medium dy-text-xs",
+        })
+        return (
+          <Badge
+            variant={presentation.variant}
+            className={presentation.className}
+            style={presentation.style}
+          >
+            {badgeText}
+          </Badge>
+        )
+      }
+
       return (
         <div className="dy-flex dy-flex-wrap dy-gap-1.5">
           {list.map((item, idx) => {
@@ -338,8 +437,8 @@ export function DetailFieldRenderer({
               badgeText: itemText,
               badgeColors: options?.badgeColors,
               fieldDef,
-              defaultVariant: "outline",
-              baseClassName: "dy-text-xs dy-font-normal",
+              defaultVariant: "secondary",
+              baseClassName: "dy-text-xs dy-font-medium",
             })
             return (
               <Badge
@@ -587,49 +686,46 @@ export function DetailFieldRenderer({
       )
     }
 
-    if (fieldType === "relationship") {
+    if (
+      fieldType === "relationship" ||
+      fieldDef?.relationTo ||
+      fieldName === "author" ||
+      fieldName === "authorId" ||
+      (typeof val === "string" && (val.startsWith("author-") || val.startsWith("user-")))
+    ) {
+      const relationTo =
+        fieldDef?.relationTo ||
+        (typeof val === "object" ? val?._meta?.collection : undefined) ||
+        (fieldName === "author" || fieldName === "authorId" || (typeof val === "string" && val.startsWith("author-"))
+          ? "authors"
+          : (typeof val === "string" && val.startsWith("user-") ? "users" : undefined))
+
       if (Array.isArray(val)) {
+        if (val.length === 0) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
         return (
           <div className="dy-flex dy-flex-wrap dy-gap-2">
-            {val.map((item, i) => {
-              if (item && typeof item === "object" && item.id) {
-                const title = item.title || item.name || item.slug || item.id
-                const targetSlug = fieldDef.relationTo
-                return (
-                  <Link
-                    key={i}
-                    to={`/collections/${targetSlug}/${item.id}`}
-                    className="dy-inline-flex dy-items-center dy-gap-1 dy-text-xs dy-font-medium dy-bg-primary/10 dy-text-primary hover:dy-bg-primary/20 dy-rounded-md dy-px-2.5 dy-py-1 dy-transition-colors"
-                  >
-                    <span>{title}</span>
-                    <ExternalLink className="dy-h-3 dy-w-3" />
-                  </Link>
-                )
-              }
-              return (
-                <span key={i} className="dy-text-xs dy-text-muted-foreground">
-                  {String(item)}
-                </span>
-              )
-            })}
+            {val.map((item, i) => (
+              <DetailRelationshipLink
+                key={i}
+                value={item}
+                relationTo={relationTo}
+                client={client}
+                schemas={schemas}
+              />
+            ))}
           </div>
         )
       }
 
-      if (val && typeof val === "object" && val.id) {
-        const title = val.title || val.name || val.slug || val.id
-        const targetSlug = fieldDef?.relationTo
-        if (targetSlug) {
-          return (
-            <Link
-              to={`/collections/${targetSlug}/${val.id}`}
-              className="dy-inline-flex dy-items-center dy-gap-1.5 dy-text-sm dy-font-medium dy-text-primary hover:dy-underline"
-            >
-              <span>{title}</span>
-              <ExternalLink className="dy-h-3.5 dy-w-3.5" />
-            </Link>
-          )
-        }
+      if (val) {
+        return (
+          <DetailRelationshipLink
+            value={val}
+            relationTo={relationTo}
+            client={client}
+            schemas={schemas}
+          />
+        )
       }
     }
 
@@ -781,6 +877,41 @@ export function DetailFieldRenderer({
 
     if (val === null || val === undefined || val === "") {
       return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+    }
+
+    const parsedList = parseListItems(val)
+    if (
+      fieldType === "multiSelect" ||
+      fieldName?.toLowerCase().includes("tag") ||
+      (parsedList.length > 0 && parsedList.every((item) => typeof item === "string" || typeof item === "number"))
+    ) {
+      if (parsedList.length === 0) return <span className="dy-text-muted-foreground/60">{placeholder}</span>
+      return (
+        <div className="dy-flex dy-flex-wrap dy-gap-1.5">
+          {parsedList.map((item, idx) => {
+            const itemLabel = resolveOptionLabel(item, fieldDef?.options)
+            const itemText = itemLabel || String(item)
+            const presentation = resolveBadgePresentation({
+              value: item,
+              badgeText: itemText,
+              badgeColors: options?.badgeColors,
+              fieldDef,
+              defaultVariant: "secondary",
+              baseClassName: "dy-text-xs dy-font-medium",
+            })
+            return (
+              <Badge
+                key={idx}
+                variant={presentation.variant}
+                className={presentation.className}
+                style={presentation.style}
+              >
+                {itemText}
+              </Badge>
+            )
+          })}
+        </div>
+      )
     }
 
     if (Array.isArray(val)) {
