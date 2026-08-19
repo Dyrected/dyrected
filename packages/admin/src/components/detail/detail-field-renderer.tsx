@@ -127,6 +127,7 @@ export function DetailRelationshipLink({
     >
       {avatarVal ? (
         <DyrectedMedia
+          unstyled={false}
           media={avatarVal}
           variant="avatar"
           className="dy-h-5 dy-w-5 dy-shrink-0"
@@ -346,6 +347,7 @@ export function DetailFieldRenderer({
     return (
       <DyrectedMedia
         key={keyIdx}
+        unstyled={false}
         media={item}
         baseUrl={client?.getBaseUrl() || ""}
         fieldDef={fieldDef}
@@ -581,6 +583,7 @@ export function DetailFieldRenderer({
     if (displayVariant === "image" || displayVariant === "avatar") {
       return (
         <DyrectedMedia
+          unstyled={false}
           media={val}
           baseUrl={client?.getBaseUrl() || ""}
           fieldDef={fieldDef}

@@ -19,6 +19,7 @@ export interface DyrectedMediaProps extends Omit<React.HTMLAttributes<HTMLDivEle
   width?: number | string
   height?: number | string
   fieldDef?: any
+  unstyled?: boolean
 }
 
 /**
@@ -157,8 +158,18 @@ export function resolveMediaKind(
 }
 
 /**
- * Universal media component for Dyrected Admin.
- * Handles images, avatars, HTML5 / YouTube / Vimeo videos, audio, and downloadable documents.
+ * Universal media component for Dyrected.
+ * 
+ * DESIGN GOALS & ALIGNMENT:
+ * - This component handles resolving and displaying various media types (images, avatars, 
+ *   HTML5 / YouTube / Vimeo videos, audio, and downloadable documents) from Dyrected collections.
+ * - Public Website Usage: This component is explicitly designed to be exported and used 
+ *   in consumers' public-facing websites (e.g. Next.js, Nuxt, React apps) as the primary 
+ *   way to display Dyrected media.
+ * - Styling Philosophy: Because it is used in external consumer projects, the styling must be 
+ *   completely unopinionated. Hardcoded opinionated styles (like fixed borders, aggressive 
+ *   paddings, or forced background colors) must be strictly avoided or made opt-in so they 
+ *   never break or conflict with the design system of the public website importing it.
  */
 export function DyrectedMedia({
   media,
@@ -170,6 +181,7 @@ export function DyrectedMedia({
   fallback,
   showDetails = true,
   fieldDef,
+  unstyled = true,
   ...props
 }: DyrectedMediaProps) {
   const dyContext = useContext(DyrectedContext)
@@ -226,7 +238,9 @@ export function DyrectedMedia({
     return (
       <div
         className={cn(
-          "dy-relative dy-h-16 dy-w-16 dy-rounded-full dy-overflow-hidden dy-border-2 dy-border-border/80 dy-bg-muted/40 dy-shadow-sm dy-shrink-0 dy-group/avatar",
+          unstyled
+            ? "dy-relative"
+            : "dy-relative dy-h-16 dy-w-16 dy-rounded-full dy-overflow-hidden dy-border-2 dy-border-border/80 dy-bg-muted/40 dy-shadow-sm dy-shrink-0 dy-group/avatar",
           className
         )}
         {...props}
@@ -236,12 +250,14 @@ export function DyrectedMedia({
             src={previewUrl}
             alt={displayAlt}
             className={cn(
-              "dy-h-full dy-w-full dy-object-cover dy-transition-transform group-hover/avatar:dy-scale-105",
+              unstyled
+                ? "dy-w-full dy-h-full dy-object-cover"
+                : "dy-h-full dy-w-full dy-object-cover dy-transition-transform group-hover/avatar:dy-scale-105",
               imgClassName
             )}
           />
         ) : (
-          <div className="dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground dy-text-sm dy-font-semibold">
+          <div className={cn(unstyled ? "" : "dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground dy-text-sm dy-font-semibold")}>
             {(filename || alt || "A").charAt(0).toUpperCase()}
           </div>
         )}
@@ -253,8 +269,8 @@ export function DyrectedMedia({
   if (kind === "video") {
     if (embedUrl) {
       return (
-        <div className={cn("dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
-          <div className="dy-relative dy-w-full dy-pt-[56.25%] dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/60 dy-bg-black">
+        <div className={cn(unstyled ? "" : "dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
+          <div className={cn(unstyled ? "dy-relative dy-w-full dy-pt-[56.25%]" : "dy-relative dy-w-full dy-pt-[56.25%] dy-rounded-xl dy-overflow-hidden dy-border dy-border-border/60 dy-bg-black")}>
             <iframe
               src={embedUrl}
               title={filename || "Video player"}
@@ -263,19 +279,19 @@ export function DyrectedMedia({
               allowFullScreen
             />
           </div>
-          {showDetails && filename && <p className="dy-text-xs dy-text-muted-foreground dy-truncate">{filename}</p>}
+          {showDetails && filename && <p className={cn(unstyled ? "" : "dy-text-xs dy-text-muted-foreground dy-truncate")}>{filename}</p>}
         </div>
       )
     }
 
     return (
-      <div className={cn("dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
+      <div className={cn(unstyled ? "" : "dy-space-y-2 dy-w-full dy-max-w-md", className)} {...props}>
         <video
           src={previewUrl}
           controls
-          className={cn("dy-w-full dy-rounded-xl dy-border dy-border-border/60 dy-bg-black/90", imgClassName)}
+          className={cn(unstyled ? "dy-max-w-full dy-h-auto" : "dy-w-full dy-rounded-xl dy-border dy-border-border/60 dy-bg-black/90", imgClassName)}
         />
-        {showDetails && filename && <p className="dy-text-xs dy-text-muted-foreground dy-truncate">{filename}</p>}
+        {showDetails && filename && <p className={cn(unstyled ? "" : "dy-text-xs dy-text-muted-foreground dy-truncate")}>{filename}</p>}
       </div>
     )
   }
@@ -283,9 +299,9 @@ export function DyrectedMedia({
   // 3. Audio display
   if (kind === "audio") {
     return (
-      <div className={cn("dy-space-y-1.5 dy-w-full dy-max-w-md", className)} {...props}>
-        <audio src={previewUrl} controls className="dy-w-full" />
-        {showDetails && filename && <p className="dy-text-xs dy-text-muted-foreground dy-truncate">{filename}</p>}
+      <div className={cn(unstyled ? "" : "dy-space-y-1.5 dy-w-full dy-max-w-md", className)} {...props}>
+        <audio src={previewUrl} controls className={cn(unstyled ? "" : "dy-w-full")} />
+        {showDetails && filename && <p className={cn(unstyled ? "" : "dy-text-xs dy-text-muted-foreground dy-truncate")}>{filename}</p>}
       </div>
     )
   }
@@ -296,16 +312,18 @@ export function DyrectedMedia({
       return (
         <div
           className={cn(
-            "dy-relative dy-h-12 dy-w-12 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0",
+            unstyled
+              ? ""
+              : "dy-relative dy-h-12 dy-w-12 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0",
             className
           )}
           {...props}
         >
           {previewUrl ? (
-            <img src={previewUrl} alt={displayAlt} className={cn("dy-h-full dy-w-full dy-object-cover", imgClassName)} />
+            <img src={previewUrl} alt={displayAlt} className={cn(unstyled ? "dy-max-w-full dy-h-auto" : "dy-h-full dy-w-full dy-object-cover", imgClassName)} />
           ) : (
-            <div className="dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground">
-              <FileText className="dy-h-4 dy-w-4" />
+            <div className={cn(unstyled ? "" : "dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground")}>
+              <FileText className={cn(unstyled ? "" : "dy-h-4 dy-w-4")} />
             </div>
           )}
         </div>
@@ -315,7 +333,9 @@ export function DyrectedMedia({
     return (
       <div
         className={cn(
-          "dy-flex dy-items-start dy-gap-3.5 dy-p-3 dy-bg-muted/20 dy-border dy-border-border/60 dy-rounded-xl dy-max-w-md dy-transition-all hover:dy-border-border hover:dy-bg-muted/30",
+          unstyled
+            ? "dy-flex dy-flex-col dy-gap-2"
+            : "dy-flex dy-items-start dy-gap-3.5 dy-p-3 dy-bg-muted/20 dy-border dy-border-border/60 dy-rounded-xl dy-max-w-md dy-transition-all hover:dy-border-border hover:dy-bg-muted/30",
           className
         )}
         {...props}
@@ -324,7 +344,11 @@ export function DyrectedMedia({
           href={previewUrl || "#"}
           target="_blank"
           rel="noopener noreferrer"
-          className="dy-relative dy-h-20 dy-w-20 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0 dy-group/media"
+          className={cn(
+            unstyled
+              ? ""
+              : "dy-relative dy-h-20 dy-w-20 dy-rounded-lg dy-overflow-hidden dy-border dy-border-border/60 dy-bg-muted/40 dy-shrink-0 dy-group/media"
+          )}
           title="Click to view full image"
         >
           {previewUrl ? (
@@ -332,21 +356,23 @@ export function DyrectedMedia({
               src={previewUrl}
               alt={displayAlt}
               className={cn(
-                "dy-h-full dy-w-full dy-object-cover dy-transition-transform group-hover/media:dy-scale-105",
+                unstyled
+                  ? "dy-max-w-full dy-h-auto"
+                  : "dy-h-full dy-w-full dy-object-cover dy-transition-transform group-hover/media:dy-scale-105",
                 imgClassName
               )}
             />
           ) : (
-            <div className="dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground">
-              <FileText className="dy-h-6 dy-w-6" />
+            <div className={cn(unstyled ? "" : "dy-flex dy-h-full dy-w-full dy-items-center dy-justify-center dy-text-muted-foreground")}>
+              <FileText className={cn(unstyled ? "" : "dy-h-6 dy-w-6")} />
             </div>
           )}
         </a>
         {showDetails && (
-          <div className="dy-flex-1 dy-min-w-0 dy-space-y-1">
-            <p className="dy-text-xs dy-font-semibold dy-text-foreground dy-truncate">{filename || "Image asset"}</p>
-            {mimeType && <p className="dy-text-[11px] dy-text-muted-foreground">{mimeType}</p>}
-            {previewUrl && (
+          <div className={cn(unstyled ? "" : "dy-flex-1 dy-min-w-0 dy-space-y-1")}>
+            <p className={cn(unstyled ? "" : "dy-text-xs dy-font-semibold dy-text-foreground dy-truncate")}>{filename || "Image asset"}</p>
+            {mimeType && <p className={cn(unstyled ? "" : "dy-text-[11px] dy-text-muted-foreground")}>{mimeType}</p>}
+            {previewUrl && !unstyled && (
               <div className="dy-flex dy-items-center dy-gap-2 dy-pt-1">
                 <a
                   href={previewUrl}
@@ -366,6 +392,16 @@ export function DyrectedMedia({
   }
 
   // 5. Generic downloadable file
+  if (unstyled) {
+    return (
+      <div className={cn("dy-inline-flex", className)} {...props}>
+        <a href={previewUrl || "#"} target="_blank" rel="noopener noreferrer">
+          {filename || "Download File"}
+        </a>
+      </div>
+    )
+  }
+
   return (
     <div className={cn("dy-inline-flex", className)} {...props}>
       <a
